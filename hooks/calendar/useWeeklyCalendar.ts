@@ -110,8 +110,7 @@ export const useWeeklyCalendar = () => {
 
     const weekDates = useMemo(() => getWeekDates(), [currentDate]);
     const miniCalendarDays = useMemo(() => generateMiniCalendar(), [miniCalendarDate]);
-
-    const today = getTodayDate();
+    const today = useMemo(getTodayDate, []);
 
     const monthNames = [
         'January', 'February', 'March', 'April', 'May', 'June',
