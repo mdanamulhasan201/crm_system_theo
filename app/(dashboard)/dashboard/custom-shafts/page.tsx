@@ -79,7 +79,7 @@ export default function CustomShafts() {
             </div>
 
             {/* Filter Bar */}
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
                 <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                         <Button
@@ -159,7 +159,7 @@ export default function CustomShafts() {
 
             {/* Product Grid */}
             {!loading && !error && filteredData.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredData.map((item) => (
                         <div key={item.id} className="border group border-gray-300 rounded-md bg-white flex flex-col h-full">
                             <Image src={item.image} alt={item.name} className="w-full h-40 object-contain p-4" width={500} height={500} />

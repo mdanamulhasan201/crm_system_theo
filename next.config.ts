@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'blah-proc-regularly-wall.trycloudflare.com',
+        hostname: 'forecasts-pdf-suggesting-trek.trycloudflare.com',
         port: '',
         pathname: '/**',
       }

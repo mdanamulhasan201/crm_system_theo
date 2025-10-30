@@ -22,6 +22,7 @@ import { TbDashboardFilled } from 'react-icons/tb';
 import { GiFootprint } from 'react-icons/gi';
 import { FaShoePrints } from 'react-icons/fa';
 import { HiDocumentText } from 'react-icons/hi';
+import { RiDashboard2Line } from 'react-icons/ri';
 
 
 interface SidebarProps {
@@ -77,6 +78,7 @@ export default function Sidebar({ onClose }: SidebarProps) {
             label: 'Individuelle Kundenversorgung',
             items: [
                 { icon: FaShoePrints, label: 'Maßschäfte', href: '/dashboard/custom-shafts' },
+                { icon: RiDashboard2Line, label: 'Masschuhe', href: '/dashboard/masschuhe' },
                 { icon: GiFootprint, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
                 { icon: HiDocumentText, label: 'Musterzettel', href: '/dashboard/musterzettel' }
             ]
