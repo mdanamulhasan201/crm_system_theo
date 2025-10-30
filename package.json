@@ -28,7 +28,6 @@
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-three/drei": "^10.6.1",
     "@react-three/fiber": "^9.3.0",
-    "@types/react-calendar": "^4.1.0",
     "@types/react-datepicker": "^6.2.0",
     "axios": "^1.9.0",
     "canvasjs-react-charts": "^1.0.5",

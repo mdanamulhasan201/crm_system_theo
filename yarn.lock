@@ -1975,15 +1975,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-calendar@npm:^4.1.0":
-  version: 4.1.0
-  resolution: "@types/react-calendar@npm:4.1.0"
-  dependencies:
-    react-calendar: "npm:*"
-  checksum: 10c0/53090cf205d5f8fbad6ac588a4b049d0e564285133ab947d2ab09aa1d068e3d36f4b0999ac3dbb92cf6e3d15d744bda881bf3b5051c7c18ac2901471c8c33ccd
-  languageName: node
-  linkType: hard
-
 "@types/react-datepicker@npm:^6.2.0":
   version: 6.2.0
   resolution: "@types/react-datepicker@npm:6.2.0"
@@ -5373,7 +5364,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-calendar@npm:*, react-calendar@npm:^6.0.0":
+"react-calendar@npm:^6.0.0":
   version: 6.0.0
   resolution: "react-calendar@npm:6.0.0"
   dependencies:
@@ -6319,7 +6310,6 @@ __metadata:
     "@tailwindcss/postcss": "npm:^4"
     "@types/node": "npm:^20"
     "@types/react": "npm:^19"
-    "@types/react-calendar": "npm:^4.1.0"
     "@types/react-datepicker": "npm:^6.2.0"
     "@types/react-dom": "npm:^19"
     "@types/three": "npm:^0"
