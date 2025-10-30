@@ -194,12 +194,14 @@ const WeeklyCalendar = () => {
         setVisibleDaysCount(prev => Math.min(prev + 4, selectedMonthDates.length));
     };
 
+    const miniCalendarMonth = miniCalendarDate.getMonth();
+    const miniCalendarYear = miniCalendarDate.getFullYear();
 
     React.useEffect(() => {
         setVisibleDaysCount(4);
         setSelectedRowStartDate(null);
         setCurrentSelectedDate(today);
-    }, [miniCalendarDate.getMonth(), miniCalendarDate.getFullYear()]);
+    }, [miniCalendarMonth, miniCalendarYear, today]);
 
     // Override the handleMiniCalendarDateClick to set selected row
     const handleMiniCalendarDateClickOverride = (date: Date) => {
