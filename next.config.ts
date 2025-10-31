@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'forecasts-pdf-suggesting-trek.trycloudflare.com',
+        hostname: 'christmas-inside-workstation-irrigation.trycloudflare.com',
         port: '',
         pathname: '/**',
       }
