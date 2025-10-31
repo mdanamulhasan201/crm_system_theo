@@ -247,7 +247,29 @@ const WeeklyCalendar = () => {
 
             // Format date and time for form
             const date = new Date(apt.date);
-            const formattedTime = apt.time.split(' ')[0];
+            const to24h = (t: string) => {
+                const time = t.trim().toLowerCase();
+                const ampm = time.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
+                if (ampm) {
+                    let h = parseInt(ampm[1], 10);
+                    const m = ampm[2];
+                    const mod = ampm[3];
+                    if (mod === 'pm' && h !== 12) h += 12;
+                    if (mod === 'am' && h === 12) h = 0;
+                    return `${String(h).padStart(2, '0')}:${m}`;
+                }
+                const hhmm = time.match(/^(\d{1,2}):(\d{2})$/);
+                if (hhmm) {
+                    return `${hhmm[1].padStart(2, '0')}:${hhmm[2]}`;
+                }
+                // Fallback: try Date parsing
+                const d = new Date(`2000-01-01T${time}`);
+                if (!isNaN(d.getTime())) {
+                    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                }
+                return time;
+            };
+            const formattedTime = to24h(apt.time);
 
             editForm.reset({
                 kunde: apt.customer_name,
@@ -512,7 +534,8 @@ const WeeklyCalendar = () => {
                                         onClick={handleSeeMore}
                                         className="px-6 py-3 bg-[#62A07C] text-white rounded-lg hover:bg-[#4f8a65] transition-colors cursor-pointer"
                                     >
-                                        Mehr Anzeigen ({selectedMonthDates.length - visibleDaysCount} more days)
+                                        Mehr Anzeigen 
+                                        {/* ({selectedMonthDates.length - visibleDaysCount} more days) */}
                                     </button>
                                 </div>
                             )}
