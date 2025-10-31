@@ -47,7 +47,7 @@ interface AppointmentFormData {
     uhrzeit: string;
     selectedEventDate: Date | undefined;
     termin: string;
-    bemerk: string;
+    bemerk?: string;
     mitarbeiter: string;
     isClientEvent: boolean;
     duration: number;
@@ -223,7 +223,7 @@ const WeeklyCalendar = () => {
     };
 
 
-    const onSubmit = async (data: { selectedEventDate: string | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
+    const onSubmit = async (data: { selectedEventDate: string | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
         const success = await createNewAppointment(data);
         if (success) {
             form.reset();
@@ -266,7 +266,7 @@ const WeeklyCalendar = () => {
         }
     };
 
-    const onUpdateSubmit = async (data: { selectedEventDate: string | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
+    const onUpdateSubmit = async (data: { selectedEventDate: string | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
         if (!selectedAppointment?.id) return;
 
         const success = await updateAppointmentById(selectedAppointment.id.toString(), data);

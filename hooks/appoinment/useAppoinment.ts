@@ -44,7 +44,7 @@ interface SubmittedAppointmentData {
     uhrzeit: string;
     selectedEventDate: string | undefined;
     termin: string;
-    bemerk: string;
+    bemerk?: string;
     mitarbeiter: string;
     isClientEvent: boolean;
     duration: number;

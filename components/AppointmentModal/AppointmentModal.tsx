@@ -21,7 +21,7 @@ interface AppointmentFormData {
     selectedEventDate: Date | undefined;
     termin: string;
     mitarbeiter: string;
-    bemerk: string;
+    bemerk?: string;
     duration: number;
     customerId?: string;
     employeeId?: string;
@@ -34,7 +34,7 @@ interface SubmittedAppointmentData {
     selectedEventDate: string | undefined;
     termin: string;
     mitarbeiter: string;
-    bemerk: string;
+    bemerk?: string;
     duration: number;
     customerId?: string;
     employeeId?: string;
@@ -440,7 +440,7 @@ export default function AppointmentModal({
                             name="bemerk"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Notitz</FormLabel>
+                                    <FormLabel>Notitz (optional)</FormLabel>
                                     <FormControl>
                                         <Textarea
                                             placeholder="Notitz"
