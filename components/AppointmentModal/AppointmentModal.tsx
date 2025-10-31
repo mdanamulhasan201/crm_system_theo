@@ -31,7 +31,7 @@ interface SubmittedAppointmentData {
     isClientEvent: boolean;
     kunde: string;
     uhrzeit: string;
-    selectedEventDate: string | undefined;
+    selectedEventDate: Date | undefined;
     termin: string;
     mitarbeiter: string;
     bemerk?: string;
@@ -147,7 +147,8 @@ export default function AppointmentModal({
     const handleFormSubmit = async (data: AppointmentFormData) => {
         const formattedData: SubmittedAppointmentData = {
             ...data,
-            selectedEventDate: data.selectedEventDate ? data.selectedEventDate.toISOString() : undefined
+            // send Date directly without ISO conversion
+            selectedEventDate: data.selectedEventDate
         };
         try {
             setSubmitting(true);

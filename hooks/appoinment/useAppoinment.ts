@@ -42,7 +42,7 @@ interface AppointmentData {
 interface SubmittedAppointmentData {
     kunde: string;
     uhrzeit: string;
-    selectedEventDate: string | undefined;
+    selectedEventDate: string | Date | undefined;
     termin: string;
     bemerk?: string;
     mitarbeiter: string;
@@ -106,21 +106,14 @@ export const useAppoinment = () => {
                 return false;
             }
 
-            // Format time for display
-            const timeDate = new Date(`2000-01-01T${data.uhrzeit}`);
-            const formattedTime = timeDate.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            }).toLowerCase();
-
-            // Create correct datetime - data.selectedEventDate is already ISO string
-            const dateTime = createDateTimeWithOffset(formatDate(new Date(data.selectedEventDate || new Date())), data.uhrzeit);
+            // Use raw HH:MM time and plain date string (YYYY-MM-DD)
+            const formattedTime = data.uhrzeit;
+            const selectedDateStr = formatDate(new Date(data.selectedEventDate || new Date()));
 
             const appointmentData: any = {
                 customer_name: isCustomerAppointment ? data.kunde : (data.kunde || ''),
                 time: formattedTime,
-                date: dateTime.toISOString(),
+                date: selectedDateStr,
                 reason: data.termin,
                 assignedTo: data.mitarbeiter || '',
                 details: data.bemerk || '',
@@ -193,22 +186,15 @@ export const useAppoinment = () => {
     // Update appointment
     const updateAppointmentById = useCallback(async (appointmentId: string, data: SubmittedAppointmentData) => {
         try {
-            // Format time for display
-            const timeDate = new Date(`2000-01-01T${data.uhrzeit}`);
-            const formattedTime = timeDate.toLocaleTimeString('en-US', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: true
-            }).toLowerCase();
-
-            // Create correct datetime - data.selectedEventDate is already ISO string
-            const dateTime = createDateTimeWithOffset(formatDate(new Date(data.selectedEventDate || new Date())), data.uhrzeit);
+            // Use raw HH:MM time and plain date string (YYYY-MM-DD)
+            const formattedTime = data.uhrzeit;
+            const selectedDateStr = formatDate(new Date(data.selectedEventDate || new Date()));
 
             const isCustomerAppointment = Boolean(data.isClientEvent);
             const appointmentData: any = {
                 customer_name: isCustomerAppointment ? data.kunde : (data.kunde || ''),
                 time: formattedTime,
-                date: dateTime.toISOString(),
+                date: selectedDateStr,
                 reason: data.termin,
                 assignedTo: data.mitarbeiter || '',
                 details: data.bemerk || '',
@@ -244,7 +230,7 @@ export const useAppoinment = () => {
         }
     }, [fetchAppointments]);
 
-    // Helper function to create datetime with offset
+    // Helper function to create datetime without offset
     const createDateTimeWithOffset = (dateStr: string, timeStr: string) => {
         const [hours, minutes] = timeStr.split(':');
         const selectedDate = new Date(dateStr);
@@ -252,7 +238,7 @@ export const useAppoinment = () => {
         dateTime.setFullYear(selectedDate.getFullYear());
         dateTime.setMonth(selectedDate.getMonth());
         dateTime.setDate(selectedDate.getDate());
-        dateTime.setHours(parseInt(hours) + 2);
+        dateTime.setHours(parseInt(hours));
         dateTime.setMinutes(parseInt(minutes));
         dateTime.setSeconds(0);
         dateTime.setMilliseconds(0);

@@ -7,7 +7,7 @@ import { useAppoinment } from '@/hooks/appoinment/useAppoinment';
 import AppointmentModal from '@/components/AppointmentModal/AppointmentModal';
 import { useWeeklyCalendar } from '@/hooks/calendar/useWeeklyCalendar';
 import MiniCalendar from '@/components/AppoinmentData/MiniCalendar';
-import DayView from '@/components/AppoinmentData/DayView';
+
 import DailyCalendarView from '@/components/AppoinmentData/DailyCalendarView';
 
 interface Event {
@@ -223,7 +223,7 @@ const WeeklyCalendar = () => {
     };
 
 
-    const onSubmit = async (data: { selectedEventDate: string | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
+    const onSubmit = async (data: { selectedEventDate: Date | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
         const success = await createNewAppointment(data);
         if (success) {
             form.reset();
@@ -266,7 +266,7 @@ const WeeklyCalendar = () => {
         }
     };
 
-    const onUpdateSubmit = async (data: { selectedEventDate: string | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
+    const onUpdateSubmit = async (data: { selectedEventDate: Date | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
         if (!selectedAppointment?.id) return;
 
         const success = await updateAppointmentById(selectedAppointment.id.toString(), data);

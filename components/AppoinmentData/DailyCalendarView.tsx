@@ -173,8 +173,23 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
         return layout;
     }, [events]);
 
-    // Get event color
-    const getEventColor = (index: number) => EVENT_COLORS[index % EVENT_COLORS.length];
+    // Deterministic color per assignedTo
+    const hashString = (str: string) => {
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = (hash << 5) - hash + str.charCodeAt(i);
+            hash |= 0;
+        }
+        return Math.abs(hash);
+    };
+
+    const getEventColor = (assignedTo: string | undefined, fallbackIndex: number) => {
+        if (assignedTo && assignedTo.trim().length > 0) {
+            const idx = hashString(assignedTo.trim()) % EVENT_COLORS.length;
+            return EVENT_COLORS[idx];
+        }
+        return EVENT_COLORS[fallbackIndex % EVENT_COLORS.length];
+    };
 
     // Calculate end time
     const getEndTime = (event: any) => {
@@ -299,7 +314,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 
                         {/* Event Blocks */}
                         {eventLayout.map((event, index) => {
-                            const color = getEventColor(index);
+                            const color = getEventColor(event.assignedTo, index);
                             const topPercent = (event.startMinutes / (timeSlots.length * 60)) * 100;
 
                             return (
