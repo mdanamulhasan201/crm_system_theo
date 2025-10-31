@@ -51,6 +51,15 @@ export default function Settingss() {
         //     alt: "News",
         // },
 
+        // {
+        //     label: "Sprache",
+        //     href: "#",
+        //     icon: BiGlobe,
+        //     className: "text-6xl text-gray-800 hover:text-primary-600 transition-colors",
+        //     alt: "Language",
+        //     onClick: handleLanguageClick,
+        // },
+
         {
             label: "Einstellungen",
             href: "/dashboard/settings-profile",
@@ -59,20 +68,15 @@ export default function Settingss() {
             alt: "Settings",
         },
         {
-            label: "Versorgungs",
+            label: "Versorgungen",
             href: "/dashboard/versorgungs",
             icon: MdProductionQuantityLimits,
             className: "text-6xl text-gray-800 hover:text-primary-600 transition-colors",
             alt: "Versorgungs",
         },
-        {
-            label: "Sprache",
-            href: "#",
-            icon: BiGlobe,
-            className: "text-6xl text-gray-800 hover:text-primary-600 transition-colors",
-            alt: "Language",
-            onClick: handleLanguageClick,
-        },
+
+
+
         {
             label: "Software",
             href: "/dashboard/software",
@@ -80,13 +84,13 @@ export default function Settingss() {
             className: "text-6xl text-gray-800 hover:text-primary-600 transition-colors",
             alt: "Software",
         },
-        {
-            label: "Hilfe",
-            href: "/dashboard/support",
-            icon: BiSupport,
-            className: "text-6xl text-gray-800 hover:text-primary-600 transition-colors",
-            alt: "Support",
-        },
+        // {
+        //     label: "Hilfe",
+        //     href: "/dashboard/support",
+        //     icon: BiSupport,
+        //     className: "text-6xl text-gray-800 hover:text-primary-600 transition-colors",
+        //     alt: "Support",
+        // },
 
         {
             label: "Log Out",
@@ -143,18 +147,7 @@ export default function Settingss() {
                             </Link>
                         )}
 
-                        {option.label === "Sprache" && showLanguageDropdown && (
-                            <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white/95 backdrop-blur-sm rounded-xl shadow-lg border border-gray-100 z-50">
-                                <div className="relative p-2">
-                                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-white border-t border-l border-gray-100 rotate-45 shadow-[-1px_-1px_1px_rgba(0,0,0,0.05)]"></div>
-                                    <LanguageSwitcher
-                                        variant="minimal"
-                                        className="mt-1"
-                                        onLanguageChange={() => setShowLanguageDropdown(false)}
-                                    />
-                                </div>
-                            </div>
-                        )}
+                     
                     </div>
                 ))}
             </div>

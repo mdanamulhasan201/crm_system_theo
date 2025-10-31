@@ -11,11 +11,12 @@ import {
     FootprintsIcon,
     Lock,
     Store,
- 
+
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import SettingsLayout from "@/components/Settings/SettingsLayout";
+import { BiGlobe } from "react-icons/bi";
 
 const sidebarData = [
     {
@@ -25,23 +26,19 @@ const sidebarData = [
         href: "/dashboard/settings-profile"
     },
     {
-        id: "changes-password",
-        icon: Lock,
-        label: "Passwort ändern",
-        href: "/dashboard/settings-profile/changes-password"
+        id: "backup",
+        icon: Save,
+        label: "Backup Einstellungen",
+        href: "/dashboard/settings-profile/backup"
     },
+
     {
         id: "communication",
         icon: MessageSquare,
         label: "Kundenkommunikation",
         href: "/dashboard/settings-profile/communication"
     },
-    {
-        id: "backup",
-        icon: Save,
-        label: "Backup Einstellungen",
-        href: "/dashboard/settings-profile/backup"
-    },
+
     // {
     //     id: "versorgungs",
     //     icon: FootprintsIcon,
@@ -89,6 +86,18 @@ const sidebarData = [
         icon: Palette,
         label: "Design & Logo",
         href: "/dashboard/settings-profile/design"
+    },
+    {
+        id: "changes-password",
+        icon: Lock,
+        label: "Passwort ändern",
+        href: "/dashboard/settings-profile/changes-password"
+    },
+    {
+        id: "sprache",
+        icon: BiGlobe,
+        label: "Sprache",
+        href: "/dashboard/settings-profile/sprache"
     },
     // {
     //     id: "language",

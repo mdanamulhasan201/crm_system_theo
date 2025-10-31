@@ -19,7 +19,7 @@ export interface LastScansRef {
     refreshData: () => void;
 }
 
-const  LastScans = forwardRef<LastScansRef>((props, ref) => {
+const LastScans = forwardRef<LastScansRef>((props, ref) => {
     const [lastScans, setLastScans] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -135,12 +135,14 @@ const  LastScans = forwardRef<LastScansRef>((props, ref) => {
                     <div className="overflow-hidden" ref={emblaRef}>
                         <div className="flex">
                             {lastScans.map((scan: LastScan, index: number) => (
-                                <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.333%] xl:flex-[0_0_25%] 2xl:flex-[0_0_20%] p-2">
-                                    <div key={scan.id} className='border-2 border-gray-200 p-3 flex flex-col gap-2 h-[480px]'>
+                                <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.333%] xl:flex-[0_0_25%] 2xl:flex-[0_0_20%] p-2 ">
+                                    <div key={scan.id} className='border-2 border-gray-200 p-3 flex flex-col gap-2 h-[480px] overflow-hidden'>
                                         <div className='flex justify-center items-center'>
                                             <Image src={legsImg} alt='legs' className='w-48 h-48' />
                                         </div>
-                                        <h2 className='text-xl capitalize font-semibold'>{scan?.vorname} {scan?.nachname}</h2>
+                                        <h2 className='text-lg capitalize font-semibold break-words'>
+                                            {scan?.vorname} {scan?.nachname}
+                                        </h2>
                                         <p>Customer ID: {scan?.customerNumber}</p>
                                         <p>Erstellt am: {formatDate(scan.createdAt)}</p>
                                         <p>Ort: {scan?.wohnort}</p>
