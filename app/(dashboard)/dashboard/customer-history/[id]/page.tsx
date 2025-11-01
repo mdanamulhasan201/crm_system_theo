@@ -43,7 +43,8 @@ export default function CustomerHistory() {
     if (!scanData) return <div className="p-4">Customer not found</div>;
 
     const handleVersorgung = () => {
-        router.push('/dashboard/versorgungs');
+
+        router.push(`/dashboard/customer-info/${params.id}`);
     }
 
     // Helper function to format date for date input
@@ -235,26 +236,28 @@ export default function CustomerHistory() {
                         <input
                             type="email"
                             className="w-full p-2 border rounded-md border-gray-300 bg-gray-50"
-                            value={scanData.email || '-'}
+                            value={scanData.email || ''}
                             readOnly
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">straße</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
                         <input
                             type="text"
                             className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
-                            value={isEditing ? editFormData.straße : (scanData.straße || '-')}
+                            value={isEditing ? editFormData.straße : (scanData.straße || '')}
                             onChange={isEditing ? (e) => handleInputChange('straße', e.target.value) : undefined}
+                            placeholder="location, Street, Street Number"
                             readOnly={!isEditing}
                         />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Land</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Versichertennummer</label>
                         <input
                             type="text"
                             className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
-                            value={isEditing ? editFormData.land : (scanData.land || '-')}
+                            value={isEditing ? editFormData.land : (scanData.land || '')}
+                            placeholder="Versichertennummer"
                             onChange={isEditing ? (e) => handleInputChange('land', e.target.value) : undefined}
                             readOnly={!isEditing}
                         />
@@ -264,12 +267,13 @@ export default function CustomerHistory() {
                 {/* Additional Location and Contact */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">ort</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Kostenträger</label>
                         <input
                             type="text"
                             className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
-                            value={isEditing ? editFormData.ort : (scanData.ort || '-')}
+                            value={isEditing ? editFormData.ort : (scanData.ort || '')}
                             onChange={isEditing ? (e) => handleInputChange('ort', e.target.value) : undefined}
+                            placeholder="Kostenträger"
                             readOnly={!isEditing}
                         />
                     </div>
@@ -278,7 +282,8 @@ export default function CustomerHistory() {
                         <input
                             type="text"
                             className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
-                            value={isEditing ? editFormData.telefon : (scanData.telefon || '-')}
+                            value={isEditing ? editFormData.telefon : (scanData.telefon || '')}
+                            placeholder="+0000000000000"
                             onChange={isEditing ? (e) => handleInputChange('telefon', e.target.value) : undefined}
                             readOnly={!isEditing}
                         />
