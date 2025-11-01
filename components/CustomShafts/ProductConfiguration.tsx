@@ -153,13 +153,16 @@ export default function ProductConfiguration({
         {/* Schafthöhe */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Schafthöhe:</Label>
-          <Input
-            type="text"
-            placeholder="Schafthöhe eingeben (z.B. 7cm, 9cm)..."
-            className="w-full md:w-1/2"
-            value={schafthohe}
-            onChange={e => setSchafthohe(e.target.value)}
-          />
+          <div className="flex items-center gap-2 w-fit ">
+            <Input
+              type="number"
+              placeholder="z.B. 5 cm"
+              className="flex-1"
+              value={schafthohe}
+              onChange={e => setSchafthohe(e.target.value)}
+            />
+            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
+          </div>
         </div>
 
         {/* Polsterung */}
@@ -168,7 +171,7 @@ export default function ProductConfiguration({
           <div className="flex gap-4 flex-wrap">
             {['Standard', 'Lasche', 'Ferse', 'Innen-Außenknöchel', 'Vorderfuß'].map((option) => (
               <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <Checkbox 
+                <Checkbox
                   checked={polsterung.includes(option)}
                   onChange={(e) => {
                     if (e.target.checked) {
@@ -187,8 +190,8 @@ export default function ProductConfiguration({
         {/* Polsterung Anmerkung */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3"> </Label>
-          <Textarea 
-            placeholder="Spezielle Anmerkung (z.B. Polsterdicke in mm, asymmetrisch, extraweich..)" 
+          <Textarea
+            placeholder="Spezielle Anmerkung (z.B. Polsterdicke in mm, asymmetrisch, extraweich..)"
             className="w-full md:w-2/3"
             value={polsterungText}
             onChange={(e) => setPolsterungText(e.target.value)}
@@ -201,7 +204,7 @@ export default function ProductConfiguration({
           <div className="flex gap-4 flex-wrap">
             {['Standard', 'Fersenverstärkung', 'Innen-Außenknöchel', 'Vorderfuß'].map((option) => (
               <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <Checkbox 
+                <Checkbox
                   checked={verstarkungen.includes(option)}
                   onChange={(e) => {
                     if (e.target.checked) {
@@ -220,8 +223,8 @@ export default function ProductConfiguration({
         {/* Verstärkungen Anmerkung */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3"> </Label>
-          <Textarea 
-            placeholder="Besondere Anmerkung zu den Verstärkungen (z.B. Material, Stärke, Position)" 
+          <Textarea
+            placeholder="Besondere Anmerkung zu den Verstärkungen (z.B. Material, Stärke, Position)"
             className="w-full md:w-2/3"
             value={verstarkungenText}
             onChange={(e) => setVerstarkungenText(e.target.value)}

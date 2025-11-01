@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useSingleCustomShaft } from '@/hooks/customShafts/useSingleCustomShaft';
 import Loading from '@/components/Shared/Loading';
 import toast from 'react-hot-toast';
@@ -23,6 +23,9 @@ interface Customer {
 }
 
 export default function DetailsPage() {
+  // Router for navigation
+  const router = useRouter();
+  
   // State management
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
@@ -126,6 +129,11 @@ export default function DetailsPage() {
       setShowSuccessMessage(true);
       setShowConfirmationModal(false);
       toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
+      
+      // Navigate back to custom-shafts page after success
+      setTimeout(() => {
+        router.push('/dashboard/custom-shafts');
+      }, 200);
     } catch (error) {
       toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" });
     } finally {

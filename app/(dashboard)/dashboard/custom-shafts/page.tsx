@@ -16,7 +16,7 @@ const categories = [
     { label: 'Formal Shoes', value: 'Formal Shoes' },
     { label: 'Running Shoes', value: 'Running Shoes' },
     { label: 'Casual Shoes', value: 'Casual Shoes' },
-    { label: 'Sports Shoes', value: 'Sports Shoes' },
+    { label: 'Sports Shoes', value: 'Sportschuhe' },
 ];
 
 export default function CustomShafts() {
@@ -73,8 +73,7 @@ export default function CustomShafts() {
                 <h1 className="text-xl md:text-2xl font-bold mb-1">Maßschaft - individuell für deinen Kunden.</h1>
                 <div className="text-xs md:text-sm text-gray-700 leading-snug mb-1">
                     Basierend auf dem 3D-Modell des Kundenfußes stellen wir passgenaue Maßschäfte her. So sparst du dir unnötigen Versand, erhältst eine deutlich schnellere Lieferzeit und profitierst von besten Preisen.<br />
-                    <span className="font-bold">Und das Beste:</span> <br />
-                    Mit FeetFirst kannst du nicht nur aus unserer Kollektion wählen – du kannst auch ein ganz eigenes Modell für deinen Kunden erstellen. <a href="#" className="font-bold underline">Hier starten.</a>
+
                 </div>
             </div>
 
@@ -162,7 +161,7 @@ export default function CustomShafts() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {filteredData.map((item) => (
                         <div key={item.id} className="border group border-gray-300 rounded-md bg-white flex flex-col h-full">
-                            <Image src={item.image} alt={item.name} className="w-full h-40 object-contain p-4" width={500} height={500} />
+                            <Image src={item.image} alt={item.name} className="w-64 mx-auto h-full object-contain p-4" width={500} height={500} />
                             <div className="flex-1 flex flex-col justify-between p-4">
                                 <div>
                                     <div className="font-semibold text-base mb-1 text-left">{item.name}</div>
