@@ -1,8 +1,30 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UploadCloud } from "lucide-react";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+
+// Progress bar data configuration
+const progressBarData = {
+    percentage: 60,
+    color: '#60b4ff',
+};
+
+// Function to get progress bar color based on percentage
+const getProgressColor = (percentage: number): string => {
+    if (percentage >= 80) {
+        return '#22c55e';
+    } else if (percentage >= 50) {
+        return '#60b4ff';
+    } else if (percentage >= 30) {
+        return '#f59e0b';
+    } else {
+        return '#ef4444';
+    }
+};
 
 function UploadDropdown() {
     return (
@@ -21,8 +43,60 @@ function UploadDropdown() {
 }
 
 export default function MusterzettelPage() {
+    const [showPopup, setShowPopup] = useState(false);
+
+    useEffect(() => {
+        // Show popup when page loads
+        setShowPopup(true);
+    }, []);
+
+
+    const handleOk = () => {
+        setShowPopup(false);
+    };
+
     return (
         <>
+            {/* Under Construction Popup */}
+            <Dialog open={showPopup} onOpenChange={setShowPopup}>
+                <DialogContent className="!max-w-5xl !w-full bg-black/70 border-none  rounded-lg shadow-2xl [&>button]:hidden [&_[data-slot=dialog-overlay]]:bg-black/80 [&_[data-slot=dialog-overlay]]:backdrop-blur-sm">
+                    <div className="flex flex-col items-center justify-center text-center space-y-8">
+                        {/* Main Title */}
+                        <h1 className="text-2xl md:text-6xl font-bold text-white uppercase tracking-wider leading-tight">
+                            UNDER <br /> CONSTRUCTION
+                        </h1>
+
+                        {/* Subtitle */}
+                        <p className="text-white uppercase text-sm tracking-widest mt-2">
+                            SITE NEARLY READY
+                        </p>
+
+                        {/* Progress Bar */}
+                        <div className="w-full space-y-3 mt-8">
+                            <div className="w-full h-4 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+                                <div
+                                    className="h-full rounded-full transition-all duration-1000 ease-out shadow-lg"
+                                    style={{
+                                        width: `${progressBarData.percentage}%`,
+                                        backgroundColor: getProgressColor(progressBarData.percentage)
+                                    }}
+                                />
+                            </div>
+                            <div className="flex justify-between text-xs text-white font-medium">
+                                <span>{progressBarData.percentage}%</span>
+                                <span>100%</span>
+                            </div>
+                        </div>
+
+
+                        <div className="flex justify-center">
+                            <Button variant="outline" className="cursor-pointer bg-gray-100 text-gray-500 " onClick={handleOk}>OK</Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Main Content */}
             <div className=" w-full px-4 opacity-75">
                 {/* Musterzettel Section */}
                 <h2 className="text-2xl font-bold mb-4 text-gray-600">Musterzettel</h2>
