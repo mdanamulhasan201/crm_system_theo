@@ -4,7 +4,6 @@ import { Button } from "../ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel } from "../ui/form";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
-import { Switch } from "../ui/switch";
 import { Textarea } from "../ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/lib/utils";
@@ -193,26 +192,43 @@ export default function AppointmentModal({
                                 <FormItem className="flex items-center justify-between">
                                     <FormLabel>Kundentyp</FormLabel>
                                     <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={(v) => {
-                                                field.onChange(v);
-                                                if (!v) {
+                                        <div className="flex gap-2">
+                                            <Button
+                                                type="button"
+                                                onClick={() => {
+                                                    field.onChange(true);
+                                                    // Switching to Kunde: prefill if we have a searched name
+                                                    if (searchName) form.setValue('kunde', searchName);
+                                                }}
+                                                className={cn(
+                                                    "cursor-pointer",
+                                                    field.value 
+                                                        ? "bg-[#61A07B] hover:bg-[#528c68] text-white" 
+                                                        : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                                                )}
+                                            >
+                                                Kundentermin
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                onClick={() => {
+                                                    field.onChange(false);
                                                     // Switching to Andere: clear customer-related fields
                                                     clearSearch();
                                                     form.setValue('kunde', '');
                                                     form.setValue('customerId', undefined);
-                                                } else {
-                                                    // Switching to Kunde: prefill if we have a searched name
-                                                    if (searchName) form.setValue('kunde', searchName);
-                                                }
-                                            }}
-                                            className="data-[state=checked]:bg-[#61A07B] cursor-pointer"
-                                        />
+                                                }}
+                                                className={cn(
+                                                    "cursor-pointer",
+                                                    !field.value 
+                                                        ? "bg-[#61A07B] hover:bg-[#528c68] text-white" 
+                                                        : "bg-gray-200 hover:bg-gray-300 text-gray-700"
+                                                )}
+                                            >
+                                                Anderes
+                                            </Button>
+                                        </div>
                                     </FormControl>
-                                    <span className="text-sm text-gray-500">
-                                        {field.value ? 'Kunde' : 'Andere'}
-                                    </span>
                                 </FormItem>
                             )}
                         />
