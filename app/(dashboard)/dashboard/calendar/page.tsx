@@ -340,6 +340,7 @@ const WeeklyCalendar = () => {
                                     return next;
                                 });
                             }}
+                            colorMode="assignedTo"
                         />
                     </div>
 
@@ -534,7 +535,7 @@ const WeeklyCalendar = () => {
                                         onClick={handleSeeMore}
                                         className="px-6 py-3 bg-[#62A07C] text-white rounded-lg hover:bg-[#4f8a65] transition-colors cursor-pointer"
                                     >
-                                        Mehr Anzeigen 
+                                        Mehr Anzeigen
                                         {/* ({selectedMonthDates.length - visibleDaysCount} more days) */}
                                     </button>
                                 </div>

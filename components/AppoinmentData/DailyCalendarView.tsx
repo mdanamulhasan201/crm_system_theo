@@ -1,6 +1,7 @@
 'use client'
 import React, { useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getCustomerColor, getAssignedToColor, EVENT_COLORS } from '@/lib/appointmentColors';
 
 interface Event {
     id: string;
@@ -26,33 +27,24 @@ interface DailyCalendarViewProps {
     monthNames: string[];
     dayNamesLong: string[];
     onDateChange: (direction: number) => void;
+    onEventClick?: (eventId: string) => void;
+    colorMode?: 'customer' | 'assignedTo'; 
 }
 
-// Color configuration
-const EVENT_COLORS = [
-    { bg: 'bg-green-50', border: '#4CAF50' },
-    { bg: 'bg-orange-50', border: '#FF9800' },
-    { bg: 'bg-purple-50', border: '#9C27B0' },
-    { bg: 'bg-pink-50', border: '#E91E63' },
-    { bg: 'bg-blue-50', border: '#2196F3' },
-    { bg: 'bg-yellow-50', border: '#FFC107' },
-    { bg: 'bg-red-50', border: '#F44336' },
-    { bg: 'bg-teal-50', border: '#009688' },
-    { bg: 'bg-indigo-50', border: '#3F51B5' },
-    { bg: 'bg-rose-50', border: '#E91E63' }
-];
+// Colors are now imported from shared utility
 
 const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     selectedDate,
     events,
     dayNamesLong,
-    onDateChange
+    onDateChange,
+    onEventClick,
+    colorMode = 'customer' 
 }) => {
     // Calendar configuration
-    const calendarStartHour = 8; // Start from 08:00
-    // Show full 24 hours starting from 08:00 → 07:00 next day
+    const calendarStartHour = 8; 
     const timeSlots = Array.from({ length: 24 }, (_, i) => `${String((calendarStartHour + i) % 24).padStart(2, '0')}:00`);
-    const containerHeightPx = timeSlots.length * 60; // 60px per hour
+    const containerHeightPx = timeSlots.length * 60; 
 
     // Parse time to minutes from 6 AM
     const parseTimeToMinutes = (timeStr: string): number => {
@@ -173,23 +165,8 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
         return layout;
     }, [events]);
 
-    // Deterministic color per assignedTo
-    const hashString = (str: string) => {
-        let hash = 0;
-        for (let i = 0; i < str.length; i++) {
-            hash = (hash << 5) - hash + str.charCodeAt(i);
-            hash |= 0;
-        }
-        return Math.abs(hash);
-    };
-
-    const getEventColor = (assignedTo: string | undefined, fallbackIndex: number) => {
-        if (assignedTo && assignedTo.trim().length > 0) {
-            const idx = hashString(assignedTo.trim()) % EVENT_COLORS.length;
-            return EVENT_COLORS[idx];
-        }
-        return EVENT_COLORS[fallbackIndex % EVENT_COLORS.length];
-    };
+    // Get color based on customer (customerId or customer_name)
+    // This ensures the same customer always gets the same color
 
     // Calculate end time
     const getEndTime = (event: any) => {
@@ -314,13 +291,18 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 
                         {/* Event Blocks */}
                         {eventLayout.map((event, index) => {
-                            const color = getEventColor(event.assignedTo, index);
+                            // Get color based on colorMode
+                            // If colorMode is 'assignedTo', use employee-based colors (old system)
+                            // If colorMode is 'customer', use customer-based colors (new system)
+                            const color = colorMode === 'assignedTo' 
+                                ? getAssignedToColor(event.assignedTo, index)
+                                : getCustomerColor(event.customerId, event.customer_name, index);
                             const topPercent = (event.startMinutes / (timeSlots.length * 60)) * 100;
 
                             return (
                                 <div
                                     key={event.id}
-                                    className={`absolute ${color.bg} rounded-lg p-2 sm:p-3 text-gray-800 cursor-pointer hover:opacity-90 transition-opacity shadow-sm border-2`}
+                                    className={`absolute ${color.bg} rounded-lg p-2 sm:p-3 text-gray-800 ${onEventClick ? 'cursor-pointer hover:opacity-90' : ''} transition-opacity shadow-sm border-2`}
                                     style={{
                                         top: `${topPercent}%`,
                                         left: `${event.left + 6}%`,
@@ -330,6 +312,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         marginBottom: '2px',
                                         borderColor: color.border
                                     }}
+                                    onClick={onEventClick ? () => onEventClick(event.id) : undefined}
                                 >
                                     {/* Time Pills */}
                                     <div className="flex gap-1 mb-1 sm:mb-2">

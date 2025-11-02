@@ -1,6 +1,5 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import useEmblaCarousel from 'embla-carousel-react'
 import dashboard from '@/public/images/dashboard/dashbord.png'
 import users from '@/public/images/dashboard/user.png'
 import date from '@/public/images/dashboard/date.png'
@@ -12,6 +11,8 @@ import { format, setDefaultOptions } from 'date-fns';
 import { getMyAppointments, getSingleAppointment } from '@/apis/appoinmentApis';
 import { de } from 'date-fns/locale';
 import { X } from 'lucide-react';
+import DailyCalendarView from '@/components/AppoinmentData/DailyCalendarView';
+import { useWeeklyCalendar } from '@/hooks/calendar/useWeeklyCalendar';
 
 interface AppointmentDetail {
     id: string;
@@ -22,149 +23,167 @@ interface AppointmentDetail {
     assignedTo: string;
     details: string;
     isClient: boolean;
+    duration?: number;
+    customerId?: string;
     user: {
         name: string;
         email: string;
     };
 }
 
-interface AppointmentItem {
+interface Event {
     id: string;
+    date: string;
     time: string;
     title: string;
-    reason: string;
+    subtitle: string;
+    type: string;
     assignedTo: string;
-    details: string;
-    userType: 'user' | 'other';
-}
-
-interface DayAppointments {
-    day: string;
-    appointments: AppointmentItem[];
-}
-
-interface GroupedAppointments {
-    [key: string]: {
-        day: string;
-        appointments: AppointmentItem[];
+    reason: string;
+    duration?: number;
+    customer_name?: string;
+    customerId?: string;
+    user?: {
+        name: string;
+        email: string;
     };
 }
 
 export default function DashboardMainPage() {
-    const [emblaRef, emblaApi] = useEmblaCarousel({
-        slidesToScroll: 1,
-        align: 'start',
-        breakpoints: {
-            '(min-width: 768px)': { slidesToScroll: 2 },
-            '(min-width: 1024px)': { slidesToScroll: 4 }
-        }
-    })
     setDefaultOptions({ locale: de });
-    const [appointments, setAppointments] = useState<DayAppointments[]>([]);
+    
+    // Use hooks for calendar functionality
+    const {
+        today
+    } = useWeeklyCalendar();
+    
+    // English day and month names
+    const dayNamesLong = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    
+    const [events, setEvents] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isInitialLoad, setIsInitialLoad] = useState(true);
-
+    const [currentSelectedDate, setCurrentSelectedDate] = useState<Date>(today);
+    
     const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDetail | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
 
-    useEffect(() => {
-        fetchAppointments();
-    }, []);
-
+    // Fetch appointments using getMyAppointments API directly - fetch all pages
     const fetchAppointments = async () => {
         try {
             setIsLoading(true);
-            
-            // Add minimum loading time to prevent flash and improve UX
-            const startTime = Date.now();
-            const minLoadingTime = 800; // 800ms minimum loading time
-            
-            const response = await getMyAppointments({
-                page: 1,
-                limit: 100
-            });
+            let allAppointments: AppointmentDetail[] = [];
+            let currentPage = 1;
+            let totalPages = 1;
+            const limit = 100; // Fetch 100 items per page
 
-            if (response?.data) {
-                const groupedByDay = response.data.reduce((acc: GroupedAppointments, apt: AppointmentDetail) => {
-                    const dayName = format(new Date(apt.date), 'EEEE');
+            // Fetch all pages
+            do {
+                const response = await getMyAppointments({
+                    page: currentPage,
+                    limit: limit
+                });
 
-                    if (!acc[dayName]) {
-                        acc[dayName] = {
-                            day: dayName,
-                            appointments: []
-                        };
-                    }
+                if (response?.data && Array.isArray(response.data)) {
+                    allAppointments = [...allAppointments, ...response.data];
+                    totalPages = response.pagination?.totalPages || 1;
+                    currentPage++;
+                } else {
+                    break;
+                }
+            } while (currentPage <= totalPages);
 
-                    acc[dayName].appointments.push({
+            // Format all appointments
+            if (allAppointments.length > 0) {
+                const formattedEvents = allAppointments.map((apt: AppointmentDetail) => {
+                    // Parse date from ISO format (e.g., "2025-11-30T19:00:00.000Z")
+                    const appointmentDate = new Date(apt.date);
+                    const dateStr = appointmentDate.toISOString().split('T')[0]; // Get YYYY-MM-DD format
+                    
+                    // Handle empty customer_name
+                    const customerName = apt.customer_name?.trim() || '';
+                    const title = customerName ? customerName.toUpperCase() : 'No Customer Name';
+                    
+                    return {
                         id: apt.id,
+                        date: dateStr,
                         time: apt.time,
-                        title: apt.customer_name.toUpperCase(),
-                        reason: apt.reason,
-                        assignedTo: apt.assignedTo,
-                        details: apt.details,
-                        userType: apt.isClient ? 'user' : 'other'
-                    });
-
-                    return acc;
-                }, {});
-
-                const daysOfWeek = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-                const finalAppointments = daysOfWeek.map(day => ({
-                    day: day,
-                    appointments: (groupedByDay[day]?.appointments || [])
-                }));
-
-                // Ensure minimum loading time for better UX
-                const elapsedTime = Date.now() - startTime;
-                const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
-                
-                setTimeout(() => {
-                    setAppointments(finalAppointments);
-                    setIsLoading(false);
-                    setIsInitialLoad(false);
-                }, remainingTime);
-            } else {
-                // If no data, still show the structure with empty appointments
-                const daysOfWeek = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-                const emptyAppointments = daysOfWeek.map(day => ({
-                    day: day,
-                    appointments: []
-                }));
-                
-                const elapsedTime = Date.now() - startTime;
-                const remainingTime = Math.max(0, minLoadingTime - elapsedTime);
-                
-                setTimeout(() => {
-                    setAppointments(emptyAppointments);
-                    setIsLoading(false);
-                    setIsInitialLoad(false);
-                }, remainingTime);
+                        title: title,
+                        subtitle: apt.details?.toUpperCase() || '',
+                        type: apt.isClient ? 'user' : 'others',
+                        assignedTo: apt.assignedTo || '',
+                        reason: apt.reason || '',
+                        duration: apt.duration || 1,
+                        customer_name: apt.customer_name || '',
+                        customerId: apt.customerId || undefined,
+                        user: apt.user
+                    };
+                });
+                setEvents(formattedEvents);
             }
         } catch (error) {
-            // console.error('Failed to load appointments:', error);
-            // Even on error, show the structure with empty appointments
-            const daysOfWeek = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
-            const emptyAppointments = daysOfWeek.map(day => ({
-                day: day,
-                appointments: []
-            }));
-            
-            setTimeout(() => {
-                setAppointments(emptyAppointments);
-                setIsLoading(false);
-                setIsInitialLoad(false);
-            }, 300);
+            console.error('Failed to load appointments:', error);
+        } finally {
+            setIsLoading(false);
+            setIsInitialLoad(false);
         }
     };
 
-    const scrollPrev = React.useCallback(() => {
-        if (emblaApi) emblaApi.scrollPrev()
-    }, [emblaApi])
+    // Helper function to format date
+    const formatDate = (date: Date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
 
-    const scrollNext = React.useCallback(() => {
-        if (emblaApi) emblaApi.scrollNext()
-    }, [emblaApi])
+    // Get events for a specific date
+    const getEventsForDate = (date: Date): Event[] => {
+        const dateStr = formatDate(date); // Format: YYYY-MM-DD
+        
+        const eventsForDay = events.filter((event: Event) => {
+            // event.date is already in YYYY-MM-DD format from fetchAppointments
+            return event.date === dateStr;
+        });
+
+        // Sort by time chronologically
+        const parseToMinutes = (timeStr: string | undefined): number => {
+            if (!timeStr) return Number.MAX_SAFE_INTEGER;
+            const trimmed = timeStr.trim().toLowerCase();
+            // If already like 13:45
+            const twentyFour = /^\d{1,2}:\d{2}$/;
+            if (twentyFour.test(trimmed)) {
+                const [h, m] = trimmed.split(':').map(Number);
+                return h * 60 + m;
+            }
+            // Try parsing am/pm like "3:00 pm"
+            const ampm = /^(\d{1,2}):(\d{2})\s*(am|pm)$/;
+            const match = trimmed.match(ampm);
+            if (match) {
+                let hour = parseInt(match[1], 10);
+                const minute = parseInt(match[2], 10);
+                const modifier = match[3];
+                if (modifier === 'pm' && hour !== 12) hour += 12;
+                if (modifier === 'am' && hour === 12) hour = 0;
+                return hour * 60 + minute;
+            }
+            // Fallback: try Date parsing
+            const d = new Date(`2000-01-01T${trimmed}`);
+            if (!isNaN(d.getTime())) {
+                return d.getHours() * 60 + d.getMinutes();
+            }
+            return Number.MAX_SAFE_INTEGER;
+        };
+
+        return eventsForDay.sort((a, b) => parseToMinutes(a.time) - parseToMinutes(b.time));
+    };
+
+    // Fetch appointments on mount
+    useEffect(() => {
+        fetchAppointments();
+    }, []);
 
     const handleAppointmentClick = async (appointmentId: string) => {
         try {
@@ -189,24 +208,6 @@ export default function DashboardMainPage() {
         </div>
     );
 
-    const AppointmentCardSkeleton = () => (
-        <div className="p-3 rounded bg-gray-200 animate-pulse">
-            <div className="h-3 bg-gray-300 rounded mb-2 w-1/3"></div>
-            <div className="h-4 bg-gray-300 rounded w-3/4"></div>
-        </div>
-    );
-
-    const DayCardSkeleton = () => (
-        <div className="border rounded-[20px] p-4 h-[400px] flex flex-col bg-white">
-            <div className="h-8 bg-gray-200 rounded mb-4 w-2/3 animate-pulse"></div>
-            <div className="space-y-3 overflow-y-auto flex-1">
-                {Array.from({ length: 3 }).map((_, i) => (
-                    <AppointmentCardSkeleton key={i} />
-                ))}
-            </div>
-        </div>
-    );
-
 
 
     return (
@@ -221,74 +222,23 @@ export default function DashboardMainPage() {
             )}
 
 
-            {/* Appointment Carousel */}
-            <div className="relative">
-                <div className="overflow-hidden" ref={emblaRef}>
-                    <div className="flex">
-                        {isLoading ? (
-                            // Show skeleton for all days during loading
-                            Array.from({ length: 7 }).map((_, index) => (
-                                <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] p-2">
-                                    <DayCardSkeleton />
-                                </div>
-                            ))
-                        ) : (
-                            appointments.map((day, index) => (
-                                <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] p-2">
-                                    <div className="border rounded-[20px] p-4 h-[400px] flex flex-col bg-white transition-all duration-500 hover:shadow-lg">
-                                        <h2 className="text-xl font-semibold mb-4 bg-gray-100 p-2 rounded">{day?.day}</h2>
-                                        <div className="space-y-3 overflow-y-auto flex-1">
-                                            {day.appointments.length > 0 ? (
-                                                // Actual appointments
-                                                day.appointments.map((apt: AppointmentItem, aptIndex: number) => (
-                                                    <div
-                                                        key={aptIndex}
-                                                        onClick={() => handleAppointmentClick(apt.id)}
-                                                        className={`p-3 rounded cursor-pointer transition-all duration-300 hover:opacity-90 ${apt.userType === 'user' ? 'bg-black text-white' : 'bg-[#62A07B] text-white'
-                                                            }`}
-                                                    >
-                                                        {apt.time && <div className="text-xs opacity-90 mb-1 uppercase">{apt.time}</div>}
-                                                        <div className="font-semibold">{apt.title}</div>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                // Empty state
-                                                <div className="flex items-center justify-center h-full">
-                                                    <div className="text-center text-gray-500">
-                                                        <div className="text-4xl mb-2">📅</div>
-                                                        <p className="text-sm">Keine Termine</p>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                </div>
-
-                {/* Navigation Arrows - Only show if there are appointments or not loading */}
-                {!isLoading && appointments.some(day => day.appointments.length > 0) && (
-                    <>
-                        <button
-                            onClick={scrollPrev}
-                            className="absolute cursor-pointer left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 bg-white p-2 transition-all duration-300 rounded-full shadow-lg hover:bg-gray-100 z-10"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                            </svg>
-                        </button>
-                        <button
-                            onClick={scrollNext}
-                            className="absolute cursor-pointer right-0 top-1/2 -translate-y-1/2 translate-x-1/2 bg-white transition-all duration-300 p-2 rounded-full shadow-lg hover:bg-gray-100 z-10"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-6 h-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                            </svg>
-                        </button>
-                    </>
-                )}
+            {/* Calendar View */}
+            <div className="mb-6">
+                <DailyCalendarView
+                    key={currentSelectedDate.toDateString()}
+                    selectedDate={currentSelectedDate}
+                    events={getEventsForDate(currentSelectedDate)}
+                    monthNames={monthNames}
+                    dayNamesLong={dayNamesLong}
+                    onDateChange={(direction) => {
+                        setCurrentSelectedDate(prev => {
+                            const next = new Date(prev);
+                            next.setDate(next.getDate() + direction);
+                            return next;
+                        });
+                    }}
+                    onEventClick={handleAppointmentClick}
+                />
             </div>
 
             {/* Appointment Detail Modal */}
