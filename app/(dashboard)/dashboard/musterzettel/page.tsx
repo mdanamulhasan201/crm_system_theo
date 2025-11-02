@@ -5,7 +5,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { UploadCloud } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 
 // Progress bar data configuration
 const progressBarData = {
@@ -62,9 +62,9 @@ export default function MusterzettelPage() {
                 <DialogContent className="!max-w-5xl !w-full bg-black/70 border-none  rounded-lg shadow-2xl [&>button]:hidden [&_[data-slot=dialog-overlay]]:bg-black/80 [&_[data-slot=dialog-overlay]]:backdrop-blur-sm">
                     <div className="flex flex-col items-center justify-center text-center space-y-8">
                         {/* Main Title */}
-                        <h1 className="text-2xl md:text-6xl font-bold text-white uppercase tracking-wider leading-tight">
+                        <DialogTitle className="text-2xl sm:text-4xl lg:text-6xl font-bold text-white uppercase tracking-wider leading-tight">
                             UNDER <br /> CONSTRUCTION
-                        </h1>
+                        </DialogTitle>
 
                         {/* Subtitle */}
                         <p className="text-white uppercase text-sm tracking-widest mt-2">

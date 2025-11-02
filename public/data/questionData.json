@@ -194,10 +194,10 @@
                     "Nein",
                     "Ja, Rückenschmerzen",
                     "Ja, Hüftprobleme",
-                    "Andere, bitte angeben",
                     "Ja, Wadenprobleme",
                     "Ja, Achilessehnenprobleme",
-                    "Ja, Gelenkschmerzen"
+                    "Ja, Gelenkschmerzen",
+                    "Andere, bitte angeben"
                 ]
             }
         ]
@@ -228,13 +228,13 @@
         ],
         "questions": [
             {
-                "question": "Welche Erwartungen oder ziele haben sie mit den einlagen?",
+                "question": "Welche Erwartungen oder Ziele haben Sie mit Einlagen?",
                 "options": [
                     "Besserer Komfort",
                     "Unterstützung bei Fußproblemen",
-                    "Andere, bitte eingeben",
                     "Bessere Performance beim Sport",
-                    "Vorbeugen von Fußschmerzen"
+                    "Vorbeugen von Fußschmerzen",
+                    "Andere, bitte eingeben"
                 ]
             }
         ]
@@ -248,7 +248,7 @@
         ],
         "questions": [
             {
-                "question": "Haben sie eine bevorzugte farbe für den überzug ihrer Einlagen?",
+                "question": "Haben Sie eine bevorzugte Farbe für den Überzug Ihrer Einlagen?",
                 "options": [
                     "Schwarz",
                     "Grau",
