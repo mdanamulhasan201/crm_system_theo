@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
         hostname: 'backend.feetf1rst.tech',
       },
       {
+        protocol: 'https',
+        hostname: 'chemistry-supplemental-vatican-fixed.trycloudflare.com,
+      },
+      {
         // local host
         protocol: 'http',
         hostname: '192.168.7.12',
