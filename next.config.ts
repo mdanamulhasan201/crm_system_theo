@@ -1,7 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   images: {
     remotePatterns: [
       {
@@ -10,7 +9,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'chemistry-supplemental-vatican-fixed.trycloudflare.com,
+        hostname: 'chemistry-supplemental-vatican-fixed.trycloudflare.com',
       },
       {
         // local host
@@ -21,10 +20,10 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'christmas-inside-workstation-irrigation.trycloudflare.com',
+        hostname: 'chemistry-supplemental-vatican-fixed.trycloudflare.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
 };
