@@ -1,12 +1,12 @@
 'use client'
-import React, { useState } from 'react'
+import React from 'react'
 import { useParams } from 'next/navigation'
-import Image from 'next/image'
-import folderImg from '@/public/images/scanning/folder.png'
-import userImg from '@/public/images/scanning/user.png'
-import shoesImg from '@/public/images/scanning/shoes.png'
-import emailImg from '@/public/images/scanning/email.png'
-import logoImg from '@/public/images/scanning/logo.png'
+// import Image from 'next/image'
+// import folderImg from '@/public/images/scanning/folder.png'
+// import userImg from '@/public/images/scanning/user.png'
+// import shoesImg from '@/public/images/scanning/shoes.png'
+// import emailImg from '@/public/images/scanning/email.png'
+// import logoImg from '@/public/images/scanning/logo.png'
 import Link from 'next/link';
 import SacnningForm from '@/app/(dashboard)/dashboard/_components/Scanning/SacnningForm';
 import ScannningDataPage from '@/app/(dashboard)/dashboard/_components/ScannningData/ScannningDataPage';
