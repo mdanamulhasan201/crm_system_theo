@@ -39,7 +39,7 @@ export default function ScanningData() {
                 }}
             />
             {/* Bottom Action Links */}
-            <div className="mt-14 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 text-center mb-20 ">
+            <div className=" grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 text-center  ">
 
                 {/* <div className="flex flex-col items-center">
                     <div
@@ -51,42 +51,42 @@ export default function ScanningData() {
                     <span className="text-sm">Werkstattzettel<br />ausdrucken</span>
                 </div> */}
 
-                <div className="flex flex-col items-center">
+                {/* <div className="flex flex-col items-center">
                     <Link href="" className="p-3 bg-gray-100 hover:bg-gray-200 cursor-pointer rounded-full mb-2 relative transition-all duration-300">
                         <Image src={folderImg} alt="Kundenordner" width={50} height={50} className='w-10 h-auto' />
 
                     </Link>
                     <span className="text-sm">Kundenordner</span>
-                </div>
+                </div> */}
 
-                <div className="flex flex-col items-center">
+                {/* <div className="flex flex-col items-center">
                     <Link href={`/dashboard/customer-history/${scanData.id}`} className="p-3 bg-gray-100 hover:bg-gray-200 cursor-pointer rounded-full mb-2 relative transition-all duration-300">
                         <Image src={userImg} alt="Kundendaten" width={50} height={50} className='w-10 h-auto' />
                     </Link>
                     <span className="text-sm">Kundendaten und - historie</span>
-                </div>
+                </div> */}
 
-                <div className="flex flex-col items-center">
+                {/* <div className="flex flex-col items-center">
                     <Link href=" " className="p-3 bg-gray-100 hover:bg-gray-200 cursor-pointer rounded-full mb-2 relative transition-all duration-300">
                         <Image src={shoesImg} alt="Schuhfinder" width={50} height={50} className='w-12 h-auto' />
 
                     </Link>
                     <span className="text-sm">Shoe Finder</span>
-                </div>
+                </div> */}
 
-                <div className="flex flex-col items-center">
+                {/* <div className="flex flex-col items-center">
                     <Link href="/dashboard/email" className="p-3 bg-gray-100 hover:bg-gray-200 cursor-pointer rounded-full mb-2 relative transition-all duration-300">
                         <Image src={emailImg} alt="Email" width={50} height={50} className='w-11 h-auto' />
                     </Link>
                     <span className="text-sm">Email kontaktieren</span>
-                </div>
+                </div> */}
 
-                <div className="flex flex-col items-center">
+                {/* <div className="flex flex-col items-center">
                     <Link href="" className="p-3 bg-gray-100 hover:bg-gray-200 cursor-pointer rounded-full mb-2 relative transition-all duration-300">
                         <Image src={logoImg} alt="Zugang FeetFirst App" width={50} height={50} className='w-11 h-auto' />
                     </Link>
                     <span className="text-sm">Zugang FeetFirst<br />App</span>
-                </div>
+                </div> */}
             </div>
         </div>
     );
