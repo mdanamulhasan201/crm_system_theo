@@ -17,15 +17,6 @@ const nextConfig: NextConfig = {
         hostname: '192.168.7.12',
         port: '3001',
         pathname: '/**',
-<<<<<<< HEAD
-      },
-      {
-        protocol: 'https',
-        hostname: 'chemistry-supplemental-vatican-fixed.trycloudflare.com',
-        port: '',
-        pathname: '/**',
-=======
->>>>>>> 35a1fbbc85c0c88de13509be691f5e689399b26f
       }
     ],
   },
