@@ -32,13 +32,19 @@ export default function CustomShafts() {
     const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
     // Fetch data from API
-    const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery);
+    const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery, gender);
 
     // Get unique categories from API data
     const availableCategories = useMemo(() => {
         if (!apiData?.data) return categories;
 
-        const uniqueCategories = Array.from(new Set(apiData.data.map(item => item.catagoary)));
+        const uniqueCategories = Array.from(
+            new Set(
+                apiData.data
+                    .map(item => item.catagoary?.trim())
+                    .filter((v): v is string => Boolean(v))
+            )
+        );
         return [
             { label: 'Alle Kategorien', value: 'alle' },
             ...uniqueCategories.map(cat => ({ label: cat, value: cat }))
@@ -50,8 +56,14 @@ export default function CustomShafts() {
         if (!apiData?.data) return [];
 
         return apiData.data.filter(item => {
-            const genderMatch = item.gender === gender;
-            const categoryMatch = category === 'alle' || item.catagoary === category;
+            const normalizedItemGender = (item.gender || '').trim().toLowerCase();
+            const normalizedSelectedGender = gender.toLowerCase();
+            const genderMatch = normalizedItemGender === normalizedSelectedGender;
+
+            const normalizedItemCategory = (item.catagoary || '').trim();
+            const normalizedSelectedCategory = category;
+            const categoryMatch = normalizedSelectedCategory === 'alle' || normalizedItemCategory === normalizedSelectedCategory;
+
             return genderMatch && categoryMatch;
         });
     }, [apiData?.data, gender, category]);

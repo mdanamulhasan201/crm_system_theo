@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import UserInfoUpdateModal from './UserInfoUpdateModal';
 import { ScanData } from '@/types/scan';
 import OrderConfirmationModal from './OrderConfirmationModal';
+import toast from 'react-hot-toast';
 
 
 interface Customer {
@@ -191,7 +192,7 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                     setShowPdfModal(true);
                 }
             } catch (error) {
-                console.error('Failed to create order:', error);
+                // Error toast is already handled inside useCreateOrder.createOrderAndGeneratePdf
             }
         }
         setShowConfirmModal(false);
@@ -202,7 +203,7 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
     return (
         <div>
             <div className='mt-10'>
-                <div className="flex flex-col lg:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
+                <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
                     {/* Diagnosis Dropdown */}
                     <div className="w-full lg:w-1/2">
                         <div className="relative">
