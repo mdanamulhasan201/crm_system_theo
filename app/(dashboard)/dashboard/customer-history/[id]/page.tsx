@@ -113,6 +113,10 @@ export default function CustomerHistory() {
         setIsPopUpOpen(true);
     }
 
+    const handleKundenordner = () => {
+        router.push(`/dashboard/kundenordner/${params.id}`);
+    }
+
     return (
         <div className="p-4 space-y-6">
 
@@ -332,6 +336,7 @@ export default function CustomerHistory() {
                 <div className="flex flex-col items-center">
 
                     <button
+                        onClick={handleKundenordner}
                         className="p-2 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer"
                     >
                         <Image src={folderImg} alt="Kundenordner" width={60} height={60} />
