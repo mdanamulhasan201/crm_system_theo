@@ -190,7 +190,7 @@ export default function AppointmentModal({
                             name="isClientEvent"
                             render={({ field }) => (
                                 <FormItem className="flex items-center justify-between">
-                                    <FormLabel>Kundentyp</FormLabel>
+                                    <FormLabel>Kundentyp <span className="text-red-500">*</span></FormLabel>
                                     <FormControl>
                                         <div className="flex gap-2">
                                             <Button
@@ -282,7 +282,7 @@ export default function AppointmentModal({
                                 name="uhrzeit"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Uhrzeit</FormLabel>
+                                        <FormLabel>Uhrzeit <span className="text-red-500">*</span></FormLabel>
                                         <FormControl>
                                             <div className="relative">
                                                 <Input
@@ -311,7 +311,7 @@ export default function AppointmentModal({
                                 name="selectedEventDate"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-col">
-                                        <FormLabel>Datum</FormLabel>
+                                        <FormLabel>Datum <span className="text-red-500">*</span></FormLabel>
                                         <Popover>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
@@ -353,7 +353,7 @@ export default function AppointmentModal({
                             name="duration"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Dauer</FormLabel>
+                                    <FormLabel>Dauer <span className="text-red-500">*</span></FormLabel>
                                     <Select 
                                         onValueChange={(value) => field.onChange(parseFloat(value))} 
                                         value={field.value?.toString()}
@@ -380,7 +380,7 @@ export default function AppointmentModal({
                             name="termin"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Grund</FormLabel>
+                                    <FormLabel>Grund <span className="text-red-500">*</span></FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
                                             <SelectTrigger className="cursor-pointer">
@@ -406,7 +406,7 @@ export default function AppointmentModal({
                             name="mitarbeiter"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Mitarbeiter</FormLabel>
+                                    <FormLabel>Mitarbeiter <span className="text-red-500">*</span></FormLabel>
                                     <div className="relative" ref={employeeContainerRef}>
                                         <Input
                                             ref={employeeInputRef}
