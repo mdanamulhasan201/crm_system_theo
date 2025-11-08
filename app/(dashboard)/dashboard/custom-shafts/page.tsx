@@ -1,15 +1,14 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
 import { ChevronDown, Search } from 'lucide-react';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
 import { useCustomShafts } from '@/hooks/customShafts/useCustomShafts';
-import Loading from '@/components/Shared/Loading';
 import useDebounce from '@/hooks/useDebounce';
+import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
 
 const categories = [
     { label: 'Alle Kategorien', value: 'alle' },
@@ -25,7 +24,10 @@ export default function CustomShafts() {
     const [categoryOpen, setCategoryOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
-    const itemsPerPage = 10;
+    const [displayedCount, setDisplayedCount] = useState(8);
+    const [allFetchedItems, setAllFetchedItems] = useState<CustomShaft[]>([]);
+    const [isFetchingNewPage, setIsFetchingNewPage] = useState(false);
+    const itemsPerPage = 8;
     const router = useRouter();
 
     // Debounce search query to reduce API calls
@@ -34,13 +36,41 @@ export default function CustomShafts() {
     // Fetch data from API
     const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery, gender);
 
-    // Get unique categories from API data
+    // Track previous filtered data length to detect when new items are added
+    const prevFilteredLengthRef = React.useRef(0);
+
+    // Accumulate fetched items when new data arrives
+    useEffect(() => {
+        if (apiData?.data && apiData.data.length > 0) {
+            setAllFetchedItems(prev => {
+                // If it's a new search/filter, reset the accumulated items
+                if (currentPage === 1) {
+                    return apiData.data;
+                }
+                // Otherwise, append new items (avoid duplicates)
+                const existingIds = new Set(prev.map(item => item.id));
+                const newItems = apiData.data.filter(item => !existingIds.has(item.id));
+                return [...prev, ...newItems];
+            });
+        }
+    }, [apiData?.data, currentPage]);
+
+    // Reset accumulated items and displayed count when filters change
+    useEffect(() => {
+        setAllFetchedItems([]);
+        setDisplayedCount(8);
+        setCurrentPage(1);
+        setIsFetchingNewPage(false);
+        prevFilteredLengthRef.current = 0;
+    }, [gender, category, debouncedSearchQuery]);
+
+    // Get unique categories from all fetched data
     const availableCategories = useMemo(() => {
-        if (!apiData?.data) return categories;
+        if (allFetchedItems.length === 0) return categories;
 
         const uniqueCategories = Array.from(
             new Set(
-                apiData.data
+                allFetchedItems
                     .map(item => item.catagoary?.trim())
                     .filter((v): v is string => Boolean(v))
             )
@@ -49,13 +79,13 @@ export default function CustomShafts() {
             { label: 'Alle Kategorien', value: 'alle' },
             ...uniqueCategories.map(cat => ({ label: cat, value: cat }))
         ];
-    }, [apiData?.data]);
+    }, [allFetchedItems]);
 
     // Filter data based on gender and category
     const filteredData = useMemo(() => {
-        if (!apiData?.data) return [];
+        if (allFetchedItems.length === 0) return [];
 
-        return apiData.data.filter(item => {
+        return allFetchedItems.filter(item => {
             const normalizedItemGender = (item.gender || '').trim().toLowerCase();
             const normalizedSelectedGender = gender.toLowerCase();
             const genderMatch = normalizedItemGender === normalizedSelectedGender;
@@ -66,12 +96,51 @@ export default function CustomShafts() {
 
             return genderMatch && categoryMatch;
         });
-    }, [apiData?.data, gender, category]);
+    }, [allFetchedItems, gender, category]);
 
-    // Reset pagination when filters change
-    React.useEffect(() => {
-        setCurrentPage(1);
-    }, [gender, category, debouncedSearchQuery]);
+    // Automatically increase displayedCount when new filtered data arrives from API
+    useEffect(() => {
+        if (isFetchingNewPage && filteredData.length > prevFilteredLengthRef.current && currentPage > 1) {
+            // New items were added to filteredData from API, automatically show 8 more
+            setDisplayedCount(prevCount => Math.min(prevCount + 8, filteredData.length));
+            setIsFetchingNewPage(false);
+        }
+        prevFilteredLengthRef.current = filteredData.length;
+    }, [filteredData.length, currentPage, isFetchingNewPage]);
+
+    // Display only the first `displayedCount` items
+    const displayedData = useMemo(() => {
+        return filteredData.slice(0, displayedCount);
+    }, [filteredData, displayedCount]);
+
+    // Check if there are more items to show from already fetched data
+    const hasMoreItems = displayedCount < filteredData.length;
+
+    // Check if we need to fetch more data from API
+    // We need more data if we've displayed all filtered items and there's a next page
+    const needsMoreData = filteredData.length > 0 && displayedCount >= filteredData.length && apiData?.pagination?.hasNextPage;
+
+    // Check if there's more data available (either in cache or from API)
+    const hasMoreDataAvailable = hasMoreItems || (apiData?.pagination?.hasNextPage ?? false);
+
+    // Handle "Mehr anzeigen" button click
+    const handleShowMore = (e: React.MouseEvent<HTMLButtonElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Don't do anything if already loading
+        if (loading) return;
+        
+        // First, check if we have more items in already fetched data
+        if (hasMoreItems) {
+            // Show next 8 items from already fetched data (instant, no loading needed)
+            setDisplayedCount(prev => Math.min(prev + 8, filteredData.length));
+        } else if (apiData?.pagination?.hasNextPage) {
+            // No more items in fetched data, fetch next page
+            setIsFetchingNewPage(true);
+            setCurrentPage(prev => prev + 1);
+        }
+    };
 
     // handle click on the button
     const handleClick = (id: string) => {
@@ -151,13 +220,6 @@ export default function CustomShafts() {
                 </div>
             </div>
 
-            {/* Loading State */}
-            {loading && (
-                <div className="flex justify-center items-center py-12">
-                    <Loading />
-                </div>
-            )}
-
             {/* Error State */}
             {error && (
                 <div className="flex flex-col items-center justify-center py-12">
@@ -169,66 +231,49 @@ export default function CustomShafts() {
             )}
 
             {/* Product Grid */}
-            {!loading && !error && filteredData.length > 0 && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {filteredData.map((item) => (
-                        <div key={item.id} className="border group border-gray-300 rounded-md bg-white flex flex-col h-full">
-                            <Image src={item.image} alt={item.name} className="w-64 mx-auto h-full object-contain p-4" width={500} height={500} />
-                            <div className="flex-1 flex flex-col justify-between p-4">
-                                <div>
-                                    <div className="font-semibold text-base mb-1 text-left">{item.name}</div>
-                                    <div className="text-xs text-gray-500 mb-2 text-left">#{item.ide}</div>
-                                    <div className="font-bold text-lg mb-2 text-left">ab {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
+            {!error && displayedData.length > 0 && (
+                <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {displayedData.map((item) => (
+                            <div key={item.id} className="border group border-gray-300 rounded-md bg-white flex flex-col h-full">
+                                <Image src={item.image} alt={item.name} className="w-64 mx-auto h-full object-contain p-4" width={500} height={500} />
+                                <div className="flex-1 flex flex-col justify-between p-4">
+                                    <div>
+                                        <div className="font-semibold text-base mb-1 text-left">{item.name}</div>
+                                        <div className="text-xs text-gray-500 mb-2 text-left">#{item.ide}</div>
+                                        <div className="font-bold text-lg mb-2 text-left">ab {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
+                                    </div>
+                                    <Button variant="outline" className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-none border border-black bg-white text-black hover:bg-gray-100 text-sm font-medium" onClick={() => handleClick(item.id)}>Jetzt konfigurieren</Button>
                                 </div>
-                                <Button variant="outline" className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-none border border-black bg-white text-black hover:bg-gray-100 text-sm font-medium" onClick={() => handleClick(item.id)}>Jetzt konfigurieren</Button>
                             </div>
+                        ))}
+                    </div>
+
+                    {/* Show More Button */}
+                    {hasMoreDataAvailable && (
+                        <div className="flex justify-center mt-8">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={handleShowMore}
+                                disabled={loading && !hasMoreItems}
+                                className="rounded-none border border-black px-8 py-2 text-base font-normal bg-white text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {loading && !hasMoreItems ? 'Laden...' : 'Mehr anzeigen'}
+                            </Button>
                         </div>
-                    ))}
-                </div>
+                    )}
+                </>
             )}
 
             {/* No Products Found */}
-            {!loading && !error && filteredData.length === 0 && (
+            {!error && !loading && filteredData.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12">
                     <div className="text-gray-500 text-lg font-medium mb-2">Keine Produkte gefunden</div>
                     <div className="text-gray-400 text-sm text-center">
                         Es wurden keine Produkte für die ausgewählten Filter gefunden.<br />
                         Versuchen Sie andere Kategorien oder Filter zu verwenden.
                     </div>
-                </div>
-            )}
-
-            {/* Pagination */}
-            {!loading && !error && apiData?.pagination && apiData.pagination.totalPages > 1 && (
-                <div className="flex justify-center mt-8">
-                    <Pagination>
-                        <PaginationContent>
-                            <PaginationItem>
-                                <PaginationPrevious
-                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                />
-                            </PaginationItem>
-
-                            {Array.from({ length: apiData.pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                                <PaginationItem key={page}>
-                                    <PaginationLink
-                                        onClick={() => setCurrentPage(page)}
-                                        className={`cursor-pointer ${currentPage === page ? 'bg-black text-white' : ''}`}
-                                    >
-                                        {page}
-                                    </PaginationLink>
-                                </PaginationItem>
-                            ))}
-
-                            <PaginationItem>
-                                <PaginationNext
-                                    onClick={() => setCurrentPage(prev => Math.min(apiData.pagination.totalPages, prev + 1))}
-                                    className={currentPage === apiData.pagination.totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
-                                />
-                            </PaginationItem>
-                        </PaginationContent>
-                    </Pagination>
                 </div>
             )}
         </div>
