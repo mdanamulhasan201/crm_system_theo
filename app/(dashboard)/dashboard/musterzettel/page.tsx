@@ -51,54 +51,50 @@ export default function MusterzettelPage() {
     }, []);
 
 
-    const handleOk = () => {
-        setShowPopup(false);
-    };
 
     return (
         <>
-            {/* Under Construction Popup */}
-            <Dialog open={showPopup} onOpenChange={setShowPopup}>
-                <DialogContent className="!max-w-5xl !w-full bg-black/70 border-none  rounded-lg shadow-2xl [&>button]:hidden [&_[data-slot=dialog-overlay]]:bg-black/80 [&_[data-slot=dialog-overlay]]:backdrop-blur-sm">
-                    <div className="flex flex-col items-center justify-center text-center space-y-8">
-                        {/* Main Title */}
-                        <DialogTitle className="text-2xl sm:text-4xl lg:text-6xl font-bold text-white uppercase tracking-wider leading-tight">
-                            UNDER <br /> CONSTRUCTION
-                        </DialogTitle>
 
-                        {/* Subtitle */}
-                        <p className="text-white uppercase text-sm tracking-widest mt-2">
-                            SITE NEARLY READY
-                        </p>
 
-                        {/* Progress Bar */}
-                        <div className="w-full space-y-3 mt-8">
-                            <div className="w-full h-4 bg-gray-800 rounded-full overflow-hidden shadow-inner">
-                                <div
-                                    className="h-full rounded-full transition-all duration-1000 ease-out shadow-lg"
-                                    style={{
-                                        width: `${progressBarData.percentage}%`,
-                                        backgroundColor: getProgressColor(progressBarData.percentage)
-                                    }}
-                                />
-                            </div>
-                            <div className="flex justify-between text-xs text-white font-medium">
-                                <span>{progressBarData.percentage}%</span>
-                                <span>100%</span>
-                            </div>
+            <div className='bg-black/90 h-full bg-opacity-50 backdrop-blur-sm flex items-center justify-center'>
+                <div className="flex flex-col items-center justify-center text-center space-y-8 ">
+                    {/* Main Title */}
+                    <h1 className="lg:text-6xl text-4xl font-bold text-white uppercase tracking-wider leading-tight">
+                        UNDER <br /> CONSTRUCTION
+                    </h1>
+
+                    {/* Subtitle */}
+                    <p className="text-white uppercase text-sm tracking-widest mt-2">
+                        SITE NEARLY READY
+                    </p>
+
+                    {/* Progress Bar */}
+                    <div className="w-full space-y-3 mt-8">
+                        <div className="w-full h-4 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+                            <div
+                                className="h-full rounded-full transition-all duration-1000 ease-out shadow-lg"
+                                style={{
+                                    width: `${progressBarData.percentage}%`,
+                                    backgroundColor: getProgressColor(progressBarData.percentage)
+                                }}
+                            />
                         </div>
-
-
-                        <div className="flex justify-center">
-                            <Button variant="outline" className="cursor-pointer bg-gray-100 text-gray-500 " onClick={handleOk}>OK</Button>
+                        <div className="flex justify-between text-xs text-white font-medium">
+                            <span>{progressBarData.percentage}%</span>
+                            <span>100%</span>
                         </div>
                     </div>
-                </DialogContent>
-            </Dialog>
 
-            {/* Main Content */}
-            <div className=" w-full px-4 opacity-75">
-                {/* Musterzettel Section */}
+
+                    <div className="flex justify-center">
+                        {/* <Button variant="outline" className="cursor-pointer bg-gray-100 text-gray-500 " >OK</Button> */}
+                    </div>
+                </div>
+            </div>
+
+
+            {/* <div className=" w-full px-4 opacity-75">
+
                 <h2 className="text-2xl font-bold mb-4 text-gray-600">Musterzettel</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-4">
                     {[0, 1].map((col) => (
@@ -113,7 +109,7 @@ export default function MusterzettelPage() {
                     <Button variant="outline" disabled className="bg-gray-100 text-gray-500 cursor-not-allowed">MEHR ANZEIGEN</Button>
                 </div>
 
-                {/* Schuheinlagen Muster Section */}
+            
                 <h2 className="text-2xl font-bold mb-4 text-gray-600">Schuheinlagen Muster</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
                     {[0, 1].map((row) => (
@@ -141,7 +137,7 @@ export default function MusterzettelPage() {
                     <Button variant="outline" disabled className="bg-gray-100 text-gray-500 cursor-not-allowed">MEHR ANZEIGEN</Button>
                 </div>
 
-                {/* Shoe Usage Form Section */}
+  
                 <h2 className="text-xl font-bold mb-4 mt-10 uppercase tracking-tight text-gray-600">WELCHE SCHUHE NUTZEN IHRE KUNDEN AM HÄUFIGSTEN?</h2>
                 <form className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -154,9 +150,9 @@ export default function MusterzettelPage() {
                         <Button className="w-2/12 bg-gray-400 text-gray-600 cursor-not-allowed" disabled>SENDEN</Button>
                     </div>
                 </form>
-            </div>
-            {/* Footer */}
-            <footer className="bg-[#181818] w-full py-4 px-0 mt-8">
+            </div> */}
+
+            {/* <footer className="bg-[#181818] w-full py-4 px-0 mt-8">
                 <div className=" px-10 flex items-center gap-6 text-white text-sm">
                     <span className="flex items-center justify-center w-10 h-10 border border-white rounded-full">
                         <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -168,7 +164,7 @@ export default function MusterzettelPage() {
                         <span className="font-normal">ALTERNATIV ERREICHEN SIE UNS JEDERZEIT UNTER +39 366 508 7742</span>
                     </div>
                 </div>
-            </footer>
+            </footer> */}
         </>
     );
 }
