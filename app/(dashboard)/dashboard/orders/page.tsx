@@ -258,7 +258,7 @@ export default function Orders() {
 
 
                 </div>
-                <HighPriorityCard />
+                {/* <HighPriorityCard /> */}
 
                 <ProcessTable />
             </div>

@@ -422,14 +422,14 @@ export default function VersorgungModal({
                     {renderProductDropdown()}
 
                     {/* Basic Information */}
-                    <input
+                    {/* <input
                         name="name"
                         value={form.name}
                         onChange={handleFormChange}
                         placeholder="Name der Versorgung"
                         className="border p-2 rounded"
                         required
-                    />
+                    /> */}
 
                     <div className="flex gap-2">
 
