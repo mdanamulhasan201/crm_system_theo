@@ -49,13 +49,29 @@ export default function LagerChart() {
     const CustomTooltips = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-white p-2 border border-gray-200 shadow-md rounded">
-                    <p className="font-semibold">{`Jahr: ${label}`}</p>
-                    {payload.map((entry: any, index: number) => (
-                        <p key={`item-${index}`} style={{ color: entry.color }} className="text-sm">
-                            {`${entry.name}: ${entry.value.toLocaleString()} €`}
-                        </p>
-                    ))}
+                <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg">
+                    <p className="font-semibold text-base mb-2 pb-2 border-b border-gray-200">
+                        {`Jahr: ${label}`}
+                    </p>
+                    <div className="space-y-2">
+                        {payload.map((entry: any, index: number) => (
+                            <div 
+                                key={`item-${index}`} 
+                                className="flex items-center gap-2 py-1"
+                            >
+                                <div 
+                                    className="w-3 h-3 rounded-full" 
+                                    style={{ backgroundColor: entry.color }}
+                                />
+                                <span className="text-sm font-medium text-gray-700">
+                                    {entry.name}:
+                                </span>
+                                <span className="text-sm font-semibold" style={{ color: entry.color }}>
+                                    {entry.value.toLocaleString('de-DE')} €
+                                </span>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
         }
@@ -78,7 +94,7 @@ export default function LagerChart() {
                                 <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                                 <XAxis dataKey="year" axisLine={false} tickLine={false} />
                                 <YAxis axisLine={false} tickLine={false} />
-                                <Tooltip content={<CustomTooltips />} />
+                                <Tooltip content={<CustomTooltips />} shared={false} />
                                 <Legend iconType="circle" verticalAlign="top" align="center" wrapperStyle={{ paddingBottom: '15px' }} />
                                 <Bar dataKey="Einkaufspreis" fill="#81E6D9" name="Einkaufspreis" radius={[4, 4, 0, 0]} barSize={50} />
                                 <Bar dataKey="Verkaufspreis" fill="#38B2AC" name="Verkaufspreis" radius={[4, 4, 0, 0]} barSize={50} />
