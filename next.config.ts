@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'chemistry-supplemental-vatican-fixed.trycloudflare.com',
+        hostname: 'native-rep-framing-harry.trycloudflare.com',
       },
       {
         // local host

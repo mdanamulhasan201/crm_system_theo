@@ -1,16 +1,25 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Search, Upload, Download, Eye, Trash2, FileText, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import { useParams } from 'next/navigation'
-import { getKundenordnerData } from '@/apis/kundenordnerDataApis'
+import { getKundenordnerData, deleteKundenordnerData, uploadKundenordnerData } from '@/apis/kundenordnerDataApis'
 import Loading from '@/components/Shared/Loading'
 
 type DocumentType = 'all' | 'rezept' | 'kostenvoranschlag' | 'genehmigung' | 'konformität' | 'rechnung' | 'zahlungsbeleg' | 'image' | 'stl' | 'csv' | 'pdf' | 'jpg' | 'webp'
 
 interface Document {
     id: string
+    url: string
     title: string
     size: string
     date: string
@@ -81,7 +90,7 @@ const mapFileTypeToDocumentType = (fileType: string, table: string, fieldName: s
                 return 'image'
         }
     }
-    
+
     // Map by file extension
     switch (fileType.toLowerCase()) {
         case 'pdf':
@@ -159,7 +168,35 @@ export default function KundenordnerPage() {
     const [error, setError] = useState<string | null>(null)
     const [page, setPage] = useState(1)
     const [pagination, setPagination] = useState<ApiResponse['pagination'] | null>(null)
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null)
+    const [deleteLoading, setDeleteLoading] = useState(false)
+    const [uploadLoading, setUploadLoading] = useState(false)
     const limit = 20
+    const fileInputRef = useRef<HTMLInputElement | null>(null)
+    const handleUploadClick = () => {
+        fileInputRef.current?.click()
+    }
+
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0]
+        if (!file) return
+
+        try {
+            setUploadLoading(true)
+            await uploadKundenordnerData(customerId, file)
+            await fetchDocuments()
+        } catch (err) {
+            console.error('Error uploading document:', err)
+            alert('Upload fehlgeschlagen. Bitte erneut versuchen.')
+        } finally {
+            setUploadLoading(false)
+            if (event.target) {
+                event.target.value = ''
+            }
+        }
+    }
+
 
     useEffect(() => {
         fetchDocuments()
@@ -170,13 +207,14 @@ export default function KundenordnerPage() {
             setLoading(true)
             setError(null)
             const response: ApiResponse = await getKundenordnerData(customerId, page, limit)
-            
+
             if (response.success && response.data) {
                 const mappedDocuments: Document[] = response.data.map((file: ApiFile) => {
                     const docType = mapFileTypeToDocumentType(file.fileType, file.table, file.fieldName)
                     const colors = getDocumentColors(docType)
                     return {
                         id: file.id,
+                        url: file.url,
                         title: getFileTitle(file.url, file.fieldName, file.table),
                         size: formatFileSize(file.url),
                         date: formatDate(file.createdAt),
@@ -208,11 +246,11 @@ export default function KundenordnerPage() {
     }
 
     const filteredDocuments = activeFilter === 'all'
-        ? documents.filter(doc => 
+        ? documents.filter(doc =>
             searchQuery === '' || doc.title.toLowerCase().includes(searchQuery.toLowerCase())
         )
-        : documents.filter(doc => 
-            doc.type === activeFilter && 
+        : documents.filter(doc =>
+            doc.type === activeFilter &&
             (searchQuery === '' || doc.title.toLowerCase().includes(searchQuery.toLowerCase()))
         )
 
@@ -230,10 +268,29 @@ export default function KundenordnerPage() {
         document.body.removeChild(link)
     }
 
-    const handleDelete = async (doc: Document) => {
-        if (confirm(`Are you sure you want to delete ${doc.title}?`)) {
-            // TODO: Implement delete API call
-            console.log('Delete:', doc.id)
+    const handleDelete = (doc: Document) => {
+        setDocumentToDelete(doc)
+        setDeleteDialogOpen(true)
+    }
+
+    const confirmDelete = async () => {
+        if (!documentToDelete) return
+        try {
+            setDeleteLoading(true)
+            await deleteKundenordnerData({
+                fieldName: documentToDelete.fieldName,
+                table: documentToDelete.table,
+                url: documentToDelete.url,
+                id: documentToDelete.id,
+            })
+            setDeleteDialogOpen(false)
+            setDocumentToDelete(null)
+            await fetchDocuments()
+        } catch (err) {
+            console.error('Error deleting document:', err)
+            alert('Löschen fehlgeschlagen. Bitte erneut versuchen.')
+        } finally {
+            setDeleteLoading(false)
         }
     }
 
@@ -297,9 +354,18 @@ export default function KundenordnerPage() {
                     />
                 </div>
                 <div className='w-48 h-9 bg-gray-200 rounded-md' />
-                <Button variant='outline' className='flex items-center gap-2'>
-                    <Upload className='w-4 h-4' />
-                    Hochladen
+                <Button
+                    variant='outline'
+                    className='flex items-center gap-2'
+                    onClick={handleUploadClick}
+                    disabled={uploadLoading || loading}
+                >
+                    {uploadLoading ? (
+                        <Loader2 className='w-4 h-4 animate-spin' />
+                    ) : (
+                        <Upload className='w-4 h-4' />
+                    )}
+                    {uploadLoading ? 'Hochladen...' : 'Hochladen'}
                 </Button>
                 <Button variant='outline' className='flex items-center gap-2'>
                     <Download className='w-4 h-4' />
@@ -307,17 +373,23 @@ export default function KundenordnerPage() {
                 </Button>
             </div>
 
+            <input
+                type='file'
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className='hidden'
+            />
+
             {/* Filter Tabs */}
             <div className='flex items-center gap-2 overflow-x-auto pb-2'>
                 {availableTypes.map((type) => (
                     <button
                         key={type}
                         onClick={() => setActiveFilter(type)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
-                            activeFilter === type
+                        className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === type
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
+                            }`}
                     >
                         {documentTypeLabels[type]} ({getDocumentCount(type)})
                     </button>
@@ -351,23 +423,23 @@ export default function KundenordnerPage() {
                                     {documentTypeLabels[doc.type]}
                                 </span>
                                 <div className='flex items-center gap-2'>
-                                    <button 
+                                    <button
                                         onClick={() => handleView(doc)}
-                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors' 
+                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors'
                                         title='Ansehen'
                                     >
                                         <Eye className='w-4 h-4 text-gray-600' />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => handleDownload(doc)}
-                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors' 
+                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors'
                                         title='Download'
                                     >
                                         <Download className='w-4 h-4 text-gray-600' />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => handleDelete(doc)}
-                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors' 
+                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors'
                                         title='Löschen'
                                     >
                                         <Trash2 className='w-4 h-4 text-gray-600' />
@@ -412,6 +484,53 @@ export default function KundenordnerPage() {
                     {pagination?.total || documents.length} Dokumente Gesamt
                 </p>
             </div>
+
+            <Dialog
+                open={deleteDialogOpen}
+                onOpenChange={(open) => {
+                    setDeleteDialogOpen(open)
+                    if (!open) {
+                        setDocumentToDelete(null)
+                    }
+                }}
+            >
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Dokument löschen?</DialogTitle>
+                        <DialogDescription>
+                            {documentToDelete
+                                ? `Möchten Sie "${documentToDelete.title}" endgültig löschen?`
+                                : 'Möchten Sie dieses Dokument endgültig löschen?'}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant='outline'
+                            onClick={() => {
+                                setDeleteDialogOpen(false)
+                                setDocumentToDelete(null)
+                            }}
+                            disabled={deleteLoading}
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            variant='destructive'
+                            onClick={confirmDelete}
+                            disabled={deleteLoading}
+                        >
+                            {deleteLoading ? (
+                                <span className='flex items-center gap-2'>
+                                    <Loader2 className='w-4 h-4 animate-spin' />
+                                    Löschen...
+                                </span>
+                            ) : (
+                                'Löschen'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
