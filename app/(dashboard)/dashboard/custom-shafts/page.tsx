@@ -11,11 +11,11 @@ import useDebounce from '@/hooks/useDebounce';
 import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
 
 const categories = [
-    { label: 'Alle Kategorien', value: 'alle' },
-    { label: 'Formal Shoes', value: 'Formal Shoes' },
-    { label: 'Running Shoes', value: 'Running Shoes' },
-    { label: 'Casual Shoes', value: 'Casual Shoes' },
-    { label: 'Sports Shoes', value: 'Sportschuhe' },
+    { label: 'Alle Kategorien', value: 'Alle Kategorien' },
+    { label: 'Elegante Schuhe / Business-Schuhe', value: 'Elegante Schuhe / Business-Schuhe' },
+    { label: 'Laufschuhe', value: 'Laufschuhe' },
+    { label: 'Freizeitschuhe', value: 'Freizeitschuhe' },
+    { label: 'Sportschuhe', value: 'Sportschuhe' },
 ];
 
 export default function CustomShafts() {
@@ -127,10 +127,10 @@ export default function CustomShafts() {
     const handleShowMore = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         // Don't do anything if already loading
         if (loading) return;
-        
+
         // First, check if we have more items in already fetched data
         if (hasMoreItems) {
             // Show next 8 items from already fetched data (instant, no loading needed)

@@ -16,6 +16,8 @@ interface ConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   orderPrice: number;
+  passendenSchnursenkel?: boolean | undefined;
+  osenEinsetzen?: boolean | undefined;
   selectedCustomer: Customer | null;
   shaftName?: string;
   isCreatingOrder?: boolean;
@@ -26,6 +28,8 @@ export default function ConfirmationModal({
   onClose,
   onConfirm,
   orderPrice,
+  passendenSchnursenkel,
+  osenEinsetzen,
   selectedCustomer,
   shaftName,
   isCreatingOrder = false,
@@ -54,6 +58,9 @@ export default function ConfirmationModal({
             </div>
           )}
 
+
+
+
           {/* Price Information */}
           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
             <h4 className="font-medium text-green-900 mb-1">Gesamtpreis:</h4>
@@ -62,13 +69,34 @@ export default function ConfirmationModal({
             </p>
           </div>
 
+
+
+          {/* Zusatzoptionen */}
+          {(passendenSchnursenkel !== undefined || osenEinsetzen !== undefined) && (
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <h4 className="font-medium text-gray-900 mb-2">Zusätzliche Optionen</h4>
+              <ul className="list-disc pl-5 text-gray-800 space-y-1">
+                {passendenSchnursenkel !== undefined && (
+                  <li>
+                    Schnürsenkel: {passendenSchnursenkel ? 'Ja (+4,49€)' : 'Nein'}
+                  </li>
+                )}
+                {osenEinsetzen !== undefined && (
+                  <li>
+                    Ösen einsetzen: {osenEinsetzen ? 'Ja (+8,99€)' : 'Nein'}
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
+
           <p className="text-base">
             Möchtest du die Bestellung dieses Maßschaftes abschließen?
           </p>
           <p className="text-xs text-gray-500">
             Nach dem Abschließen kann die Bestellung nicht mehr bearbeitet werden.
           </p>
-          
+
           {/* Loading State */}
           {isCreatingOrder && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">

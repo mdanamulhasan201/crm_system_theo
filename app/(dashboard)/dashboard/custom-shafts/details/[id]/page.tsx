@@ -25,7 +25,7 @@ interface Customer {
 export default function DetailsPage() {
   // Router for navigation
   const router = useRouter();
-  
+
   // State management
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
@@ -46,6 +46,9 @@ export default function DetailsPage() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  // Add-ons
+  const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<boolean | undefined>(undefined);
+  const [osenEinsetzen, setOsenEinsetzen] = useState<boolean | undefined>(undefined);
 
   // Get shaft data
   const params = useParams();
@@ -62,11 +65,11 @@ export default function DetailsPage() {
   // Order handling
   const basePrice = shaft?.price || 0;
 
-  
+
 
   const calculateTotalPrice = () => {
-    let total = basePrice;
-    return total;
+    // Total should reflect only the base product price; add-ons are shown separately
+    return basePrice;
   };
 
   const orderPrice = calculateTotalPrice();
@@ -110,7 +113,7 @@ export default function DetailsPage() {
       if (linkerLeistenFile) {
         formData.append('image3d_2', linkerLeistenFile);
       }
-      
+
       formData.append('lederType', lederType);
       formData.append('lederfarbe', lederfarbe);
       formData.append('innenfutter', innenfutter);
@@ -119,9 +122,19 @@ export default function DetailsPage() {
       formData.append('schafthohe', schafthohe);
       formData.append('polsterung', polsterung.join(','));
       formData.append('vestarkungen', verstarkungen.join(','));
-      
+
       formData.append('polsterung_text', polsterungText);
       formData.append('vestarkungen_text', verstarkungenText);
+      if (passendenSchnursenkel === true) {
+        formData.append('passenden_schnursenkel', 'true');
+
+        formData.append('passenden_schnursenkel_price', '4.49');
+      }
+      if (osenEinsetzen === true) {
+        formData.append('osen_einsetzen', 'true');
+
+        formData.append('osen_einsetzen_price', '8.99');
+      }
       formData.append('mabschaftKollektionId', shaftId);
       formData.append('totalPrice', orderPrice.toString());
       const response = await createCustomShaft(formData);
@@ -129,7 +142,7 @@ export default function DetailsPage() {
       setShowSuccessMessage(true);
       setShowConfirmationModal(false);
       toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
-      
+
       // Navigate back to custom-shafts page after success
       setTimeout(() => {
         router.push('/dashboard/custom-shafts');
@@ -207,6 +220,10 @@ export default function DetailsPage() {
         setNahtfarbeOption={setNahtfarbeOption}
         customNahtfarbe={customNahtfarbe}
         setCustomNahtfarbe={setCustomNahtfarbe}
+        passendenSchnursenkel={passendenSchnursenkel}
+        setPassendenSchnursenkel={setPassendenSchnursenkel}
+        osenEinsetzen={osenEinsetzen}
+        setOsenEinsetzen={setOsenEinsetzen}
         lederType={lederType}
         setLederType={setLederType}
         lederfarbe={lederfarbe}
@@ -239,6 +256,8 @@ export default function DetailsPage() {
         onClose={() => setShowConfirmationModal(false)}
         onConfirm={handleOrderConfirmation}
         orderPrice={orderPrice}
+        passendenSchnursenkel={passendenSchnursenkel}
+        osenEinsetzen={osenEinsetzen}
         selectedCustomer={selectedCustomer}
         shaftName={shaft?.name}
         isCreatingOrder={isCreatingOrder}

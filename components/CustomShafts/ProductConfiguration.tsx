@@ -16,6 +16,10 @@ interface ProductConfigurationProps {
   setNahtfarbeOption: (option: string) => void;
   customNahtfarbe: string;
   setCustomNahtfarbe: (color: string) => void;
+  passendenSchnursenkel?: boolean;
+  setPassendenSchnursenkel?: (value: boolean) => void;
+  osenEinsetzen?: boolean;
+  setOsenEinsetzen?: (value: boolean) => void;
   lederType: string;
   setLederType: (type: string) => void;
   lederfarbe: string;
@@ -40,6 +44,10 @@ export default function ProductConfiguration({
   setNahtfarbeOption,
   customNahtfarbe,
   setCustomNahtfarbe,
+  passendenSchnursenkel,
+  setPassendenSchnursenkel,
+  osenEinsetzen,
+  setOsenEinsetzen,
   lederType,
   setLederType,
   lederfarbe,
@@ -58,6 +66,29 @@ export default function ProductConfiguration({
   setVerstarkungenText,
   onOrderComplete,
 }: ProductConfigurationProps) {
+  // Local fallbacks if parent does not control these fields
+  const [localSchnursenkel, setLocalSchnursenkel] = useState<boolean | undefined>(undefined);
+  const [localOsenEinsetzen, setLocalOsenEinsetzen] = useState<boolean | undefined>(undefined);
+
+  const effektSchnursenkel = typeof passendenSchnursenkel === 'boolean' ? passendenSchnursenkel : localSchnursenkel;
+  const updateSchnursenkel = (value: boolean | undefined) => {
+    if (setPassendenSchnursenkel) {
+      // If parent manages state, fallback to boolean only
+      setPassendenSchnursenkel(value ?? false);
+    } else {
+      setLocalSchnursenkel(value);
+    }
+  };
+
+  const effektOsen = typeof osenEinsetzen === 'boolean' ? osenEinsetzen : localOsenEinsetzen;
+  const updateOsen = (value: boolean | undefined) => {
+    if (setOsenEinsetzen) {
+      setOsenEinsetzen(value ?? false);
+    } else {
+      setLocalOsenEinsetzen(value);
+    }
+  };
+
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6">
@@ -162,6 +193,52 @@ export default function ProductConfiguration({
               onChange={e => setSchafthohe(e.target.value)}
             />
             <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
+          </div>
+        </div>
+
+        {/* Zusätze: Schnürsenkel */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Label className="font-medium text-base md:w-1/3">
+            Möchten Sie passende Schnürsenkel zum Schuh? (+4,49€)
+          </Label>
+          <div className="flex items-center gap-8">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektSchnursenkel === false}
+                onChange={() => updateSchnursenkel(effektSchnursenkel === false ? undefined : false)}
+              />
+              <span>Nein, ohne</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektSchnursenkel === true}
+                onChange={() => updateSchnursenkel(effektSchnursenkel === true ? undefined : true)}
+              />
+              <span>Ja mit passenden Schnürsenkel (+4,49€)</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Zusätze: Ösen einsetzen */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Label className="font-medium text-base md:w-1/3">
+            Möchten Sie den Schaft bereits mit eingesetzten Ösen? (+8,99€)
+          </Label>
+          <div className="flex items-center gap-8">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektOsen === false}
+                onChange={() => updateOsen(effektOsen === false ? undefined : false)}
+              />
+              <span>Nein, ohne Ösen</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektOsen === true}
+                onChange={() => updateOsen(effektOsen === true ? undefined : true)}
+              />
+              <span>Ja, Ösen einsetzen (+8,99€)</span>
+            </label>
           </div>
         </div>
 
