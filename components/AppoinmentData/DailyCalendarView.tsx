@@ -1,5 +1,6 @@
 'use client'
 import React, { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getCustomerColor, getAssignedToColor, EVENT_COLORS } from '@/lib/appointmentColors';
 
@@ -350,12 +351,23 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         </h2>
                                     </div>
 
-                                    {/* Event Title */}
+                                    {/* customer name */}
                                     <div className=" text-xs sm:text-sm mb-1 leading-tight">
                                         {
                                             event.customer_name && (
                                                 <>
-                                                    Kund: <span className='font-semibold'>{event.customer_name}</span>
+                                                    Kund:{' '}
+                                                    {event.customerId ? (
+                                                        <Link
+                                                            href={`/dashboard/customer-info/${event.customerId}`}
+                                                            className="font-semibold text-blue-600 hover:underline"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                        >
+                                                            {event.customer_name}
+                                                        </Link>
+                                                    ) : (
+                                                        <span className='font-semibold'>{event.customer_name}</span>
+                                                    )}
                                                 </>
                                             )
                                         }
