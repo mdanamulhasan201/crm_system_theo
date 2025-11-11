@@ -11,6 +11,7 @@ interface Event {
     type: string;
     assignedTo: string;
     reason: string;
+    details?: string;
     duration?: number;
     customer_name?: string;
     customerId?: string;
@@ -80,6 +81,7 @@ export const useAppoinment = () => {
                     type: apt.isClient ? 'user' : 'others',
                     assignedTo: apt.assignedTo || '',
                     reason: apt.reason || '',
+                    details: apt.details || '',
                     duration: apt.duration,
                     customer_name: apt.customer_name,
                     customerId: apt.customerId,

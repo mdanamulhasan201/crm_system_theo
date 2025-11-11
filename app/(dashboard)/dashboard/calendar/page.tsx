@@ -19,6 +19,7 @@ interface Event {
     type: string;
     assignedTo: string;
     reason: string;
+    details?: string;
     duration?: number;
     customer_name?: string;
     customerId?: string;
@@ -326,7 +327,7 @@ const WeeklyCalendar = () => {
                 <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 mb-6 sm:mb-10 w-full">
 
                     {/* Daily Calendar View - Responsive layout */}
-                    <div className="w-full xl:w-11/12">
+                    <div className="w-full lg:w-11/12 2xl:w-11/12">
                         <DailyCalendarView
                             key={currentSelectedDate.toDateString()}
                             selectedDate={currentSelectedDate}
@@ -345,7 +346,7 @@ const WeeklyCalendar = () => {
                     </div>
 
                     {/* MiniCalendar */}
-                    <div className="w-full xl:w-5/12">
+                    <div className="w-full lg:w-4/12 2xl:w-3/12 mx-auto">
                         <MiniCalendar
                             isMobile={isMobile}
                             miniCalendarDate={miniCalendarDate}
@@ -469,6 +470,11 @@ const WeeklyCalendar = () => {
                                                                         {
                                                                             event.reason && (
                                                                                 <div className="text-xs opacity-90 mb-1">Grund: {event.reason}</div>
+                                                                            )
+                                                                        }
+                                                                        {
+                                                                            event.details && (
+                                                                                <div className="text-xs opacity-90 mb-1">Details: {event.details}</div>
                                                                             )
                                                                         }
                                                                         {

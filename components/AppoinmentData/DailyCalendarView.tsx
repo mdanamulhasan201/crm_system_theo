@@ -1,5 +1,5 @@
 'use client'
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getCustomerColor, getAssignedToColor, EVENT_COLORS } from '@/lib/appointmentColors';
 
@@ -12,6 +12,7 @@ interface Event {
     type: string;
     assignedTo: string;
     reason: string;
+    details?: string;
     duration?: number;
     customer_name?: string;
     customerId?: string;
@@ -28,7 +29,7 @@ interface DailyCalendarViewProps {
     dayNamesLong: string[];
     onDateChange: (direction: number) => void;
     onEventClick?: (eventId: string) => void;
-    colorMode?: 'customer' | 'assignedTo'; 
+    colorMode?: 'customer' | 'assignedTo';
 }
 
 // Colors are now imported from shared utility
@@ -39,12 +40,16 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     dayNamesLong,
     onDateChange,
     onEventClick,
-    colorMode = 'customer' 
+    colorMode = 'customer'
 }) => {
     // Calendar configuration
-    const calendarStartHour = 8; 
+    const calendarStartHour = 8;
     const timeSlots = Array.from({ length: 24 }, (_, i) => `${String((calendarStartHour + i) % 24).padStart(2, '0')}:00`);
-    const containerHeightPx = timeSlots.length * 60; 
+    const containerHeightPx = timeSlots.length * 100;
+
+    // Modal state
+    const [isNotesOpen, setIsNotesOpen] = useState(false);
+    const [noteContent, setNoteContent] = useState<string>('');
 
     // Parse time to minutes from 6 AM
     const parseTimeToMinutes = (timeStr: string): number => {
@@ -213,7 +218,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                 <div
                     className="relative bg-white border border-gray-200 rounded-lg overflow-y-auto overflow-x-auto"
                     style={{
-                        height: '500px',
+                        height: '700px',
                         width: '100%'
                     }}
                 >
@@ -247,7 +252,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                             height: `${containerHeightPx}px`,
                             left: '0%',
                             width: '99.9%',
-                            minWidth: '800px'
+                            minWidth: '1000px'
                         }}
                     >
                         {/* Grid Lines - Horizontal */}
@@ -294,10 +299,11 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                             // Get color based on colorMode
                             // If colorMode is 'assignedTo', use employee-based colors (old system)
                             // If colorMode is 'customer', use customer-based colors (new system)
-                            const color = colorMode === 'assignedTo' 
+                            const color = colorMode === 'assignedTo'
                                 ? getAssignedToColor(event.assignedTo, index)
                                 : getCustomerColor(event.customerId, event.customer_name, index);
                             const topPercent = (event.startMinutes / (timeSlots.length * 60)) * 100;
+                            const heightPercent = (event.durationMinutes / (timeSlots.length * 60)) * 100;
 
                             return (
                                 <div
@@ -307,7 +313,8 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         top: `${topPercent}%`,
                                         left: `${event.left + 6}%`,
                                         width: `${event.width - 2}%`,
-                                        minHeight: '50px',
+                                        height: `${heightPercent}%`,
+                                        minHeight: '140px',
                                         marginTop: '2px',
                                         marginBottom: '2px',
                                         borderColor: color.border
@@ -315,24 +322,43 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                     onClick={onEventClick ? () => onEventClick(event.id) : undefined}
                                 >
                                     {/* Time Pills */}
-                                    <div className="flex gap-1 mb-1 sm:mb-2">
-                                        <div
-                                            className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium text-white border-2"
-                                            style={{ backgroundColor: color.border, borderColor: color.border }}
-                                        >
-                                            {formatTime(event.time)}
+                                    <div className='flex justify-between items-center'>
+                                        <div className="flex gap-1 mb-1 sm:mb-2">
+                                            <div
+                                                className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium text-white border-2"
+                                                style={{ backgroundColor: color.border, borderColor: color.border }}
+                                            >
+                                                {formatTime(event.time)}
+                                            </div>
+                                            <div
+                                                className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium text-white border-2"
+                                                style={{ backgroundColor: color.border, borderColor: color.border }}
+                                            >
+                                                {getEndTime(event)}
+                                            </div>
                                         </div>
-                                        <div
-                                            className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium text-white border-2"
-                                            style={{ backgroundColor: color.border, borderColor: color.border }}
+
+                                        <h2
+                                            className='text-xs sm:text-sm font-medium text-gray-700 underline cursor-pointer'
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setNoteContent(event.details || '');
+                                                setIsNotesOpen(true);
+                                            }}
                                         >
-                                            {getEndTime(event)}
-                                        </div>
+                                            Notiz öffnen
+                                        </h2>
                                     </div>
 
                                     {/* Event Title */}
-                                    <div className="font-semibold text-xs sm:text-sm mb-1 leading-tight">
-                                        {event.customer_name || event.title}
+                                    <div className=" text-xs sm:text-sm mb-1 leading-tight">
+                                        {
+                                            event.customer_name && (
+                                                <>
+                                                    Kund: <span className='font-semibold'>{event.customer_name}</span>
+                                                </>
+                                            )
+                                        }
                                     </div>
 
                                     {/* Event Subtitle */}
@@ -343,19 +369,20 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                     )}
 
                                     {/* Assigned To */}
-                                    {event.assignedTo && (
+                                    {/* {event.assignedTo && (
                                         <div className="text-xs opacity-80 mb-1 sm:mb-2 leading-tight flex items-center gap-1">
-                                            <span className="font-medium">Assigned to:</span>
-                                            <span>{event.assignedTo}</span>
+                                            <span className="font-medium">Kunde</span>
+                                            <span>{event.customer_name}</span>
                                         </div>
-                                    )}
+                                    )} */}
 
                                     {/* Customer Avatar */}
                                     <div className="flex items-center gap-1 mt-auto">
                                         <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center">
                                             <span className="text-xs font-medium text-gray-700">
-                                                {event.customer_name?.charAt(0).toUpperCase() || 'U'}
+                                                {event.assignedTo?.charAt(0).toUpperCase() || 'U'}
                                             </span>
+
                                         </div>
                                     </div>
                                 </div>
@@ -374,6 +401,33 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                     )}
                 </div>
             </div>
+            {isNotesOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0 bg-black/40" onClick={() => setIsNotesOpen(false)} />
+                    <div className="relative bg-white rounded-lg shadow-lg w-[90%] max-w-md p-4 sm:p-6">
+                        <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-sm sm:text-base font-semibold text-gray-800">Notiz</h3>
+                            <button
+                                className="text-gray-500 hover:text-gray-700 text-sm"
+                                onClick={() => setIsNotesOpen(false)}
+                            >
+                                Schließen
+                            </button>
+                        </div>
+                        <div className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+                            {noteContent}
+                        </div>
+                        <div className="mt-4 flex justify-end">
+                            <button
+                                className="px-3 py-1.5 rounded-md bg-gray-800 text-white text-xs sm:text-sm"
+                                onClick={() => setIsNotesOpen(false)}
+                            >
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
