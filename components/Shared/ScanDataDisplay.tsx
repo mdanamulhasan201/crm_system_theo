@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useRef } from 'react'
 import Image from 'next/image'
 import { MdZoomOutMap } from 'react-icons/md'
 import { TfiDownload } from 'react-icons/tfi'
@@ -110,12 +110,30 @@ export default function ScanDataDisplay({
         return scanData.updatedAt ? new Date(scanData.updatedAt).toLocaleDateString() : '-';
     };
 
+    // Track previous data to prevent unnecessary onDataChange calls
+    const previousDataRef = useRef<string | null>(null);
+
     React.useEffect(() => {
         if (onDataChange) {
             const currentData = selectedScanData || scanData;
-            onDataChange(currentData);
+            
+            // Create a unique identifier for the current data
+            const dataId = (selectedScanData ? selectedScanData.id : null) || 
+                         (selectedScanData ? selectedScanData.updatedAt : scanData.updatedAt) ||
+                         currentData.id ||
+                         JSON.stringify({
+                             id: currentData.id,
+                             updatedAt: selectedScanData ? selectedScanData.updatedAt : scanData.updatedAt
+                         });
+            
+            // Only call onDataChange if the data has actually changed
+            if (previousDataRef.current !== dataId) {
+                previousDataRef.current = dataId;
+                onDataChange(currentData);
+            }
         }
-    }, [selectedScanData, scanData, onDataChange]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedScanData, scanData]);
 
     const renderField = (fieldName: string, label: string) => {
         if (isEditable && onInputChange) {
@@ -134,7 +152,10 @@ export default function ScanDataDisplay({
             );
         }
 
-        const fieldValue = scanData[fieldName as keyof ScanData];
+        // Use selectedScanData if available, otherwise fall back to scanData
+        const fieldValue = selectedScanData && (selectedScanData as any)[fieldName] !== undefined
+            ? (selectedScanData as any)[fieldName]
+            : scanData[fieldName as keyof ScanData];
         const displayValue = typeof fieldValue === 'string' || typeof fieldValue === 'number' ? fieldValue : '-';
 
         return (
@@ -170,9 +191,10 @@ export default function ScanDataDisplay({
                 dateOfBirthText: scanData.geburtsdatum || null
             } as const;
 
-            // Get dynamic foot length values from scan data (Fusslänge = foot length)
-            const leftFootLength = parseFloat(scanData.fusslange2 as string) || 0; // Left foot Fusslänge
-            const rightFootLength = parseFloat(scanData.fusslange1 as string) || 0; // Right foot Fusslänge
+            // Get dynamic foot length values from selected scan data (Fusslänge = foot length)
+            const currentData = selectedScanData || scanData;
+            const leftFootLength = parseFloat((currentData as any).fusslange2 as string) || 0; // Left foot Fusslänge
+            const rightFootLength = parseFloat((currentData as any).fusslange1 as string) || 0; // Right foot Fusslänge
 
             const { combined } = await generateFeetPdf({
                 rightImageUrl: rightUrl,
@@ -348,6 +370,7 @@ export default function ScanDataDisplay({
                             {/* Additional content (like save button, etc.) */}
                             {children}
                         </div>
+                        {/* scan data fields */}
                         <div className="grid grid-cols-2 gap-2 mx-2">
                             {renderField('fusslange2', 'Fusslänge')}
                             {renderField('fusslange1', 'Fusslänge')}

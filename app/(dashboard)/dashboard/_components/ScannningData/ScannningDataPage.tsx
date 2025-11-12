@@ -1,6 +1,6 @@
 'use client'
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import QuestionSection from '../Scanning/QuestionSection';
 import toast from 'react-hot-toast';
 import ImagePreviewModal from '@/components/CustomerModal/ImagePreviewModal';
@@ -70,6 +70,9 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
         (key) => editableData[key as keyof typeof editableData] !== originalData[key as keyof typeof originalData]
     );
 
+    // Track previous filtered data to prevent unnecessary updates
+    const previousFilteredDataRef = useRef<string | null>(null);
+
     // Handle input changes
     const handleInputChange = (field: string, value: string) => {
         setEditableData(prev => ({
@@ -77,6 +80,42 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
             [field]: value
         }));
     };
+
+    // Memoized callback to handle data changes from date filter
+    const handleDataChange = useCallback((filteredData: any) => {
+        if (!filteredData) return;
+
+        // Create a unique identifier for the current filtered data
+        const dataId = filteredData.id || filteredData.updatedAt || JSON.stringify({
+            fusslange1: filteredData.fusslange1,
+            fusslange2: filteredData.fusslange2,
+        });
+
+        // Only update if the data has actually changed
+        if (previousFilteredDataRef.current === dataId) {
+            return;
+        }
+
+        previousFilteredDataRef.current = dataId;
+
+        const newEditableData = {
+            fusslange1: filteredData.fusslange1 ?? '',
+            fusslange2: filteredData.fusslange2 ?? '',
+            fussbreite1: filteredData.fussbreite1 ?? '',
+            fussbreite2: filteredData.fussbreite2 ?? '',
+            kugelumfang1: filteredData.kugelumfang1 ?? '',
+            kugelumfang2: filteredData.kugelumfang2 ?? '',
+            rist1: filteredData.rist1 ?? '',
+            rist2: filteredData.rist2 ?? '',
+            zehentyp1: filteredData.zehentyp1 ?? '',
+            zehentyp2: filteredData.zehentyp2 ?? '',
+            archIndex1: filteredData.archIndex1 ?? '',
+            archIndex2: filteredData.archIndex2 ?? '',
+        };
+
+        setEditableData(newEditableData);
+        setOriginalData(newEditableData);
+    }, []);
 
     const handleSaveChanges = async () => {
         try {
@@ -186,6 +225,7 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
                         isEditable={true}
                         editableData={editableData}
                         onInputChange={handleInputChange}
+                        onDataChange={handleDataChange}
                     >
                         {/* Additional content for the scan data section */}
                         {isChanged && (

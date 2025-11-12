@@ -53,7 +53,7 @@ export default function PerformerData() {
     }
 
     return (
-        <div className="mt-5 w-full">
+        <div className="lg:mt-14 w-full">
 
             {/* Tabs */}
             <div className="flex mb-4 sm:mb-6">
@@ -89,11 +89,11 @@ export default function PerformerData() {
                                     <BarChart
                                         data={currentData}
                                         layout="vertical"
-                                        margin={{ 
-                                            top: 10, 
-                                            right: isSmall ? 5 : (windowWidth < 1024 ? 15 : 30), 
-                                            left: isSmall ? 0 : 0, 
-                                            bottom: 10 
+                                        margin={{
+                                            top: 10,
+                                            right: isSmall ? 5 : (windowWidth < 1024 ? 15 : 30),
+                                            left: isSmall ? 0 : 0,
+                                            bottom: 10
                                         }}
                                     >
                                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
