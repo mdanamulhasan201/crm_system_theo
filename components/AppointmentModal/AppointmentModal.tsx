@@ -12,6 +12,12 @@ import { UseFormReturn } from "react-hook-form";
 import { Calendar } from "../ui/calendar";
 import { useSearchCustomer } from "@/hooks/customer/useSearchCustomer";
 import { useSearchEmployee } from "@/hooks/employee/useSearchEmployee";
+import toast from "react-hot-toast";
+
+interface Employee {
+    employeeId: string;
+    assignedTo: string;
+}
 
 interface AppointmentFormData {
     isClientEvent: boolean;
@@ -24,6 +30,7 @@ interface AppointmentFormData {
     duration: number;
     customerId?: string;
     employeeId?: string;
+    employees?: Employee[];
 }
 
 interface SubmittedAppointmentData {
@@ -37,6 +44,7 @@ interface SubmittedAppointmentData {
     duration: number;
     customerId?: string;
     employeeId?: string;
+    employees?: Employee[];
 }
 
 interface AppointmentModalProps {
@@ -60,6 +68,8 @@ export default function AppointmentModal({
     const isClientEvent = form.watch('isClientEvent');
     const kundeContainerRef = React.useRef<HTMLDivElement | null>(null);
     const employeeContainerRef = React.useRef<HTMLDivElement | null>(null);
+    const employees = form.watch('employees') || [];
+    const [currentEmployeeSearch, setCurrentEmployeeSearch] = React.useState('');
 
     const clientTerminOptions = [
         { value: 'fussanalyse-laufanalyse', label: 'Fußanalyse / Laufanalyse' },
@@ -123,6 +133,28 @@ export default function AppointmentModal({
         inputRef: employeeInputRef,
     } = useSearchEmployee();
 
+    const addEmployee = React.useCallback((employee: { id: string; employeeName: string }) => {
+        const currentEmployees = form.getValues('employees') || [];
+        // Check if employee already exists
+        if (currentEmployees.some(emp => emp.employeeId === employee.id)) {
+            return;
+        }
+        const newEmployee: Employee = {
+            employeeId: employee.id,
+            assignedTo: employee.employeeName
+        };
+        form.setValue('employees', [...currentEmployees, newEmployee]);
+        setCurrentEmployeeSearch('');
+        setEmployeeSearchText('');
+        setShowEmployeeSuggestions(false);
+    }, [form, setEmployeeSearchText, setShowEmployeeSuggestions]);
+
+    const removeEmployee = React.useCallback((index: number) => {
+        const currentEmployees = form.getValues('employees') || [];
+        const updatedEmployees = currentEmployees.filter((_, i) => i !== index);
+        form.setValue('employees', updatedEmployees);
+    }, [form]);
+
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent | TouchEvent) => {
             const target = event.target as Node;
@@ -141,13 +173,26 @@ export default function AppointmentModal({
         };
     }, [setShowNameSuggestions, setShowEmployeeSuggestions]);
 
+    // Filter out already selected employees from suggestions
+    const filteredEmployeeSuggestions = React.useMemo(() => {
+        const selectedIds = (form.getValues('employees') || []).map(emp => emp.employeeId);
+        return employeeSuggestions.filter(s => !selectedIds.includes(s.id));
+    }, [employeeSuggestions, form]);
+
     if (!isOpen) return null;
 
     const handleFormSubmit = async (data: AppointmentFormData) => {
+        // Validate that at least one employee is selected
+        if (!data.employees || data.employees.length === 0) {
+            toast.error('Bitte wählen Sie mindestens einen Mitarbeiter aus');
+            return;
+        }
+        
         const formattedData: SubmittedAppointmentData = {
             ...data,
             // send Date directly without ISO conversion
-            selectedEventDate: data.selectedEventDate
+            selectedEventDate: data.selectedEventDate,
+            employees: data.employees || []
         };
         try {
             setSubmitting(true);
@@ -403,50 +448,71 @@ export default function AppointmentModal({
 
                         <FormField
                             control={form.control}
-                            name="mitarbeiter"
+                            name="employees"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Mitarbeiter <span className="text-red-500">*</span></FormLabel>
-                                    <div className="relative" ref={employeeContainerRef}>
-                                        <Input
-                                            ref={employeeInputRef}
-                                            placeholder="Mitarbeiter suchen"
-                                            value={employeeSearchText || field.value || ''}
-                                            onChange={(e) => {
-                                                handleEmployeeChange(e.target.value);
-                                                setEmployeeSearchText(e.target.value);
-                                                field.onChange(e.target.value);
-                                            }}
-                                            onFocus={() => {
-                                                setShowEmployeeSuggestions(true);
-                                                if (!(employeeSearchText || field.value)) {
-                                                    handleEmployeeChange('');
-                                                }
-                                            }}
-                                        />
-                                        {employeeSuggestionLoading && (
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">...</div>
-                                        )}
-                                        {showEmployeeSuggestions && employeeSuggestions.length > 0 && (
-                                            <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded shadow">
-                                                {employeeSuggestions.map((s) => (
-                                                    <button
-                                                        type="button"
-                                                        key={s.id}
-                                                        className="w-full text-left px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                                                        onClick={() => {
-                                                            field.onChange(s.employeeName);
-                                                            form.setValue('employeeId', s.id);
-                                                            setEmployeeSearchText(s.employeeName);
-                                                            setShowEmployeeSuggestions(false);
-                                                        }}
+                                    <div className="space-y-2">
+                                        {/* Selected Employees List */}
+                                        {employees.length > 0 && (
+                                            <div className="flex flex-wrap gap-2">
+                                                {employees.map((emp, index) => (
+                                                    <div
+                                                        key={`${emp.employeeId}-${index}`}
+                                                        className="flex items-center gap-2 bg-gray-100 px-3 py-1.5 rounded-full text-sm"
                                                     >
-                                                        <div className="font-medium">{s.employeeName}</div>
-                                                        <div className="text-xs text-gray-500">{s.email || ''}</div>
-                                                    </button>
+                                                        <span className="font-medium">{emp.assignedTo}</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removeEmployee(index)}
+                                                            className="text-red-500 hover:text-red-700 cursor-pointer"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
                                                 ))}
                                             </div>
                                         )}
+
+                                        {/* Employee Search Input */}
+                                        <div className="relative" ref={employeeContainerRef}>
+                                            <Input
+                                                ref={employeeInputRef}
+                                                placeholder="Mitarbeiter suchen"
+                                                value={currentEmployeeSearch || employeeSearchText || ''}
+                                                onChange={(e) => {
+                                                    handleEmployeeChange(e.target.value);
+                                                    setEmployeeSearchText(e.target.value);
+                                                    setCurrentEmployeeSearch(e.target.value);
+                                                }}
+                                                onFocus={() => {
+                                                    setShowEmployeeSuggestions(true);
+                                                    if (!(employeeSearchText || currentEmployeeSearch)) {
+                                                        handleEmployeeChange('');
+                                                    }
+                                                }}
+                                            />
+                                            {employeeSuggestionLoading && (
+                                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">...</div>
+                                            )}
+                                            {showEmployeeSuggestions && filteredEmployeeSuggestions.length > 0 && (
+                                                <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded shadow max-h-60 overflow-y-auto">
+                                                    {filteredEmployeeSuggestions.map((s) => (
+                                                        <button
+                                                            type="button"
+                                                            key={s.id}
+                                                            className="w-full text-left px-3 py-2 hover:bg-gray-50 cursor-pointer"
+                                                            onClick={() => {
+                                                                addEmployee(s);
+                                                            }}
+                                                        >
+                                                            <div className="font-medium">{s.employeeName}</div>
+                                                            <div className="text-xs text-gray-500">{s.email || ''}</div>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </FormItem>
                             )}

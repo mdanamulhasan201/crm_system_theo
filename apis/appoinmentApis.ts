@@ -6,13 +6,18 @@ export const createAppoinment = async (appointmentData: {
     time: string;
     date: string;
     reason: string;
-    assignedTo: string;
+    assignedTo: Array<{
+        employeId: string;
+        assignedTo: string;
+    }>;
     details: string;
     isClient: boolean;
-    userId: string;
+    userId?: string;
+    customerId?: string;
+    duration?: number;
 }) => {
     try {
-        const response = await axiosClient.post('/appointment', appointmentData);
+        const response = await axiosClient.post('/v2/appointment', appointmentData);
         return response.data;
     } catch (error: any) {
         // If there's an error response with data, return it
@@ -36,7 +41,7 @@ export const getMyAppointments = async (params?: {
             search: params?.search || ''
         });
 
-        const response = await axiosClient.get(`/appointment/my?${queryParams}`);
+        const response = await axiosClient.get(`/v2/appointment/my?${queryParams}`);
 
         return response.data;
     } catch (error) {
@@ -73,9 +78,14 @@ export const updateAppointment = async (appointmentId: string, appointmentData: 
     time: string;
     date: string;
     reason: string;
-    assignedTo: string;
+    assignedTo: Array<{
+        employeId: string;
+        assignedTo: string;
+    }>;
     details: string;
     isClient: boolean;
+    customerId?: string;
+    duration?: number;
 }) => {
     try {
         const response = await axiosClient.put(`/appointment/${appointmentId}`, appointmentData);

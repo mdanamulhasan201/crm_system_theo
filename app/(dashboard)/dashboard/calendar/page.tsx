@@ -17,7 +17,10 @@ interface Event {
     title: string;
     subtitle: string;
     type: string;
-    assignedTo: string;
+    assignedTo: string | Array<{
+        employeId: string;
+        assignedTo: string;
+    }>;
     reason: string;
     details?: string;
     duration?: number;
@@ -35,12 +38,24 @@ interface AppointmentData {
     time: string;
     date: string;
     reason: string;
-    assignedTo: string;
+    assignedTo: string | Array<{
+        employeId: string;
+        assignedTo: string;
+    }>;
     details: string;
     isClient: boolean;
     duration?: number;
     customerId?: string;
     employeId?: string;
+    employe?: Array<{
+        employeId: string;
+        assignedTo: string;
+    }>;
+}
+
+interface Employee {
+    employeeId: string;
+    assignedTo: string;
 }
 
 interface AppointmentFormData {
@@ -54,6 +69,7 @@ interface AppointmentFormData {
     duration: number;
     customerId?: string;
     employeeId?: string;
+    employees?: Employee[];
 }
 
 
@@ -120,7 +136,8 @@ const WeeklyCalendar = () => {
             isClientEvent: false,
             duration: 1,
             customerId: undefined,
-            employeeId: undefined
+            employeeId: undefined,
+            employees: []
         }
     });
 
@@ -135,7 +152,8 @@ const WeeklyCalendar = () => {
             isClientEvent: false,
             duration: 1,
             customerId: undefined,
-            employeeId: undefined
+            employeeId: undefined,
+            employees: []
         }
     });
 
@@ -272,24 +290,51 @@ const WeeklyCalendar = () => {
             };
             const formattedTime = to24h(apt.time);
 
+            // Convert assignedTo array from API to employees array for form
+            let employeesArray: Employee[] = [];
+            if (Array.isArray(apt.assignedTo) && apt.assignedTo.length > 0) {
+                // assignedTo is an array
+                employeesArray = apt.assignedTo.map((emp: { employeId: string; assignedTo: string }) => ({
+                    employeeId: emp.employeId,
+                    assignedTo: emp.assignedTo
+                }));
+            } else if (apt.employe && Array.isArray(apt.employe) && apt.employe.length > 0) {
+                // Fallback: check employe array (old format)
+                employeesArray = apt.employe.map((emp: { employeId: string; assignedTo: string }) => ({
+                    employeeId: emp.employeId,
+                    assignedTo: emp.assignedTo
+                }));
+            } else if (typeof apt.assignedTo === 'string' && apt.employeId) {
+                // Fallback: if assignedTo is a string (old format)
+                employeesArray = [{
+                    employeeId: apt.employeId,
+                    assignedTo: apt.assignedTo
+                }];
+            }
+
+            // Get the first employee name for mitarbeiter field (for backward compatibility)
+            const firstEmployeeName = employeesArray.length > 0 ? employeesArray[0].assignedTo : (typeof apt.assignedTo === 'string' ? apt.assignedTo : '');
+            const firstEmployeeId = employeesArray.length > 0 ? employeesArray[0].employeeId : apt.employeId;
+
             editForm.reset({
                 kunde: apt.customer_name,
                 uhrzeit: formattedTime,
                 selectedEventDate: date,
                 termin: apt.reason,
                 bemerk: apt.details,
-                mitarbeiter: apt.assignedTo,
+                mitarbeiter: firstEmployeeName,
                 isClientEvent: apt.isClient,
                 duration: apt.duration || 1,
                 customerId: apt.customerId,
-                employeeId: apt.employeId
+                employeeId: firstEmployeeId,
+                employees: employeesArray
             });
 
             setIsEditModalOpen(true);
         }
     };
 
-    const onUpdateSubmit = async (data: { selectedEventDate: Date | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
+    const onUpdateSubmit = async (data: AppointmentFormData) => {
         if (!selectedAppointment?.id) return;
 
         const success = await updateAppointmentById(selectedAppointment.id.toString(), data);
@@ -503,7 +548,11 @@ const WeeklyCalendar = () => {
                                                                         <h1 className="font-semibold">{event.title}</h1>
                                                                         {
                                                                             event.assignedTo && (
-                                                                                <div className="text-xs opacity-90 mb-1">Mitarbeiter: {event.assignedTo}</div>
+                                                                                <div className="text-xs opacity-90 mb-1">
+                                                                                    Mitarbeiter: {Array.isArray(event.assignedTo) 
+                                                                                        ? event.assignedTo.map(emp => emp.assignedTo).join(', ')
+                                                                                        : event.assignedTo}
+                                                                                </div>
                                                                             )
                                                                         }
                                                                         {

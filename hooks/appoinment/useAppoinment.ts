@@ -9,7 +9,10 @@ interface Event {
     title: string;
     subtitle: string;
     type: string;
-    assignedTo: string;
+    assignedTo: string | Array<{
+        employeId: string;
+        assignedTo: string;
+    }>;
     reason: string;
     details?: string;
     duration?: number;
@@ -27,7 +30,10 @@ interface AppointmentData {
     time: string;
     date: string;
     reason: string;
-    assignedTo: string;
+    assignedTo: string | Array<{
+        employeId: string;
+        assignedTo: string;
+    }>;
     details: string;
     isClient: boolean;
     duration?: number;
@@ -40,6 +46,11 @@ interface AppointmentData {
 
 
 
+interface Employee {
+    employeeId: string;
+    assignedTo: string;
+}
+
 interface SubmittedAppointmentData {
     kunde: string;
     uhrzeit: string;
@@ -51,13 +62,14 @@ interface SubmittedAppointmentData {
     duration: number;
     customerId?: string;
     employeeId?: string;
+    employees?: Employee[];
 }
 
 export const useAppoinment = () => {
     const [events, setEvents] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [refreshKey, setRefreshKey] = useState(0);
-    
+
     // Debug logging when events state changes
     // console.log('useAppoinment hook - events state changed:', events.length, 'events');
 
@@ -72,21 +84,31 @@ export const useAppoinment = () => {
             const appointments = response?.data || [];
 
             if (appointments.length > 0) {
-                const formattedEvents = appointments.map((apt: AppointmentData) => ({
-                    id: apt.id,
-                    date: new Date(apt.date).toISOString().split('T')[0],
-                    time: apt.time,
-                    title: apt.customer_name.toUpperCase(),
-                    subtitle: apt.details?.toUpperCase(),
-                    type: apt.isClient ? 'user' : 'others',
-                    assignedTo: apt.assignedTo || '',
-                    reason: apt.reason || '',
-                    details: apt.details || '',
-                    duration: apt.duration,
-                    customer_name: apt.customer_name,
-                    customerId: apt.customerId,
-                    user: apt.user
-                }));
+                const formattedEvents = appointments.map((apt: AppointmentData) => {
+                    // Handle assignedTo - can be string or array
+                    let assignedToValue: string | Array<{ employeId: string; assignedTo: string }> = '';
+                    if (Array.isArray(apt.assignedTo)) {
+                        assignedToValue = apt.assignedTo;
+                    } else if (typeof apt.assignedTo === 'string') {
+                        assignedToValue = apt.assignedTo;
+                    }
+
+                    return {
+                        id: apt.id,
+                        date: new Date(apt.date).toISOString().split('T')[0],
+                        time: apt.time,
+                        title: apt.customer_name.toUpperCase(),
+                        subtitle: apt.details?.toUpperCase(),
+                        type: apt.isClient ? 'user' : 'others',
+                        assignedTo: assignedToValue,
+                        reason: apt.reason || '',
+                        details: apt.details || '',
+                        duration: apt.duration,
+                        customer_name: apt.customer_name,
+                        customerId: apt.customerId,
+                        user: apt.user
+                    };
+                });
                 setEvents(formattedEvents);
                 // console.log('Events state updated with', formattedEvents.length, 'events');
             }
@@ -108,6 +130,13 @@ export const useAppoinment = () => {
                 return false;
             }
 
+            // Validate employees
+            if (!data.employees || data.employees.length === 0) {
+                toast.dismiss(loadingToastId);
+                toast.error('Please select at least one employee');
+                return false;
+            }
+
             // Use raw HH:MM time and plain date string (YYYY-MM-DD)
             const formattedTime = data.uhrzeit;
             const selectedDateStr = formatDate(new Date(data.selectedEventDate || new Date()));
@@ -117,7 +146,6 @@ export const useAppoinment = () => {
                 time: formattedTime,
                 date: selectedDateStr,
                 reason: data.termin,
-                assignedTo: data.mitarbeiter || '',
                 details: data.bemerk || '',
                 isClient: isCustomerAppointment,
                 duration: data.duration
@@ -127,8 +155,14 @@ export const useAppoinment = () => {
                 appointmentData.customerId = data.customerId;
             }
 
-            if (data.employeeId) {
-                appointmentData.employeId = data.employeeId;
+            // Add employees array as assignedTo
+            if (data.employees && data.employees.length > 0) {
+                appointmentData.assignedTo = data.employees.map(emp => ({
+                    employeId: emp.employeeId,
+                    assignedTo: emp.assignedTo
+                }));
+            } else {
+                appointmentData.assignedTo = [];
             }
 
             const response = await createAppoinment(appointmentData);
@@ -188,6 +222,12 @@ export const useAppoinment = () => {
     // Update appointment
     const updateAppointmentById = useCallback(async (appointmentId: string, data: SubmittedAppointmentData) => {
         try {
+            // Validate employees
+            if (!data.employees || data.employees.length === 0) {
+                toast.error('Please select at least one employee');
+                return false;
+            }
+
             // Use raw HH:MM time and plain date string (YYYY-MM-DD)
             const formattedTime = data.uhrzeit;
             const selectedDateStr = formatDate(new Date(data.selectedEventDate || new Date()));
@@ -198,7 +238,6 @@ export const useAppoinment = () => {
                 time: formattedTime,
                 date: selectedDateStr,
                 reason: data.termin,
-                assignedTo: data.mitarbeiter || '',
                 details: data.bemerk || '',
                 isClient: isCustomerAppointment,
                 duration: data.duration
@@ -208,8 +247,14 @@ export const useAppoinment = () => {
                 appointmentData.customerId = data.customerId;
             }
 
-            if (data.employeeId) {
-                appointmentData.employeId = data.employeeId;
+            // Add employees array as assignedTo
+            if (data.employees && data.employees.length > 0) {
+                appointmentData.assignedTo = data.employees.map(emp => ({
+                    employeId: emp.employeeId,
+                    assignedTo: emp.assignedTo
+                }));
+            } else {
+                appointmentData.assignedTo = [];
             }
 
             const response = await updateAppointment(appointmentId, appointmentData);
@@ -302,7 +347,7 @@ export const useAppoinment = () => {
         events,
         isLoading,
         refreshKey,
-        
+
         // Functions
         fetchAppointments,
         createNewAppointment,
@@ -310,7 +355,7 @@ export const useAppoinment = () => {
         getAppointmentById,
         updateAppointmentById,
         getEventsForDate,
-        
+
         // Helper functions
         formatDate,
         createDateTimeWithOffset

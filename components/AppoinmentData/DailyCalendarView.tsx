@@ -11,7 +11,10 @@ interface Event {
     title: string;
     subtitle: string;
     type: string;
-    assignedTo: string;
+    assignedTo: string | Array<{
+        employeId: string;
+        assignedTo: string;
+    }>;
     reason: string;
     details?: string;
     duration?: number;
@@ -300,8 +303,13 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                             // Get color based on colorMode
                             // If colorMode is 'assignedTo', use employee-based colors (old system)
                             // If colorMode is 'customer', use customer-based colors (new system)
+                            const assignedToForColor = Array.isArray(event.assignedTo) 
+                                ? event.assignedTo.length > 0 
+                                    ? event.assignedTo[0].assignedTo 
+                                    : ''
+                                : (typeof event.assignedTo === 'string' ? event.assignedTo : '');
                             const color = colorMode === 'assignedTo'
-                                ? getAssignedToColor(event.assignedTo, index)
+                                ? getAssignedToColor(assignedToForColor, index)
                                 : getCustomerColor(event.customerId, event.customer_name, index);
                             const topPercent = (event.startMinutes / (timeSlots.length * 60)) * 100;
                             const heightPercent = (event.durationMinutes / (timeSlots.length * 60)) * 100;
@@ -388,14 +396,47 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         </div>
                                     )} */}
 
-                                    {/* Customer Avatar */}
-                                    <div className="flex items-center gap-1 mt-auto">
-                                        <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                                            <span className="text-xs font-medium text-gray-700">
-                                                {event.assignedTo?.charAt(0).toUpperCase() || 'U'}
-                                            </span>
-
-                                        </div>
+                                    {/* employee avatar */}
+                                    <div className="flex items-center gap-1 mt-auto flex-wrap">
+                                        {Array.isArray(event.assignedTo) && event.assignedTo.length > 0 ? (
+                                            // Multiple employees (array format) - show all avatars
+                                            event.assignedTo.map((emp, empIndex) => (
+                                                <div 
+                                                    key={emp.employeId || empIndex}
+                                                    className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center"
+                                                    title={emp.assignedTo}
+                                                >
+                                                    <span className="text-xs font-medium text-gray-700">
+                                                        {emp.assignedTo?.charAt(0).toUpperCase() || 'U'}
+                                                    </span>
+                                                </div>
+                                            ))
+                                        ) : typeof event.assignedTo === 'string' && event.assignedTo.includes(',') ? (
+                                            // Multiple employees (comma-separated string format) - show all avatars
+                                            event.assignedTo.split(',').map((name, nameIndex) => {
+                                                const trimmedName = name.trim();
+                                                return trimmedName ? (
+                                                    <div 
+                                                        key={nameIndex}
+                                                        className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center"
+                                                        title={trimmedName}
+                                                    >
+                                                        <span className="text-xs font-medium text-gray-700">
+                                                            {trimmedName.charAt(0).toUpperCase() || 'U'}
+                                                        </span>
+                                                    </div>
+                                                ) : null;
+                                            })
+                                        ) : (
+                                            // Single employee (string format) or no employee
+                                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center">
+                                                <span className="text-xs font-medium text-gray-700">
+                                                    {typeof event.assignedTo === 'string' 
+                                                        ? event.assignedTo?.charAt(0).toUpperCase() || 'U'
+                                                        : 'U'}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             );
