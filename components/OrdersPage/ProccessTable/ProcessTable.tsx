@@ -373,16 +373,18 @@ export default function ProcessTable() {
                         <TableHead className="w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words text-xs sm:text-sm text-center">Kundenname</TableHead>
                         <TableHead className="w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words text-xs sm:text-sm text-center">Status</TableHead>
                         <TableHead className="w-[100px] min-w-[100px] max-w-[100px] whitespace-normal break-words text-xs sm:text-sm text-center">Preis</TableHead>
-                        <TableHead className="w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words text-xs sm:text-sm hidden md:table-cell text-center">Zahlung</TableHead>
-                        <TableHead className="w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words text-xs sm:text-sm hidden lg:table-cell text-center">Beschreibung</TableHead>
-                        <TableHead className="w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words text-xs sm:text-sm hidden xl:table-cell text-center">Abholort / Versand</TableHead>
+                        <TableHead className="w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words text-xs sm:text-sm hidden md:table-cell text-center">Zahlung</TableHead>
+                        <TableHead className="w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words text-xs sm:text-sm hidden lg:table-cell text-center">Erstellt am</TableHead>
+                        <TableHead className="w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words text-xs sm:text-sm hidden lg:table-cell text-center">Fertiggestellt am</TableHead>
+                        <TableHead className="w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words text-xs sm:text-sm hidden xl:table-cell text-center">Beschreibung</TableHead>
+                        {/* <TableHead className="w-[200px] min-w-[200px] max-w-[200px] whitespace-normal break-words text-xs sm:text-sm hidden xl:table-cell text-center">Abholort / Versand</TableHead> */}
                         <TableHead className="w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words text-xs sm:text-sm text-center">Status Update</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {loading ? (
                         <TableRow>
-                            <TableCell colSpan={9} className="text-center py-20">
+                            <TableCell colSpan={11} className="text-center py-20">
                                 <div className="flex flex-col items-center justify-center">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                                     <p className="text-gray-600">Loading orders...</p>
@@ -391,7 +393,7 @@ export default function ProcessTable() {
                         </TableRow>
                     ) : memoizedOrders.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={9} className="text-center py-20">
+                            <TableCell colSpan={11} className="text-center py-20">
                                 <div className="flex flex-col items-center justify-center">
                                     <p className="text-gray-600 mb-4 text-lg">No orders found</p>
                                     <Button onClick={refetch} variant="outline">
@@ -484,9 +486,11 @@ export default function ProcessTable() {
                                     </span>
                                 </TableCell>
                                 <TableCell className="text-center text-xs sm:text-sm w-[100px] min-w-[100px] max-w-[100px] whitespace-normal break-words overflow-hidden">{row.preis}</TableCell>
-                                <TableCell className="text-center text-xs sm:text-sm w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words overflow-hidden hidden md:table-cell">{row.zahlung}</TableCell>
-                                <TableCell className="text-center text-xs sm:text-sm w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words overflow-hidden hidden lg:table-cell">{row.beschreibung}</TableCell>
-                                <TableCell className="text-center text-xs sm:text-sm w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words overflow-hidden hidden xl:table-cell">{row.abholort}</TableCell>
+                                <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden hidden md:table-cell">{row.zahlung}</TableCell>
+                                <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden hidden lg:table-cell">{row.erstelltAm}</TableCell>
+                                <TableCell className="text-center text-xs sm:text-sm w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words overflow-hidden hidden lg:table-cell">{row.fertiggestelltAm}</TableCell>
+                                <TableCell className="text-center text-xs sm:text-sm w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words overflow-hidden hidden xl:table-cell">{row.beschreibung}</TableCell>
+                                {/* <TableCell className="text-center text-xs sm:text-sm w-[200px] min-w-[200px] max-w-[200px] whitespace-normal break-words overflow-hidden hidden xl:table-cell">{row.abholort}</TableCell> */}
                                 <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">{row.fertigstellung}</TableCell>
                             </TableRow>
                         ))

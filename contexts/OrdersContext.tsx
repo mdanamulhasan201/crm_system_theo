@@ -16,6 +16,8 @@ export interface OrderData {
     beschreibung: string;
     abholort: string;
     fertigstellung: string;
+    erstelltAm: string;
+    fertiggestelltAm: string;
     productName: string;
     deliveryDate: string;
     invoice: string | null;
@@ -120,6 +122,13 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
     const currentStep = statusToStepMap[apiOrder.orderStatus] || 0;
     const germanStatus = apiStatusToGermanStatus[apiOrder.orderStatus] || apiOrder.orderStatus;
     const isPrioritized = shouldBePrioritized(apiOrder.orderStatus);
+    const formatDate = (dateString?: string | null) => {
+        if (!dateString) return '—';
+        const date = new Date(dateString);
+        return Number.isNaN(date.getTime()) ? '—' : date.toLocaleDateString('de-DE');
+    };
+
+    const werkstattzettel = apiOrder.werkstattzettel;
 
     return {
         id: apiOrder.id,
@@ -128,10 +137,12 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         status: apiOrder.orderStatus,
         displayStatus: germanStatus,
         preis: `${(apiOrder.fußanalyse + apiOrder.einlagenversorgung).toFixed(2)} €`,
-        zahlung: "Offen",
-        beschreibung: apiOrder.product.versorgung || apiOrder.product.status,
+        zahlung: werkstattzettel?.bezahlt ? 'Bezahlt' : 'Offen',
+        beschreibung: werkstattzettel?.versorgung || apiOrder.product.versorgung || apiOrder.product.status,
         abholort: "Abholung Innsbruck oder Wird mit Post versandt",
         fertigstellung: new Date(apiOrder.statusUpdate || apiOrder.createdAt).toLocaleDateString('de-DE'),
+        erstelltAm: formatDate(werkstattzettel?.auftragsDatum || apiOrder.createdAt),
+        fertiggestelltAm: formatDate(werkstattzettel?.fertigstellungBis || apiOrder.statusUpdate || apiOrder.updatedAt),
         productName: apiOrder.product.status || apiOrder.product.name,
         deliveryDate: new Date(apiOrder.updatedAt).toLocaleDateString('de-DE'),
         invoice: apiOrder.invoice, // Include invoice URL

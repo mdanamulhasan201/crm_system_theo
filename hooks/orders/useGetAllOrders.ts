@@ -5,6 +5,7 @@ export interface ApiOrderData {
     id: string;
     fußanalyse: number;
     einlagenversorgung: number;
+    totalPrice?: number;
     orderStatus: string;
     statusUpdate: string;
     invoice: string | null;
@@ -32,6 +33,13 @@ export interface ApiOrderData {
         createdAt: string;
         updatedAt: string;
     };
+    werkstattzettel?: {
+        id: string;
+        auftragsDatum: string | null;
+        fertigstellungBis: string | null;
+        versorgung: string | null;
+        bezahlt: boolean | null;
+    } | null;
 }
 
 export interface PaginationData {
