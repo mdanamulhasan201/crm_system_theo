@@ -202,3 +202,78 @@ export const updateCustomerNote = async (id: string, note: string, category: str
     }
 }
 
+
+export interface FilterCustomersParams {
+    page?: number;
+    limit?: number;
+    year?: string;
+    month?: string;
+    selectedMonth?: string;
+    today?: boolean;
+    yesterday?: boolean;
+    thisWeek?: boolean;
+    lastWeek?: boolean;
+    thisYear?: boolean;
+    thisMonth?: boolean;
+    completedOrders?: boolean;
+    noOrder?: boolean;
+}
+
+// filter customers /customers/filter-customers?year=&month=?today=?yesterday=?thisWeek=?lastWeek=?year=?thisMonth=?month=?completedOrders=?noOrder=?
+export const filterCustomers = async (params: FilterCustomersParams = {}) => {
+    try {
+        const {
+            page,
+            limit,
+            year,
+            month,
+            selectedMonth,
+            today,
+            yesterday,
+            thisWeek,
+            lastWeek,
+            thisYear,
+            thisMonth,
+            completedOrders,
+            noOrder
+        } = params;
+
+        const query = new URLSearchParams();
+
+        const appendString = (key: string, value?: string | number) => {
+            if (value !== undefined && value !== null && value !== '' && value !== 'all') {
+                query.append(key, String(value));
+            }
+        };
+
+        const appendBoolean = (key: string, value?: boolean) => {
+            if (typeof value === 'boolean') {
+                query.append(key, String(value));
+            }
+        };
+
+        appendString('page', page);
+        appendString('limit', limit);
+        appendString('year', year);
+        appendString('month', month);
+        appendString('selectedMonth', selectedMonth);
+
+        appendBoolean('today', today);
+        appendBoolean('yesterday', yesterday);
+        appendBoolean('thisWeek', thisWeek);
+        appendBoolean('lastWeek', lastWeek);
+        appendBoolean('thisYear', thisYear);
+        appendBoolean('thisMonth', thisMonth);
+        appendBoolean('completedOrders', completedOrders);
+        appendBoolean('noOrder', noOrder);
+
+        const queryString = query.toString();
+        const url = `/customers/filter-customers${queryString ? `?${queryString}` : ''}`;
+
+        const response = await axiosClient.get(url);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
