@@ -149,13 +149,15 @@ const formatDate = (dateString: string): string => {
 // Get file title from URL
 const getFileTitle = (url: string, fieldName: string, table: string): string => {
     const fileName = url.split('/').pop() || url
-    // Remove UUID prefix if present
-    const cleanName = fileName.replace(/^[a-f0-9-]+-/, '')
+    // Extract only the last part after the last dash
+    const lastPart = fileName.includes('-') 
+        ? fileName.substring(fileName.lastIndexOf('-') + 1)
+        : fileName
     // If still too long, truncate
-    if (cleanName.length > 30) {
-        return cleanName.substring(0, 27) + '...'
+    if (lastPart.length > 30) {
+        return lastPart.substring(0, 27) + '...'
     }
-    return cleanName || `${fieldName}_${table}`
+    return lastPart || `${fieldName}_${table}`
 }
 
 export default function KundenordnerPage() {
