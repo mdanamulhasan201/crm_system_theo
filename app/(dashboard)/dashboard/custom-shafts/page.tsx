@@ -11,11 +11,11 @@ import useDebounce from '@/hooks/useDebounce';
 import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
 
 const categories = [
-    { label: 'Alle Kategorien', value: 'Alle Kategorien' },
-    { label: 'Elegante Schuhe / Business-Schuhe', value: 'Elegante Schuhe / Business-Schuhe' },
-    { label: 'Laufschuhe', value: 'Laufschuhe' },
-    { label: 'Freizeitschuhe', value: 'Freizeitschuhe' },
+    { label: 'Alle Kategorien', value: 'alle' },
     { label: 'Sportschuhe', value: 'Sportschuhe' },
+    { label: 'Freizeitschuhe', value: 'Freizeitschuhe' },
+    { label: 'Laufschuhe', value: 'Laufschuhe' },
+    { label: 'Elegante Schuhe / Business-Schuhe', value: 'Elegante Schuhe / Business-Schuhe' },
 ];
 
 export default function CustomShafts() {
@@ -33,29 +33,41 @@ export default function CustomShafts() {
     // Debounce search query to reduce API calls
     const debouncedSearchQuery = useDebounce(searchQuery, 500);
 
-    // Fetch data from API
-    const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery, gender);
+    // Convert 'alle' to empty string for API (all categories)
+    const apiCategory = category === 'alle' ? '' : category;
 
-    // Track previous filtered data length to detect when new items are added
+    // Fetch data from API
+    const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery, gender, apiCategory);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (categoryOpen && !target.closest('.category-dropdown')) {
+                setCategoryOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [categoryOpen]);
+
     const prevFilteredLengthRef = React.useRef(0);
 
-    // Accumulate fetched items when new data arrives
     useEffect(() => {
         if (apiData?.data && apiData.data.length > 0) {
             setAllFetchedItems(prev => {
-                // If it's a new search/filter, reset the accumulated items
                 if (currentPage === 1) {
                     return apiData.data;
                 }
-                // Otherwise, append new items (avoid duplicates)
+
                 const existingIds = new Set(prev.map(item => item.id));
                 const newItems = apiData.data.filter(item => !existingIds.has(item.id));
                 return [...prev, ...newItems];
             });
         }
     }, [apiData?.data, currentPage]);
-
-    // Reset accumulated items and displayed count when filters change
     useEffect(() => {
         setAllFetchedItems([]);
         setDisplayedCount(8);
@@ -64,24 +76,10 @@ export default function CustomShafts() {
         prevFilteredLengthRef.current = 0;
     }, [gender, category, debouncedSearchQuery]);
 
-    // Get unique categories from all fetched data
     const availableCategories = useMemo(() => {
-        if (allFetchedItems.length === 0) return categories;
+        return categories;
+    }, []);
 
-        const uniqueCategories = Array.from(
-            new Set(
-                allFetchedItems
-                    .map(item => item.catagoary?.trim())
-                    .filter((v): v is string => Boolean(v))
-            )
-        );
-        return [
-            { label: 'Alle Kategorien', value: 'alle' },
-            ...uniqueCategories.map(cat => ({ label: cat, value: cat }))
-        ];
-    }, [allFetchedItems]);
-
-    // Filter data based on gender and category
     const filteredData = useMemo(() => {
         if (allFetchedItems.length === 0) return [];
 
@@ -98,7 +96,6 @@ export default function CustomShafts() {
         });
     }, [allFetchedItems, gender, category]);
 
-    // Automatically increase displayedCount when new filtered data arrives from API
     useEffect(() => {
         if (isFetchingNewPage && filteredData.length > prevFilteredLengthRef.current && currentPage > 1) {
             // New items were added to filteredData from API, automatically show 8 more
@@ -178,21 +175,25 @@ export default function CustomShafts() {
                         </Button>
                     </div>
                     {/* Category Dropdown as text with chevron */}
-                    <div className="relative mt-1">
+                    <div className="relative mt-1 category-dropdown">
                         <button
                             className="flex cursor-pointer items-center text-base md:text-sm font-normal text-black bg-transparent px-0 py-1 focus:outline-none"
                             onClick={() => setCategoryOpen((v) => !v)}
                             type="button"
                         >
                             {availableCategories.find((c) => c.value === category)?.label || 'Alle Kategorien'}
-                            <ChevronDown className="ml-1 w-5 h-5" />
+                            <ChevronDown className={`ml-1 w-5 h-5 transition-transform ${categoryOpen ? 'rotate-180' : ''}`} />
                         </button>
                         {categoryOpen && (
-                            <div className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded shadow-lg">
+                            <div className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-y-auto">
                                 {availableCategories.map((cat) => (
                                     <div
                                         key={cat.value}
-                                        className={`px-4 py-2 cursor-pointer hover:bg-gray-100 text-sm ${category === cat.value ? 'font-semibold' : ''}`}
+                                        className={`px-4 py-2 cursor-pointer text-sm transition-colors ${
+                                            category === cat.value 
+                                                ? 'bg-black text-white font-semibold hover:bg-gray-800' 
+                                                : 'text-black hover:bg-gray-100'
+                                        }`}
                                         onClick={() => {
                                             setCategory(cat.value);
                                             setCategoryOpen(false);

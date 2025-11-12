@@ -28,7 +28,7 @@ export interface CustomShaftsResponse {
   };
 }
 
-export const useCustomShafts = (page: number, limit: number, search: string, gender: 'Herren' | 'Damen') => {
+export const useCustomShafts = (page: number, limit: number, search: string, gender: 'Herren' | 'Damen', category: string) => {
   const [data, setData] = useState<CustomShaftsResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,7 +38,7 @@ export const useCustomShafts = (page: number, limit: number, search: string, gen
       setLoading(true);
       setError(null);
       try {
-        const response = await getAllCustomShafts(page, limit, search, gender);
+        const response = await getAllCustomShafts(page, limit, search, gender, category);
         setData(response);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
@@ -48,7 +48,7 @@ export const useCustomShafts = (page: number, limit: number, search: string, gen
     };
 
     fetchData();
-  }, [page, limit, search, gender]);
+  }, [page, limit, search, gender, category]);
 
   return { data, loading, error };
 };
