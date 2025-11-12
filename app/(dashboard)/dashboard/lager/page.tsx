@@ -398,9 +398,14 @@ export default function Lager() {
             />
 
             {/* Chart */}
-            <LagerChart />
-
-            <PerformerData />
+            <div className='flex flex-col xl:flex-row gap-4 lg:gap-6 items-stretch lg:items-start justify-center mt-14'>
+                <div className='w-full lg:flex-1'>
+                    <LagerChart />
+                </div>
+                <div className='w-full lg:flex-1'>
+                    <PerformerData />
+                </div>
+            </div>
         </div>
     )
 }

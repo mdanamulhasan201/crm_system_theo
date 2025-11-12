@@ -41,9 +41,9 @@ export default function PerformerData() {
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
-                <div className="bg-white p-3 border border-gray-200 shadow-lg rounded-lg">
-                    <p className="font-semibold text-gray-800">{`${label}`}</p>
-                    <p className="text-sm text-gray-600">
+                <div className="bg-white p-2 sm:p-3 border border-gray-200 shadow-lg rounded-lg">
+                    <p className="font-semibold text-xs sm:text-sm text-gray-800">{`${label}`}</p>
+                    <p className="text-xs sm:text-sm text-gray-600">
                         Verkäufe: <span className="font-medium">{payload[0].value}</span>
                     </p>
                 </div>
@@ -53,13 +53,13 @@ export default function PerformerData() {
     }
 
     return (
-        <div className="mt-5">
+        <div className="mt-5 w-full">
 
             {/* Tabs */}
-            <div className="flex mb-6">
+            <div className="flex mb-4 sm:mb-6">
                 <button
                     onClick={() => setActiveTab('top')}
-                    className={`px-4 py-2 rounded-l-lg cursor-pointer font-medium text-sm  transition-colors ${activeTab === 'top'
+                    className={`px-3 sm:px-4 py-2 rounded-l-lg cursor-pointer font-medium text-xs sm:text-sm transition-colors ${activeTab === 'top'
                         ? 'bg-gray-800 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
@@ -68,7 +68,7 @@ export default function PerformerData() {
                 </button>
                 <button
                     onClick={() => setActiveTab('low')}
-                    className={`px-4 py-2 rounded-r-lg cursor-pointer font-medium text-sm  transition-colors ${activeTab === 'low'
+                    className={`px-3 sm:px-4 py-2 rounded-r-lg cursor-pointer font-medium text-xs sm:text-sm transition-colors ${activeTab === 'low'
                         ? 'bg-gray-800 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         }`}
@@ -78,19 +78,23 @@ export default function PerformerData() {
             </div>
 
             {/* Chart and Table */}
-            {/* On laptop widths allow horizontal scrolling */}
-            <div className="md:overflow-x-auto">
-                <div className="rounded-lg border border-gray-200 p-4">
-                    <h1 className='text-lg md:text-xl font-semibold text-gray-800 mb-4 md:mb-6'>Top-Performer Modelle/Aufträge</h1>
-                    <div className='flex flex-col md:flex-row gap-6 md:gap-8 md:min-w-[900px] '>
+            <div className="w-full overflow-x-auto -mx-2 sm:mx-0">
+                <div className="rounded-lg border border-gray-200 p-2 sm:p-4 min-w-[280px]">
+                    <h1 className='text-base sm:text-lg md:text-xl font-semibold text-gray-800 mb-3 sm:mb-4 md:mb-6'>Top-Performer Modelle/Aufträge</h1>
+                    <div className='flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8'>
                         {/* Chart */}
-                        <div className="flex-1 ">
-                            <div className="h-[240px] md:h-[300px]">
+                        <div className="flex-1 w-full min-w-0">
+                            <div className="h-[200px] sm:h-[240px] md:h-[280px] lg:h-[300px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart
                                         data={currentData}
                                         layout="vertical"
-                                        margin={{ top: 10, right: isSmall ? 10 : 30, left: isSmall ? 0 : 0, bottom: 10 }}
+                                        margin={{ 
+                                            top: 10, 
+                                            right: isSmall ? 5 : (windowWidth < 1024 ? 15 : 30), 
+                                            left: isSmall ? 0 : 0, 
+                                            bottom: 10 
+                                        }}
                                     >
                                         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
                                         <XAxis
@@ -98,22 +102,22 @@ export default function PerformerData() {
                                             domain={[0, 250]}
                                             axisLine={false}
                                             tickLine={false}
-                                            tick={{ fontSize: isSmall ? 11 : 12, fill: '#666' }}
+                                            tick={{ fontSize: isSmall ? 10 : (windowWidth < 1024 ? 11 : 12), fill: '#666' }}
                                         />
                                         <YAxis
                                             type="category"
                                             dataKey="model"
                                             axisLine={false}
                                             tickLine={false}
-                                            tick={{ fontSize: isSmall ? 11 : 12, fill: '#666' }}
-                                            width={isSmall ? 65 : 80}
+                                            tick={{ fontSize: isSmall ? 10 : (windowWidth < 1024 ? 11 : 12), fill: '#666' }}
+                                            width={isSmall ? 60 : (windowWidth < 1024 ? 70 : 80)}
                                         />
                                         <Tooltip content={<CustomTooltip />} />
                                         <Bar
                                             dataKey="verkaufe"
                                             fill="#10B981"
                                             radius={[0, 4, 4, 0]}
-                                            barSize={isSmall ? 12 : (windowWidth > 1024 ? 14 : 16)}
+                                            barSize={isSmall ? 10 : (windowWidth < 640 ? 12 : (windowWidth < 1024 ? 14 : 16))}
                                             name="Verkäufe"
                                         />
                                     </BarChart>
@@ -122,18 +126,18 @@ export default function PerformerData() {
                         </div>
 
                         {/* Table */}
-                        <div className="w-full md:w-4/12 h-[240px] md:h-[300px]">
-                            <div className="bg-gray-50 rounded-lg p-3 md:p-4 h-full flex flex-col">
-                                <div className="grid grid-cols-2 gap-3 md:gap-4 mb-2 md:mb-3">
-                                    <div className="text-xs md:text-sm font-medium text-gray-700 text-center">Verkäufe</div>
-                                    <div className="text-xs md:text-sm font-medium text-gray-700 text-center">
+                        <div className="w-full lg:w-4/12 h-auto lg:h-[300px]">
+                            <div className="bg-gray-50 rounded-lg p-2 sm:p-3 md:p-4 h-full flex flex-col min-h-[200px] lg:min-h-0">
+                                <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
+                                    <div className="text-xs sm:text-sm font-medium text-gray-700 text-center">Verkäufe</div>
+                                    <div className="text-xs sm:text-sm font-medium text-gray-700 text-center">
                                         Umsatzanteil
                                     </div>
                                 </div>
 
-                                <div className="flex-1 flex flex-col justify-between">
+                                <div className="flex-1 flex flex-col justify-between gap-2 sm:gap-0">
                                     {currentData.map((item, index) => (
-                                        <div key={index} className="grid grid-cols-2 gap-3 md:gap-4 text-xs md:text-sm">
+                                        <div key={index} className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm">
                                             <div className="text-center font-medium text-gray-800">
                                                 {item.verkaufe}
                                             </div>
