@@ -440,26 +440,65 @@ const WeeklyCalendar = () => {
                                                                 <div className="flex justify-between items-start">
                                                                     <div className="flex-1">
                                                                         {event.time && (
-                                                                            <div className="text-xs opacity-90 mb-1">{(() => {
-                                                                                const t = event.time.trim().toLowerCase();
-                                                                                const ampm = /^(\d{1,2}):(\d{2})\s*(am|pm)$/;
-                                                                                const m = t.match(ampm);
-                                                                                if (m) {
-                                                                                    let h = parseInt(m[1], 10);
-                                                                                    const min = m[2];
-                                                                                    const mod = m[3];
-                                                                                    if (mod === 'pm' && h !== 12) h += 12;
-                                                                                    if (mod === 'am' && h === 12) h = 0;
-                                                                                    return `${String(h).padStart(2, '0')}:${min}`;
-                                                                                }
-                                                                                const is24 = /^\d{1,2}:\d{2}$/.test(t);
-                                                                                if (is24) return t.length === 4 ? `0${t}` : t;
-                                                                                const d = new Date(`2000-01-01T${t}`);
-                                                                                if (!isNaN(d.getTime())) {
-                                                                                    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-                                                                                }
-                                                                                return t;
-                                                                            })()}</div>
+                                                                            <div className="text-xs opacity-90 mb-1">
+                                                                                {(() => {
+                                                                                    const t = event.time.trim().toLowerCase();
+                                                                                    const ampm = /^(\d{1,2}):(\d{2})\s*(am|pm)$/;
+                                                                                    const m = t.match(ampm);
+                                                                                    if (m) {
+                                                                                        let h = parseInt(m[1], 10);
+                                                                                        const min = m[2];
+                                                                                        const mod = m[3];
+                                                                                        if (mod === 'pm' && h !== 12) h += 12;
+                                                                                        if (mod === 'am' && h === 12) h = 0;
+                                                                                        return `${String(h).padStart(2, '0')}:${min}`;
+                                                                                    }
+                                                                                    const is24 = /^\d{1,2}:\d{2}$/.test(t);
+                                                                                    if (is24) return t.length === 4 ? `0${t}` : t;
+                                                                                    const d = new Date(`2000-01-01T${t}`);
+                                                                                    if (!isNaN(d.getTime())) {
+                                                                                        return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                                                                                    }
+                                                                                    return t;
+                                                                                })()} - {(() => {
+                                                                                    // Calculate end time from start time + duration
+                                                                                    const t = event.time.trim().toLowerCase();
+                                                                                    const ampm = /^(\d{1,2}):(\d{2})\s*(am|pm)$/;
+                                                                                    const m = t.match(ampm);
+                                                                                    let startHour = 0;
+                                                                                    let startMin = 0;
+
+                                                                                    if (m) {
+                                                                                        startHour = parseInt(m[1], 10);
+                                                                                        startMin = parseInt(m[2], 10);
+                                                                                        const mod = m[3];
+                                                                                        if (mod === 'pm' && startHour !== 12) startHour += 12;
+                                                                                        if (mod === 'am' && startHour === 12) startHour = 0;
+                                                                                    } else {
+                                                                                        const is24 = /^\d{1,2}:\d{2}$/.test(t);
+                                                                                        if (is24) {
+                                                                                            const parts = t.split(':');
+                                                                                            startHour = parseInt(parts[0], 10);
+                                                                                            startMin = parseInt(parts[1], 10);
+                                                                                        } else {
+                                                                                            const d = new Date(`2000-01-01T${t}`);
+                                                                                            if (!isNaN(d.getTime())) {
+                                                                                                startHour = d.getHours();
+                                                                                                startMin = d.getMinutes();
+                                                                                            }
+                                                                                        }
+                                                                                    }
+
+                                                                                    // Calculate end time: duration is in hours, convert to minutes
+                                                                                    const duration = event.duration || 1;
+                                                                                    const durationMinutes = Math.round(duration * 60);
+                                                                                    const totalMinutes = startHour * 60 + startMin + durationMinutes;
+                                                                                    const endHour = Math.floor(totalMinutes / 60) % 24;
+                                                                                    const endMin = totalMinutes % 60;
+
+                                                                                    return `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+                                                                                })()}
+                                                                            </div>
                                                                         )}
                                                                         <h1 className="font-semibold">{event.title}</h1>
                                                                         {
