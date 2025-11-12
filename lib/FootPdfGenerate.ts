@@ -34,99 +34,150 @@ async function generateCombinedFeetPdf(params: {
     const pageHeight = 297;
     const margin = 10;
 
-    // Helper function to add header to a page
-    const addHeaderToPage = async (footLabel: string): Promise<number> => {
-        let currentY = margin;
-        const headerHeight = 24;
+    const addHeaderOverlay = async (footLabel: string): Promise<void> => {
+        const logoX = margin;
+        const logoY = margin;
+        const textX = margin;
+        const textY = margin + 8;
         let drewLogo = false;
 
-        // Header section
         if (header.logoUrl) {
             try {
                 const logoDataUrl = await fetchImageAsDataUrl(header.logoUrl);
-                const logoWidth = 24;
-                const logoHeight = 24;
-                pdf.addImage(logoDataUrl, 'JPEG', margin, currentY, logoWidth, logoHeight);
+                const logoWidth = 18;
+                const logoHeight = 18;
+                pdf.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight);
                 drewLogo = true;
             } catch (_) {
                 // ignore
             }
         }
 
-        // Header text
-        const textX = margin + 30;
         pdf.setTextColor(0, 0, 0);
-        const nameParts = [header.partnerName || '', header.customerFullName, footLabel].filter(Boolean);
+        const nameParts = [header.customerFullName, footLabel].filter(Boolean);
         let line1 = nameParts.join('   |   ');
-        const availableLineWidth = (pageWidth - margin) - textX;
-        let fontSize = 13;
+
+        const adjustedTextX = drewLogo ? textX + 22 : textX;
+
+        let fontSize = 11;
         pdf.setFontSize(fontSize);
         let textWidth = pdf.getTextWidth(line1);
-        while (textWidth > availableLineWidth && fontSize > 9) {
+        const maxWidth = pageWidth - adjustedTextX - margin;
+        while (textWidth > maxWidth && fontSize > 8) {
             fontSize -= 0.5;
             pdf.setFontSize(fontSize);
             textWidth = pdf.getTextWidth(line1);
         }
 
         const kdnrText = header.customerNumber !== undefined && header.customerNumber !== null ? `Kdnr: ${header.customerNumber}` : '';
-        const dobText = header.dateOfBirthText ? `Geb.: ${header.dateOfBirthText}` : '';
-        const lines: string[] = [line1];
-        if (kdnrText) lines.push(kdnrText);
-        if (dobText) lines.push(dobText);
 
-        const lineGap = 7;
-        const blockHeight = (lines.length - 1) * lineGap;
-        const startY = (drewLogo ? (currentY + headerHeight / 2 - blockHeight / 2) : currentY + 10);
-        let yCursor = startY;
+        const lineGap = 6;
+        let yCursor = textY;
+
         pdf.setFontSize(fontSize);
-        pdf.text(line1, textX, yCursor);
+        pdf.text(line1, adjustedTextX, yCursor);
         yCursor += lineGap;
-        pdf.setFontSize(12);
-        if (kdnrText) {
-            pdf.text(kdnrText, textX, yCursor);
-            yCursor += lineGap;
-        }
-        if (dobText) {
-            pdf.text(dobText, textX, yCursor);
-        }
 
-        return currentY + headerHeight + 12;
+        if (kdnrText) {
+            pdf.setFontSize(10);
+            pdf.text(kdnrText, adjustedTextX, yCursor);
+        }
     };
 
-
-    const addFootImage = async (imageUrl: string, currentY: number, footSide: 'L' | 'R'): Promise<void> => {
-        const imageWidth = (pageWidth - margin * 2) * 0.75;
-        const imageX = (pageWidth - imageWidth) / 2;
-        const availableHeight = pageHeight - currentY - margin - 40;
-        const maxImageHeight = Math.min(availableHeight, 280);
-        const imageDataUrl = await fetchImageAsDataUrl(imageUrl);
-        pdf.addImage(imageDataUrl, 'PNG', imageX, currentY, imageWidth, maxImageHeight, undefined, 'SLOW');
-        const calculationY = currentY + maxImageHeight + 10;
+    const addFooterOverlay = (footSide: 'L' | 'R'): void => {
         const footLength = footSide === 'L' ? leftFootLength : rightFootLength;
+        const footerY = pageHeight - margin - 5;
 
         if (footLength && footLength > 0) {
             const pelottenposition = (footLength + 5) * 0.66;
-
-            pdf.setFontSize(12);
+            pdf.setFontSize(10);
             pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(0, 0, 0);
             pdf.text(`Pelottenposition ${footSide} = ${pelottenposition.toFixed(1)}mm`,
-                pageWidth / 2, calculationY, { align: 'center' });
+                margin, footerY, { align: 'left' });
         } else {
-            pdf.setFontSize(12);
+            pdf.setFontSize(10);
             pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(0, 0, 0);
             pdf.text(`Pelottenposition ${footSide} = Fusslänge data not available`,
-                pageWidth / 2, calculationY, { align: 'center' });
+                margin, footerY, { align: 'left' });
         }
     };
 
+    const addFootImage = async (imageUrl: string, footSide: 'L' | 'R'): Promise<void> => {
+        const imageStartY = 0;
+        const imageEndY = pageHeight;
+        const availableHeight = imageEndY - imageStartY;
+        const widthMargin = 5;
+        const availableWidth = pageWidth - (widthMargin * 2);
+
+        const imageDataUrl = await fetchImageAsDataUrl(imageUrl);
+
+        const img = new Image();
+        await new Promise<void>((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = reject;
+            img.src = imageDataUrl;
+        });
+
+        const imageAspectRatio = img.width / img.height;
+
+        let imageWidth: number;
+        let imageHeight: number;
+        let imageX: number;
+        let imageY: number = imageStartY;
+
+        imageHeight = availableHeight;
+        imageWidth = availableHeight * imageAspectRatio;
+
+        if (imageWidth < availableWidth) {
+            const scaleFactor = Math.min(1.15, availableWidth / imageWidth);
+            imageWidth = imageWidth * scaleFactor;
+            imageHeight = imageWidth / imageAspectRatio;
+
+            if (imageHeight > availableHeight) {
+                imageHeight = availableHeight;
+                imageWidth = availableHeight * imageAspectRatio;
+            }
+
+
+            imageX = (pageWidth - imageWidth) / 2;
+            imageY = imageStartY;
+        } else {
+            imageWidth = availableWidth;
+            imageHeight = availableWidth / imageAspectRatio;
+
+            if (imageHeight < availableHeight) {
+                imageY = (availableHeight - imageHeight) / 2;
+            } else {
+                imageY = imageStartY;
+            }
+
+            imageX = widthMargin;
+        }
+
+        pdf.addImage(
+            imageDataUrl,
+            'PNG',
+            imageX,
+            imageY,
+            imageWidth,
+            imageHeight,
+            undefined,
+            'SLOW'
+        );
+    };
+
     // Page 1: Right Foot
-    const rightFootY = await addHeaderToPage('Right Foot');
-    await addFootImage(rightImageUrl, rightFootY, 'R');
+    await addFootImage(rightImageUrl, 'R');
+    await addHeaderOverlay('Right Foot');
+    addFooterOverlay('R');
 
     // Page 2: Left Foot
     pdf.addPage();
-    const leftFootY = await addHeaderToPage('Left Foot');
-    await addFootImage(leftImageUrl, leftFootY, 'L');
+    await addFootImage(leftImageUrl, 'L');
+    await addHeaderOverlay('Left Foot');
+    addFooterOverlay('L');
 
     return pdf.output('blob');
 }
