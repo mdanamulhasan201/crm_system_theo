@@ -7,10 +7,12 @@ import NotificationPage from './Notification';
 
 interface NavbarProps {
     onMenuClick: () => void;
+    onCollapseToggle: () => void;
     isSidebarOpen: boolean;
+    isSidebarCollapsed: boolean;
 }
 
-export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
+export default function Navbar({ onMenuClick, onCollapseToggle, isSidebarOpen, isSidebarCollapsed }: NavbarProps) {
     const [isSearchVisible, setIsSearchVisible] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
 
@@ -30,16 +32,28 @@ export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
     return (
         <nav className="bg-white border-b border-gray-200">
             <div className="px-4 py-3 md:py-4 flex items-center justify-between relative">
-                <button
-                    onClick={onMenuClick}
-                    className="text-gray-600 cursor-pointer hover:text-gray-800 transition-all duration-300"
-                >
-                    {isSidebarOpen ? (
-                        <HiArrowLeft className="text-2xl hidden md:block" />
-                    ) : (
-                        <HiMenuAlt2 className="text-2xl" />
-                    )}
-                </button>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={onMenuClick}
+                        className="text-gray-600 cursor-pointer hover:text-gray-800 transition-all duration-300 md:hidden"
+                    >
+                        {isSidebarOpen ? (
+                            <HiArrowLeft className="text-2xl" />
+                        ) : (
+                            <HiMenuAlt2 className="text-2xl" />
+                        )}
+                    </button>
+                    <button
+                        onClick={onCollapseToggle}
+                        className="hidden md:flex text-gray-600 cursor-pointer hover:text-gray-800 transition-all duration-300"
+                        aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    >
+                        <HiArrowLeft
+                            className={`text-2xl transform transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''
+                                }`}
+                        />
+                    </button>
+                </div>
 
                 <div className="hidden md:block">
                     <div className='w-16 h-16'>

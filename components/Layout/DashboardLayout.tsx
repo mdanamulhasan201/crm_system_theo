@@ -10,12 +10,13 @@ interface LayoutProps {
 
 const DashboardLayout = ({ children }: LayoutProps) => {
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     useEffect(() => {
         const handleResize = () => {
             if (window.innerWidth < 768) {
                 setIsSidebarOpen(false);
+                setIsSidebarCollapsed(false);
             } else {
                 setIsSidebarOpen(true);
             }
@@ -26,23 +27,43 @@ const DashboardLayout = ({ children }: LayoutProps) => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const toggleSidebar = () => {
-        setIsSidebarOpen(!isSidebarOpen);
+    const toggleSidebarVisibility = () => {
+        setIsSidebarOpen(prev => {
+            const next = !prev;
+            if (next) {
+                setIsSidebarCollapsed(false);
+            }
+            return next;
+        });
+    };
+
+    const toggleSidebarCollapse = () => {
+        setIsSidebarCollapsed(prev => !prev);
     };
 
     return (
         <div className="flex h-screen bg-gray-100">
             {/* Sidebar */}
             <div
-                className={`fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                className={`fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
                     }`}
             >
-                <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+                <Sidebar
+                    isCollapsed={isSidebarCollapsed}
+                    onClose={() => setIsSidebarOpen(false)}
+                />
             </div>
 
             {/* Main Content */}
-            <div className={`flex-1 flex flex-col overflow-hidden ${isSidebarOpen ? 'ml-80' : 'ml-0'}`}>
-                <Navbar onMenuClick={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+            <div
+                className={`flex-1 flex flex-col overflow-hidden transition-[margin] duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-80'}`}
+            >
+                <Navbar
+                    onMenuClick={toggleSidebarVisibility}
+                    onCollapseToggle={toggleSidebarCollapse}
+                    isSidebarOpen={isSidebarOpen}
+                    isSidebarCollapsed={isSidebarCollapsed}
+                />
 
                 {/* Overlay */}
                 {isSidebarOpen && (

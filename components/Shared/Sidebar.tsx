@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { IoClose } from 'react-icons/io5';
@@ -10,7 +10,6 @@ import {
     HiShoppingCart,
     HiUsers,
     HiCalendar,
-    HiChevronDown,
     HiChat
 } from 'react-icons/hi';
 import { HiArrowRightOnRectangle } from "react-icons/hi2";
@@ -23,30 +22,24 @@ import { GiFootprint } from 'react-icons/gi';
 import { FaShoePrints } from 'react-icons/fa';
 import { HiDocumentText } from 'react-icons/hi';
 import { RiDashboard2Line } from 'react-icons/ri';
+import type { IconType } from 'react-icons';
 
 
 interface SidebarProps {
-    isOpen: boolean;
+    isCollapsed: boolean;
     onClose: () => void;
 }
 
-export default function Sidebar({ onClose }: SidebarProps) {
+export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
     const { logout } = useAuth();
-    const [expandedSections, setExpandedSections] = useState({
-        '1': true,
-        '2': true,
-        '3': true,
-        '4': true,
-        '5': true,
-        '6': true,
-        '7': true
-    });
 
     const pathname = usePathname();
 
     const handleLogout = async () => {
         await logout();
     };
+
+    const showLabels = !isCollapsed;
 
     const menuSections = [
         {
@@ -107,17 +100,39 @@ export default function Sidebar({ onClose }: SidebarProps) {
         }
     ];
 
-    const toggleSection = (sectionId: string) => {
-        setExpandedSections(prev => ({
-            ...prev,
-            [sectionId]: !prev[sectionId as keyof typeof expandedSections]
-        }));
-    };
+    type MenuItem =
+        | { type: 'link'; key: string; icon: IconType; label: string; href: string }
+        | { type: 'divider'; key: string };
+
+    const menuItems: MenuItem[] = menuSections.flatMap((section, index) => {
+        const items = section.standalone
+            ? [{
+                type: 'link' as const,
+                key: section.id,
+                icon: section.icon,
+                label: section.label,
+                href: section.href
+            }]
+            : (section.items ?? []).map((item, subIndex) => ({
+                type: 'link' as const,
+                key: `${section.id}-${subIndex}`,
+                icon: item.icon,
+                label: item.label,
+                href: item.href
+            }));
+
+        const result: MenuItem[] = [];
+        if (index > 0 && items.length > 0) {
+            result.push({ type: 'divider', key: `divider-${section.id}` });
+        }
+        result.push(...items);
+        return result;
+    });
 
     return (
-        <div className="w-80 h-screen bg-white  flex flex-col border-r border-gray-200 ">
-            <div className="py-5 px-3 flex justify-between items-center border-gray-400">
-                <div className='w-14 h-14'>
+        <div className={`h-screen bg-white flex flex-col border-r border-gray-200 transition-all duration-300 w-80 ${isCollapsed ? 'md:w-20' : 'md:w-80'}`}>
+            <div className={`py-5 flex items-center border-gray-400 ${showLabels ? 'px-3 justify-between' : 'px-2 justify-center'}`}>
+                <div className={`${showLabels ? 'w-14 h-14' : 'w-10 h-10'}`}>
                     <Image src={logo} alt="logo" width={100} height={100} className='w-full h-full object-contain' />
                 </div>
                 <button
@@ -128,62 +143,43 @@ export default function Sidebar({ onClose }: SidebarProps) {
                 </button>
             </div>
 
-            <nav className="mt-4 flex-1 overflow-y-auto">
-                {menuSections.map((section) => (
-                    <div key={section.id} className="mb-3 px-2 ">
-                        {section.standalone ? (
-                            <Link href={section.href} className='cursor-pointer'>
-                                <span className={`flex items-center px-4 py-1 rounded-full ${pathname === section.href
-                                    ? 'bg-black text-white'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                                    }`}>
-                                    <section.icon className="h-5 w-5 mr-3" />
-                                    {section.label}
-                                </span>
-                            </Link>
-                        ) : (
-                            <>
-                                <button
-                                    onClick={() => toggleSection(section.id)}
-                                    className="flex cursor-pointer items-center justify-between w-full px-4 py-2 text-md font-medium text-gray-900"
-                                >
-                                    {section.label}
-                                    <HiChevronDown
-                                        className={`w-5 h-5 transition-transform ${expandedSections[section.id as keyof typeof expandedSections] ? 'transform rotate-180' : ''
-                                            }`}
-                                    />
-                                </button>
-                                {expandedSections[section.id as keyof typeof expandedSections] && (
-                                    <ul className="mt-1 space-y-1">
-                                        {section.items?.map((item) => (
-                                            <li key={`${section.id}-${item.label}`}>
-                                                <Link href={item.href}>
-                                                    <span className={`flex items-center px-8 py-1 rounded-full ${pathname === item.href
-                                                        ? 'bg-black text-white'
-                                                        : 'text-gray-700 hover:bg-gray-100'
-                                                        }`}>
-                                                        <item.icon className="h-5 w-5 mr-3" />
-                                                        {item.label}
-                                                    </span>
-                                                </Link>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </>
-                        )}
-                    </div>
-                ))}
+            <nav className="mt-4 flex-1 overflow-y-auto space-y-3 px-3">
+                {menuItems.map((item) => {
+                    if (item.type === 'divider') {
+                        return (
+                            <div
+                                key={item.key}
+                                className="h-px bg-gray-200 mx-1"
+                            />
+                        );
+                    }
+
+                    const Icon = item.icon;
+                    const isActive = pathname === item.href;
+
+                    return (
+                        <Link key={item.key} href={item.href} title={item.label}>
+                            <span
+                                className={`flex items-center ${showLabels ? 'px-5 justify-start' : 'justify-center p-3'} py-2 rounded-full transition-colors duration-200 ${isActive ? 'bg-[var(--td-green,#61A175)] text-white' : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                            >
+                                <Icon className={`h-5 w-5 ${showLabels ? 'mr-3' : ''}`} />
+                                {showLabels && item.label}
+                            </span>
+                        </Link>
+                    );
+                })}
             </nav>
 
             {/* Logout button */}
-            <div className="border-t border-gray-200  pb-1">
+            <div className="border-t border-gray-200 pb-1">
                 <button
                     onClick={handleLogout}
-                    className="flex items-center cursor-pointer w-full px-4 py-2 text-gray-700 hover:bg-[#61A175] hover:text-white rounded-md transition-colors duration-300 group"
+                    className={`flex items-center cursor-pointer w-full ${showLabels ? 'px-4 justify-start' : 'justify-center px-0'} py-2 text-gray-700 hover:bg-[#61A175] hover:text-white rounded-md transition-colors duration-300 group`}
+                    title="Logout"
                 >
-                    <HiArrowRightOnRectangle className="h-5 w-5 mr-3 transition-transform duration-300 group-hover:translate-x-1" />
-                    Logout
+                    <HiArrowRightOnRectangle className={`h-5 w-5 transition-transform duration-300 group-hover:translate-x-1 ${showLabels ? 'mr-3' : ''}`} />
+                    {showLabels && 'Logout'}
                 </button>
             </div>
         </div>
