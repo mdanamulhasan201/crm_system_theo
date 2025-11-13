@@ -446,7 +446,7 @@ export default function LastScanTable() {
                 </div>
 
                 <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Stadt</span>
+                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Standort</span>
                     <Select value={locationFilter} onValueChange={(val: string) => handleFilterChange(setLocationFilter, val as string, false)}>
                         <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
                             <SelectValue placeholder="Stadt" />

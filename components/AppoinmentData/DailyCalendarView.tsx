@@ -154,10 +154,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                     column = col;
                     break;
                 }
-            }
 
-            if (overlappingEvents.length === 0) {
-                column = index % maxColumns;
             }
 
             layout.push({
@@ -303,9 +300,9 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                             // Get color based on colorMode
                             // If colorMode is 'assignedTo', use employee-based colors (old system)
                             // If colorMode is 'customer', use customer-based colors (new system)
-                            const assignedToForColor = Array.isArray(event.assignedTo) 
-                                ? event.assignedTo.length > 0 
-                                    ? event.assignedTo[0].assignedTo 
+                            const assignedToForColor = Array.isArray(event.assignedTo)
+                                ? event.assignedTo.length > 0
+                                    ? event.assignedTo[0].assignedTo
                                     : ''
                                 : (typeof event.assignedTo === 'string' ? event.assignedTo : '');
                             const color = colorMode === 'assignedTo'
@@ -401,7 +398,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         {Array.isArray(event.assignedTo) && event.assignedTo.length > 0 ? (
                                             // Multiple employees (array format) - show all avatars
                                             event.assignedTo.map((emp, empIndex) => (
-                                                <div 
+                                                <div
                                                     key={emp.employeId || empIndex}
                                                     className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center"
                                                     title={emp.assignedTo}
@@ -416,7 +413,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                             event.assignedTo.split(',').map((name, nameIndex) => {
                                                 const trimmedName = name.trim();
                                                 return trimmedName ? (
-                                                    <div 
+                                                    <div
                                                         key={nameIndex}
                                                         className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center"
                                                         title={trimmedName}
@@ -431,7 +428,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                             // Single employee (string format) or no employee
                                             <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center">
                                                 <span className="text-xs font-medium text-gray-700">
-                                                    {typeof event.assignedTo === 'string' 
+                                                    {typeof event.assignedTo === 'string'
                                                         ? event.assignedTo?.charAt(0).toUpperCase() || 'U'
                                                         : 'U'}
                                                 </span>
@@ -486,3 +483,4 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 };
 
 export default DailyCalendarView;
+

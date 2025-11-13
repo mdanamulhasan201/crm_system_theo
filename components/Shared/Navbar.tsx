@@ -71,10 +71,10 @@ export default function Navbar({ onMenuClick, onCollapseToggle, isSidebarOpen, i
 
                         {/* Search dropdown */}
                         {isSearchVisible && (
-                            <div className="absolute right-0 top-10 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-3">
+                            <div className="absolute z-50 right-0 top-10 w-72 bg-white border border-gray-200 rounded-lg shadow-lg p-3">
                                 <input
                                     type="text"
-                                    placeholder="Search..."
+                                    placeholder="Suchen..."
                                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     autoFocus
                                 />

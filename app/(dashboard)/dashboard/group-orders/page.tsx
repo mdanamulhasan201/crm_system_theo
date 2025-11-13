@@ -101,15 +101,15 @@ export default function GroupOrders() {
             </div>
 
 
-            <div className='bg-black/90 h-full bg-opacity-50 backdrop-blur-sm flex items-center justify-center'>
+            <div className='bg-white/90 border border-gray-300 rounded-lg p-8 h-full bg-opacity-50 backdrop-blur-sm flex items-center justify-center'>
                 <div className="flex flex-col items-center justify-center text-center space-y-8 ">
                     {/* Main Title */}
-                    <h1 className="lg:text-6xl text-4xl font-bold text-white uppercase tracking-wider leading-tight">
+                    <h1 className="lg:text-6xl text-4xl font-bold text-black uppercase tracking-wider leading-tight">
                         UNDER <br /> CONSTRUCTION
                     </h1>
 
                     {/* Subtitle */}
-                    <p className="text-white uppercase text-sm tracking-widest mt-2">
+                    <p className="text-black uppercase text-sm tracking-widest mt-2">
                         SITE NEARLY READY
                     </p>
 
@@ -124,7 +124,7 @@ export default function GroupOrders() {
                                 }}
                             />
                         </div>
-                        <div className="flex justify-between text-xs text-white font-medium">
+                        <div className="flex justify-between text-xs text-black font-medium">
                             <span>{progressBarData.percentage}%</span>
                             <span>100%</span>
                         </div>

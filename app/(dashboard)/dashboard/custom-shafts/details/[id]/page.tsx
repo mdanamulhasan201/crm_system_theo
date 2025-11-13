@@ -190,7 +190,7 @@ export default function DetailsPage() {
   return (
     <div className="px-2 md:px-6 py-8 w-full">
       <h1 className="text-2xl md:text-3xl font-bold mb-8 text-left">
-        Konfiguriere jetzt deinen Masschaft!
+        Massschaftkonfigurator
       </h1>
 
       {/* File Upload Section */}

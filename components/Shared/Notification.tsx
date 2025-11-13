@@ -81,17 +81,17 @@ export default function NotificationPage() {
     const [notifications, setNotifications] = useState([
         {
             id: '1',
-            title: 'New Order Received',
-            message: 'You have received a new order from customer John Doe',
-            time: '2 minutes ago',
+            title: 'Neuer Auftrag erhalten',
+            message: 'Sie haben einen neuen Auftrag von Kunden John Doe erhalten',
+            time: '2 Minuten zuvor',
             isRead: false,
             type: 'info' as const
         },
         {
             id: '2',
-            title: 'Payment Successful',
-            message: 'Payment of $150 has been processed successfully',
-            time: '1 hour ago',
+            title: 'Zahlung erfolgreich',
+            message: 'Zahlung von 150€ wurde erfolgreich verarbeitet',
+            time: '1 Stunde zuvor',
             isRead: false,
             type: 'success' as const
         },
@@ -132,13 +132,13 @@ export default function NotificationPage() {
             <PopoverContent className="w-80 p-0" align="end" sideOffset={8}>
                 <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-gray-900">Notifications</h3>
+                        <h3 className="font-semibold text-gray-900">Benachrichtigungen</h3>
                         {unreadCount > 0 && (
                             <button
                                 onClick={handleMarkAllAsRead}
                                 className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                             >
-                                Mark all as read
+                                Alle 
                             </button>
                         )}
                     </div>
@@ -148,7 +148,7 @@ export default function NotificationPage() {
                     {notifications.length === 0 ? (
                         <div className="text-center py-8">
                             <IoNotificationsOutline className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500 text-sm">No notifications</p>
+                            <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
                         </div>
                     ) : (
                         notifications.map(notification => (
@@ -165,7 +165,7 @@ export default function NotificationPage() {
                 {notifications.length > 0 && (
                     <div className="p-4 border-t border-gray-200">
                         <button className="w-full text-center text-sm text-gray-600 hover:text-gray-800 font-medium">
-                            View all notifications
+                            Alle Benachrichtigungen anzeigen
                         </button>
                     </div>
                 )}
