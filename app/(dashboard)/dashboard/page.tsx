@@ -13,6 +13,7 @@ import { de } from 'date-fns/locale';
 import { X } from 'lucide-react';
 import DailyCalendarView from '@/components/AppoinmentData/DailyCalendarView';
 import { useWeeklyCalendar } from '@/hooks/calendar/useWeeklyCalendar';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface AppointmentDetail {
     id: string;
@@ -57,9 +58,9 @@ export default function DashboardMainPage() {
         today
     } = useWeeklyCalendar();
 
-    // English day and month names
-    const dayNamesLong = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    // German day and month names
+    const dayNamesLong = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
+    const monthNames = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
 
     const [events, setEvents] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -69,6 +70,9 @@ export default function DashboardMainPage() {
     const [selectedAppointment, setSelectedAppointment] = useState<AppointmentDetail | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+    // user data show
+    const { user } = useAuth();
 
     // Fetch appointments using getMyAppointments API directly - fetch all pages
     const fetchAppointments = async () => {
@@ -216,7 +220,7 @@ export default function DashboardMainPage() {
 
             {isInitialLoad ? <HeaderSkeleton /> : (
                 <div className='flex flex-col gap-3 mb-6'>
-                    <h1 className='text-3xl font-bold'>WELCOME BACK ORTHOPÄDIE PUTZER</h1>
+                    <h1 className='text-3xl font-bold'>WELCOME BACK {user?.name?.toUpperCase()}</h1>
                     <p className='text-lg text-gray-500'>{format(new Date(), 'EEEE, d. MMMM yyyy')}</p>
                 </div>
             )}

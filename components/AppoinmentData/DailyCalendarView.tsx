@@ -447,8 +447,8 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                     {events.length === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center text-gray-500">
-                                <div className="text-base sm:text-lg font-medium mb-2">No appointments</div>
-                                <div className="text-xs sm:text-sm">No appointments scheduled for this day</div>
+                                <div className="text-base sm:text-lg font-medium mb-2">Keine Termine</div>
+                                <div className="text-xs sm:text-sm">Keine Termine für diesen Tag geplant</div>
                             </div>
                         </div>
                     )}
