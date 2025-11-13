@@ -264,7 +264,7 @@ export default function Customers() {
                         className='flex items-center gap-2 cursor-pointer'
                         onClick={handleAddCustomerClick}
                     >
-                        <h1 className='text-xl font-semibold'>Add Customer</h1>
+                        <h1 className='text-xl font-semibold'>Kunde hinzufügen</h1>
                         <HiPlus className='text-4xl font-semibold text-black border border-gray-500 rounded-full p-1' />
                     </div>
                 </div>

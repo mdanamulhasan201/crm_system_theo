@@ -7,7 +7,11 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
+import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface LatestOrder {
     id: string;
@@ -57,6 +61,7 @@ export default function LastScanTable() {
     const [monthFilter, setMonthFilter] = React.useState<string>('all');
     const [locationFilter, setLocationFilter] = React.useState<string>('all');
     const [insuranceFilter, setInsuranceFilter] = React.useState<string>('all');
+    const [selectedRows, setSelectedRows] = React.useState<Set<string>>(new Set());
 
     const load = React.useCallback(async () => {
         try {
@@ -105,6 +110,15 @@ export default function LastScanTable() {
             }
 
             const res = await filterCustomers(params);
+
+            if (res && res.success === false && res.message) {
+                toast.error(res.message);
+                setRows([]);
+                setTotalPages(1);
+                setTotalItems(0);
+                return;
+            }
+
             const data = Array.isArray(res?.data) ? res.data : [];
 
             setRows(data as LastScanRow[]);
@@ -123,8 +137,30 @@ export default function LastScanTable() {
                 setTotalPages(data.length < limit && page === 1 ? 1 : Math.max(1, page + (data.length === limit ? 1 : 0)));
                 setTotalItems(data.length);
             }
-        } catch (error) {
-            console.error('Failed to load customers', error);
+        } catch (error: any) {
+            // console.error('Failed to load customers', error);
+
+            // Extract error message from axios error response
+            // When axios gets 400, the response data is in error.response.data
+            if (error?.response?.data) {
+                const errorData = error.response.data;
+                // Check if it has the structure { success: false, message: "..." }
+                if (errorData.success === false && errorData.message) {
+                    toast.error(errorData.message);
+                } else if (errorData.message) {
+                    toast.error(errorData.message);
+                } else {
+                    toast.error(error.response.statusText || 'Fehler beim Laden der Kundendaten');
+                }
+            } else if (error?.message) {
+                toast.error(error.message);
+            } else {
+                toast.error('Fehler beim Laden der Kundendaten');
+            }
+
+            setRows([]);
+            setTotalPages(1);
+            setTotalItems(0);
         } finally {
             setIsLoading(false);
         }
@@ -228,41 +264,111 @@ export default function LastScanTable() {
         }
     };
 
+    const handleRowSelect = (rowId: string) => {
+        setSelectedRows((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(rowId)) {
+                newSet.delete(rowId);
+            } else {
+                newSet.add(rowId);
+            }
+            return newSet;
+        });
+    };
+
+    const handleSelectAll = () => {
+        if (selectedRows.size === displayRows.length) {
+            setSelectedRows(new Set());
+        } else {
+            setSelectedRows(new Set(displayRows.map(row => row.id)));
+        }
+    };
+
+    const handleExport = () => {
+        try {
+            // Get selected rows or all rows if none selected
+            const rowsToExport = selectedRows.size > 0
+                ? displayRows.filter(row => selectedRows.has(row.id))
+                : displayRows;
+
+            if (rowsToExport.length === 0) {
+                toast.error('Bitte wählen Sie mindestens eine Zeile zum Exportieren aus');
+                return;
+            }
+
+            // Prepare data for Excel
+            const excelData = rowsToExport.map((row) => {
+                const latestOrderStatus = row.latestOrder?.orderStatus ?? null;
+                const latestOrderDate = row.latestOrder?.createdAt ?? null;
+                const latestScreenerDate = row.latestScreener?.createdAt ?? null;
+                const customerFullName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim();
+
+                return {
+                    'Kunde': customerFullName || '—',
+                    'Kundennummer': row.customerNumber ?? '—',
+                    'Krankenkasse': row.krankenkasse?.trim() || '—',
+                    'Kundentyp': row.kundentyp?.trim() || '—',
+                    'Neuester Scan': latestScreenerDate ? formatDate(latestScreenerDate) : 'Kein Scan',
+                    'Neuester Auftrag': latestOrderStatus ? getOrderStatusLabel(latestOrderStatus) : 'Kein Auftrag',
+                    'Auftragsdatum': latestOrderDate ? formatDate(latestOrderDate) : '—',
+                    'Erstellt am': formatDate(row.createdAt),
+                    'Wohnort': row.wohnort?.trim() || '—',
+                    'Gesamt Aufträge': row.totalOrders ?? 0,
+                    'Abgeschlossene Aufträge': row.completedOrders ?? 0,
+                };
+            });
+
+            // Create workbook and worksheet
+            const worksheet = XLSX.utils.json_to_sheet(excelData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Kunden');
+
+            // Generate Excel file and download
+            const fileName = `Kunden_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+
+            toast.success(`${rowsToExport.length} ${rowsToExport.length === 1 ? 'Zeile' : 'Zeilen'} erfolgreich exportiert`);
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('Fehler beim Exportieren der Daten');
+        }
+    };
+
     const periodOptions: { label: string; value: DateRangeFilter }[] = [
-        { label: 'All customers', value: 'all' },
-        { label: 'Today', value: 'today' },
-        { label: 'Yesterday', value: 'yesterday' },
-        { label: 'This week', value: 'thisWeek' },
-        { label: 'Last week', value: 'lastWeek' },
-        { label: 'This month', value: 'thisMonth' },
-        { label: 'This year', value: 'thisYear' },
+        { label: 'Alle Kunden', value: 'all' },
+        { label: 'Heute', value: 'today' },
+        { label: 'Gestern', value: 'yesterday' },
+        { label: 'Diese Woche', value: 'thisWeek' },
+        { label: 'Letzte Woche', value: 'lastWeek' },
+        { label: 'Dieser Monat', value: 'thisMonth' },
+        { label: 'Dieses Jahr', value: 'thisYear' },
     ];
 
     const orderOptions: { label: string; value: OrderStatusFilter }[] = [
-        { label: 'All orders', value: 'all' },
-        { label: 'Completed', value: 'completed' },
-        { label: 'No order', value: 'no-order' },
+        { label: 'Alle Aufträge', value: 'all' },
+        { label: 'Abgeschlossen', value: 'completed' },
+        { label: 'Kein Auftrag', value: 'no-order' },
     ];
 
-    const yearOptions = [{ label: 'All years', value: 'all' as const }, ...uniqueYears.map((year) => ({ label: year, value: year }))];
+    const yearOptions = [{ label: 'Alle Jahre', value: 'all' as const }, ...uniqueYears.map((year) => ({ label: year, value: year }))];
     const monthOptions = [
-        { label: 'All months', value: 'all' as const },
-        { label: 'January', value: '1' as const },
-        { label: 'February', value: '2' as const },
-        { label: 'March', value: '3' as const },
+        { label: 'Alle Monate', value: 'all' as const },
+        { label: 'Januar', value: '1' as const },
+        { label: 'Februar', value: '2' as const },
+        { label: 'März', value: '3' as const },
         { label: 'April', value: '4' as const },
-        { label: 'May', value: '5' as const },
-        { label: 'June', value: '6' as const },
-        { label: 'July', value: '7' as const },
+        { label: 'Mai', value: '5' as const },
+        { label: 'Juni', value: '6' as const },
+        { label: 'Juli', value: '7' as const },
         { label: 'August', value: '8' as const },
         { label: 'September', value: '9' as const },
-        { label: 'October', value: '10' as const },
+        { label: 'Oktober', value: '10' as const },
         { label: 'November', value: '11' as const },
-        { label: 'December', value: '12' as const },
+        { label: 'Dezember', value: '12' as const },
     ];
 
-    const locationOptions = [{ label: 'All cities', value: 'all' as const }, ...uniqueLocations.map((loc) => ({ label: loc, value: loc }))];
-    const insuranceOptions = [{ label: 'All insurances', value: 'all' as const }, ...uniqueInsurances.map((ins) => ({ label: ins, value: ins }))];
+    const locationOptions = [{ label: 'Alle Städte', value: 'all' as const }, ...uniqueLocations.map((loc) => ({ label: loc, value: loc }))];
+    const insuranceOptions = [{ label: 'Alle Krankenkassen', value: 'all' as const }, ...uniqueInsurances.map((ins) => ({ label: ins, value: ins }))];
 
     const currentRangeStart = displayRows.length === 0 ? 0 : (page - 1) * limit + 1;
     const currentRangeEnd = displayRows.length === 0 ? 0 : Math.min(currentRangeStart + displayRows.length - 1, totalItems || displayRows.length);
@@ -271,14 +377,18 @@ export default function LastScanTable() {
         <div className="mt-10 space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-2xl font-semibold text-gray-900">Customer Orders Overview</h2>
+                    <h2 className="text-2xl font-semibold text-gray-900">Kundenaufträge Übersicht</h2>
                     <p className="text-sm text-gray-500 mt-1">
-                        Monitor customer activity, latest scans, and order pipeline at a glance.
+                        Überwachen Sie die Kundenaktivität, neueste Scans und den Auftragspipeline auf einen Blick.
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" className="rounded-full border-gray-300 text-sm px-4 py-2 cursor-pointer">
-                        Export
+                    <Button
+                        variant="outline"
+                        className="rounded-full border-gray-300 text-sm px-4 py-2 cursor-pointer"
+                        onClick={handleExport}
+                    >
+                        Exportieren
                     </Button>
                     <Button variant="outline" className="rounded-full border-gray-300 text-sm px-4 py-2 cursor-pointer">
                         Import
@@ -288,10 +398,10 @@ export default function LastScanTable() {
 
             <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                 <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Date range</span>
+                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Zeitraum</span>
                     <Select value={dateRange} onValueChange={(val) => handleFilterChange(setDateRange, val as DateRangeFilter)}>
                         <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Date range" />
+                            <SelectValue placeholder="Zeitraum" />
                         </SelectTrigger>
                         <SelectContent>
                             {periodOptions.map((option) => (
@@ -304,10 +414,10 @@ export default function LastScanTable() {
                 </div>
 
                 <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Year</span>
+                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Jahr</span>
                     <Select value={yearFilter} onValueChange={(val: string) => handleFilterChange(setYearFilter, val as string)}>
                         <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Year" />
+                            <SelectValue placeholder="Jahr" />
                         </SelectTrigger>
                         <SelectContent>
                             {yearOptions.map((option) => (
@@ -320,10 +430,10 @@ export default function LastScanTable() {
                 </div>
 
                 <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Month</span>
+                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Monat</span>
                     <Select value={monthFilter} onValueChange={(val) => handleFilterChange(setMonthFilter, val)}>
                         <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Month" />
+                            <SelectValue placeholder="Monat" />
                         </SelectTrigger>
                         <SelectContent>
                             {monthOptions.map((option) => (
@@ -336,10 +446,10 @@ export default function LastScanTable() {
                 </div>
 
                 <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">City</span>
+                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Stadt</span>
                     <Select value={locationFilter} onValueChange={(val: string) => handleFilterChange(setLocationFilter, val as string, false)}>
                         <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="City" />
+                            <SelectValue placeholder="Stadt" />
                         </SelectTrigger>
                         <SelectContent>
                             {locationOptions.map((option) => (
@@ -352,10 +462,10 @@ export default function LastScanTable() {
                 </div>
 
                 <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Insurance</span>
+                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Krankenkasse</span>
                     <Select value={insuranceFilter} onValueChange={(val: string) => handleFilterChange(setInsuranceFilter, val as string, false)}>
                         <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Insurance" />
+                            <SelectValue placeholder="Krankenkasse" />
                         </SelectTrigger>
                         <SelectContent>
                             {insuranceOptions.map((option) => (
@@ -368,10 +478,10 @@ export default function LastScanTable() {
                 </div>
 
                 <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Order status</span>
+                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Auftragsstatus</span>
                     <Select value={orderFilter} onValueChange={(val) => handleFilterChange(setOrderFilter, val as OrderStatusFilter)}>
                         <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Order status" />
+                            <SelectValue placeholder="Auftragsstatus" />
                         </SelectTrigger>
                         <SelectContent>
                             {orderOptions.map((option) => (
@@ -396,7 +506,7 @@ export default function LastScanTable() {
                             setOrderFilter('all');
                         }}
                     >
-                        Reset filters
+                        Filter zurücksetzen
                     </Button>
                 </div>
             </div>
@@ -405,19 +515,25 @@ export default function LastScanTable() {
                 <Table>
                     <TableHeader>
                         <TableRow className="bg-gray-50">
-                            <TableHead className="font-semibold text-gray-600">Customer</TableHead>
-                            <TableHead className="font-semibold text-gray-600">Customer No.</TableHead>
-                            <TableHead className="font-semibold text-gray-600">Insurance</TableHead>
-                            <TableHead className="font-semibold text-gray-600">Customer Type</TableHead>
-                            <TableHead className="font-semibold text-gray-600">Latest Scan</TableHead>
-                            <TableHead className="font-semibold text-gray-600">Latest Order</TableHead>
-                            <TableHead className="text-right font-semibold text-gray-600">Actions</TableHead>
+                            <TableHead className="w-[50px]">
+                                <Checkbox
+                                    checked={displayRows.length > 0 && selectedRows.size === displayRows.length}
+                                    onChange={handleSelectAll}
+                                />
+                            </TableHead>
+                            <TableHead className="font-semibold text-gray-600">Kunde</TableHead>
+                            <TableHead className="font-semibold text-gray-600">Kundennummer</TableHead>
+                            <TableHead className="font-semibold text-gray-600">Krankenkasse</TableHead>
+                            <TableHead className="font-semibold text-gray-600">Kundentyp</TableHead>
+                            <TableHead className="font-semibold text-gray-600">Neuester Scan</TableHead>
+                            <TableHead className="font-semibold text-gray-600">Neuester Auftrag</TableHead>
+                            <TableHead className="text-right font-semibold text-gray-600">Aktionen</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={7}>
+                                <TableCell colSpan={8}>
                                     <div className="py-10 flex items-center justify-center gap-2 text-gray-500">
                                         <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -429,7 +545,7 @@ export default function LastScanTable() {
                             </TableRow>
                         ) : displayRows.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={7}>
+                                <TableCell colSpan={8}>
                                     <div className="py-10 text-center text-gray-500">No customers match the current filters.</div>
                                 </TableCell>
                             </TableRow>
@@ -444,6 +560,13 @@ export default function LastScanTable() {
 
                                 return (
                                     <TableRow key={row.id} className="hover:bg-gray-50 transition-colors">
+                                        <TableCell>
+                                            <Checkbox
+                                                checked={selectedRows.has(row.id)}
+                                                onChange={() => handleRowSelect(row.id)}
+                                                onClick={(e) => e.stopPropagation()}
+                                            />
+                                        </TableCell>
                                         <TableCell className="font-medium capitalize">{customerFullName || '—'}</TableCell>
                                         <TableCell>{row.customerNumber ?? '—'}</TableCell>
                                         <TableCell>
@@ -474,13 +597,13 @@ export default function LastScanTable() {
                                                     className="cursor-pointer border-gray-300 px-3 py-1.5 text-sm rounded-lg"
                                                     onClick={() => handleKundeninfoView(row.id)}
                                                 >
-                                                    Customer profile
+                                                    Kundenprofil
                                                 </Button>
                                                 <Button
                                                     className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
                                                     onClick={() => handleNeuerAuftrag(row.id)}
                                                 >
-                                                    New order
+                                                    Neuer Auftrag
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -494,15 +617,21 @@ export default function LastScanTable() {
 
             <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
                 <div>
-                    Showing {currentRangeStart}-{currentRangeEnd} of {totalItems || displayRows.length || 0}
+                    Zeige {currentRangeStart}-{currentRangeEnd} von {totalItems || displayRows.length || 0}
                 </div>
                 <Pagination>
                     <PaginationContent>
                         <PaginationItem>
-                            <PaginationPrevious
+                            <PaginationLink
                                 onClick={() => handlePageChange(Math.max(1, page - 1))}
                                 href="#"
-                            />
+                                size="default"
+                                className="gap-1 px-2.5 sm:pl-2.5 cursor-pointer"
+                                aria-label="Zur vorherigen Seite"
+                            >
+                                <ChevronLeft className="h-4 w-4" />
+                                <span className="hidden sm:block">Zurück</span>
+                            </PaginationLink>
                         </PaginationItem>
 
                         {Array.from({ length: totalPages }).map((_, idx) => {
@@ -521,10 +650,16 @@ export default function LastScanTable() {
                         })}
 
                         <PaginationItem>
-                            <PaginationNext
+                            <PaginationLink
                                 onClick={() => handlePageChange(totalPages ? Math.min(totalPages, page + 1) : page + 1)}
                                 href="#"
-                            />
+                                size="default"
+                                className="gap-1 px-2.5 sm:pr-2.5 cursor-pointer"
+                                aria-label="Zur nächsten Seite"
+                            >
+                                <span className="hidden sm:block">Weiter</span>
+                                <ChevronRight className="h-4 w-4" />
+                            </PaginationLink>
                         </PaginationItem>
                     </PaginationContent>
                 </Pagination>
