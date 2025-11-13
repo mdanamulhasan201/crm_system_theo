@@ -31,6 +31,43 @@ export const useRevenueOverview = (year?: string, month?: string) => {
     const [error, setError] = useState<string | null>(null);
     const [isRefetching, setIsRefetching] = useState(false);
 
+    // Helper function to format date with German month names
+    const formatDateWithGermanMonths = (dateStr: string): string => {
+        const monthMap: { [key: string]: string } = {
+            'January': 'Januar',
+            'February': 'Februar',
+            'March': 'März',
+            'April': 'April',
+            'May': 'Mai',
+            'June': 'Juni',
+            'July': 'Juli',
+            'August': 'August',
+            'September': 'September',
+            'October': 'Oktober',
+            'November': 'November',
+            'December': 'Dezember',
+            'Jan': 'Jan',
+            'Feb': 'Feb',
+            'Mar': 'Mär',
+            'Apr': 'Apr',
+            'Jun': 'Jun',
+            'Jul': 'Jul',
+            'Aug': 'Aug',
+            'Sep': 'Sep',
+            'Oct': 'Okt',
+            'Nov': 'Nov',
+            'Dec': 'Dez'
+        };
+
+        let formatted = dateStr;
+        // Replace English month names/abbreviations with German
+        Object.keys(monthMap).forEach(eng => {
+            const regex = new RegExp(`\\b${eng}\\b`, 'gi');
+            formatted = formatted.replace(regex, monthMap[eng]);
+        });
+        return formatted;
+    };
+
     // Process chart data to group by 3-day periods
     const processChartData = (chartData: ChartDataPoint[]): ProcessedChartData[] => {
         if (!chartData || chartData.length === 0) return [];
@@ -45,9 +82,9 @@ export const useRevenueOverview = (year?: string, month?: string) => {
             const totalValue = period.reduce((sum, item) => sum + item.value, 0);
             
             if (period.length > 0) {
-                const startDate = period[0].date;
-                const endDate = period[period.length - 1].date;
-                const dateRange = `${startDate} to ${endDate}`;
+                const startDate = formatDateWithGermanMonths(period[0].date);
+                const endDate = formatDateWithGermanMonths(period[period.length - 1].date);
+                const dateRange = `${startDate} bis ${endDate}`;
                 
                 processed.push({
                     date: dateRange,

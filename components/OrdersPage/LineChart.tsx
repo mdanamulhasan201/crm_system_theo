@@ -11,7 +11,7 @@ export default function LineChartComponent({ chartData }: { chartData: ChartData
     if (!chartData || chartData.length === 0) {
         return (
             <div className="w-full h-[300px] flex items-center justify-center">
-                <div className="text-lg text-gray-500">No data available</div>
+                <div className="text-lg text-gray-500">Keine Daten verfügbar</div>
             </div>
         );
     }
@@ -26,9 +26,9 @@ export default function LineChartComponent({ chartData }: { chartData: ChartData
         if (active && payload && payload.length) {
             return (
                 <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
-                    <p className="font-semibold text-gray-800">{`Period: ${label}`}</p>
-                    <p className="text-blue-600 font-bold">{`Total Revenue: ${payload[0].value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</p>
-                    <p className="text-gray-600 text-sm">{`3-Day Total`}</p>
+                    <p className="font-semibold text-gray-800">{`Zeitraum: ${label}`}</p>
+                    <p className="text-blue-600 font-bold">{`Gesamtumsatz: ${payload[0].value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`}</p>
+                    <p className="text-gray-600 text-sm">{`3-Tage-Gesamt`}</p>
                 </div>
             );
         }
@@ -53,7 +53,7 @@ export default function LineChartComponent({ chartData }: { chartData: ChartData
                     />
                     <YAxis
                         domain={[0, 'dataMax + 1000']}
-                        tickFormatter={v => v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'}
+                        tickFormatter={v => v.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'}
                         tick={{ fontSize: 12 }}
                     />
                     <Tooltip content={<CustomTooltip />} />

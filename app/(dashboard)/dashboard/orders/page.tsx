@@ -132,25 +132,23 @@ export default function Orders() {
         return () => { mounted = false; };
     }, []);
 
-    // Helper for currency formatting with comma and decimals
     const formatEuro = (amount: number) =>
         amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
 
-    // UI-only state for month and year dropdowns (no server filtering logic beyond fetch params)
     const months = React.useMemo(
         () => [
-            { label: 'January', value: '01' },
-            { label: 'February', value: '02' },
-            { label: 'March', value: '03' },
+            { label: 'Januar', value: '01' },
+            { label: 'Februar', value: '02' },
+            { label: 'März', value: '03' },
             { label: 'April', value: '04' },
-            { label: 'May', value: '05' },
-            { label: 'June', value: '06' },
-            { label: 'July', value: '07' },
+            { label: 'Mai', value: '05' },
+            { label: 'Juni', value: '06' },
+            { label: 'Juli', value: '07' },
             { label: 'August', value: '08' },
             { label: 'September', value: '09' },
-            { label: 'October', value: '10' },
+            { label: 'Oktober', value: '10' },
             { label: 'November', value: '11' },
-            { label: 'December', value: '12' },
+            { label: 'Dezember', value: '12' },
         ],
         []
     );
@@ -170,7 +168,7 @@ export default function Orders() {
 
                     {loading ? (
                         <div className="w-full h-64 flex items-center justify-center">
-                            <div className="text-lg">Loading revenue data...</div>
+                            <div className="text-lg">Umsatzdaten werden geladen...</div>
                         </div>
                     ) : error ? (
                         <div className="w-full h-64 flex items-center justify-center">
@@ -196,7 +194,7 @@ export default function Orders() {
                                             <div className="flex flex-col sm:flex-row gap-3 mb-2">
                                                 <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                                                     <SelectTrigger className="w-[200px] cursor-pointer">
-                                                        <SelectValue placeholder="Select month" />
+                                                        <SelectValue placeholder="Monat auswählen" />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {months.map((m) => (
@@ -209,7 +207,7 @@ export default function Orders() {
 
                                                 <Select value={selectedYear} onValueChange={setSelectedYear}>
                                                     <SelectTrigger className="w-[200px] cursor-pointer">
-                                                        <SelectValue placeholder="Select year" />
+                                                        <SelectValue placeholder="Jahr auswählen" />
                                                     </SelectTrigger>
                                                     <SelectContent>
                                                         {years.map((y) => (

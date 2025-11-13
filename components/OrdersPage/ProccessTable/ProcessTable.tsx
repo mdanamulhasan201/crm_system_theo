@@ -277,9 +277,9 @@ export default function ProcessTable() {
         return (
             <div className="mt-6 sm:mt-10 max-w-full flex justify-center items-center py-20">
                 <div className="text-center">
-                    <p className="text-red-600 mb-4">Error: {error}</p>
+                    <p className="text-red-600 mb-4">Fehler: {error}</p>
                     <Button onClick={refetch} variant="outline">
-                        Try Again
+                        Erneut versuchen
                     </Button>
                 </div>
             </div>
@@ -378,7 +378,7 @@ export default function ProcessTable() {
                         <TableHead className="w-[160px] min-w-[160px] max-w-[160px] whitespace-normal break-words text-xs sm:text-sm hidden lg:table-cell text-center">Fertiggestellt am</TableHead>
                         <TableHead className="w-[180px] min-w-[180px] max-w-[180px] whitespace-normal break-words text-xs sm:text-sm hidden xl:table-cell text-center">Beschreibung</TableHead>
                         {/* <TableHead className="w-[200px] min-w-[200px] max-w-[200px] whitespace-normal break-words text-xs sm:text-sm hidden xl:table-cell text-center">Abholort / Versand</TableHead> */}
-                        <TableHead className="w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words text-xs sm:text-sm text-center">Status Update</TableHead>
+                        <TableHead className="w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words text-xs sm:text-sm text-center">Status aktualisieren</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -387,7 +387,7 @@ export default function ProcessTable() {
                             <TableCell colSpan={11} className="text-center py-20">
                                 <div className="flex flex-col items-center justify-center">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                                    <p className="text-gray-600">Loading orders...</p>
+                                    <p className="text-gray-600">Aufträge werden geladen...</p>
                                 </div>
                             </TableCell>
                         </TableRow>
@@ -395,9 +395,9 @@ export default function ProcessTable() {
                         <TableRow>
                             <TableCell colSpan={11} className="text-center py-20">
                                 <div className="flex flex-col items-center justify-center">
-                                    <p className="text-gray-600 mb-4 text-lg">No orders found</p>
+                                    <p className="text-gray-600 mb-4 text-lg">Keine Aufträge gefunden</p>
                                     <Button onClick={refetch} variant="outline">
-                                        Refresh
+                                        Aktualisieren
                                     </Button>
                                 </div>
                             </TableCell>
@@ -504,10 +504,10 @@ export default function ProcessTable() {
                     <div className="text-sm text-gray-600">
                         {memoizedOrders.length === 0 ? (
                             <span>
-                                No orders found
+                                Keine Aufträge gefunden
                                 {selectedStatus && (
                                     <span className="ml-2 text-blue-600 font-medium">
-                                        • Filtered by: {steps.find((_, idx) => {
+                                        • Gefiltert nach: {steps.find((_, idx) => {
                                             const stepToApiStatus: Record<string, string> = {
                                                 "Einlage vorbereiten": "Einlage_vorbereiten",
                                                 "Einlage in Fertigung": "Einlage_in_Fertigung",
@@ -523,7 +523,7 @@ export default function ProcessTable() {
                             </span>
                         ) : (
                             <span>
-                                Showing {((currentPage - 1) * pagination.itemsPerPage) + 1} to {Math.min(currentPage * pagination.itemsPerPage, pagination.totalItems)} of {pagination.totalItems} orders ({memoizedOrders.length} on this page)
+                                Zeige {((currentPage - 1) * pagination.itemsPerPage) + 1} bis {Math.min(currentPage * pagination.itemsPerPage, pagination.totalItems)} von {pagination.totalItems} Aufträgen ({memoizedOrders.length} auf dieser Seite)
                                 {/* {selectedStatus && (
                                     <span className="ml-2 text-blue-600 font-medium">
                                         • Filtered by: {steps.find((_, idx) => {
@@ -552,11 +552,11 @@ export default function ProcessTable() {
                                 className="flex items-center gap-1"
                             >
                                 <ChevronLeft className="h-4 w-4" />
-                                Previous
+                                Zurück
                             </Button>
 
                             <span className="text-sm text-gray-600 px-3">
-                                Page {currentPage} of {pagination.totalPages}
+                                Seite {currentPage} von {pagination.totalPages}
                             </span>
 
                             <Button
@@ -566,7 +566,7 @@ export default function ProcessTable() {
                                 disabled={!pagination.hasNextPage}
                                 className="flex items-center gap-1"
                             >
-                                Next
+                                Weiter
                                 <ChevronRight className="h-4 w-4" />
                             </Button>
                         </div>
