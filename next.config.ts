@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'native-rep-framing-harry.trycloudflare.com',
+        hostname: 'gif-sponsors-names-dealer.trycloudflare.com',
       },
       {
         // local host

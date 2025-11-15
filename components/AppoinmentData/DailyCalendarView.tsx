@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { getCustomerColor, getAssignedToColor, EVENT_COLORS } from '@/lib/appointmentColors';
+import { getAssignedToColor } from '@/lib/appointmentColors';
 
 interface Event {
     id: string;
@@ -33,18 +33,16 @@ interface DailyCalendarViewProps {
     dayNamesLong: string[];
     onDateChange: (direction: number) => void;
     onEventClick?: (eventId: string) => void;
-    colorMode?: 'customer' | 'assignedTo';
 }
 
-// Colors are now imported from shared utility
+// Using assignedTo-based color system from appointmentColors.ts
 
 const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     selectedDate,
     events,
     dayNamesLong,
     onDateChange,
-    onEventClick,
-    colorMode = 'customer'
+    onEventClick
 }) => {
     // Calendar configuration
     const calendarStartHour = 8;
@@ -297,17 +295,14 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 
                         {/* Event Blocks */}
                         {eventLayout.map((event, index) => {
-                            // Get color based on colorMode
-                            // If colorMode is 'assignedTo', use employee-based colors (old system)
-                            // If colorMode is 'customer', use customer-based colors (new system)
+                            // Get color based on assignedTo using getAssignedToColor
                             const assignedToForColor = Array.isArray(event.assignedTo)
                                 ? event.assignedTo.length > 0
                                     ? event.assignedTo[0].assignedTo
                                     : ''
                                 : (typeof event.assignedTo === 'string' ? event.assignedTo : '');
-                            const color = colorMode === 'assignedTo'
-                                ? getAssignedToColor(assignedToForColor, index)
-                                : getCustomerColor(event.customerId, event.customer_name, index);
+                            const color = getAssignedToColor(assignedToForColor, index);
+                            
                             const topPercent = (event.startMinutes / (timeSlots.length * 60)) * 100;
                             const heightPercent = (event.durationMinutes / (timeSlots.length * 60)) * 100;
 
@@ -345,7 +340,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         </div>
 
                                         <h2
-                                            className='text-xs sm:text-sm font-medium text-gray-700 underline cursor-pointer'
+                                            className='text-xs sm:text-sm font-medium text-gray-700 underline cursor-pointer hover:text-gray-900'
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setNoteContent(event.details || '');
@@ -357,7 +352,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                     </div>
 
                                     {/* customer name */}
-                                    <div className=" text-xs sm:text-sm mb-1 leading-tight">
+                                    <div className="text-xs sm:text-sm mb-1 leading-tight">
                                         {
                                             event.customer_name && (
                                                 <>

@@ -386,7 +386,6 @@ const WeeklyCalendar = () => {
                                     return next;
                                 });
                             }}
-                            colorMode="assignedTo"
                         />
                     </div>
 
@@ -549,7 +548,7 @@ const WeeklyCalendar = () => {
                                                                         {
                                                                             event.assignedTo && (
                                                                                 <div className="text-xs opacity-90 mb-1">
-                                                                                    Mitarbeiter: {Array.isArray(event.assignedTo) 
+                                                                                    Mitarbeiter: {Array.isArray(event.assignedTo)
                                                                                         ? event.assignedTo.map(emp => emp.assignedTo).join(', ')
                                                                                         : event.assignedTo}
                                                                                 </div>
