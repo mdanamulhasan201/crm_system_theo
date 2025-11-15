@@ -16,6 +16,7 @@ export default function EmailLayout({ children }: { children: React.ReactNode })
     const pathname = usePathname();
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [favoriteCount, setFavoriteCount] = useState(0);
+    const [showComingSoon, setShowComingSoon] = useState(false);
 
     // Fetch favorite count on mount and when needed
     const updateFavoriteCount = async () => {
@@ -39,15 +40,29 @@ export default function EmailLayout({ children }: { children: React.ReactNode })
                         } md:translate-x-0`}
                 >
                     <div className="p-4 border-b">
+                        <button
+                            onClick={() => {
+                                setShowComingSoon(true);
+                                setSidebarOpen(false);
+                            }}
+                            className="w-full border border-[#61A07B] cursor-pointer text-[#61A07B] font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-colors hover:bg-[#61A07B] hover:text-white justify-center shadow-sm"
+                        >
+                            <Plus size={16} />
+                            Verfassen
+                        </button>
+                    </div>
+                    {/* 
+                     <div className="p-4 border-b">
                         <Link
                             href="/dashboard/email/compose"
                             className="w-full border border-[#61A07B] cursor-pointer text-[#61A07B] font-medium py-2 px-4 rounded-lg flex items-center gap-2 transition-colors hover:bg-[#61A07B] hover:text-white justify-center shadow-sm"
                             onClick={() => setSidebarOpen(false)}
+                            
                         >
                             <Plus size={16} />
                             Verfassen
                         </Link>
-                    </div>
+                    </div> */}
                     <nav className="flex-1 p-2">
                         <div className="space-y-1">
                             {tabs.map(tab => {
@@ -90,6 +105,37 @@ export default function EmailLayout({ children }: { children: React.ReactNode })
                     </button>
                     <div className="pt-10 md:pt-0">{children}</div>
                 </main>
+
+                {/* Coming Soon Modal */}
+                {showComingSoon && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/40" onClick={() => setShowComingSoon(false)} />
+                        <div className="relative bg-white rounded-lg shadow-lg w-[90%] max-w-md p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-semibold text-gray-800">Coming Soon</h3>
+                                <button
+                                    className="text-gray-500 hover:text-gray-700"
+                                    onClick={() => setShowComingSoon(false)}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div className="text-gray-700 mb-6">
+                                <p>This feature is coming soon. Stay tuned!</p>
+                            </div>
+                            <div className="flex justify-end">
+                                <button
+                                    className="px-4 py-2 bg-[#61A07B] text-white rounded-lg hover:bg-[#4f8a65] transition-colors"
+                                    onClick={() => setShowComingSoon(false)}
+                                >
+                                    OK
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </FavoriteCountContext.Provider>
     );
