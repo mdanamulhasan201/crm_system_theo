@@ -75,19 +75,19 @@ export default function Customers() {
     const handleCustomerSubmit = async (customerData: any) => {
         try {
             setIsAddCustomerModalOpen(false)
-            console.log('Customer submitted, will refresh LastScans in 1 second...');
+            // console.log('Customer submitted, will refresh LastScans in 1 second...');
             // Add a small delay to ensure the API call completes
             setTimeout(() => {
-                console.log('Timeout completed, calling refreshData...');
+                // console.log('Timeout completed, calling refreshData...');
                 if (lastScansRef.current) {
-                    console.log('lastScansRef.current exists, calling refreshData');
+                    // console.log('lastScansRef.current exists, calling refreshData');
                     lastScansRef.current.refreshData()
                 } else {
-                    console.log('lastScansRef.current is null!');
+                    // console.log('lastScansRef.current is null!');
                 }
             }, 1000)
         } catch (error) {
-            console.error('Error adding customer:', error)
+            // console.error('Error adding customer:', error)
         }
     }
 

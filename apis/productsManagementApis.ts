@@ -20,6 +20,17 @@ export const getAllStorages = async () => {
     }
 };
 
+
+// get product history 
+export const getProductHistory = async (productId: string, page: number = 1, limit: number = 10) => {
+    try {
+        const response = await axiosClient.get(`/store/history/${productId}?page=${page}&limit=${limit}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
 // get single storage
 export const getSingleStorage = async (storageId: string) => {
     try {

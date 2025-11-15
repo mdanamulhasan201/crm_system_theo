@@ -54,7 +54,7 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
     // Expose refresh function to parent components
     useImperativeHandle(ref, () => ({
         refreshData: () => {
-            console.log('refreshData called - refreshing LastScans');
+            // console.log('refreshData called - refreshing LastScans');
             fetchLastScans(true); // Pass true to indicate this is a refresh
         }
     }));

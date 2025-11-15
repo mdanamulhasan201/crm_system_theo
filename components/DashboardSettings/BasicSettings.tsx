@@ -68,7 +68,7 @@ export default function BasicSettings() {
 
     const handleSaveSettings = () => {
         // Here you would typically save to your backend/API
-        console.log('Saving settings:', { requiredFields, shippingSettings });
+        // console.log('Saving settings:', { requiredFields, shippingSettings });
         // Add your API call here
         alert('Einstellungen gespeichert!');
         setHasChanges(false);

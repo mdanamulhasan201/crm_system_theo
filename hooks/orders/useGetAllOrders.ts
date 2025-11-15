@@ -68,9 +68,9 @@ export const useGetAllOrders = (page: number = 1, limit: number = 10, days: numb
         try {
             setLoading(true);
             setError(null);
-            console.log('useGetAllOrders: Fetching orders with params:', { pageNum, limitNum, daysNum, status });
+            // console.log('useGetAllOrders: Fetching orders with params:', { pageNum, limitNum, daysNum, status });
             const response: OrdersResponse = await getAllOrders(pageNum, limitNum, daysNum, status);
-            console.log('useGetAllOrders: API response:', response);
+            // console.log('useGetAllOrders: API response:', response);
             
             if (response.success) {
                 setOrders(response.data);
@@ -79,7 +79,7 @@ export const useGetAllOrders = (page: number = 1, limit: number = 10, days: numb
                 setError(response.message || 'Failed to fetch orders');
             }
         } catch (err) {
-            console.error('useGetAllOrders: Error:', err);
+            // console.error('useGetAllOrders: Error:', err);
             setError(err instanceof Error ? err.message : 'An error occurred while fetching orders');
         } finally {
             setLoading(false);

@@ -44,13 +44,13 @@ export default function ContactPage() {
             };
 
             const response = await postSuggestion(suggestionData);
-            console.log('Success:', response);
+            // console.log('Success:', response);
             form.reset();
             toast.success('Ihre Nachricht wurde erfolgreich gesendet!');
 
         } catch (error) {
             // toast.error(error as string);
-            console.error('Submission error:', error);
+            // console.error('Submission error:', error);
         }
     }
 

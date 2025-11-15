@@ -124,7 +124,7 @@ export const useStockManagementSlice = () => {
 
         try {
             const response: ApiResponse = await getAllStorages();
-            console.log('Fetched products:', response);
+            // console.log('Fetched products:', response);
             
             if (response.success && response.data) {
                 setProducts(response.data);
@@ -136,7 +136,7 @@ export const useStockManagementSlice = () => {
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch products';
             setError(errorMessage);
-            console.error('Error fetching products:', err);
+            // console.error('Error fetching products:', err);
             throw err;
         } finally {
             setIsLoadingProducts(false);

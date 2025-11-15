@@ -223,14 +223,14 @@ export default function ProcessTable() {
 
     // Handle status filter
     const handleStatusFilter = (status: string) => {
-        console.log('Filtering by status:', status);
+        // console.log('Filtering by status:', status);
         if (selectedStatus === status) {
             // If clicking the same status, clear the filter
-            console.log('Clearing status filter');
+            // console.log('Clearing status filter');
             setSelectedStatus(null);
         } else {
             // Set the new status filter
-            console.log('Setting status filter to:', status);
+            // console.log('Setting status filter to:', status);
             setSelectedStatus(status);
         }
         setSelectedOrderId(null); // Reset selection when changing filters

@@ -187,8 +187,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         // Always update orders, even if empty array
-        console.log('OrdersContext: Updating orders with apiOrders:', apiOrders.length, 'items');
-        console.log('OrdersContext: Current selectedStatus:', selectedStatus);
+        // console.log('OrdersContext: Updating orders with apiOrders:', apiOrders.length, 'items');
+        // console.log('OrdersContext: Current selectedStatus:', selectedStatus);
         const mappedOrders = apiOrders.map(mapApiDataToOrderData);
         setOrders(mappedOrders);
         

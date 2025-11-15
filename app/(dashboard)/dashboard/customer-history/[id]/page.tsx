@@ -77,7 +77,7 @@ export default function CustomerHistory() {
                 ...editFormData
             };
 
-            console.log('Sending update data:', updateData);
+            // console.log('Sending update data:', updateData);
             const success = await updateCustomer(updateData);
             if (success) {
                 toast.success('Customer information updated successfully');
