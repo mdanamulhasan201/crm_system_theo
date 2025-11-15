@@ -34,7 +34,9 @@ export default function CustomerHistory() {
         straße: '',
         land: '',
         ort: '',
-        telefon: ''
+        telefon: '',
+        telefonnummer: '',
+        wohnort: ''
     });
     const [isPopUpOpen, setIsPopUpOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -66,7 +68,9 @@ export default function CustomerHistory() {
             straße: scanData.straße || '',
             land: scanData.land || '',
             ort: scanData.ort || '',
-            telefon: scanData.telefon || ''
+            telefon: scanData.telefon || '',
+            telefonnummer: scanData.telefonnummer || '',
+            wohnort: scanData.wohnort || ''
         });
         setIsEditing(true);
     }
@@ -74,9 +78,29 @@ export default function CustomerHistory() {
     const handleSaveClick = async () => {
         try {
             // Send gender directly as MALE/FEMALE to API
-            const updateData = {
-                ...editFormData
+            const updateData: any = {
+                gender: editFormData.gender,
+                geburtsdatum: editFormData.geburtsdatum,
+                straße: editFormData.straße,
+                land: editFormData.land,
+                ort: editFormData.ort,
             };
+
+            // Add wohnort (always include it, even if empty, to allow clearing)
+            updateData.wohnort = editFormData.wohnort || '';
+
+            // Use telefonnummer if original data had it or if user entered a value
+            // Otherwise fall back to telefon
+            const phoneValue = editFormData.telefonnummer || editFormData.telefon || '';
+            if (phoneValue) {
+                // If original data had telefonnummer, always use telefonnummer for updates
+                if (scanData.telefonnummer) {
+                    updateData.telefonnummer = phoneValue;
+                } else {
+                    // If original data only had telefon, use telefon for updates
+                    updateData.telefon = phoneValue;
+                }
+            }
 
             // console.log('Sending update data:', updateData);
             const success = await updateCustomer(updateData);
@@ -99,7 +123,9 @@ export default function CustomerHistory() {
             straße: scanData.straße || '',
             land: scanData.land || '',
             ort: scanData.ort || '',
-            telefon: scanData.telefon || ''
+            telefon: scanData.telefon || '',
+            telefonnummer: scanData.telefonnummer || '',
+            wohnort: scanData.wohnort || ''
         });
     }
 
@@ -311,12 +337,27 @@ export default function CustomerHistory() {
                         <input
                             type="text"
                             className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
-                            value={isEditing ? editFormData.straße : (scanData.straße || '')}
-                            onChange={isEditing ? (e) => handleInputChange('straße', e.target.value) : undefined}
-                            placeholder="location, Street, Street Number"
+                            value={isEditing ? editFormData.wohnort : (scanData.wohnort || scanData.straße || '')}
+                            onChange={isEditing ? (e) => handleInputChange('wohnort', e.target.value) : undefined}
+                            placeholder="Stadt, PLZ, Adresse"
                             readOnly={!isEditing}
                         />
                     </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Straße</label>
+                        <input
+                            type="text"
+                            className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
+                            value={isEditing ? editFormData.straße : (scanData.straße || '')}
+                            onChange={isEditing ? (e) => handleInputChange('straße', e.target.value) : undefined}
+                            placeholder="Street, Street Number"
+                            readOnly={!isEditing}
+                        />
+                    </div>
+                </div>
+
+                {/* Additional Address Fields */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Versichertennummer</label>
                         <input
@@ -328,10 +369,6 @@ export default function CustomerHistory() {
                             readOnly={!isEditing}
                         />
                     </div>
-                </div>
-
-                {/* Additional Location and Contact */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Kostenträger</label>
                         <input
@@ -348,12 +385,22 @@ export default function CustomerHistory() {
                         <input
                             type="text"
                             className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
-                            value={isEditing ? editFormData.telefon : (scanData.telefon || '')}
+                            value={isEditing 
+                                ? (editFormData.telefonnummer || editFormData.telefon || '') 
+                                : (scanData.telefonnummer || scanData.telefon || '')}
                             placeholder="+0000000000000"
-                            onChange={isEditing ? (e) => handleInputChange('telefon', e.target.value) : undefined}
+                            onChange={isEditing ? (e) => {
+                                // Update both fields to ensure compatibility
+                                handleInputChange('telefonnummer', e.target.value);
+                                handleInputChange('telefon', e.target.value);
+                            } : undefined}
                             readOnly={!isEditing}
                         />
                     </div>
+                </div>
+
+                {/* Customer ID */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Kunden-ID</label>
                         <input
@@ -459,7 +506,7 @@ export default function CustomerHistory() {
 
             {/* Tab content */}
             <div>
-                {activeTab === 'scans' && <ScansPromoted />}
+                {activeTab === 'scans' && <ScansPromoted customerData={scanData} />}
                 {activeTab === 'shoes' && <ShoePurchasesMade />}
                 {activeTab === 'versorgungen' && <TreatmentsCarriedOut />}
                 {activeTab === 'reviews' && <Reviews />}
