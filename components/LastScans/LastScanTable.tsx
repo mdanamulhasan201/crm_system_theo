@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { filterCustomers, FilterCustomersParams } from '@/apis/customerApis';
+import { filterCustomers, FilterCustomersParams, deleteCustomer } from '@/apis/customerApis';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useRouter } from 'next/navigation';
@@ -11,7 +11,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface LatestOrder {
     id: string;
@@ -40,6 +41,7 @@ interface LastScanRow {
     completedOrders?: number;
     latestOrder?: LatestOrder | null;
     latestScreener?: LatestScreener | null;
+    screenerFile?: Array<{ id: string; createdAt: string | null; updatedAt?: string | null }> | null;
 }
 
 type DateRangeFilter = 'all' | 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'thisYear';
@@ -62,6 +64,9 @@ export default function LastScanTable() {
     const [locationFilter, setLocationFilter] = React.useState<string>('all');
     const [insuranceFilter, setInsuranceFilter] = React.useState<string>('all');
     const [selectedRows, setSelectedRows] = React.useState<Set<string>>(new Set());
+    const [deleteModalOpen, setDeleteModalOpen] = React.useState<boolean>(false);
+    const [customerToDelete, setCustomerToDelete] = React.useState<{ id: string; name: string } | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState<boolean>(false);
 
     const load = React.useCallback(async () => {
         try {
@@ -121,7 +126,41 @@ export default function LastScanTable() {
 
             const data = Array.isArray(res?.data) ? res.data : [];
 
-            setRows(data as LastScanRow[]);
+            // Process data - use latestScreener from API if available, otherwise extract from screenerFile array
+            const processedData = data.map((item: any) => {
+                let latestScreener: LatestScreener | null = null;
+
+                // Use latestScreener from API if it exists
+                if (item.latestScreener && item.latestScreener.createdAt) {
+                    latestScreener = {
+                        id: item.latestScreener.id,
+                        createdAt: item.latestScreener.createdAt,
+                        picture_10: item.latestScreener.picture_10,
+                        picture_23: item.latestScreener.picture_23,
+                    };
+                } else if (Array.isArray(item.screenerFile) && item.screenerFile.length > 0) {
+                    // Fallback: Find the latest screener file by comparing dates
+                    const latest = item.screenerFile.reduce((latest: any, current: any) => {
+                        const latestDate = new Date(latest.updatedAt || latest.createdAt || 0);
+                        const currentDate = new Date(current.updatedAt || current.createdAt || 0);
+                        return currentDate > latestDate ? current : latest;
+                    });
+
+                    latestScreener = {
+                        id: latest.id,
+                        createdAt: latest.createdAt,
+                        picture_10: latest.picture_10,
+                        picture_23: latest.picture_23,
+                    };
+                }
+
+                return {
+                    ...item,
+                    latestScreener,
+                };
+            });
+
+            setRows(processedData as LastScanRow[]);
 
             const meta = res?.pagination;
             if (meta) {
@@ -131,11 +170,11 @@ export default function LastScanTable() {
                 if (typeof meta.totalItems === 'number') {
                     setTotalItems(meta.totalItems);
                 } else {
-                    setTotalItems(data.length);
+                    setTotalItems(processedData.length);
                 }
             } else {
-                setTotalPages(data.length < limit && page === 1 ? 1 : Math.max(1, page + (data.length === limit ? 1 : 0)));
-                setTotalItems(data.length);
+                setTotalPages(processedData.length < limit && page === 1 ? 1 : Math.max(1, page + (processedData.length === limit ? 1 : 0)));
+                setTotalItems(processedData.length);
             }
         } catch (error: any) {
             // console.error('Failed to load customers', error);
@@ -176,6 +215,52 @@ export default function LastScanTable() {
 
     const handleNeuerAuftrag = (id: string) => {
         router.push(`/dashboard/scanning-data/${id}`);
+    };
+
+    const handleScanDurchführen = (id: string) => {
+        router.push(`/dashboard/customer-info/${id}?manageCustomer=true`);
+    };
+
+    const handleDeleteClick = (row: LastScanRow) => {
+        const customerName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim() || 'Kunde';
+        setCustomerToDelete({ id: row.id, name: customerName });
+        setDeleteModalOpen(true);
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!customerToDelete) return;
+
+        try {
+            setIsDeleting(true);
+            const res = await deleteCustomer(customerToDelete.id);
+
+            if (res && res.success === false && res.message) {
+                toast.error(res.message);
+            } else {
+                toast.success('Kunde erfolgreich gelöscht');
+                setDeleteModalOpen(false);
+                setCustomerToDelete(null);
+                // Reload the data
+                load();
+            }
+        } catch (error: any) {
+            if (error?.response?.data) {
+                const errorData = error.response.data;
+                if (errorData.success === false && errorData.message) {
+                    toast.error(errorData.message);
+                } else if (errorData.message) {
+                    toast.error(errorData.message);
+                } else {
+                    toast.error(error.response.statusText || 'Fehler beim Löschen des Kunden');
+                }
+            } else if (error?.message) {
+                toast.error(error.message);
+            } else {
+                toast.error('Fehler beim Löschen des Kunden');
+            }
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     const formatDate = (date?: string | null, options?: Intl.DateTimeFormatOptions) => {
@@ -221,14 +306,6 @@ export default function LastScanTable() {
         return Array.from(set).sort((a, b) => Number(b) - Number(a));
     }, [rows]);
 
-    const uniqueLocations = React.useMemo(() => {
-        const set = new Set<string>();
-        rows.forEach((row) => {
-            const location = row.wohnort?.trim();
-            if (location) set.add(location);
-        });
-        return Array.from(set).sort((a, b) => a.localeCompare(b));
-    }, [rows]);
 
     const uniqueInsurances = React.useMemo(() => {
         const set = new Set<string>();
@@ -367,7 +444,9 @@ export default function LastScanTable() {
         { label: 'Dezember', value: '12' as const },
     ];
 
-    const locationOptions = [{ label: 'Alle Städte', value: 'all' as const }, ...uniqueLocations.map((loc) => ({ label: loc, value: loc }))];
+    const locationOptions = [
+        { label: 'Alle Städte', value: 'all' as const },
+    ];
     const insuranceOptions = [{ label: 'Alle Krankenkassen', value: 'all' as const }, ...uniqueInsurances.map((ins) => ({ label: ins, value: ins }))];
 
     const currentRangeStart = displayRows.length === 0 ? 0 : (page - 1) * limit + 1;
@@ -599,11 +678,27 @@ export default function LastScanTable() {
                                                 >
                                                     Kundenprofil
                                                 </Button>
+                                                {latestScreenerDate ? (
+                                                    <Button
+                                                        className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
+                                                        onClick={() => handleNeuerAuftrag(row.id)}
+                                                    >
+                                                        Neuer Auftrag
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
+                                                        onClick={() => handleScanDurchführen(row.id)}
+                                                    >
+                                                        Scan durchführen
+                                                    </Button>
+                                                )}
                                                 <Button
-                                                    className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
-                                                    onClick={() => handleNeuerAuftrag(row.id)}
+                                                    variant="outline"
+                                                    className="cursor-pointer border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 px-3 py-1.5 text-sm rounded-lg"
+                                                    onClick={() => handleDeleteClick(row)}
                                                 >
-                                                    Neuer Auftrag
+                                                    <Trash2 className="h-4 w-4" />
                                                 </Button>
                                             </div>
                                         </TableCell>
@@ -664,6 +759,45 @@ export default function LastScanTable() {
                     </PaginationContent>
                 </Pagination>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">Kunde löschen bestätigen</DialogTitle>
+                        <DialogDescription>
+                            Sind Sie sicher, dass Sie den Kunden <strong>{customerToDelete?.name}</strong> löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex gap-2">
+                        <Button
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={() => {
+                                setDeleteModalOpen(false);
+                                setCustomerToDelete(null);
+                            }}
+                            disabled={isDeleting}
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            onClick={handleDeleteConfirm}
+                            disabled={isDeleting}
+                            className="bg-red-600 cursor-pointer hover:bg-red-700 text-white"
+                        >
+                            {isDeleting ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                    <span>Löschen...</span>
+                                </div>
+                            ) : (
+                                'Ja, löschen'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

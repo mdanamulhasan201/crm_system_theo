@@ -150,7 +150,7 @@ const formatDate = (dateString: string): string => {
 const getFileTitle = (url: string, fieldName: string, table: string): string => {
     const fileName = url.split('/').pop() || url
     // Extract only the last part after the last dash
-    const lastPart = fileName.includes('-') 
+    const lastPart = fileName.includes('-')
         ? fileName.substring(fileName.lastIndexOf('-') + 1)
         : fileName
     // If still too long, truncate
@@ -160,10 +160,20 @@ const getFileTitle = (url: string, fieldName: string, table: string): string => 
     return lastPart || `${fieldName}_${table}`
 }
 
+type TableFilter = 'all' | 'customer_files' | 'custom_shafts' | 'screener_file'
+
+const tableFilterLabels: Record<TableFilter, string> = {
+    all: 'Alle',
+    customer_files: 'Kundendateien',
+    custom_shafts: 'Individuelle Schäfte',
+    screener_file: 'Scanner-Datei'
+}
+
 export default function KundenordnerPage() {
     const params = useParams()
     const customerId = String(params.id)
     const [activeFilter, setActiveFilter] = useState<DocumentType>('all')
+    const [tableFilter, setTableFilter] = useState<TableFilter>('all')
     const [searchQuery, setSearchQuery] = useState('')
     const [documents, setDocuments] = useState<Document[]>([])
     const [loading, setLoading] = useState(true)
@@ -202,13 +212,14 @@ export default function KundenordnerPage() {
 
     useEffect(() => {
         fetchDocuments()
-    }, [customerId, page])
+    }, [customerId, page, tableFilter])
 
     const fetchDocuments = async () => {
         try {
             setLoading(true)
             setError(null)
-            const response: ApiResponse = await getKundenordnerData(customerId, page, limit)
+            const table = tableFilter === 'all' ? undefined : tableFilter
+            const response: ApiResponse = await getKundenordnerData(customerId, page, limit, table)
 
             if (response.success && response.data) {
                 const mappedDocuments: Document[] = response.data.map((file: ApiFile) => {
@@ -382,21 +393,44 @@ export default function KundenordnerPage() {
                 className='hidden'
             />
 
-            {/* Filter Tabs */}
-            <div className='flex items-center gap-2 overflow-x-auto pb-2'>
-                {availableTypes.map((type) => (
-                    <button
-                        key={type}
-                        onClick={() => setActiveFilter(type)}
-                        className={`px-4 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === type
+
+
+            <div className='flex flex-col md:flex-row items-center gap-2 justify-between'>
+                {/* Document Type Filter Tabs */}
+                <div className='flex items-center gap-2 overflow-x-auto '>
+                    {availableTypes.map((type) => (
+                        <button
+                            key={type}
+                            onClick={() => setActiveFilter(type)}
+                            className={`px-4 cursor-pointer py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === type
                                 ? 'bg-blue-600 text-white'
                                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        {documentTypeLabels[type]} ({getDocumentCount(type)})
-                    </button>
-                ))}
+                                }`}
+                        >
+                            {documentTypeLabels[type]} ({getDocumentCount(type)})
+                        </button>
+                    ))}
+                </div>
+                {/* Table Filter Tabs */}
+                <div className='flex items-center gap-2 overflow-x-auto '>
+                    {(['all', 'customer_files', 'custom_shafts', 'screener_file'] as TableFilter[]).map((table) => (
+                        <button
+                            key={table}
+                            onClick={() => {
+                                setTableFilter(table)
+                                setPage(1) 
+                            }}
+                            className={`px-4 cursor-pointer py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${tableFilter === table
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                        >
+                            {tableFilterLabels[table]}
+                        </button>
+                    ))}
+                </div>
             </div>
+
 
             {/* Loading indicator for pagination */}
             {loading && documents.length > 0 && (

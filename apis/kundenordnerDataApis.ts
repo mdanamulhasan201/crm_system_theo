@@ -1,16 +1,22 @@
 import axiosClient from "@/lib/axiosClient";
 
 
-// get kundenordner data /customer-files/get/cccb741b-74e2-4584-ac1f-2fd95deaa03d?page=&limit=
+// get kundenordner data /customer-files/get/cccb741b-74e2-4584-ac1f-2fd95deaa03d?page=&limit=&table=custom_shafts
 
-export const getKundenordnerData = async (customerId: string, page: number, limit: number) => {
+export const getKundenordnerData = async (customerId: string, page: number, limit: number, table?: string) => {
     try {
+        const params: any = {
+            id: customerId,
+            page,
+            limit,
+        };
+        
+        if (table) {
+            params.table = table;
+        }
+
         const response = await axiosClient.get('/customer-files/get', {
-            params: {
-                id: customerId,
-                page,
-                limit,
-            },
+            params,
         });
         return response.data;
     } catch (error) {
