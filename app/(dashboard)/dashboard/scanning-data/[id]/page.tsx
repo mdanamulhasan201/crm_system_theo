@@ -30,7 +30,7 @@ export default function ScanningData() {
     return (
         <div className="p-4">
             {/* backbutton */}
-            <div>
+            <div className='mb-6'>
                 <Button
                     onClick={() => router.back()}
                     variant="outline"

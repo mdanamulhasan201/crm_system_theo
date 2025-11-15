@@ -1,19 +1,23 @@
 'use client'
-import React, { useState } from 'react'
-import { useParams } from 'next/navigation'
+import React, { useState, useEffect } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
 import Image from 'next/image'
 import ImagePreviewModal from '@/components/CustomerModal/ImagePreviewModal'
+import CustomerModal from '@/components/CustomerModal/CustomerModal'
 import userload from '@/public/images/scanning/userload.png'
 import userImg from '@/public/images/scanning/user.png'
 import { useRouter } from 'next/navigation'
 import ScanDataDisplay from '@/components/Shared/ScanDataDisplay'
 import Loading from '@/components/Shared/Loading'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
 
 export default function CustomerInfo() {
     const router = useRouter();
     const params = useParams();
-    const { customer: scanData, loading, error } = useSingleCustomer(String(params.id));
+    const searchParams = useSearchParams();
+    const { customer: scanData, loading, error, refreshCustomer } = useSingleCustomer(String(params.id));
 
     // Modal states
     const [modalOpen, setModalOpen] = useState(false);
@@ -24,6 +28,7 @@ export default function CustomerInfo() {
     const [isVersorgungLoading, setIsVersorgungLoading] = useState(false);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [filteredData, setFilteredData] = useState(scanData);
+    const [addScanningModalOpen, setAddScanningModalOpen] = useState(false);
     const openModal = (img: string | null, title: string) => {
         setModalImg(img);
         setModalTitle(title);
@@ -40,6 +45,13 @@ export default function CustomerInfo() {
         setModalOpen(true);
     };
 
+    // Check for query parameter to open manage customer modal automatically
+    useEffect(() => {
+        const manageCustomer = searchParams.get('manageCustomer');
+        if (manageCustomer === 'true') {
+            setAddScanningModalOpen(true);
+        }
+    }, [searchParams]);
 
     if (loading) return <div className="p-4 flex justify-center items-center h-screen">Loading...</div>;
     if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
@@ -79,7 +91,46 @@ export default function CustomerInfo() {
                 stlUrl={stlUrl}
             />
 
+            {/* Add New Scanning Modal */}
+            <CustomerModal
+                isOpen={addScanningModalOpen}
+                onClose={() => {
+                    setAddScanningModalOpen(false);
+                    // Remove query parameter when modal is closed
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('manageCustomer');
+                    router.replace(url.pathname + url.search);
+                }}
+                customerId={scanData?.id}
+                onSubmit={() => {
+                    refreshCustomer();
+                }}
+            />
+
             <div className="mb-6">
+                <div className='flex justify-between items-center mb-4 gap-4'>
+                    {/* backbutton */}
+                    <Button
+                        onClick={() => router.back()}
+                        variant="outline"
+                        className="flex items-center gap-2 cursor-pointer"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </Button>
+                    <button
+                        onClick={() => {
+                            setAddScanningModalOpen(true);
+                            // Add query parameter to URL
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('manageCustomer', 'true');
+                            router.push(url.pathname + url.search);
+                        }}
+                        className='bg-[#62A07C] capitalize cursor-pointer text-white px-4 py-2 rounded hover:bg-[#62a07c98] transition text-sm'
+                    >
+                        manage customer
+                    </button>
+                </div>
                 <h1 className="text-2xl font-bold capitalize">
                     {scanData.vorname} {scanData.nachname}
                 </h1>
