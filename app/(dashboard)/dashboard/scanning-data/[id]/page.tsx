@@ -1,6 +1,6 @@
 'use client'
 import React from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 // import Image from 'next/image'
 // import folderImg from '@/public/images/scanning/folder.png'
 // import userImg from '@/public/images/scanning/user.png'
@@ -12,10 +12,13 @@ import SacnningForm from '@/app/(dashboard)/dashboard/_components/Scanning/Sacnn
 import ScannningDataPage from '@/app/(dashboard)/dashboard/_components/ScannningData/ScannningDataPage';
 
 import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 
 
 export default function ScanningData() {
+    const router = useRouter();
     const params = useParams();
     const { customer: scanData, loading, error, updateCustomer, refreshCustomer } = useSingleCustomer(String(params.id));
 
@@ -26,6 +29,17 @@ export default function ScanningData() {
 
     return (
         <div className="p-4">
+            {/* backbutton */}
+            <div>
+                <Button
+                    onClick={() => router.back()}
+                    variant="outline"
+                    className="flex items-center gap-2 cursor-pointer"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </Button>
+            </div>
             <ScannningDataPage scanData={scanData} />
             <hr className='my-10 border-gray-500' />
             {/*  form section */}

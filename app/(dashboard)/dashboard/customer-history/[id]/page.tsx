@@ -15,7 +15,7 @@ import Reviews from '@/components/CustomerHistory/Reviews/Reviews';
 import userload from '@/public/images/scanning/userload.png'
 import scanImg from '@/public/images/history/scan.png'
 import AdvancedFeaturesModal from '@/app/(dashboard)/dashboard/_components/Customers/AdvancedFeaturesModal'
-import { Edit, X, Loader2, Trash, AlertTriangle } from 'lucide-react'
+import { Edit, X, Loader2, Trash, AlertTriangle, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 // import { Input } from '@/components/ui/input'
@@ -145,6 +145,17 @@ export default function CustomerHistory() {
 
     return (
         <div className="p-4 space-y-6">
+            {/* backbutton */}
+            <div>
+                <Button
+                    onClick={() => router.back()}
+                    variant="outline"
+                    className="flex items-center gap-2 cursor-pointer"
+                >
+                    <ArrowLeft className="w-4 h-4" />
+                    Back
+                </Button>
+            </div>
 
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">{scanData.vorname} {scanData.nachname}</h1>
