@@ -277,3 +277,14 @@ export const filterCustomers = async (params: FilterCustomersParams = {}) => {
     }
 }
 
+
+// delete customer
+export const deleteCustomer = async (id: string) => {
+    try {
+        const response = await axiosClient.delete(`/customers/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+

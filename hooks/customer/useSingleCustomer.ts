@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getSingleCustomer } from '@/apis/customerApis'
+import { getSingleCustomer, deleteCustomer } from '@/apis/customerApis'
 import { ScanData } from '@/types/scan'
 import { useUpdateCustomerInfo } from './useUpdateCustomerInfo'
 
@@ -8,8 +8,10 @@ interface UseSingleCustomerReturn {
     loading: boolean
     error: string | null
     isUpdating: boolean
+    isDeleting: boolean
     fetchCustomer: (id: string) => Promise<void>
     updateCustomer: (customerData: any) => Promise<boolean>
+    deleteCustomer: (id: string) => Promise<boolean>
     refreshCustomer: () => Promise<void>
 }
 
@@ -17,6 +19,7 @@ export const useSingleCustomer = (customerId?: string): UseSingleCustomerReturn 
     const [customer, setCustomer] = useState<ScanData | null>(null)
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
+    const [isDeleting, setIsDeleting] = useState<boolean>(false)
 
     // Use the existing update hook
     const { updateCustomerInfo, isUpdating, error: updateError } = useUpdateCustomerInfo()
@@ -59,6 +62,22 @@ export const useSingleCustomer = (customerId?: string): UseSingleCustomerReturn 
         }
     }
 
+    const handleDeleteCustomer = async (id: string): Promise<boolean> => {
+        setIsDeleting(true)
+        setError(null)
+
+        try {
+            await deleteCustomer(id)
+            return true
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to delete customer'
+            setError(errorMessage)
+            return false
+        } finally {
+            setIsDeleting(false)
+        }
+    }
+
     const refreshCustomer = async () => {
         if (customer?.id) {
             await fetchCustomer(customer.id)
@@ -84,8 +103,10 @@ export const useSingleCustomer = (customerId?: string): UseSingleCustomerReturn 
         loading,
         error,
         isUpdating,
+        isDeleting,
         fetchCustomer,
         updateCustomer,
+        deleteCustomer: handleDeleteCustomer,
         refreshCustomer
     }
 }

@@ -15,7 +15,7 @@ import Reviews from '@/components/CustomerHistory/Reviews/Reviews';
 import userload from '@/public/images/scanning/userload.png'
 import scanImg from '@/public/images/history/scan.png'
 import AdvancedFeaturesModal from '@/app/(dashboard)/dashboard/_components/Customers/AdvancedFeaturesModal'
-import { Edit, X, Loader2 } from 'lucide-react'
+import { Edit, X, Loader2, Trash, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 // import { Input } from '@/components/ui/input'
@@ -25,7 +25,7 @@ import toast from 'react-hot-toast'
 export default function CustomerHistory() {
     const params = useParams();
     const router = useRouter();
-    const { customer: scanData, loading, error, updateCustomer, isUpdating } = useSingleCustomer(String(params.id));
+    const { customer: scanData, loading, error, updateCustomer, isUpdating, deleteCustomer, isDeleting } = useSingleCustomer(String(params.id));
     const [activeTab, setActiveTab] = useState<'scans' | 'shoes' | 'versorgungen' | 'reviews'>('scans');
     const [isEditing, setIsEditing] = useState(false);
     const [editFormData, setEditFormData] = useState({
@@ -37,6 +37,7 @@ export default function CustomerHistory() {
         telefon: ''
     });
     const [isPopUpOpen, setIsPopUpOpen] = useState(false);
+    const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
     if (loading) return <div className="p-4">Loading...</div>;
     if (error) return <div className="p-4 text-red-600">Error: {error}</div>;
@@ -117,41 +118,91 @@ export default function CustomerHistory() {
         router.push(`/dashboard/kundenordner/${params.id}`);
     }
 
+    const handleDeleteClick = () => {
+        setIsDeleteDialogOpen(true);
+    }
+
+    const handleConfirmDelete = async () => {
+        if (!scanData?.id) {
+            toast.error('Customer ID not found');
+            return;
+        }
+
+        try {
+            const success = await deleteCustomer(scanData.id);
+            if (success) {
+                toast.success('Customer deleted successfully');
+                router.push('/dashboard/customers');
+            } else {
+                toast.error('Failed to delete customer');
+            }
+        } catch (error) {
+            toast.error('An error occurred while deleting customer');
+        } finally {
+            setIsDeleteDialogOpen(false);
+        }
+    }
+
     return (
         <div className="p-4 space-y-6">
 
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">{scanData.vorname} {scanData.nachname}</h1>
                 <div className="flex gap-2">
-                    {!isEditing ? (
+                    {/* delete button */}
+                    <div>
                         <Button
-                            onClick={handleEditClick}
+                            onClick={handleDeleteClick}
                             variant="outline"
-                            className="flex items-center gap-2 cursor-pointer"
+                            disabled={isDeleting}
+                            className="flex items-center gap-2 cursor-pointer hover:bg-red-50 hover:border-red-300"
                         >
-                            <Edit className="w-4 h-4" />
-                            Edit
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                <>
+                                    <Trash className="w-4 h-4" />
+                                    Delete
+                                </>
+                            )}
                         </Button>
-                    ) : (
-                        <>
+                    </div>
+
+                    {/* edit and save buttons */}
+                    <div className="flex gap-2">
+                        {!isEditing ? (
                             <Button
-                                onClick={handleCancelClick}
+                                onClick={handleEditClick}
                                 variant="outline"
-                                disabled={isUpdating}
-                                className="cursor-pointer"
+                                className="flex items-center gap-2 cursor-pointer"
                             >
-                                Cancel
+                                <Edit className="w-4 h-4" />
+                                Edit
                             </Button>
-                            <Button
-                                onClick={handleSaveClick}
-                                disabled={isUpdating}
-                                className="bg-[#61A07B] hover:bg-[#528c68] text-white cursor-pointer"
-                            >
-                                {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                {isUpdating ? 'Saving...' : 'Save'}
-                            </Button>
-                        </>
-                    )}
+                        ) : (
+                            <>
+                                <Button
+                                    onClick={handleCancelClick}
+                                    variant="outline"
+                                    disabled={isUpdating}
+                                    className="cursor-pointer"
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    onClick={handleSaveClick}
+                                    disabled={isUpdating}
+                                    className="bg-[#61A07B] hover:bg-[#528c68] text-white cursor-pointer"
+                                >
+                                    {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {isUpdating ? 'Saving...' : 'Save'}
+                                </Button>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -410,6 +461,51 @@ export default function CustomerHistory() {
                     </DialogHeader>
                     <div className="flex justify-center pt-2">
                         <Button onClick={() => setIsPopUpOpen(false)} className="cursor-pointer">OK</Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-center text-xl font-semibold">Delete Customer</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                                <AlertTriangle className="w-8 h-8 text-red-600" />
+                            </div>
+                            <div className="text-center">
+                                <p className="text-gray-700 mb-2">
+                                    Are you sure you want to delete this customer?
+                                </p>
+                                <p className="text-lg font-semibold text-gray-900">
+                                    {scanData?.vorname} {scanData?.nachname}
+                                </p>
+                                <p className="text-sm text-red-600 mt-2 font-medium">
+                                    This action cannot be undone.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex justify-center gap-3 pt-2">
+                        <Button
+                            onClick={() => setIsDeleteDialogOpen(false)}
+                            variant="outline"
+                            disabled={isDeleting}
+                            className="cursor-pointer min-w-[100px]"
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            onClick={handleConfirmDelete}
+                            disabled={isDeleting}
+                            className="bg-red-600 hover:bg-red-700 text-white cursor-pointer min-w-[100px]"
+                        >
+                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isDeleting ? 'Deleting...' : 'Delete'}
+                        </Button>
                     </div>
                 </DialogContent>
             </Dialog>
