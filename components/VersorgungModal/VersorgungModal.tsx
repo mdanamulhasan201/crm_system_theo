@@ -1,8 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react'
-import useEmblaCarousel from 'embla-carousel-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { BsFillQuestionCircleFill } from 'react-icons/bs'
 import { createVersorgung, updateVersorgung } from '@/apis/versorgungApis'
 import { getAllStorages } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
@@ -47,23 +45,6 @@ export interface VersorgungModalProps {
 }
 
 // Constants
-const DEFAULT_LENGTHS = [
-    { value: '250', label: '35' },
-    { value: '255', label: '36' },
-    { value: '260', label: '37' },
-    { value: '265', label: '38' },
-    { value: '270', label: '39' },
-    { value: '275', label: '40' },
-    { value: '280', label: '41' },
-    { value: '285', label: '42' },
-    { value: '290', label: '43' },
-    { value: '295', label: '44' },
-    { value: '300', label: '45' },
-    { value: '305', label: '46' },
-    { value: '310', label: '47' },
-    { value: '315', label: '48' },
-]
-
 const CATEGORY_TITLES = {
     alltagseinlagen: 'Alltagseinlagen',
     sporteinlagen: 'Sporteinlagen',
@@ -94,7 +75,6 @@ export default function VersorgungModal({
 }: VersorgungModalProps) {
 
     const [form, setForm] = useState(INITIAL_FORM_STATE)
-    const [lengths, setLengths] = useState(DEFAULT_LENGTHS)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
@@ -103,17 +83,6 @@ export default function VersorgungModal({
     const [storageProducts, setStorageProducts] = useState<StorageProduct[]>([])
     const [isLoadingProducts, setIsLoadingProducts] = useState(false)
     const [selectedProduct, setSelectedProduct] = useState<StorageProduct | null>(null)
-
-    // Carousel Setup
-    const [lengthEmblaRef, lengthEmblaApi] = useEmblaCarousel({
-        slidesToScroll: 3,
-        align: 'start',
-        containScroll: 'trimSnaps'
-    })
-
-    // Carousel Navigation States
-    const [canScrollLengthPrev, setCanScrollLengthPrev] = useState(false)
-    const [canScrollLengthNext, setCanScrollLengthNext] = useState(false)
 
     // Helper Functions
     const getCategoryTitle = () => CATEGORY_TITLES[category] || 'Versorgung'
@@ -147,17 +116,6 @@ export default function VersorgungModal({
             artikelHersteller: product.artikelnummer,
             rohlingHersteller: product.hersteller,
         }))
-
-        // Update lengths based on groessenMengen
-        const newLengths = DEFAULT_LENGTHS.map((length, index) => {
-            const size = length.label
-            const quantity = product.groessenMengen[size] || 0
-            return {
-                ...length,
-                value: quantity.toString()
-            }
-        })
-        setLengths(newLengths)
     }
 
     const resetForm = useCallback(() => {
@@ -178,7 +136,6 @@ export default function VersorgungModal({
             })
         } else {
             setForm(INITIAL_FORM_STATE)
-            setLengths(DEFAULT_LENGTHS)
         }
     }, [editingCard])
 
@@ -187,19 +144,6 @@ export default function VersorgungModal({
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
     }
 
-
-    const handleLengthInputChange = (index: number, newValue: string) => {
-        setLengths(prev => {
-            const newLengths = [...prev]
-            newLengths[index].value = newValue
-            for (let i = index + 1; i < newLengths.length; i++) {
-                const prevValue = parseInt(newLengths[i - 1].value)
-                newLengths[i].value = (prevValue + 5).toString()
-            }
-
-            return newLengths
-        })
-    }
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -211,18 +155,12 @@ export default function VersorgungModal({
 
         try {
             // Transform form data to match API format
-            const langenempfehlung: { [key: string]: number } = {}
-            lengths.forEach(l => {
-                langenempfehlung[l.label] = parseInt(l.value)
-            })
-
             const apiData = {
                 name: form.name,
                 rohlingHersteller: form.rohlingHersteller,
                 artikelHersteller: form.artikelHersteller,
                 versorgung: form.versorgung,
                 material: form.materialien,
-                langenempfehlung,
                 status: getCategoryStatus(),
                 storeId: selectedProduct?.id || null,
                 ...(isAuswahl && { diagnosis_status: selectedDiagnosis })
@@ -261,35 +199,7 @@ export default function VersorgungModal({
         }
     }
 
-    // Carousel Navigation Handlers
-    const scrollLengthPrev = useCallback(() => {
-        if (lengthEmblaApi) lengthEmblaApi.scrollPrev()
-    }, [lengthEmblaApi])
-
-    const scrollLengthNext = useCallback(() => {
-        if (lengthEmblaApi) lengthEmblaApi.scrollNext()
-    }, [lengthEmblaApi])
-
-    const onLengthSelect = useCallback(() => {
-        if (!lengthEmblaApi) return
-        setCanScrollLengthPrev(lengthEmblaApi.canScrollPrev())
-        setCanScrollLengthNext(lengthEmblaApi.canScrollNext())
-    }, [lengthEmblaApi])
-
     // Effects
-    useEffect(() => {
-        if (!lengthEmblaApi) return
-
-        onLengthSelect()
-        lengthEmblaApi.on('select', onLengthSelect)
-        lengthEmblaApi.on('reInit', onLengthSelect)
-
-        return () => {
-            lengthEmblaApi.off('select', onLengthSelect)
-            lengthEmblaApi.off('reInit', onLengthSelect)
-        }
-    }, [lengthEmblaApi, onLengthSelect])
-
     useEffect(() => {
         if (open) {
             resetForm()
@@ -329,59 +239,6 @@ export default function VersorgungModal({
                         </option>
                     ))}
                 </select>
-            </div>
-        </div>
-    )
-
-    const renderLengthCarousel = () => (
-        <div>
-            <div className='flex items-center gap-2'>
-                <label className="font-bold mb-1 block">Längenempfehlung</label>
-                <BsFillQuestionCircleFill className='text-gray-700' />
-            </div>
-            <div className="relative">
-                <div className="overflow-hidden" ref={lengthEmblaRef}>
-                    <div className="flex gap-2">
-                        {lengths.map((length, index) => (
-                            <div key={index} className="flex-[0_0_auto] min-w-[60px]">
-                                <div className="p-1 text-center">
-                                    <input
-                                        type="number"
-                                        value={length.value}
-                                        onChange={(e) => handleLengthInputChange(index, e.target.value)}
-                                        className="border text-center px-1 py-2 rounded text-xs mb-1"
-                                        placeholder={length.value}
-                                    />
-                                    <div className="text-xs text-gray-500">{length.label}</div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Carousel Navigation Arrows */}
-                {canScrollLengthPrev && (
-                    <button
-                        type="button"
-                        onClick={scrollLengthPrev}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white p-2 cursor-pointer rounded-full shadow-lg hover:bg-gray-100 z-10 border"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                        </svg>
-                    </button>
-                )}
-                {canScrollLengthNext && (
-                    <button
-                        type="button"
-                        onClick={scrollLengthNext}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white p-2 cursor-pointer rounded-full shadow-lg hover:bg-gray-100 z-10 border"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                        </svg>
-                    </button>
-                )}
             </div>
         </div>
     )
@@ -494,9 +351,6 @@ export default function VersorgungModal({
                             </select>
                         </div>
                     )}
-
-                    {/* Length Recommendation */}
-                    {renderLengthCarousel()}
 
                     <DialogFooter>
                         {renderSubmitButton()}

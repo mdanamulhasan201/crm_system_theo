@@ -3,9 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
 import { useAuth } from '@/contexts/AuthContext'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import toast from 'react-hot-toast'
+
+interface SizeData {
+    length: number;
+    quantity: number;
+}
 
 interface NewProduct {
     Produktname: string;
@@ -15,7 +21,7 @@ interface NewProduct {
     minStockLevel: number;
     purchase_price: number;
     selling_price: number;
-    sizeQuantities: { [key: string]: number };
+    sizeQuantities: { [key: string]: SizeData };
 }
 
 interface AddProductProps {
@@ -43,7 +49,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
         minStockLevel: 5,
         purchase_price: 0,
         selling_price: 0,
-        sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, 0]))
+        sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
     });
 
     const handleNewProductChange = (field: keyof NewProduct, value: string | number) => {
@@ -54,7 +60,22 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
             ...prev,
             sizeQuantities: {
                 ...prev.sizeQuantities,
-                [size]: parseInt(value) || 0
+                [size]: {
+                    ...prev.sizeQuantities[size],
+                    quantity: parseInt(value) || 0
+                }
+            }
+        }));
+    };
+    const handleNewProductLengthChange = (size: string, value: string) => {
+        setNewProduct(prev => ({
+            ...prev,
+            sizeQuantities: {
+                ...prev.sizeQuantities,
+                [size]: {
+                    ...prev.sizeQuantities[size],
+                    length: parseFloat(value) || 0
+                }
             }
         }));
     };
@@ -111,7 +132,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 minStockLevel: 5,
                 purchase_price: 0,
                 selling_price: 0,
-                sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, 0]))
+                sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
             });
         } catch (err) {
             console.error('Failed to create product:', err);
@@ -130,6 +151,24 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
             try {
                 setIsPrefilling(true)
                 const product = await getProductById(editProductId);
+                // Convert backend format to frontend format
+                const convertedSizeQuantities: { [key: string]: SizeData } = {};
+                if (product.groessenMengen) {
+                    Object.keys(product.groessenMengen).forEach(size => {
+                        const sizeData = product.groessenMengen[size];
+                        // Check if it's already in the new format {length, quantity}
+                        if (typeof sizeData === 'object' && 'length' in sizeData && 'quantity' in sizeData) {
+                            convertedSizeQuantities[size] = sizeData as SizeData;
+                        } else {
+                            // Old format: just a number, convert to new format
+                            convertedSizeQuantities[size] = {
+                                quantity: sizeData as number,
+                                length: product.groessenLaengen?.[size] ? parseFloat(product.groessenLaengen[size]) || 0 : 0
+                            };
+                        }
+                    });
+                }
+                
                 setNewProduct({
                     Produktname: product.produktname,
                     Hersteller: product.hersteller,
@@ -138,7 +177,9 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                     minStockLevel: product.mindestbestand,
                     purchase_price: product.purchase_price,
                     selling_price: product.selling_price,
-                    sizeQuantities: product.groessenMengen || Object.fromEntries(sizeColumns.map(size => [size, 0]))
+                    sizeQuantities: Object.keys(convertedSizeQuantities).length > 0 
+                        ? convertedSizeQuantities 
+                        : Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
                 });
             } finally {
                 setIsPrefilling(false)
@@ -159,7 +200,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 minStockLevel: 5,
                 purchase_price: 0,
                 selling_price: 0,
-                sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, 0]))
+                sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
             })
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -176,7 +217,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 </button>
             )}
             <Dialog open={isOpen} onOpenChange={setOpen}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editProductId ? 'Produkt bearbeiten' : 'Produkt manuell hinzufügen'}</DialogTitle>
                     </DialogHeader>
@@ -251,20 +292,44 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">Größen & Mengen</label>
-                            <div className="grid grid-cols-5 gap-2">
-                                {sizeColumns.map(size => (
-                                    <div key={size} className="flex flex-col items-center">
-                                        <span className="text-xs text-gray-500 mb-1">{size}</span>
-                                        <Input
-                                            type="number"
-                                            min={0}
-                                            value={newProduct.sizeQuantities[size]}
-                                            onChange={e => handleNewProductSizeChange(size, e.target.value)}
-                                            className="w-16"
-                                        />
-                                    </div>
-                                ))}
+                            <label className="block text-sm font-medium mb-3">Größen & Mengen</label>
+                            <div className="border rounded-lg overflow-hidden">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="font-medium">Größe</TableHead>
+                                            <TableHead className="font-medium">Bestand</TableHead>
+                                            <TableHead className="font-medium">Länge (cm)</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {sizeColumns.map(size => (
+                                            <TableRow key={size}>
+                                                <TableCell className="font-medium">{size}</TableCell>
+                                                <TableCell>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        value={newProduct.sizeQuantities[size]?.quantity || 0}
+                                                        onChange={e => handleNewProductSizeChange(size, e.target.value)}
+                                                        className="w-full"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Input
+                                                        type="number"
+                                                        step="0.1"
+                                                        min={0}
+                                                        value={newProduct.sizeQuantities[size]?.length || ''}
+                                                        onChange={e => handleNewProductLengthChange(size, e.target.value)}
+                                                        placeholder="z.B. 150"
+                                                        className="w-full"
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
                             </div>
                         </div>
                         <div className="flex justify-end gap-2">

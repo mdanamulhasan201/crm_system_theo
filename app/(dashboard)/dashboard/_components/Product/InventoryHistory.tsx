@@ -5,6 +5,11 @@ import { getProductHistory } from '@/apis/productsManagementApis';
 import toast from 'react-hot-toast';
 import { IoPerson, IoCart, IoDocumentText, IoTime, IoArrowForward, IoArrowDown, IoArrowUp } from 'react-icons/io5';
 
+interface SizeData {
+  length: number;
+  quantity: number;
+}
+
 interface Product {
   id: string;
   Produktname: string;
@@ -12,7 +17,7 @@ interface Product {
   Hersteller: string;
   Lagerort: string;
   minStockLevel: number;
-  sizeQuantities: { [key: string]: number };
+  sizeQuantities: { [key: string]: number | SizeData };
 }
 
 interface HistoryEntry {

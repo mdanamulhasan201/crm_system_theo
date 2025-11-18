@@ -29,6 +29,11 @@ import { deleteStorage } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 
+interface SizeData {
+    length: number;
+    quantity: number;
+}
+
 interface Product {
     id: string
     Produktname: string
@@ -36,7 +41,7 @@ interface Product {
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number }
+    sizeQuantities: { [key: string]: number | SizeData }
     Status: string
     inventoryHistory: Array<{
         id: string
@@ -51,13 +56,22 @@ interface Product {
     }>
 }
 
+// Helper function to get quantity from sizeQuantities (handles both old and new format)
+const getQuantity = (sizeData: number | SizeData | undefined): number => {
+    if (sizeData === undefined) return 0;
+    if (typeof sizeData === 'number') return sizeData;
+    return sizeData.quantity || 0;
+}
+
 interface NewProduct {
     Produktname: string
     Produktkürzel: string
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number }
+    purchase_price: number
+    selling_price: number
+    sizeQuantities: { [key: string]: SizeData }
 }
 
 // Define the size columns
@@ -133,15 +147,19 @@ export default function Lager() {
 
     // Stock level helpers
     const hasLowStock = (product: Product) => {
-        return Object.entries(product.sizeQuantities).some(([, quantity]) =>
-            quantity <= product.minStockLevel && quantity > 0
-        );
+        return Object.entries(product.sizeQuantities).some(([, sizeData]) => {
+            const quantity = getQuantity(sizeData);
+            return quantity <= product.minStockLevel && quantity > 0;
+        });
     }
 
     const getLowStockSizes = (product: Product) => {
         return Object.entries(product.sizeQuantities)
-            .filter(([, quantity]) => quantity <= product.minStockLevel && quantity > 0)
-            .map(([size, quantity]) => ({ size, quantity }));
+            .filter(([, sizeData]) => {
+                const quantity = getQuantity(sizeData);
+                return quantity <= product.minStockLevel && quantity > 0;
+            })
+            .map(([size, sizeData]) => ({ size, quantity: getQuantity(sizeData) }));
     }
 
 

@@ -23,6 +23,11 @@ import { useAuth } from '@/contexts/AuthContext'
 import AddProduct from './AddProduct'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 
+interface SizeData {
+    length: number;
+    quantity: number;
+}
+
 interface Product {
     id: string
     Produktname: string
@@ -30,7 +35,7 @@ interface Product {
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number }
+    sizeQuantities: { [key: string]: number | SizeData }
     Status: string
     inventoryHistory: Array<{
         id: string
@@ -43,6 +48,13 @@ interface Product {
         user: string
         notes: string
     }>
+}
+
+// Helper function to get quantity from sizeQuantities (handles both old and new format)
+const getQuantity = (sizeData: number | SizeData | undefined): number => {
+    if (sizeData === undefined) return 0;
+    if (typeof sizeData === 'number') return sizeData;
+    return sizeData.quantity || 0;
 }
 
 interface ProductManagementTableProps {
@@ -75,7 +87,7 @@ export default function ProductManagementTable({
 
     // Helper to get stock for a size
     function getStockForSize(product: Product, size: string) {
-        return product.sizeQuantities[size] || 0;
+        return getQuantity(product.sizeQuantities[size]);
     }
 
     return (

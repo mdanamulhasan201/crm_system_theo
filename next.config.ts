@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         hostname: 'gif-sponsors-names-dealer.trycloudflare.com',
       },
       {
+        protocol: 'https',
+        hostname: 'enjoyed-designation-hist-librarian.trycloudflare.com',
+      },
+      {
         // local host
         protocol: 'http',
         hostname: '192.168.7.12',

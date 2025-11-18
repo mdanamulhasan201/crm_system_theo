@@ -3,6 +3,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { IoCamera } from 'react-icons/io5';
 
+interface SizeData {
+  length: number;
+  quantity: number;
+}
+
 interface Product {
   id: number;
   Produktname: string;
@@ -10,7 +15,7 @@ interface Product {
   Hersteller: string;
   Lagerort: string;
   minStockLevel: number;
-  sizeQuantities: { [key: string]: number };
+  sizeQuantities: { [key: string]: number | SizeData };
   inventoryHistory: Array<{
     id: string;
     date: string;
@@ -22,6 +27,13 @@ interface Product {
     user: string;
     notes: string;
   }>;
+}
+
+// Helper function to get quantity from sizeQuantities (handles both old and new format)
+const getQuantity = (sizeData: number | SizeData | undefined): number => {
+  if (sizeData === undefined) return 0;
+  if (typeof sizeData === 'number') return sizeData;
+  return sizeData.quantity || 0;
 }
 
 interface ScannedData {
@@ -88,11 +100,14 @@ export default function DeliveryNote({ productsData, onDeliveryNoteAdd, showButt
   const applyToExistingProduct = (product: Product, scannedData: ScannedData) => {
     const updatedProducts = productsData.map(p => {
       if (p.id === product.id) {
-        const updatedSizeQuantities = { ...p.sizeQuantities };
+        const updatedSizeQuantities: { [key: string]: number | SizeData } = { ...p.sizeQuantities };
         Object.entries(scannedData.sizeQuantities).forEach(([size, quantity]) => {
-          const currentQuantity = updatedSizeQuantities[size] || 0;
+          const currentQuantity = getQuantity(updatedSizeQuantities[size]);
           const newQuantity = currentQuantity + (quantity as number);
-          updatedSizeQuantities[size] = newQuantity;
+          // Keep existing length if it exists, otherwise set to 0
+          const existingData = updatedSizeQuantities[size];
+          const existingLength = typeof existingData === 'object' && 'length' in existingData ? existingData.length : 0;
+          updatedSizeQuantities[size] = { length: existingLength, quantity: newQuantity };
         });
         const historyEntry: Product['inventoryHistory'][0] = {
           id: `hist_${Date.now()}`,
@@ -100,8 +115,8 @@ export default function DeliveryNote({ productsData, onDeliveryNoteAdd, showButt
           type: 'delivery',
           quantity: Object.values(scannedData.sizeQuantities).reduce((sum: number, qty: number) => sum + qty, 0),
           size: 'multiple',
-          previousStock: Object.values(p.sizeQuantities).reduce((sum: number, qty: number) => sum + qty, 0),
-          newStock: Object.values(updatedSizeQuantities).reduce((sum: number, qty: number) => sum + qty, 0),
+          previousStock: Object.values(p.sizeQuantities).reduce((sum: number, sizeData) => sum + getQuantity(sizeData), 0),
+          newStock: Object.values(updatedSizeQuantities).reduce((sum: number, sizeData) => sum + getQuantity(sizeData), 0),
           user: 'admin',
           notes: `Delivery note scan: ${scannedData.supplier}`,
         };
@@ -118,6 +133,12 @@ export default function DeliveryNote({ productsData, onDeliveryNoteAdd, showButt
 
   // Create new product from scanned data
   const createNewProduct = (scannedData: ScannedData) => {
+    // Convert scanned data sizeQuantities to new format
+    const convertedSizeQuantities: { [key: string]: SizeData } = {};
+    Object.entries(scannedData.sizeQuantities).forEach(([size, quantity]) => {
+      convertedSizeQuantities[size] = { length: 0, quantity: quantity as number };
+    });
+    
     const newProduct: Product = {
       id: Math.max(0, ...productsData.map(p => p.id)) + 1,
       Produktname: scannedData.productName,
@@ -125,7 +146,7 @@ export default function DeliveryNote({ productsData, onDeliveryNoteAdd, showButt
       Hersteller: scannedData.manufacturer,
       Lagerort: 'Neues Lager',
       minStockLevel: 10,
-      sizeQuantities: scannedData.sizeQuantities,
+      sizeQuantities: convertedSizeQuantities,
       inventoryHistory: [
         {
           id: `hist_${Date.now()}`,

@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { createProduct, getAllStorages, getSingleStorage, updateStorage } from '@/apis/productsManagementApis';
 
+interface SizeData {
+    length: number;
+    quantity: number;
+}
+
 interface ProductFormData {
     Produktname: string;
     Hersteller: string;
@@ -9,7 +14,7 @@ interface ProductFormData {
     minStockLevel: number;
     purchase_price: number;
     selling_price: number;
-    sizeQuantities: { [key: string]: number };
+    sizeQuantities: { [key: string]: SizeData };
 }
 
 interface CreateProductPayload {
@@ -19,7 +24,7 @@ interface CreateProductPayload {
     lagerort: string;
     mindestbestand: number;
     historie: string;
-    groessenMengen: { [key: string]: number };
+    groessenMengen: { [key: string]: SizeData };
     purchase_price: number;
     selling_price: number;
     Status: string;
@@ -32,7 +37,8 @@ interface ApiProduct {
     artikelnummer: string;
     lagerort: string;
     mindestbestand: number;
-    groessenMengen: { [key: string]: number };
+    groessenMengen: { [key: string]: SizeData | number };
+    groessenLaengen?: { [key: string]: string };
     purchase_price: number;
     selling_price: number;
     Status: string;
@@ -64,9 +70,10 @@ export const useStockManagementSlice = () => {
     const [pagination, setPagination] = useState<PaginationInfo | null>(null);
     const [isLoadingProducts, setIsLoadingProducts] = useState(false);
 
-    const determineStockStatus = (sizeQuantities: { [key: string]: number }, minStockLevel: number): string => {
-        const totalStock = Object.values(sizeQuantities).reduce((sum, qty) => sum + qty, 0);
-        const lowStockSizes = Object.values(sizeQuantities).some(qty => qty <= minStockLevel && qty > 0);
+    const determineStockStatus = (sizeQuantities: { [key: string]: SizeData }, minStockLevel: number): string => {
+        const quantities = Object.values(sizeQuantities).map(data => data.quantity);
+        const totalStock = quantities.reduce((sum, qty) => sum + qty, 0);
+        const lowStockSizes = quantities.some(qty => qty <= minStockLevel && qty > 0);
         
         if (totalStock === 0) return "Out of Stock";
         if (totalStock <= minStockLevel) return "Critical Low Stock";
