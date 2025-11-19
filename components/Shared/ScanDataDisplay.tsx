@@ -19,6 +19,8 @@ interface ScanDataDisplayProps {
     error?: string | null
     children?: React.ReactNode
     onDataChange?: (filteredData: any) => void
+    defaultSelectedDate?: string | null
+    onDateChange?: (date: string | null) => void
 }
 
 export default function ScanDataDisplay({
@@ -31,11 +33,13 @@ export default function ScanDataDisplay({
     isUpdating = false,
     error = null,
     children,
-    onDataChange
+    onDataChange,
+    defaultSelectedDate = null,
+    onDateChange
 }: ScanDataDisplayProps) {
     const { user } = useAuth();
     // Date filter state
-    const [selectedScanDate, setSelectedScanDate] = useState<string>('');
+    const [selectedScanDate, setSelectedScanDate] = useState<string>(defaultSelectedDate || '');
     const [showDateDropdown, setShowDateDropdown] = useState(false);
 
     // Zoom state
@@ -95,9 +99,14 @@ export default function ScanDataDisplay({
         return scanData[fieldName] || null;
     };
 
+    React.useEffect(() => {
+        setSelectedScanDate(defaultSelectedDate || '');
+    }, [defaultSelectedDate]);
+
     const handleDateSelect = (date: string) => {
         setSelectedScanDate(date);
         setShowDateDropdown(false);
+        onDateChange?.(date || null);
     };
 
     const getCurrentDisplayDate = () => {

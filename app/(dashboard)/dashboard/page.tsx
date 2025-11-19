@@ -220,7 +220,7 @@ export default function DashboardMainPage() {
 
             {isInitialLoad ? <HeaderSkeleton /> : (
                 <div className='flex flex-col gap-3 mb-6'>
-                    <h1 className='text-3xl font-bold'>WELCOME BACK {user?.name?.toUpperCase()}</h1>
+                    <h1 className='text-3xl font-bold uppercase'>Willkommen zurück <span className='capitalize'> {user?.busnessName}</span> </h1>
                     <p className='text-lg text-gray-500'>{format(new Date(), 'EEEE, d. MMMM yyyy')}</p>
                 </div>
             )}

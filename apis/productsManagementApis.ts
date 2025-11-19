@@ -74,3 +74,14 @@ export const getChartData = async () => {
     }
 };
 
+// /store/performer quary?type=low and ?type=top
+export const getPerformanceData = async (type: 'low' | 'top') => {
+    try {
+        const response = await axiosClient.get(`/store/performer?type=${type}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+

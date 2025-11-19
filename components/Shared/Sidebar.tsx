@@ -75,7 +75,8 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
             standalone: true,
             icon: PiFootprintsLight,
             label: 'Einlagenaufträge',
-            href: '/dashboard/einlagenauftraege'
+            // href: '/dashboard/einlagenauftraege'
+            href: '/dashboard/orders'
         },
         {
             id: '1d',
@@ -95,7 +96,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
             id: '2',
             label: 'Aufträge & Produkte',
             items: [
-                { icon: HiShoppingCart, label: 'Aufträge', href: '/dashboard/orders' },
+                // { icon: HiShoppingCart, label: 'Aufträge', href: '/dashboard/orders' },
                 { icon: HiOutlineCube, label: 'Produktverwaltung', href: '/dashboard/lager' },
                 { icon: GrCubes, label: 'Sammelbestellungen', href: '/dashboard/group-orders' }
 
@@ -271,7 +272,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
                         <div className="flex flex-col items-center">
                             <p className="text-sm text-gray-600 mb-1">Welcome back</p>
                             <p className="text-base font-semibold text-gray-800 mb-2">
-                                {user?.name || 'User'}
+                                {user?.busnessName || ''}
                                 <span className="ml-2">👋</span>
                             </p>
                         </div>

@@ -59,18 +59,19 @@ export default function ScansPromoted({ customerData }: ScansPromotedProps) {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {screenerFiles.map((scan) => {
                     const location = getLocation(customerData.wohnort);
-                    
+                    const targetDate = scan.updatedAt || scan.createdAt;
+
                     return (
                         <div
                             key={scan.id}
                             className="flex flex-col"
                         >
-                            <Image 
-                                src={legImage} 
-                                alt="Leg Scan" 
-                                className="mb-4" 
-                                width={160} 
-                                height={100} 
+                            <Image
+                                src={legImage}
+                                alt="Leg Scan"
+                                className="mb-4"
+                                width={160}
+                                height={100}
                             />
 
                             <h3 className="text-lg font-semibold text-[#62A07C]">
@@ -84,8 +85,11 @@ export default function ScansPromoted({ customerData }: ScansPromotedProps) {
                             </p>
 
                             <div>
-                                <button 
-                                    onClick={() => router.push(`/dashboard/customer-info/${customerData.id}`)}
+                                <button
+                                    onClick={() => {
+                                        const query = targetDate ? `?scanDate=${encodeURIComponent(targetDate)}` : ''
+                                        router.push(`/dashboard/customer-info/${customerData.id}${query}`)
+                                    }}
                                     className="bg-[#62A07C] px-10 hover:bg-[#62a07c77] cursor-pointer text-white text-sm py-2 rounded transition"
                                 >
                                     Scan ansehen

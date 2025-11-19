@@ -18,6 +18,7 @@ export default function CustomerInfo() {
     const params = useParams();
     const searchParams = useSearchParams();
     const { customer: scanData, loading, error, refreshCustomer } = useSingleCustomer(String(params.id));
+    const selectedScanDate = searchParams.get('scanDate');
 
     // Modal states
     const [modalOpen, setModalOpen] = useState(false);
@@ -167,6 +168,7 @@ export default function CustomerInfo() {
                     scanData={scanData}
                     isEditable={false}
                     onDataChange={setFilteredData}
+                    defaultSelectedDate={selectedScanDate}
                 />
             </div>
 
