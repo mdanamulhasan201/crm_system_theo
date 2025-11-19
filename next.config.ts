@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'enjoyed-designation-hist-librarian.trycloudflare.com',
+        hostname: 'bennett-kodak-cabinets-atlanta.trycloudflare.com',
       },
       {
         // local host
