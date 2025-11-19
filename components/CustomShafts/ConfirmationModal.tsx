@@ -74,7 +74,7 @@ export default function ConfirmationModal({
           {/* Zusatzoptionen */}
           {(passendenSchnursenkel !== undefined || osenEinsetzen !== undefined) && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <h4 className="font-medium text-gray-900 mb-2">Zusätzliche Optionen</h4>
+              <h4 className="font-medium text-gray-900 mb-2">Zusätzlich ausgewählte</h4>
               <ul className="list-disc pl-5 text-gray-800 space-y-1">
                 {passendenSchnursenkel !== undefined && (
                   <li>

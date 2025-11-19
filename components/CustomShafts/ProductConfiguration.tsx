@@ -196,51 +196,7 @@ export default function ProductConfiguration({
           </div>
         </div>
 
-        {/* Zusätze: Schnürsenkel */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">
-            Möchten Sie passende Schnürsenkel zum Schuh? (+4,49€)
-          </Label>
-          <div className="flex items-center gap-8">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektSchnursenkel === false}
-                onChange={() => updateSchnursenkel(effektSchnursenkel === false ? undefined : false)}
-              />
-              <span>Nein, ohne</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektSchnursenkel === true}
-                onChange={() => updateSchnursenkel(effektSchnursenkel === true ? undefined : true)}
-              />
-              <span>Ja mit passenden Schnürsenkel (+4,49€)</span>
-            </label>
-          </div>
-        </div>
 
-        {/* Zusätze: Ösen einsetzen */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">
-            Möchten Sie den Schaft bereits mit eingesetzten Ösen? (+8,99€)
-          </Label>
-          <div className="flex items-center gap-8">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektOsen === false}
-                onChange={() => updateOsen(effektOsen === false ? undefined : false)}
-              />
-              <span>Nein, ohne Ösen</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektOsen === true}
-                onChange={() => updateOsen(effektOsen === true ? undefined : true)}
-              />
-              <span>Ja, Ösen einsetzen (+8,99€)</span>
-            </label>
-          </div>
-        </div>
 
         {/* Polsterung */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -306,6 +262,53 @@ export default function ProductConfiguration({
             value={verstarkungenText}
             onChange={(e) => setVerstarkungenText(e.target.value)}
           />
+        </div>
+
+
+        {/* Zusätze: Schnürsenkel */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4 mt-5">
+          <Label className="font-medium text-base md:w-1/3">
+            Möchten Sie passende Schnürsenkel zum Schuh? (+4,49€)
+          </Label>
+          <div className="flex items-center gap-8">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektSchnursenkel === false}
+                onChange={() => updateSchnursenkel(effektSchnursenkel === false ? undefined : false)}
+              />
+              <span>Nein, ohne</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektSchnursenkel === true}
+                onChange={() => updateSchnursenkel(effektSchnursenkel === true ? undefined : true)}
+              />
+              <span>Ja mit passenden Schnürsenkel (+4,49€)</span>
+            </label>
+          </div>
+        </div>
+
+        {/* Zusätze: Ösen einsetzen */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Label className="font-medium text-base md:w-1/3">
+            Möchten Sie den Schaft bereits mit eingesetzten Ösen? (+8,99€)
+          </Label>
+          <div className="flex items-center gap-8">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektOsen === false}
+                onChange={() => updateOsen(effektOsen === false ? undefined : false)}
+              />
+              <span>Nein, ohne Ösen</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektOsen === true}
+                onChange={() => updateOsen(effektOsen === true ? undefined : true)}
+              />
+              <span>Ja, Ösen einsetzen (+8,99€)</span>
+            </label>
+          </div>
         </div>
         {/* Submit Button */}
         <div className="flex justify-center mt-4">

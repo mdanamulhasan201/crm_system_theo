@@ -1,4 +1,7 @@
 "use client";
+
+import { GrCubes } from "react-icons/gr";
+
 // import  { useEffect, useState } from "react";
 // import Image from "next/image";
 // import gassImg from "@/public/images/gass.png";
@@ -101,40 +104,18 @@ export default function GroupOrders() {
             </div>
 
 
-            <div className='bg-white/90 border border-gray-300 rounded-lg p-8 h-full bg-opacity-50 backdrop-blur-sm flex items-center justify-center'>
-                <div className="flex flex-col items-center justify-center text-center space-y-8 ">
-                    {/* Main Title */}
-                    <h1 className="lg:text-6xl text-4xl font-bold text-black uppercase tracking-wider leading-tight">
-                        UNDER <br /> CONSTRUCTION
-                    </h1>
-
-                    {/* Subtitle */}
-                    <p className="text-black uppercase text-sm tracking-widest mt-2">
-                        SITE NEARLY READY
-                    </p>
-
-                    {/* Progress Bar */}
-                    <div className="w-full space-y-3 mt-8">
-                        <div className="w-full h-4 bg-gray-800 rounded-full overflow-hidden shadow-inner">
-                            <div
-                                className="h-full rounded-full transition-all duration-1000 ease-out shadow-lg"
-                                style={{
-                                    width: `${progressBarData.percentage}%`,
-                                    backgroundColor: getProgressColor(progressBarData.percentage)
-                                }}
-                            />
-                        </div>
-                        <div className="flex justify-between text-xs text-black font-medium">
-                            <span>{progressBarData.percentage}%</span>
-                            <span>100%</span>
-                        </div>
-                    </div>
-
-
-                    <div className="flex justify-center">
-                        {/* <Button variant="outline" className="cursor-pointer bg-gray-100 text-gray-500 " >OK</Button> */}
-                    </div>
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+                <div className="flex items-center justify-center w-20 h-20 rounded-full bg-[#E9F5EF] mb-6 shadow-sm">
+                    <GrCubes className="w-12 h-12 text-[#61A175]" />
                 </div>
+                <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-800">Sammelbestellungen – Coming Soon!</h1>
+                <p className="text-gray-600 mb-6 max-w-md">
+                    Wir arbeiten gerade daran, die Sammelbestellungen für euch bereitzustellen.<br />
+                    Schon bald könnt ihr hier Produkte vormerken und bestellen!
+                </p>
+                <span className="inline-block px-4 py-1 text-sm bg-[#e0e8df] text-[#61A175] rounded-full font-semibold">
+                    In Entwicklung
+                </span>
             </div>
 
             {/* Product Card Section */}

@@ -169,15 +169,15 @@ async function generateCombinedFeetPdf(params: {
     };
 
     // Page 1: Right Foot
-    await addFootImage(rightImageUrl, 'R');
-    await addHeaderOverlay('Right Foot');
-    addFooterOverlay('R');
+    await addFootImage(rightImageUrl, 'L');
+    await addHeaderOverlay('Left Foot');
+    addFooterOverlay('L');
 
     // Page 2: Left Foot
     pdf.addPage();
-    await addFootImage(leftImageUrl, 'L');
-    await addHeaderOverlay('Left Foot');
-    addFooterOverlay('L');
+    await addFootImage(leftImageUrl, 'R');
+    await addHeaderOverlay('Right Foot');
+    addFooterOverlay('R');
 
     return pdf.output('blob');
 }

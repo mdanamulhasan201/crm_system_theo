@@ -67,9 +67,21 @@ export default function DetailsPage() {
 
 
 
+  const SCHNURSENKEL_PRICE = 4.49;
+  const OSEN_EINSETZEN_PRICE = 8.99;
+
   const calculateTotalPrice = () => {
-    // Total should reflect only the base product price; add-ons are shown separately
-    return basePrice;
+    let total = basePrice;
+
+    if (passendenSchnursenkel) {
+      total += SCHNURSENKEL_PRICE;
+    }
+
+    if (osenEinsetzen) {
+      total += OSEN_EINSETZEN_PRICE;
+    }
+
+    return total;
   };
 
   const orderPrice = calculateTotalPrice();
@@ -101,8 +113,6 @@ export default function DetailsPage() {
     }
 
     setIsCreatingOrder(true);
-    toast.loading("Bestellung wird erstellt...", { id: "creating-order" });
-
     try {
       const formData = new FormData();
       formData.append('customerId', selectedCustomer.id);
