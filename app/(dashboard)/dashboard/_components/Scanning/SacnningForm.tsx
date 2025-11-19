@@ -5,6 +5,7 @@ import { TiArrowSortedDown } from "react-icons/ti";
 import ManualEntryModal from './ManualEntryModal';
 import FeetFirstInventoryModal from './FeetFirstInventoryModal';
 import { useScanningFormData } from '@/hooks/customer/useScanningFormData';
+import type { EinlageType } from '@/hooks/customer/useScanningFormData';
 import Image from 'next/image';
 import { useCreateOrder } from '@/hooks/orders/useCreateOrder';
 import InvoiceGeneratePdfModal from '../PdfModal/InvoiceGeneratePdf/InvoiceGeneratePdfModal';
@@ -13,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import UserInfoUpdateModal from './UserInfoUpdateModal';
 import { ScanData } from '@/types/scan';
 import OrderConfirmationModal from './OrderConfirmationModal';
-import toast from 'react-hot-toast';
+import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee'
 
 
 interface Customer {
@@ -106,6 +107,8 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
     const [autoSendToCustomer, setAutoSendToCustomer] = useState(false);
     const [realOrderData, setRealOrderData] = useState<any>(null);
     const [showUserInfoUpdateModal, setShowUserInfoUpdateModal] = useState(false);
+    const [showEinlageDropdown, setShowEinlageDropdown] = useState(false);
+    const einlageOptions: EinlageType[] = ['Alltagseinlage', 'Sporteinlage', 'Businesseinlage'];
 
     // Listen for order data updates from useCreateOrder hook
     useEffect(() => {
@@ -202,10 +205,52 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
 
     return (
         <div>
+            {/*  Scanning Form */}
             <div className='mt-10'>
                 <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
+                    {/* Ärztliche Diagnose/ Ausführliche Diagnose text area  */}
+                    <div className="w-full xl:w-1/2">
+                        <div className="mb-2">
+                            <h3 className="text-sm font-semibold">Ärztliche Diagnose/ Ausführliche Diagnose</h3>
+                        </div>
+                        <div className="relative">
+                            <textarea
+                                value={diagnosis}
+                                onChange={(e) => setDiagnosis(e.target.value)}
+                                onBlur={handleDiagnosisBlur}
+                                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows={4}
+                                placeholder="Geben Sie hier die ausführliche Diagnose ein..."
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+
+                    {/* Versorgung laut Arzt tedxt filed just  */}
+                    <div className="w-full xl:w-1/2">
+                        <div className="mb-2">
+                            <h3 className="text-sm font-semibold">Versorgung laut Arzt</h3>
+                        </div>
+                        <div className="relative">
+                            <textarea
+                                value={diagnosis}
+                                onChange={(e) => setDiagnosis(e.target.value)}
+                                onBlur={handleDiagnosisBlur}
+                                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                rows={4}
+                                placeholder="Geben Sie hier die ausführliche Diagnose ein..."
+                                autoFocus
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
                     {/* Diagnosis Dropdown */}
-                    <div className="w-full lg:w-1/2">
+                    <div className="w-full xl:w-1/2">
+                        <div className="mb-2">
+                            <h3 className="text-sm font-semibold">Diagnose</h3>
+                        </div>
                         <div className="relative">
                             <div
                                 className="p-3 sm:p-2 border border-gray-300 rounded cursor-pointer flex justify-between items-center min-h-[44px]"
@@ -248,35 +293,47 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                         </div>
                     </div>
 
-                    {/* button section */}
-                    <div className="w-full lg:w-1/2">
-                        <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 lg:justify-end">
-                            <button
-                                type="button"
-                                className={`border cursor-pointer border-gray-400 px-3 sm:px-4 lg:px-6 py-2 sm:py-2 rounded text-xs sm:text-sm font-semibold hover:bg-gray-100 transition-colors min-h-[44px] flex-1 sm:flex-none ${selectedEinlage === 'Alltagseinlage' ? 'bg-gray-200 border-gray-600' : 'bg-white'}`}
-                                onClick={() => handleEinlageButtonClick('Alltagseinlage')}
+                    {/* Einlage Dropdown */}
+                    <div className="w-full xl:w-1/2">
+                        <div className="mb-2">
+                            <h3 className="text-sm font-semibold">Einlagentyp</h3>
+                        </div>
+                        <div className="relative">
+                            <div
+                                className="p-3 sm:p-2 border border-gray-300 rounded cursor-pointer flex justify-between items-center min-h-[44px]"
+                                onClick={() => setShowEinlageDropdown(!showEinlageDropdown)}
                             >
-                                <span className="sm:hidden">Alltag</span>
-                                <span className="hidden sm:inline">Alltagseinlage</span>
-                            </button>
-                            <button
-                                type="button"
-                                className={`border cursor-pointer border-gray-400 px-3 sm:px-4 lg:px-6 py-2 sm:py-2 rounded text-xs sm:text-sm font-semibold hover:bg-gray-100 transition-colors min-h-[44px] flex-1 sm:flex-none ${selectedEinlage === 'Sporteinlage' ? 'bg-gray-200 border-gray-600' : 'bg-white'}`}
-                                onClick={() => handleEinlageButtonClick('Sporteinlage')}
-                            >
-                                <span className="sm:hidden">Sport</span>
-                                <span className="hidden sm:inline">Sporteinlage</span>
-                            </button>
-                            <button
-                                type="button"
-                                className={`border cursor-pointer border-gray-400 px-3 sm:px-4 lg:px-6 py-2 sm:py-2 rounded text-xs sm:text-sm font-semibold hover:bg-gray-100 transition-colors min-h-[44px] flex-1 sm:flex-none ${selectedEinlage === 'Businesseinlage' ? 'bg-gray-200 border-gray-600' : 'bg-white'}`}
-                                onClick={() => handleEinlageButtonClick('Businesseinlage')}
-                            >
-                                <span className="sm:hidden">Business</span>
-                                <span className="hidden sm:inline">Businesseinlage</span>
-                            </button>
+                                <span className={`text-sm sm:text-base truncate pr-2 ${selectedEinlage ? '' : 'text-gray-400'}`}>
+                                    {selectedEinlage || "Einlage auswählen"}
+                                </span>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            {showEinlageDropdown && (
+                                <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                                    {einlageOptions.map((option) => (
+                                        <div
+                                            key={option}
+                                            className="p-3 sm:p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base border-b border-gray-100 last:border-b-0"
+                                            onClick={() => {
+                                                handleEinlageButtonClick(option);
+                                                setShowEinlageDropdown(false);
+                                            }}
+                                        >
+                                            {option}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
+                </div>
+
+                {/* Durchgeführt von: dropdown  */}
+
+                <div>
+                    {/* Durchgeführt von: dropdown  */}
                 </div>
 
                 {/* Diagnosis and Supply Editable Fields */}

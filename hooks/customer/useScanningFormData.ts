@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { getAllVersorgungen } from '@/apis/versorgungApis';
 import { addCustomerVersorgung, getSingleCustomer, updateSingleCustomer } from '@/apis/customerApis';
 
-type EinlageType = 'Alltagseinlage' | 'Sporteinlage' | 'Businesseinlage';
+export type EinlageType = 'Alltagseinlage' | 'Sporteinlage' | 'Businesseinlage';
 
 const diagnosisOptions = [
     'Plantarfasziitis',
