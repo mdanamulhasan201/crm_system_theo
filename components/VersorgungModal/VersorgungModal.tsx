@@ -13,7 +13,7 @@ export interface VersorgungCard {
     artikelHersteller: string
     artNr: string
     versorgung: string
-    materialien: string
+    materialien: string | string[]
     laenge: string
 }
 
@@ -59,7 +59,7 @@ const INITIAL_FORM_STATE = {
     artikelHersteller: '',
     artNr: '',
     versorgung: '',
-    materialien: '',
+    materialien: [] as string[],
     laenge: '',
 }
 
@@ -123,15 +123,26 @@ export default function VersorgungModal({
         setSuccess(null)
         setIsLoading(false)
         setSelectedProduct(null)
+        setMaterialienInput('')
 
         if (editingCard) {
+            let materialienArray: string[] = []
+            if (typeof editingCard.materialien === 'string') {
+                materialienArray = editingCard.materialien
+                    .split(/\n|,/)
+                    .map(m => m.trim())
+                    .filter(m => m.length > 0)
+            } else if (Array.isArray(editingCard.materialien)) {
+                materialienArray = editingCard.materialien
+            }
+
             setForm({
                 name: editingCard.name,
                 rohlingHersteller: editingCard.rohlingHersteller,
                 artikelHersteller: editingCard.artikelHersteller,
                 artNr: editingCard.artNr,
                 versorgung: editingCard.versorgung,
-                materialien: editingCard.materialien,
+                materialien: materialienArray,
                 laenge: editingCard.laenge,
             })
         } else {
@@ -144,6 +155,34 @@ export default function VersorgungModal({
         setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
     }
 
+    // Handle materialien tag input
+    const [materialienInput, setMaterialienInput] = useState('')
+
+    const handleAddMaterialTag = () => {
+        const trimmedInput = materialienInput.trim()
+        if (trimmedInput && !form.materialien.includes(trimmedInput)) {
+            setForm(prev => ({
+                ...prev,
+                materialien: [...prev.materialien, trimmedInput]
+            }))
+            setMaterialienInput('')
+        }
+    }
+
+    const handleMaterialienKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault()
+            handleAddMaterialTag()
+        }
+    }
+
+    const handleRemoveMaterialTag = (indexToRemove: number) => {
+        setForm(prev => ({
+            ...prev,
+            materialien: prev.materialien.filter((_, index) => index !== indexToRemove)
+        }))
+    }
+
 
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -151,16 +190,24 @@ export default function VersorgungModal({
         setError(null)
         setSuccess(null)
 
-        const loadingToastId = toast.loading(editingCard ? 'Versorgung wird aktualisiert...' : 'Versorgung wird erstellt...')
-
         try {
             // Transform form data to match API format
+            // Filter out empty materialien and convert to array
+            const materialienArray = form.materialien.filter(m => m.trim().length > 0)
+
+            // Validate that at least one material is added
+            if (materialienArray.length === 0) {
+                toast.error('Bitte fügen Sie mindestens ein Material hinzu')
+                setIsLoading(false)
+                return
+            }
+
             const apiData = {
                 name: form.name,
                 rohlingHersteller: form.rohlingHersteller,
                 artikelHersteller: form.artikelHersteller,
                 versorgung: form.versorgung,
-                material: form.materialien,
+                material: materialienArray, // Send as array
                 status: getCategoryStatus(),
                 storeId: selectedProduct?.id || null,
                 ...(isAuswahl && { diagnosis_status: selectedDiagnosis })
@@ -175,7 +222,6 @@ export default function VersorgungModal({
                 response = await createVersorgung(apiData)
             }
 
-            toast.dismiss(loadingToastId)
             const successMessage = response.message || (editingCard ? 'Versorgung erfolgreich aktualisiert!' : 'Versorgung erfolgreich erstellt!')
             setSuccess(successMessage)
             toast.success(successMessage)
@@ -188,8 +234,6 @@ export default function VersorgungModal({
             }, 100)
         } catch (error: any) {
             console.error('Error saving versorgung:', error)
-
-            toast.dismiss(loadingToastId)
 
             const errorMessage = error.response?.data?.message || `Failed to ${editingCard ? 'update' : 'create'} versorgung. Please try again.`
             setError(errorMessage)
@@ -321,14 +365,53 @@ export default function VersorgungModal({
                         required
                     />
 
-                    <textarea
-                        name="materialien"
-                        value={form.materialien}
-                        onChange={handleFormChange}
-                        placeholder="Materialien"
-                        className="border p-2 rounded"
-                        required
-                    />
+                    {/* Materialien - Tag Input */}
+                    <div>
+                        <label className="font-bold mb-2 block">Materialien</label>
+
+                        {/* Display added materials as tags */}
+                        {form.materialien.length > 0 && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {form.materialien.map((material, index) => (
+                                    <div
+                                        key={index}
+                                        className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
+                                    >
+                                        <span>{material}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveMaterialTag(index)}
+                                            className="text-blue-600 hover:text-blue-900 font-bold"
+                                        >
+                                            ×
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Single input field for adding materials */}
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={materialienInput}
+                                onChange={(e) => setMaterialienInput(e.target.value)}
+                                onKeyDown={handleMaterialienKeyDown}
+                                placeholder="Material eingeben (Enter oder Komma drücken zum Hinzufügen)"
+                                className="border p-2 rounded flex-1"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleAddMaterialTag}
+                                className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
+                            >
+                                Hinzufügen
+                            </button>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-1">
+                            Drücken Sie Enter oder Komma nach jedem Material
+                        </p>
+                    </div>
 
                     {/* Category Dropdown - Only for Auswahl */}
                     {isAuswahl && (
