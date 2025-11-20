@@ -153,7 +153,10 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                 </div>
                                 <div style={{ textAlign: 'left' }}>
                                     <div style={{ marginBottom: '15px' }}>
-                                        <p style={{ margin: 0 }}>Diagnose: {data.product?.diagnosis_status || '-'}</p>
+                                        <p style={{ margin: 0 }}>Diagnose: {(data as any)?.ausführliche_diagnose || data.product?.diagnosis_status || '-'}</p>
+                                    </div>
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <p style={{ margin: 0 }}>Schuhmodell: {(data as any)?.schuhmodell_wählen || '-'}</p>
                                     </div>
                                 </div>
                             </div>
@@ -225,8 +228,16 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                         Versorgung
                                     </h3>
                                     <div style={{ marginBottom: '15px' }}>
-                                        <p style={{ margin: 0 }}>Versorgung:{data.product?.status}</p>
-                                        <p style={{ margin: 0 }}>{data.product?.versorgung || data.product?.status}</p>
+                                        {(data as any)?.menge && (
+                                            <p style={{ margin: 0, marginBottom: '5px' }}>Menge: {(data as any).menge}</p>
+                                        )}
+                                        {(data as any)?.einlagentyp && (
+                                            <p style={{ margin: 0, marginBottom: '5px' }}>Versorgung: {(data as any).einlagentyp}</p>
+                                        )}
+                                        <p style={{ margin: 0, marginBottom: '5px' }}>{data.product?.versorgung || data.product?.status || (data as any)?.werkstattzettel?.versorgung || '-'}</p>
+                                        {(data as any)?.überzug && (
+                                            <p style={{ margin: 0 }}>Überzug: {(data as any).überzug}</p>
+                                        )}
                                     </div>
 
                                 </div>
@@ -272,7 +283,7 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                     <div style={{ marginBottom: '15px' }}>
                                         <p style={{ margin: 0 }}>Fußanalyse: {formatPrice(data?.fußanalyse)}</p>
                                     </div>
-                                    <div style={{ marginBottom: '15px' }}>
+                                    <div style={{ marginBottom: '20px' }}>
                                         <p style={{
                                             margin: 0,
                                             fontWeight: 'bold',
@@ -281,13 +292,17 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                             Gesamtpreis: {formatPrice(data?.totalPrice)}
                                         </p>
                                     </div>
-                                </div>
-                                <div style={{ textAlign: 'left' }}>
                                     <div style={{ marginBottom: '15px' }}>
                                         <p style={{ margin: 0 }}>Private Bezahlung am: ________________</p>
                                     </div>
                                     <div style={{ marginBottom: '15px' }}>
                                         <p style={{ margin: 0 }}>Abgeholt am: ________________</p>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ marginBottom: '15px' }}>
+                                        <p style={{ margin: 0, fontWeight: 'bold', marginBottom: '8px' }}>Notizen:</p>
+                                        <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{(data as any)?.versorgung_note || '-'}</p>
                                     </div>
                                 </div>
                             </div>

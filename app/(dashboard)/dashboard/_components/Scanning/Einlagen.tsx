@@ -44,7 +44,7 @@ interface ScanningFormProps {
     onDataRefresh?: () => void;
 }
 
-export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
+export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
     const {
         diagnosisOptions,
         // dropdowns
@@ -126,13 +126,11 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
         setIsEmployeeDropdownOpen(false);
     };
 
-    // Handle dropdown open/close
     const handleEmployeeDropdownChange = (open: boolean) => {
         setIsEmployeeDropdownOpen(open);
         setShowSuggestions(open);
     };
 
-    // Sync einlagentyp with selectedEinlage from hook
     useEffect(() => {
         if (selectedEinlage && !einlagentyp) {
             setEinlagentyp(selectedEinlage);
@@ -152,16 +150,15 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
         };
     }, []);
 
-    // Create order data for InvoicePage component - use real data if available, otherwise mock data
+
     const createOrderData = () => {
         if (!customer) return null;
 
-        // If we have real order data, use it
         if (realOrderData) {
             return realOrderData;
         }
 
-        // Otherwise, create mock data (fallback)
+
         return {
             id: 'temp-id',
             customerId: customer.id,
@@ -216,17 +213,17 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
     const handleConfirmOrder = async () => {
         const resolvedId = resolveVersorgungIdFromText();
         const werkstattzettelId = typeof window !== 'undefined' ? localStorage.getItem('werkstattzettelId') || undefined : undefined;
-        
+
         if (customer?.id && resolvedId && formDataForOrder) {
             try {
-                // Prepare order data with all form fields
+
                 const orderPayload = {
                     customerId: customer.id,
                     versorgungId: resolvedId,
                     werkstattzettelId: werkstattzettelId,
                     ...formDataForOrder
                 };
-                
+
                 // Create order with form data
                 const result = await createOrderAndGeneratePdf(customer.id, resolvedId, autoSendToCustomer, orderPayload);
                 const orderId = (result as any)?.data?.id ?? (result as any)?.id ?? result?.orderId;
@@ -243,21 +240,20 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
 
     const orderData = createOrderData();
 
-    // Collect all form data
+
     const collectFormData = () => {
-        // Extract number from menge (e.g., "1 paar" -> 1)
         const mengeNumber = menge ? parseInt(menge.split(' ')[0]) || 1 : 1;
-        
-        // Find selected versorgung data
+
+
         const selectedVersorgungItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
-        
+
         return {
             ausführliche_diagnose: ausführliche_diagnose || '',
             versorgung_laut_arzt: versorgung_laut_arzt || '',
             einlagentyp: einlagentyp || selectedEinlage || '',
             überzug: überzug || '',
             menge: mengeNumber,
-            versorgung: supply || '', // Selected versorgung data (not versorgung_note)
+            versorgung: supply || '',
             versorgung_note: versorgung_note || '',
             schuhmodell_wählen: schuhmodell_wählen || '',
             kostenvoranschlag: kostenvoranschlag === true,
@@ -705,9 +701,9 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                         <div className="mb-2">
                             <h3 className="text-lg font-semibold">Schuhmodell</h3>
                         </div>
-                        <Input 
-                            type="text" 
-                            placeholder="Manuell eintragen (Marke+Modell+Größe)" 
+                        <Input
+                            type="text"
+                            placeholder="Manuell eintragen (Marke+Modell+Größe)"
                             value={schuhmodell_wählen}
                             onChange={(e) => setSchuhmodell_wählen(e.target.value)}
                         />
@@ -772,10 +768,10 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
             />
 
             {/* Order Confirmation Modal */}
-            <OrderConfirmationModal 
-                showConfirmModal={showConfirmModal} 
-                setShowConfirmModal={setShowConfirmModal} 
-                handleConfirmOrder={handleConfirmOrder} 
+            <OrderConfirmationModal
+                showConfirmModal={showConfirmModal}
+                setShowConfirmModal={setShowConfirmModal}
+                handleConfirmOrder={handleConfirmOrder}
                 isCreating={isCreating}
                 formData={formDataForOrder}
                 customerId={customer?.id}
