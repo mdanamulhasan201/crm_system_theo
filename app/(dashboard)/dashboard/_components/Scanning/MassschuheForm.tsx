@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import { useCreateMassschuhe } from '@/hooks/massschuhe/useCreateMassschuhe';
 import { ChevronDown, Check } from 'lucide-react';
@@ -47,6 +48,10 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
     // Massschuhe hook
     const { createMassschuhe, isLoading } = useCreateMassschuhe();
 
+    // Confirmation modal state
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [pendingFormData, setPendingFormData] = useState<any>(null);
+
 
 
 
@@ -63,8 +68,8 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
         setShowSuggestions(open);
     };
 
-    // Handle form submission
-    const handleSubmit = async () => {
+    // Handle form submission - Show confirmation modal
+    const handleSubmit = () => {
         // Validation
         if (!customer?.id) {
             toast.error('Kunde-ID fehlt');
@@ -94,10 +99,23 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
             kostenvoranschlag: kostenvoranschlag === true,
         };
 
+        // Store form data and show confirmation modal
+        setPendingFormData(formData);
+        setShowConfirmModal(true);
+    };
+
+    // Confirm and submit to API
+    const confirmSubmit = async () => {
+        if (!pendingFormData) return;
+
         // Submit to API
-        const result = await createMassschuhe(formData);
+        const result = await createMassschuhe(pendingFormData);
 
         if (result.success) {
+            // Close modal
+            setShowConfirmModal(false);
+            setPendingFormData(null);
+
             // Reset form
             setÄrztlicheDiagnose('');
             setAusführlicheDiagnose('');
@@ -113,6 +131,12 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                 onDataRefresh();
             }
         }
+    };
+
+    // Cancel confirmation
+    const cancelSubmit = () => {
+        setShowConfirmModal(false);
+        setPendingFormData(null);
     };
 
 
@@ -343,6 +367,66 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                     </Button>
                 </div>
             </div>
+
+            {/* Confirmation Modal */}
+            <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-bold">Bestellung bestätigen</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <p className="text-gray-700 mb-4">
+                            Möchten Sie diese Massschuhe-Bestellung wirklich absenden?
+                        </p>
+                        <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
+                            <div className="flex justify-between">
+                                <span className="font-semibold">Kunde:</span>
+                                <span>{customer?.vorname} {customer?.nachname}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="font-semibold">Mitarbeiter:</span>
+                                <span>{selectedEmployee}</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="font-semibold">Diagnose:</span>
+                                <span className="truncate ml-2">{ärztlicheDiagnose}</span>
+                            </div>
+                            {rezeptnummer && (
+                                <div className="flex justify-between">
+                                    <span className="font-semibold">Rezeptnummer:</span>
+                                    <span>{rezeptnummer}</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    <DialogFooter className="flex gap-2 sm:gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={cancelSubmit}
+                            disabled={isLoading}
+                            className="flex-1"
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={confirmSubmit}
+                            disabled={isLoading}
+                            className="flex-1 bg-[#62A07C] hover:bg-[#62a07c98]"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                    Wird gespeichert...
+                                </>
+                            ) : (
+                                'Bestätigen'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
         </div>
     );
