@@ -343,7 +343,7 @@ export default function CustomerHistory() {
                             readOnly={!isEditing}
                         />
                     </div>
-                    <div>
+                    {/* <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Straße</label>
                         <input
                             type="text"
@@ -353,6 +353,19 @@ export default function CustomerHistory() {
                             placeholder="Street, Street Number"
                             readOnly={!isEditing}
                         />
+                    </div> */}
+
+                    {/* Customer ID */}
+                    <div >
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Kunden-ID</label>
+                            <input
+                                type="text"
+                                className="w-full p-2 border rounded-md border-gray-300 bg-gray-50"
+                                value={(scanData as any).customerNumber || '-'}
+                                readOnly
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -385,8 +398,8 @@ export default function CustomerHistory() {
                         <input
                             type="text"
                             className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
-                            value={isEditing 
-                                ? (editFormData.telefonnummer || editFormData.telefon || '') 
+                            value={isEditing
+                                ? (editFormData.telefonnummer || editFormData.telefon || '')
                                 : (scanData.telefonnummer || scanData.telefon || '')}
                             placeholder="+0000000000000"
                             onChange={isEditing ? (e) => {
@@ -399,18 +412,7 @@ export default function CustomerHistory() {
                     </div>
                 </div>
 
-                {/* Customer ID */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Kunden-ID</label>
-                        <input
-                            type="text"
-                            className="w-full p-2 border rounded-md border-gray-300 bg-gray-50"
-                            value={(scanData as any).customerNumber || '-'}
-                            readOnly
-                        />
-                    </div>
-                </div>
+
             </div>
 
             <div className="flex  items-center gap-10 my-10 flex-wrap">

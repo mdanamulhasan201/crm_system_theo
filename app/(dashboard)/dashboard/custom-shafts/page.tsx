@@ -12,10 +12,12 @@ import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
 
 const categories = [
     { label: 'Alle Kategorien', value: 'alle' },
-    { label: 'Sportschuhe', value: 'Sportschuhe' },
-    { label: 'Freizeitschuhe', value: 'Freizeitschuhe' },
-    { label: 'Laufschuhe', value: 'Laufschuhe' },
-    { label: 'Elegante Schuhe / Business-Schuhe', value: 'Elegante Schuhe / Business-Schuhe' },
+    { label: 'Halbschuhe', value: 'Halbschuhe' },
+    { label: 'Stiefel', value: 'Stiefel' },
+    { label: 'Knöchelhoch', value: 'Knöchelhoch' },
+    { label: 'Sandalen', value: 'Sandalen' },
+    { label: 'Bergschuhe', value: 'Bergschuhe' },
+    { label: 'Business-Schuhe', value: 'Business-Schuhe' },
 ];
 
 export default function CustomShafts() {

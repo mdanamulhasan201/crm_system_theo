@@ -81,7 +81,8 @@ export default function ScansPromoted({ customerData }: ScansPromotedProps) {
                                 Erstellt am: {formatDate(scan.createdAt)}
                             </p>
                             <p className="text-gray-600 text-sm mb-4">
-                                Ort: {location}
+                                {/* Ort: {location} */}
+                                Ort: -
                             </p>
 
                             <div>
