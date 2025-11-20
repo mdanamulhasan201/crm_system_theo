@@ -258,7 +258,11 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                         <p style={{ margin: 0 }}>Pelotte: {data.product?.material || '-'}</p>
                                     </div>
                                     <div style={{ marginBottom: '15px' }}>
-                                        <p style={{ margin: 0 }}>Zusatz: -</p>
+                                        <p style={{ margin: 0 }}>
+                                            Zusatz: {Array.isArray(data.product?.material)
+                                                ? data.product.material.join(', ')
+                                                : (data.product?.material || '-')}
+                                        </p>
                                     </div>
                                 </div>
                             </div>

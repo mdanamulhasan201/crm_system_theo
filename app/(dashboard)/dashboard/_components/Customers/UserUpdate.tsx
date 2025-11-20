@@ -63,7 +63,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                     vorname: payload?.vorname || '',
                     nachname: payload?.nachname || '',
                     email: payload?.email || '',
-                    telefonnummer: payload?.telefonnummer || '',
+                    telefonnummer: payload?.telefon || '',
                     wohnort: payload?.wohnort || '',
                 })
             } catch (e) {
@@ -91,8 +91,8 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
             if (values.email !== customer?.email) {
                 changedFields.email = values.email
             }
-            if (values.telefonnummer !== customer?.telefonnummer) {
-                changedFields.telefonnummer = values.telefonnummer
+            if (values.telefonnummer !== customer?.telefon) {
+                (changedFields as any).telefon = values.telefonnummer
             }
             if (values.wohnort !== customer?.wohnort) {
                 changedFields.wohnort = values.wohnort
@@ -146,7 +146,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                 vorname: customer?.vorname || '',
                 nachname: customer?.nachname || '',
                 email: customer?.email || '',
-                telefonnummer: customer?.telefonnummer || '',
+                telefonnummer: customer?.telefon || '',
                 wohnort: customer?.wohnort || '',
             })
         }
