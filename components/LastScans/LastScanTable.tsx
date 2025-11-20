@@ -29,6 +29,11 @@ interface LatestScreener {
     picture_23?: string | null;
 }
 
+interface LatestMassschuheOrder {
+    id: string;
+    createdAt: string;
+}
+
 interface LastScanRow {
     id: string;
     vorname: string;
@@ -42,6 +47,7 @@ interface LastScanRow {
     completedOrders?: number;
     latestOrder?: LatestOrder | null;
     latestScreener?: LatestScreener | null;
+    latestMassschuheOrder?: LatestMassschuheOrder | null;
     screenerFile?: Array<{ id: string; createdAt: string | null; updatedAt?: string | null }> | null;
 }
 
@@ -377,11 +383,14 @@ export default function LastScanTable() {
                 const latestScreenerDate = row.latestScreener?.createdAt ?? null;
                 const customerFullName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim();
 
+                // Determine customer type based on latest Massschuhe order
+                const kundentyp = row.latestMassschuheOrder ? 'Massschuhe' : 'Einlagen';
+
                 return {
                     'Kunde': customerFullName || '—',
                     'Kundennummer': row.customerNumber ?? '—',
                     'Krankenkasse': row.krankenkasse?.trim() || '—',
-                    'Kundentyp': row.kundentyp?.trim() || '—',
+                    'Kundentyp': kundentyp,
                     'Neuester Scan': latestScreenerDate ? formatDate(latestScreenerDate) : 'Kein Scan',
                     'Neuester Auftrag': latestOrderStatus ? getOrderStatusLabel(latestOrderStatus) : 'Kein Auftrag',
                     'Auftragsdatum': latestOrderDate ? formatDate(latestOrderDate) : '—',
@@ -632,7 +641,8 @@ export default function LastScanTable() {
                                 const latestScreenerDate = row.latestScreener?.createdAt ?? null;
                                 const customerFullName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim();
                                 const krankenkasse = row.krankenkasse?.trim() || '—';
-                                const kundentyp = row.kundentyp?.trim() || '—';
+                                // Determine customer type based on latest Massschuhe order
+                                const kundentyp = row.latestMassschuheOrder ? 'Massschuhe' : 'Einlagen';
 
                                 return (
                                     <TableRow key={row.id} className="hover:bg-gray-50 transition-colors">
@@ -661,7 +671,14 @@ export default function LastScanTable() {
                                                 {krankenkasse}
                                             </span>
                                         </TableCell>
-                                        <TableCell>{kundentyp}</TableCell>
+                                        <TableCell>
+                                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${kundentyp === 'Massschuhe'
+                                                    ? 'bg-purple-100 text-purple-700'
+                                                    : 'bg-blue-100 text-blue-700'
+                                                }`}>
+                                                {kundentyp}
+                                            </span>
+                                        </TableCell>
                                         <TableCell className={cn('font-medium', latestScreenerDate ? 'text-gray-700' : 'text-orange-500')}>
                                             {latestScreenerDate ? formatDate(latestScreenerDate) : 'No scan'}
                                         </TableCell>

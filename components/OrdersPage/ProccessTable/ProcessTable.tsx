@@ -43,6 +43,7 @@ export default function ProcessTable() {
     const { deleteSingleOrder, loading: deleteLoading } = useDeleteSingleOrder();
 
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [pendingAction, setPendingAction] = useState<{
@@ -234,12 +235,14 @@ export default function ProcessTable() {
             setSelectedStatus(status);
         }
         setSelectedOrderId(null); // Reset selection when changing filters
+        setSelectedOrderIds([]); // Clear multiselect when changing filters
     };
 
     // Handle pagination
     const handlePageChange = (newPage: number) => {
         setCurrentPage(newPage);
         setSelectedOrderId(null); // Reset selection when changing pages
+        setSelectedOrderIds([]); // Clear multiselect when changing pages
     };
 
     // Clear selection when orders change
@@ -250,9 +253,45 @@ export default function ProcessTable() {
                 setSelectedOrderId(null);
             }
         }
-    }, [orders, selectedOrderId]);
+        // Clean up multiselect for orders that no longer exist
+        if (selectedOrderIds.length > 0) {
+            const validIds = selectedOrderIds.filter(id => 
+                orders.some(order => order.id === id)
+            );
+            if (validIds.length !== selectedOrderIds.length) {
+                setSelectedOrderIds(validIds);
+            }
+        }
+    }, [orders, selectedOrderId, selectedOrderIds]);
 
     const memoizedOrders = React.useMemo(() => orders, [orders]);
+
+    // Handle select all checkbox
+    const handleSelectAll = () => {
+        if (selectedOrderIds.length === memoizedOrders.length) {
+            // Deselect all
+            setSelectedOrderIds([]);
+        } else {
+            // Select all visible orders
+            setSelectedOrderIds(memoizedOrders.map(order => order.id));
+        }
+    };
+
+    // Handle individual checkbox
+    const handleSelectOrder = (orderId: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        setSelectedOrderIds(prev => {
+            if (prev.includes(orderId)) {
+                return prev.filter(id => id !== orderId);
+            } else {
+                return [...prev, orderId];
+            }
+        });
+    };
+
+    // Check if all visible orders are selected
+    const isAllSelected = memoizedOrders.length > 0 && selectedOrderIds.length === memoizedOrders.length;
+    const isSomeSelected = selectedOrderIds.length > 0 && selectedOrderIds.length < memoizedOrders.length;
 
     // Get status color for each step
     const getStepColor = (stepIndex: number, isActive: boolean) => {
@@ -365,9 +404,58 @@ export default function ProcessTable() {
                 </div>
             </div>
 
+            {/* Bulk Actions Bar */}
+            {selectedOrderIds.length > 0 && (
+                <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <span className="text-sm font-medium text-blue-900">
+                            {selectedOrderIds.length} {selectedOrderIds.length === 1 ? 'Auftrag' : 'Aufträge'} ausgewählt
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSelectedOrderIds([])}
+                            className="text-xs"
+                        >
+                            Auswahl aufheben
+                        </Button>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                                // Handle bulk delete
+                                toast('Bulk-Löschfunktion wird bald verfügbar sein', {
+                                    icon: 'ℹ️',
+                                });
+                            }}
+                            className="text-xs"
+                        >
+                            <Trash2 className="h-3 w-3 mr-1" />
+                            Ausgewählte löschen
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             <Table className="table-fixed w-full">
                 <TableHeader>
                     <TableRow>
+                        <TableHead className="w-[50px] min-w-[50px] max-w-[50px] text-center">
+                            <input
+                                type="checkbox"
+                                checked={isAllSelected}
+                                ref={input => {
+                                    if (input) {
+                                        input.indeterminate = isSomeSelected;
+                                    }
+                                }}
+                                onChange={handleSelectAll}
+                                className="w-4 h-4 cursor-pointer"
+                                title={isAllSelected ? "Alle abwählen" : "Alle auswählen"}
+                            />
+                        </TableHead>
                         <TableHead className="w-[200px] min-w-[200px] max-w-[200px] text-center"></TableHead>
                         <TableHead className="w-[120px] min-w-[120px] max-w-[120px] whitespace-normal break-words text-xs sm:text-sm text-center">Bestellnummer</TableHead>
                         <TableHead className="w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words text-xs sm:text-sm text-center">Kundenname</TableHead>
@@ -384,7 +472,7 @@ export default function ProcessTable() {
                 <TableBody>
                     {loading ? (
                         <TableRow>
-                            <TableCell colSpan={11} className="text-center py-20">
+                            <TableCell colSpan={12} className="text-center py-20">
                                 <div className="flex flex-col items-center justify-center">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                                     <p className="text-gray-600">Aufträge werden geladen...</p>
@@ -393,7 +481,7 @@ export default function ProcessTable() {
                         </TableRow>
                     ) : memoizedOrders.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={11} className="text-center py-20">
+                            <TableCell colSpan={12} className="text-center py-20">
                                 <div className="flex flex-col items-center justify-center">
                                     <p className="text-gray-600 mb-4 text-lg">Keine Aufträge gefunden</p>
                                     <Button onClick={refetch} variant="outline">
@@ -406,9 +494,21 @@ export default function ProcessTable() {
                         memoizedOrders.map((row, idx) => (
                             <TableRow
                                 key={row.id}
-                                className={`hover:bg-gray-50 transition-colors cursor-pointer ${selectedOrderId === row.id ? 'bg-blue-50' : ''}`}
+                                className={`hover:bg-gray-50 transition-colors cursor-pointer ${
+                                    selectedOrderIds.includes(row.id) ? 'bg-blue-50' : 
+                                    selectedOrderId === row.id ? 'bg-gray-50' : ''
+                                }`}
                                 onClick={() => setSelectedOrderId(row.id)}
                             >
+                                <TableCell className="p-2 w-[50px] min-w-[50px] max-w-[50px] text-center">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedOrderIds.includes(row.id)}
+                                        onChange={(e) => handleSelectOrder(row.id, e as any)}
+                                        onClick={(e) => e.stopPropagation()}
+                                        className="w-4 h-4 cursor-pointer"
+                                    />
+                                </TableCell>
                                 <TableCell className="p-2 w-[200px] min-w-[200px] max-w-[200px] text-center">
                                     <div className="flex gap-1 sm:gap-2 justify-center">
                                         <Button
