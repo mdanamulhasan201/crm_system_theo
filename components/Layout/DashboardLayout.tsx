@@ -79,7 +79,7 @@ const DashboardLayout = ({ children }: LayoutProps) => {
                 </main>
 
                 {/* Global Team Chat */}
-                <TeamChat />
+                {/* <TeamChat /> */}
 
             </div>
 
