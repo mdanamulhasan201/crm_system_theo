@@ -27,13 +27,17 @@ export default function CustomerModal({
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-xl uppercase font-semibold text-center">
-                        Manage customer
+                        {/* german language */}
+                        <span className="text-2xl font-semibold capitalize">
+                            <span className="text-gray-500">Kunde</span>
+                            <span className="text-gray-500">verwalten</span>
+                        </span>
                     </DialogTitle>
                 </DialogHeader>
                 <Tabs defaultValue="add-scan" className=''>
                     <TabsList className="grid grid-cols-2 w-full">
-                        <TabsTrigger value="add-scan" className='cursor-pointer capitalize hover:bg-gray-100 hover:text-gray-900'>scanning Data added</TabsTrigger>
-                        <TabsTrigger value="update-customer" className='cursor-pointer capitalize hover:bg-gray-100 hover:text-gray-900'>update customer</TabsTrigger>
+                        <TabsTrigger value="add-scan" className='cursor-pointer capitalize hover:bg-gray-100 hover:text-gray-900'>Scandaten hinzufügen</TabsTrigger>
+                        <TabsTrigger value="update-customer" className='cursor-pointer capitalize hover:bg-gray-100 hover:text-gray-900'>Kundendaten aktualisieren</TabsTrigger>
                     </TabsList>
 
 

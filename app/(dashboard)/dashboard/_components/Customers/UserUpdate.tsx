@@ -162,7 +162,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
             {/* Customer Information */}
             <div className='mt-10'>
                 <div className='flex justify-between items-center'>
-                    <h3 className="text-lg font-semibold mb-3">Customer Information</h3>
+                    <h3 className="text-lg font-semibold mb-3">Kundendaten</h3>
                     {/* edit icon */}
                     {!isEditing ? (
                         <button type="button" onClick={() => setIsEditing(true)} className='bg-gray-100 hover:bg-gray-200 cursor-pointer p-2 rounded-md'>
@@ -171,7 +171,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                     ) : (
                         <div className='flex items-center gap-2'>
                             <Button type="button" variant="outline" className='cursor-pointer' onClick={handleCancel} disabled={isUpdating}>
-                                Cancel
+                                Abbrechen
                             </Button>
                             <Button
                                 type="button"
@@ -179,7 +179,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                 onClick={() => form.handleSubmit(handleSubmit)()}
                                 disabled={isUpdating}
                             >
-                                {isUpdating ? 'Updating...' : 'Update Customer'}
+                                {isUpdating ? 'Aktualisieren...' : 'Kundendaten aktualisieren'}
                             </Button>
                         </div>
                     )}

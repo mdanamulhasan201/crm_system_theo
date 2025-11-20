@@ -163,7 +163,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
     }
 
     if (loading) {
-        return <div className="text-center py-4">Loading...</div>
+        return <div className="text-center py-4">Laden...</div>
     }
 
     return (
@@ -171,7 +171,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
             {/* Screener Files - Date wise */}
             <div className='mt-5'>
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold">Scanning Data</h3>
+                    <h3 className="text-lg font-semibold">Scan-Daten aktualisieren</h3>
 
                 </div>
 
@@ -239,7 +239,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
 
                 {!selectedScreenerData ? (
                     <div className="mb-6 p-8 border border-gray-200 rounded-lg bg-gray-50 text-center">
-                        <p className="text-gray-500">Please select a date to view and update scanning data</p>
+                        <p className="text-gray-500">Bitte wählen Sie ein Datum aus, um die Scan-Daten anzuzeigen und zu aktualisieren</p>
                     </div>
                 ) : (
                     <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
@@ -276,7 +276,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                                     Existing {getFileLabel(fieldName)}
                                                                 </p>
                                                                 <p className="text-xs text-gray-500">
-                                                                    Click to replace
+                                                                    Klicken Sie, um zu ersetzen
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -360,7 +360,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                                         Existing {getFileLabel(fieldName)}
                                                                     </p>
                                                                     <p className="text-xs text-gray-500">
-                                                                        Click to replace
+                                                                        Klicken Sie, um zu ersetzen
                                                                     </p>
                                                                 </div>
                                                             </div>
@@ -518,7 +518,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                     onClick={handleUpdateScanningData}
                     disabled={isUpdating || !selectedScreenerData || filePreviews.length === 0}
                 >
-                    {isUpdating ? 'Updating...' : 'Update Scanning Data'}
+                    {isUpdating ? 'Aktualisieren...' : 'Scan-Daten aktualisieren'}
                 </Button>
             </div>
         </div>
