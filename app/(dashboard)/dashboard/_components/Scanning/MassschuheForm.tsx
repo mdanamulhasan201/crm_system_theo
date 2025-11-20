@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
+import { useCreateMassschuhe } from '@/hooks/massschuhe/useCreateMassschuhe';
 import { ChevronDown, Check } from 'lucide-react';
-import UserInfoUpdateModal from './UserInfoUpdateModal';
-import { ScanData } from '@/types/scan';
-import OrderConfirmationModal from './OrderConfirmationModal';
-import { useCreateOrder } from '@/hooks/orders/useCreateOrder';
-import InvoiceGeneratePdfModal from '../PdfModal/InvoiceGeneratePdf/InvoiceGeneratePdfModal';
+import toast from 'react-hot-toast';
+
+
+
 
 interface Customer {
     id: string;
@@ -44,14 +44,12 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
     const [selectedEmployee, setSelectedEmployee] = useState<string>('');
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
 
-    // Modals
-    const [showUserInfoUpdateModal, setShowUserInfoUpdateModal] = useState(false);
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [formDataForOrder, setFormDataForOrder] = useState<any>(null);
-    const [showPdfModal, setShowPdfModal] = useState(false);
-    const [currentOrderId, setCurrentOrderId] = useState<string | undefined>(undefined);
+    // Massschuhe hook
+    const { createMassschuhe, isLoading } = useCreateMassschuhe();
 
-    const { createOrderAndGeneratePdf, isCreating } = useCreateOrder();
+
+
+
 
     // Handle employee selection
     const handleEmployeeSelect = (employee: { employeeName: string; id: string }) => {
@@ -65,59 +63,58 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
         setShowSuggestions(open);
     };
 
-    // Collect form data
-    const collectFormData = () => {
-        return {
-            ärztliche_diagnose: ärztlicheDiagnose || '',
-            ausführliche_diagnose: ausführlicheDiagnose || '',
-            rezeptnummer: rezeptnummer || '',
-            versorgung_note: versorgungNote || '',
+    // Handle form submission
+    const handleSubmit = async () => {
+        // Validation
+        if (!customer?.id) {
+            toast.error('Kunde-ID fehlt');
+            return;
+        }
+
+        if (!selectedEmployeeId) {
+            toast.error('Bitte wählen Sie einen Mitarbeiter aus');
+            return;
+        }
+
+        if (!ärztlicheDiagnose.trim()) {
+            toast.error('Bitte geben Sie eine ärztliche Diagnose ein');
+            return;
+        }
+
+        // Prepare data for API
+        const formData = {
+            customerId: customer.id,
+            employeeId: selectedEmployeeId,
+            arztliche_diagnose: ärztlicheDiagnose,
+            usführliche_diagnose: ausführlicheDiagnose,
+            rezeptnummer: rezeptnummer,
+            durchgeführt_von: selectedEmployee,
+            note: versorgungNote,
             halbprobe_geplant: halbprobeGeplant === true,
             kostenvoranschlag: kostenvoranschlag === true,
-            employeeName: selectedEmployee || '',
-            employeeId: selectedEmployeeId || '',
         };
-    };
 
-    const handleSpeichernClick = () => {
-        const formData = collectFormData();
-        setFormDataForOrder(formData);
-        setShowUserInfoUpdateModal(true);
-    };
+        // Submit to API
+        const result = await createMassschuhe(formData);
 
-    const handleConfirmOrder = async () => {
-        const werkstattzettelId = typeof window !== 'undefined' ? localStorage.getItem('werkstattzettelId') || undefined : undefined;
+        if (result.success) {
+            // Reset form
+            setÄrztlicheDiagnose('');
+            setAusführlicheDiagnose('');
+            setRezeptnummer('');
+            setVersorgungNote('');
+            setHalbprobeGeplant(null);
+            setKostenvoranschlag(null);
+            setSelectedEmployee('');
+            setSelectedEmployeeId('');
 
-        if (customer?.id && formDataForOrder) {
-            try {
-                // Exclude employee fields from payload
-                const { employeeName, employeeId, ...formFields } = formDataForOrder;
-
-                const orderPayload = {
-                    customerId: customer.id,
-                    werkstattzettelId: werkstattzettelId,
-                    ...formFields
-                };
-
-                // For Massschuhe, we don't have versorgungId, so we'll use empty string
-                // Create order with form data
-                const result = await createOrderAndGeneratePdf(customer.id, '', false, orderPayload);
-                const orderId = (result as any)?.data?.id ?? (result as any)?.id ?? result?.orderId;
-                if (orderId) {
-                    setCurrentOrderId(orderId);
-                    setShowPdfModal(true);
-                }
-            } catch (error) {
-                // Error toast is already handled inside useCreateOrder.createOrderAndGeneratePdf
+            // Refresh data if callback provided
+            if (onDataRefresh) {
+                onDataRefresh();
             }
         }
-        setShowConfirmModal(false);
     };
 
-    const handleClosePdfModal = () => {
-        setShowPdfModal(false);
-        setCurrentOrderId(undefined);
-    };
 
     return (
         <div>
@@ -331,47 +328,22 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                 <div className="flex justify-center my-10">
                     <Button
                         type="button"
-                        className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px]"
-                        onClick={handleSpeichernClick}
-                        disabled={isCreating}
+                        onClick={handleSubmit}
+                        disabled={isLoading}
+                        className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isCreating ? 'Speichern...' : 'Speichern'}
+                        {isLoading ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                                Speichern...
+                            </>
+                        ) : (
+                            'Speichern'
+                        )}
                     </Button>
                 </div>
             </div>
 
-            {/* User Info Update Modal */}
-            <UserInfoUpdateModal
-                isOpen={showUserInfoUpdateModal}
-                onOpenChange={setShowUserInfoUpdateModal}
-                scanData={customer as ScanData}
-                formData={formDataForOrder}
-                onInfoUpdate={() => {
-                    onDataRefresh?.()
-                }}
-                onShowOrderConfirmation={(formData) => {
-                    setFormDataForOrder(formData || formDataForOrder);
-                    setShowConfirmModal(true);
-                }}
-            />
-
-            {/* Order Confirmation Modal */}
-            <OrderConfirmationModal
-                showConfirmModal={showConfirmModal}
-                setShowConfirmModal={setShowConfirmModal}
-                handleConfirmOrder={handleConfirmOrder}
-                isCreating={isCreating}
-                formData={formDataForOrder}
-                customerId={customer?.id}
-                versorgungId={undefined}
-            />
-
-            {/* PDF Generation Modal */}
-            <InvoiceGeneratePdfModal
-                isOpen={showPdfModal}
-                onClose={handleClosePdfModal}
-                orderId={currentOrderId}
-            />
         </div>
     );
 }
