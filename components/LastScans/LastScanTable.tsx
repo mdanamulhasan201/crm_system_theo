@@ -5,6 +5,7 @@ import { filterCustomers, FilterCustomersParams, deleteCustomer } from '@/apis/c
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -208,10 +209,6 @@ export default function LastScanTable() {
     React.useEffect(() => {
         load();
     }, [load]);
-
-    const handleKundeninfoView = (id: string) => {
-        router.push(`/dashboard/scanning-data/${id}?manageCustomer=true`);
-    };
 
     const handleNeuerAuftrag = (id: string) => {
         router.push(`/dashboard/scanning-data/${id}`);
@@ -646,7 +643,18 @@ export default function LastScanTable() {
                                                 onClick={(e) => e.stopPropagation()}
                                             />
                                         </TableCell>
-                                        <TableCell className="font-medium capitalize">{customerFullName || '—'}</TableCell>
+                                        <TableCell className="font-medium capitalize">
+                                            {customerFullName ? (
+                                                <Link
+                                                    href={`/dashboard/scanning-data/${row.id}?manageCustomer=true`}
+                                                    className="text-[#2F7D5C] hover:underline"
+                                                >
+                                                    {customerFullName}
+                                                </Link>
+                                            ) : (
+                                                '—'
+                                            )}
+                                        </TableCell>
                                         <TableCell>{row.customerNumber ?? '—'}</TableCell>
                                         <TableCell>
                                             <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
@@ -671,13 +679,6 @@ export default function LastScanTable() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex gap-2 justify-end">
-                                                <Button
-                                                    variant="outline"
-                                                    className="cursor-pointer border-gray-300 px-3 py-1.5 text-sm rounded-lg"
-                                                    onClick={() => handleKundeninfoView(row.id)}
-                                                >
-                                                    Kundenprofil
-                                                </Button>
                                                 {latestScreenerDate ? (
                                                     <Button
                                                         className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
