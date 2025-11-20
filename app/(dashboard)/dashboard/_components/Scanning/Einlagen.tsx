@@ -367,7 +367,7 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
                                         variant="outline"
                                         role="combobox"
                                         aria-expanded={isEmployeeDropdownOpen}
-                                        className="w-full justify-between font-normal min-h-[44px]"
+                                        className="w-full cursor-pointer justify-between font-normal min-h-[44px]"
                                     >
                                         <span className={`truncate ${selectedEmployee ? '' : 'text-gray-400'}`}>
                                             {selectedEmployee || "Mitarbeiter auswählen..."}

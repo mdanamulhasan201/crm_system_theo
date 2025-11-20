@@ -267,9 +267,9 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                 </div>
 
                 {/* Radio Button Sections */}
-                <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
+                <div className="flex flex-col  gap-6 mb-10 w-full">
                     {/* Halbprobe Geplant */}
-                    <div className="w-full xl:w-1/2">
+                    <div className="w-full">
                         <div className="flex items-center gap-10 pb-2 border-b border-gray-300">
                             <h3 className="text-lg font-semibold">Halbprobe Geplant?</h3>
                             <div className="flex items-center space-x-6">
@@ -298,7 +298,7 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                     </div>
 
                     {/* Kostenvoranschlag */}
-                    <div className="w-full xl:w-1/2 mt-5">
+                    <div className="w-full mt-5">
                         <div className="flex items-center gap-10 pb-2 border-b border-gray-300">
                             <h3 className="text-lg font-semibold">Kostenvoranschlag</h3>
                             <div className="flex items-center space-x-6">
