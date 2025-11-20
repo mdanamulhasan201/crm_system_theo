@@ -2,13 +2,29 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import React from 'react'
 
+interface FormData {
+    ausführliche_diagnose?: string;
+    versorgung_laut_arzt?: string;
+    einlagentyp?: string;
+    überzug?: string;
+    menge?: number;
+    versorgung_note?: string;
+    schuhmodell_wählen?: string;
+    kostenvoranschlag?: boolean;
+    employeeName?: string;
+    employeeId?: string;
+}
+
 interface OrderConfirmationModalProps {
     showConfirmModal: boolean;
     setShowConfirmModal: (showConfirmModal: boolean) => void;
     handleConfirmOrder: () => void;
     isCreating: boolean;
+    formData?: FormData | null;
+    customerId?: string;
+    versorgungId?: string | null;
 }
-export default function OrderConfirmationModal({ showConfirmModal, setShowConfirmModal, handleConfirmOrder, isCreating }: OrderConfirmationModalProps) {
+export default function OrderConfirmationModal({ showConfirmModal, setShowConfirmModal, handleConfirmOrder, isCreating, formData, customerId, versorgungId }: OrderConfirmationModalProps) {
 
 
     return (

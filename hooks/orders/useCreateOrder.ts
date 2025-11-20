@@ -28,12 +28,13 @@ export const useCreateOrder = () => {
         }
     }, []);
 
-    const createOrderAndGeneratePdf = useCallback(async (customerId: string, versorgungId: string, autoSendToCustomer: boolean = false) => {
+    const createOrderAndGeneratePdf = useCallback(async (customerId: string, versorgungId: string, autoSendToCustomer: boolean = false, formData?: Record<string, any>) => {
         setIsCreating(true);
         setLastOrderId(null);
         try {
             const werkstattzettelId = typeof window !== 'undefined' ? localStorage.getItem('werkstattzettelId') || undefined : undefined;
-            const response = await createOrderApi(customerId, versorgungId, werkstattzettelId);
+            // Include formData in the API call if provided
+            const response = await createOrderApi(customerId, versorgungId, werkstattzettelId, formData);
             const orderId = (response as any)?.data?.id ?? (response as any)?.id ?? response?.orderId;
             if (!orderId) {
                 throw new Error('Order ID not received from API');
@@ -57,9 +58,9 @@ export const useCreateOrder = () => {
                 const pdfBlob = await generatePdfFromElement('invoice-print-area', pdfPresets.balanced);
 
                 // Save the PDF
-                const formData = new FormData();
-                formData.append('invoice', pdfBlob, `order_${orderId}.pdf`);
-                await saveInvoicePdf(orderId, formData);
+                const pdfFormData = new FormData();
+                pdfFormData.append('invoice', pdfBlob, `order_${orderId}.pdf`);
+                await saveInvoicePdf(orderId, pdfFormData);
 
                 if (autoSendToCustomer) {
                     try {

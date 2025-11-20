@@ -13,17 +13,33 @@ import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee'
 import toast from 'react-hot-toast'
 import { ChevronDown, Check } from 'lucide-react'
 
+interface FormData {
+  ausführliche_diagnose?: string
+  versorgung_laut_arzt?: string
+  einlagentyp?: string
+  überzug?: string
+  menge?: number
+  versorgung?: string // Selected versorgung data (not versorgung_note)
+  versorgung_note?: string
+  schuhmodell_wählen?: string
+  kostenvoranschlag?: boolean
+  employeeName?: string
+  employeeId?: string
+  selectedVersorgungData?: any
+}
+
 interface UserInfoUpdateModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   scanData: ScanData | null
+  formData?: FormData | null
   onInfoUpdate?: () => void
   onContinue?: () => void
   onCustomerUpdate?: (updatedCustomer: any) => void
-  onShowOrderConfirmation?: () => void
+  onShowOrderConfirmation?: (formData?: FormData) => void
 }
 
-export default function UserInfoUpdateModal({ isOpen, onOpenChange, scanData, onInfoUpdate, onContinue, onShowOrderConfirmation }: UserInfoUpdateModalProps) {
+export default function UserInfoUpdateModal({ isOpen, onOpenChange, scanData, formData, onInfoUpdate, onContinue, onShowOrderConfirmation }: UserInfoUpdateModalProps) {
   // Customer Information State
   const [vorname, setVorname] = useState('')
   const [nachname, setNachname] = useState('')
@@ -60,18 +76,25 @@ export default function UserInfoUpdateModal({ isOpen, onOpenChange, scanData, on
   } = useSearchEmployee()
 
   const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false)
+  const [employeeId, setEmployeeId] = useState<string>('')
 
   useEffect(() => {
     if (scanData) {
       setVorname(scanData.vorname || '')
       setNachname(scanData.nachname || '')
       setEmail(scanData.email || '')
-      setTelefonnummer(scanData.telefonnummer || '')
+      setTelefonnummer(scanData.telefonnummer || (scanData as any).telefon || '')
       setWohnort(scanData.wohnort || '')
-      // prefer workshopNote.employeeName
-      const employeeName = (scanData as any)?.workshopNote?.employeeName
-      setMitarbeiter(employeeName || scanData.mitarbeiter || '')
-      setVersorgung(scanData.versorgung || '')
+      // prefer formData employeeName, then workshopNote.employeeName, then scanData.mitarbeiter
+      const employeeName = formData?.employeeName || (scanData as any)?.workshopNote?.employeeName || scanData.mitarbeiter || ''
+      setMitarbeiter(employeeName)
+      // Set employeeId from formData if available
+      if (formData?.employeeId) {
+        setEmployeeId(formData.employeeId)
+      }
+      // prefer formData versorgung (selected versorgung), then scanData.versorgung, then formData.versorgung_note
+      const versorgungValue = formData?.versorgung || scanData.versorgung || formData?.versorgung_note || ''
+      setVersorgung(versorgungValue)
       // Datum des Auftrags defaults to today if not provided
       const today = new Date().toISOString().slice(0, 10)
       setDatumAuftrag((scanData as any)?.datumAuftrag || today)
@@ -105,7 +128,21 @@ export default function UserInfoUpdateModal({ isOpen, onOpenChange, scanData, on
         typeof scanData.einlagenversorgung === 'number' ? String(scanData.einlagenversorgung) : (scanData.einlagenversorgung || '')
       )
     }
-  }, [scanData, isOpen])
+    
+    // Update from formData when modal opens
+    if (formData && isOpen) {
+      if (formData.employeeName) {
+        setMitarbeiter(formData.employeeName)
+      }
+      if (formData.employeeId) {
+        setEmployeeId(formData.employeeId)
+      }
+      // Use versorgung (selected versorgung) not versorgung_note
+      if (formData.versorgung) {
+        setVersorgung(formData.versorgung)
+      }
+    }
+  }, [scanData, isOpen, formData])
 
   // Fetch prices when modal opens (only once)
   useEffect(() => {
@@ -205,6 +242,7 @@ export default function UserInfoUpdateModal({ isOpen, onOpenChange, scanData, on
         email: email || undefined,
         geschaeftsstandort: geschaeftsstandort || undefined,
         mitarbeiter: mitarbeiter || undefined,
+        employeeId: employeeId || undefined,
         fertigstellungBis: fertigIso,
         versorgung: versorgung || undefined,
         bezahlt: Boolean(bezahlt === 'Ja' || bezahlt === 'true' || bezahlt === 'True'),
@@ -219,7 +257,7 @@ export default function UserInfoUpdateModal({ isOpen, onOpenChange, scanData, on
       }
 
       onOpenChange(false)
-      onShowOrderConfirmation?.()
+      onShowOrderConfirmation?.(formData || undefined)
     } catch (err: any) {
       const apiMessage = err?.response?.data?.message || err?.message || 'Speichern fehlgeschlagen'
       toast.error(apiMessage)

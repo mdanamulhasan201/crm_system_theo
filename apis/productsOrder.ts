@@ -1,8 +1,15 @@
 import axiosClient from "@/lib/axiosClient";
 // create order 
-export const createOrder = async (customerId: string, versorgungId: string, werkstattzettelId?: string) => {
+export const createOrder = async (customerId: string, versorgungId: string, werkstattzettelId?: string, formData?: Record<string, any>) => {
     try {
-        const response = await axiosClient.post('/customer-orders/create', { customerId, versorgungId, werkstattzettelId });
+        const payload: any = { customerId, versorgungId };
+        if (werkstattzettelId) {
+            payload.werkstattzettelId = werkstattzettelId;
+        }
+        if (formData) {
+            Object.assign(payload, formData);
+        }
+        const response = await axiosClient.post('/customer-orders/create', payload);
         return response.data;
     } catch (error) {
         throw error;

@@ -2,19 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { BiSolidEdit } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
 import { TiArrowSortedDown } from "react-icons/ti";
-import ManualEntryModal from './ManualEntryModal';
-import FeetFirstInventoryModal from './FeetFirstInventoryModal';
 import { useScanningFormData } from '@/hooks/customer/useScanningFormData';
 import type { EinlageType } from '@/hooks/customer/useScanningFormData';
-import Image from 'next/image';
 import { useCreateOrder } from '@/hooks/orders/useCreateOrder';
 import InvoiceGeneratePdfModal from '../PdfModal/InvoiceGeneratePdf/InvoiceGeneratePdfModal';
 import InvoicePage from '../PdfModal/InvoiceGeneratePdf/InvoicePage';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import UserInfoUpdateModal from './UserInfoUpdateModal';
 import { ScanData } from '@/types/scan';
 import OrderConfirmationModal from './OrderConfirmationModal';
-import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee'
+import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
+import { ChevronDown, Check } from 'lucide-react';
 
 
 interface Customer {
@@ -67,21 +67,6 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
         editingSupply,
         // buttons
         selectedEinlage,
-        // checkboxes
-        manualEntry,
-        fromFeetFirst,
-        // manual entry modal
-        showManualEntryModal,
-        openManualEntryModal,
-        handleManualEntryModalClose,
-        handleManualEntryModalSave,
-        manualEntryData,
-        // feetfirst modal
-        showFeetFirstModal,
-        openFeetFirstModal,
-        handleFeetFirstModalClose,
-        handleFeetFirstModalSave,
-        feetFirstData,
         // loadings
         isSaving,
         isSavingDiagnosis,
@@ -93,8 +78,6 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
         handleDiagnosisBlur,
         handleSupplyEdit,
         handleSupplyBlur,
-        handleManualEntryCheckboxChange,
-        handleFeetFirstCheckboxChange,
         handleFormSubmit,
         clearDiagnosisAndReloadOptions,
         resolveVersorgungIdFromText,
@@ -109,6 +92,52 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
     const [showUserInfoUpdateModal, setShowUserInfoUpdateModal] = useState(false);
     const [showEinlageDropdown, setShowEinlageDropdown] = useState(false);
     const einlageOptions: EinlageType[] = ['Alltagseinlage', 'Sporteinlage', 'Businesseinlage'];
+    const [showUberzugDropdown, setShowUberzugDropdown] = useState(false);
+    const uberzugOptions = ['Leder', 'Microfaser Schwarz', 'Microfaser Beige'];
+    const [showMengeDropdown, setShowMengeDropdown] = useState(false);
+    const mengeOptions = ['1 paar', '2 paar', '3 paar', '4 paar', '5 paar'];
+
+    // Employee search functionality
+    const {
+        searchText,
+        suggestions: employeeSuggestions,
+        loading: employeeLoading,
+        setShowSuggestions,
+        handleChange: handleEmployeeSearchChange,
+    } = useSearchEmployee();
+
+    const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
+    const [selectedEmployee, setSelectedEmployee] = useState<string>('');
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+    const [kostenvoranschlag, setKostenvoranschlag] = useState<boolean | null>(null);
+    const [formDataForOrder, setFormDataForOrder] = useState<any>(null);
+    const [versorgung_note, setVersorgung_note] = useState<string>('');
+    const [versorgung_laut_arzt, setVersorgung_laut_arzt] = useState<string>('');
+    const [ausführliche_diagnose, setAusführliche_diagnose] = useState<string>('');
+    const [einlagentyp, setEinlagentyp] = useState<string>('');
+    const [überzug, setÜberzug] = useState<string>('');
+    const [menge, setMenge] = useState<string>('');
+    const [schuhmodell_wählen, setSchuhmodell_wählen] = useState<string>('');
+
+    // Handle employee selection
+    const handleEmployeeSelect = (employee: { employeeName: string; id: string }) => {
+        setSelectedEmployee(employee.employeeName);
+        setSelectedEmployeeId(employee.id);
+        setIsEmployeeDropdownOpen(false);
+    };
+
+    // Handle dropdown open/close
+    const handleEmployeeDropdownChange = (open: boolean) => {
+        setIsEmployeeDropdownOpen(open);
+        setShowSuggestions(open);
+    };
+
+    // Sync einlagentyp with selectedEinlage from hook
+    useEffect(() => {
+        if (selectedEinlage && !einlagentyp) {
+            setEinlagentyp(selectedEinlage);
+        }
+    }, [selectedEinlage]);
 
     // Listen for order data updates from useCreateOrder hook
     useEffect(() => {
@@ -164,14 +193,14 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
             },
             product: {
                 id: 'temp-product-id',
-                name: selectedEinlage || 'Einlage',
+                name: einlagentyp || selectedEinlage || 'Einlage',
                 rohlingHersteller: 'Standard',
                 artikelHersteller: 'Standard',
                 versorgung: supply || 'Standard Versorgung',
                 material: 'Standard Material',
                 langenempfehlung: {},
                 status: 'Active',
-                diagnosis_status: diagnosis || null,
+                diagnosis_status: ausführliche_diagnose || diagnosis || null,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             }
@@ -186,9 +215,20 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
 
     const handleConfirmOrder = async () => {
         const resolvedId = resolveVersorgungIdFromText();
-        if (customer?.id && resolvedId) {
+        const werkstattzettelId = typeof window !== 'undefined' ? localStorage.getItem('werkstattzettelId') || undefined : undefined;
+        
+        if (customer?.id && resolvedId && formDataForOrder) {
             try {
-                const result = await createOrderAndGeneratePdf(customer.id, resolvedId, autoSendToCustomer);
+                // Prepare order data with all form fields
+                const orderPayload = {
+                    customerId: customer.id,
+                    versorgungId: resolvedId,
+                    werkstattzettelId: werkstattzettelId,
+                    ...formDataForOrder
+                };
+                
+                // Create order with form data
+                const result = await createOrderAndGeneratePdf(customer.id, resolvedId, autoSendToCustomer, orderPayload);
                 const orderId = (result as any)?.data?.id ?? (result as any)?.id ?? result?.orderId;
                 if (orderId) {
                     setCurrentOrderId(orderId);
@@ -203,6 +243,36 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
 
     const orderData = createOrderData();
 
+    // Collect all form data
+    const collectFormData = () => {
+        // Extract number from menge (e.g., "1 paar" -> 1)
+        const mengeNumber = menge ? parseInt(menge.split(' ')[0]) || 1 : 1;
+        
+        // Find selected versorgung data
+        const selectedVersorgungItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
+        
+        return {
+            ausführliche_diagnose: ausführliche_diagnose || '',
+            versorgung_laut_arzt: versorgung_laut_arzt || '',
+            einlagentyp: einlagentyp || selectedEinlage || '',
+            überzug: überzug || '',
+            menge: mengeNumber,
+            versorgung: supply || '', // Selected versorgung data (not versorgung_note)
+            versorgung_note: versorgung_note || '',
+            schuhmodell_wählen: schuhmodell_wählen || '',
+            kostenvoranschlag: kostenvoranschlag === true,
+            employeeName: selectedEmployee || '',
+            employeeId: selectedEmployeeId || '',
+            selectedVersorgungData: selectedVersorgungItem || null,
+        };
+    };
+
+    const handleSpeichernClick = () => {
+        const formData = collectFormData();
+        setFormDataForOrder(formData);
+        setShowUserInfoUpdateModal(true);
+    };
+
     return (
         <div>
             {/*  Scanning Form */}
@@ -215,13 +285,11 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                         </div>
                         <div className="relative">
                             <textarea
-                                value={diagnosis}
-                                onChange={(e) => setDiagnosis(e.target.value)}
-                                onBlur={handleDiagnosisBlur}
+                                value={ausführliche_diagnose}
+                                onChange={(e) => setAusführliche_diagnose(e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 rows={4}
                                 placeholder="Geben Sie hier die ausführliche Diagnose ein..."
-                                autoFocus
                             />
                         </div>
                     </div>
@@ -233,13 +301,11 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                         </div>
                         <div className="relative">
                             <textarea
-                                value={diagnosis}
-                                onChange={(e) => setDiagnosis(e.target.value)}
-                                onBlur={handleDiagnosisBlur}
+                                value={versorgung_laut_arzt}
+                                onChange={(e) => setVersorgung_laut_arzt(e.target.value)}
                                 className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 rows={4}
-                                placeholder="Geben Sie hier die ausführliche Diagnose ein..."
-                                autoFocus
+                                placeholder="Versorgung laut Arzt eingeben..."
                             />
                         </div>
                     </div>
@@ -293,6 +359,89 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                         </div>
                     </div>
 
+                    {/* Durchgeführt von: dropdown  */}
+                    <div className="w-full xl:w-1/2">
+                        <div className="mb-2">
+                            <h3 className="text-sm font-semibold">Durchgeführt von:</h3>
+                        </div>
+                        <div className="relative">
+                            <Popover open={isEmployeeDropdownOpen} onOpenChange={handleEmployeeDropdownChange}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        role="combobox"
+                                        aria-expanded={isEmployeeDropdownOpen}
+                                        className="w-full justify-between font-normal min-h-[44px]"
+                                    >
+                                        <span className={`truncate ${selectedEmployee ? '' : 'text-gray-400'}`}>
+                                            {selectedEmployee || "Mitarbeiter auswählen..."}
+                                        </span>
+                                        <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                                    <div className="p-2">
+                                        <Input
+                                            placeholder="Mitarbeiter suchen..."
+                                            value={searchText}
+                                            onChange={(e) => handleEmployeeSearchChange(e.target.value)}
+                                            className="w-full"
+                                            autoFocus
+                                        />
+                                    </div>
+                                    <div className="max-h-60 overflow-y-auto">
+                                        {employeeLoading ? (
+                                            <div className="p-4 text-center text-sm text-gray-500">
+                                                Lade Mitarbeiter...
+                                            </div>
+                                        ) : employeeSuggestions.length > 0 ? (
+                                            <div className="py-1">
+                                                {employeeSuggestions.map((employee) => (
+                                                    <div
+                                                        key={employee.id}
+                                                        className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150 ${selectedEmployee === employee.employeeName
+                                                            ? 'bg-blue-50 hover:bg-blue-100 border-l-2 border-blue-500'
+                                                            : 'hover:bg-gray-100'
+                                                            }`}
+                                                        onClick={() => handleEmployeeSelect({ employeeName: employee.employeeName, id: employee.id })}
+                                                    >
+                                                        <div className="flex flex-col min-w-0 flex-1">
+                                                            <span className={`text-sm font-medium truncate ${selectedEmployee === employee.employeeName
+                                                                ? 'text-blue-900'
+                                                                : 'text-gray-900'
+                                                                }`}>
+                                                                {employee.employeeName}
+                                                            </span>
+                                                            {employee.email && (
+                                                                <span className={`text-xs truncate ${selectedEmployee === employee.employeeName
+                                                                    ? 'text-blue-600'
+                                                                    : 'text-gray-500'
+                                                                    }`}>
+                                                                    {employee.email}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {selectedEmployee === employee.employeeName && (
+                                                            <Check className="h-4 w-4 text-blue-600 ml-2 flex-shrink-0" />
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <div className="p-4 text-center text-sm text-gray-500">
+                                                Keine Mitarbeiter gefunden
+                                            </div>
+                                        )}
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+                    </div>
+                </div>
+
+
+                {/* Einlage Dropdown and Überzug dropdown and Menge dropdown */}
+                <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
                     {/* Einlage Dropdown */}
                     <div className="w-full xl:w-1/2">
                         <div className="mb-2">
@@ -303,8 +452,8 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                                 className="p-3 sm:p-2 border border-gray-300 rounded cursor-pointer flex justify-between items-center min-h-[44px]"
                                 onClick={() => setShowEinlageDropdown(!showEinlageDropdown)}
                             >
-                                <span className={`text-sm sm:text-base truncate pr-2 ${selectedEinlage ? '' : 'text-gray-400'}`}>
-                                    {selectedEinlage || "Einlage auswählen"}
+                                <span className={`text-sm sm:text-base truncate pr-2 ${einlagentyp || selectedEinlage ? '' : 'text-gray-400'}`}>
+                                    {einlagentyp || selectedEinlage || "Einlage auswählen"}
                                 </span>
                                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
                                     <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -318,6 +467,7 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                                             className="p-3 sm:p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base border-b border-gray-100 last:border-b-0"
                                             onClick={() => {
                                                 handleEinlageButtonClick(option);
+                                                setEinlagentyp(option);
                                                 setShowEinlageDropdown(false);
                                             }}
                                         >
@@ -328,54 +478,98 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                             )}
                         </div>
                     </div>
-                </div>
 
-                {/* Durchgeführt von: dropdown  */}
+                    {/* Überzug dropdown  */}
+                    <div className="w-full xl:w-1/2">
+                        <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center  w-full">
+                            <div className="w-full xl:w-8/12">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold">Überzug</h3>
+                                </div>
+                                <div className="relative">
+                                    <div
+                                        className="p-3 sm:p-2 border border-gray-300 rounded cursor-pointer flex justify-between items-center min-h-[44px]"
+                                        onClick={() => setShowUberzugDropdown(!showUberzugDropdown)}
+                                    >
+                                        <span className={`text-sm sm:text-base truncate pr-2 ${überzug ? '' : 'text-gray-400'}`}>
+                                            {überzug || "Überzug auswählen"}
+                                        </span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    {showUberzugDropdown && (
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                                            {uberzugOptions.map((option) => (
+                                                <div
+                                                    key={option}
+                                                    className="p-3 sm:p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base border-b border-gray-100 last:border-b-0"
+                                                    onClick={() => {
+                                                        setÜberzug(option);
+                                                        setShowUberzugDropdown(false);
+                                                    }}
+                                                >
+                                                    {option}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                <div>
-                    {/* Durchgeführt von: dropdown  */}
+                            {/* Menge dropdown */}
+                            <div className="w-full xl:w-4/12">
+                                <div className="mb-2">
+                                    <h3 className="text-sm font-semibold">Menge</h3>
+                                </div>
+                                <div className="relative">
+                                    <div
+                                        className="p-3 sm:p-2 border border-gray-300 rounded cursor-pointer flex justify-between items-center min-h-[44px]"
+                                        onClick={() => setShowMengeDropdown(!showMengeDropdown)}
+                                    >
+                                        <span className={`text-sm sm:text-base truncate pr-2 ${menge ? '' : 'text-gray-400'}`}>
+                                            {menge || "Menge auswählen"}
+                                        </span>
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    {showMengeDropdown && (
+                                        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
+                                            {mengeOptions.map((option) => (
+                                                <div
+                                                    key={option}
+                                                    className="p-3 sm:p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base border-b border-gray-100 last:border-b-0"
+                                                    onClick={() => {
+                                                        setMenge(option);
+                                                        setShowMengeDropdown(false);
+                                                    }}
+                                                >
+                                                    {option}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Diagnosis and Supply Editable Fields */}
                 <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Versorgung */}
+                    {/* Versorgung note */}
                     <div className="relative">
-                        <div className="flex items-center mb-2">
-                            <h3 className="text-lg font-semibold">Ausführliche Diagnose</h3>
-                            <button
-                                type="button"
-                                onClick={handleDiagnosisEdit}
-                                className="ml-3 cursor-pointer"
-                                disabled={isSavingDiagnosis}
-                            >
-                                <BiSolidEdit className='text-gray-900 text-xl' />
-                            </button>
-                            {isSavingDiagnosis && (
-                                <div className="ml-2 flex items-center">
-                                    <ImSpinner2 className="animate-spin text-blue-500 text-sm" />
-                                    <span className="ml-1 text-sm text-blue-600">Speichern...</span>
-                                </div>
-                            )}
+                        <div className="mb-2">
+                            <h3 className="text-lg font-semibold">Versorgung Note</h3>
                         </div>
-                        {editingDiagnosis ? (
-                            <textarea
-                                value={diagnosis}
-                                onChange={(e) => setDiagnosis(e.target.value)}
-                                onBlur={handleDiagnosisBlur}
-                                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                rows={4}
-                                placeholder="Geben Sie hier die ausführliche Diagnose ein..."
-                                autoFocus
-                            />
-                        ) : (
-                            <div className="p-2 border border-gray-300 rounded min-h-[100px] cursor-pointer" onClick={handleDiagnosisEdit}>
-                                {diagnosis || (
-                                    <span className="text-gray-400 italic">
-                                        Klicken Sie hier oder auf das Bearbeiten-Symbol, um eine ausführliche Diagnose hinzuzufügen...
-                                    </span>
-                                )}
-                            </div>
-                        )}
+                        <textarea
+                            value={versorgung_note}
+                            onChange={(e) => setVersorgung_note(e.target.value)}
+                            className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            rows={4}
+                            placeholder="Hast du sonstige Anmerkungen oder Notizen zur Versorgung..."
+                        />
                     </div>
 
                     <div className="relative">
@@ -478,136 +672,82 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                             />
                         ) : (
                             <div className="p-2 border border-gray-300 rounded min-h-[100px]">
-                                {supply}
+                                {selectedVersorgungId && versorgungData.length > 0 ? (() => {
+                                    const selectedItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
+                                    if (selectedItem) {
+                                        return (
+                                            <div className="space-y-2">
+                                                <div className="font-semibold text-gray-900">{selectedItem.name}</div>
+                                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                                    <div><span className="font-medium">Rohling:</span> {selectedItem.rohlingHersteller}</div>
+                                                    <div><span className="font-medium">Artikel:</span> {selectedItem.artikelHersteller}</div>
+                                                </div>
+                                                <div className="text-sm text-gray-700">
+                                                    <span className="font-medium">Versorgung:</span> {selectedItem.versorgung}
+                                                </div>
+                                                <div className="text-xs text-gray-500">
+                                                    <span className="font-medium">Material:</span> {selectedItem.material}
+                                                </div>
+                                            </div>
+                                        );
+                                    }
+                                    return supply || <span className="text-gray-400 italic">Keine Versorgung ausgewählt</span>;
+                                })() : supply || <span className="text-gray-400 italic">Keine Versorgung ausgewählt</span>}
                             </div>
                         )}
                     </div>
                 </div>
 
-                {/* Checkbox Section (Schuhmodell wählen) */}
-                <div className="flex flex-col md:flex-row md:items-start md:space-x-8 mb-8 mt-8">
-                    <div className="mb-2 md:mb-0 min-w-max font-semibold flex items-center" style={{ fontWeight: 600 }}>
-                        Schuhmodell wählen (optional aber empfohlen)
+
+                {/* Schuhmodell wählen input field */}
+                <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center w-full">
+                    <div className="w-full xl:w-1/2">
+                        <div className="mb-2">
+                            <h3 className="text-lg font-semibold">Schuhmodell</h3>
+                        </div>
+                        <Input 
+                            type="text" 
+                            placeholder="Manuell eintragen (Marke+Modell+Größe)" 
+                            value={schuhmodell_wählen}
+                            onChange={(e) => setSchuhmodell_wählen(e.target.value)}
+                        />
                     </div>
-                    <div className="flex flex-col space-y-3">
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                className="w-5 h-5"
-                                checked={manualEntry}
-                                onChange={(e) => {
-                                    handleManualEntryCheckboxChange(e.target.checked)
-                                }}
-                            />
-                            <span>Manuell eintragen (Marke + Modell + Größe)</span>
-                        </label>
-                        <label className="flex items-center space-x-2 cursor-pointer">
-                            <input
-                                type="checkbox"
-                                className="w-5 h-5"
-                                checked={fromFeetFirst}
-                                onChange={(e) => {
-                                    handleFeetFirstCheckboxChange(e.target.checked)
-                                }}
-                            />
-                            <span>Aus FeetFirst Bestand wählen</span>
-                        </label>
+
+                    {/* Kostenvoranschlag */}
+                    <div className="w-full xl:w-1/2 mt-5">
+                        <div className="flex items-center gap-10 pb-2 border-b border-gray-300">
+                            <h3 className="text-lg font-semibold">Kostenvoranschlag</h3>
+                            <div className="flex items-center space-x-6">
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="kostenvoranschlag"
+                                        className="w-5 h-5 cursor-pointer"
+                                        checked={kostenvoranschlag === true}
+                                        onChange={() => setKostenvoranschlag(true)}
+                                    />
+                                    <span className="text-sm">Ja</span>
+                                </label>
+                                <label className="flex items-center space-x-2 cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="kostenvoranschlag"
+                                        className="w-5 h-5 cursor-pointer"
+                                        checked={kostenvoranschlag === false}
+                                        onChange={() => setKostenvoranschlag(false)}
+                                    />
+                                    <span className="text-sm">Nein</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-
-
-                {/* Manual Entry Data Display */}
-                {manualEntry && (manualEntryData.marke || manualEntryData.modell || manualEntryData.kategorie || manualEntryData.grosse) && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-lg font-semibold text-blue-900">Manuell eingetragenes Schuhmodell</h4>
-                            <button
-                                onClick={openManualEntryModal}
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                            >
-                                Bearbeiten
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                            <div>
-                                <span className="font-medium text-gray-700">Marke:</span>
-                                <div className="text-gray-900">{manualEntryData.marke || '-'}</div>
-                            </div>
-                            <div>
-                                <span className="font-medium text-gray-700">Modell:</span>
-                                <div className="text-gray-900">{manualEntryData.modell || '-'}</div>
-                            </div>
-                            <div>
-                                <span className="font-medium text-gray-700">Kategorie:</span>
-                                <div className="text-gray-900">{manualEntryData.kategorie || '-'}</div>
-                            </div>
-                            <div>
-                                <span className="font-medium text-gray-700">Größe:</span>
-                                <div className="text-gray-900">{manualEntryData.grosse || '-'}</div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* FeetFirst Inventory Data Display */}
-                {fromFeetFirst && (feetFirstData.kategorie || feetFirstData.marke || feetFirstData.modell || feetFirstData.grosse) && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                        <div className="flex items-center justify-between mb-3">
-                            <h4 className="text-lg font-semibold text-green-900">Aus FeetFirst-Bestand ausgewählt</h4>
-                            <button
-                                onClick={openFeetFirstModal}
-                                className="text-green-600 hover:text-green-800 text-sm font-medium"
-                            >
-                                Bearbeiten
-                            </button>
-                        </div>
-                        <div className="flex items-center space-x-4">
-                            {feetFirstData.image && (
-                                <Image
-                                    width={100}
-                                    height={100}
-                                    src={feetFirstData.image}
-                                    alt={feetFirstData.modell}
-                                    className="w-16 h-16 object-cover rounded-md"
-                                    onError={(e) => {
-                                        e.currentTarget.src = '/images/products/shoes.png';
-                                    }}
-                                />
-                            )}
-                            <div className="flex-1">
-                                <div className="text-lg font-semibold text-gray-900 mb-2">
-                                    {feetFirstData.kategorie} – {feetFirstData.marke} – {feetFirstData.modell} – Größe {feetFirstData.grosse}
-                                </div>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                                    <div>
-                                        <span className="font-medium text-gray-700">Kategorie:</span>
-                                        <div className="text-gray-900">{feetFirstData.kategorie || '-'}</div>
-                                    </div>
-                                    <div>
-                                        <span className="font-medium text-gray-700">Marke:</span>
-                                        <div className="text-gray-900">{feetFirstData.marke || '-'}</div>
-                                    </div>
-                                    <div>
-                                        <span className="font-medium text-gray-700">Modell:</span>
-                                        <div className="text-gray-900">{feetFirstData.modell || '-'}</div>
-                                    </div>
-                                    <div>
-                                        <span className="font-medium text-gray-700">Größe:</span>
-                                        <div className="text-gray-900">{feetFirstData.grosse || '-'}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
 
                 <div className="flex justify-center my-10">
                     <Button
                         type="button"
                         className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px]"
-                        onClick={() => setShowUserInfoUpdateModal(true)}
+                        onClick={handleSpeichernClick}
                         disabled={isCreating}
                     >
                         {isCreating ? 'Speichern...' : 'Speichern'}
@@ -615,35 +755,32 @@ export default function SacnningForm({ customer, onCustomerUpdate, onDataRefresh
                 </div>
             </div>
 
-            {/* Manual Entry Modal */}
-            <ManualEntryModal
-                isOpen={showManualEntryModal}
-                onClose={handleManualEntryModalClose}
-                onSave={handleManualEntryModalSave}
-                initialData={manualEntryData}
-            />
-
-            {/* FeetFirst Inventory Modal */}
-            <FeetFirstInventoryModal
-                isOpen={showFeetFirstModal}
-                onClose={handleFeetFirstModalClose}
-                onSave={handleFeetFirstModalSave}
-            />
-
             {/* User Info Update Modal */}
             <UserInfoUpdateModal
                 isOpen={showUserInfoUpdateModal}
                 onOpenChange={setShowUserInfoUpdateModal}
                 scanData={customer as ScanData}
+                formData={formDataForOrder}
                 onInfoUpdate={() => {
                     // Refresh the customer data to show updated prices
                     onDataRefresh?.()
                 }}
-                onShowOrderConfirmation={() => setShowConfirmModal(true)}
+                onShowOrderConfirmation={(formData) => {
+                    setFormDataForOrder(formData || formDataForOrder);
+                    setShowConfirmModal(true);
+                }}
             />
 
             {/* Order Confirmation Modal */}
-            <OrderConfirmationModal showConfirmModal={showConfirmModal} setShowConfirmModal={setShowConfirmModal} handleConfirmOrder={handleConfirmOrder} isCreating={isCreating} />
+            <OrderConfirmationModal 
+                showConfirmModal={showConfirmModal} 
+                setShowConfirmModal={setShowConfirmModal} 
+                handleConfirmOrder={handleConfirmOrder} 
+                isCreating={isCreating}
+                formData={formDataForOrder}
+                customerId={customer?.id}
+                versorgungId={resolveVersorgungIdFromText()}
+            />
 
             {/* PDF Generation Modal */}
             <InvoiceGeneratePdfModal
