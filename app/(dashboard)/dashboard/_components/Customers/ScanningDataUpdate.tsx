@@ -171,7 +171,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
             {/* Screener Files - Date wise */}
             <div className='mt-5'>
                 <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold">Scan-Daten aktualisieren</h3>
+                    <h3 className="text-lg font-semibold">Scandaten</h3>
 
                 </div>
 

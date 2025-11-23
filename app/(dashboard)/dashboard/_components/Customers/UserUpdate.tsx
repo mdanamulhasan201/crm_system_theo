@@ -162,7 +162,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
             {/* Customer Information */}
             <div className='mt-10'>
                 <div className='flex justify-between items-center'>
-                    <h3 className="text-lg font-semibold mb-3">Kundendaten</h3>
+                    <h3 className="text-lg font-semibold mb-3">Kundeninformation</h3>
                     {/* edit icon */}
                     {!isEditing ? (
                         <button type="button" onClick={() => setIsEditing(true)} className='bg-gray-100 hover:bg-gray-200 cursor-pointer p-2 rounded-md'>

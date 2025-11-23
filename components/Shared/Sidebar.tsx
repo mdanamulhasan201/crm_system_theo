@@ -5,25 +5,30 @@ import { usePathname } from 'next/navigation';
 import { IoClose, IoSearchOutline } from 'react-icons/io5';
 import {
     HiCog,
-    HiCollection,
-    HiShoppingCart,
     HiCalendar,
     HiChat,
     HiOutlineCube
 } from 'react-icons/hi';
 import { RxDashboard } from "react-icons/rx";
-import { HiArrowRightOnRectangle, HiMiniBars2, HiOutlineChatBubbleOvalLeft } from "react-icons/hi2";
+import { HiMiniBars2, HiOutlineChatBubbleOvalLeft } from "react-icons/hi2";
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaMoneyCheckAlt, FaShoePrints } from 'react-icons/fa';
-import { TbActivityHeartbeat, TbDashboardFilled, TbUsers } from 'react-icons/tb';
-import { GiFootprint } from 'react-icons/gi';
+import { FaShoePrints } from 'react-icons/fa';
+import { TbActivityHeartbeat, TbUsers } from 'react-icons/tb';
 import { HiDocumentText } from 'react-icons/hi';
-import { RiDashboard2Line } from 'react-icons/ri';
 import type { IconType } from 'react-icons';
+import type { StaticImageData } from 'next/image';
 import { FiBarChart, FiShoppingBag, FiUserPlus } from 'react-icons/fi';
 import { PiFootprintsLight } from "react-icons/pi";
 import { GrCubes } from "react-icons/gr";
+import Einlagenauftrag from '@/public/images/dashboard/partner_sidebar/Einlagenaufträge.png';
+import Einstellungen from '@/public/images/dashboard/partner_sidebar/Einstellungen.png';
+import Fußübungen from '@/public/images/dashboard/partner_sidebar/Fußübungen.png';
+import Maßschäfte from '@/public/images/dashboard/partner_sidebar/Maßschäfte.png';
+import Maßschuhaufträge from '@/public/images/dashboard/partner_sidebar/Maßschuhaufträge.png';
+import Musterzettel from '@/public/images/dashboard/partner_sidebar/Musterzettel.png';
+import Nachrichten from '@/public/images/dashboard/partner_sidebar/Nachrichten.png';
+import Terminkalender from '@/public/images/dashboard/partner_sidebar/Terminkalender.png';
 
 
 
@@ -33,12 +38,8 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
-    const { logout, user } = useAuth();
-
+    const { user } = useAuth();
     const pathname = usePathname();
-
-
-
     const showLabels = !isCollapsed;
 
     const menuSections = [
@@ -73,7 +74,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
         {
             id: '1c',
             standalone: true,
-            icon: PiFootprintsLight,
+            icon: Einlagenauftrag,
             label: 'Einlagenaufträge',
             // href: '/dashboard/einlagenauftraege'
             href: '/dashboard/orders'
@@ -81,14 +82,14 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
         {
             id: '1d',
             standalone: true,
-            icon: FiShoppingBag,
+            icon: Maßschuhaufträge,
             label: 'Maßschuhaufträge',
             href: '/dashboard/massschuhauftraege'
         },
         {
             id: '1e',
             standalone: true,
-            icon: FaShoePrints,
+            icon: Maßschäfte,
             label: 'Maßschäfte',
             href: '/dashboard/custom-shafts'
         },
@@ -107,8 +108,8 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
             label: 'Kundenmanagement',
             items: [
 
-                { icon: HiChat, label: 'Nachrichten', href: '/dashboard/email/inbox' },
-                { icon: HiCalendar, label: 'Terminkalender', href: '/dashboard/calendar' }
+                { icon: Nachrichten, label: 'Nachrichten', href: '/dashboard/email/inbox' },
+                { icon: Terminkalender, label: 'Terminkalender', href: '/dashboard/calendar' }
             ]
         },
 
@@ -136,15 +137,15 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
             id: '5',
             label: 'System & Einstellungen',
             items: [
-                { icon: HiMiniBars2, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
-                { icon: HiDocumentText, label: 'Musterzettel', href: '/dashboard/musterzettel' },
-                { icon: HiCog, label: 'Einstellungen', href: '/dashboard/settings' },
+                { icon: Fußübungen, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
+                { icon: Musterzettel, label: 'Musterzettel', href: '/dashboard/musterzettel' },
+                { icon: Einstellungen, label: 'Einstellungen', href: '/dashboard/settings' },
             ]
         }
     ];
 
     type MenuItem =
-        | { type: 'link'; key: string; icon: IconType; label: string; href: string }
+        | { type: 'link'; key: string; icon: IconType | StaticImageData; label: string; href: string }
         | { type: 'divider'; key: string };
 
     const menuItems: MenuItem[] = menuSections.flatMap((section, index) => {
@@ -239,6 +240,9 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
 
                     const Icon = item.icon;
                     const isActive = pathname === item.href;
+                    
+                    // Check if icon is an image import (StaticImageData) or React Icon component
+                    const isImageIcon = typeof Icon !== 'function';
 
                     return (
                         <Link
@@ -252,7 +256,17 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
                                 className={`flex items-center ${showLabels ? 'px-5 justify-start' : 'justify-center p-2'} py-1 rounded-lg transition-colors duration-200 ${isActive ? 'bg-[var(--td-green,#61A175)] text-white' : 'text-gray-700 hover:bg-gray-100'
                                     }`}
                             >
-                                <Icon className={`h-5 w-5 ${showLabels ? 'mr-3' : ''}`} />
+                                {isImageIcon ? (
+                                    <Image 
+                                        src={Icon} 
+                                        alt={item.label}
+                                        width={20}
+                                        height={20}
+                                        className={`h-7 w-7 object-contain ${showLabels ? 'mr-3' : ''} ${isActive ? 'brightness-0 invert' : ''}`}
+                                    />
+                                ) : (
+                                    <Icon className={`h-5 w-5 ${showLabels ? 'mr-3' : ''}`} />
+                                )}
                                 {showLabels && item.label}
                             </span>
                         </Link>
