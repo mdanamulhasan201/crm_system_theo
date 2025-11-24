@@ -1,7 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { steps } from "@/contexts/OrdersContext";
-import { getApiStatusFromStep } from "@/lib/orderStatusMappings";
 
 interface PaginationControlsProps {
     pagination: any;
@@ -28,10 +26,7 @@ export default function PaginationControls({
                         Keine Aufträge gefunden
                         {selectedStatus && (
                             <span className="ml-2 text-blue-600 font-medium">
-                                • Gefiltert nach: {steps.find((_, idx) => {
-                                    const apiStatus = getApiStatusFromStep(steps[idx]);
-                                    return apiStatus === selectedStatus;
-                                })}
+                                • Gefiltert nach: {selectedStatus}
                             </span>
                         )}
                     </span>

@@ -11,6 +11,7 @@ export interface ApiOrderData {
     invoice: string | null;
     createdAt: string;
     updatedAt: string;
+    priority?: string | null;
     customer: {
         id: string;
         vorname: string;

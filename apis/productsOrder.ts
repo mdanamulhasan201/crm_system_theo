@@ -118,3 +118,40 @@ export const getEinlagenInProduktion = async () => {
         throw error;
     }
 }
+
+
+
+// delete group order 
+export const deleteGroupOrder = async (orderIds: string[]) => {
+    try {
+        const response = await axiosClient.delete('/customer-orders/multiple/delete', {
+            data: { orderIds }
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// group order status changes  
+export const groupOrderStatusUpdate = async (orderIds: string[], orderStatus: string) => {
+    try {
+        const response = await axiosClient.patch('/customer-orders/status/multiple/update', { orderIds, orderStatus });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const updateOrderPriority = async (orderId: string, priority: string) => {
+    try {
+        const response = await axiosClient.patch(`/customer-orders/update/priority/${orderId}`, { priority });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// prioritat stats chanages 
+

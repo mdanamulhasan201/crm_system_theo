@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useOrders, steps } from '@/contexts/OrdersContext';
+import { useOrders } from '@/contexts/OrdersContext';
 import toast from 'react-hot-toast';
 import { useDeleteSingleOrder } from '@/hooks/orders/useDeleteSingleOrder';
 
-export type PendingActionType = 'nextStep' | 'priority' | 'delete';
+export type PendingActionType = 'delete';
 
 export interface PendingAction {
     type: PendingActionType;
@@ -16,9 +16,6 @@ export interface PendingAction {
 export function useOrderActions() {
     const {
         orders,
-        togglePriority,
-        moveToNextStep,
-        refreshOrderData,
         deleteOrder
     } = useOrders();
 
@@ -27,92 +24,6 @@ export function useOrderActions() {
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-
-    const handleNextStep = (orderId: string, setSelectedOrderId: (id: string) => void) => {
-        const order = orders.find(o => o.id === orderId);
-        if (!order) return;
-
-        const nextStep = order.currentStep + 1;
-        if (nextStep >= steps.length) return;
-
-        const nextGermanStatus = steps[nextStep];
-
-        setPendingAction({
-            type: 'nextStep',
-            orderId: orderId,
-            orderName: order.kundenname,
-            currentStatus: order.displayStatus,
-            newStatus: nextGermanStatus
-        });
-        setShowConfirmModal(true);
-    };
-
-    const executeNextStep = async (setSelectedOrderId: (id: string) => void) => {
-        if (!pendingAction) return;
-
-        try {
-            await moveToNextStep(pendingAction.orderId);
-            setSelectedOrderId(pendingAction.orderId);
-
-            toast.success(`Status erfolgreich geändert: ${pendingAction.currentStatus} → ${pendingAction.newStatus}`);
-
-            setTimeout(() => {
-                refreshOrderData(pendingAction.orderId);
-            }, 500);
-        } catch (error) {
-            console.error('Failed to move to next step:', error);
-            toast.error('Fehler beim Ändern des Status');
-        } finally {
-            setShowConfirmModal(false);
-            setPendingAction(null);
-        }
-    };
-
-    const handlePriorityToggle = (orderId: string, setSelectedOrderId: (id: string) => void) => {
-        const order = orders.find(o => o.id === orderId);
-        if (!order) return;
-
-        const isPrioritizing = !order.isPrioritized;
-        const newStatus = isPrioritizing ? "Einlage vorbereiten" : "Zurück zu ursprünglichem Status";
-
-        setPendingAction({
-            type: 'priority',
-            orderId: orderId,
-            orderName: order.kundenname,
-            currentStatus: order.displayStatus,
-            newStatus: newStatus
-        });
-        setShowConfirmModal(true);
-    };
-
-    const executePriorityToggle = async (setSelectedOrderId: (id: string) => void) => {
-        if (!pendingAction) return;
-
-        try {
-            await togglePriority(pendingAction.orderId);
-            setSelectedOrderId(pendingAction.orderId);
-
-            const order = orders.find(o => o.id === pendingAction.orderId);
-            if (order) {
-                const isPrioritizing = !order.isPrioritized;
-                if (isPrioritizing) {
-                    toast.success(`Auftrag erfolgreich priorisiert: ${pendingAction.orderName}`);
-                } else {
-                    toast.success(`Priorität erfolgreich entfernt: ${pendingAction.orderName}`);
-                }
-            }
-
-            setTimeout(() => {
-                refreshOrderData(pendingAction.orderId);
-            }, 500);
-        } catch (error) {
-            console.error('Failed to toggle priority:', error);
-            toast.error('Fehler beim Ändern der Priorität');
-        } finally {
-            setShowConfirmModal(false);
-            setPendingAction(null);
-        }
-    };
 
     const handleDeleteOrder = (orderId: string, setSelectedOrderId: (id: string | null) => void) => {
         const order = orders.find(o => o.id === orderId);
@@ -178,10 +89,6 @@ export function useOrderActions() {
         isDeleting,
         pendingAction,
         deleteLoading,
-        handleNextStep,
-        executeNextStep,
-        handlePriorityToggle,
-        executePriorityToggle,
         handleDeleteOrder,
         executeDeleteOrder,
         handleInvoiceDownload,

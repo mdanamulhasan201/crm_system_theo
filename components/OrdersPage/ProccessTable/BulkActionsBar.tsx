@@ -1,51 +1,33 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2 } from "lucide-react";
-import { steps } from "@/contexts/OrdersContext";
-import { OrderData } from "@/contexts/OrdersContext";
-import { getApiStatusFromStep, getGermanStatusFromApi } from "@/lib/orderStatusMappings";
-import toast from 'react-hot-toast';
+import { STATUS_OPTIONS } from "@/lib/orderStatusMappings";
 
 interface BulkActionsBarProps {
     selectedOrderIds: string[];
-    orders: OrderData[];
     onClearSelection: () => void;
-    onBulkStatusChange?: (orderIds: string[], status: string) => void;
+    onBulkDelete: (orderIds: string[]) => void;
+    onBulkStatusChange: (orderIds: string[], status: string) => void;
+    statusValue: string;
+    onStatusValueChange: (value: string) => void;
 }
 
 export default function BulkActionsBar({
     selectedOrderIds,
-    orders,
     onClearSelection,
+    onBulkDelete,
     onBulkStatusChange,
+    statusValue,
+    onStatusValueChange,
 }: BulkActionsBarProps) {
-    const handleStatusChange = (value: string) => {
-        // Static demo - show which status was selected for which orders
-        const germanStatus = getGermanStatusFromApi(value);
-        
-        const selectedOrders = orders.filter(order =>
-            selectedOrderIds.includes(order.id)
-        );
-        const orderCount = selectedOrderIds.length;
-        const orderNames = selectedOrders.slice(0, 3).map(o => o.kundenname).join(', ');
-        const moreOrders = orderCount > 3 ? ` und ${orderCount - 3} weitere` : '';
-        
-        toast.success(
-            `Status ändern zu "${germanStatus}" für ${orderCount} ${orderCount === 1 ? 'Auftrag' : 'Aufträge'}: ${orderNames}${moreOrders}`,
-            { duration: 4000 }
-        );
-
-        // Call the callback if provided
-        if (onBulkStatusChange) {
-            onBulkStatusChange(selectedOrderIds, value);
-        }
+    const handleBulkDelete = () => {
+        onBulkDelete(selectedOrderIds);
     };
 
-    const handleBulkDelete = () => {
-        // Handle bulk delete
-        toast('Bulk-Löschfunktion wird bald verfügbar sein', {
-            icon: 'ℹ️',
-        });
+    const handleBulkStatusChange = (value: string) => {
+        if (!value) return;
+        onStatusValueChange(value);
+        onBulkStatusChange(selectedOrderIds, value);
     };
 
     if (selectedOrderIds.length === 0) {
@@ -68,19 +50,16 @@ export default function BulkActionsBar({
                 </Button>
             </div>
             <div className="flex gap-2">
-                <Select onValueChange={handleStatusChange}>
-                    <SelectTrigger className="w-[220px] text-xs h-8 cursor-pointer">
+                <Select value={statusValue || undefined} onValueChange={handleBulkStatusChange}>
+                    <SelectTrigger className="w-[220px] text-xs h-8 cursor-pointer bg-white">
                         <SelectValue placeholder="Status ändern" />
                     </SelectTrigger>
                     <SelectContent>
-                        {steps.map((step, idx) => {
-                            const apiStatus = getApiStatusFromStep(step);
-                            return (
-                                <SelectItem key={idx} value={apiStatus || step}>
-                                    {step}
-                                </SelectItem>
-                            );
-                        })}
+                        {STATUS_OPTIONS.map((status) => (
+                            <SelectItem key={status.value} value={status.value} className="cursor-pointer">
+                                {status.label}
+                            </SelectItem>
+                        ))}
                     </SelectContent>
                 </Select>
                 <Button

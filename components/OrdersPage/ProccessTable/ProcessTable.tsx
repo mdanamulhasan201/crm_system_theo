@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useOrders } from "@/contexts/OrdersContext";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useOrders, OrderData } from "@/contexts/OrdersContext";
 import ConfirmModal from '../ConfirmModal/ConfirmModal';
 import StatusFilterBar from "./StatusFilterBar";
 import BulkActionsBar from "./BulkActionsBar";
@@ -9,6 +10,8 @@ import OrderTableHeader from "./OrderTableHeader";
 import OrderTableRow from "./OrderTableRow";
 import PaginationControls from "./PaginationControls";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
+import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
+import toast from 'react-hot-toast';
 
 export default function ProcessTable() {
     const {
@@ -23,10 +26,26 @@ export default function ProcessTable() {
         setSelectedDays,
         setSelectedStatus,
         refetch,
+        deleteBulkOrders,
+        bulkUpdateOrderStatus,
+        updateOrderPriority,
     } = useOrders();
 
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+    const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
+    const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+    const [bulkStatusSelectValue, setBulkStatusSelectValue] = useState<string>("");
+    const [showBulkStatusModal, setShowBulkStatusModal] = useState(false);
+    const [isBulkStatusUpdating, setIsBulkStatusUpdating] = useState(false);
+    const [pendingBulkStatus, setPendingBulkStatus] = useState<{
+        orderIds: string[];
+        newStatus: string;
+    } | null>(null);
+    const [showPriorityModal, setShowPriorityModal] = useState(false);
+    const [priorityModalOrder, setPriorityModalOrder] = useState<OrderData | null>(null);
+    const [prioritySelection, setPrioritySelection] = useState<'Dringend' | 'Normal'>('Normal');
+    const [isPriorityUpdating, setIsPriorityUpdating] = useState(false);
 
     const {
         showConfirmModal,
@@ -34,21 +53,11 @@ export default function ProcessTable() {
         isDeleting,
         pendingAction,
         deleteLoading,
-        handleNextStep,
-        executeNextStep,
-        handlePriorityToggle,
-        executePriorityToggle,
         handleDeleteOrder,
         executeDeleteOrder,
         handleInvoiceDownload,
     } = useOrderActions();
 
-    // Get the selected order's current step to show as active in the progress bar
-    const activeStep = useMemo(() => {
-        if (!selectedOrderId) return -1;
-        const selectedOrder = orders.find(order => order.id === selectedOrderId);
-        return selectedOrder ? selectedOrder.currentStep : -1;
-    }, [selectedOrderId, orders]);
 
     // Memoized orders
     const memoizedOrders = useMemo(() => orders, [orders]);
@@ -117,12 +126,61 @@ export default function ProcessTable() {
 
     // Handle confirm modal actions
     const handleConfirm = async () => {
-        if (pendingAction?.type === 'nextStep') {
-            await executeNextStep((id: string) => setSelectedOrderId(id));
-        } else if (pendingAction?.type === 'priority') {
-            await executePriorityToggle((id: string) => setSelectedOrderId(id));
-        } else if (pendingAction?.type === 'delete') {
+        if (pendingAction?.type === 'delete') {
             await executeDeleteOrder((id: string | null) => setSelectedOrderId(id));
+        }
+    };
+
+    // Handle bulk delete
+    const handleBulkDelete = (orderIds: string[]) => {
+        setShowBulkDeleteModal(true);
+    };
+
+    const handleBulkStatusChange = (orderIds: string[], newStatus: string) => {
+        if (orderIds.length === 0) return;
+        setPendingBulkStatus({ orderIds, newStatus });
+        setShowBulkStatusModal(true);
+    };
+
+    const executeBulkStatusChange = async () => {
+        if (!pendingBulkStatus) return;
+        setIsBulkStatusUpdating(true);
+        try {
+            await bulkUpdateOrderStatus(pendingBulkStatus.orderIds, pendingBulkStatus.newStatus);
+            toast.success('Status erfolgreich aktualisiert');
+            setShowBulkStatusModal(false);
+            setPendingBulkStatus(null);
+            setSelectedOrderIds([]);
+            setBulkStatusSelectValue("");
+        } catch (error) {
+            console.error('Failed to update statuses:', error);
+            toast.error('Fehler beim Aktualisieren des Status');
+        } finally {
+            setIsBulkStatusUpdating(false);
+        }
+    };
+
+    useEffect(() => {
+        if (selectedOrderIds.length === 0) {
+            setBulkStatusSelectValue("");
+        }
+    }, [selectedOrderIds.length]);
+
+    const executeBulkDelete = async () => {
+        if (selectedOrderIds.length === 0) return;
+
+        setIsBulkDeleting(true);
+        try {
+            await deleteBulkOrders(selectedOrderIds);
+            toast.success(`${selectedOrderIds.length} ${selectedOrderIds.length === 1 ? 'Auftrag' : 'Aufträge'} erfolgreich gelöscht`);
+            setSelectedOrderIds([]);
+            setSelectedOrderId(null);
+        } catch (error) {
+            console.error('Failed to delete orders:', error);
+            toast.error('Fehler beim Löschen der Aufträge');
+        } finally {
+            setIsBulkDeleting(false);
+            setShowBulkDeleteModal(false);
         }
     };
 
@@ -141,20 +199,25 @@ export default function ProcessTable() {
 
     return (
         <div className="mt-6 sm:mt-10 max-w-full overflow-x-auto">
-            <StatusFilterBar
-                selectedDays={selectedDays}
-                selectedStatus={selectedStatus}
-                activeStep={activeStep}
-                onDaysChange={setSelectedDays}
-                onStatusFilter={handleStatusFilter}
-                onClearFilter={() => setSelectedStatus(null)}
-            />
-
-            <BulkActionsBar
-                selectedOrderIds={selectedOrderIds}
-                orders={orders}
-                onClearSelection={() => setSelectedOrderIds([])}
-            />
+            {selectedOrderIds.length === 0 ? (
+                <StatusFilterBar
+                    selectedDays={selectedDays}
+                    selectedStatus={selectedStatus}
+                    activeStep={-1}
+                    onDaysChange={setSelectedDays}
+                    onStatusFilter={handleStatusFilter}
+                    onClearFilter={() => setSelectedStatus(null)}
+                />
+            ) : (
+                <BulkActionsBar
+                    selectedOrderIds={selectedOrderIds}
+                    onClearSelection={() => setSelectedOrderIds([])}
+                    onBulkDelete={handleBulkDelete}
+                    onBulkStatusChange={handleBulkStatusChange}
+                    statusValue={bulkStatusSelectValue}
+                    onStatusValueChange={setBulkStatusSelectValue}
+                />
+            )}
 
             <Table className="table-fixed w-full">
                 <TableHeader>
@@ -195,10 +258,13 @@ export default function ProcessTable() {
                                 deleteLoading={deleteLoading}
                                 onRowClick={setSelectedOrderId}
                                 onCheckboxChange={handleSelectOrder}
-                                onNextStep={(id) => handleNextStep(id, (id: string) => setSelectedOrderId(id))}
-                                onPriorityToggle={(id) => handlePriorityToggle(id, (id: string) => setSelectedOrderId(id))}
                                 onDelete={(id) => handleDeleteOrder(id, (id: string | null) => setSelectedOrderId(id))}
                                 onInvoiceDownload={handleInvoiceDownload}
+                                onPriorityClick={(orderData) => {
+                                    setPriorityModalOrder(orderData);
+                                    setPrioritySelection(orderData.priority || 'Normal');
+                                    setShowPriorityModal(true);
+                                }}
                             />
                         ))
                     )}
@@ -216,16 +282,110 @@ export default function ProcessTable() {
             <ConfirmModal
                 open={showConfirmModal}
                 onOpenChange={setShowConfirmModal}
-                title={pendingAction?.type === 'delete' ? "Auftrag löschen bestätigen" : "Status ändern bestätigen"}
-                description={pendingAction?.type === 'delete' ? "Sind Sie sicher, dass Sie den Auftrag" : "Sind Sie sicher, dass Sie den Status für den Auftrag"}
+                title="Auftrag löschen bestätigen"
+                description="Sind Sie sicher, dass Sie den Auftrag"
                 orderName={pendingAction?.orderName}
                 currentStatus={pendingAction?.currentStatus || ''}
                 newStatus={pendingAction?.newStatus || ''}
                 onConfirm={handleConfirm}
-                confirmText={pendingAction?.type === 'delete' ? "Ja, löschen" : "Ja, Status ändern"}
-                isDeleteAction={pendingAction?.type === 'delete'}
+                confirmText="Ja, löschen"
+                isDeleteAction={true}
                 isLoading={isDeleting}
             />
+
+            {/* Bulk Delete Confirmation Modal */}
+            <ConfirmModal
+                open={showBulkDeleteModal}
+                onOpenChange={setShowBulkDeleteModal}
+                title="Mehrere Aufträge löschen bestätigen"
+                description={`Sind Sie sicher, dass Sie ${selectedOrderIds.length} ${selectedOrderIds.length === 1 ? 'Auftrag' : 'Aufträge'} löschen möchten?`}
+                orderName={`${selectedOrderIds.length} ${selectedOrderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
+                currentStatus=""
+                newStatus=""
+                onConfirm={executeBulkDelete}
+                confirmText="Ja, alle löschen"
+                isDeleteAction={true}
+                isLoading={isBulkDeleting}
+            />
+
+            <ConfirmModal
+                open={showBulkStatusModal}
+                onOpenChange={(open) => {
+                    setShowBulkStatusModal(open);
+                    if (!open) {
+                        setIsBulkStatusUpdating(false);
+                        setPendingBulkStatus(null);
+                    }
+                }}
+                title="Status ändern bestätigen"
+                description={`Sind Sie sicher, dass Sie den Status für ${pendingBulkStatus?.orderIds.length || 0} ${pendingBulkStatus && pendingBulkStatus.orderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
+                orderName={`${pendingBulkStatus?.orderIds.length || 0} ${pendingBulkStatus && pendingBulkStatus.orderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
+                currentStatus="Mehrere Statuswerte"
+                newStatus={pendingBulkStatus ? getLabelFromApiStatus(pendingBulkStatus.newStatus) : ''}
+                onConfirm={executeBulkStatusChange}
+                confirmText="Bestätigen"
+                isLoading={isBulkStatusUpdating}
+            />
+
+            <Dialog open={showPriorityModal} onOpenChange={(open) => {
+                setShowPriorityModal(open);
+                if (!open) {
+                    setPriorityModalOrder(null);
+                    setIsPriorityUpdating(false);
+                }
+            }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Priorität ändern</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <p className="text-sm text-gray-600">
+                            Wähle die gewünschte Priorität für <strong>{priorityModalOrder?.kundenname}</strong>
+                        </p>
+                        <div className="grid grid-cols-1 gap-2">
+                            {(['Dringend', 'Normal'] as ('Dringend' | 'Normal')[]).map(option => (
+                                <button
+                                    key={option}
+                                    className={`w-full border rounded-lg py-2 px-3 text-sm font-medium cursor-pointer transition ${prioritySelection === option
+                                            ? option === 'Dringend'
+                                                ? 'border-red-500 bg-red-50 text-red-600'
+                                                : 'border-gray-400 bg-gray-100 text-gray-700'
+                                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                                        }`}
+                                    onClick={() => setPrioritySelection(option)}
+                                >
+                                    {option}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" className="cursor-pointer" onClick={() => setShowPriorityModal(false)} disabled={isPriorityUpdating}>
+                            Abbrechen
+                        </Button>
+                        <Button
+                            className="cursor-pointer"
+                            onClick={async () => {
+                                if (!priorityModalOrder) return;
+                                setIsPriorityUpdating(true);
+                                try {
+                                    await updateOrderPriority(priorityModalOrder.id, prioritySelection);
+                                    toast.success('Priorität aktualisiert');
+                                    setShowPriorityModal(false);
+                                } catch (error) {
+                                    console.error('Failed to update priority:', error);
+                                    toast.error('Fehler beim Aktualisieren der Priorität');
+                                } finally {
+                                    setIsPriorityUpdating(false);
+                                }
+                            }}
+                            disabled={isPriorityUpdating}
+                        >
+                            {isPriorityUpdating ? 'Aktualisiere...' : 'Speichern'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -1,54 +1,35 @@
 import { Button } from "@/components/ui/button";
-import { AlertTriangle, Trash2, ClipboardEdit, ArrowLeft } from "lucide-react";
-import { steps } from "@/contexts/OrdersContext";
+import { Trash2, ClipboardEdit, AlertTriangle } from "lucide-react";
 import { OrderData } from "@/contexts/OrdersContext";
 
 interface OrderActionsProps {
     order: OrderData;
     deleteLoading: boolean;
-    onNextStep: (orderId: string) => void;
-    onPriorityToggle: (orderId: string) => void;
     onDelete: (orderId: string) => void;
     onInvoiceDownload: (orderId: string) => void;
+    onPriorityClick: (order: OrderData) => void;
 }
 
 export default function OrderActions({
     order,
     deleteLoading,
-    onNextStep,
-    onPriorityToggle,
     onDelete,
     onInvoiceDownload,
+    onPriorityClick,
 }: OrderActionsProps) {
     return (
         <div className="flex gap-1 sm:gap-2 justify-center">
             <Button
                 variant="ghost"
                 size="sm"
-                className={`h-6 cursor-pointer sm:h-8 px-1 sm:px-2 text-xs hover:bg-gray-200 flex items-center gap-1 min-w-fit ${order.currentStep >= steps.length - 1 ? 'opacity-50 cursor-not-allowed' : ''
-                    }`}
+                className={`h-6 cursor-pointer w-6 sm:h-8 sm:w-8 p-0 hover:bg-red-50 ${order.priority === 'Dringend' ? 'text-red-600' : 'text-gray-500'}`}
+                title="Priorität ändern"
                 onClick={(e) => {
                     e.stopPropagation();
-                    onNextStep(order.id);
-                }}
-                disabled={order.currentStep >= steps.length - 1}
-                title={order.currentStep >= steps.length - 1 ? "Bereits im letzten Schritt" : "Nächster Schritt"}
-            >
-                <ArrowLeft className="h-3 w-3 text-gray-700" />
-                <span className="hidden sm:inline text-gray-700">Nächster</span>
-            </Button>
-
-            <Button
-                variant="ghost"
-                size="sm"
-                className={`h-6 cursor-pointer w-6 sm:h-8 sm:w-8 p-0 hover:bg-red-100 ${order.isPrioritized ? 'bg-red-100' : ''}`}
-                title="Auftrag priorisieren"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onPriorityToggle(order.id);
+                    onPriorityClick(order);
                 }}
             >
-                <AlertTriangle className={`h-3 w-3 ${order.isPrioritized ? 'text-red-600 fill-current' : 'text-red-500'}`} />
+                <AlertTriangle className="h-3 w-3" />
             </Button>
             <Button
                 variant="ghost"
