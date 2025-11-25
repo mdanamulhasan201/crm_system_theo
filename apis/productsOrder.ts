@@ -169,6 +169,13 @@ export const updateOrderPriority = async (orderId: string, priority: string) => 
     }
 }
 
-
-// prioritat stats chanages 
+// get customer orders by customer id /customer-orders/get/:id /customer-orders/customer/cbc25f6f-c217-467e-8c64-287c7625265f?page=&limit=
+export const getCustomerOrdersByCustomerId = async (customerId: string, page: number, limit: number) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/customer/${customerId}?page=${page}&limit=${limit}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
 

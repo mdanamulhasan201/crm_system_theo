@@ -510,7 +510,7 @@ export default function CustomerHistory() {
             <div>
                 {activeTab === 'scans' && <ScansPromoted customerData={scanData} />}
                 {activeTab === 'shoes' && <ShoePurchasesMade />}
-                {activeTab === 'versorgungen' && <TreatmentsCarriedOut />}
+                {activeTab === 'versorgungen' && <TreatmentsCarriedOut customerId={scanData.id} />}
                 {activeTab === 'reviews' && <Reviews />}
             </div>
 
