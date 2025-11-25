@@ -252,14 +252,14 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                         Materialien
                                     </h3>
                                     <div style={{ marginBottom: '15px' }}>
-                                        <p style={{ margin: 0 }}>Rohling: {data.product?.rohlingHersteller} <span style={{ color: '#FF0000', fontWeight: 'bold' }}>Größe {data.customer?.recommendedSize?.size || '-'}</span></p>
+                                        <p style={{ margin: 0 }}> {data.product?.rohlingHersteller} <span style={{ color: '#FF0000', fontWeight: 'bold' }}>Größe {data.customer?.recommendedSize?.size || '-'}</span></p>
                                     </div>
                                     <div style={{ marginBottom: '15px' }}>
-                                        <p style={{ margin: 0 }}>Pelotte: {data.product?.material || '-'}</p>
+                                        <p style={{ margin: 0 }}>{data.product?.material || '-'}</p>
                                     </div>
                                     <div style={{ marginBottom: '15px' }}>
                                         <p style={{ margin: 0 }}>
-                                            Zusatz: {Array.isArray(data.product?.material)
+                                            {Array.isArray(data.product?.material)
                                                 ? data.product.material.join(', ')
                                                 : (data.product?.material || '-')}
                                         </p>

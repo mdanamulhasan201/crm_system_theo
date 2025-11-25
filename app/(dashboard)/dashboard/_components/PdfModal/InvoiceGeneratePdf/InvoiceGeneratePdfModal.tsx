@@ -135,7 +135,7 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId }: In
                             />
 
                             {/* Send to Customer Button */}
-                            <button
+                            {/* <button
                                 onClick={handleGenerateAndSend}
                                 disabled={isSending}
                                 className=" bg-[#62A17C] px-4 text-white rounded-md hover:bg-[#4A8A5F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer"
@@ -151,7 +151,7 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId }: In
                                         Send to Customer
                                     </>
                                 )}
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 )}
