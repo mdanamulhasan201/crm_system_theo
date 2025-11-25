@@ -15,9 +15,10 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
     const [modalTitle, setModalTitle] = useState<string>('');
     const [modalType, setModalType] = useState<'image' | 'stl' | null>(null);
     const [stlUrl, setStlUrl] = useState<string | null>(null);
+    const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
 
-    // Use the existing hook for customer data management
-    const { customer: currentScanData, updateCustomer, refreshCustomer, isUpdating, error } = useSingleCustomer(scanData.id);
+    // Use the existing hook for customer data management with date filtering
+    const { customer: currentScanData, availableDates, updateCustomer, refreshCustomer, isUpdating, error } = useSingleCustomer(scanData.id, selectedDate);
 
     // State for editable scan data
     const [editableData, setEditableData] = useState({
@@ -35,23 +36,31 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
         archIndex2: scanData.archIndex2 ?? '',
     });
 
-    // Sync editableData when scanData prop changes
+    // Sync editableData when scanData prop or currentScanData changes
+    // But only if there's no screenerFile (screenerFile থাকলে main data থেকে sync হবে না)
     useEffect(() => {
-        setEditableData({
-            fusslange1: scanData.fusslange1 ?? '',
-            fusslange2: scanData.fusslange2 ?? '',
-            fussbreite1: scanData.fussbreite1 ?? '',
-            fussbreite2: scanData.fussbreite2 ?? '',
-            kugelumfang1: scanData.kugelumfang1 ?? '',
-            kugelumfang2: scanData.kugelumfang2 ?? '',
-            rist1: scanData.rist1 ?? '',
-            rist2: scanData.rist2 ?? '',
-            zehentyp1: scanData.zehentyp1 ?? '',
-            zehentyp2: scanData.zehentyp2 ?? '',
-            archIndex1: scanData.archIndex1 ?? '',
-            archIndex2: scanData.archIndex2 ?? '',
-        });
-    }, [scanData]);
+        const dataToSync = currentScanData || scanData;
+        const hasScreenerFile = dataToSync?.screenerFile && Array.isArray(dataToSync.screenerFile) && dataToSync.screenerFile.length > 0;
+        
+        // Only sync from main data if no screenerFile exists
+        // If screenerFile exists, data will come from handleDataChange callback
+        if (!hasScreenerFile && !selectedDate) {
+            setEditableData({
+                fusslange1: dataToSync.fusslange1 ?? '',
+                fusslange2: dataToSync.fusslange2 ?? '',
+                fussbreite1: dataToSync.fussbreite1 ?? '',
+                fussbreite2: dataToSync.fussbreite2 ?? '',
+                kugelumfang1: dataToSync.kugelumfang1 ?? '',
+                kugelumfang2: dataToSync.kugelumfang2 ?? '',
+                rist1: dataToSync.rist1 ?? '',
+                rist2: dataToSync.rist2 ?? '',
+                zehentyp1: dataToSync.zehentyp1 ?? '',
+                zehentyp2: dataToSync.zehentyp2 ?? '',
+                archIndex1: dataToSync.archIndex1 ?? '',
+                archIndex2: dataToSync.archIndex2 ?? '',
+            });
+        }
+    }, [scanData, currentScanData, selectedDate]);
 
     // Check if any field has changed
     const [originalData, setOriginalData] = useState(editableData);
@@ -70,6 +79,11 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
         }));
     };
 
+    // Handle date selection from ScanDataDisplay
+    const handleDateChange = useCallback((date: string | null) => {
+        setSelectedDate(date || undefined);
+    }, []);
+
     // Memoized callback to handle data changes from date filter
     const handleDataChange = useCallback((filteredData: any) => {
         if (!filteredData) return;
@@ -87,19 +101,20 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
 
         previousFilteredDataRef.current = dataId;
 
+        // Preserve null values from screenerFile, don't convert to empty string
         const newEditableData = {
-            fusslange1: filteredData.fusslange1 ?? '',
-            fusslange2: filteredData.fusslange2 ?? '',
-            fussbreite1: filteredData.fussbreite1 ?? '',
-            fussbreite2: filteredData.fussbreite2 ?? '',
-            kugelumfang1: filteredData.kugelumfang1 ?? '',
-            kugelumfang2: filteredData.kugelumfang2 ?? '',
-            rist1: filteredData.rist1 ?? '',
-            rist2: filteredData.rist2 ?? '',
-            zehentyp1: filteredData.zehentyp1 ?? '',
-            zehentyp2: filteredData.zehentyp2 ?? '',
-            archIndex1: filteredData.archIndex1 ?? '',
-            archIndex2: filteredData.archIndex2 ?? '',
+            fusslange1: filteredData.fusslange1 !== undefined ? filteredData.fusslange1 : '',
+            fusslange2: filteredData.fusslange2 !== undefined ? filteredData.fusslange2 : '',
+            fussbreite1: filteredData.fussbreite1 !== undefined ? filteredData.fussbreite1 : '',
+            fussbreite2: filteredData.fussbreite2 !== undefined ? filteredData.fussbreite2 : '',
+            kugelumfang1: filteredData.kugelumfang1 !== undefined ? filteredData.kugelumfang1 : '',
+            kugelumfang2: filteredData.kugelumfang2 !== undefined ? filteredData.kugelumfang2 : '',
+            rist1: filteredData.rist1 !== undefined ? filteredData.rist1 : '',
+            rist2: filteredData.rist2 !== undefined ? filteredData.rist2 : '',
+            zehentyp1: filteredData.zehentyp1 !== undefined ? filteredData.zehentyp1 : '',
+            zehentyp2: filteredData.zehentyp2 !== undefined ? filteredData.zehentyp2 : '',
+            archIndex1: filteredData.archIndex1 !== undefined ? filteredData.archIndex1 : '',
+            archIndex2: filteredData.archIndex2 !== undefined ? filteredData.archIndex2 : '',
         };
 
         setEditableData(newEditableData);
@@ -184,6 +199,9 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
                         editableData={editableData}
                         onInputChange={handleInputChange}
                         onDataChange={handleDataChange}
+                        onDateChange={handleDateChange}
+                        availableDates={availableDates}
+                        defaultSelectedDate={selectedDate || null}
                     >
                         {/* Additional content for the scan data section */}
                         {isChanged && (

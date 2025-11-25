@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import { MdZoomOutMap } from 'react-icons/md'
 import { TfiDownload } from 'react-icons/tfi'
@@ -13,14 +13,11 @@ interface ScanDataDisplayProps {
     isEditable?: boolean
     editableData?: any
     onInputChange?: (field: string, value: string) => void
-    showSaveButton?: boolean
-    onSave?: () => void
-    isUpdating?: boolean
-    error?: string | null
     children?: React.ReactNode
     onDataChange?: (filteredData: any) => void
     defaultSelectedDate?: string | null
     onDateChange?: (date: string | null) => void
+    availableDates?: string[]
 }
 
 export default function ScanDataDisplay({
@@ -28,31 +25,38 @@ export default function ScanDataDisplay({
     isEditable = false,
     editableData = {},
     onInputChange,
-    showSaveButton = false,
-    onSave,
-    isUpdating = false,
-    error = null,
     children,
     onDataChange,
     defaultSelectedDate = null,
-    onDateChange
+    onDateChange,
+    availableDates: propAvailableDates
 }: ScanDataDisplayProps) {
     const { user } = useAuth();
-    // Date filter state
     const [selectedScanDate, setSelectedScanDate] = useState<string>(defaultSelectedDate || '');
     const [showDateDropdown, setShowDateDropdown] = useState(false);
-
-    // Zoom state
     const [isZoomed, setIsZoomed] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
 
-    // Toggle zoom mode
-    const toggleZoom = () => {
-        setIsZoomed(!isZoomed);
-    };
+    // Helper function to check if screenerFile exists
+    const hasScreenerFile = useMemo(() => {
+        return scanData?.screenerFile && Array.isArray(scanData.screenerFile) && scanData.screenerFile.length > 0;
+    }, [scanData?.screenerFile]);
 
-    // Get all available scan dates from screenerFile
+    const toggleZoom = () => setIsZoomed(!isZoomed);
+
     const availableScanDates = useMemo(() => {
+
+        if (propAvailableDates && Array.isArray(propAvailableDates) && propAvailableDates.length > 0) {
+            return propAvailableDates
+                .map(date => ({
+                    date: date,
+                    id: date, // Use date as id if no file id available
+                    displayDate: new Date(date).toLocaleDateString('de-DE')
+                }))
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        }
+
+        // Fallback to screenerFile
         if (!scanData?.screenerFile || !Array.isArray(scanData.screenerFile) || scanData.screenerFile.length === 0) {
             return [];
         }
@@ -63,45 +67,47 @@ export default function ScanDataDisplay({
                 .map(file => ({
                     date: file.updatedAt,
                     id: file.id,
-                    displayDate: new Date(file.updatedAt).toLocaleDateString()
+                    displayDate: new Date(file.updatedAt).toLocaleDateString('de-DE')
                 }))
                 .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         } catch (error) {
             console.error('Error processing scan dates:', error);
             return [];
         }
-    }, [scanData?.screenerFile]);
+    }, [scanData?.screenerFile, propAvailableDates]);
 
     const selectedScanData = useMemo(() => {
-        if (!scanData?.screenerFile || !Array.isArray(scanData.screenerFile) || scanData.screenerFile.length === 0) {
-            return null;
-        }
+        if (!hasScreenerFile || !scanData.screenerFile) return null;
 
         if (selectedScanDate) {
-            return scanData.screenerFile.find(file => file.updatedAt === selectedScanDate);
+            return scanData.screenerFile.find(file => file.updatedAt === selectedScanDate) || null;
         }
 
-        if (scanData.screenerFile.length > 0) {
-            return scanData.screenerFile.reduce((latest, item) => {
-                const latestDate = new Date(latest.updatedAt);
-                const currentDate = new Date(item.updatedAt);
-                return currentDate > latestDate ? item : latest;
-            });
-        }
-
-        return null;
-    }, [scanData?.screenerFile, selectedScanDate]);
+        // Return latest file by date
+        return scanData.screenerFile.reduce((latest, item) => {
+            const latestDate = new Date(latest.updatedAt);
+            const currentDate = new Date(item.updatedAt);
+            return currentDate > latestDate ? item : latest;
+        });
+    }, [hasScreenerFile, scanData.screenerFile, selectedScanDate]);
 
     const getLatestData = (fieldName: keyof Pick<ScanData, 'picture_10' | 'picture_23' | 'picture_11' | 'picture_24' | 'threed_model_left' | 'threed_model_right' | 'picture_17' | 'picture_16'>) => {
-        if (selectedScanData && selectedScanData[fieldName]) {
-            return selectedScanData[fieldName];
+        if (hasScreenerFile && selectedScanData) {
+            return selectedScanData[fieldName] || null;
         }
-        return scanData[fieldName] || null;
+        return hasScreenerFile ? null : (scanData[fieldName] || null);
     };
 
-    React.useEffect(() => {
-        setSelectedScanDate(defaultSelectedDate || '');
-    }, [defaultSelectedDate]);
+    useEffect(() => {
+        if (defaultSelectedDate) {
+            setSelectedScanDate(defaultSelectedDate);
+        } else if (availableScanDates.length > 0) {
+            const latestDate = availableScanDates[0].date;
+            if (!selectedScanDate || selectedScanDate !== latestDate) {
+                setSelectedScanDate(latestDate);
+            }
+        }
+    }, [defaultSelectedDate, availableScanDates]);
 
     const handleDateSelect = (date: string) => {
         setSelectedScanDate(date);
@@ -109,63 +115,72 @@ export default function ScanDataDisplay({
         onDateChange?.(date || null);
     };
 
-    const getCurrentDisplayDate = () => {
+    const getCurrentDisplayDate = useMemo(() => {
         if (selectedScanDate) {
-            return new Date(selectedScanDate).toLocaleDateString();
+            return new Date(selectedScanDate).toLocaleDateString('de-DE');
         }
         if (selectedScanData) {
-            return new Date(selectedScanData.updatedAt).toLocaleDateString();
+            return new Date(selectedScanData.updatedAt).toLocaleDateString('de-DE');
         }
-        return scanData.updatedAt ? new Date(scanData.updatedAt).toLocaleDateString() : '-';
-    };
+        return scanData.updatedAt ? new Date(scanData.updatedAt).toLocaleDateString('de-DE') : '-';
+    }, [selectedScanDate, selectedScanData, scanData.updatedAt]);
 
-    // Track previous data to prevent unnecessary onDataChange calls
     const previousDataRef = useRef<string | null>(null);
 
-    React.useEffect(() => {
-        if (onDataChange) {
-            const currentData = selectedScanData || scanData;
-            
-            // Create a unique identifier for the current data
-            const dataId = (selectedScanData ? selectedScanData.id : null) || 
-                         (selectedScanData ? selectedScanData.updatedAt : scanData.updatedAt) ||
-                         currentData.id ||
-                         JSON.stringify({
-                             id: currentData.id,
-                             updatedAt: selectedScanData ? selectedScanData.updatedAt : scanData.updatedAt
-                         });
-            
-            // Only call onDataChange if the data has actually changed
-            if (previousDataRef.current !== dataId) {
-                previousDataRef.current = dataId;
-                onDataChange(currentData);
-            }
+    useEffect(() => {
+        if (!onDataChange) return;
+
+        const currentData = hasScreenerFile && scanData.screenerFile
+            ? (selectedScanData || scanData.screenerFile[0] || null)
+            : scanData;
+
+        const dataId = currentData?.id || currentData?.updatedAt || JSON.stringify({
+            id: currentData?.id,
+            updatedAt: currentData?.updatedAt
+        });
+
+        if (previousDataRef.current !== dataId) {
+            previousDataRef.current = dataId;
+            onDataChange(currentData);
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedScanData, scanData]);
+    }, [onDataChange, hasScreenerFile, selectedScanData, scanData]);
+
+    // Helper function to format display value
+    const formatDisplayValue = (value: any): string => {
+        if (value === null || value === undefined || value === '') return '-';
+        const trimmed = typeof value === 'string' ? value.trim() : value;
+        return trimmed === '' ? '-' : String(trimmed);
+    };
+
+    // Helper function to get field value
+    const getFieldValue = (fieldName: string): any => {
+        if (hasScreenerFile) {
+            return selectedScanData ? (selectedScanData as any)[fieldName] : null;
+        }
+        return scanData[fieldName as keyof ScanData];
+    };
 
     const renderField = (fieldName: string, label: string) => {
         if (isEditable && onInputChange) {
+            const inputValue = editableData[fieldName] || '';
             return (
                 <div>
                     <div className="text-center text-gray-600 text-sm">{label}</div>
-                    <div className="border border-gray-300 text-center py-1">
+                    <div className="border border-gray-300 text-center py-1 bg-gray-50">
                         <input
                             type="text"
-                            value={editableData[fieldName] || ''}
+                            value={inputValue}
+                            placeholder="-"
                             onChange={(e) => onInputChange(fieldName, e.target.value)}
-                            className="w-full text-center border-none outline-none"
+                            className="w-full text-center border-none outline-none bg-transparent"
                         />
                     </div>
                 </div>
             );
         }
 
-        // Use selectedScanData if available, otherwise fall back to scanData
-        const fieldValue = selectedScanData && (selectedScanData as any)[fieldName] !== undefined
-            ? (selectedScanData as any)[fieldName]
-            : scanData[fieldName as keyof ScanData];
-        const displayValue = typeof fieldValue === 'string' || typeof fieldValue === 'number' ? fieldValue : '-';
+        const fieldValue = getFieldValue(fieldName);
+        const displayValue = formatDisplayValue(fieldValue);
 
         return (
             <div>
@@ -253,7 +268,7 @@ export default function ScanDataDisplay({
                     onClick={() => availableScanDates.length > 0 && setShowDateDropdown(!showDateDropdown)}
                 >
                     <span className="text-gray-600 text-sm">
-                        Scan Date: {getCurrentDisplayDate()}
+                        Scan Date: {getCurrentDisplayDate}
                     </span>
                     {availableScanDates.length > 0 && (
                         <RiArrowDownSLine className={`text-gray-900 text-xl transition-transform ${showDateDropdown ? 'rotate-180' : ''}`} />

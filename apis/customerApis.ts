@@ -24,10 +24,14 @@ export const getAllCustomers = async (page: number, limit: number) => {
     }
 }
 
-// get single customer
-export const getSingleCustomer = async (id: string) => {
+// get single customer ?date=2025-11-25T04:41:00.120Z
+export const getSingleCustomer = async (id: string, date?: string) => {
     try {
-        const response = await axiosClient.get(`/customers/${id}`);
+        let url = `/customers/${id}`;
+        if (date) {
+            url += `?date=${date}`;
+        }
+        const response = await axiosClient.get(url);
         return response.data;
     } catch (error) {
         throw error;

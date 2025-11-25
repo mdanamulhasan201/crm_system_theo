@@ -5,18 +5,20 @@ import { useUpdateCustomerInfo } from './useUpdateCustomerInfo'
 
 interface UseSingleCustomerReturn {
     customer: ScanData | null
+    availableDates: string[]
     loading: boolean
     error: string | null
     isUpdating: boolean
     isDeleting: boolean
-    fetchCustomer: (id: string) => Promise<void>
+    fetchCustomer: (id: string, date?: string) => Promise<void>
     updateCustomer: (customerData: any) => Promise<boolean>
     deleteCustomer: (id: string) => Promise<boolean>
-    refreshCustomer: () => Promise<void>
+    refreshCustomer: (date?: string) => Promise<void>
 }
 
-export const useSingleCustomer = (customerId?: string): UseSingleCustomerReturn => {
+export const useSingleCustomer = (customerId?: string, selectedDate?: string): UseSingleCustomerReturn => {
     const [customer, setCustomer] = useState<ScanData | null>(null)
+    const [availableDates, setAvailableDates] = useState<string[]>([])
     const [loading, setLoading] = useState<boolean>(false)
     const [error, setError] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState<boolean>(false)
@@ -24,14 +26,26 @@ export const useSingleCustomer = (customerId?: string): UseSingleCustomerReturn 
     // Use the existing update hook
     const { updateCustomerInfo, isUpdating, error: updateError } = useUpdateCustomerInfo()
 
-    const fetchCustomer = async (id: string) => {
+    const fetchCustomer = async (id: string, date?: string) => {
         setLoading(true)
         setError(null)
 
         try {
-            const response = await getSingleCustomer(id)
+            const response = await getSingleCustomer(id, date)
             const payload = Array.isArray(response?.data) ? response.data[0] : response?.data
             setCustomer(payload)
+            
+            // Extract availableDates from response
+            if (response?.availableDates && Array.isArray(response.availableDates)) {
+                setAvailableDates(response.availableDates)
+            } else if (payload?.screenerFile && Array.isArray(payload.screenerFile)) {
+                // Fallback: extract dates from screenerFile
+                const dates = payload.screenerFile
+                    .filter((file: any) => file?.updatedAt)
+                    .map((file: any) => file.updatedAt)
+                    .sort((a: string, b: string) => new Date(b).getTime() - new Date(a).getTime())
+                setAvailableDates(dates)
+            }
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Failed to fetch customer data'
             setError(errorMessage)
@@ -78,18 +92,19 @@ export const useSingleCustomer = (customerId?: string): UseSingleCustomerReturn 
         }
     }
 
-    const refreshCustomer = async () => {
+    const refreshCustomer = async (date?: string) => {
         if (customer?.id) {
-            await fetchCustomer(customer.id)
+            await fetchCustomer(customer.id, date)
         }
     }
 
-    // Auto-fetch customer when customerId changes
+    // Auto-fetch customer when customerId or selectedDate changes
     useEffect(() => {
         if (customerId) {
-            fetchCustomer(customerId)
+            fetchCustomer(customerId, selectedDate)
         }
-    }, [customerId])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [customerId, selectedDate])
 
     // Use update error if available
     useEffect(() => {
@@ -100,6 +115,7 @@ export const useSingleCustomer = (customerId?: string): UseSingleCustomerReturn 
 
     return {
         customer,
+        availableDates,
         loading,
         error,
         isUpdating,
