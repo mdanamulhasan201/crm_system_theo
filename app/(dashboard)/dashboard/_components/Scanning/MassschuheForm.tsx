@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import { useCreateMassschuhe } from '@/hooks/massschuhe/useCreateMassschuhe';
 import { ChevronDown, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import MassschuheOrderModal from './MassschuheOrderModal';
 
 
 interface Customer {
@@ -14,6 +14,12 @@ interface Customer {
     vorname?: string;
     nachname?: string;
     email?: string;
+    telefon?: string;
+    telefonnummer?: string;
+    wohnort?: string;
+    partner?: {
+        hauptstandort?: string[];
+    };
 }
 
 interface MassschuheFormProps {
@@ -46,9 +52,8 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
     // Massschuhe hook
     const { createMassschuhe, isLoading } = useCreateMassschuhe();
 
-    // Confirmation modal state
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
-    const [pendingFormData, setPendingFormData] = useState<any>(null);
+    // Order creation modal state
+    const [showOrderModal, setShowOrderModal] = useState(false);
 
 
 
@@ -66,7 +71,7 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
         setShowSuggestions(open);
     };
 
-    // Handle form submission - Show confirmation modal
+    // Handle form submission - Show order creation modal
     const handleSubmit = () => {
         // Validation
         if (!customer?.id) {
@@ -84,35 +89,18 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
             return;
         }
 
-        // Prepare data for API
-        const formData = {
-            customerId: customer.id,
-            employeeId: selectedEmployeeId,
-            arztliche_diagnose: ärztlicheDiagnose,
-            usführliche_diagnose: ausführlicheDiagnose,
-            rezeptnummer: rezeptnummer,
-            durchgeführt_von: selectedEmployee,
-            note: versorgungNote,
-            halbprobe_geplant: halbprobeGeplant === true,
-            kostenvoranschlag: kostenvoranschlag === true,
-        };
-
-        // Store form data and show confirmation modal
-        setPendingFormData(formData);
-        setShowConfirmModal(true);
+        // Show order creation modal
+        setShowOrderModal(true);
     };
 
-    // Confirm and submit to API
-    const confirmSubmit = async () => {
-        if (!pendingFormData) return;
-
+    // Handle order submission from modal
+    const handleOrderSubmit = async (orderData: any) => {
         // Submit to API
-        const result = await createMassschuhe(pendingFormData);
+        const result = await createMassschuhe(orderData);
 
         if (result.success) {
             // Close modal
-            setShowConfirmModal(false);
-            setPendingFormData(null);
+            setShowOrderModal(false);
 
             // Reset form
             setÄrztlicheDiagnose('');
@@ -129,12 +117,6 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                 onDataRefresh();
             }
         }
-    };
-
-    // Cancel confirmation
-    const cancelSubmit = () => {
-        setShowConfirmModal(false);
-        setPendingFormData(null);
     };
 
 
@@ -366,65 +348,24 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                 </div>
             </div>
 
-            {/* Confirmation Modal */}
-            <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-xl font-bold">Bestellung bestätigen</DialogTitle>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <p className="text-gray-700 mb-4">
-                            Möchten Sie diese Massschuhe-Bestellung wirklich absenden?
-                        </p>
-                        <div className="bg-gray-50 p-4 rounded-lg space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="font-semibold">Kunde:</span>
-                                <span>{customer?.vorname} {customer?.nachname}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="font-semibold">Mitarbeiter:</span>
-                                <span>{selectedEmployee}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="font-semibold">Diagnose:</span>
-                                <span className="truncate ml-2">{ärztlicheDiagnose}</span>
-                            </div>
-                            {rezeptnummer && (
-                                <div className="flex justify-between">
-                                    <span className="font-semibold">Rezeptnummer:</span>
-                                    <span>{rezeptnummer}</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                    <DialogFooter className="flex gap-2 sm:gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={cancelSubmit}
-                            disabled={isLoading}
-                            className="flex-1"
-                        >
-                            Abbrechen
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={confirmSubmit}
-                            disabled={isLoading}
-                            className="flex-1 bg-[#62A07C] hover:bg-[#62a07c98]"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                    Wird gespeichert...
-                                </>
-                            ) : (
-                                'Bestätigen'
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Order Creation Modal */}
+            <MassschuheOrderModal
+                isOpen={showOrderModal}
+                onClose={() => setShowOrderModal(false)}
+                customer={customer}
+                formData={{
+                    arztlicheDiagnose: ärztlicheDiagnose,
+                    ausführlicheDiagnose: ausführlicheDiagnose,
+                    rezeptnummer: rezeptnummer,
+                    versorgungNote: versorgungNote,
+                    halbprobeGeplant: halbprobeGeplant,
+                    kostenvoranschlag: kostenvoranschlag,
+                    selectedEmployee: selectedEmployee,
+                    selectedEmployeeId: selectedEmployeeId,
+                }}
+                onSubmit={handleOrderSubmit}
+                isLoading={isLoading}
+            />
 
         </div>
     );
