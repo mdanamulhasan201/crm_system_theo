@@ -1,6 +1,7 @@
 import { TableRow, TableCell } from "@/components/ui/table";
 import { OrderData } from "@/contexts/OrdersContext";
 import OrderActions from "./OrderActions";
+import Link from "next/link";
 
 interface OrderTableRowProps {
     order: OrderData;
@@ -99,7 +100,17 @@ export default function OrderTableRow({
             </TableCell>
 
             <TableCell className="text-center text-xs sm:text-sm w-[130px] min-w-[130px] max-w-[130px] whitespace-normal break-words overflow-hidden">
-                {order.kundenname}
+                {order.customerId ? (
+                    <Link
+                        href={`/dashboard/customer-history/${order.customerId}`}
+                        className="text-[#2F7D5C] hover:underline underline-offset-2 "
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {order.kundenname}
+                    </Link>
+                ) : (
+                    order.kundenname
+                )}
             </TableCell>
             <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
                 <span className={`px-1 sm:px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(order.displayStatus)}`}>

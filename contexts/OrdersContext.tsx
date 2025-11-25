@@ -7,6 +7,7 @@ import { getLabelFromApiStatus } from '@/lib/orderStatusMappings';
 
 export interface OrderData {
     id: string;
+    customerId: string;
     bestellnummer: string;
     kundenname: string;
     status: string;
@@ -45,6 +46,8 @@ interface OrdersContextType {
     setSearchParams: (params: { customerNumber?: string; orderNumber?: string; customerName?: string }) => void;
     clearSearchParams: () => void;
     refetch: () => void;
+    statsRefreshKey: number;
+    triggerStatsRefresh: () => void;
     deleteOrder: (orderId: string) => void;
     deleteOrderByUser: (orderId: string) => void;
     deleteBulkOrders: (orderIds: string[]) => Promise<void>;
@@ -68,6 +71,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
     const priority = (apiOrder.priority as 'Dringend' | 'Normal') || 'Normal';
     return {
         id: apiOrder.id,
+        customerId: apiOrder.customer.id,
         bestellnummer: apiOrder.orderNumber.toString(),
         kundenname: `${apiOrder.customer.vorname} ${apiOrder.customer.nachname}`,
         status: apiOrder.orderStatus,
@@ -98,6 +102,11 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     });
     const [orders, setOrders] = useState<OrderData[]>([]);
     const [prioritizedOrders, setPrioritizedOrders] = useState<OrderData[]>([]);
+    const [statsRefreshKey, setStatsRefreshKey] = useState(0);
+
+    const triggerStatsRefresh = useCallback(() => {
+        setStatsRefreshKey(prev => prev + 1);
+    }, []);
 
     const { orders: apiOrders, loading, error, pagination, refetch } = useGetAllOrders(
         currentPage, 
@@ -168,6 +177,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         });
         
         setPrioritizedOrders(prevPrioritized => prevPrioritized.filter(o => o.id !== orderId));
+        triggerStatsRefresh();
     };
 
     const deleteOrderByUser = async (orderId: string) => {
@@ -185,6 +195,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         });
         
         setPrioritizedOrders(prevPrioritized => prevPrioritized.filter(o => o.id !== orderId));
+        triggerStatsRefresh();
     };
 
     const deleteBulkOrders = async (orderIds: string[]) => {
@@ -202,6 +213,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         });
         
         setPrioritizedOrders(prevPrioritized => prevPrioritized.filter(o => !orderIds.includes(o.id)));
+        triggerStatsRefresh();
     };
 
 
@@ -220,6 +232,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                     : order
             )
         );
+        triggerStatsRefresh();
     };
 
     const updateOrderPriority = async (orderId: string, priority: 'Dringend' | 'Normal') => {
@@ -233,6 +246,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             setPrioritizedOrders(updatedOrders.filter(order => order.priority === 'Dringend'));
             return updatedOrders;
         });
+        triggerStatsRefresh();
     };
 
     const refreshOrderData = async (orderId: string) => {
@@ -243,6 +257,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                 setOrders(prevOrders =>
                     prevOrders.map(o => o.id === orderId ? updatedOrder : o)
                 );
+                triggerStatsRefresh();
             }
         } catch (error) {
             console.error('Failed to refresh order data:', error);
@@ -266,6 +281,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             setSearchParams,
             clearSearchParams,
             refetch,
+            statsRefreshKey,
+            triggerStatsRefresh,
             deleteOrder,
             deleteOrderByUser,
             deleteBulkOrders,

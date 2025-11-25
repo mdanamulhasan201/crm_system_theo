@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2 } from "lucide-react";
+import { Trash2, CheckCircle2 } from "lucide-react";
 import { STATUS_OPTIONS } from "@/lib/orderStatusMappings";
 
 interface BulkActionsBarProps {
@@ -51,7 +51,7 @@ export default function BulkActionsBar({
             </div>
             <div className="flex gap-2">
                 <Select value={statusValue || undefined} onValueChange={handleBulkStatusChange}>
-                    <SelectTrigger className="w-[220px] text-xs h-8 cursor-pointer bg-white">
+                    <SelectTrigger className="w-[220px] text-xs  cursor-pointer bg-white border-none">
                         <SelectValue placeholder="Status ändern" />
                     </SelectTrigger>
                     <SelectContent>
@@ -62,15 +62,26 @@ export default function BulkActionsBar({
                         ))}
                     </SelectContent>
                 </Select>
-                <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={handleBulkDelete}
-                    className="text-xs"
-                >
-                    <Trash2 className="h-3 w-3 mr-1" />
-                    Ausgewählte löschen
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="text-xs py-4"
+                    >
+                        <CheckCircle2 className="h-3 w-3 mr-1" />
+                        Als genehmigt markieren
+                    </Button>
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        className="text-xs"
+                    >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Ausgewählte löschen
+                    </Button>
+
+                </div>
             </div>
         </div>
     );

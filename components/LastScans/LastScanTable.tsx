@@ -656,8 +656,9 @@ export default function LastScanTable() {
                                         <TableCell className="font-medium capitalize">
                                             {customerFullName ? (
                                                 <Link
-                                                    href={`/dashboard/customer-history/${row.id}?manageCustomer=true`}
-                                                    className="text-[#2F7D5C] hover:underline"
+                                                    href={`/dashboard/customer-history/${row.id}`}
+                                                    className="text-[#2F7D5C] hover:underline
+                                                    "
                                                 >
                                                     {customerFullName}
                                                 </Link>
