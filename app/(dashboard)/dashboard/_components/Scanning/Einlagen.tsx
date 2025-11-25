@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { BiSolidEdit } from 'react-icons/bi';
 import { ImSpinner2 } from 'react-icons/im';
 import { TiArrowSortedDown } from "react-icons/ti";
 import { useScanningFormData } from '@/hooks/customer/useScanningFormData';
@@ -116,7 +115,7 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
     const [ausführliche_diagnose, setAusführliche_diagnose] = useState<string>('');
     const [einlagentyp, setEinlagentyp] = useState<string>('');
     const [überzug, setÜberzug] = useState<string>('');
-    const [menge, setMenge] = useState<string>('');
+    const [menge, setMenge] = useState<string>('1 paar');
     const [schuhmodell_wählen, setSchuhmodell_wählen] = useState<string>('');
 
     // Handle employee selection
@@ -579,13 +578,6 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
                                 >
                                     <TiArrowSortedDown className={`text-gray-900 text-3xl transition-transform ${showSupplyDropdown ? 'rotate-180' : ''}`} />
                                 </button>
-                                <button
-                                    type="button"
-                                    onClick={handleSupplyEdit}
-                                    className="ml-3 cursor-pointer hover:bg-gray-100 p-1 rounded transition-colors"
-                                >
-                                    <BiSolidEdit className='text-gray-900 text-xl' />
-                                </button>
                             </div>
                         </div>
 
@@ -657,40 +649,29 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
                             </div>
                         )}
 
-                        {editingSupply ? (
-                            <textarea
-                                value={supply}
-                                onChange={(e) => setSupply(e.target.value)}
-                                onBlur={handleSupplyBlur}
-                                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                rows={4}
-                                autoFocus
-                            />
-                        ) : (
-                            <div className="p-2 border border-gray-300 rounded min-h-[100px]">
-                                {selectedVersorgungId && versorgungData.length > 0 ? (() => {
-                                    const selectedItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
-                                    if (selectedItem) {
-                                        return (
-                                            <div className="space-y-2">
-                                                <div className="font-semibold text-gray-900">{selectedItem.name}</div>
-                                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                                    <div><span className="font-medium">Rohling:</span> {selectedItem.rohlingHersteller}</div>
-                                                    <div><span className="font-medium">Artikel:</span> {selectedItem.artikelHersteller}</div>
-                                                </div>
-                                                <div className="text-sm text-gray-700">
-                                                    <span className="font-medium">Versorgung:</span> {selectedItem.versorgung}
-                                                </div>
-                                                <div className="text-xs text-gray-500">
-                                                    <span className="font-medium">Material:</span> {selectedItem.material}
-                                                </div>
+                        <div className="p-2 border border-gray-300 rounded min-h-[100px] bg-gray-50">
+                            {selectedVersorgungId && versorgungData.length > 0 ? (() => {
+                                const selectedItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
+                                if (selectedItem) {
+                                    return (
+                                        <div className="space-y-2">
+                                            <div className="font-semibold text-gray-900">{selectedItem.name}</div>
+                                            <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                                <div><span className="font-medium">Rohling:</span> {selectedItem.rohlingHersteller}</div>
+                                                <div><span className="font-medium">Artikel:</span> {selectedItem.artikelHersteller}</div>
                                             </div>
-                                        );
-                                    }
-                                    return supply || <span className="text-gray-400 italic">Keine Versorgung ausgewählt</span>;
-                                })() : supply || <span className="text-gray-400 italic">Keine Versorgung ausgewählt</span>}
-                            </div>
-                        )}
+                                            <div className="text-sm text-gray-700">
+                                                <span className="font-medium">Versorgung:</span> {selectedItem.versorgung}
+                                            </div>
+                                            <div className="text-xs text-gray-500">
+                                                <span className="font-medium">Material:</span> {selectedItem.material}
+                                            </div>
+                                        </div>
+                                    );
+                                }
+                                return supply || <span className="text-gray-400 italic">Keine Versorgung ausgewählt</span>;
+                            })() : supply || <span className="text-gray-400 italic">Keine Versorgung ausgewählt</span>}
+                        </div>
                     </div>
                 </div>
 
