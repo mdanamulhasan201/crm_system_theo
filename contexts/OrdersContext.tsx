@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
 import { useGetAllOrders, ApiOrderData } from '@/hooks/orders/useGetAllOrders';
 import { deleteOrder as deleteOrderApi, deleteGroupOrder, getSingleOrder, getAllOrders, groupOrderStatusUpdate, updateOrderPriority as updateOrderPriorityApi } from '@/apis/productsOrder';
 import { getLabelFromApiStatus } from '@/lib/orderStatusMappings';
@@ -34,9 +34,16 @@ interface OrdersContextType {
     currentPage: number;
     selectedDays: number;
     selectedStatus: string | null;
+    searchParams: {
+        customerNumber: string;
+        orderNumber: string;
+        customerName: string;
+    };
     setCurrentPage: (page: number) => void;
     setSelectedDays: (days: number) => void;
     setSelectedStatus: (status: string | null) => void;
+    setSearchParams: (params: { customerNumber?: string; orderNumber?: string; customerName?: string }) => void;
+    clearSearchParams: () => void;
     refetch: () => void;
     deleteOrder: (orderId: string) => void;
     deleteOrderByUser: (orderId: string) => void;
@@ -61,7 +68,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
     const priority = (apiOrder.priority as 'Dringend' | 'Normal') || 'Normal';
     return {
         id: apiOrder.id,
-        bestellnummer: apiOrder.customer.customerNumber.toString(),
+        bestellnummer: apiOrder.orderNumber.toString(),
         kundenname: `${apiOrder.customer.vorname} ${apiOrder.customer.nachname}`,
         status: apiOrder.orderStatus,
         displayStatus: getLabelFromApiStatus(apiOrder.orderStatus),
@@ -82,12 +89,25 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedDays, setSelectedDays] = useState(30); // Default to 30 days
+    const [selectedDays, setSelectedDays] = useState(30); 
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+    const [searchParams, setSearchParamsState] = useState({
+        customerNumber: '',
+        orderNumber: '',
+        customerName: '',
+    });
     const [orders, setOrders] = useState<OrderData[]>([]);
     const [prioritizedOrders, setPrioritizedOrders] = useState<OrderData[]>([]);
 
-    const { orders: apiOrders, loading, error, pagination, refetch } = useGetAllOrders(currentPage, 10, selectedDays, selectedStatus || undefined);
+    const { orders: apiOrders, loading, error, pagination, refetch } = useGetAllOrders(
+        currentPage, 
+        10, 
+        selectedDays, 
+        selectedStatus || undefined,
+        searchParams.customerNumber || undefined,
+        searchParams.orderNumber || undefined,
+        searchParams.customerName || undefined
+    );
 
 
     useEffect(() => {
@@ -101,7 +121,36 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedDays, selectedStatus]);
+    }, [selectedDays, selectedStatus, searchParams]);
+
+    const setSearchParams = useCallback((params: { customerNumber?: string; orderNumber?: string; customerName?: string }) => {
+        setSearchParamsState(prev => {
+            const newParams = {
+                customerNumber: params.customerNumber ?? prev.customerNumber,
+                orderNumber: params.orderNumber ?? prev.orderNumber,
+                customerName: params.customerName ?? prev.customerName,
+            };
+            
+            // Only update if values actually changed
+            if (
+                newParams.customerNumber === prev.customerNumber &&
+                newParams.orderNumber === prev.orderNumber &&
+                newParams.customerName === prev.customerName
+            ) {
+                return prev;
+            }
+            
+            return newParams;
+        });
+    }, []);
+
+    const clearSearchParams = useCallback(() => {
+        setSearchParamsState({
+            customerNumber: '',
+            orderNumber: '',
+            customerName: '',
+        });
+    }, []);
 
     const deleteOrder = async (orderId: string) => {
         await deleteOrderApi(orderId);
@@ -210,9 +259,12 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             currentPage,
             selectedDays,
             selectedStatus,
+            searchParams,
             setCurrentPage,
             setSelectedDays,
             setSelectedStatus,
+            setSearchParams,
+            clearSearchParams,
             refetch,
             deleteOrder,
             deleteOrderByUser,

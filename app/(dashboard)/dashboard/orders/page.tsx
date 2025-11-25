@@ -1,100 +1,13 @@
 'use client'
 import LineChartComponent from '@/components/OrdersPage/LineChart';
 import React from 'react';
-import { useForm } from 'react-hook-form';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // import HighPriorityCard from '@/components/OrdersPage/HighPriorityCard/HighPriorityCard';
 import ProcessTable from '@/components/OrdersPage/ProccessTable/ProcessTable';
 import { OrdersProvider } from '@/contexts/OrdersContext';
 import { useRevenueOverview } from '@/hooks/orders/useRevenueOverview';
 import { getEinlagenInProduktion } from '@/apis/productsOrder';
-
-// Mock orders data
-const mockOrders = [
-    { bestellnummer: '10025', kundennummer: '2001', name: 'Anna Huber' },
-    { bestellnummer: '10026', kundennummer: '2002', name: 'Annabelle Müller' },
-    { bestellnummer: '10027', kundennummer: '2001', name: 'Max Mustermann' },
-    { bestellnummer: '10028', kundennummer: '2003', name: 'Lisa Schmidt' },
-];
-
-type Auftrag = { bestellnummer: string; kundennummer: string; name: string };
-
-type SearchForm = {
-    bestellnummer: string;
-    kundennummer: string;
-    name: string;
-};
-
-function AuftragssucheCard() {
-    const { register, handleSubmit, watch } = useForm<SearchForm>();
-    const [results, setResults] = React.useState<Auftrag[] | null>(null);
-    const [searched, setSearched] = React.useState(false);
-
-    const onSubmit = (data: SearchForm) => {
-        const { bestellnummer, kundennummer, name } = data;
-        setSearched(true);
-        if (!bestellnummer && !kundennummer && !name) return;
-        let found: Auftrag[] = [];
-        if (bestellnummer.trim()) {
-            found = mockOrders.filter(o => o.bestellnummer === bestellnummer.trim());
-        } else if (kundennummer.trim()) {
-            found = mockOrders.filter(o => o.kundennummer.includes(kundennummer.trim()));
-        } else if (name.trim()) {
-            found = mockOrders.filter(o => o.name.toLowerCase().includes(name.trim().toLowerCase()));
-        }
-        setResults(found);
-    };
-
-    const allFieldsEmpty = !watch('bestellnummer') && !watch('kundennummer') && !watch('name');
-
-    return (
-        <div className="flex-1 flex flex-col items-center justify-center py-6">
-            <div className="text-lg font-bold mb-2 text-center">Auftragssuche</div>
-            <form className="w-full flex flex-col items-center" onSubmit={handleSubmit(onSubmit)}>
-                <Input
-                    className="w-full max-w-xs mb-2"
-                    placeholder="Bestellnummer"
-                    {...register('bestellnummer')}
-                />
-                <Input
-                    className="w-full max-w-xs mb-2"
-                    placeholder="Kundennummer"
-                    {...register('kundennummer')}
-                />
-                <Input
-                    className="w-full max-w-xs mb-4"
-                    placeholder="Name"
-                    {...register('name')}
-                />
-                <Button type="submit" className="w-full max-w-xs" disabled={allFieldsEmpty}>
-                    Suchen
-                </Button>
-            </form>
-            {searched && allFieldsEmpty && (
-                <div className="text-center text-red-500 mt-2">Bitte mindestens ein Feld ausfüllen.</div>
-            )}
-            {searched && !allFieldsEmpty && (
-                <div className="w-full max-w-xs mt-4">
-                    {results && results.length > 0 ? (
-                        <ul className="divide-y divide-gray-200">
-                            {results.map((order: Auftrag, idx: number) => (
-                                <li key={idx} className="py-2">
-                                    <div className="font-semibold">Bestellnummer: {order.bestellnummer}</div>
-                                    <div>Kundennummer: {order.kundennummer}</div>
-                                    <div>Name: {order.name}</div>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div className="text-center text-red-500">Kein Auftrag gefunden.</div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
+import AuftragssucheCard from '@/components/OrdersPage/AuftragssucheCard/AuftragssucheCard';
 
 export default function Orders() {
     const now = React.useMemo(() => new Date(), []);
@@ -164,7 +77,7 @@ export default function Orders() {
             <div className='mb-20'>
 
                 <div className='py-5 px-8 bg-white rounded-xl shadow'>
-                    <div className="text-2xl font-bold mb-5">Revenue Overview</div>
+                    <div className="text-2xl font-bold mb-5">Umsatzübersicht</div>
 
                     {loading ? (
                         <div className="w-full h-64 flex items-center justify-center">
@@ -253,8 +166,6 @@ export default function Orders() {
                         {/* Auftragssuche */}
                         <AuftragssucheCard />
                     </div>
-
-
                 </div>
                 {/* <HighPriorityCard /> */}
 

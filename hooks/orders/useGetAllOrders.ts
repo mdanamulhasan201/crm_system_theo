@@ -3,6 +3,7 @@ import { getAllOrders } from '@/apis/productsOrder';
 
 export interface ApiOrderData {
     id: string;
+    orderNumber: number;
     fußanalyse: number;
     einlagenversorgung: number;
     totalPrice?: number;
@@ -59,18 +60,34 @@ export interface OrdersResponse {
     pagination: PaginationData;
 }
 
-export const useGetAllOrders = (page: number = 1, limit: number = 10, days: number = 30, orderStatus?: string) => {
+export const useGetAllOrders = (
+    page: number = 1, 
+    limit: number = 10, 
+    days: number = 30, 
+    orderStatus?: string,
+    customerNumber?: string,
+    orderNumber?: string,
+    customerName?: string
+) => {
     const [orders, setOrders] = useState<ApiOrderData[]>([]);
     const [pagination, setPagination] = useState<PaginationData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchOrders = async (pageNum: number, limitNum: number, daysNum: number, status?: string) => {
+    const fetchOrders = async (
+        pageNum: number, 
+        limitNum: number, 
+        daysNum: number, 
+        status?: string,
+        custNumber?: string,
+        ordNumber?: string,
+        custName?: string
+    ) => {
         try {
             setLoading(true);
             setError(null);
-            // console.log('useGetAllOrders: Fetching orders with params:', { pageNum, limitNum, daysNum, status });
-            const response: OrdersResponse = await getAllOrders(pageNum, limitNum, daysNum, status);
+            // console.log('useGetAllOrders: Fetching orders with params:', { pageNum, limitNum, daysNum, status, custNumber, ordNumber, custName });
+            const response: OrdersResponse = await getAllOrders(pageNum, limitNum, daysNum, status, custNumber, ordNumber, custName);
             // console.log('useGetAllOrders: API response:', response);
             
             if (response.success) {
@@ -88,11 +105,11 @@ export const useGetAllOrders = (page: number = 1, limit: number = 10, days: numb
     };
 
     useEffect(() => {
-        fetchOrders(page, limit, days, orderStatus);
-    }, [page, limit, days, orderStatus]);
+        fetchOrders(page, limit, days, orderStatus, customerNumber, orderNumber, customerName);
+    }, [page, limit, days, orderStatus, customerNumber, orderNumber, customerName]);
 
     const refetch = () => {
-        fetchOrders(page, limit, days, orderStatus);
+        fetchOrders(page, limit, days, orderStatus, customerNumber, orderNumber, customerName);
     };
 
     return {
