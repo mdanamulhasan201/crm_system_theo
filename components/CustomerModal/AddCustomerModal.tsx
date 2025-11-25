@@ -122,7 +122,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSubmit }: AddCusto
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-semibold text-center">
-                        Add Customer
+                        Kunde hinzufügen    
                     </DialogTitle>
                 </DialogHeader>
 
@@ -224,7 +224,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSubmit }: AddCusto
 
                         {/* File Upload Section */}
                         <div className="space-y-4">
-                            <h3 className="text-lg font-semibold">Scan Files Upload</h3>
+                            <h3 className="text-lg font-semibold">Scan-Dateien hochladen</h3>
 
                             {/* 3D Model Files - Side by Side */}
                             <div className="space-y-2">
@@ -248,7 +248,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSubmit }: AddCusto
                                                         />
                                                         <label htmlFor={`file-${fieldName}`} className="cursor-pointer">
                                                             <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                                            <p className="text-xs text-gray-600">Upload {getFileLabel(fieldName)}</p>
+                                                            <p className="text-xs text-gray-600">{getFileLabel(fieldName)} hochladen</p>
                                                         </label>
                                                     </div>
                                                 ) : (
@@ -282,7 +282,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSubmit }: AddCusto
 
                             {/* Other Files */}
                             <div className="space-y-2">
-                                <Label className="text-sm font-medium">Picture Files & CSV</Label>
+                                <Label className="text-sm font-medium">Bilddateien & CSV</Label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                     {fileFields.map((fieldName) => {
                                         const preview = filePreviews.find(p => p.fieldName === fieldName)
@@ -303,7 +303,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSubmit }: AddCusto
                                                         />
                                                         <label htmlFor={`file-${fieldName}`} className="cursor-pointer">
                                                             <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                                            <p className="text-xs text-gray-600">Upload {getFileLabel(fieldName)}</p>
+                                                            <p className="text-xs text-gray-600">{getFileLabel(fieldName)} hochladen</p>
                                                         </label>
                                                     </div>
                                                 ) : (
@@ -335,7 +335,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSubmit }: AddCusto
                                                                     width={100}
                                                                     height={100}
                                                                     src={preview.preview}
-                                                                    alt="Preview"
+                                                                    alt="Vorschau"
                                                                     className="w-full h-20 object-cover rounded border"
                                                                 />
                                                             </div>
@@ -374,7 +374,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSubmit }: AddCusto
                                         Speichern...
                                     </>
                                 ) : (
-                                    'Add Customer'
+                                    'Kunde hinzufügen'
                                 )}
                             </Button>
                         </div>
