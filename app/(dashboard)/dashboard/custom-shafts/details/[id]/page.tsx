@@ -146,7 +146,7 @@ export default function DetailsPage() {
       if (passendenSchnursenkel === true) {
         formData.append('passenden_schnursenkel', 'true');
 
-        formData.append('passenden_schnursenkel_price', '4.49');
+        formData.append('Passenden_schnursenkel_price', '4.49');
       }
       if (osenEinsetzen === true) {
         formData.append('osen_einsetzen', 'true');

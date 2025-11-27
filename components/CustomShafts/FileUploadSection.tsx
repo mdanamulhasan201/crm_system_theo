@@ -80,23 +80,27 @@ export default function FileUploadSection({
 
   return (
     <div className="flex flex-col gap-4 w-fit mb-8">
-      <Button 
-        variant="outline" 
-        className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
-        onClick={() => setShowCustomerModal(true)}
-      >
-        <User className="w-5 h-5" />
-        {selectedCustomer ? selectedCustomer.name : "Kunde auswählen"}
-      </Button>
+      {!otherCustomerNumber && (
+        <Button 
+          variant="outline" 
+          className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
+          onClick={() => setShowCustomerModal(true)}
+        >
+          <User className="w-5 h-5" />
+          {selectedCustomer ? selectedCustomer.name : "Kunde auswählen"}
+        </Button>
+      )}
 
-      <Button 
-        variant="outline" 
-        className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
-        onClick={() => setShowOtherCustomerModal(true)}
-      >
-        <UserPlus className="w-5 h-5" />
-        {otherCustomerNumber ? otherCustomerNumber : "Anderer Kunde"}
-      </Button>
+      {!selectedCustomer && (
+        <Button 
+          variant="outline" 
+          className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
+          onClick={() => setShowOtherCustomerModal(true)}
+        >
+          <UserPlus className="w-5 h-5" />
+          {otherCustomerNumber ? otherCustomerNumber : "Anderer Kunde"}
+        </Button>
+      )}
       
       {/* Left Side Upload */}
       <div className="relative">
