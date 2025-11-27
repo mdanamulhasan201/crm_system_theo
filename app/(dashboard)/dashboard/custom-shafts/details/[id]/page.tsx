@@ -39,6 +39,7 @@ export default function DetailsPage() {
   const [linkerLeistenFile, setLinkerLeistenFile] = useState<File | null>(null);
   const [rechterLeistenFile, setRechterLeistenFile] = useState<File | null>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [otherCustomerNumber, setOtherCustomerNumber] = useState<string>('');
   const [polsterung, setPolsterung] = useState<string[]>([]);
   const [verstarkungen, setVerstarkungen] = useState<string[]>([]);
   const [polsterungText, setPolsterungText] = useState('');
@@ -100,6 +101,7 @@ export default function DetailsPage() {
     setLinkerLeistenFile(null);
     setRechterLeistenFile(null);
     setSelectedCustomer(null);
+    setOtherCustomerNumber('');
     setPolsterung([]);
     setVerstarkungen([]);
     setPolsterungText('');
@@ -107,15 +109,21 @@ export default function DetailsPage() {
   };
 
   const handleOrderConfirmation = async () => {
-    if (!selectedCustomer) {
-      toast.error("Bitte wählen Sie einen Kunden aus.");
+    if (!selectedCustomer && !otherCustomerNumber.trim()) {
+      toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
       return;
     }
 
     setIsCreatingOrder(true);
     try {
       const formData = new FormData();
-      formData.append('customerId', selectedCustomer.id);
+      
+      // Use selected customer ID if available, otherwise use other_customer_number
+      if (selectedCustomer) {
+        formData.append('customerId', selectedCustomer.id);
+      } else if (otherCustomerNumber.trim()) {
+        formData.append('other_customer_number', otherCustomerNumber.trim());
+      }
 
       if (rechterLeistenFile) {
         formData.append('image3d_1', rechterLeistenFile);
@@ -215,6 +223,8 @@ export default function DetailsPage() {
         setRechterLeistenFile={setRechterLeistenFile}
         selectedCustomer={selectedCustomer}
         onSelectCustomer={setSelectedCustomer}
+        otherCustomerNumber={otherCustomerNumber}
+        setOtherCustomerNumber={setOtherCustomerNumber}
       />
 
       {/* Product Image and Info */}
@@ -269,6 +279,7 @@ export default function DetailsPage() {
         passendenSchnursenkel={passendenSchnursenkel}
         osenEinsetzen={osenEinsetzen}
         selectedCustomer={selectedCustomer}
+        otherCustomerNumber={otherCustomerNumber}
         shaftName={shaft?.name}
         isCreatingOrder={isCreatingOrder}
       />

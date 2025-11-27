@@ -102,7 +102,7 @@ function OrdersPageContent() {
                         <div className='flex flex-col xl:flex-row items-stretch w-full gap-6'>
                             {/* left side card  */}
                             <div className="bg-white rounded-lg p-8 flex flex-col items-center justify-center min-w-[250px] border mb-4 md:mb-0 xl:w-4/12">
-                                <div className="text-2xl font-bold text-center mb-2">Geschäftsumsatz<br />(letzten 30 Tage)</div>
+                                <div className="text-2xl font-bold text-center mb-2">Geschäftsumsatz<br /></div>
                                 <div className="text-4xl font-extrabold mt-4">
                                     {data?.statistics?.totalRevenue ? formatEuro(data.statistics.totalRevenue) : '-€'}
                                 </div>
@@ -169,7 +169,7 @@ function OrdersPageContent() {
                     <div className='border-r border-gray-300 hidden md:block'></div>
                     {/* Ausgeführte Einlagen (letzten 30 Tage) */}
                     <div className="flex-1 flex flex-col items-center justify-center  border-gray-300 py-6">
-                        <div className="text-lg font-bold text-[#62A07C] mb-2 text-center">Ausgeführte Einlagen<br />(letzten 30 Tage)</div>
+                        <div className="text-lg font-bold text-[#62A07C] mb-2 text-center">Ausgeführte Einlagen<br /></div>
                         <div className="text-4xl font-extrabold">
                             {einlagenLoading ? '…' : (einlagenError ? '-' : (typeof ausgeführteEinlagenUmsatz === 'number' ? formatEuro(ausgeführteEinlagenUmsatz) : '-'))}
                         </div>

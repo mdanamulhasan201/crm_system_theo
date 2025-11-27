@@ -9,6 +9,7 @@ import img2 from "@/public/images/customerHistory/2.png"
 import img3 from "@/public/images/customerHistory/3.png"
 import img4 from "@/public/images/customerHistory/4.png"
 import { getCustomerOrdersByCustomerId } from '@/apis/productsOrder'
+import { useRouter } from 'next/navigation'
 
 type TreatmentsCarriedOutProps = {
     customerId?: string
@@ -30,8 +31,13 @@ const staticImages = [img1, img2, img3, img4]
 
 export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOutProps) {
     const [orders, setOrders] = useState<CustomerOrder[]>([])
+    const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+
+    const handleRepeatTreatment = () => {
+        router.push(`/dashboard/scanning-data/${customerId}`)
+    }
 
     useEffect(() => {
         if (!customerId) return
@@ -110,6 +116,7 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
                     <span className="text-sm text-gray-400">Kein Auftragszettel verfügbar</span>
                 )}
                 <button
+                    onClick={handleRepeatTreatment}
                     type="button"
                     className="py-2 px-4 rounded-full bg-[#61A07B] text-white text-sm font-semibold hover:bg-[#528c68] transition-colors cursor-pointer"
                 >

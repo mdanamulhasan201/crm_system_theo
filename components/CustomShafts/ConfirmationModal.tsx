@@ -19,6 +19,7 @@ interface ConfirmationModalProps {
   passendenSchnursenkel?: boolean | undefined;
   osenEinsetzen?: boolean | undefined;
   selectedCustomer: Customer | null;
+  otherCustomerNumber?: string;
   shaftName?: string;
   isCreatingOrder?: boolean;
 }
@@ -31,6 +32,7 @@ export default function ConfirmationModal({
   passendenSchnursenkel,
   osenEinsetzen,
   selectedCustomer,
+  otherCustomerNumber,
   shaftName,
   isCreatingOrder = false,
 }: ConfirmationModalProps) {
@@ -47,6 +49,12 @@ export default function ConfirmationModal({
               <h4 className="font-medium text-blue-900 mb-1">Kunde:</h4>
               <p className="text-blue-800">{selectedCustomer.name}</p>
               <p className="text-sm text-blue-700">{selectedCustomer.email}</p>
+            </div>
+          )}
+          {otherCustomerNumber && !selectedCustomer && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h4 className="font-medium text-blue-900 mb-1">Kunde:</h4>
+              <p className="text-blue-800">{otherCustomerNumber}</p>
             </div>
           )}
 

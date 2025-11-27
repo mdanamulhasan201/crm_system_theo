@@ -86,12 +86,12 @@
                 "question": "Wie Viel Wiegen Sie Ca.?",
                 "options": [
                     "Unter 50kg",
-                    "61-70kg",
-                    "81-90kg",
-                    "101-110kg",
                     "Ja, 51-60kg",
+                    "61-70kg",
                     "71-80kg",
+                    "81-90kg",
                     "91-100kg",
+                    "101-110kg",
                     "Über 110kg"
                 ]
             }

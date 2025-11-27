@@ -1,8 +1,9 @@
 'use client';
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { User, UploadCloud } from 'lucide-react';
+import { User, UploadCloud, UserPlus } from 'lucide-react';
 import CustomerSearchModal from './CustomerSearchModal';
+import OtherCustomerModal from './OtherCustomerModal';
 
 interface Customer {
   id: string;
@@ -24,6 +25,8 @@ interface FileUploadSectionProps {
   setRechterLeistenFile: (file: File | null) => void;
   selectedCustomer: Customer | null;
   onSelectCustomer: (customer: Customer | null) => void;
+  otherCustomerNumber: string;
+  setOtherCustomerNumber: (name: string) => void;
 }
 
 export default function FileUploadSection({
@@ -37,10 +40,13 @@ export default function FileUploadSection({
   setRechterLeistenFile,
   selectedCustomer,
   onSelectCustomer,
+  otherCustomerNumber,
+  setOtherCustomerNumber,
 }: FileUploadSectionProps) {
   const linkerLeistenInputRef = useRef<HTMLInputElement>(null);
   const rechterLeistenInputRef = useRef<HTMLInputElement>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showOtherCustomerModal, setShowOtherCustomerModal] = useState(false);
 
   const handleLinkerLeistenFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -58,6 +64,20 @@ export default function FileUploadSection({
     }
   };
 
+  const handleSelectCustomer = (customer: Customer | null) => {
+    onSelectCustomer(customer);
+    // Clear other customer number when selecting from list
+    if (customer) {
+      setOtherCustomerNumber('');
+    }
+  };
+
+  const handleOtherCustomerConfirm = (customerName: string) => {
+    setOtherCustomerNumber(customerName);
+    // Clear selected customer when entering custom name
+    onSelectCustomer(null);
+  };
+
   return (
     <div className="flex flex-col gap-4 w-fit mb-8">
       <Button 
@@ -67,6 +87,15 @@ export default function FileUploadSection({
       >
         <User className="w-5 h-5" />
         {selectedCustomer ? selectedCustomer.name : "Kunde auswählen"}
+      </Button>
+
+      <Button 
+        variant="outline" 
+        className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
+        onClick={() => setShowOtherCustomerModal(true)}
+      >
+        <UserPlus className="w-5 h-5" />
+        {otherCustomerNumber ? otherCustomerNumber : "Anderer Kunde"}
       </Button>
       
       {/* Left Side Upload */}
@@ -121,8 +150,16 @@ export default function FileUploadSection({
       <CustomerSearchModal
         isOpen={showCustomerModal}
         onClose={() => setShowCustomerModal(false)}
-        onSelectCustomer={onSelectCustomer}
+        onSelectCustomer={handleSelectCustomer}
         selectedCustomer={selectedCustomer}
+      />
+
+      {/* Other Customer Modal */}
+      <OtherCustomerModal
+        isOpen={showOtherCustomerModal}
+        onClose={() => setShowOtherCustomerModal(false)}
+        onConfirm={handleOtherCustomerConfirm}
+        currentValue={otherCustomerNumber}
       />
     </div>
   );

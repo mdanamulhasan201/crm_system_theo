@@ -132,9 +132,6 @@ export default function OrderTableRow({
             <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden hidden xl:table-cell">
                 {order.beschreibung}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[120px] min-w-[120px] max-w-[120px] whitespace-normal break-words overflow-hidden">
-                {order.fertigstellung}
-            </TableCell>
             <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">
                 <OrderActions
                     order={order}
