@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
     id: string;
@@ -42,6 +43,7 @@ interface OrderFormData {
     fußanalyse?: number;
     einlagenversorgung?: number;
     orderNote?: string;
+    location?: string;
     // Additional fields for API
     delivery_date?: string;
     telefon?: string;
@@ -78,7 +80,7 @@ export default function MassschuheOrderModal({
     isLoading = false
 }: MassschuheOrderModalProps) {
     const { prices, loading: pricesLoading, fetchPrices } = usePriceManagement();
-    
+
     // Order modal form state
     const [orderDate, setOrderDate] = useState<Date>(new Date());
     const [fertigstellungDate, setFertigstellungDate] = useState<Date | undefined>(undefined);
@@ -87,6 +89,10 @@ export default function MassschuheOrderModal({
     const [selectedFußanalyse, setSelectedFußanalyse] = useState<string>('');
     const [selectedEinlagenversorgung, setSelectedEinlagenversorgung] = useState<string>('');
     const [orderNote, setOrderNote] = useState<string>('');
+    const [selectedLocation, setSelectedLocation] = useState<string>('');
+
+    const { user } = useAuth();
+
 
     // Fetch prices on mount
     useEffect(() => {
@@ -119,8 +125,12 @@ export default function MassschuheOrderModal({
             setSelectedFußanalyse('');
             setSelectedEinlagenversorgung('');
             setOrderNote('');
+            setSelectedLocation('');
+            if (user?.hauptstandort && user.hauptstandort.length > 0) {
+                setSelectedLocation(user.hauptstandort[0] || '');
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, user?.hauptstandort]);
 
     const handleSubmit = async () => {
         if (!customer?.id) {
@@ -170,6 +180,7 @@ export default function MassschuheOrderModal({
             fußanalyse: paymentType === 'privat' ? parseFloat(selectedFußanalyse) : undefined,
             einlagenversorgung: paymentType === 'privat' ? parseFloat(selectedEinlagenversorgung) : undefined,
             orderNote: orderNote,
+            location: selectedLocation || undefined,
             // Additional fields
             delivery_date: fertigstellungDate ? format(fertigstellungDate, 'yyyy-MM-dd') : undefined,
             telefon: customerPhone,
@@ -188,28 +199,30 @@ export default function MassschuheOrderModal({
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold">Neuer Auftrag erstellen</DialogTitle>
                 </DialogHeader>
-                
+
                 <div className="space-y-6 py-4">
                     {/* AUFTRAGSÜBERSICHT Section */}
                     <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
                         <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">AUFTRAGSÜBERSICHT</h3>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Kunde</label>
                                 <p className="text-gray-900 font-medium">{customer?.vorname || ''} {customer?.nachname || ''}</p>
                             </div>
-                            
+
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">E-Mail</label>
                                 <p className="text-gray-900">{customer?.email || '-'}</p>
                             </div>
-                            
+
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Telefon</label>
                                 <p className="text-gray-900">{customer?.telefonnummer || customer?.telefon || '-'}</p>
                             </div>
-                            
+
+
+
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Fertigstellung</label>
                                 <Popover>
@@ -239,7 +252,9 @@ export default function MassschuheOrderModal({
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                            
+
+
+
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Datum des Auftrags</label>
                                 <Popover>
@@ -262,15 +277,43 @@ export default function MassschuheOrderModal({
                                     </PopoverContent>
                                 </Popover>
                             </div>
-                            
+
                             <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Filiale</label>
+                                <label className="text-sm font-medium text-gray-600 mb-1 block">Wohnort</label>
                                 <Input
                                     value={filiale}
                                     onChange={(e) => setFiliale(e.target.value)}
                                     placeholder="Filiale eingeben"
                                     className="w-full"
                                 />
+                            </div>
+
+                            {!!user?.hauptstandort?.length && (
+                                <div>
+                                    <label className="text-sm font-medium text-gray-600 mb-1 block">Standort auswählen</label>
+                                    <Select
+                                        value={selectedLocation}
+                                        onValueChange={(value) => setSelectedLocation(value)}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue placeholder="Standort wählen" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {user.hauptstandort.map((location) => (
+                                                <SelectItem key={location} value={location}>
+                                                    {location}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-600 mb-1 block">Durchgeführt von</label>
+                                <p className="text-gray-900 font-medium">
+                                    {formData.selectedEmployee || 'Nicht ausgewählt'}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -312,7 +355,7 @@ export default function MassschuheOrderModal({
                     {paymentType === 'privat' && (
                         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
                             <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">PREISAUSWAHL</h3>
-                            
+
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm font-medium text-gray-600 mb-2 block">Fußanalyse</label>
@@ -329,7 +372,7 @@ export default function MassschuheOrderModal({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                
+
                                 <div>
                                     <label className="text-sm font-medium text-gray-600 mb-2 block">Einlagenversorgung</label>
                                     <Select value={selectedEinlagenversorgung} onValueChange={setSelectedEinlagenversorgung}>
@@ -352,7 +395,7 @@ export default function MassschuheOrderModal({
                     {/* KONTROLLE & AKTIONEN Section */}
                     <div className="bg-white rounded-lg border border-gray-200 p-6">
                         <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">KONTROLLE & AKTIONEN</h3>
-                        
+
                         <div>
                             <label className="text-sm font-medium text-gray-600 mb-2 block">Notiz</label>
                             <Textarea
