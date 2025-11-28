@@ -15,6 +15,8 @@ export interface VersorgungCard {
     versorgung: string
     materialien: string | string[]
     laenge: string
+    // Optional: only set when eine Diagnose verknüpft ist
+    diagnosis_status?: string
 }
 
 interface StorageProduct {
@@ -78,6 +80,7 @@ export default function VersorgungModal({
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
+    const [selectedDiagnosisState, setSelectedDiagnosisState] = useState<string>(selectedDiagnosis || '')
 
     // Storage products state
     const [storageProducts, setStorageProducts] = useState<StorageProduct[]>([])
@@ -125,6 +128,15 @@ export default function VersorgungModal({
         setSelectedProduct(null)
         setMaterialienInput('')
 
+        // Beim Öffnen des Modals:
+        // 1. Falls wir bearbeiten und die Karte bereits eine diagnosis_status hat -> diese vorselektieren
+        // 2. Sonst (z. B. aus Auswahl oder ohne Diagnose) -> selectedDiagnosis-Prop oder leer
+        if (editingCard?.diagnosis_status) {
+            setSelectedDiagnosisState(editingCard.diagnosis_status)
+        } else {
+            setSelectedDiagnosisState(selectedDiagnosis || '')
+        }
+
         if (editingCard) {
             let materialienArray: string[] = []
             if (typeof editingCard.materialien === 'string') {
@@ -148,7 +160,7 @@ export default function VersorgungModal({
         } else {
             setForm(INITIAL_FORM_STATE)
         }
-    }, [editingCard])
+    }, [editingCard, selectedDiagnosis])
 
     // Event Handlers
     const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -210,7 +222,7 @@ export default function VersorgungModal({
                 material: materialienArray, // Send as array
                 status: getCategoryStatus(),
                 storeId: selectedProduct?.id || null,
-                ...(isAuswahl && { diagnosis_status: selectedDiagnosis })
+                ...(selectedDiagnosisState && { diagnosis_status: selectedDiagnosisState })
             }
 
             let response
@@ -254,6 +266,7 @@ export default function VersorgungModal({
             setSuccess(null)
             setIsLoading(false)
             setSelectedProduct(null)
+            setSelectedDiagnosisState('')
         }
     }, [editingCard, open, resetForm])
 
@@ -413,27 +426,35 @@ export default function VersorgungModal({
                         </p>
                     </div>
 
-                    {/* Category Dropdown - Only for Auswahl */}
-                    {isAuswahl && (
-                        <div>
-                            <label className="font-bold mb-1 block">Kategorie</label>
-                            <select
-                                name="category"
-                                value={category}
-                                onChange={(e) => {
-                                    if (onCategoryChange) {
-                                        onCategoryChange(e.target.value as 'alltagseinlagen' | 'sporteinlagen' | 'businesseinlagen');
-                                    }
-                                }}
-                                className="border p-2 rounded w-full"
-                                required
-                            >
-                                <option value="alltagseinlagen">Alltagseinlagen</option>
-                                <option value="sporteinlagen">Sporteinlagen</option>
-                                <option value="businesseinlagen">Businesseinlagen</option>
-                            </select>
-                        </div>
-                    )}
+                    {/* Diagnosis Dropdown - Available for all categories */}
+                    <div>
+                        <label className="font-bold mb-1 block">Diagnose (Optional)</label>
+                        <select
+                            name="diagnosis"
+                            value={selectedDiagnosisState}
+                            onChange={(e) => {
+                                setSelectedDiagnosisState(e.target.value)
+                            }}
+                            className="border p-2 rounded w-full"
+                        >
+                            <option value="">Keine Diagnose auswählen</option>
+                            <option value="PLANTARFASZIITIS">Plantarfasziitis</option>
+                            <option value="FERSENSPORN">Fersensporn</option>
+                            <option value="SPREIZFUSS">Spreizfuß</option>
+                            <option value="SENKFUSS">Senkfuß</option>
+                            <option value="PLATTFUSS">Plattfuß</option>
+                            <option value="HOHLFUSS">Hohlfuß</option>
+                            <option value="KNICKFUSS">Knickfuß</option>
+                            <option value="KNICK_SENKFUSS">Knick-Senkfuß</option>
+                            <option value="HALLUX_VALGUS">Hallux valgus</option>
+                            <option value="HALLUX_RIGIDUS">Hallux rigidus</option>
+                            <option value="HAMMERZEHEN_KRALLENZEHEN">Hammerzehen / Krallenzehen</option>
+                            <option value="MORTON_NEUROM">Morton-Neurom</option>
+                            <option value="FUSSARTHROSE">Fußarthrose</option>
+                            <option value="STRESSFRAKTUREN_IM_FUSS">Stressfrakturen im Fußbereich</option>
+                            <option value="DIABETISCHES_FUSSSYNDROM">Diabetisches Fußsyndrom</option>
+                        </select>
+                    </div>
 
                     <DialogFooter>
                         {renderSubmitButton()}

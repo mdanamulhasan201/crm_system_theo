@@ -71,6 +71,7 @@ export default function Sporteinlagen() {
                     versorgung: item.versorgung || 'N/A',
                     materialien: item.material || 'N/A',
                     laenge: item.laenge || 'N/A',
+                    diagnosis_status: item.diagnosis_status || '',
                 }));
                 setCards(transformedData);
             } else {
