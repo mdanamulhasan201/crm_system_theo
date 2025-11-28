@@ -7,7 +7,7 @@
  * Handles both old format (boolean/string) and new format (e.g., "Privat - Bezahlt")
  */
 export function formatPaymentStatus(bezahlt: string | boolean | null | undefined): string {
-  if (!bezahlt) return 'Offen'
+  if (bezahlt === null || bezahlt === undefined || bezahlt === '') return ''
 
   // Handle boolean (old format)
   if (typeof bezahlt === 'boolean') {
@@ -45,6 +45,10 @@ export function getPaymentStatusColor(status: string): {
   bg: string
   text: string
 } {
+  if (!status) {
+    return { bg: 'bg-gray-100', text: 'text-gray-600' }
+  }
+
   const normalizedStatus = status.toLowerCase()
 
   // Paid statuses

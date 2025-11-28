@@ -44,6 +44,10 @@ export default function OrderTableRow({
     };
 
     const renderPaymentStatus = () => {
+        if (!order.zahlung) {
+            return null;
+        }
+
         const colors = getPaymentStatusColor(order.zahlung);
         // Format display text - show shorter version if it contains " - "
         const displayText = order.zahlung.includes(' - ')

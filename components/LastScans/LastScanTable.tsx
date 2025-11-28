@@ -3,56 +3,17 @@
 import React from 'react';
 import { filterCustomers, FilterCustomersParams, deleteCustomer } from '@/apis/customerApis';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import * as XLSX from 'xlsx';
-import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-
-interface LatestOrder {
-    id: string;
-    orderStatus: string;
-    createdAt: string | null;
-    totalPrice?: number | null;
-}
-
-interface LatestScreener {
-    id: string;
-    createdAt: string | null;
-    picture_10?: string | null;
-    picture_23?: string | null;
-}
-
-interface LatestMassschuheOrder {
-    id: string;
-    createdAt: string;
-}
-
-interface LastScanRow {
-    id: string;
-    vorname: string;
-    nachname: string;
-    createdAt: string;
-    wohnort?: string | null;
-    customerNumber: number | string;
-    krankenkasse?: string | null;
-    kundentyp?: string | null;
-    totalOrders?: number;
-    completedOrders?: number;
-    latestOrder?: LatestOrder | null;
-    latestScreener?: LatestScreener | null;
-    latestMassschuheOrder?: LatestMassschuheOrder | null;
-    screenerFile?: Array<{ id: string; createdAt: string | null; updatedAt?: string | null }> | null;
-}
-
-type DateRangeFilter = 'all' | 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'thisYear';
-type OrderStatusFilter = 'all' | 'completed' | 'no-order';
+import { LastScanToolbar } from './Tables/LastScanToolbar';
+import { LastScanFilters } from '@/components/LastScans/Tables/LastScanFilters';
+import { LastScanTableRow } from '@/components/LastScans/Tables/LastScanTableRow';
+import { DeleteCustomerDialog } from '@/components/LastScans/Tables/DeleteCustomerDialog';
+import { LastScanPagination } from '@/components/LastScans/Tables/LastScanPagination';
+import { formatDate, getOrderStatusLabel } from '@/components/LastScans/Tables/utils';
+import { DateRangeFilter, LastScanRow, OrderStatusFilter, LatestScreener } from '@/components/LastScans/Tables/types';
 
 export default function LastScanTable() {
     const router = useRouter();
@@ -266,36 +227,6 @@ export default function LastScanTable() {
         }
     };
 
-    const formatDate = (date?: string | null, options?: Intl.DateTimeFormatOptions) => {
-        if (!date) return '—';
-        try {
-            return new Date(date).toLocaleString('en-GB', options ?? {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-            });
-        } catch (error) {
-            return '—';
-        }
-    };
-
-    const getOrderStatusLabel = (status?: string | null) => {
-        if (!status) return 'No order';
-        const normalized = status.toLowerCase();
-        if (['completed', 'abgeschlossen', 'done', 'finished'].includes(normalized)) return 'Completed';
-        if (['started', 'sarted', 'in_progress', 'processing'].includes(normalized)) return 'In progress';
-        if (['cancelled', 'canceled'].includes(normalized)) return 'Cancelled';
-        return status;
-    };
-
-    const getOrderStatusClass = (status?: string | null) => {
-        if (!status) return 'text-orange-500';
-        const normalized = status.toLowerCase();
-        if (['completed', 'abgeschlossen', 'done', 'finished'].includes(normalized)) return 'text-green-600';
-        if (['cancelled', 'canceled'].includes(normalized)) return 'text-red-500';
-        return 'text-sky-600';
-    };
-
     const uniqueYears = React.useMemo(() => {
         const set = new Set<string>();
         rows.forEach((row) => {
@@ -316,6 +247,17 @@ export default function LastScanTable() {
             const insurance = row.krankenkasse?.trim();
             if (insurance) {
                 set.add(insurance);
+            }
+        });
+        return Array.from(set).sort((a, b) => a.localeCompare(b));
+    }, [rows]);
+
+    const uniqueLocations = React.useMemo(() => {
+        const set = new Set<string>();
+        rows.forEach((row) => {
+            const location = row.wohnort?.trim();
+            if (location) {
+                set.add(location);
             }
         });
         return Array.from(set).sort((a, b) => a.localeCompare(b));
@@ -343,6 +285,23 @@ export default function LastScanTable() {
             setPage(1);
         }
     };
+
+    const handleFilterReset = () => {
+        setDateRange('all');
+        setYearFilter('all');
+        setMonthFilter('all');
+        setLocationFilter('all');
+        setInsuranceFilter('all');
+        setOrderFilter('all');
+        setPage(1);
+    };
+
+    const handleDateRangeChange = (value: DateRangeFilter) => handleFilterChange(setDateRange, value);
+    const handleYearChange = (value: string) => handleFilterChange(setYearFilter, value);
+    const handleMonthChange = (value: string) => handleFilterChange(setMonthFilter, value);
+    const handleLocationChange = (value: string) => handleFilterChange(setLocationFilter, value, false);
+    const handleInsuranceChange = (value: string) => handleFilterChange(setInsuranceFilter, value, false);
+    const handleOrderChange = (value: OrderStatusFilter) => handleFilterChange(setOrderFilter, value);
 
     const handleRowSelect = (rowId: string) => {
         setSelectedRows((prev) => {
@@ -378,13 +337,28 @@ export default function LastScanTable() {
 
             // Prepare data for Excel
             const excelData = rowsToExport.map((row) => {
-                const latestOrderStatus = row.latestOrder?.orderStatus ?? null;
-                const latestOrderDate = row.latestOrder?.createdAt ?? null;
                 const latestScreenerDate = row.latestScreener?.createdAt ?? null;
                 const customerFullName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim();
+                const customerTypes: string[] = [];
+                if (row.latestMassschuheOrder) customerTypes.push('Massschuhe');
+                if (row.latestOrder) customerTypes.push('Einlagen');
+                const kundentyp = customerTypes.length > 0 ? customerTypes.join(', ') : '—';
 
-                // Determine customer type based on latest Massschuhe order
-                const kundentyp = row.latestMassschuheOrder ? 'Massschuhe' : 'Einlagen';
+                const orderEntries: string[] = [];
+                const orderDates: (string | null)[] = [];
+
+                if (row.latestOrder) {
+                    orderEntries.push(getOrderStatusLabel(row.latestOrder.orderStatus));
+                    orderDates.push(row.latestOrder.createdAt ?? null);
+                }
+
+                if (row.latestMassschuheOrder) {
+                    orderEntries.push('Massschuhe');
+                    orderDates.push(row.latestMassschuheOrder.createdAt ?? null);
+                }
+
+                const newestOrderLabel = orderEntries.length > 0 ? orderEntries.join(' | ') : 'Kein Auftrag';
+                const newestOrderDate = orderDates[0];
 
                 return {
                     'Kunde': customerFullName || '—',
@@ -392,8 +366,8 @@ export default function LastScanTable() {
                     'Krankenkasse': row.krankenkasse?.trim() || '—',
                     'Kundentyp': kundentyp,
                     'Neuester Scan': latestScreenerDate ? formatDate(latestScreenerDate) : 'Kein Scan',
-                    'Neuester Auftrag': latestOrderStatus ? getOrderStatusLabel(latestOrderStatus) : 'Kein Auftrag',
-                    'Auftragsdatum': latestOrderDate ? formatDate(latestOrderDate) : '—',
+                    'Neuester Auftrag': newestOrderLabel,
+                    'Auftragsdatum': newestOrderDate ? formatDate(newestOrderDate) : '—',
                     'Erstellt am': formatDate(row.createdAt),
                     'Wohnort': row.wohnort?.trim() || '—',
                     'Gesamt Aufträge': row.totalOrders ?? 0,
@@ -452,149 +426,38 @@ export default function LastScanTable() {
 
     const locationOptions = [
         { label: 'Alle Städte', value: 'all' as const },
+        ...uniqueLocations.map((location) => ({ label: location, value: location })),
     ];
-    const insuranceOptions = [{ label: 'Alle Krankenkassen', value: 'all' as const }, ...uniqueInsurances.map((ins) => ({ label: ins, value: ins }))];
-
-    const currentRangeStart = displayRows.length === 0 ? 0 : (page - 1) * limit + 1;
-    const currentRangeEnd = displayRows.length === 0 ? 0 : Math.min(currentRangeStart + displayRows.length - 1, totalItems || displayRows.length);
+    const insuranceOptions = [
+        { label: 'Alle Krankenkassen', value: 'all' as const },
+        ...uniqueInsurances.map((ins) => ({ label: ins, value: ins })),
+    ];
 
     return (
         <div className="mt-10 space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                    <h2 className="text-2xl font-semibold text-gray-900">Kundenaufträge Übersicht</h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                        Überwachen Sie die Kundenaktivität, neueste Scans und den Auftragspipeline auf einen Blick.
-                    </p>
-                </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="outline"
-                        className="rounded-full border-gray-300 text-sm px-4 py-2 cursor-pointer"
-                        onClick={handleExport}
-                    >
-                        Exportieren
-                    </Button>
-                    <Button variant="outline" className="rounded-full border-gray-300 text-sm px-4 py-2 cursor-pointer">
-                        Import
-                    </Button>
-                </div>
-            </div>
+            <LastScanToolbar onExport={handleExport} />
 
-            <div className="grid w-full gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
-                <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Zeitraum</span>
-                    <Select value={dateRange} onValueChange={(val) => handleFilterChange(setDateRange, val as DateRangeFilter)}>
-                        <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Zeitraum" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {periodOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Jahr</span>
-                    <Select value={yearFilter} onValueChange={(val: string) => handleFilterChange(setYearFilter, val as string)}>
-                        <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Jahr" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {yearOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Monat</span>
-                    <Select value={monthFilter} onValueChange={(val) => handleFilterChange(setMonthFilter, val)}>
-                        <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Monat" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {monthOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Standort</span>
-                    <Select value={locationFilter} onValueChange={(val: string) => handleFilterChange(setLocationFilter, val as string, false)}>
-                        <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Stadt" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {locationOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Krankenkasse</span>
-                    <Select value={insuranceFilter} onValueChange={(val: string) => handleFilterChange(setInsuranceFilter, val as string, false)}>
-                        <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Krankenkasse" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {insuranceOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex flex-col">
-                    <span className="text-xs uppercase tracking-wide text-gray-400 mb-1">Auftragsstatus</span>
-                    <Select value={orderFilter} onValueChange={(val) => handleFilterChange(setOrderFilter, val as OrderStatusFilter)}>
-                        <SelectTrigger className="h-11 rounded-xl bg-white border-gray-200 shadow-sm px-4 justify-start">
-                            <SelectValue placeholder="Auftragsstatus" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {orderOptions.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                    {option.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                <div className="flex md:col-span-2 xl:col-span-3 2xl:col-span-6 justify-start">
-                    <Button
-                        variant="ghost"
-                        className="mt-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-xl h-11 px-4 cursor-pointer"
-                        onClick={() => {
-                            setDateRange('all');
-                            setYearFilter('all');
-                            setMonthFilter('all');
-                            setLocationFilter('all');
-                            setInsuranceFilter('all');
-                            setOrderFilter('all');
-                        }}
-                    >
-                        Filter zurücksetzen
-                    </Button>
-                </div>
-            </div>
+            <LastScanFilters
+                dateRange={dateRange}
+                yearFilter={yearFilter}
+                monthFilter={monthFilter}
+                locationFilter={locationFilter}
+                insuranceFilter={insuranceFilter}
+                orderFilter={orderFilter}
+                periodOptions={periodOptions}
+                yearOptions={yearOptions}
+                monthOptions={monthOptions}
+                locationOptions={locationOptions}
+                insuranceOptions={insuranceOptions}
+                orderOptions={orderOptions}
+                onDateRangeChange={handleDateRangeChange}
+                onYearChange={handleYearChange}
+                onMonthChange={handleMonthChange}
+                onLocationChange={handleLocationChange}
+                onInsuranceChange={handleInsuranceChange}
+                onOrderChange={handleOrderChange}
+                onReset={handleFilterReset}
+            />
 
             <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
                 <Table>
@@ -635,188 +498,43 @@ export default function LastScanTable() {
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            displayRows.map((row) => {
-                                const latestOrderStatus = row.latestOrder?.orderStatus ?? null;
-                                const latestOrderDate = row.latestOrder?.createdAt ?? null;
-                                const latestScreenerDate = row.latestScreener?.createdAt ?? null;
-                                const customerFullName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim();
-                                const krankenkasse = row.krankenkasse?.trim() || '—';
-                                // Determine customer type based on latest Massschuhe order
-                                const kundentyp = row.latestMassschuheOrder ? 'Massschuhe' : 'Einlagen';
-
-                                return (
-                                    <TableRow key={row.id} className="hover:bg-gray-50 transition-colors">
-                                        <TableCell>
-                                            <Checkbox
-                                                checked={selectedRows.has(row.id)}
-                                                onChange={() => handleRowSelect(row.id)}
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="font-medium capitalize">
-                                            {customerFullName ? (
-                                                <Link
-                                                    href={`/dashboard/customer-history/${row.id}`}
-                                                    className="text-[#2F7D5C] hover:underline
-                                                    "
-                                                >
-                                                    {customerFullName}
-                                                </Link>
-                                            ) : (
-                                                '—'
-                                            )}
-                                        </TableCell>
-                                        <TableCell>{row.customerNumber ?? '—'}</TableCell>
-                                        <TableCell>
-                                            <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                                                {krankenkasse}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${kundentyp === 'Massschuhe'
-                                                    ? 'bg-purple-100 text-purple-700'
-                                                    : 'bg-blue-100 text-blue-700'
-                                                }`}>
-                                                {kundentyp}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className={cn('font-medium', latestScreenerDate ? 'text-gray-700' : 'text-orange-500')}>
-                                            {latestScreenerDate ? formatDate(latestScreenerDate) : 'No scan'}
-                                        </TableCell>
-                                        <TableCell className={cn('font-medium', getOrderStatusClass(latestOrderStatus))}>
-                                            {latestOrderStatus ? (
-                                                <div className="flex flex-col">
-                                                    <span>{getOrderStatusLabel(latestOrderStatus)}</span>
-                                                    {latestOrderDate && (
-                                                        <span className="text-xs text-gray-400">{formatDate(latestOrderDate)}</span>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                'No order'
-                                            )}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <div className="flex gap-2 justify-end">
-                                                {latestScreenerDate ? (
-                                                    <Button
-                                                        className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
-                                                        onClick={() => handleNeuerAuftrag(row.id)}
-                                                    >
-                                                        Neuer Auftrag
-                                                    </Button>
-                                                ) : (
-                                                    <Button
-                                                        className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
-                                                        onClick={() => handleScanDurchführen(row.id)}
-                                                    >
-                                                        Scan durchführen
-                                                    </Button>
-                                                )}
-                                                <Button
-                                                    variant="outline"
-                                                    className="cursor-pointer border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 px-3 py-1.5 text-sm rounded-lg"
-                                                    onClick={() => handleDeleteClick(row)}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                );
-                            })
+                            displayRows.map((row) => (
+                                <LastScanTableRow
+                                    key={row.id}
+                                    row={row}
+                                    isSelected={selectedRows.has(row.id)}
+                                    onSelect={handleRowSelect}
+                                    onNeuerAuftrag={handleNeuerAuftrag}
+                                    onScanDurchführen={handleScanDurchführen}
+                                    onDelete={handleDeleteClick}
+                                />
+                            ))
                         )}
                     </TableBody>
                 </Table>
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 text-sm text-gray-500">
-                <div>
-                    Zeige {currentRangeStart}-{currentRangeEnd} von {totalItems || displayRows.length || 0}
-                </div>
-                <Pagination>
-                    <PaginationContent>
-                        <PaginationItem>
-                            <PaginationLink
-                                onClick={() => handlePageChange(Math.max(1, page - 1))}
-                                href="#"
-                                size="default"
-                                className="gap-1 px-2.5 sm:pl-2.5 cursor-pointer"
-                                aria-label="Zur vorherigen Seite"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                                <span className="hidden sm:block">Zurück</span>
-                            </PaginationLink>
-                        </PaginationItem>
+            <LastScanPagination
+                page={page}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                displayRowsCount={displayRows.length}
+                limit={limit}
+                onPageChange={handlePageChange}
+            />
 
-                        {Array.from({ length: totalPages }).map((_, idx) => {
-                            const pageNum = idx + 1;
-                            return (
-                                <PaginationItem key={pageNum}>
-                                    <PaginationLink
-                                        href="#"
-                                        isActive={pageNum === page}
-                                        onClick={() => handlePageChange(pageNum)}
-                                    >
-                                        {pageNum}
-                                    </PaginationLink>
-                                </PaginationItem>
-                            );
-                        })}
-
-                        <PaginationItem>
-                            <PaginationLink
-                                onClick={() => handlePageChange(totalPages ? Math.min(totalPages, page + 1) : page + 1)}
-                                href="#"
-                                size="default"
-                                className="gap-1 px-2.5 sm:pr-2.5 cursor-pointer"
-                                aria-label="Zur nächsten Seite"
-                            >
-                                <span className="hidden sm:block">Weiter</span>
-                                <ChevronRight className="h-4 w-4" />
-                            </PaginationLink>
-                        </PaginationItem>
-                    </PaginationContent>
-                </Pagination>
-            </div>
-
-            {/* Delete Confirmation Modal */}
-            <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className="text-red-600">Kunde löschen bestätigen</DialogTitle>
-                        <DialogDescription>
-                            Sind Sie sicher, dass Sie den Kunden <strong>{customerToDelete?.name}</strong> löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="flex gap-2">
-                        <Button
-                            variant="outline"
-                            className="cursor-pointer"
-                            onClick={() => {
-                                setDeleteModalOpen(false);
-                                setCustomerToDelete(null);
-                            }}
-                            disabled={isDeleting}
-                        >
-                            Abbrechen
-                        </Button>
-                        <Button
-                            onClick={handleDeleteConfirm}
-                            disabled={isDeleting}
-                            className="bg-red-600 cursor-pointer hover:bg-red-700 text-white"
-                        >
-                            {isDeleting ? (
-                                <div className="flex items-center gap-2">
-                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                    <span>Löschen...</span>
-                                </div>
-                            ) : (
-                                'Ja, löschen'
-                            )}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            <DeleteCustomerDialog
+                open={deleteModalOpen}
+                customer={customerToDelete}
+                isDeleting={isDeleting}
+                onOpenChange={(open) => {
+                    setDeleteModalOpen(open);
+                    if (!open) {
+                        setCustomerToDelete(null);
+                    }
+                }}
+                onConfirm={handleDeleteConfirm}
+            />
         </div>
     );
 }

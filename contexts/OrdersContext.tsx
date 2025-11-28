@@ -78,7 +78,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         status: apiOrder.orderStatus,
         displayStatus: getLabelFromApiStatus(apiOrder.orderStatus),
         preis: `${(apiOrder.fußanalyse + apiOrder.einlagenversorgung).toFixed(2)} €`,
-        zahlung: formatPaymentStatus(werkstattzettel?.bezahlt),
+        zahlung: formatPaymentStatus(apiOrder.bezahlt),
         beschreibung: werkstattzettel?.versorgung || apiOrder.product.versorgung || apiOrder.product.status,
         abholort: "Abholung Innsbruck oder Wird mit Post versandt",
         fertigstellung: new Date(apiOrder.statusUpdate || apiOrder.createdAt).toLocaleDateString('de-DE'),
