@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, ReactNode, useEffect, useCa
 import { useGetAllOrders, ApiOrderData } from '@/hooks/orders/useGetAllOrders';
 import { deleteOrder as deleteOrderApi, deleteGroupOrder, getSingleOrder, getAllOrders, groupOrderStatusUpdate, updateOrderPriority as updateOrderPriorityApi } from '@/apis/productsOrder';
 import { getLabelFromApiStatus } from '@/lib/orderStatusMappings';
+import { formatPaymentStatus } from '@/lib/paymentStatusUtils';
 
 export interface OrderData {
     id: string;
@@ -77,7 +78,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         status: apiOrder.orderStatus,
         displayStatus: getLabelFromApiStatus(apiOrder.orderStatus),
         preis: `${(apiOrder.fußanalyse + apiOrder.einlagenversorgung).toFixed(2)} €`,
-        zahlung: werkstattzettel?.bezahlt ? 'Bezahlt' : 'Offen',
+        zahlung: formatPaymentStatus(werkstattzettel?.bezahlt),
         beschreibung: werkstattzettel?.versorgung || apiOrder.product.versorgung || apiOrder.product.status,
         abholort: "Abholung Innsbruck oder Wird mit Post versandt",
         fertigstellung: new Date(apiOrder.statusUpdate || apiOrder.createdAt).toLocaleDateString('de-DE'),

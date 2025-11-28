@@ -40,7 +40,7 @@ export interface ApiOrderData {
         auftragsDatum: string | null;
         fertigstellungBis: string | null;
         versorgung: string | null;
-        bezahlt: boolean | null;
+        bezahlt: string | boolean | null;
     } | null;
 }
 

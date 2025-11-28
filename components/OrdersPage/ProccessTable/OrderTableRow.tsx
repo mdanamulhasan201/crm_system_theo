@@ -2,6 +2,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { OrderData } from "@/contexts/OrdersContext";
 import OrderActions from "./OrderActions";
 import Link from "next/link";
+import { getPaymentStatusColor } from "@/lib/paymentStatusUtils";
 
 interface OrderTableRowProps {
     order: OrderData;
@@ -43,17 +44,15 @@ export default function OrderTableRow({
     };
 
     const renderPaymentStatus = () => {
-        if (order.zahlung === 'Bezahlt') {
-            return (
-                <span className="px-2 py-1 rounded text-xs font-semibold bg-emerald-100 text-emerald-800">
-                    Bezahlt
-                </span>
-            );
-        }
+        const colors = getPaymentStatusColor(order.zahlung);
+        // Format display text - show shorter version if it contains " - "
+        const displayText = order.zahlung.includes(' - ')
+            ? order.zahlung.split(' - ').join(' • ') // Replace " - " with " • " for better display
+            : order.zahlung;
 
         return (
-            <span className="px-2 py-1 rounded text-xs font-semibold bg-gray-100 text-gray-600">
-                {order.zahlung}
+            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text}`}>
+                {displayText}
             </span>
         );
     };
