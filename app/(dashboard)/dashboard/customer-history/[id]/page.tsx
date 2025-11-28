@@ -411,8 +411,6 @@ export default function CustomerHistory() {
                         />
                     </div>
                 </div>
-
-
             </div>
 
             <div className="flex  items-center gap-10 my-10 flex-wrap">
