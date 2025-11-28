@@ -2,11 +2,13 @@
 import React, { useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
-import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useWerkstattzettel } from "@/hooks/settings/useWerkstattzettel";
 
 export default function WerkstattzettelPage() {
@@ -25,23 +27,8 @@ export default function WerkstattzettelPage() {
     saveWerkstattzettel,
   } = useWerkstattzettel();
 
-  // Calculate minimum selectable date (exactly 5 days from today)
-  const getMinimumDate = () => {
-    const today = new Date();
-    const minDate = new Date(today);
-    minDate.setDate(today.getDate() + 5);
-    return minDate;
-  };
-
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Set default date to 5 days from today when component loads
-  useEffect(() => {
-    if (!settings.werktage) {
-      updateSetting('werktage', getMinimumDate());
-    }
-  }, []);
 
   // Close suggestions when clicking outside
   useEffect(() => {
@@ -145,44 +132,26 @@ export default function WerkstattzettelPage() {
         )}
       </div>
 
-      {/* Fertigstellungsdatum Date Picker */}
+      {/* Fertigstellungsdatum Days Dropdown */}
       <div className="mb-6">
         <label className="font-semibold block mb-2">
           Standardberechnung des Fertigstellungsdatums
         </label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal",
-                !settings.werktage && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {settings.werktage ? (
-                format(settings.werktage, "PPP")
-              ) : (
-                <span>Datum auswählen</span>
-              )}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
-            <Calendar
-              mode="single"
-              selected={settings.werktage}
-              onSelect={(date) => updateSetting('werktage', date)}
-              disabled={(date) => {
-                const minDate = getMinimumDate();
-                // Reset time to compare only dates, not time
-                const dateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-                const minDateOnly = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
-                return dateOnly < minDateOnly;
-              }}
-              initialFocus
-            />
-          </PopoverContent>
-        </Popover>
+        <Select
+          value={settings.werktage?.toString() || ""}
+          onValueChange={(value) => updateSetting('werktage', parseInt(value))}
+        >
+          <SelectTrigger className="w-full border-gray-600">
+            <SelectValue placeholder="Tage auswählen" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="3">3 Tage</SelectItem>
+            <SelectItem value="7">7 Tage</SelectItem>
+            <SelectItem value="14">14 Tage</SelectItem>
+            <SelectItem value="20">20 Tage</SelectItem>
+            <SelectItem value="30">30 Tage</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Abholstandorte */}
@@ -294,10 +263,10 @@ export default function WerkstattzettelPage() {
       <div className="mt-8">
         <button
           onClick={saveWerkstattzettel}
-          disabled={isSaving || !settings.mitarbeiterId || !settings.werktage}
-          className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer capitalize transform hover:scale-105 flex items-center justify-center gap-2 ${isSaving || !settings.mitarbeiterId || !settings.werktage
-              ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-              : 'bg-[#62A07C] text-white hover:bg-[#4A8A6A]'
+          disabled={isSaving}
+          className={`px-8 py-3 rounded-lg font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer capitalize transform hover:scale-105 flex items-center justify-center gap-2 ${isSaving
+            ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            : 'bg-[#62A07C] text-white hover:bg-[#4A8A6A]'
             }`}
         >
           {isSaving && (

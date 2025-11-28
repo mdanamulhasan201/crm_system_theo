@@ -17,7 +17,7 @@ interface Employee {
 interface WerkstattzettelSettings {
   mitarbeiter: string;
   mitarbeiterId: string;
-  werktage: Date | undefined;
+  werktage: number | undefined; // Changed to number (days)
   abholstandort: "geschaeft" | "eigen";
   firmenlogo: "ja" | "nein";
   auftragSofort: "ja" | "manuell";
@@ -106,30 +106,17 @@ export const useWerkstattzettel = () => {
   };
 
   const saveWerkstattzettel = async () => {
-    if (!settings.mitarbeiterId) {
-      toast.error('Bitte wählen Sie einen Mitarbeiter aus.');
-      return;
-    }
-
     if (!settings.werktage) {
-      toast.error('Bitte wählen Sie ein Fertigstellungsdatum aus.');
+      toast.error('Bitte wählen Sie die Anzahl der Tage aus.');
       return;
     }
 
     setIsSaving(true);
 
     try {
-      // Format date properly to avoid timezone issues
-      const formatDateForAPI = (date: Date): string => {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-      };
-
       const werkstattzettelData = {
-        employeeId: settings.mitarbeiterId,
-        completionDays: formatDateForAPI(settings.werktage), // Format as YYYY-MM-DD without timezone conversion
+        employeeId: settings.mitarbeiterId || "",
+        completionDays: settings.werktage.toString(), // Send number of days as string
         pickupLocation: settings.abholstandort === "geschaeft" ? "Geschäftsstandort" : "Eigene Definition",
         sameAsBusiness: settings.abholstandort === "geschaeft",
         showCompanyLogo: settings.firmenlogo === "ja",
