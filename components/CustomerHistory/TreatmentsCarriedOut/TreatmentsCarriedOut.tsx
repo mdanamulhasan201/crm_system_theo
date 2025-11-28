@@ -35,8 +35,12 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const handleRepeatTreatment = () => {
-        router.push(`/dashboard/scanning-data/${customerId}`)
+    const handleRepeatTreatment = (orderId?: string) => {
+        if (!customerId) return
+        const path = orderId
+            ? `/dashboard/scanning-data/${customerId}?orderId=${orderId}`
+            : `/dashboard/scanning-data/${customerId}`
+        router.push(path)
     }
 
     useEffect(() => {
@@ -116,7 +120,7 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
                     <span className="text-sm text-gray-400">Kein Auftragszettel verfügbar</span>
                 )}
                 <button
-                    onClick={handleRepeatTreatment}
+                    onClick={() => handleRepeatTreatment(item.order.id)}
                     type="button"
                     className="py-2 px-4 rounded-full bg-[#61A07B] text-white text-sm font-semibold hover:bg-[#528c68] transition-colors cursor-pointer"
                 >

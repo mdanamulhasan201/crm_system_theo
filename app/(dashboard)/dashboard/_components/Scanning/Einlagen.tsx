@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useScanningFormData } from '@/hooks/customer/useScanningFormData';
 import type { EinlageType } from '@/hooks/customer/useScanningFormData';
 import { useCreateOrder } from '@/hooks/orders/useCreateOrder';
@@ -37,8 +37,32 @@ interface Customer {
     }>;
 }
 
+interface PrefillOrderData {
+    id: string;
+    versorgungId?: string | null;
+    versorgung?: string | null;
+    ausführliche_diagnose?: string | null;
+    versorgung_laut_arzt?: string | null;
+    einlagentyp?: string | null;
+    überzug?: string | null;
+    menge?: number | string | null;
+    versorgung_note?: string | null;
+    schuhmodell_wählen?: string | null;
+    kostenvoranschlag?: boolean | null;
+    werkstattzettel?: {
+        versorgung?: string | null;
+        mitarbeiter?: string | null;
+        employeeId?: string | null;
+    };
+    product?: {
+        versorgung?: string | null;
+        diagnosis_status?: string | null;
+    };
+}
+
 interface ScanningFormProps {
     customer?: Customer;
+    prefillOrderData?: PrefillOrderData | null;
     onCustomerUpdate?: (updatedCustomer: Customer) => void;
     onDataRefresh?: () => void;
 }
@@ -47,22 +71,69 @@ interface ScanningFormProps {
 const EINLAGE_OPTIONS: EinlageType[] = ['Alltagseinlage', 'Sporteinlage', 'Businesseinlage'];
 const UBERZUG_OPTIONS = ['Leder', 'Microfaser Schwarz', 'Microfaser Beige'];
 const MENGE_OPTIONS = ['1 paar', '2 paar', '3 paar', '4 paar', '5 paar'];
+const DIAGNOSIS_CODE_TO_LABEL: Record<string, string> = {
+    PLANTARFASZIITIS: 'Plantarfasziitis',
+    FERSENSPORN: 'Fersensporn',
+    SPREIZFUSS: 'Spreizfuß',
+    SENKFUSS: 'Senkfuß',
+    PLATTFUSS: 'Plattfuß',
+    HOHLFUSS: 'Hohlfuß',
+    KNICKFUSS: 'Knickfuß',
+    KNICK_SENKFUSS: 'Knick-Senkfuß',
+    HALLUX_VALGUS: 'Hallux valgus',
+    HALLUX_RIGIDUS: 'Hallux rigidus',
+    HAMMERZEHEN_KRALLENZEHEN: 'Hammerzehen / Krallenzehen',
+    MORTON_NEUROM: 'Morton-Neurom',
+    FUSSARTHROSE: 'Fußarthrose',
+    STRESSFRAKTUREN_IM_FUSS: 'Stressfrakturen im Fußbereich',
+    DIABETISCHES_FUSSSYNDROM: 'Diabetisches Fußsyndrom',
+};
 
-export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
+const formatMengeValue = (value?: number | string | null) => {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+        return `${value} paar`;
+    }
+    if (typeof value === 'string' && value.trim()) {
+        return value;
+    }
+    return '';
+};
+
+const parseBooleanValue = (value: unknown) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        return normalized === 'true' || normalized === '1';
+    }
+    if (typeof value === 'number') {
+        return value === 1;
+    }
+    return false;
+};
+
+const mapEinlageType = (value?: string | null) => {
+    if (!value) return undefined;
+    return EINLAGE_OPTIONS.find((option) => option === value) as EinlageType | undefined;
+};
+
+export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
     // Scanning form data hook
     const {
         diagnosisOptions,
         showDiagnosisDropdown,
         setShowDiagnosisDropdown,
         selectedDiagnosis,
+        setSelectedDiagnosis,
         showSupplyDropdown,
         handleSupplyDropdownToggle,
         versorgungData,
         loadingVersorgung,
         hasDataLoaded,
         selectedVersorgungId,
+        setSelectedVersorgungId,
         diagnosis,
         supply,
+        setSupply,
         selectedEinlage,
         handleDiagnosisSelect,
         handleVersorgungCardSelect,
@@ -73,6 +144,40 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
 
     // Custom form hook
     const formHook = useEinlagenForm({ selectedEinlage });
+    const prefillHandledRef = useRef<string | null>(null);
+    const {
+        ausführliche_diagnose,
+        versorgung_laut_arzt,
+        einlagentyp,
+        überzug,
+        menge,
+        versorgung_note,
+        schuhmodell_wählen,
+        kostenvoranschlag,
+        showEinlageDropdown,
+        setShowEinlageDropdown,
+        showUberzugDropdown,
+        setShowUberzugDropdown,
+        showMengeDropdown,
+        setShowMengeDropdown,
+        selectedEmployee,
+        selectedEmployeeId,
+        isEmployeeDropdownOpen,
+        employeeSearchText,
+        employeeSuggestions,
+        employeeLoading,
+        handleEmployeeDropdownChange,
+        handleEmployeeSearchChange,
+        handleEmployeeSelect,
+        setAusführliche_diagnose,
+        setVersorgung_laut_arzt,
+        setEinlagentyp,
+        setÜberzug,
+        setMenge,
+        setVersorgung_note,
+        setSchuhmodell_wählen,
+        setKostenvoranschlag,
+    } = formHook;
 
     // Order creation hook
     const { createOrderAndGeneratePdf, isCreating } = useCreateOrder();
@@ -88,10 +193,89 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
 
     // Sync einlagentyp when selectedEinlage changes
     useEffect(() => {
-        if (selectedEinlage && !formHook.einlagentyp) {
-            formHook.setEinlagentyp(selectedEinlage as string);
+        if (selectedEinlage && !einlagentyp) {
+            setEinlagentyp(selectedEinlage as string);
         }
-    }, [selectedEinlage, formHook.einlagentyp]);
+    }, [selectedEinlage, einlagentyp, setEinlagentyp]);
+
+    // Reset prefill tracker when order changes back to null
+    useEffect(() => {
+        if (!prefillOrderData) {
+            prefillHandledRef.current = null;
+        }
+    }, [prefillOrderData]);
+
+    // Prefill form fields when an order is provided
+    useEffect(() => {
+        if (!prefillOrderData) return;
+        if (prefillHandledRef.current === prefillOrderData.id) return;
+        prefillHandledRef.current = prefillOrderData.id;
+
+        if (typeof prefillOrderData.ausführliche_diagnose !== 'undefined') {
+            setAusführliche_diagnose(prefillOrderData.ausführliche_diagnose ?? '');
+        }
+        if (typeof prefillOrderData.versorgung_laut_arzt !== 'undefined') {
+            setVersorgung_laut_arzt(prefillOrderData.versorgung_laut_arzt ?? '');
+        }
+        const derivedEinlage = mapEinlageType(prefillOrderData.einlagentyp);
+        if (derivedEinlage) {
+            handleEinlageButtonClick(derivedEinlage);
+            setEinlagentyp(derivedEinlage);
+        }
+        if (typeof prefillOrderData.überzug !== 'undefined') {
+            setÜberzug(prefillOrderData.überzug ?? '');
+        }
+        const mengeOption = formatMengeValue(prefillOrderData.menge);
+        if (mengeOption) {
+            setMenge(mengeOption);
+        }
+        if (typeof prefillOrderData.versorgung_note !== 'undefined') {
+            setVersorgung_note(prefillOrderData.versorgung_note ?? '');
+        }
+        if (typeof prefillOrderData.schuhmodell_wählen !== 'undefined') {
+            setSchuhmodell_wählen(prefillOrderData.schuhmodell_wählen ?? '');
+        }
+        if (typeof prefillOrderData.kostenvoranschlag !== 'undefined') {
+            setKostenvoranschlag(parseBooleanValue(prefillOrderData.kostenvoranschlag));
+        }
+        const diagnosisLabel = DIAGNOSIS_CODE_TO_LABEL[prefillOrderData.product?.diagnosis_status ?? ''];
+        if (diagnosisLabel) {
+            setSelectedDiagnosis(diagnosisLabel);
+        }
+        const supplyValue =
+            prefillOrderData.werkstattzettel?.versorgung ||
+            prefillOrderData.product?.versorgung ||
+            prefillOrderData.versorgung ||
+            '';
+        if (supplyValue) {
+            setSupply(supplyValue);
+        }
+        if (prefillOrderData.versorgungId) {
+            setSelectedVersorgungId(prefillOrderData.versorgungId);
+        }
+        if (prefillOrderData.werkstattzettel?.mitarbeiter) {
+            handleEmployeeSelect({
+                employeeName: prefillOrderData.werkstattzettel.mitarbeiter,
+                id: prefillOrderData.werkstattzettel.employeeId || '',
+            });
+        }
+    }, [
+        prefillOrderData,
+        prefillHandledRef,
+        handleEinlageButtonClick,
+        handleEmployeeSelect,
+        setAusführliche_diagnose,
+        setVersorgung_laut_arzt,
+        setEinlagentyp,
+        setÜberzug,
+        setMenge,
+        setVersorgung_note,
+        setSchuhmodell_wählen,
+        setKostenvoranschlag,
+        setSelectedDiagnosis,
+        setSupply,
+        setSelectedVersorgungId,
+    ]);
 
     // Listen for order data updates
     useEffect(() => {
@@ -146,18 +330,18 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
 
     const handleSpeichernClick = () => {
         const formData = collectFormData({
-            ausführliche_diagnose: formHook.ausführliche_diagnose,
-            versorgung_laut_arzt: formHook.versorgung_laut_arzt,
-            einlagentyp: formHook.einlagentyp,
+            ausführliche_diagnose,
+            versorgung_laut_arzt,
+            einlagentyp,
             selectedEinlage: selectedEinlage as string,
-            überzug: formHook.überzug,
-            menge: formHook.menge,
+            überzug,
+            menge,
             supply,
-            versorgung_note: formHook.versorgung_note,
-            schuhmodell_wählen: formHook.schuhmodell_wählen,
-            kostenvoranschlag: formHook.kostenvoranschlag,
-            selectedEmployee: formHook.selectedEmployee,
-            selectedEmployeeId: formHook.selectedEmployeeId,
+            versorgung_note,
+            schuhmodell_wählen,
+            kostenvoranschlag,
+            selectedEmployee,
+            selectedEmployeeId,
             versorgungData,
             selectedVersorgungId,
         });
@@ -167,18 +351,18 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
 
     const handleEinlageSelect = (value: EinlageType) => {
         handleEinlageButtonClick(value);
-        formHook.setEinlagentyp(value);
-        formHook.setShowEinlageDropdown(false);
+        setEinlagentyp(value);
+        setShowEinlageDropdown(false);
     };
 
     // Create order data for PDF
     const orderData = createOrderData({
         customer,
         realOrderData,
-        einlagentyp: formHook.einlagentyp,
+        einlagentyp,
         selectedEinlage,
         supply,
-        ausführliche_diagnose: formHook.ausführliche_diagnose,
+        ausführliche_diagnose,
         diagnosis,
     });
 
@@ -188,13 +372,13 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
                 {/* Text Area Section */}
                 <TextAreaSection
                     leftLabel="Ärztliche Diagnose/ Ausführliche Diagnose"
-                    leftValue={formHook.ausführliche_diagnose}
+                    leftValue={ausführliche_diagnose}
                     leftPlaceholder="Geben Sie hier die ausführliche Diagnose ein..."
-                    leftOnChange={formHook.setAusführliche_diagnose}
+                    leftOnChange={setAusführliche_diagnose}
                     rightLabel="Versorgung laut Arzt"
-                    rightValue={formHook.versorgung_laut_arzt}
+                    rightValue={versorgung_laut_arzt}
                     rightPlaceholder="Versorgung laut Arzt eingeben..."
-                    rightOnChange={formHook.setVersorgung_laut_arzt}
+                    rightOnChange={setVersorgung_laut_arzt}
                 />
 
                 {/* Diagnosis Section */}
@@ -205,46 +389,46 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
                     selectedDiagnosis={selectedDiagnosis}
                     onDiagnosisSelect={handleDiagnosisSelect}
                     onDiagnosisClear={clearDiagnosisAndReloadOptions}
-                    selectedEmployee={formHook.selectedEmployee}
-                    isEmployeeDropdownOpen={formHook.isEmployeeDropdownOpen}
-                    employeeSearchText={formHook.employeeSearchText}
-                    employeeSuggestions={formHook.employeeSuggestions}
-                    employeeLoading={formHook.employeeLoading}
-                    onEmployeeDropdownChange={formHook.handleEmployeeDropdownChange}
-                    onEmployeeSearchChange={formHook.handleEmployeeSearchChange}
-                    onEmployeeSelect={formHook.handleEmployeeSelect}
+                    selectedEmployee={selectedEmployee}
+                    isEmployeeDropdownOpen={isEmployeeDropdownOpen}
+                    employeeSearchText={employeeSearchText}
+                    employeeSuggestions={employeeSuggestions}
+                    employeeLoading={employeeLoading}
+                    onEmployeeDropdownChange={handleEmployeeDropdownChange}
+                    onEmployeeSearchChange={handleEmployeeSearchChange}
+                    onEmployeeSelect={handleEmployeeSelect}
                 />
 
                 {/* Product Selection Section */}
                 <ProductSelectionSection
-                    einlagentyp={formHook.einlagentyp}
+                    einlagentyp={einlagentyp}
                     selectedEinlage={selectedEinlage}
                     einlageOptions={EINLAGE_OPTIONS}
-                    showEinlageDropdown={formHook.showEinlageDropdown}
-                    onEinlageToggle={() => formHook.setShowEinlageDropdown(!formHook.showEinlageDropdown)}
+                    showEinlageDropdown={showEinlageDropdown}
+                    onEinlageToggle={() => setShowEinlageDropdown(!showEinlageDropdown)}
                     onEinlageSelect={handleEinlageSelect}
-                    überzug={formHook.überzug}
+                    überzug={überzug}
                     uberzugOptions={UBERZUG_OPTIONS}
-                    showUberzugDropdown={formHook.showUberzugDropdown}
-                    onUberzugToggle={() => formHook.setShowUberzugDropdown(!formHook.showUberzugDropdown)}
+                    showUberzugDropdown={showUberzugDropdown}
+                    onUberzugToggle={() => setShowUberzugDropdown(!showUberzugDropdown)}
                     onUberzugSelect={(value) => {
-                        formHook.setÜberzug(value);
-                        formHook.setShowUberzugDropdown(false);
+                        setÜberzug(value);
+                        setShowUberzugDropdown(false);
                     }}
-                    menge={formHook.menge}
+                    menge={menge}
                     mengeOptions={MENGE_OPTIONS}
-                    showMengeDropdown={formHook.showMengeDropdown}
-                    onMengeToggle={() => formHook.setShowMengeDropdown(!formHook.showMengeDropdown)}
+                    showMengeDropdown={showMengeDropdown}
+                    onMengeToggle={() => setShowMengeDropdown(!showMengeDropdown)}
                     onMengeSelect={(value) => {
-                        formHook.setMenge(value);
-                        formHook.setShowMengeDropdown(false);
+                        setMenge(value);
+                        setShowMengeDropdown(false);
                     }}
                 />
 
                 {/* Supply Section */}
                 <SupplySection
-                    versorgungNote={formHook.versorgung_note}
-                    onVersorgungNoteChange={formHook.setVersorgung_note}
+                    versorgungNote={versorgung_note}
+                    onVersorgungNoteChange={setVersorgung_note}
                     showSupplyDropdown={showSupplyDropdown}
                     onSupplyDropdownToggle={handleSupplyDropdownToggle}
                     selectedDiagnosis={selectedDiagnosis}
@@ -259,10 +443,10 @@ export default function Einlagen({ customer, onCustomerUpdate, onDataRefresh }: 
 
                 {/* Additional Fields Section */}
                 <AdditionalFieldsSection
-                    schuhmodell_wählen={formHook.schuhmodell_wählen}
-                    onSchuhmodellChange={formHook.setSchuhmodell_wählen}
-                    kostenvoranschlag={formHook.kostenvoranschlag}
-                    onKostenvoranschlagChange={formHook.setKostenvoranschlag}
+                    schuhmodell_wählen={schuhmodell_wählen}
+                    onSchuhmodellChange={setSchuhmodell_wählen}
+                    kostenvoranschlag={kostenvoranschlag}
+                    onKostenvoranschlagChange={setKostenvoranschlag}
                 />
 
                 {/* Save Button */}

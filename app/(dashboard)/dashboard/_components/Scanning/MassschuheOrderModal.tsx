@@ -2,16 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { usePriceManagement } from '@/hooks/priceManagement/usePriceManagement';
 import { CalendarIcon } from 'lucide-react';
 import { Textarea } from "@/components/ui/textarea";
-import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { initializeDeliveryDate, getRequiredDeliveryDate } from './utils/dateUtils';
 
 interface Customer {
     id: string;
@@ -21,8 +19,16 @@ interface Customer {
     telefon?: string;
     telefonnummer?: string;
     wohnort?: string;
+    datumAuftrag?: string;
+    fertigstellungBis?: string;
+    workshopNote?: {
+        completionDays?: string | number;
+    };
     partner?: {
         hauptstandort?: string[];
+        workshopNote?: {
+            completionDays?: string | number;
+        };
     };
 }
 
@@ -82,8 +88,8 @@ export default function MassschuheOrderModal({
     const { prices, loading: pricesLoading, fetchPrices } = usePriceManagement();
 
     // Order modal form state
-    const [orderDate, setOrderDate] = useState<Date>(new Date());
-    const [fertigstellungDate, setFertigstellungDate] = useState<Date | undefined>(undefined);
+    const [orderDate, setOrderDate] = useState<string>(new Date().toISOString().slice(0, 10));
+    const [fertigstellungDate, setFertigstellungDate] = useState<string>('');
     const [filiale, setFiliale] = useState<string>('');
     const [paymentType, setPaymentType] = useState<'krankenkasse' | 'privat' | null>(null);
     const [selectedFußanalyse, setSelectedFußanalyse] = useState<string>('');
@@ -93,6 +99,10 @@ export default function MassschuheOrderModal({
 
     const { user } = useAuth();
 
+
+    const completionDays =
+        (customer as any)?.workshopNote?.completionDays ??
+        (customer as any)?.partner?.workshopNote?.completionDays;
 
     // Fetch prices on mount
     useEffect(() => {
@@ -119,8 +129,14 @@ export default function MassschuheOrderModal({
     // Reset form when modal opens
     useEffect(() => {
         if (isOpen) {
-            setOrderDate(new Date());
-            setFertigstellungDate(undefined);
+            const today = new Date().toISOString().slice(0, 10);
+            const initialOrder = customer?.datumAuftrag || today;
+            setOrderDate(initialOrder);
+
+            const deliveryFromApi = customer ? initializeDeliveryDate(customer as any) : '';
+            const fallbackDelivery = initialOrder ? getRequiredDeliveryDate(initialOrder, completionDays) : today;
+            setFertigstellungDate(deliveryFromApi || fallbackDelivery);
+
             setPaymentType(null);
             setSelectedFußanalyse('');
             setSelectedEinlagenversorgung('');
@@ -130,7 +146,32 @@ export default function MassschuheOrderModal({
                 setSelectedLocation(user.hauptstandort[0] || '');
             }
         }
-    }, [isOpen, user?.hauptstandort]);
+    }, [isOpen, user?.hauptstandort, customer, completionDays]);
+
+    const handleOrderDateChange = (value: string) => {
+        setOrderDate(value);
+        if (value) {
+            const nextDelivery = getRequiredDeliveryDate(value, completionDays);
+            setFertigstellungDate(nextDelivery);
+        } else {
+            setFertigstellungDate('');
+        }
+    };
+
+    const handleFertigstellungDateChange = (value: string) => {
+        if (value && orderDate) {
+            const requiredDate = getRequiredDeliveryDate(orderDate, completionDays);
+            if (new Date(value) < new Date(requiredDate)) {
+                const daysText = completionDays ? `${completionDays} Tage` : '5 Tage';
+                toast.error(`Fertigstellung muss mindestens ${daysText} nach Auftragsdatum sein. Minimum: ${requiredDate}`);
+                setFertigstellungDate(requiredDate);
+                return;
+            }
+        }
+        setFertigstellungDate(value);
+    };
+
+    const deliveryMinDate = orderDate ? getRequiredDeliveryDate(orderDate, completionDays) : undefined;
 
     const handleSubmit = async () => {
         if (!customer?.id) {
@@ -173,8 +214,8 @@ export default function MassschuheOrderModal({
             note: formData.versorgungNote,
             halbprobe_geplant: formData.halbprobeGeplant === true,
             kostenvoranschlag: formData.kostenvoranschlag === true,
-            datumAuftrag: format(orderDate, 'yyyy-MM-dd'),
-            fertigstellungBis: fertigstellungDate ? format(fertigstellungDate, 'yyyy-MM-dd') : undefined,
+            datumAuftrag: orderDate,
+            fertigstellungBis: fertigstellungDate || undefined,
             filiale: filiale,
             paymentType: paymentType,
             fußanalyse: paymentType === 'privat' ? parseFloat(selectedFußanalyse) : undefined,
@@ -182,7 +223,7 @@ export default function MassschuheOrderModal({
             orderNote: orderNote,
             location: selectedLocation || undefined,
             // Additional fields
-            delivery_date: fertigstellungDate ? format(fertigstellungDate, 'yyyy-MM-dd') : undefined,
+            delivery_date: fertigstellungDate || undefined,
             telefon: customerPhone,
             kunde: customerName,
             email: customerEmail,
@@ -223,59 +264,19 @@ export default function MassschuheOrderModal({
 
 
 
-                            <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Fertigstellung</label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className={cn(
-                                                "w-full justify-start text-left font-normal",
-                                                !fertigstellungDate && "text-muted-foreground"
-                                            )}
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {fertigstellungDate ? (
-                                                format(fertigstellungDate, "dd.MM.yyyy")
-                                            ) : (
-                                                <span>Datum auswählen</span>
-                                            )}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={fertigstellungDate}
-                                            onSelect={setFertigstellungDate}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-
 
 
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Datum des Auftrags</label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full justify-start text-left font-normal"
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {format(orderDate, "dd.MM.yyyy")}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={orderDate}
-                                            onSelect={(date) => date && setOrderDate(date)}
-                                            initialFocus
-                                        />
-                                    </PopoverContent>
-                                </Popover>
+                                <div className="relative">
+                                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                    <Input
+                                        type="date"
+                                        className="pl-9"
+                                        value={orderDate}
+                                        onChange={(e) => handleOrderDateChange(e.target.value)}
+                                    />
+                                </div>
                             </div>
 
                             <div>
@@ -286,6 +287,20 @@ export default function MassschuheOrderModal({
                                     placeholder="Filiale eingeben"
                                     className="w-full"
                                 />
+                            </div>
+
+                            <div>
+                                <label className="text-sm font-medium text-gray-600 mb-1 block">Fertigstellung</label>
+                                <div className="relative">
+                                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
+                                    <Input
+                                        type="date"
+                                        className="pl-9"
+                                        value={fertigstellungDate}
+                                        onChange={(e) => handleFertigstellungDateChange(e.target.value)}
+                                        min={deliveryMinDate}
+                                    />
+                                </div>
                             </div>
 
                             {!!user?.hauptstandort?.length && (

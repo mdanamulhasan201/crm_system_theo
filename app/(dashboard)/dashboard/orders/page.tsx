@@ -171,7 +171,7 @@ function OrdersPageContent() {
                     <div className="flex-1 flex flex-col items-center justify-center  border-gray-300 py-6">
                         <div className="text-lg font-bold text-[#62A07C] mb-2 text-center">Ausgeführte Einlagen<br /></div>
                         <div className="text-4xl font-extrabold">
-                            {einlagenLoading ? '…' : (einlagenError ? '-' : (typeof ausgeführteEinlagenUmsatz === 'number' ? formatEuro(ausgeführteEinlagenUmsatz) : '-'))}
+                            {einlagenLoading ? '…' : einlagenError ? '-' : ausgeführteEinlagenUmsatz}
                         </div>
                     </div>
                     <div className='border-r border-gray-300 mr-5 hidden md:block'></div>

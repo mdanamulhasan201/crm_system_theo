@@ -1,6 +1,6 @@
 'use client'
-import React, { useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import React, { useEffect, useState } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 import MassschuheForm from '@/app/(dashboard)/dashboard/_components/Scanning/MassschuheForm';
 import ScannningDataPage from '@/app/(dashboard)/dashboard/_components/ScannningData/ScannningDataPage';
@@ -9,14 +9,57 @@ import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Einlagen from '@/app/(dashboard)/dashboard/_components/Scanning/Einlagen';
+import { getSingleOrder } from '@/apis/productsOrder';
 
 
 
 export default function ScanningData() {
     const router = useRouter();
     const params = useParams();
+    const searchParams = useSearchParams();
+    const orderId = searchParams.get('orderId');
     const { customer: scanData, loading, error, updateCustomer, refreshCustomer } = useSingleCustomer(String(params.id));
     const [selectedForm, setSelectedForm] = useState<'einlagen' | 'massschuhe'>('einlagen');
+    const [prefillOrderData, setPrefillOrderData] = useState<any | null>(null);
+    const [orderPrefillError, setOrderPrefillError] = useState<string | null>(null);
+    const [orderPrefillLoading, setOrderPrefillLoading] = useState(false);
+
+    useEffect(() => {
+        let isMounted = true;
+        if (!orderId) {
+            setPrefillOrderData(null);
+            setOrderPrefillError(null);
+            setOrderPrefillLoading(false);
+            return () => {
+                isMounted = false;
+            };
+        }
+
+        const fetchOrder = async () => {
+            setOrderPrefillLoading(true);
+            setOrderPrefillError(null);
+            try {
+                const response = await getSingleOrder(orderId);
+                if (!isMounted) return;
+                const payload = (response as any)?.data ?? response;
+                setPrefillOrderData(payload);
+            } catch (err) {
+                if (!isMounted) return;
+                setOrderPrefillError('Fehler beim Laden des Auftrags.');
+                setPrefillOrderData(null);
+            } finally {
+                if (isMounted) {
+                    setOrderPrefillLoading(false);
+                }
+            }
+        };
+
+        void fetchOrder();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [orderId]);
 
 
     if (loading) return <div>Loading...</div>;
@@ -38,6 +81,12 @@ export default function ScanningData() {
             </div>
             <ScannningDataPage scanData={scanData} />
             <hr className='my-10 border-gray-500' />
+            {orderId && orderPrefillLoading && (
+                <div className="text-sm text-gray-500 mb-4">Auftrag wird geladen...</div>
+            )}
+            {orderId && orderPrefillError && (
+                <div className="text-sm text-red-500 mb-4">{orderPrefillError}</div>
+            )}
 
             {/* Form Type Selection Buttons */}
             <div className="flex gap-4 mb-10">
@@ -65,6 +114,7 @@ export default function ScanningData() {
             {selectedForm === 'einlagen' ? (
                 <Einlagen
                     customer={scanData}
+                    prefillOrderData={prefillOrderData}
                     onCustomerUpdate={(updatedCustomer) => {
                         updateCustomer(updatedCustomer);
                     }}

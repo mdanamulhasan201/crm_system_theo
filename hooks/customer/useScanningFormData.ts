@@ -427,6 +427,7 @@ export const useScanningFormData = (
         hasDataLoaded,
         setHasDataLoaded,
         selectedVersorgungId,
+        setSelectedVersorgungId,
         // editable fields
         diagnosis,
         setDiagnosis,

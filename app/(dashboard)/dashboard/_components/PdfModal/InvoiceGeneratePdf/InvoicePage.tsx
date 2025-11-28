@@ -95,6 +95,8 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                     }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start' }}>
                             <div style={{ width: '70px', height: '120px', marginRight: '30px', flexShrink: 0 }}>
+
+                                {/* logo image */}
                                 <img
                                     src={data.partner?.image || "/images/pdfLogo.png"}
                                     alt={`${data.partner.busnessName || data.partner.name} Logo`}
@@ -252,11 +254,15 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                         Materialien
                                     </h3>
                                     <div style={{ marginBottom: '15px' }}>
-                                        <p style={{ margin: 0 }}> {data.product?.rohlingHersteller} <span style={{ color: '#FF0000', fontWeight: 'bold' }}>Größe {data.customer?.recommendedSize?.size || '-'}</span></p>
+                                        <p style={{ margin: 0 }}> 
+                                            
+                                            {/* {data.product?.rohlingHersteller}  */}
+                                            
+                                            <span style={{ color: '#FF0000', fontWeight: 'bold' }}>Größe {data.customer?.recommendedSize?.size || '-'}</span></p>
                                     </div>
-                                    <div style={{ marginBottom: '15px' }}>
+                                    {/* <div style={{ marginBottom: '15px' }}>
                                         <p style={{ margin: 0 }}>{data.product?.material || '-'}</p>
-                                    </div>
+                                    </div> */}
                                     <div style={{ marginBottom: '15px' }}>
                                         <p style={{ margin: 0 }}>
                                             {Array.isArray(data.product?.material)
