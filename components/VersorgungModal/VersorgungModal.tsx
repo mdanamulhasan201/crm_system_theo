@@ -1,9 +1,12 @@
 'use client'
 import React, { useState, useEffect, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { createVersorgung, updateVersorgung } from '@/apis/versorgungApis'
+import { createVersorgung, updateVersorgung, getSingleStorageById } from '@/apis/versorgungApis'
 import { getAllStorages } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
+import ProductSelector from './ProductSelector'
+import MaterialienInput from './MaterialienInput'
+import DiagnosisSelector from './DiagnosisSelector'
 
 // Types and Interfaces
 export interface VersorgungCard {
@@ -41,8 +44,6 @@ export interface VersorgungModalProps {
     category: 'alltagseinlagen' | 'sporteinlagen' | 'businesseinlagen'
     editingCard: VersorgungCard | null
     onSubmit: (formData: Omit<VersorgungCard, 'id'>) => void
-    isAuswahl?: boolean
-    onCategoryChange?: (category: 'alltagseinlagen' | 'sporteinlagen' | 'businesseinlagen') => void
     selectedDiagnosis?: string
 }
 
@@ -71,16 +72,15 @@ export default function VersorgungModal({
     category,
     editingCard,
     onSubmit,
-    isAuswahl = false,
-    onCategoryChange,
     selectedDiagnosis
 }: VersorgungModalProps) {
 
     const [form, setForm] = useState(INITIAL_FORM_STATE)
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
     const [success, setSuccess] = useState<string | null>(null)
     const [selectedDiagnosisState, setSelectedDiagnosisState] = useState<string>(selectedDiagnosis || '')
+    const [pendingStoreId, setPendingStoreId] = useState<string | null>(null)
+    const [isFetchingSingleVersorgung, setIsFetchingSingleVersorgung] = useState(false)
 
     // Storage products state
     const [storageProducts, setStorageProducts] = useState<StorageProduct[]>([])
@@ -89,8 +89,21 @@ export default function VersorgungModal({
 
     // Helper Functions
     const getCategoryTitle = () => CATEGORY_TITLES[category] || 'Versorgung'
-
     const getCategoryStatus = () => CATEGORY_TITLES[category] || 'Alltagseinlagen'
+
+    const parseMaterialien = (materialSource: string | string[] | null | undefined) => {
+        if (!materialSource) return []
+        if (typeof materialSource === 'string') {
+            return materialSource
+                .split(/\n|,/)
+                .map(m => m.trim())
+                .filter(Boolean)
+        }
+        if (Array.isArray(materialSource)) {
+            return materialSource.filter((m): m is string => typeof m === 'string' && m.trim().length > 0)
+        }
+        return []
+    }
 
     // Fetch storage products
     const fetchStorageProducts = async () => {
@@ -122,15 +135,12 @@ export default function VersorgungModal({
     }
 
     const resetForm = useCallback(() => {
-        setError(null)
         setSuccess(null)
         setIsLoading(false)
         setSelectedProduct(null)
+        setPendingStoreId(null)
         setMaterialienInput('')
 
-        // Beim Öffnen des Modals:
-        // 1. Falls wir bearbeiten und die Karte bereits eine diagnosis_status hat -> diese vorselektieren
-        // 2. Sonst (z. B. aus Auswahl oder ohne Diagnose) -> selectedDiagnosis-Prop oder leer
         if (editingCard?.diagnosis_status) {
             setSelectedDiagnosisState(editingCard.diagnosis_status)
         } else {
@@ -138,23 +148,13 @@ export default function VersorgungModal({
         }
 
         if (editingCard) {
-            let materialienArray: string[] = []
-            if (typeof editingCard.materialien === 'string') {
-                materialienArray = editingCard.materialien
-                    .split(/\n|,/)
-                    .map(m => m.trim())
-                    .filter(m => m.length > 0)
-            } else if (Array.isArray(editingCard.materialien)) {
-                materialienArray = editingCard.materialien
-            }
-
             setForm({
                 name: editingCard.name,
                 rohlingHersteller: editingCard.rohlingHersteller,
                 artikelHersteller: editingCard.artikelHersteller,
                 artNr: editingCard.artNr,
                 versorgung: editingCard.versorgung,
-                materialien: materialienArray,
+                materialien: parseMaterialien(editingCard.materialien),
                 laenge: editingCard.laenge,
             })
         } else {
@@ -199,7 +199,6 @@ export default function VersorgungModal({
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
-        setError(null)
         setSuccess(null)
 
         try {
@@ -246,65 +245,72 @@ export default function VersorgungModal({
             }, 100)
         } catch (error: any) {
             console.error('Error saving versorgung:', error)
-
             const errorMessage = error.response?.data?.message || `Failed to ${editingCard ? 'update' : 'create'} versorgung. Please try again.`
-            setError(errorMessage)
             toast.error(errorMessage)
         } finally {
             setIsLoading(false)
         }
     }
 
+    const fetchSingleVersorgung = useCallback(async (versorgungId: number | string) => {
+        if (!versorgungId) return
+        try {
+            setIsFetchingSingleVersorgung(true)
+            const response = await getSingleStorageById(String(versorgungId))
+            const versorgungData = response?.data || response
+            if (versorgungData) {
+                setForm({
+                    name: versorgungData.name || '',
+                    rohlingHersteller: versorgungData.rohlingHersteller || '',
+                    artikelHersteller: versorgungData.artikelHersteller || '',
+                    artNr: versorgungData.artNr || '',
+                    versorgung: versorgungData.versorgung || '',
+                    materialien: parseMaterialien(versorgungData.material ?? versorgungData.materialien),
+                    laenge: versorgungData.laenge || '',
+                })
+
+                setSelectedDiagnosisState(versorgungData.diagnosis_status || selectedDiagnosis || '')
+                setPendingStoreId(versorgungData.storeId || null)
+            }
+        } catch (err) {
+
+            toast.error('Versorgungsdetails konnten nicht geladen werden')
+        } finally {
+            setIsFetchingSingleVersorgung(false)
+        }
+    }, [selectedDiagnosis])
+
+    useEffect(() => {
+        if (!pendingStoreId) return
+        const product = storageProducts.find(product => product.id === pendingStoreId)
+        if (product) {
+            setSelectedProduct(product)
+            setPendingStoreId(null)
+        }
+    }, [pendingStoreId, storageProducts])
+
     // Effects
     useEffect(() => {
         if (open) {
             resetForm()
             fetchStorageProducts()
+            if (editingCard?.id) {
+                fetchSingleVersorgung(editingCard.id)
+            }
         } else {
             // Clean up states when modal closes
-            setError(null)
             setSuccess(null)
             setIsLoading(false)
             setSelectedProduct(null)
             setSelectedDiagnosisState('')
         }
-    }, [editingCard, open, resetForm])
-
-    // Render Functions
-    const renderProductDropdown = () => (
-        <div>
-            <label className="font-bold mb-1 block">Produkt aus Lager auswählen</label>
-            <div className="relative">
-                <select
-                    value={selectedProduct?.id || ''}
-                    onChange={(e) => {
-                        const productId = e.target.value
-                        const product = storageProducts.find(p => p.id === productId)
-                        if (product) {
-                            handleProductSelect(product)
-                        }
-                    }}
-                    className="border p-2 rounded w-full"
-                    disabled={isLoadingProducts}
-                >
-                    <option value="">
-                        {isLoadingProducts ? 'Lade Produkte...' : 'Produkt auswählen'}
-                    </option>
-                    {storageProducts.map((product) => (
-                        <option key={product.id} value={product.id}>
-                            {product.produktname} - {product.artikelnummer}
-                        </option>
-                    ))}
-                </select>
-            </div>
-        </div>
-    )
+    }, [editingCard, open, resetForm, fetchSingleVersorgung])
 
     const renderSubmitButton = () => (
         <button
             type="submit"
-            disabled={isLoading}
-            className={`px-6 cursor-pointer py-2 rounded-full text-lg ${isLoading
+            disabled={isLoading || isFetchingSingleVersorgung}
+            className={`px-6 cursor-pointer py-2 rounded-full text-lg ${(isLoading || isFetchingSingleVersorgung)
                 ? 'bg-gray-400 text-white cursor-not-allowed'
                 : 'bg-black text-white hover:bg-gray-800'
                 }`}
@@ -332,8 +338,17 @@ export default function VersorgungModal({
                 </DialogHeader>
 
                 <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 overflow-hidden">
-                    {/* Product Selection Dropdown */}
-                    {renderProductDropdown()}
+                    <ProductSelector
+                        products={storageProducts}
+                        isLoading={isLoadingProducts}
+                        selectedProductId={selectedProduct?.id || ''}
+                        onSelect={(productId) => {
+                            const product = storageProducts.find(p => p.id === productId)
+                            if (product) {
+                                handleProductSelect(product)
+                            }
+                        }}
+                    />
 
                     {/* Basic Information */}
                     {/* <input
@@ -378,83 +393,19 @@ export default function VersorgungModal({
                         required
                     />
 
-                    {/* Materialien - Tag Input */}
-                    <div>
-                        <label className="font-bold mb-2 block">Materialien</label>
+                    <MaterialienInput
+                        materialien={form.materialien}
+                        inputValue={materialienInput}
+                        onInputChange={setMaterialienInput}
+                        onAdd={handleAddMaterialTag}
+                        onRemove={handleRemoveMaterialTag}
+                        onKeyDown={handleMaterialienKeyDown}
+                    />
 
-                        {/* Display added materials as tags */}
-                        {form.materialien.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mb-2">
-                                {form.materialien.map((material, index) => (
-                                    <div
-                                        key={index}
-                                        className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full"
-                                    >
-                                        <span>{material}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveMaterialTag(index)}
-                                            className="text-blue-600 hover:text-blue-900 font-bold"
-                                        >
-                                            ×
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {/* Single input field for adding materials */}
-                        <div className="flex gap-2">
-                            <input
-                                type="text"
-                                value={materialienInput}
-                                onChange={(e) => setMaterialienInput(e.target.value)}
-                                onKeyDown={handleMaterialienKeyDown}
-                                placeholder="Material eingeben (Enter oder Komma drücken zum Hinzufügen)"
-                                className="border p-2 rounded flex-1"
-                            />
-                            <button
-                                type="button"
-                                onClick={handleAddMaterialTag}
-                                className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800"
-                            >
-                                Hinzufügen
-                            </button>
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Drücken Sie Enter oder Komma nach jedem Material
-                        </p>
-                    </div>
-
-                    {/* Diagnosis Dropdown - Available for all categories */}
-                    <div>
-                        <label className="font-bold mb-1 block">Diagnose (Optional)</label>
-                        <select
-                            name="diagnosis"
-                            value={selectedDiagnosisState}
-                            onChange={(e) => {
-                                setSelectedDiagnosisState(e.target.value)
-                            }}
-                            className="border p-2 rounded w-full"
-                        >
-                            <option value="">Keine Diagnose auswählen</option>
-                            <option value="PLANTARFASZIITIS">Plantarfasziitis</option>
-                            <option value="FERSENSPORN">Fersensporn</option>
-                            <option value="SPREIZFUSS">Spreizfuß</option>
-                            <option value="SENKFUSS">Senkfuß</option>
-                            <option value="PLATTFUSS">Plattfuß</option>
-                            <option value="HOHLFUSS">Hohlfuß</option>
-                            <option value="KNICKFUSS">Knickfuß</option>
-                            <option value="KNICK_SENKFUSS">Knick-Senkfuß</option>
-                            <option value="HALLUX_VALGUS">Hallux valgus</option>
-                            <option value="HALLUX_RIGIDUS">Hallux rigidus</option>
-                            <option value="HAMMERZEHEN_KRALLENZEHEN">Hammerzehen / Krallenzehen</option>
-                            <option value="MORTON_NEUROM">Morton-Neurom</option>
-                            <option value="FUSSARTHROSE">Fußarthrose</option>
-                            <option value="STRESSFRAKTUREN_IM_FUSS">Stressfrakturen im Fußbereich</option>
-                            <option value="DIABETISCHES_FUSSSYNDROM">Diabetisches Fußsyndrom</option>
-                        </select>
-                    </div>
+                    <DiagnosisSelector
+                        value={selectedDiagnosisState}
+                        onChange={setSelectedDiagnosisState}
+                    />
 
                     <DialogFooter>
                         {renderSubmitButton()}

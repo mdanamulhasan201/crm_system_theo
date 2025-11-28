@@ -21,6 +21,9 @@ export const getAllStorages = async () => {
 };
 
 
+
+
+
 // get product history 
 export const getProductHistory = async (productId: string, page: number = 1, limit: number = 10) => {
     try {

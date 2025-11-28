@@ -41,4 +41,14 @@ export const deleteVersorgung = async (id: string) => {
     }
 }
 
+// get single versorgung by id
+export const getSingleStorageById = async (storageId: string) => {
+    try {
+        const response = await axiosClient.get(`/versorgungen/single/${storageId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
 
