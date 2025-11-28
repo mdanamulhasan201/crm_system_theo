@@ -304,8 +304,6 @@ export default function Auswahl() {
                 category={modalCategory}
                 editingCard={editingCard}
                 onSubmit={handleModalSubmit}
-                isAuswahl={true}
-                onCategoryChange={setModalCategory}
                 selectedDiagnosis={diagnosisMapping[selectedCategory]}
             />
 
