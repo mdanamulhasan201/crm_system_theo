@@ -1,4 +1,4 @@
-import { LastScanRow } from './Tables/types';
+import { LastScanRow } from './types';
 
 export const formatDate = (date?: string | null, options?: Intl.DateTimeFormatOptions) => {
     if (!date) return '—';
