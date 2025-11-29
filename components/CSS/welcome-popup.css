@@ -1,0 +1,95 @@
+.dev-popup-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.25);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.dev-popup-card {
+  background: linear-gradient(to bottom, #ffffff, #f9fdfb);
+  border-radius: 20px;
+  padding: 40px 30px;
+  text-align: center;
+  position: relative;
+  width: 90%;
+  max-width: 650px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+}
+
+.dev-popup-image {
+  width: 330px;
+  height: auto;
+  margin: 0 auto 20px;
+}
+
+.dev-popup-title {
+font-family: Inter;
+font-weight: 700;
+font-style: Bold;
+font-size: 32px;
+leading-trim: NONE;
+line-height: 100%;
+letter-spacing: 0%;
+text-align: center;
+vertical-align: middle;
+
+  color: #1b4332;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+
+.dev-popup-title span {
+  color: #1b4332;
+}
+
+.dev-popup-text {
+  font-size: 15px;
+  color: #64748B;
+  margin-bottom: 25px;
+  line-height: 1.6;
+}
+
+.dev-popup-button {
+  background: #28a745;
+  border: none;
+  color: white;
+  padding: 12px 35px;
+  border-radius: 30px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+  transition: all 0.3s ease;
+}
+
+.dev-popup-button:hover {
+  background: #218838;
+}
+
+.dev-popup-footer {
+  font-size: 13px;
+  color: #64748B;
+  margin-top: 20px;
+}
+
+.dev-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: #64748B;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.dev-close-btn:hover {
+  color: #64748B;
+}

@@ -1,0 +1,202 @@
+import React   from "react"
+import type { GroupDef, OptionDef, OptionInputsState } from "./Types"
+export function InlineLabelWithInputs({
+  groupId,
+  option,
+  values,
+  onChange,
+}: {
+  groupId: string
+  option: OptionDef
+  values: string[]
+  onChange: (idx: number, val: string) => void
+}) {
+  const normalized = normalizeUnderscores(option.label)
+  const parts = normalized.split("___")
+ 
+  const restrictNumber = (value: string): string => {
+ 
+    const cleaned = value.replace(/[^\d.,]/g, "")
+    if (cleaned === "") return ""
+ 
+    const sepMatch = cleaned.match(/[.,]/)
+    const sepIndex = sepMatch ? sepMatch.index ?? -1 : -1
+    const intPartRaw = sepIndex >= 0 ? cleaned.slice(0, sepIndex) : cleaned
+    const intPart = intPartRaw.replace(/\D/g, "").slice(0, 2)
+    if (sepIndex === -1) {
+ 
+      return intPart
+    }
+    const decPartRaw = cleaned.slice(sepIndex + 1)
+    const decPart = decPartRaw.replace(/\D/g, "").slice(0, 2)
+ 
+    return `${intPart}.${decPart}`
+  } 
+  const isNumericAt = (i: number): boolean => {
+    if (groupId === "zehenelemente") return false
+    const prev = parts[i] ?? ""
+    const next = parts[i + 1] ?? "" 
+    if (/\bmm\b/i.test(prev) || /\bmm\b/i.test(next)) return true
+    return false
+  }
+  return (
+    <span>
+      {parts.map((part, idx) => (
+        <React.Fragment key={idx}>
+          <span>{part}</span>
+          {idx < parts.length - 1 && (
+            (() => {
+              const numeric = isNumericAt(idx)
+              const val = values[idx] ?? ""
+              return (
+                <input
+                  type={numeric ? "number" : "text"}
+                  className={`inline-input ${numeric ? "" : "inline-input-wide"}`}
+                  aria-label={`Eingabefeld ${idx + 1} für ${option.label}`}
+                  value={val}
+                  onChange={(e) => onChange(idx, numeric ? restrictNumber(e.target.value) : e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onFocus={(e) => e.stopPropagation()}
+                  inputMode={numeric ? "decimal" : undefined}
+                  step={numeric ? "0.01" : undefined}
+                  min={numeric ? 0 : undefined}
+                  placeholder={numeric ? "_ _ _" : "_ _ _ _ _ _ _ _ _ _ _ _ _ _ _"}
+                />
+              )
+            })()
+          )}
+        </React.Fragment>
+      ))}
+    </span>
+  )
+}
+
+export function OptionGroup({
+  def,
+  selected,
+  onSelect,
+  optionInputs,
+  setOptionInputs,
+}: {
+  def: GroupDef
+  selected: string | null
+  onSelect: (optionId: string | null) => void
+  optionInputs: OptionInputsState
+  setOptionInputs: React.Dispatch<React.SetStateAction<OptionInputsState>>
+}) {
+  const handleSelect = (optId: string) => {
+    onSelect(optId)
+  }
+
+  const handleDoubleClick = () => {
+    onSelect(null)
+  }
+
+  const getOptionInlineCount = (label: string) => {
+    const norm = normalizeUnderscores(label)
+    return Math.max(0, norm.split("___").length - 1)
+  }
+ 
+  React.useEffect(() => {
+    def.options.forEach((opt) => {
+      const placeholderCount = getOptionInlineCount(opt.label)
+      if (placeholderCount > 0) {
+        const current = optionInputs[def.id]?.[opt.id] ?? []
+        if (current.length !== placeholderCount) {
+          setOptionInputs((prev) => {
+            const prevGroup = prev[def.id] ?? {}
+            const nextValues = Array.from({ length: placeholderCount }, (_, i) => current[i] ?? "")
+            return {
+              ...prev,
+              [def.id]: {
+                ...prevGroup,
+                [opt.id]: nextValues,
+              },
+            }
+          })
+        }
+      }
+    })
+ 
+  }, [def, optionInputs, setOptionInputs])
+
+  return (
+    <div
+      className="display-f-start margin-b-3"
+      role="radiogroup"
+      aria-label={def.question}
+      onDoubleClick={handleDoubleClick}
+    >
+      <div className="general-text">{def.question}</div>
+      <div className="display-f-start">
+        {def.options.map((opt) => {
+          const isChecked = selected === opt.id
+          const placeholderCount = getOptionInlineCount(opt.label)
+          const inputsForOpt = optionInputs[def.id]?.[opt.id] ?? Array.from({ length: placeholderCount }, () => "")
+
+          const inputId = `opt-${def.id}-${opt.id}`
+          return (
+            <div
+              key={opt.id}
+              className="checkbox-label"
+              onDoubleClick={(e) => {
+                e.stopPropagation()
+                onSelect(null)
+              }}
+            >
+              <input
+                id={inputId}
+                type="checkbox"
+                className="checkbox-input"
+                checked={isChecked}
+                onChange={() => handleSelect(opt.id)}
+                aria-label={opt.label}
+              />
+              {placeholderCount > 0 ? (
+                <div
+                  className="option-label-text"
+                  onClick={() => handleSelect(opt.id)}
+                  role="button"
+                  aria-label={opt.label}
+                >
+                  <InlineLabelWithInputs
+                    groupId={def.id}
+                    option={opt}
+                    values={inputsForOpt}
+                    onChange={(idx, val) =>
+                      setOptionInputs((prev) => ({
+                        ...prev,
+                        [def.id]: {
+                          ...(prev[def.id] ?? {}),
+                          [opt.id]: inputsForOpt.map((v, i) => (i === idx ? val : v)),
+                        },
+                      }))
+                    }
+                  />
+                </div>
+              ) : (
+                <label htmlFor={inputId} className="option-label-text">
+                  {opt.label}
+                </label>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+
+export function parseEuroFromText(txt: string): number {
+  const match = txt.match(/(\d{1,3}(?:[.,]\d{2})?)\s*€/)
+  if (!match) return 0
+  const raw = match[1].replace(/\./g, "").replace(",", ".")
+  const n = Number(raw)
+  return Number.isFinite(n) ? n : 0
+}
+
+export function normalizeUnderscores(txt: string): string {
+  return txt.replace(/_{3,}/g, "___")
+}
