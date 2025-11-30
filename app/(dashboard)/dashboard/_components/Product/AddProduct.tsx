@@ -41,6 +41,8 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
     const isOpen = open !== undefined ? open : showAddProductModal;
     const setOpen = onOpenChange || setShowAddProductModal;
     const [isPrefilling, setIsPrefilling] = useState(false)
+    const [increaseAllSizesInput, setIncreaseAllSizesInput] = useState<string>('');
+    const [cumulativeIncreaseValue, setCumulativeIncreaseValue] = useState<number>(0);
     const [newProduct, setNewProduct] = useState<NewProduct>({
         Produktname: '',
         Hersteller: '',
@@ -78,6 +80,34 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 }
             }
         }));
+    };
+    const handleIncreaseAllSizes = () => {
+        if (!increaseAllSizesInput || increaseAllSizesInput.trim() === '') {
+            return;
+        }
+
+        const numValue = parseInt(increaseAllSizesInput) || 0;
+        if (numValue <= 0) return;
+
+        // Update all sizes by adding the entered value
+        setNewProduct(prev => {
+            const updatedSizeQuantities = { ...prev.sizeQuantities };
+            Object.keys(updatedSizeQuantities).forEach(size => {
+                const currentQuantity = updatedSizeQuantities[size]?.quantity || 0;
+                updatedSizeQuantities[size] = {
+                    ...updatedSizeQuantities[size],
+                    quantity: currentQuantity + numValue
+                };
+            });
+            return {
+                ...prev,
+                sizeQuantities: updatedSizeQuantities
+            };
+        });
+
+        // Update cumulative value and clear input for next entry
+        setCumulativeIncreaseValue(prev => prev + numValue);
+        setIncreaseAllSizesInput('');
     };
     const handleAddProduct = async () => {
         try {
@@ -134,6 +164,8 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 selling_price: 0,
                 sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
             });
+            setIncreaseAllSizesInput('');
+            setCumulativeIncreaseValue(0);
         } catch (err) {
             console.error('Failed to create product:', err);
             // Show error toast
@@ -168,7 +200,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                         }
                     });
                 }
-                
+
                 setNewProduct({
                     Produktname: product.produktname,
                     Hersteller: product.hersteller,
@@ -177,10 +209,13 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                     minStockLevel: product.mindestbestand,
                     purchase_price: product.purchase_price,
                     selling_price: product.selling_price,
-                    sizeQuantities: Object.keys(convertedSizeQuantities).length > 0 
-                        ? convertedSizeQuantities 
+                    sizeQuantities: Object.keys(convertedSizeQuantities).length > 0
+                        ? convertedSizeQuantities
                         : Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
                 });
+                // Reset increase all sizes field when editing
+                setIncreaseAllSizesInput('');
+                setCumulativeIncreaseValue(0);
             } finally {
                 setIsPrefilling(false)
             }
@@ -201,7 +236,9 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 purchase_price: 0,
                 selling_price: 0,
                 sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
-            })
+            });
+            setIncreaseAllSizesInput('');
+            setCumulativeIncreaseValue(0);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
@@ -284,11 +321,42 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                             </div>
                         </div>
 
-                        {/* Row 4: Mindestbestand */}
-                        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-                            <div className="md:w-1/2">
+                        {/* Row 4: Mindestbestand and Alle Größen um X erhöhen */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
                                 <label className="block text-sm font-medium mb-1">Mindestbestand</label>
                                 <Input type="number" min={0} value={newProduct.minStockLevel} onChange={e => handleNewProductChange('minStockLevel', parseInt(e.target.value) || 0)} required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">
+                                    Alle Größen um X erhöhen
+                                    {cumulativeIncreaseValue > 0 && (
+                                        <span className="ml-2 text-sm text-gray-500">(Gesamt: {cumulativeIncreaseValue})</span>
+                                    )}
+                                </label>
+                                <div className="flex gap-2">
+                                    <Input
+                                        type="number"
+                                        min={0}
+                                        value={increaseAllSizesInput}
+                                        onChange={e => setIncreaseAllSizesInput(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                handleIncreaseAllSizes();
+                                            }
+                                        }}
+                                        placeholder="Anzahl eingeben..."
+                                        className="flex-1"
+                                    />
+                                    <Button
+                                        type="button"
+                                        onClick={handleIncreaseAllSizes}
+                                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
+                                    >
+                                        Hinzufügen
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                         <div>

@@ -34,20 +34,22 @@ export default function ProfileImage({ src = null, onChange, editable = true }: 
     <div className=" flex flex-col items-center relative">
       <div className="relative mb-4">
         <div
-          className={`relative w-28 h-28 rounded-full bg-gray-100 flex items-center justify-center border-2 border-[#62A07C] overflow-hidden shadow-md group ${editable ? 'cursor-pointer' : 'cursor-default opacity-100' } transition-all duration-200`}
+          className={`relative w-28 h-28 rounded-full bg-gray-100 flex items-center justify-center border-2 border-[#62A07C] overflow-hidden shadow-md group ${editable ? 'cursor-pointer' : 'cursor-default opacity-100'} transition-all duration-200`}
           tabIndex={editable ? 0 : -1}
           onClick={() => { if (editable) fileInputRef.current?.click() }}
           onKeyPress={e => { if (editable && e.key === "Enter") fileInputRef.current?.click() }}
           title={editable ? "Logo hochladen" : "Bearbeiten aktivieren, um das Logo zu ändern"}
         >
           {logo ? (
-            <Image
-              width={100}
-              height={100}
-              src={logo}
-              alt="Logo Preview"
-              className="w-full h-full object-cover"
-            />
+            <div className="w-20 h-full p-2">
+              <Image
+                width={500}
+                height={500}
+                src={logo}
+                alt="Logo Preview"
+                className="w-full h-full "
+              />
+            </div>
           ) : (
             <span className="text-gray-300 text-4xl">+</span>
           )}
