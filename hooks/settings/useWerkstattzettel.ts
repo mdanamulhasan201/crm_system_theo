@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { searchEmployee, createWerkstattzettel } from '@/apis/werkstattzettelApis';
+import { searchEmployee, createWerkstattzettel, getWerkstattzettel, Werkstattzettel } from '@/apis/werkstattzettelApis';
 import useDebounce from '@/hooks/useDebounce';
 import toast from 'react-hot-toast';
 
@@ -17,8 +17,9 @@ interface Employee {
 interface WerkstattzettelSettings {
   mitarbeiter: string;
   mitarbeiterId: string;
-  werktage: number | undefined; // Changed to number (days)
+  werktage: number | undefined;
   abholstandort: "geschaeft" | "eigen";
+  pickupLocation: string;
   firmenlogo: "ja" | "nein";
   auftragSofort: "ja" | "manuell";
   versorgungsart: "ja" | "nein";
@@ -30,6 +31,7 @@ export const useWerkstattzettel = () => {
     mitarbeiterId: "",
     werktage: undefined,
     abholstandort: "geschaeft",
+    pickupLocation: "",
     firmenlogo: "ja",
     auftragSofort: "ja",
     versorgungsart: "ja",
@@ -41,10 +43,10 @@ export const useWerkstattzettel = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const debouncedSearch = useDebounce(employeeSearch, 300);
 
-  // Search employees when debounced search changes
   useEffect(() => {
     const searchEmployees = async () => {
       if (debouncedSearch.length < 2) {
@@ -63,7 +65,7 @@ export const useWerkstattzettel = () => {
       } catch (error) {
         console.error('Error searching employees:', error);
         setEmployees([]);
-        setShowSuggestions(true); // Still show dropdown to display "not found" message
+        setShowSuggestions(true);
       } finally {
         setIsSearching(false);
       }
@@ -71,6 +73,41 @@ export const useWerkstattzettel = () => {
 
     searchEmployees();
   }, [debouncedSearch]);
+
+  useEffect(() => {
+    const fetchWerkstattzettel = async () => {
+      try {
+        setIsLoading(true);
+        const response = await getWerkstattzettel();
+        const data = response?.data;
+
+        if (data && Object.keys(data).length > 0) {
+          const isGeschaeft = data.sameAsBusiness;
+          setSettings(prev => ({
+            ...prev,
+            mitarbeiterId: data.employeeId || "",
+            mitarbeiter: data.employeeName || "",
+            werktage: data.completionDays ? parseInt(data.completionDays) : undefined,
+            pickupLocation: data.pickupLocation || "",
+            abholstandort: isGeschaeft ? "geschaeft" : "eigen",
+            firmenlogo: data.showCompanyLogo !== undefined ? (data.showCompanyLogo ? "ja" : "nein") : "ja",
+            auftragSofort: data.autoShowAfterPrint !== undefined ? (data.autoShowAfterPrint ? "ja" : "manuell") : "ja",
+            versorgungsart: data.autoApplySupply !== undefined ? (data.autoApplySupply ? "ja" : "nein") : "ja",
+          }));
+
+          if (data.employeeName) {
+            setEmployeeSearch(data.employeeName);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching werkstattzettel:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchWerkstattzettel();
+  }, []);
 
   const handleEmployeeSelect = (employee: Employee) => {
     setSettings(prev => ({
@@ -80,8 +117,8 @@ export const useWerkstattzettel = () => {
     }));
     setEmployeeSearch(employee.employeeName);
     setShowSuggestions(false);
-    setEmployees([]); // Clear the employees list to close dropdown
-    setHasSearched(false); // Reset search state
+    setEmployees([]);
+    setHasSearched(false);
   };
 
   const handleEmployeeSearchChange = (value: string) => {
@@ -114,21 +151,52 @@ export const useWerkstattzettel = () => {
     setIsSaving(true);
 
     try {
-      const werkstattzettelData = {
+      const pickupLocation = typeof settings.pickupLocation === 'string'
+        ? settings.pickupLocation.trim()
+        : '';
+
+      const werkstattzettelData: Werkstattzettel = {
         employeeId: settings.mitarbeiterId || "",
-        completionDays: settings.werktage.toString(), // Send number of days as string
-        pickupLocation: settings.abholstandort === "geschaeft" ? "Geschäftsstandort" : "Eigene Definition",
+        completionDays: settings.werktage.toString(),
         sameAsBusiness: settings.abholstandort === "geschaeft",
         showCompanyLogo: settings.firmenlogo === "ja",
         autoShowAfterPrint: settings.auftragSofort === "ja",
-        autoApplySupply: settings.versorgungsart === "ja"
+        autoApplySupply: settings.versorgungsart === "ja",
+        ...(pickupLocation && { pickupLocation })
       };
 
       await createWerkstattzettel(werkstattzettelData);
+
       toast.success('Werkstattzettel-Einstellungen erfolgreich gespeichert!');
-    } catch (error) {
+
+      try {
+        const response = await getWerkstattzettel();
+        const updatedData = response?.data;
+        if (updatedData && Object.keys(updatedData).length > 0) {
+          const isGeschaeft = updatedData.sameAsBusiness;
+          setSettings(prev => ({
+            ...prev,
+            mitarbeiterId: updatedData.employeeId || "",
+            mitarbeiter: updatedData.employeeName || "",
+            werktage: updatedData.completionDays ? parseInt(updatedData.completionDays) : undefined,
+            pickupLocation: updatedData.pickupLocation || "",
+            abholstandort: isGeschaeft ? "geschaeft" : "eigen",
+            firmenlogo: updatedData.showCompanyLogo !== undefined ? (updatedData.showCompanyLogo ? "ja" : "nein") : "ja",
+            auftragSofort: updatedData.autoShowAfterPrint !== undefined ? (updatedData.autoShowAfterPrint ? "ja" : "manuell") : "ja",
+            versorgungsart: updatedData.autoApplySupply !== undefined ? (updatedData.autoApplySupply ? "ja" : "nein") : "ja",
+          }));
+
+          if (updatedData.employeeName) {
+            setEmployeeSearch(updatedData.employeeName);
+          }
+        }
+      } catch (fetchError) {
+        console.error('Error fetching updated data:', fetchError);
+      }
+    } catch (error: any) {
       console.error('Error saving werkstattzettel:', error);
-      toast.error('Fehler beim Speichern. Bitte versuchen Sie es erneut.');
+      const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Speichern. Bitte versuchen Sie es erneut.';
+      toast.error(errorMessage);
     } finally {
       setIsSaving(false);
     }
@@ -142,6 +210,7 @@ export const useWerkstattzettel = () => {
     showSuggestions,
     hasSearched,
     isSaving,
+    isLoading,
     handleEmployeeSelect,
     handleEmployeeSearchChange,
     updateSetting,

@@ -1,7 +1,6 @@
 "use client";
-import React, { useRef, useEffect } from "react";
+import { useRef, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -20,6 +19,7 @@ export default function WerkstattzettelPage() {
     showSuggestions,
     hasSearched,
     isSaving,
+    isLoading,
     handleEmployeeSelect,
     handleEmployeeSearchChange,
     updateSetting,
@@ -30,7 +30,6 @@ export default function WerkstattzettelPage() {
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Close suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -48,6 +47,17 @@ export default function WerkstattzettelPage() {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [setShowSuggestions]);
+
+  if (isLoading) {
+    return (
+      <div className="max-w-3xl mx-auto mt-10 font-sans">
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
+          <span className="ml-3 text-gray-600">Lade Einstellungen...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto mt-10 font-sans">
@@ -71,7 +81,6 @@ export default function WerkstattzettelPage() {
               }
             }}
             onBlur={() => {
-              // Small delay to allow click on suggestion before closing
               setTimeout(() => setShowSuggestions(false), 150);
             }}
             className="border border-gray-600"
@@ -83,7 +92,6 @@ export default function WerkstattzettelPage() {
           )}
         </div>
 
-        {/* Employee Suggestions Dropdown */}
         {showSuggestions && (
           <div
             ref={suggestionsRef}
@@ -102,7 +110,7 @@ export default function WerkstattzettelPage() {
                   key={employee.id}
                   className="px-4 py-3 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
                   onMouseDown={(e) => {
-                    e.preventDefault(); // Prevent input blur
+                    e.preventDefault();
                     handleEmployeeSelect(employee);
                   }}
                 >
@@ -123,7 +131,6 @@ export default function WerkstattzettelPage() {
           </div>
         )}
 
-        {/* Selected Employee Display */}
         {settings.mitarbeiter && (
           <div className="mt-2 p-2 bg-gray-50 rounded-md">
             <span className="text-sm text-gray-600">Ausgewählter Mitarbeiter: </span>
@@ -132,7 +139,6 @@ export default function WerkstattzettelPage() {
         )}
       </div>
 
-      {/* Fertigstellungsdatum Days Dropdown */}
       <div className="mb-6">
         <label className="font-semibold block mb-2">
           Standardberechnung des Fertigstellungsdatums
@@ -154,24 +160,29 @@ export default function WerkstattzettelPage() {
         </Select>
       </div>
 
-      {/* Abholstandorte */}
       <div className="mb-8">
         <label className="font-semibold block mb-2">Abholstandorte</label>
         <div className="flex gap-8">
           <label className="flex items-center gap-2 cursor-pointer">
             <input
-              type="checkbox"
+              type="radio"
               checked={settings.abholstandort === "geschaeft"}
-              onChange={() => updateSetting('abholstandort', "geschaeft")}
+              onChange={() => {
+                updateSetting('abholstandort', "geschaeft");
+                updateSetting('pickupLocation', "");
+              }}
               className="w-6 h-6 accent-black"
             />
             Dieselben wie Geschäftsstandorte
           </label>
           <label className="flex items-center gap-2 cursor-pointer">
             <input
-              type="checkbox"
+              type="radio"
               checked={settings.abholstandort === "eigen"}
-              onChange={() => updateSetting('abholstandort', "eigen")}
+              onChange={() => {
+                updateSetting('abholstandort', "eigen");
+                updateSetting('pickupLocation', "");
+              }}
               className="w-6 h-6 accent-black"
             />
             Eigene definieren
@@ -179,7 +190,6 @@ export default function WerkstattzettelPage() {
         </div>
       </div>
 
-      {/* Firmenlogo anzeigen */}
       <div className="mb-8">
         <div className="font-semibold mb-2">
           Soll das Firmenlogo auf dem Werkstattzettel angezeigt werden (empfohlen)?
@@ -206,7 +216,6 @@ export default function WerkstattzettelPage() {
         </div>
       </div>
 
-      {/* Auftrag nach Drucken sofort anzeigen */}
       <div className="mb-8">
         <div className="font-semibold mb-2">
           Nach dem Drucken wird der Auftrag sofort in der Auftragsübersicht angezeigt (empfohlen).
@@ -259,7 +268,7 @@ export default function WerkstattzettelPage() {
           </label>
         </div>
       </div>
-      {/* Save Button */}
+
       <div className="mt-8">
         <button
           onClick={saveWerkstattzettel}

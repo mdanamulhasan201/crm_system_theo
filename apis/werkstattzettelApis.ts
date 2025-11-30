@@ -1,9 +1,9 @@
 import axiosClient from "@/lib/axiosClient";
 
-interface Werkstattzettel {
+export interface Werkstattzettel {
     employeeId: string;
     completionDays: string;
-    pickupLocation: string;
+    pickupLocation?: string;
     sameAsBusiness: boolean;
     showCompanyLogo: boolean;
     autoShowAfterPrint: boolean;
@@ -20,10 +20,18 @@ export const searchEmployee = async (page: number, limit: number, search: string
     }
 }
 
-// create werkstattzettel /workshop-note/set
 export const createWerkstattzettel = async (werkstattzettel: Werkstattzettel) => {
     try {
         const response = await axiosClient.post(`/workshop-note/set`, werkstattzettel);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+export const getWerkstattzettel = async () => {
+    try {
+        const response = await axiosClient.get(`/workshop-note/get`);
         return response.data;
     } catch (error) {
         throw error;
