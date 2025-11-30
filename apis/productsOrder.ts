@@ -126,18 +126,6 @@ export const customOrderCreate = async (customerId: string, payload: Record<stri
 }
 
 
-// get einlagen-in-produktion  /customer-orders/einlagen-in-produktion
-export const getEinlagenInProduktion = async () => {
-    try {
-        const response = await axiosClient.get('/customer-orders/einlagen-in-produktion');
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-}
-
-
-
 // delete group order 
 export const deleteGroupOrder = async (orderIds: string[]) => {
     try {

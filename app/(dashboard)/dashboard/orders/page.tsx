@@ -4,9 +4,8 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // import HighPriorityCard from '@/components/OrdersPage/HighPriorityCard/HighPriorityCard';
 import ProcessTable from '@/components/OrdersPage/ProccessTable/ProcessTable';
-import { OrdersProvider, useOrders } from '@/contexts/OrdersContext';
+import { OrdersProvider } from '@/contexts/OrdersContext';
 import { useRevenueOverview } from '@/hooks/orders/useRevenueOverview';
-import { getEinlagenInProduktion } from '@/apis/productsOrder';
 import AuftragssucheCard from '@/components/OrdersPage/AuftragssucheCard/AuftragssucheCard';
 
 export default function Orders() {
@@ -26,35 +25,6 @@ function OrdersPageContent() {
         shouldFilter ? selectedYear : undefined,
         shouldFilter ? selectedMonth : undefined
     );
-    const [einlagenInProduktion, setEinlagenInProduktion] = React.useState<number | null>(null);
-    const [ausgeführteEinlagenUmsatz, setAusgeführteEinlagenUmsatz] = React.useState<number | null>(null);
-    const [einlagenLoading, setEinlagenLoading] = React.useState<boolean>(false);
-    const [einlagenError, setEinlagenError] = React.useState<string | null>(null);
-    const { statsRefreshKey } = useOrders();
-
-    React.useEffect(() => {
-        let mounted = true;
-        (async () => {
-            try {
-                setEinlagenLoading(true);
-                setEinlagenError(null);
-                const res = await getEinlagenInProduktion();
-                if (!mounted) return;
-                if (res?.success) {
-                    setEinlagenInProduktion(typeof res.data === 'number' ? res.data : null);
-                    setAusgeführteEinlagenUmsatz(typeof res.totalPrice === 'number' ? res.totalPrice : null);
-                } else {
-                    setEinlagenError('Failed to load');
-                }
-            } catch (e) {
-                if (!mounted) return;
-                setEinlagenError('Failed to load');
-            } finally {
-                if (mounted) setEinlagenLoading(false);
-            }
-        })();
-        return () => { mounted = false; };
-    }, [statsRefreshKey]);
 
     const formatEuro = (amount: number) =>
         amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -163,7 +133,7 @@ function OrdersPageContent() {
                     <div className="flex-1 flex flex-col items-center justify-center  border-gray-300 py-6">
                         <div className="text-lg font-bold text-[#1E1F6D] mb-2 text-center">Einlagen in Produktion</div>
                         <div className="text-4xl font-extrabold">
-                            {einlagenLoading ? '…' : (einlagenError ? '-' : (einlagenInProduktion ?? '-'))}
+                            {loading ? '…' : (error ? '-' : (data?.count ?? '-'))}
                         </div>
                     </div>
                     <div className='border-r border-gray-300 hidden md:block'></div>
@@ -171,7 +141,7 @@ function OrdersPageContent() {
                     <div className="flex-1 flex flex-col items-center justify-center  border-gray-300 py-6">
                         <div className="text-lg font-bold text-[#62A07C] mb-2 text-center">Ausgeführte Einlagen<br /></div>
                         <div className="text-4xl font-extrabold">
-                            {einlagenLoading ? '…' : einlagenError ? '-' : ausgeführteEinlagenUmsatz}
+                            {loading ? '…' : error ? '-' : (data?.totalPrice ? (data.totalPrice) : '-')}
                         </div>
                     </div>
                     <div className='border-r border-gray-300 mr-5 hidden md:block'></div>

@@ -17,6 +17,8 @@ interface RevenueStatistics {
 interface RevenueData {
     chartData: ChartDataPoint[];
     statistics: RevenueStatistics;
+    count?: number;
+    totalPrice?: number;
 }
 
 interface ProcessedChartData {
