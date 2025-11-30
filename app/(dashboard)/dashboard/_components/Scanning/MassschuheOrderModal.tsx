@@ -408,7 +408,7 @@ export default function MassschuheOrderModal({
                     )}
 
                     {/* KONTROLLE & AKTIONEN Section */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                    {/* <div className="bg-white rounded-lg border border-gray-200 p-6">
                         <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">KONTROLLE & AKTIONEN</h3>
 
                         <div>
@@ -422,7 +422,7 @@ export default function MassschuheOrderModal({
                                 rows={4}
                             />
                         </div>
-                    </div>
+                    </div> */}
                 </div>
 
                 <DialogFooter className="flex gap-2 sm:gap-2">

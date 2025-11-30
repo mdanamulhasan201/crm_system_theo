@@ -86,23 +86,23 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                 >
                     {/* Header */}
                     <div style={{
-                        padding: '40px 40px 20px 40px',
+                        padding: '40px 0 20px 0',
                         position: 'absolute',
                         top: 0,
                         left: 0,
                         right: 0,
                         zIndex: 1
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start' }}>
-                            <div style={{ width: '70px', height: '120px', marginRight: '30px', flexShrink: 0 }}>
-
-                                {/* logo image */}
+                        <div style={{ display: 'flex', alignItems: 'flex-start', paddingLeft: '40px', paddingRight: '40px' }}>
+                            {/* logo image */}
+                            <div style={{ width: '100px', marginTop: '10px', height: '120px', marginRight: '30px', flexShrink: 0 }}>
                                 <img
-                                    src={data.partner?.image || "/images/pdfLogo.png"}
+                                    src={data.partner?.image || ""}
                                     alt={`${data.partner.busnessName || data.partner.name} Logo`}
                                     style={{ width: '100%', height: '100%', objectFit: 'contain' }}
                                 />
                             </div>
+                            {/* info section */}
                             <div style={{ flex: 1 }}>
                                 <div style={{ fontWeight: 'bold', fontSize: '20px', marginBottom: '12px', textAlign: 'left' }}>
                                     {data.customer?.vorname} {data.customer?.nachname || '-'}
@@ -254,11 +254,13 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                         Materialien
                                     </h3>
                                     <div style={{ marginBottom: '15px' }}>
-                                        <p style={{ margin: 0 }}> 
-                                            
-                                            {/* {data.product?.rohlingHersteller}  */}
-                                            
-                                            <span style={{ color: '#FF0000', fontWeight: 'bold' }}>Größe {data.customer?.recommendedSize?.size || '-'}</span></p>
+                                        <p style={{ margin: 0 }}>
+                                            {data.product?.name || '-'}
+                                            <span style={{ display: 'inline-block', width: 18 }}></span>
+                                            <span style={{ color: '#FF0000', fontWeight: 'bold' }}>
+                                                Größe {data.customer?.recommendedSize?.size || '-'}
+                                            </span>
+                                        </p>
                                     </div>
                                     {/* <div style={{ marginBottom: '15px' }}>
                                         <p style={{ margin: 0 }}>{data.product?.material || '-'}</p>
