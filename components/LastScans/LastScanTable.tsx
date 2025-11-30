@@ -125,6 +125,8 @@ export default function LastScanTable() {
                 return {
                     ...item,
                     latestScreener,
+
+                    kostenträger: item.kostenträger || item.Kostenträger || null,
                 };
             });
 
@@ -364,6 +366,7 @@ export default function LastScanTable() {
                     'Kunde': customerFullName || '—',
                     'Kundennummer': row.customerNumber ?? '—',
                     'Krankenkasse': row.krankenkasse?.trim() || '—',
+                    'Kostenträger': row.kostenträger?.trim() || '—',
                     'Kundentyp': kundentyp,
                     'Neuester Scan': latestScreenerDate ? formatDate(latestScreenerDate) : 'Kein Scan',
                     'Neuester Auftrag': newestOrderLabel,

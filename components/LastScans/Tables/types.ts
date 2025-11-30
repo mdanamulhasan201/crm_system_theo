@@ -25,6 +25,7 @@ export interface LastScanRow {
     wohnort?: string | null;
     customerNumber: number | string;
     krankenkasse?: string | null;
+    kostenträger?: string | null;
     kundentyp?: string | null;
     totalOrders?: number;
     completedOrders?: number;

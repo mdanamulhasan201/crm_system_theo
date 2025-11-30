@@ -27,6 +27,7 @@ export function LastScanTableRow({
     const latestScreenerDate = row.latestScreener?.createdAt ?? null;
     const customerFullName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim();
     const krankenkasse = row.krankenkasse?.trim() || '—';
+    const kostenträger = row.kostenträger?.trim() || '—';
     const kundentypBadges = getKundentypBadges(row);
     const orderEntries = getOrderEntries(row);
 
@@ -50,9 +51,21 @@ export function LastScanTableRow({
             </TableCell>
             <TableCell>{row.customerNumber ?? '—'}</TableCell>
             <TableCell>
-                <span className="inline-flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                    {krankenkasse}
-                </span>
+                <div className="flex flex-col gap-1">
+                    {krankenkasse !== '—' && (
+                        <span className="text-xs font-medium text-gray-700">
+                            {krankenkasse}
+                        </span>
+                    )}
+                    {kostenträger !== '—' && (
+                        <span className="text-xs font-medium text-gray-700">
+                            {kostenträger}
+                        </span>
+                    )}
+                    {krankenkasse === '—' && kostenträger === '—' && (
+                        <span className="text-gray-400">—</span>
+                    )}
+                </div>
             </TableCell>
             <TableCell>
                 <div className="flex flex-wrap gap-1">
