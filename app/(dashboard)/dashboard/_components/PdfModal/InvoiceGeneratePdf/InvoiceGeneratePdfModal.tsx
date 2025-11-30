@@ -81,14 +81,14 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId }: In
             <DialogContent className="max-w-md">
                 <DialogHeader>
                     <DialogTitle className="flex items-center justify-center space-x-3">
-                        <div className="w-8 h-8">
+                        {/* <div className="w-8 h-8">
                             <img
                                 src={orderData?.partner?.image }
                                 alt={`${orderData?.partner?.busnessName || orderData?.partner?.name || 'FeetFirst'} Logo`}
                                 className="w-full h-full object-contain"
                             />
-                        </div>
-                        <span>PDF Generation</span>
+                        </div> */}
+                        <span>Auftragszettel</span>
                     </DialogTitle>
                 </DialogHeader>
 
@@ -96,33 +96,33 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId }: In
                     <div className="flex items-center justify-center py-8">
                         <div className="text-center">
                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                            <p className="text-gray-600">Loading order data...</p>
+                            <p className="text-gray-600">Lade Auftragsdaten...</p>
                         </div>
                     </div>
                 ) : !orderData ? (
                     <div className="text-center py-8">
                         <FileText className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                        <h3 className="text-lg font-semibold text-gray-600 mb-2">No Order Data</h3>
-                        <p className="text-gray-500">Please provide an order ID to generate the invoice.</p>
+                        <h3 className="text-lg font-semibold text-gray-600 mb-2">Keine Auftragsdaten</h3>
+                        <p className="text-gray-500">Bitte geben Sie eine Auftrags-ID ein, um den Auftragszettel zu generieren.</p>
                     </div>
                 ) : (
                     <div className="space-y-6">
                         {/* Order Info */}
                         <div className="text-center">
                             <p className="text-gray-600">
-                                Customer: {orderData.customer.vorname} {orderData.customer.nachname}
+                                Kunde: {orderData.customer.vorname} {orderData.customer.nachname}
                             </p>
                             <p className="text-gray-600">
-                                Total: {orderData.totalPrice.toFixed(2)} €
+                            Preis: {orderData.totalPrice.toFixed(2)} €
                             </p>
                         </div>
 
                         {/* Instructions */}
-                        <div className="text-center">
+                        {/* <div className="text-center">
                             <p className="text-gray-700 mb-4">
-                                Download the PDF invoice or send it directly to your customer.
+                                Download the PDF invoice .
                             </p>
-                        </div>
+                        </div> */}
 
                         {/* Action Buttons */}
                         <div className="flex gap-4 justify-center ">

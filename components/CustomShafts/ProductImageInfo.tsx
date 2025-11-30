@@ -1,5 +1,5 @@
 'use client';
-import React, { useRef, useState } from 'react';
+import React from 'react';
 import Image from 'next/image';
 
 interface ProductImageInfoProps {
@@ -14,47 +14,21 @@ interface ProductImageInfoProps {
   setUploadedImage: (image: string | null) => void;
 }
 
-export default function ProductImageInfo({ shaft, uploadedImage, setUploadedImage }: ProductImageInfoProps) {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setUploadedImage(ev.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
+export default function ProductImageInfo({ shaft, uploadedImage }: ProductImageInfoProps) {
   return (
     <div className="flex flex-col md:flex-row gap-10 items-center justify-center">
       {/* Image */}
       <div className="w-full md:w-1/2 flex justify-center my-10">
-        <div
-          className="cursor-pointer w-full h-full"
-          onClick={() => fileInputRef.current?.click()}
-          title="Bild ändern"
-        >
-          <div className="w-full h-full">
-            <Image
-              src={uploadedImage || shaft.image}
-              alt={shaft.name}
-              width={1000}
-              height={1000}
-              className="w-[550px] h-full object-cover"
-              priority
-            />
-          </div>
+        <div className="w-full h-full">
+          <Image
+            src={uploadedImage || shaft.image}
+            alt={shaft.name}
+            width={1000}
+            height={1000}
+            className="w-[550px] h-full object-cover"
+            priority
+          />
         </div>
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          onChange={handleImageChange}
-          className="hidden"
-        />
       </div>
 
       {/* Product info section */}

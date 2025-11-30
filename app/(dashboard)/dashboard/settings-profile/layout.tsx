@@ -11,6 +11,7 @@ import {
     FootprintsIcon,
     Lock,
     Store,
+    HelpCircle,
 
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -98,6 +99,12 @@ const sidebarData = [
         icon: BiGlobe,
         label: "Sprache",
         href: "/dashboard/settings-profile/sprache"
+    },
+    {
+        id: "fragen",
+        icon: HelpCircle,
+        label: "Fragen",
+        href: "/dashboard/settings-profile/fragen"
     },
     // {
     //     id: "language",

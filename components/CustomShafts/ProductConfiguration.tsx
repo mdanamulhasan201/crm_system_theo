@@ -166,6 +166,7 @@ export default function ProductConfiguration({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">Passend zur Lederfarbe</SelectItem>
+                <SelectItem value="personal">Passendste Nahtfarbe nach Personal</SelectItem>
                 <SelectItem value="custom">Eigene Farbe angeben</SelectItem>
               </SelectContent>
             </Select>
