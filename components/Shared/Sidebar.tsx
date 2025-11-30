@@ -4,22 +4,18 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { IoClose, IoSearchOutline } from 'react-icons/io5';
 import {
-    HiCog,
-    HiCalendar,
-    HiChat,
+
     HiOutlineCube
 } from 'react-icons/hi';
 import { RxDashboard } from "react-icons/rx";
-import { HiMiniBars2, HiOutlineChatBubbleOvalLeft } from "react-icons/hi2";
+import {  HiOutlineChatBubbleOvalLeft } from "react-icons/hi2";
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
-import { FaShoePrints } from 'react-icons/fa';
 import { TbActivityHeartbeat, TbUsers } from 'react-icons/tb';
-import { HiDocumentText } from 'react-icons/hi';
+
 import type { IconType } from 'react-icons';
 import type { StaticImageData } from 'next/image';
-import { FiBarChart, FiShoppingBag, FiUserPlus } from 'react-icons/fi';
-import { PiFootprintsLight } from "react-icons/pi";
+import { FiBarChart, FiUserPlus } from 'react-icons/fi';
 import { GrCubes } from "react-icons/gr";
 import Einlagenauftrag from '@/public/images/dashboard/partner_sidebar/Einlagenaufträge.png';
 import Einstellungen from '@/public/images/dashboard/partner_sidebar/Einstellungen.png';
@@ -198,14 +194,14 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
 
             {/* Top Logo Section */}
             <div className={`py-5 flex items-center ${showLabels ? 'px-3 justify-between' : 'px-2 justify-center '}`}>
-                <div className={`${showLabels ? 'w-16 h-16' : 'w-10 h-10'}  p-2 flex items-center justify-center overflow-hidden bg-[#61A175]/15 rounded`}>
+                <div className={`${showLabels ? 'w-16 h-16' : 'w-12 h-12'}  p-2 flex items-center justify-center overflow-hidden bg-[#61A175]/15 rounded`}>
                     {user?.image ? (
                         <Image
                             src={user.image}
                             alt={user.name || 'User'}
                             width={showLabels ? 56 : 40}
                             height={showLabels ? 56 : 40}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain"
                         />
                     ) : (
                         showLabels ? (

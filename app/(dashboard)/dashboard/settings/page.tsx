@@ -108,8 +108,8 @@ export default function Settingss() {
 
             <Link href="/dashboard/users" className="block mb-8 w-full lg:w-[40%]">
                 <div className="flex items-center border-2 border-gray-600 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors p-4">
-                    <div className="border border-gray-300 rounded-md mr-4">
-                        <Image src={user?.image || ''} alt="user" width={100} height={100} className='w-full h-full object-cover rounded-md' />
+                    <div className="border border-gray-300 rounded-md mr-4 p-2 w-40 h-40">
+                        <Image src={user?.image || ''} alt="user" width={500} height={500} className='w-full h-full rounded-md' />
                     </div>
                     <div className='flex justify-between items-center w-full'>
                         <div>
@@ -147,7 +147,7 @@ export default function Settingss() {
                             </Link>
                         )}
 
-                     
+
                     </div>
                 ))}
             </div>
