@@ -60,14 +60,21 @@ export default function WerkstattzettelModal({
     }
   }, [isOpen, fetchPrices, prices.length])
 
-  // Get locations from scanData
-  const locations =
-    (scanData as any)?.partner?.hauptstandort && Array.isArray((scanData as any).partner.hauptstandort)
+  // Get workshopNote settings
+  const workshopNote = (scanData as any)?.workshopNote
+  const sameAsBusiness = workshopNote?.sameAsBusiness ?? true
+  
+  // Get locations based on sameAsBusiness
+  // If sameAsBusiness is true, use pickupLocation array from workshopNote
+  // Otherwise, use partner.hauptstandort as fallback
+  const locations = sameAsBusiness && Array.isArray(workshopNote?.pickupLocation) && workshopNote.pickupLocation.length > 0
+    ? workshopNote.pickupLocation
+    : (scanData as any)?.partner?.hauptstandort && Array.isArray((scanData as any).partner.hauptstandort)
       ? (scanData as any).partner.hauptstandort
       : []
 
   // Get completionDays for date calculations
-  const completionDays = (scanData as any)?.workshopNote?.completionDays
+  const completionDays = workshopNote?.completionDays
 
   const handleSave = async () => {
     if (!scanData?.id) {
@@ -177,6 +184,7 @@ export default function WerkstattzettelModal({
               isLocationDropdownOpen: form.isLocationDropdownOpen,
               onLocationDropdownChange: form.handleLocationDropdownChange,
               completionDays,
+              sameAsBusiness,
             }}
           />
 

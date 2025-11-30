@@ -44,6 +44,7 @@ interface CustomerInfoSectionData {
   locations: string[]
   isLocationDropdownOpen: boolean
   onLocationDropdownChange: (open: boolean) => void
+  sameAsBusiness?: boolean
 
   // Date calculations
   completionDays?: string | number
@@ -85,6 +86,7 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     locations,
     isLocationDropdownOpen,
     onLocationDropdownChange,
+    sameAsBusiness = true,
     completionDays,
   } = data
   const handleNameChange = (fullName: string) => {
@@ -188,14 +190,22 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
 
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">Geschäftstandort</Label>
-          <LocationDropdown
-            value={geschaeftsstandort}
-            locations={locations}
-            isOpen={isLocationDropdownOpen}
-            onOpenChange={onLocationDropdownChange}
-            onChange={onGeschaeftsstandortChange}
-            onSelect={onGeschaeftsstandortChange}
-          />
+          {sameAsBusiness ? (
+            <LocationDropdown
+              value={geschaeftsstandort}
+              locations={locations}
+              isOpen={isLocationDropdownOpen}
+              onOpenChange={onLocationDropdownChange}
+              onChange={onGeschaeftsstandortChange}
+              onSelect={onGeschaeftsstandortChange}
+            />
+          ) : (
+            <Input
+              placeholder="Geschäftstandort eingeben"
+              value={geschaeftsstandort}
+              onChange={(e) => onGeschaeftsstandortChange(e.target.value)}
+            />
+          )}
         </div>
 
         <div className="space-y-2">
