@@ -1,14 +1,20 @@
 'use client'
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect, useCallback, useRef } from 'react'
-import QuestionSection from '../Scanning/QuestionSection';
 import toast from 'react-hot-toast';
 import ImagePreviewModal from '@/components/CustomerModal/ImagePreviewModal';
 import { ScanData } from '@/types/scan';
 import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer';
 import ScanDataDisplay from '@/components/Shared/ScanDataDisplay';
+import EinlagenQuestions from '../Scanning/EinlagenQuestions';
+import MassschuheQuestions from '../Scanning/MassschuheQuestion';
 
-export default function ScannningDataPage({ scanData }: { scanData: ScanData }) {
+interface ScannningDataPageProps {
+    scanData: ScanData;
+    selectedForm?: 'einlagen' | 'massschuhe';
+}
+
+export default function ScannningDataPage({ scanData, selectedForm = 'einlagen' }: ScannningDataPageProps) {
     const router = useRouter();
     const [modalOpen, setModalOpen] = useState(false);
     const [modalImg, setModalImg] = useState<string | null>(null);
@@ -187,7 +193,7 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
             />
 
             <div className='flex flex-col xl:flex-row justify-between items-start mb-6 gap-4'>
-                <div className='w-full xl:w-7/12'>
+                <div className='w-full xl:w-8/12'>
                     <div className="flex items-center mb-4 md:mb-0">
                         <div className="font-bold text-xl capitalize">{displayData.vorname} {displayData.nachname}</div>
                     </div>
@@ -218,8 +224,12 @@ export default function ScannningDataPage({ scanData }: { scanData: ScanData }) 
                         )}
                     </ScanDataDisplay>
                 </div>
-                <div className='w-full xl:w-5/12'>
-                    <QuestionSection customer={displayData} />
+                <div className='w-full xl:w-4/12'>
+                    {selectedForm === 'einlagen' ? (
+                        <EinlagenQuestions customer={displayData} />
+                    ) : (
+                        <MassschuheQuestions customer={displayData} />
+                    )}
                 </div>
             </div>
 

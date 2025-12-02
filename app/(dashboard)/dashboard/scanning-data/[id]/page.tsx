@@ -79,7 +79,7 @@ export default function ScanningData() {
                     Back
                 </Button>
             </div>
-            <ScannningDataPage scanData={scanData} />
+            <ScannningDataPage scanData={scanData} selectedForm={selectedForm} />
             <hr className='my-10 border-gray-500' />
             {orderId && orderPrefillLoading && (
                 <div className="text-sm text-gray-500 mb-4">Auftrag wird geladen...</div>
