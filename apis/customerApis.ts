@@ -98,48 +98,7 @@ export const addCustomerVersorgung = async (customerId: string, versorgungId: st
 }
 
 
-// get einlagen question with option 
-export const getEinlagenQuestionWithOption = async (customerId: string) => {
-    try {
-        const response = await axiosClient.get(`/questions/insoles/${customerId}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-}
 
-// save einlagen question with option  
-export const saveEinlagenQuestionWithOptionByCustomerId = async (customerId: string, questionData: any) => {
-    try {
-        const response = await axiosClient.post(`/questions/insoles/${customerId}`, questionData);
-        return response.data;
-    } catch (error) {
-        console.error('API Error:', error);
-        throw error;
-    }
-}
-
-
-// get massschuhe question with option  
-export const getMassschuheQuestionWithOption = async (customerId: string) => {
-    try {
-        const response = await axiosClient.get(`/questions/shoes/${customerId}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-}
-
-// save massschuhe question with option  
-export const saveMassschuheQuestionWithOptionByCustomerId = async (customerId: string, questionData: any) => {
-    try {
-        const response = await axiosClient.post(`/questions/shoes/${customerId}`, questionData);
-        return response.data;
-    } catch (error) {
-
-        throw error;
-    }
-}
 
 export const searchCustomers = async (searchData: any, page: number, limit: number, name: string, email: string, phone: string) => {
     try {

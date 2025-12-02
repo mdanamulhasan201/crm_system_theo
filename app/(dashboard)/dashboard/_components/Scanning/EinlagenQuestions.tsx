@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { getEinlagenQuestionWithOption, saveEinlagenQuestionWithOptionByCustomerId } from "@/apis/customerApis";
+
 import toast from "react-hot-toast";
+import { getEinlagenQuestionWithOption, saveEinlagenQuestionWithOptionByCustomerId } from "@/apis/questionsApis";
 
 interface OptionType {
     id: number;
@@ -264,11 +265,10 @@ export default function EinlagenQuestions({ customer }: { customer: any }) {
                                     {nq.options.map(opt => (
                                         <label
                                             key={opt.id}
-                                            className={`flex items-center gap-2 text-sm rounded-md px-2 py-1 border ${
-                                                opt.current
-                                                    ? "border-blue-500 bg-blue-50 text-blue-800"
-                                                    : "border-gray-200 bg-white text-gray-800"
-                                            }`}
+                                            className={`flex items-center gap-2 text-sm rounded-md px-2 py-1 border ${opt.current
+                                                ? "border-blue-500 bg-blue-50 text-blue-800"
+                                                : "border-gray-200 bg-white text-gray-800"
+                                                }`}
                                         >
                                             <input
                                                 type="radio"
@@ -304,11 +304,10 @@ export default function EinlagenQuestions({ customer }: { customer: any }) {
                 {opts.map(opt => (
                     <label
                         key={opt.id}
-                        className={`flex items-center gap-2 rounded-md px-2 py-1 border ${
-                            opt.current
-                                ? "border-blue-500 bg-blue-50 text-blue-800"
-                                : "border-gray-200 bg-white text-gray-800"
-                        }`}
+                        className={`flex items-center gap-2 rounded-md px-2 py-1 border ${opt.current
+                            ? "border-blue-500 bg-blue-50 text-blue-800"
+                            : "border-gray-200 bg-white text-gray-800"
+                            }`}
                     >
                         <input
                             type={isMultiSelect ? "checkbox" : "radio"}
@@ -336,6 +335,18 @@ export default function EinlagenQuestions({ customer }: { customer: any }) {
     return (
         <div className="text-sm">
             <h1 className="text-xl font-semibold mb-3">Kundenspezifische Antworten – Einlagenfinder</h1>
+
+            {isLoading && sections.length === 0 && (
+                <div className="space-y-3 mb-4">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="animate-pulse space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-3/4" />
+                            <div className="h-3 bg-gray-100 rounded w-full" />
+                            <div className="h-3 bg-gray-100 rounded w-5/6" />
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {sections.length === 0 && !isLoading && (
                 <p className="text-sm text-gray-500">Keine Fragen gefunden.</p>
