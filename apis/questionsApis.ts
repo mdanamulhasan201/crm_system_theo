@@ -62,15 +62,6 @@ export const getAllQuestions = async () => {
 
 // question controller  questions/controll-questions 
 
-// pass in body
-// {
-//     "controlShoeQuestions": [6,7]
-// "controlInsolesQuestions": [2,3,7,6]
-
-
-    
-
-// }
 export const questionController = async (questionData: any) => {
     try {
         const response = await axiosClient.post(`/questions/controll-questions`, questionData);
@@ -80,5 +71,3 @@ export const questionController = async (questionData: any) => {
     }
 }
 
-
-// save question 

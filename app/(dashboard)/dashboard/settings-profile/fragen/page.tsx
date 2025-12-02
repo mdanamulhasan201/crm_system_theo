@@ -98,6 +98,40 @@ export default function FragenPage() {
         }
     };
 
+    const handleBulkToggle = async (enableAll: boolean) => {
+        if (isSaving || currentList.length === 0) return;
+        setIsSaving(true);
+        setPendingId(null);
+
+        try {
+            if (selectedType === "insoles") {
+                const updated = insoles.map(q => ({ ...q, active: enableAll }));
+                setInsoles(updated);
+                const activeIds = enableAll ? updated.map(q => q.id) : [];
+                await questionController({ controlInsolesQuestions: activeIds });
+            } else {
+                const updated = shoes.map(q => ({ ...q, active: enableAll }));
+                setShoes(updated);
+                const activeIds = enableAll ? updated.map(q => q.id) : [];
+                await questionController({ controlShoeQuestions: activeIds });
+            }
+            toast.success("Fragen-Einstellungen aktualisiert.");
+        } catch (error) {
+            toast.error("Fehler beim Aktualisieren der Fragen.");
+            try {
+                const res = (await getAllQuestions()) as QuestionsResponse;
+                if (res?.success && res.data) {
+                    setInsoles(res.data.insoles || []);
+                    setShoes(res.data.shoes || []);
+                }
+            } catch {
+                // ignore
+            }
+        } finally {
+        setIsSaving(false);
+        }
+    };
+
     return (
         <div className=" mt-10 font-sans">
             <h1 className="text-3xl font-semibold mb-2">Fragen</h1>
@@ -146,29 +180,59 @@ export default function FragenPage() {
                 )}
 
                 {!isLoading && currentList.length > 0 && (
-                    <div className="space-y-3">
-                        {currentList.map((q, index) => (
-                            <div
-                                key={`${selectedType}-${q.id}`}
-                                className="flex items-center justify-between border-b last:border-b-0 pb-2"
-                            >
-                                <div className="pr-4">
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {index + 1}.{" "}
-                                        {selectedType === "shoes" && "title" in q && q.title
-                                            ? `${(q as ShoeQuestion).title} – ${q.question}`
-                                            : q.question}
-                                    </p>
+                    <>
+                        <div className="space-y-3">
+                            {currentList.map((q, index) => (
+                                <div
+                                    key={`${selectedType}-${q.id}`}
+                                    className="flex items-center justify-between border-b last:border-b-0 pb-2"
+                                >
+                                    <div className="pr-4">
+                                        <p className="text-sm font-medium text-gray-900">
+                                            {index + 1}.{" "}
+                                            {selectedType === "shoes" && "title" in q && q.title
+                                                ? `${(q as ShoeQuestion).title} – ${q.question}`
+                                                : q.question}
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        checked={q.active}
+                                        disabled={isSaving && pendingId === q.id}
+                                        onCheckedChange={(checked) => handleToggle(q.id, checked)}
+                                        className="scale-90"
+                                    />
                                 </div>
-                                <Switch
-                                    checked={q.active}
-                                    disabled={isSaving && pendingId === q.id}
-                                    onCheckedChange={(checked) => handleToggle(q.id, checked)}
-                                    className="scale-90"
-                                />
+                            ))}
+                        </div>
+
+                        <div className="mt-5 pt-3 border-t border-dashed border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+                            <div className="flex flex-wrap gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-3 text-xs font-medium border-gray-300 bg-white hover:bg-gray-50"
+                                    onClick={() => handleBulkToggle(true)}
+                                    disabled={isSaving || currentList.every(q => q.active)}
+                                >
+                                    Alle aktivieren
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 px-3 text-xs font-medium border-gray-300 bg-white hover:bg-gray-50"
+                                    onClick={() => handleBulkToggle(false)}
+                                    disabled={isSaving || currentList.every(q => !q.active)}
+                                >
+                                    Alle deaktivieren
+                                </Button>
                             </div>
-                        ))}
-                    </div>
+                            <span className="text-[11px] text-gray-500">
+                                {currentList.filter(q => q.active).length} von {currentList.length} Fragen aktiviert
+                            </span>
+                        </div>
+                    </>
                 )}
             </div>
         </div>
