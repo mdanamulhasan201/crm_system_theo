@@ -15,7 +15,11 @@ import { LastScanPagination } from '@/components/LastScans/Tables/LastScanPagina
 import { formatDate, getOrderStatusLabel } from '@/components/LastScans/Tables/utils';
 import { DateRangeFilter, LastScanRow, OrderStatusFilter, LatestScreener } from '@/components/LastScans/Tables/types';
 
-export default function LastScanTable() {
+interface LastScanTableProps {
+    onCustomerDeleted?: () => void;
+}
+
+export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps) {
     const router = useRouter();
 
     const [rows, setRows] = React.useState<LastScanRow[]>([]);
@@ -208,6 +212,11 @@ export default function LastScanTable() {
                 setCustomerToDelete(null);
                 // Reload the data
                 load();
+
+                // Notify parent so other views (e.g. LastScans carousel) can update
+                if (onCustomerDeleted) {
+                    onCustomerDeleted();
+                }
             }
         } catch (error: any) {
             if (error?.response?.data) {
