@@ -4,6 +4,8 @@ import { createProduct, getAllStorages, getSingleStorage, updateStorage } from '
 interface SizeData {
     length: number;
     quantity: number;
+    // Optional per-size minimum quantity, sent to backend as `mindestmenge`
+    mindestmenge?: number;
 }
 
 interface ProductFormData {

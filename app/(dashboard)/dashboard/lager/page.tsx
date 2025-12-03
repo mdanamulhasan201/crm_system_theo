@@ -32,6 +32,8 @@ import PerformerData from '@/components/LagerChart/PerformerData'
 interface SizeData {
     length: number;
     quantity: number;
+    mindestmenge?: number;
+    warningStatus?: string;
 }
 
 interface Product {
@@ -145,7 +147,16 @@ export default function Lager() {
 
     // Stock level helpers
     const hasLowStock = (product: Product) => {
-        return Object.entries(product.sizeQuantities).some(([, sizeData]) => {
+        return Object.values(product.sizeQuantities).some((sizeData) => {
+            if (typeof sizeData === 'object' && sizeData !== null) {
+                // Prefer backend warningStatus if available
+                if (sizeData.warningStatus) {
+                    return sizeData.warningStatus.includes('Niedriger Bestand');
+                }
+                // Fallback to comparison with product.minStockLevel
+                const quantity = getQuantity(sizeData);
+                return quantity <= product.minStockLevel && quantity > 0;
+            }
             const quantity = getQuantity(sizeData);
             return quantity <= product.minStockLevel && quantity > 0;
         });
@@ -154,10 +165,24 @@ export default function Lager() {
     const getLowStockSizes = (product: Product) => {
         return Object.entries(product.sizeQuantities)
             .filter(([, sizeData]) => {
+                if (typeof sizeData === 'object' && sizeData !== null) {
+                    if (sizeData.warningStatus) {
+                        return sizeData.warningStatus.includes('Niedriger Bestand');
+                    }
+                    const quantity = getQuantity(sizeData);
+                    return quantity <= product.minStockLevel && quantity > 0;
+                }
                 const quantity = getQuantity(sizeData);
                 return quantity <= product.minStockLevel && quantity > 0;
             })
-            .map(([size, sizeData]) => ({ size, quantity: getQuantity(sizeData) }));
+            .map(([size, sizeData]) => ({
+                size,
+                quantity: getQuantity(sizeData),
+                warningStatus:
+                    typeof sizeData === 'object' && sizeData !== null
+                        ? sizeData.warningStatus
+                        : undefined,
+            }));
     }
 
 
@@ -170,23 +195,20 @@ export default function Lager() {
 
     // Lagerort change handler
     const handleLagerortChange = async (productId: string, newLagerort: string) => {
+        // keep previous state for rollback
+        const previousProducts = productsData;
+
         // optimistic update
         setProductsData(prev => prev.map(product =>
             product.id === productId ? { ...product, Lagerort: newLagerort } : product
         ));
         try {
             await updateExistingProduct(productId, { lagerort: newLagerort });
-            // refresh to keep in sync with server
-            const apiProducts = await refreshProducts();
-            const convertedProducts = apiProducts.map(convertApiProductToLocal);
-            setProductsData(convertedProducts);
             toast.success('Lagerort aktualisiert');
         } catch (err: any) {
             toast.error(err?.response?.data?.message || 'Update fehlgeschlagen');
             // revert on failure
-            const apiProducts = await refreshProducts();
-            const convertedProducts = apiProducts.map(convertApiProductToLocal);
-            setProductsData(convertedProducts);
+            setProductsData(previousProducts);
         }
     };
 
@@ -203,15 +225,11 @@ export default function Lager() {
             });
     };
 
-    // Update product handler: refresh table after edit
-    const handleUpdateProduct = async (_product: Product) => {
-        try {
-            const apiProducts = await refreshProducts();
-            const convertedProducts = apiProducts.map(convertApiProductToLocal);
-            setProductsData(convertedProducts);
-        } catch (err) {
-            console.error('Failed to refresh products after update:', err);
-        }
+    // Update product handler: update only the edited product locally
+    const handleUpdateProduct = (updatedProduct: Product) => {
+        setProductsData(prev =>
+            prev.map(product => (product.id === updatedProduct.id ? updatedProduct : product))
+        );
     };
 
     // Delete product handler
@@ -229,10 +247,8 @@ export default function Lager() {
             await deleteStorage(productToDelete.id);
             toast.success(`"${productToDelete.Produktname}" wurde erfolgreich gelöscht!`);
 
-            // Refresh products from API
-            const apiProducts = await refreshProducts();
-            const convertedProducts = apiProducts.map(convertApiProductToLocal);
-            setProductsData(convertedProducts);
+            // Remove deleted product locally without full reload
+            setProductsData(prev => prev.filter(p => p.id !== productToDelete.id));
 
             // Close modal
             setDeleteModalOpen(false);
@@ -306,15 +322,6 @@ export default function Lager() {
                     onLagerortChange={handleLagerortChange}
                     onUpdateProduct={handleUpdateProduct}
                     onDeleteProduct={handleDeleteProduct}
-                    onRefreshAfterEdit={async () => {
-                        try {
-                            const apiProducts = await refreshProducts();
-                            const convertedProducts = apiProducts.map(convertApiProductToLocal);
-                            setProductsData(convertedProducts);
-                        } catch (err) {
-                            // console.error('Failed to refresh products after edit:', err);
-                        }
-                    }}
                 />
             )}
 

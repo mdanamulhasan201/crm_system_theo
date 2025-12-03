@@ -9,7 +9,8 @@ import toast from 'react-hot-toast'
 interface SizeData {
     length: number;
     quantity: number;
-    minQuantity?: number;
+    // Per-size minimum quantity, maps to backend field `mindestmenge`
+    mindestmenge?: number;
 }
 
 interface NewProduct {
@@ -82,7 +83,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 ...prev.sizeQuantities,
                 [size]: {
                     ...prev.sizeQuantities[size],
-                    minQuantity: parseInt(value) || 0
+                    mindestmenge: parseInt(value) || 0
                 }
             }
         }));
@@ -371,7 +372,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         type="number"
                                                         min={0}
                                                         placeholder="0"
-                                                        value={newProduct.sizeQuantities[size]?.minQuantity || ''}
+                                                        value={newProduct.sizeQuantities[size]?.mindestmenge ?? ''}
                                                         onChange={e => handleNewProductMinQuantityChange(size, e.target.value)}
                                                         className="w-full"
                                                     />

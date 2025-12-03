@@ -26,6 +26,8 @@ import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagem
 interface SizeData {
     length: number;
     quantity: number;
+    mindestmenge?: number;
+    warningStatus?: string;
 }
 
 interface Product {
@@ -62,11 +64,10 @@ interface ProductManagementTableProps {
     sizeColumns: string[]
     onShowHistory: (product: Product) => void
     hasLowStock: (product: Product) => boolean
-    getLowStockSizes: (product: Product) => Array<{ size: string; quantity: number }>
+    getLowStockSizes: (product: Product) => Array<{ size: string; quantity: number; warningStatus?: string }>
     onLagerortChange: (productId: string, newLagerort: string) => void
     onUpdateProduct: (product: Product) => void
     onDeleteProduct: (product: Product) => void
-    onRefreshAfterEdit?: () => void
 }
 
 export default function ProductManagementTable({
@@ -77,8 +78,7 @@ export default function ProductManagementTable({
     getLowStockSizes,
     onLagerortChange,
     onUpdateProduct,
-    onDeleteProduct,
-    onRefreshAfterEdit
+    onDeleteProduct
 }: ProductManagementTableProps) {
     const { user } = useAuth();
     const { getProductById } = useStockManagementSlice();
@@ -90,6 +90,14 @@ export default function ProductManagementTable({
         return getQuantity(product.sizeQuantities[size]);
     }
 
+    const getSizeWarningStatus = (product: Product, size: string): string | undefined => {
+        const sizeData = product.sizeQuantities[size];
+        if (typeof sizeData === 'object' && sizeData !== null) {
+            return sizeData.warningStatus;
+        }
+        return undefined;
+    };
+
     return (
         <>
         <Table className='border-2 border-gray-500 rounded-lg mt-5'>
@@ -99,7 +107,7 @@ export default function ProductManagementTable({
                     <TableHead className="border-2 border-gray-500 p-2">Hersteller</TableHead>
                     <TableHead className="border-2 border-gray-500 p-2">Artikelbezeichnung</TableHead>
                     <TableHead className="border-2 border-gray-500 p-2">Artikelnummer</TableHead>
-                    <TableHead className="border-2 border-gray-500 p-2">Status</TableHead>
+                    <TableHead className="border-2 border-gray-500 p-2">Bestandswarnung</TableHead>
                     <TableHead className="border-2 border-gray-500 p-2">Historie</TableHead>
                     <TableHead className="border-2 border-gray-500 p-2">Aktionen</TableHead>
                     {sizeColumns.map(size => (
@@ -166,25 +174,31 @@ export default function ProductManagementTable({
                                 <Tooltip>
                                     <TooltipTrigger>
                                         <div className="flex items-center gap-2">
-                                            {(product.Status === 'Critical Low Stock' || product.Status === 'Low Stock Warning' || product.Status === 'Out of Stock') && (
+                                            {hasLowStock(product) && (
                                                 <IoWarning className="text-red-500 text-lg" />
                                             )}
-                                            <span className={`text-sm ${
-                                                product.Status === 'Critical Low Stock' ? 'text-red-600 font-semibold' :
-                                                product.Status === 'Low Stock Warning' ? 'text-orange-600 font-medium' :
-                                                product.Status === 'Out of Stock' ? 'text-red-800 font-bold' :
-                                                'text-green-600'
-                                            }`}>
-                                                {product.Status}
+                                            <span
+                                                className={`text-sm ${
+                                                    hasLowStock(product)
+                                                        ? 'text-red-600 font-semibold'
+                                                        : 'text-green-600'
+                                                }`}
+                                            >
+                                                {hasLowStock(product)
+                                                    ? 'Niedriger Bestand'
+                                                    : 'Voller Bestand'}
                                             </span>
                                         </div>
                                     </TooltipTrigger>
                                     <TooltipContent>
                                         {hasLowStock(product) ? (
-                                            <div >
-                                                <p>Niedriger Bestand:</p>
-                                                {getLowStockSizes(product).map(({ size, quantity }) => (
-                                                    <p key={size}>Größe {size}: {quantity} Stück</p>
+                                            <div>
+                                                <p className="font-medium mb-1">Niedriger Bestand:</p>
+                                                {getLowStockSizes(product).map(({ size, quantity, warningStatus }) => (
+                                                    <p key={size}>
+                                                        Größe {size}: {quantity} Stück
+                                                        {warningStatus && ` (${warningStatus})`}
+                                                    </p>
                                                 ))}
                                             </div>
                                         ) : (
@@ -229,7 +243,15 @@ export default function ProductManagementTable({
                         </TableCell>
                         {sizeColumns.map(size => (
                             <TableCell key={size} className="border-2 border-gray-500 p-2 text-center">
-                                {getStockForSize(product, size)}
+                                <span
+                                    className={`${
+                                        getSizeWarningStatus(product, size)?.includes('Niedriger Bestand')
+                                            ? 'text-red-600 font-semibold'
+                                            : ''
+                                    }`}
+                                >
+                                    {getStockForSize(product, size)}
+                                </span>
                             </TableCell>
                         ))}
                     </TableRow>
@@ -249,8 +271,25 @@ export default function ProductManagementTable({
                     if (!o) setEditId(undefined)
                 }}
                 showTrigger={false}
-                onUpdated={() => {
-                    onRefreshAfterEdit && onRefreshAfterEdit()
+                onUpdated={async () => {
+                    try {
+                        // Fetch the updated product from API and update only that row
+                        const apiProduct: any = await getProductById(editId);
+                        const updatedProduct: Product = {
+                            id: apiProduct.id,
+                            Produktname: apiProduct.produktname,
+                            Produktkürzel: apiProduct.artikelnummer,
+                            Hersteller: apiProduct.hersteller,
+                            Lagerort: apiProduct.lagerort,
+                            minStockLevel: apiProduct.mindestbestand,
+                            sizeQuantities: apiProduct.groessenMengen,
+                            Status: apiProduct.Status,
+                            inventoryHistory: []
+                        };
+                        onUpdateProduct(updatedProduct);
+                    } catch (err) {
+                        console.error('Failed to fetch updated product', err);
+                    }
                 }}
             />
         )}
