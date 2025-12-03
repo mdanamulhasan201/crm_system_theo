@@ -2,23 +2,20 @@ import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
-import { useAuth } from '@/contexts/AuthContext'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import toast from 'react-hot-toast'
 
 interface SizeData {
     length: number;
     quantity: number;
+    minQuantity?: number;
 }
 
 interface NewProduct {
     Produktname: string;
     Hersteller: string;
     Produktkürzel: string;
-    Lagerort: string;
-    minStockLevel: number;
     purchase_price: number;
     selling_price: number;
     sizeQuantities: { [key: string]: SizeData };
@@ -35,7 +32,6 @@ interface AddProductProps {
 }
 
 export default function AddProduct({ onAddProduct, sizeColumns, editProductId, open, onOpenChange, showTrigger = true, onUpdated }: AddProductProps) {
-    const { user } = useAuth();
     const { createNewProduct, updateExistingProduct, getProductById, isLoading, error, clearError } = useStockManagementSlice();
     const [showAddProductModal, setShowAddProductModal] = useState(false);
     const isOpen = open !== undefined ? open : showAddProductModal;
@@ -47,8 +43,6 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
         Produktname: '',
         Hersteller: '',
         Produktkürzel: '',
-        Lagerort: 'Alle Lagerorte',
-        minStockLevel: 5,
         purchase_price: 0,
         selling_price: 0,
         sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
@@ -77,6 +71,18 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 [size]: {
                     ...prev.sizeQuantities[size],
                     length: parseFloat(value) || 0
+                }
+            }
+        }));
+    };
+    const handleNewProductMinQuantityChange = (size: string, value: string) => {
+        setNewProduct(prev => ({
+            ...prev,
+            sizeQuantities: {
+                ...prev.sizeQuantities,
+                [size]: {
+                    ...prev.sizeQuantities[size],
+                    minQuantity: parseInt(value) || 0
                 }
             }
         }));
@@ -118,8 +124,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                     produktname: newProduct.Produktname,
                     hersteller: newProduct.Hersteller,
                     artikelnummer: newProduct.Produktkürzel,
-                    lagerort: newProduct.Lagerort,
-                    mindestbestand: newProduct.minStockLevel,
+                    mindestbestand: 0,
                     // do not send 'historie' on update; backend model doesn't accept it
                     groessenMengen: newProduct.sizeQuantities,
                     purchase_price: newProduct.purchase_price,
@@ -158,8 +163,6 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 Produktname: '',
                 Hersteller: '',
                 Produktkürzel: '',
-                Lagerort: 'Alle Lagerorte',
-                minStockLevel: 5,
                 purchase_price: 0,
                 selling_price: 0,
                 sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
@@ -205,8 +208,6 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                     Produktname: product.produktname,
                     Hersteller: product.hersteller,
                     Produktkürzel: product.artikelnummer,
-                    Lagerort: product.lagerort,
-                    minStockLevel: product.mindestbestand,
                     purchase_price: product.purchase_price,
                     selling_price: product.selling_price,
                     sizeQuantities: Object.keys(convertedSizeQuantities).length > 0
@@ -231,8 +232,6 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 Produktname: '',
                 Hersteller: '',
                 Produktkürzel: '',
-                Lagerort: 'Alle Lagerorte',
-                minStockLevel: 5,
                 purchase_price: 0,
                 selling_price: 0,
                 sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
@@ -254,7 +253,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 </button>
             )}
             <Dialog open={isOpen} onOpenChange={setOpen}>
-                <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                <DialogContent className="!max-w-4xl max-h-[85vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editProductId ? 'Produkt bearbeiten' : 'Produkt manuell hinzufügen'}</DialogTitle>
                     </DialogHeader>
@@ -277,35 +276,11 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                             </div>
                         </div>
 
-                        {/* Row 2: Artikelnummer and Lagerort */}
+                        {/* Row 2: Artikelnummer */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Artikelnummer</label>
                                 <Input value={newProduct.Produktkürzel} onChange={e => handleNewProductChange('Produktkürzel', e.target.value)} required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Lagerort</label>
-                                <Select value={newProduct.Lagerort} onValueChange={v => handleNewProductChange('Lagerort', v)}>
-                                    <SelectTrigger className="w-full">
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Alle Lagerorte">Alle Lagerorte</SelectItem>
-                                        {user?.hauptstandort && user.hauptstandort.length > 0 ? (
-                                            user.hauptstandort.map((location, index) => (
-                                                <SelectItem key={index} value={location}>
-                                                    {location}
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <>
-                                                <SelectItem value="Lager 1">Lager 1</SelectItem>
-                                                <SelectItem value="Lager 2">Lager 2</SelectItem>
-                                                <SelectItem value="Lager 3">Lager 3</SelectItem>
-                                            </>
-                                        )}
-                                    </SelectContent>
-                                </Select>
                             </div>
                         </div>
 
@@ -321,12 +296,8 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                             </div>
                         </div>
 
-                        {/* Row 4: Mindestbestand and Alle Größen um X erhöhen */}
+                        {/* Row 4: Alle Größen um X erhöhen */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">Mindestbestand</label>
-                                <Input type="number" min={0} value={newProduct.minStockLevel} onChange={e => handleNewProductChange('minStockLevel', parseInt(e.target.value) || 0)} required />
-                            </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">
                                     Alle Größen um X erhöhen
@@ -368,6 +339,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                             <TableHead className="font-medium">Größe</TableHead>
                                             <TableHead className="font-medium">Bestand</TableHead>
                                             <TableHead className="font-medium">Länge (cm)</TableHead>
+                                            <TableHead className="font-medium">Mindestmenge</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -391,6 +363,16 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.length || ''}
                                                         onChange={e => handleNewProductLengthChange(size, e.target.value)}
                                                         placeholder="z.B. 150"
+                                                        className="w-full"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        placeholder="0"
+                                                        value={newProduct.sizeQuantities[size]?.minQuantity || ''}
+                                                        onChange={e => handleNewProductMinQuantityChange(size, e.target.value)}
                                                         className="w-full"
                                                     />
                                                 </TableCell>

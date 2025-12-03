@@ -67,8 +67,6 @@ interface NewProduct {
     Produktname: string
     Produktkürzel: string
     Hersteller: string
-    Lagerort: string
-    minStockLevel: number
     purchase_price: number
     selling_price: number
     sizeQuantities: { [key: string]: SizeData }
@@ -193,15 +191,16 @@ export default function Lager() {
     };
 
     // Add product handler - refresh data from API
-    const handleAddProduct = async (newProduct: NewProduct) => {
-        try {
-            // Refresh products from API to get the latest data including the newly created product
-            const apiProducts = await refreshProducts();
-            const convertedProducts = apiProducts.map(convertApiProductToLocal);
-            setProductsData(convertedProducts);
-        } catch (err) {
-            console.error('Failed to refresh products after adding:', err);
-        }
+    const handleAddProduct = (newProduct: NewProduct) => {
+        // Refresh products from API to get the latest data including the newly created product
+        refreshProducts()
+            .then(apiProducts => {
+                const convertedProducts = apiProducts.map(convertApiProductToLocal);
+                setProductsData(convertedProducts);
+            })
+            .catch(err => {
+                console.error('Failed to refresh products after adding:', err);
+            });
     };
 
     // Update product handler: refresh table after edit

@@ -10,8 +10,8 @@ interface ProductFormData {
     Produktname: string;
     Hersteller: string;
     Produktkürzel: string;
-    Lagerort: string;
-    minStockLevel: number;
+    Lagerort?: string;
+    minStockLevel?: number;
     purchase_price: number;
     selling_price: number;
     sizeQuantities: { [key: string]: SizeData };
@@ -74,7 +74,7 @@ export const useStockManagementSlice = () => {
         const quantities = Object.values(sizeQuantities).map(data => data.quantity);
         const totalStock = quantities.reduce((sum, qty) => sum + qty, 0);
         const lowStockSizes = quantities.some(qty => qty <= minStockLevel && qty > 0);
-        
+
         if (totalStock === 0) return "Out of Stock";
         if (totalStock <= minStockLevel) return "Critical Low Stock";
         if (lowStockSizes) return "Low Stock Warning";
@@ -82,14 +82,15 @@ export const useStockManagementSlice = () => {
     };
 
     const formatProductData = (formData: ProductFormData): CreateProductPayload => {
-        const stockStatus = determineStockStatus(formData.sizeQuantities, formData.minStockLevel);
-        
+        const minStockLevel = formData.minStockLevel || 0;
+        const stockStatus = determineStockStatus(formData.sizeQuantities, minStockLevel);
+
         return {
             produktname: formData.Produktname,
             hersteller: formData.Hersteller,
             artikelnummer: formData.Produktkürzel,
-            lagerort: formData.Lagerort,
-            mindestbestand: formData.minStockLevel,
+            lagerort: formData.Lagerort || '',
+            mindestbestand: minStockLevel,
             historie: `Product created on ${new Date().toISOString().split('T')[0]}`,
             groessenMengen: formData.sizeQuantities,
             purchase_price: formData.purchase_price,
@@ -105,10 +106,10 @@ export const useStockManagementSlice = () => {
         try {
             const formattedData = formatProductData(productData);
             // console.log('Creating product with data:', formattedData);
-            
+
             const response = await createProduct(formattedData);
             // console.log('Product created successfully:', response);
-            
+
             // Return the complete response including success status and data
             return {
                 success: response.success,
@@ -132,7 +133,7 @@ export const useStockManagementSlice = () => {
         try {
             const response: ApiResponse = await getAllStorages();
             // console.log('Fetched products:', response);
-            
+
             if (response.success && response.data) {
                 setProducts(response.data);
                 setPagination(response.pagination);
