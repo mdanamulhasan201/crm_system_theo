@@ -17,6 +17,7 @@ interface OrderTableRowProps {
     onInvoiceDownload: (orderId: string) => void;
     onPriorityClick: (order: OrderData) => void;
     onHistoryClick?: (orderId: string, orderNumber: string) => void;
+    onVersorgungClick?: (orderId: string, orderNumber: string, customerName: string) => void;
 }
 
 export default function OrderTableRow({
@@ -30,6 +31,7 @@ export default function OrderTableRow({
     onInvoiceDownload,
     onPriorityClick,
     onHistoryClick,
+    onVersorgungClick,
 }: OrderTableRowProps) {
     const getStatusBadgeColor = (status: string) => {
         const normalizedStatus = status.replace(/_/g, ' ');
@@ -174,7 +176,9 @@ export default function OrderTableRow({
                         title="Versorgung"
                         onClick={(e) => {
                             e.stopPropagation();
-                            // Add versorgung action here
+                            if (onVersorgungClick) {
+                                onVersorgungClick(order.id, order.bestellnummer, order.kundenname);
+                            }
                         }}
                     >
                         <Package className="h-4 w-4 text-purple-600 group-hover:text-purple-700 transition-colors" />

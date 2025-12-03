@@ -177,3 +177,14 @@ export const getCustomerOrderHistory = async (orderId: string) => {
         throw new Error(error.response.data.message || 'Failed to fetch customer order history');
     }
 }
+
+//  get supply info  /customer-orders/supply-info/89ca7ae3-c37d-4e39-b152-ae68d91f464b
+
+export const getSupplyInfo = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/supply-info/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw new Error(error.response.data.message || 'Failed to fetch supply info');
+    }
+}

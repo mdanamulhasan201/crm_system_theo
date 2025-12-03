@@ -10,6 +10,7 @@ import OrderTableHeader from "./OrderTableHeader";
 import OrderTableRow from "./OrderTableRow";
 import PaginationControls from "./PaginationControls";
 import HistorySidebar from "./HistorySidebar";
+import VersorgungModal from "./VersorgungModal";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import toast from 'react-hot-toast';
@@ -50,6 +51,10 @@ export default function ProcessTable() {
     const [showHistorySidebar, setShowHistorySidebar] = useState(false);
     const [historyOrderId, setHistoryOrderId] = useState<string | null>(null);
     const [historyOrderNumber, setHistoryOrderNumber] = useState<string | null>(null);
+    const [showVersorgungModal, setShowVersorgungModal] = useState(false);
+    const [versorgungOrderId, setVersorgungOrderId] = useState<string | null>(null);
+    const [versorgungOrderNumber, setVersorgungOrderNumber] = useState<string | null>(null);
+    const [versorgungCustomerName, setVersorgungCustomerName] = useState<string | null>(null);
 
     const {
         showConfirmModal,
@@ -274,6 +279,12 @@ export default function ProcessTable() {
                                     setHistoryOrderNumber(orderNumber);
                                     setShowHistorySidebar(true);
                                 }}
+                                onVersorgungClick={(orderId, orderNumber, customerName) => {
+                                    setVersorgungOrderId(orderId);
+                                    setVersorgungOrderNumber(orderNumber);
+                                    setVersorgungCustomerName(customerName);
+                                    setShowVersorgungModal(true);
+                                }}
                             />
                         ))
                     )}
@@ -406,6 +417,20 @@ export default function ProcessTable() {
                 }}
                 orderId={historyOrderId}
                 orderNumber={historyOrderNumber || undefined}
+            />
+
+            {/* Versorgung Modal */}
+            <VersorgungModal
+                isOpen={showVersorgungModal}
+                onClose={() => {
+                    setShowVersorgungModal(false);
+                    setVersorgungOrderId(null);
+                    setVersorgungOrderNumber(null);
+                    setVersorgungCustomerName(null);
+                }}
+                orderId={versorgungOrderId}
+                orderNumber={versorgungOrderNumber || undefined}
+                customerName={versorgungCustomerName || undefined}
             />
         </div>
     );
