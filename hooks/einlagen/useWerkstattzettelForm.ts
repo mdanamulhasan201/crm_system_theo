@@ -37,6 +37,7 @@ export function useWerkstattzettelForm(
   const [datumAuftrag, setDatumAuftrag] = useState('')
   const [geschaeftsstandort, setGeschaeftsstandort] = useState('')
   const [fertigstellungBis, setFertigstellungBis] = useState('')
+  const [fertigstellungBisTime, setFertigstellungBisTime] = useState('')
   const [bezahlt, setBezahlt] = useState('')
 
   // Business location dropdown state
@@ -165,6 +166,8 @@ export function useWerkstattzettelForm(
     setGeschaeftsstandort,
     fertigstellungBis,
     setFertigstellungBis,
+    fertigstellungBisTime,
+    setFertigstellungBisTime,
     bezahlt,
     setBezahlt,
     employeeId,

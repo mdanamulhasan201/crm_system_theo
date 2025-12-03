@@ -48,15 +48,32 @@ export function getRequiredDeliveryDate(
 }
 
 /**
- * Format date with current time for ISO string
+ * Format date with a specific time (if provided) or current time for ISO string
  */
-export function formatDateWithCurrentTime(dateString: string): string {
-  const now = new Date()
+export function formatDateWithCurrentTime(
+  dateString: string,
+  timeString?: string
+): string {
   const date = new Date(dateString)
-  date.setHours(now.getHours())
-  date.setMinutes(now.getMinutes())
-  date.setSeconds(now.getSeconds())
-  date.setMilliseconds(now.getMilliseconds())
+
+  if (timeString) {
+    // Expecting "HH:MM" or "HH:MM:SS"
+    const [hours, minutes, seconds] = timeString.split(':').map((value) => {
+      const parsed = parseInt(value, 10)
+      return isNaN(parsed) ? 0 : parsed
+    })
+    date.setHours(hours || 0)
+    date.setMinutes(minutes || 0)
+    date.setSeconds(seconds || 0)
+    date.setMilliseconds(0)
+  } else {
+    // If no time is provided, default to start of the day (00:00)
+    date.setHours(0)
+    date.setMinutes(0)
+    date.setSeconds(0)
+    date.setMilliseconds(0)
+  }
+
   return date.toISOString()
 }
 

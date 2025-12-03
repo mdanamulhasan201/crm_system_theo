@@ -15,6 +15,7 @@ export interface WerkstattzettelFormData {
   datumAuftrag: string
   geschaeftsstandort: string
   fertigstellungBis: string
+  fertigstellungBisTime?: string
   bezahlt: string
   employeeId: string
   footAnalysisPrice: string
@@ -35,9 +36,12 @@ export function createWerkstattzettelPayload(
     ? `${formData.datumAuftrag}T00:00:00.000Z`
     : undefined
 
-  // Use current time for fertigstellungBis instead of midnight
+  // Use selected time (if available) or current time for fertigstellungBis
   const fertigIso = formData.fertigstellungBis
-    ? formatDateWithCurrentTime(formData.fertigstellungBis)
+    ? formatDateWithCurrentTime(
+        formData.fertigstellungBis,
+        formData.fertigstellungBisTime
+      )
     : undefined
 
   return {

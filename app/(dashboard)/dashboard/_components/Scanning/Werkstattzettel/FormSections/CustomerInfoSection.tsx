@@ -18,6 +18,7 @@ interface CustomerInfoSectionData {
   telefonnummer: string
   geschaeftsstandort: string
   fertigstellungBis: string
+  fertigstellungBisTime: string
   bezahlt: string
 
   // Handlers
@@ -30,6 +31,7 @@ interface CustomerInfoSectionData {
   onTelefonnummerChange: (value: string) => void
   onGeschaeftsstandortChange: (value: string) => void
   onFertigstellungBisChange: (value: string) => void
+  onFertigstellungBisTimeChange: (value: string) => void
   onBezahltChange: (value: string) => void
 
   // Employee dropdown
@@ -66,6 +68,7 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     telefonnummer,
     geschaeftsstandort,
     fertigstellungBis,
+    fertigstellungBisTime,
     bezahlt,
     onNameChange,
     onWohnortChange,
@@ -76,6 +79,7 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     onTelefonnummerChange,
     onGeschaeftsstandortChange,
     onFertigstellungBisChange,
+    onFertigstellungBisTimeChange,
     onBezahltChange,
     employeeSearchText,
     employeeSuggestions,
@@ -210,23 +214,30 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
 
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">Fertigstellung bis</Label>
-          <Input
-            type="date"
-            placeholder="10.02.2025"
-            value={fertigstellungBis}
-            onChange={(e) => onFertigstellungBisChange(e.target.value)}
-            min={
-              datumAuftrag
-                ? (() => {
-                  const calculated = calculateDeliveryDate(datumAuftrag, completionDays)
-                  const minimum = getMinimumDeliveryDate(datumAuftrag)
-                  return new Date(calculated) >= new Date(minimum)
-                    ? calculated
-                    : minimum
-                })()
-                : undefined
-            }
-          />
+          <div className="flex gap-2">
+            <Input
+              type="date"
+              placeholder="10.02.2025"
+              value={fertigstellungBis}
+              onChange={(e) => onFertigstellungBisChange(e.target.value)}
+              min={
+                datumAuftrag
+                  ? (() => {
+                      const calculated = calculateDeliveryDate(datumAuftrag, completionDays)
+                      const minimum = getMinimumDeliveryDate(datumAuftrag)
+                      return new Date(calculated) >= new Date(minimum)
+                        ? calculated
+                        : minimum
+                    })()
+                  : undefined
+              }
+            />
+            <Input
+              type="time"
+              value={fertigstellungBisTime}
+              onChange={(e) => onFertigstellungBisTimeChange(e.target.value)}
+            />
+          </div>
         </div>
 
         <PaymentStatusSection value={bezahlt} onChange={onBezahltChange} />
