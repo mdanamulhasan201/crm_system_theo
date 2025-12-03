@@ -52,9 +52,9 @@ export const pdfSendToCustomer = async (orderId: string, formData: FormData) => 
 
 // get all orders  &customerNumber=&orderNumber=&customerName
 export const getAllOrders = async (
-    page: number, 
-    limit: number, 
-    days: number, 
+    page: number,
+    limit: number,
+    days: number,
     orderStatus?: string,
     customerNumber?: string,
     orderNumber?: string,
@@ -167,3 +167,13 @@ export const getCustomerOrdersByCustomerId = async (customerId: string, page: nu
     }
 }
 
+
+// customer order history get customer-orders/history/orders/89ca7ae3-c37d-4e39-b152-ae68d91f464b
+export const getCustomerOrderHistory = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/history/orders/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw new Error(error.response.data.message || 'Failed to fetch customer order history');
+    }
+}

@@ -36,6 +36,7 @@ export default function OrderTableHeader({
             <TableHead className="w-[120px] min-w-[120px] max-w-[120px] whitespace-normal break-words text-xs sm:text-sm hidden lg:table-cell text-center">Erstellt am</TableHead>
             <TableHead className="w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words text-xs sm:text-sm hidden lg:table-cell text-center">Geplantes Fertigstelldatum</TableHead>
             <TableHead className="w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words text-xs sm:text-sm hidden xl:table-cell text-center">Beschreibung</TableHead>
+            <TableHead className="w-[160px] min-w-[160px] max-w-[160px] text-center">Historie</TableHead>
             <TableHead className="w-[160px] min-w-[160px] max-w-[160px] text-center">Aktionen</TableHead>
         </TableRow>
     );

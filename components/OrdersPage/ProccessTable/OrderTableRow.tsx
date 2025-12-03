@@ -3,6 +3,8 @@ import { OrderData } from "@/contexts/OrdersContext";
 import OrderActions from "./OrderActions";
 import Link from "next/link";
 import { getPaymentStatusColor } from "@/lib/paymentStatusUtils";
+import { History, Scan, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface OrderTableRowProps {
     order: OrderData;
@@ -14,6 +16,7 @@ interface OrderTableRowProps {
     onDelete: (orderId: string) => void;
     onInvoiceDownload: (orderId: string) => void;
     onPriorityClick: (order: OrderData) => void;
+    onHistoryClick?: (orderId: string, orderNumber: string) => void;
 }
 
 export default function OrderTableRow({
@@ -26,6 +29,7 @@ export default function OrderTableRow({
     onDelete,
     onInvoiceDownload,
     onPriorityClick,
+    onHistoryClick,
 }: OrderTableRowProps) {
     const getStatusBadgeColor = (status: string) => {
         const normalizedStatus = status.replace(/_/g, ' ');
@@ -134,6 +138,48 @@ export default function OrderTableRow({
             </TableCell>
             <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden hidden xl:table-cell">
                 {order.beschreibung}
+            </TableCell>
+            <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">
+                <div className="flex gap-2 sm:gap-3 justify-center items-center">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 cursor-pointer rounded-md hover:bg-blue-50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
+                        title="Historie"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (onHistoryClick) {
+                                onHistoryClick(order.id, order.bestellnummer);
+                            }
+                        }}
+                    >
+                        <History className="h-4 w-4 text-blue-600 group-hover:text-blue-700 transition-colors" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 cursor-pointer rounded-md hover:bg-green-50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
+                        title="Scan"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Add scan action here
+                        }}
+                    >
+                        <Scan className="h-4 w-4 text-green-600 group-hover:text-green-700 transition-colors" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 cursor-pointer rounded-md hover:bg-purple-50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
+                        title="Versorgung"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            // Add versorgung action here
+                        }}
+                    >
+                        <Package className="h-4 w-4 text-purple-600 group-hover:text-purple-700 transition-colors" />
+                    </Button>
+                </div>
             </TableCell>
             <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">
                 <OrderActions
