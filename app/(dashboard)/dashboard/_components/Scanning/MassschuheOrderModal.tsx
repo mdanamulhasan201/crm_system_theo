@@ -268,39 +268,21 @@ export default function MassschuheOrderModal({
 
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Datum des Auftrags</label>
-                                <div className="relative">
-                                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                    <Input
-                                        type="date"
-                                        className="pl-9"
-                                        value={orderDate}
-                                        onChange={(e) => handleOrderDateChange(e.target.value)}
-                                    />
-                                </div>
+                                <p className="text-gray-900">
+                                    {orderDate ? new Date(orderDate).toLocaleDateString('de-DE') : '-'}
+                                </p>
                             </div>
 
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Wohnort</label>
-                                <Input
-                                    value={filiale}
-                                    onChange={(e) => setFiliale(e.target.value)}
-                                    placeholder="Filiale eingeben"
-                                    className="w-full"
-                                />
+                                <p className="text-gray-900">{filiale || customer?.wohnort || '-'}</p>
                             </div>
 
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Fertigstellung</label>
-                                <div className="relative">
-                                    <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
-                                    <Input
-                                        type="date"
-                                        className="pl-9"
-                                        value={fertigstellungDate}
-                                        onChange={(e) => handleFertigstellungDateChange(e.target.value)}
-                                        min={deliveryMinDate}
-                                    />
-                                </div>
+                                <p className="text-gray-900">
+                                    {fertigstellungDate ? new Date(fertigstellungDate).toLocaleDateString('de-DE') : '-'}
+                                </p>
                             </div>
 
                             {!!user?.hauptstandort?.length && (
