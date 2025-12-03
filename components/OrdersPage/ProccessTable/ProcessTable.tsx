@@ -11,6 +11,7 @@ import OrderTableRow from "./OrderTableRow";
 import PaginationControls from "./PaginationControls";
 import HistorySidebar from "./HistorySidebar";
 import VersorgungModal from "./VersorgungModal";
+import ScanPictureModal from "./ScanPictureModal";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import toast from 'react-hot-toast';
@@ -55,6 +56,10 @@ export default function ProcessTable() {
     const [versorgungOrderId, setVersorgungOrderId] = useState<string | null>(null);
     const [versorgungOrderNumber, setVersorgungOrderNumber] = useState<string | null>(null);
     const [versorgungCustomerName, setVersorgungCustomerName] = useState<string | null>(null);
+    const [showScanModal, setShowScanModal] = useState(false);
+    const [scanOrderId, setScanOrderId] = useState<string | null>(null);
+    const [scanOrderNumber, setScanOrderNumber] = useState<string | null>(null);
+    const [scanCustomerName, setScanCustomerName] = useState<string | null>(null);
 
     const {
         showConfirmModal,
@@ -279,6 +284,12 @@ export default function ProcessTable() {
                                     setHistoryOrderNumber(orderNumber);
                                     setShowHistorySidebar(true);
                                 }}
+                                onScanClick={(orderId, orderNumber, customerName) => {
+                                    setScanOrderId(orderId);
+                                    setScanOrderNumber(orderNumber);
+                                    setScanCustomerName(customerName);
+                                    setShowScanModal(true);
+                                }}
                                 onVersorgungClick={(orderId, orderNumber, customerName) => {
                                     setVersorgungOrderId(orderId);
                                     setVersorgungOrderNumber(orderNumber);
@@ -431,6 +442,19 @@ export default function ProcessTable() {
                 orderId={versorgungOrderId}
                 orderNumber={versorgungOrderNumber || undefined}
                 customerName={versorgungCustomerName || undefined}
+            />
+
+            {/* Scan Picture Modal */}
+            <ScanPictureModal
+                isOpen={showScanModal}
+                onClose={() => {
+                    setShowScanModal(false);
+                    setScanOrderId(null);
+                    setScanOrderNumber(null);
+                    setScanCustomerName(null);
+                }}
+                orderId={scanOrderId}
+                orderNumber={scanOrderNumber || undefined}
             />
         </div>
     );

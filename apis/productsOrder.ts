@@ -188,3 +188,14 @@ export const getSupplyInfo = async (orderId: string) => {
         throw new Error(error.response.data.message || 'Failed to fetch supply info');
     }
 }
+
+
+// get picture 23-24 of order customer-orders/picture-23-24/id
+export const getPicture2324 = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/picture-23-24/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw new Error(error.response.data.message || 'Failed to fetch picture 23-24');
+    }
+}

@@ -17,6 +17,7 @@ interface OrderTableRowProps {
     onInvoiceDownload: (orderId: string) => void;
     onPriorityClick: (order: OrderData) => void;
     onHistoryClick?: (orderId: string, orderNumber: string) => void;
+    onScanClick?: (orderId: string, orderNumber: string, customerName: string) => void;
     onVersorgungClick?: (orderId: string, orderNumber: string, customerName: string) => void;
 }
 
@@ -31,6 +32,7 @@ export default function OrderTableRow({
     onInvoiceDownload,
     onPriorityClick,
     onHistoryClick,
+    onScanClick,
     onVersorgungClick,
 }: OrderTableRowProps) {
     const getStatusBadgeColor = (status: string) => {
@@ -164,7 +166,9 @@ export default function OrderTableRow({
                         title="Scan"
                         onClick={(e) => {
                             e.stopPropagation();
-                            // Add scan action here
+                            if (onScanClick) {
+                                onScanClick(order.id, order.bestellnummer, order.kundenname);
+                            }
                         }}
                     >
                         <Scan className="h-4 w-4 text-green-600 group-hover:text-green-700 transition-colors" />
