@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { getAllCustomers } from '@/apis/customerApis';
 import toast from 'react-hot-toast';
+import LastScansShimmer from '@/components/ShimmerEffect/Customer/LastScansShimmer';
 
 interface LastScan {
     id: number;
@@ -107,6 +108,11 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
     // handle kundeninfo view function customer-history/41d77415-edab-47dc-8849-136fd707064e
     const handleKundeninfoView = (id: string) => {
         router.push(`/dashboard/customer-history/${id}`);
+    }
+
+    // Show shimmer only on the initial load while data is being fetched
+    if (isLoading && isInitialLoad) {
+        return <LastScansShimmer />;
     }
 
     return (

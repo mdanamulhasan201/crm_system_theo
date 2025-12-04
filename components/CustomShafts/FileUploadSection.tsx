@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { User, UploadCloud, UserPlus } from 'lucide-react';
 import CustomerSearchModal from './CustomerSearchModal';
 import OtherCustomerModal from './OtherCustomerModal';
+import FilePreviewWithShimmer from './FilePreviewWithShimmer';
 
 interface Customer {
   id: string;
@@ -114,15 +115,19 @@ export default function FileUploadSection({
         </Button>
         <input
           type="file"
-          accept=".stl,.obj,.ply,.3ds,.dae,.fbx,.x3d"
+          accept=".stl,.obj,.ply,.3ds,.dae,.fbx,.x3d,image/*"
           ref={linkerLeistenInputRef}
           onChange={handleLinkerLeistenFileChange}
           className="hidden"
         />
         {linkerLeistenFileName && (
-          <div className="mt-2 text-sm text-green-600 font-medium">
-            ✓ Datei hochgeladen: {linkerLeistenFileName}
-          </div>
+          <>
+            <div className="mt-2 text-sm text-green-600 font-medium">
+              ✓ Datei hochgeladen: {linkerLeistenFileName}
+            </div>
+            {/* Image preview with shimmer while loading */}
+            <FilePreviewWithShimmer file={linkerLeistenFile} fileName={linkerLeistenFileName} />
+          </>
         )}
       </div>
 
@@ -138,15 +143,19 @@ export default function FileUploadSection({
         </Button>
         <input
           type="file"
-          accept=".stl,.obj,.ply,.3ds,.dae,.fbx,.x3d"
+          accept=".stl,.obj,.ply,.3ds,.dae,.fbx,.x3d,image/*"
           ref={rechterLeistenInputRef}
           onChange={handleRechterLeistenFileChange}
           className="hidden"
         />
         {rechterLeistenFileName && (
-          <div className="mt-2 text-sm text-green-600 font-medium">
-            ✓ Datei hochgeladen: {rechterLeistenFileName}
-          </div>
+          <>
+            <div className="mt-2 text-sm text-green-600 font-medium">
+              ✓ Datei hochgeladen: {rechterLeistenFileName}
+            </div>
+            {/* Image preview with shimmer while loading */}
+            <FilePreviewWithShimmer file={rechterLeistenFile} fileName={rechterLeistenFileName} />
+          </>
         )}
       </div>
 

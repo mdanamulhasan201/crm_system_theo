@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react'
-import { Search, Upload, Download, Eye, Trash2, FileText, Loader2 } from 'lucide-react'
+import { Search, Upload, Download, Eye, Trash2, FileText, Loader2, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -11,7 +11,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { getKundenordnerData, deleteKundenordnerData, uploadKundenordnerData } from '@/apis/kundenordnerDataApis'
 import Loading from '@/components/Shared/Loading'
 
@@ -171,6 +171,7 @@ const tableFilterLabels: Record<TableFilter, string> = {
 
 export default function KundenordnerPage() {
     const params = useParams()
+    const router = useRouter()
     const customerId = String(params.id)
     const [activeFilter, setActiveFilter] = useState<DocumentType>('all')
     const [tableFilter, setTableFilter] = useState<TableFilter>('all')
@@ -333,241 +334,251 @@ export default function KundenordnerPage() {
     const availableTypes: DocumentType[] = ['all', ...Array.from(new Set(documents.map(d => d.type)))] as DocumentType[]
 
     return (
-        <div className='mb-20 p-4 space-y-6'>
-            {/* Top Navigation */}
-            <div className='flex items-center gap-6 border-b pb-4'>
-                <button className='text-lg font-medium border-b-2 border-blue-600 pb-2 px-2'>
-                    Übersicht
-                </button>
-                <button className='text-lg font-medium text-gray-600 hover:text-gray-900 pb-2 px-2'>
-                    Rezept scannen
-                </button>
-                <button className='text-lg font-medium text-gray-600 hover:text-gray-900 pb-2 px-2'>
-                    KV erstellen
-                </button>
-                <button className='text-lg font-medium text-gray-600 hover:text-gray-900 pb-2 px-2'>
-                    Versenden
-                </button>
-                <div className='flex-1' />
-                <button className='text-lg font-medium border-b-2 border-blue-600 pb-2 px-2'>
-                    Dokumente
-                </button>
-            </div>
+        <>
 
-            {/* Search and Action Bar */}
-            <div className='flex items-center gap-4'>
-                <div className='flex-1 relative'>
-                    <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
-                    <Input
-                        type='text'
-                        placeholder='Dokumente suchen...'
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className='pl-10 w-full'
-                    />
+        {/* back button */}
+        <div className='p-4 space-y-6'>
+            <Button onClick={() => router.push(`/dashboard/customer-info/${customerId}`)} variant='outline' className='flex items-center gap-2 cursor-pointer'>
+                <ArrowLeft className='w-4 h-4' />
+                Back
+            </Button>
+        </div>
+            <div className='mb-20 p-4 space-y-6'>
+                {/* Top Navigation */}
+                <div className='flex items-center gap-6 border-b pb-4'>
+                    <button className='text-lg font-medium border-b-2 border-blue-600 pb-2 px-2'>
+                        Übersicht
+                    </button>
+                    <button className='text-lg font-medium text-gray-600 hover:text-gray-900 pb-2 px-2'>
+                        Rezept scannen
+                    </button>
+                    <button className='text-lg font-medium text-gray-600 hover:text-gray-900 pb-2 px-2'>
+                        KV erstellen
+                    </button>
+                    <button className='text-lg font-medium text-gray-600 hover:text-gray-900 pb-2 px-2'>
+                        Versenden
+                    </button>
+                    <div className='flex-1' />
+                    <button className='text-lg font-medium border-b-2 border-blue-600 pb-2 px-2'>
+                        Dokumente
+                    </button>
                 </div>
-                <div className='w-48 h-9 bg-gray-200 rounded-md' />
-                <Button
-                    variant='outline'
-                    className='flex items-center gap-2'
-                    onClick={handleUploadClick}
-                    disabled={uploadLoading || loading}
-                >
-                    {uploadLoading ? (
-                        <Loader2 className='w-4 h-4 animate-spin' />
-                    ) : (
-                        <Upload className='w-4 h-4' />
-                    )}
-                    {uploadLoading ? 'Hochladen...' : 'Hochladen'}
-                </Button>
-                <Button variant='outline' className='flex items-center gap-2'>
-                    <Download className='w-4 h-4' />
-                    Alle exportieren
-                </Button>
-            </div>
 
-            <input
-                type='file'
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className='hidden'
-            />
-
-
-
-            <div className='flex flex-col md:flex-row items-center gap-2 justify-between'>
-                {/* Document Type Filter Tabs */}
-                <div className='flex items-center gap-2 overflow-x-auto '>
-                    {availableTypes.map((type) => (
-                        <button
-                            key={type}
-                            onClick={() => setActiveFilter(type)}
-                            className={`px-4 cursor-pointer py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === type
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            {documentTypeLabels[type]} ({getDocumentCount(type)})
-                        </button>
-                    ))}
-                </div>
-                {/* Table Filter Tabs */}
-                <div className='flex items-center gap-2 overflow-x-auto '>
-                    {(['all', 'customer_files', 'custom_shafts', 'screener_file'] as TableFilter[]).map((table) => (
-                        <button
-                            key={table}
-                            onClick={() => {
-                                setTableFilter(table)
-                                setPage(1) 
-                            }}
-                            className={`px-4 cursor-pointer py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${tableFilter === table
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
-                            {tableFilterLabels[table]}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-
-            {/* Loading indicator for pagination */}
-            {loading && documents.length > 0 && (
-                <div className='flex justify-center py-4'>
-                    <Loader2 className='w-6 h-6 animate-spin text-blue-600' />
-                </div>
-            )}
-
-            {/* Document Grid */}
-            {filteredDocuments.length > 0 ? (
-                <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
-                    {filteredDocuments.map((doc) => (
-                        <div
-                            key={`${doc.id}-${doc.fieldName}`}
-                            className='border border-gray-300 rounded-lg p-4 bg-white hover:shadow-md transition-shadow'
-                        >
-                            <div className='flex items-start gap-3 mb-3'>
-                                <FileText className={`w-8 h-8 ${doc.iconColor}`} />
-                                <div className='flex-1 min-w-0'>
-                                    <h3 className='font-medium text-sm truncate'>{doc.title}</h3>
-                                    <p className='text-xs text-gray-500 mt-1'>{doc.size} • {doc.date}</p>
-                                </div>
-                            </div>
-                            <div className='flex items-center justify-between mt-4'>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${doc.tagColor}`}>
-                                    {documentTypeLabels[doc.type]}
-                                </span>
-                                <div className='flex items-center gap-2'>
-                                    <button
-                                        onClick={() => handleView(doc)}
-                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors'
-                                        title='Ansehen'
-                                    >
-                                        <Eye className='w-4 h-4 text-gray-600' />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDownload(doc)}
-                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors'
-                                        title='Download'
-                                    >
-                                        <Download className='w-4 h-4 text-gray-600' />
-                                    </button>
-                                    <button
-                                        onClick={() => handleDelete(doc)}
-                                        className='p-1.5 hover:bg-gray-100 rounded transition-colors'
-                                        title='Löschen'
-                                    >
-                                        <Trash2 className='w-4 h-4 text-gray-600' />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className='text-center py-12 text-gray-500'>
-                    {searchQuery ? 'No documents found matching your search.' : 'No documents available.'}
-                </div>
-            )}
-
-            {/* Pagination */}
-            {pagination && pagination.totalPages > 1 && (
-                <div className='flex items-center justify-center gap-2 pt-4'>
+                {/* Search and Action Bar */}
+                <div className='flex items-center gap-4'>
+                    <div className='flex-1 relative'>
+                        <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
+                        <Input
+                            type='text'
+                            placeholder='Dokumente suchen...'
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className='pl-10 w-full'
+                        />
+                    </div>
+                    <div className='w-48 h-9 bg-gray-200 rounded-md' />
                     <Button
                         variant='outline'
-                        onClick={() => handlePageChange(page - 1)}
-                        disabled={!pagination.hasPrev || loading}
+                        className='flex items-center gap-2'
+                        onClick={handleUploadClick}
+                        disabled={uploadLoading || loading}
                     >
-                        Previous
+                        {uploadLoading ? (
+                            <Loader2 className='w-4 h-4 animate-spin' />
+                        ) : (
+                            <Upload className='w-4 h-4' />
+                        )}
+                        {uploadLoading ? 'Hochladen...' : 'Hochladen'}
                     </Button>
-                    <span className='text-sm text-gray-600'>
-                        Page {pagination.page} of {pagination.totalPages}
-                    </span>
-                    <Button
-                        variant='outline'
-                        onClick={() => handlePageChange(page + 1)}
-                        disabled={!pagination.hasNext || loading}
-                    >
-                        Next
+                    <Button variant='outline' className='flex items-center gap-2'>
+                        <Download className='w-4 h-4' />
+                        Alle exportieren
                     </Button>
                 </div>
-            )}
 
-            {/* Footer Summary */}
-            <div className='flex items-center justify-between pt-4 border-t'>
-                <p className='text-sm text-gray-600'>
-                    {pagination?.total || documents.length} Dokumente Gesamt
-                </p>
-            </div>
+                <input
+                    type='file'
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className='hidden'
+                />
 
-            <Dialog
-                open={deleteDialogOpen}
-                onOpenChange={(open) => {
-                    setDeleteDialogOpen(open)
-                    if (!open) {
-                        setDocumentToDelete(null)
-                    }
-                }}
-            >
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Dokument löschen?</DialogTitle>
-                        <DialogDescription>
-                            {documentToDelete
-                                ? `Möchten Sie "${documentToDelete.title}" endgültig löschen?`
-                                : 'Möchten Sie dieses Dokument endgültig löschen?'}
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
+
+
+                <div className='flex flex-col md:flex-row items-center gap-2 justify-between'>
+                    {/* Document Type Filter Tabs */}
+                    <div className='flex items-center gap-2 overflow-x-auto '>
+                        {availableTypes.map((type) => (
+                            <button
+                                key={type}
+                                onClick={() => setActiveFilter(type)}
+                                className={`px-4 cursor-pointer py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${activeFilter === type
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                            >
+                                {documentTypeLabels[type]} ({getDocumentCount(type)})
+                            </button>
+                        ))}
+                    </div>
+                    {/* Table Filter Tabs */}
+                    <div className='flex items-center gap-2 overflow-x-auto '>
+                        {(['all', 'customer_files', 'custom_shafts', 'screener_file'] as TableFilter[]).map((table) => (
+                            <button
+                                key={table}
+                                onClick={() => {
+                                    setTableFilter(table)
+                                    setPage(1)
+                                }}
+                                className={`px-4 cursor-pointer py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${tableFilter === table
+                                    ? 'bg-blue-600 text-white'
+                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                    }`}
+                            >
+                                {tableFilterLabels[table]}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+
+                {/* Loading indicator for pagination */}
+                {loading && documents.length > 0 && (
+                    <div className='flex justify-center py-4'>
+                        <Loader2 className='w-6 h-6 animate-spin text-blue-600' />
+                    </div>
+                )}
+
+                {/* Document Grid */}
+                {filteredDocuments.length > 0 ? (
+                    <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+                        {filteredDocuments.map((doc) => (
+                            <div
+                                key={`${doc.id}-${doc.fieldName}`}
+                                className='border border-gray-300 rounded-lg p-4 bg-white hover:shadow-md transition-shadow'
+                            >
+                                <div className='flex items-start gap-3 mb-3'>
+                                    <FileText className={`w-8 h-8 ${doc.iconColor}`} />
+                                    <div className='flex-1 min-w-0'>
+                                        <h3 className='font-medium text-sm truncate'>{doc.title}</h3>
+                                        <p className='text-xs text-gray-500 mt-1'>{doc.size} • {doc.date}</p>
+                                    </div>
+                                </div>
+                                <div className='flex items-center justify-between mt-4'>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${doc.tagColor}`}>
+                                        {documentTypeLabels[doc.type]}
+                                    </span>
+                                    <div className='flex items-center gap-2'>
+                                        <button
+                                            onClick={() => handleView(doc)}
+                                            className='p-1.5 hover:bg-gray-100 rounded transition-colors'
+                                            title='Ansehen'
+                                        >
+                                            <Eye className='w-4 h-4 text-gray-600' />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDownload(doc)}
+                                            className='p-1.5 hover:bg-gray-100 rounded transition-colors'
+                                            title='Download'
+                                        >
+                                            <Download className='w-4 h-4 text-gray-600' />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(doc)}
+                                            className='p-1.5 hover:bg-gray-100 rounded transition-colors'
+                                            title='Löschen'
+                                        >
+                                            <Trash2 className='w-4 h-4 text-gray-600' />
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className='text-center py-12 text-gray-500'>
+                        {searchQuery ? 'No documents found matching your search.' : 'No documents available.'}
+                    </div>
+                )}
+
+                {/* Pagination */}
+                {pagination && pagination.totalPages > 1 && (
+                    <div className='flex items-center justify-center gap-2 pt-4'>
                         <Button
                             variant='outline'
-                            onClick={() => {
-                                setDeleteDialogOpen(false)
-                                setDocumentToDelete(null)
-                            }}
-                            disabled={deleteLoading}
+                            onClick={() => handlePageChange(page - 1)}
+                            disabled={!pagination.hasPrev || loading}
                         >
-                            Abbrechen
+                            Previous
                         </Button>
+                        <span className='text-sm text-gray-600'>
+                            Page {pagination.page} of {pagination.totalPages}
+                        </span>
                         <Button
-                            variant='destructive'
-                            onClick={confirmDelete}
-                            disabled={deleteLoading}
+                            variant='outline'
+                            onClick={() => handlePageChange(page + 1)}
+                            disabled={!pagination.hasNext || loading}
                         >
-                            {deleteLoading ? (
-                                <span className='flex items-center gap-2'>
-                                    <Loader2 className='w-4 h-4 animate-spin' />
-                                    Löschen...
-                                </span>
-                            ) : (
-                                'Löschen'
-                            )}
+                            Next
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
+                    </div>
+                )}
+
+                {/* Footer Summary */}
+                <div className='flex items-center justify-between pt-4 border-t'>
+                    <p className='text-sm text-gray-600'>
+                        {pagination?.total || documents.length} Dokumente Gesamt
+                    </p>
+                </div>
+
+                <Dialog
+                    open={deleteDialogOpen}
+                    onOpenChange={(open) => {
+                        setDeleteDialogOpen(open)
+                        if (!open) {
+                            setDocumentToDelete(null)
+                        }
+                    }}
+                >
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Dokument löschen?</DialogTitle>
+                            <DialogDescription>
+                                {documentToDelete
+                                    ? `Möchten Sie "${documentToDelete.title}" endgültig löschen?`
+                                    : 'Möchten Sie dieses Dokument endgültig löschen?'}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                            <Button
+                                variant='outline'
+                                onClick={() => {
+                                    setDeleteDialogOpen(false)
+                                    setDocumentToDelete(null)
+                                }}
+                                disabled={deleteLoading}
+                            >
+                                Abbrechen
+                            </Button>
+                            <Button
+                                variant='destructive'
+                                onClick={confirmDelete}
+                                disabled={deleteLoading}
+                            >
+                                {deleteLoading ? (
+                                    <span className='flex items-center gap-2'>
+                                        <Loader2 className='w-4 h-4 animate-spin' />
+                                        Löschen...
+                                    </span>
+                                ) : (
+                                    'Löschen'
+                                )}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </>
     )
 }
 

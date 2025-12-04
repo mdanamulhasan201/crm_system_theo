@@ -14,6 +14,7 @@ import { DeleteCustomerDialog } from '@/components/LastScans/Tables/DeleteCustom
 import { LastScanPagination } from '@/components/LastScans/Tables/LastScanPagination';
 import { formatDate, getOrderStatusLabel } from '@/components/LastScans/Tables/utils';
 import { DateRangeFilter, LastScanRow, OrderStatusFilter, LatestScreener } from '@/components/LastScans/Tables/types';
+import LastScanTableShimmer from '@/components/ShimmerEffect/Customer/LastScanTableShimmer';
 
 interface LastScanTableProps {
     onCustomerDeleted?: () => void;
@@ -492,17 +493,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={8}>
-                                    <div className="py-10 flex items-center justify-center gap-2 text-gray-500">
-                                        <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                        </svg>
-                                        Loading customer data...
-                                    </div>
-                                </TableCell>
-                            </TableRow>
+                            <LastScanTableShimmer rows={6} />
                         ) : displayRows.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={8}>

@@ -2,8 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSingleCustomShaft } from '@/hooks/customShafts/useSingleCustomShaft';
-import Loading from '@/components/Shared/Loading';
 import toast from 'react-hot-toast';
+import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
 import { createCustomShaft } from '@/apis/customShaftsApis';
 
 // Import separated components
@@ -12,6 +12,8 @@ import ProductImageInfo from '@/components/CustomShafts/ProductImageInfo';
 import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
 import SuccessMessage from '@/components/CustomShafts/SuccessMessage';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 interface Customer {
   id: string;
@@ -117,7 +119,7 @@ export default function DetailsPage() {
     setIsCreatingOrder(true);
     try {
       const formData = new FormData();
-      
+
       // Use selected customer ID if available, otherwise use other_customer_number
       if (selectedCustomer) {
         formData.append('customerId', selectedCustomer.id);
@@ -172,13 +174,9 @@ export default function DetailsPage() {
     }
   };
 
-  // Loading state
+  // Loading state - show shimmer effect
   if (loading) {
-    return (
-      <div className="px-2 md:px-6 py-8 w-full flex justify-center items-center min-h-[400px]">
-        <Loading />
-      </div>
-    );
+    return <CustomShaftDetailsShimmer />;
   }
 
   // Error state
@@ -206,83 +204,93 @@ export default function DetailsPage() {
   }
 
   return (
-    <div className="px-2 md:px-6 py-8 w-full">
-      <h1 className="text-2xl md:text-3xl font-bold mb-8 text-left">
-        Massschaftkonfigurator
-      </h1>
+    <>
+      {/* back button    */}
+      <Button variant="outline" className="justify-start w-fit cursor-pointer text-base font-normal border border-black gap-3" onClick={() => router.back()}>
+        <ArrowLeft className="w-5 h-5" />
+        Zurück
+      </Button>
 
-      {/* File Upload Section */}
-      <FileUploadSection
-        linkerLeistenFileName={linkerLeistenFileName}
-        setLinkerLeistenFileName={setLinkerLeistenFileName}
-        rechterLeistenFileName={rechterLeistenFileName}
-        setRechterLeistenFileName={setRechterLeistenFileName}
-        linkerLeistenFile={linkerLeistenFile}
-        setLinkerLeistenFile={setLinkerLeistenFile}
-        rechterLeistenFile={rechterLeistenFile}
-        setRechterLeistenFile={setRechterLeistenFile}
-        selectedCustomer={selectedCustomer}
-        onSelectCustomer={setSelectedCustomer}
-        otherCustomerNumber={otherCustomerNumber}
-        setOtherCustomerNumber={setOtherCustomerNumber}
-      />
+      <div className="px-2 md:px-6 py-8 w-full">
 
-      {/* Product Image and Info */}
-      <ProductImageInfo
-        shaft={shaft}
-        uploadedImage={uploadedImage}
-        setUploadedImage={setUploadedImage}
-      />
+        <h1 className="text-2xl md:text-3xl font-bold mb-8 text-left">
+          Massschaftkonfigurator
+        </h1>
 
-      {/* Product Configuration */}
-      <ProductConfiguration
-        nahtfarbeOption={nahtfarbeOption}
-        setNahtfarbeOption={setNahtfarbeOption}
-        customNahtfarbe={customNahtfarbe}
-        setCustomNahtfarbe={setCustomNahtfarbe}
-        passendenSchnursenkel={passendenSchnursenkel}
-        setPassendenSchnursenkel={setPassendenSchnursenkel}
-        osenEinsetzen={osenEinsetzen}
-        setOsenEinsetzen={setOsenEinsetzen}
-        lederType={lederType}
-        setLederType={setLederType}
-        lederfarbe={lederfarbe}
-        setLederfarbe={setLederfarbe}
-        innenfutter={innenfutter}
-        setInnenfutter={setInnenfutter}
-        schafthohe={schafthohe}
-        setSchafthohe={setSchafthohe}
-        polsterung={polsterung}
-        setPolsterung={setPolsterung}
-        verstarkungen={verstarkungen}
-        setVerstarkungen={setVerstarkungen}
-        polsterungText={polsterungText}
-        setPolsterungText={setPolsterungText}
-        verstarkungenText={verstarkungenText}
-        setVerstarkungenText={setVerstarkungenText}
-        onOrderComplete={() => setShowConfirmationModal(true)}
-      />
+        {/* File Upload Section */}
+        <FileUploadSection
+          linkerLeistenFileName={linkerLeistenFileName}
+          setLinkerLeistenFileName={setLinkerLeistenFileName}
+          rechterLeistenFileName={rechterLeistenFileName}
+          setRechterLeistenFileName={setRechterLeistenFileName}
+          linkerLeistenFile={linkerLeistenFile}
+          setLinkerLeistenFile={setLinkerLeistenFile}
+          rechterLeistenFile={rechterLeistenFile}
+          setRechterLeistenFile={setRechterLeistenFile}
+          selectedCustomer={selectedCustomer}
+          onSelectCustomer={setSelectedCustomer}
+          otherCustomerNumber={otherCustomerNumber}
+          setOtherCustomerNumber={setOtherCustomerNumber}
+        />
 
-      {/* Success Message */}
-      <SuccessMessage
-        isVisible={showSuccessMessage}
-        onClose={() => setShowSuccessMessage(false)}
-        orderPrice={orderPrice}
-      />
+        {/* Product Image and Info */}
+        <ProductImageInfo
+          shaft={shaft}
+          uploadedImage={uploadedImage}
+          setUploadedImage={setUploadedImage}
+        />
 
-      {/* Confirmation Modal */}
-      <ConfirmationModal
-        isOpen={showConfirmationModal}
-        onClose={() => setShowConfirmationModal(false)}
-        onConfirm={handleOrderConfirmation}
-        orderPrice={orderPrice}
-        passendenSchnursenkel={passendenSchnursenkel}
-        osenEinsetzen={osenEinsetzen}
-        selectedCustomer={selectedCustomer}
-        otherCustomerNumber={otherCustomerNumber}
-        shaftName={shaft?.name}
-        isCreatingOrder={isCreatingOrder}
-      />
-    </div>
+        {/* Product Configuration */}
+        <ProductConfiguration
+          nahtfarbeOption={nahtfarbeOption}
+          setNahtfarbeOption={setNahtfarbeOption}
+          customNahtfarbe={customNahtfarbe}
+          setCustomNahtfarbe={setCustomNahtfarbe}
+          passendenSchnursenkel={passendenSchnursenkel}
+          setPassendenSchnursenkel={setPassendenSchnursenkel}
+          osenEinsetzen={osenEinsetzen}
+          setOsenEinsetzen={setOsenEinsetzen}
+          lederType={lederType}
+          setLederType={setLederType}
+          lederfarbe={lederfarbe}
+          setLederfarbe={setLederfarbe}
+          innenfutter={innenfutter}
+          setInnenfutter={setInnenfutter}
+          schafthohe={schafthohe}
+          setSchafthohe={setSchafthohe}
+          polsterung={polsterung}
+          setPolsterung={setPolsterung}
+          verstarkungen={verstarkungen}
+          setVerstarkungen={setVerstarkungen}
+          polsterungText={polsterungText}
+          setPolsterungText={setPolsterungText}
+          verstarkungenText={verstarkungenText}
+          setVerstarkungenText={setVerstarkungenText}
+          onOrderComplete={() => setShowConfirmationModal(true)}
+        />
+
+        {/* Success Message */}
+        <SuccessMessage
+          isVisible={showSuccessMessage}
+          onClose={() => setShowSuccessMessage(false)}
+          orderPrice={orderPrice}
+        />
+
+        {/* Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showConfirmationModal}
+          onClose={() => setShowConfirmationModal(false)}
+          onConfirm={handleOrderConfirmation}
+          orderPrice={orderPrice}
+          passendenSchnursenkel={passendenSchnursenkel}
+          osenEinsetzen={osenEinsetzen}
+          selectedCustomer={selectedCustomer}
+          otherCustomerNumber={otherCustomerNumber}
+          shaftName={shaft?.name}
+          isCreatingOrder={isCreatingOrder}
+        />
+      </div>
+    </>
+
   );
 }

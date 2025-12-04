@@ -345,6 +345,7 @@ export default function Customers() {
             </div>
 
             {/* ===== LAST SCANS SECTION ===== */}
+            {/* No extra timer: shimmer is handled inside LastScans based on real loading state */}
             <LastScans ref={lastScansRef} />
 
             <LastScanTable onCustomerDeleted={handleCustomerDeleted} />

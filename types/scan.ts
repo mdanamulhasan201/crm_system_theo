@@ -62,6 +62,8 @@ export interface ScanData {
     einlagenversorgung?: number | string;
     createdAt: string;
     updatedAt: string;
+    // Billing info
+    billingType?: string;
     // Latest screener files
     screenerFile?: ScreenerFileItem[];
     // Optional legacy fields (fallbacks if present on customer)

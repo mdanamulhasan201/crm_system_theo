@@ -12,6 +12,7 @@ import {
     Lock,
     Store,
     HelpCircle,
+    Bell,
 
 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -57,6 +58,12 @@ const sidebarData = [
         icon: Warehouse,
         label: "Werkstattzettel",
         href: "/dashboard/settings-profile/werkstattzettel"
+    },
+    {
+        id: "benachrichtigungen",
+        icon: Bell,
+        label: "Benachrichtigungen",
+        href: "/dashboard/settings-profile/benachrichtigungen"
     },
     {
         id: "notifications",
@@ -105,7 +112,10 @@ const sidebarData = [
         icon: HelpCircle,
         label: "Fragen",
         href: "/dashboard/settings-profile/fragen"
-    },
+    }
+
+
+
     // {
     //     id: "language",
     //     icon: Globe,

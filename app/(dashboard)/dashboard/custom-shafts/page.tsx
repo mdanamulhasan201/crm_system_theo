@@ -3,12 +3,13 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
 import { ChevronDown, Search } from 'lucide-react';
-import Image from 'next/image';
 import { Input } from '@/components/ui/input';
+import ImageWithShimmer from '@/components/CustomShafts/ImageWithShimmer';
 import { useRouter } from 'next/navigation';
 import { useCustomShafts } from '@/hooks/customShafts/useCustomShafts';
 import useDebounce from '@/hooks/useDebounce';
 import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
+import CustomShaftProductCardShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftProductCardShimmer';
 
 const categories = [
     { label: 'Alle Kategorien', value: 'alle' },
@@ -234,12 +235,20 @@ export default function CustomShafts() {
             )}
 
             {/* Product Grid */}
-            {!error && displayedData.length > 0 && (
+            {!error && (
                 <>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {displayedData.map((item) => (
+                        {/* Show loaded items */}
+                        {displayedData.map((item, index) => (
                             <div key={item.id} className="border group border-gray-300 rounded-md bg-white flex flex-col h-full">
-                                <Image src={item.image} alt={item.name} className="w-64 mx-auto h-full object-contain p-4" width={500} height={500} />
+                                <ImageWithShimmer
+                                    src={item.image}
+                                    alt={item.name}
+                                    width={500}
+                                    height={500}
+                                    priority={index < 4}
+                                    index={index}
+                                />
                                 <div className="flex-1 flex flex-col justify-between p-4">
                                     <div>
                                         <div className="font-semibold text-base mb-1 text-left">{item.name}</div>
@@ -250,6 +259,11 @@ export default function CustomShafts() {
                                 </div>
                             </div>
                         ))}
+
+                        {/* Show shimmer dynamically only for items that are still loading */}
+                        {loading && (displayedData.length === 0 || isFetchingNewPage) && (
+                            <CustomShaftProductCardShimmer count={itemsPerPage} />
+                        )}
                     </div>
 
                     {/* Show More Button */}
@@ -269,8 +283,8 @@ export default function CustomShafts() {
                 </>
             )}
 
-            {/* No Products Found */}
-            {!error && !loading && filteredData.length === 0 && (
+            {/* No Products Found - only show when not loading and no data */}
+            {!error && !loading && displayedData.length === 0 && filteredData.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12">
                     <div className="text-gray-500 text-lg font-medium mb-2">Keine Produkte gefunden</div>
                     <div className="text-gray-400 text-sm text-center">
