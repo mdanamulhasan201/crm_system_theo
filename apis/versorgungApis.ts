@@ -10,10 +10,20 @@ export const createVersorgung = async (versorgungData: any) => {
     }
 }
 
-// get all versorgungen  versorgungen?status=Businesseinlagen&page=1&limit=5&diagnosis_status=HOHLFUSS
-export const getAllVersorgungen = async (status: string, page: number, limit: number, diagnosis_status: string) => {
+// get all versorgungen  versorgungen?status=&page=&limit=
+export const getAllVersorgungen = async (status: string, page: number, limit: number,) => {
     try {
-        const response = await axiosClient.get(`/versorgungen?status=${status}&page=${page}&limit=${limit}&diagnosis_status=${diagnosis_status}`);
+        const response = await axiosClient.get(`/versorgungen?status=${status}&page=${page}&limit=${limit}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// get all versorgungen by supplyStatus.name (using status parameter)
+export const getVersorgungenBySupplyStatusId = async (supplyStatusName: string, page: number , limit: number ) => {
+    try {
+        const response = await axiosClient.get(`/versorgungen?status=${supplyStatusName}&page=${page}&limit=${limit}`);
         return response.data;
     } catch (error) {
         throw error;

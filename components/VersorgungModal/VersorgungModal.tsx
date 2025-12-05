@@ -45,6 +45,7 @@ export interface VersorgungModalProps {
     editingCard: VersorgungCard | null
     onSubmit: (formData: Omit<VersorgungCard, 'id'>) => void
     selectedDiagnosis?: string
+    supplyStatusId?: string
 }
 
 // Constants
@@ -72,7 +73,8 @@ export default function VersorgungModal({
     category,
     editingCard,
     onSubmit,
-    selectedDiagnosis
+    selectedDiagnosis,
+    supplyStatusId
 }: VersorgungModalProps) {
 
     const [form, setForm] = useState(INITIAL_FORM_STATE)
@@ -219,7 +221,7 @@ export default function VersorgungModal({
                 artikelHersteller: form.artikelHersteller,
                 versorgung: form.versorgung,
                 material: materialienArray, // Send as array
-                status: getCategoryStatus(),
+                ...(supplyStatusId ? { supplyStatusId: supplyStatusId } : { status: getCategoryStatus() }),
                 storeId: selectedProduct?.id || null,
                 ...(selectedDiagnosisState && { diagnosis_status: selectedDiagnosisState })
             }

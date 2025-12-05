@@ -1,8 +1,6 @@
 
 import React from 'react'
-import Alltagseinlagen from '../_components/Versorgungs/Alltagseinlagen'
-import Sporteinlagen from '../_components/Versorgungs/Sporteinlagen'
-import Businesseinlagen from '../_components/Versorgungs/Businesseinlagen'
+import Versorgungencard from '../_components/Versorgungs/Versorgungencard'
 
 export default function VersorgungsPage() {
     return (
@@ -11,9 +9,7 @@ export default function VersorgungsPage() {
                 <h1 className='text-2xl font-bold capitalize'>VERSORGUNGEN</h1>
                 <p>Erstelle jetzt Versorgungen, die du häufig verwendest – für eine noch schnellere Abwicklung deiner Arbeitszettel.</p>
             </div>
-            <Alltagseinlagen />
-            <Sporteinlagen />
-            <Businesseinlagen />
+            <Versorgungencard />
         </div>
     )
 }
