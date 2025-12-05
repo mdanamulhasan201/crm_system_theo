@@ -1,246 +1,336 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { usePriceManagement } from "@/hooks/priceManagement/usePriceManagement";
+import Image from "next/image";
 import { Trash2, Edit } from "lucide-react";
+import EinlagehinzufügenModal from "../_components/Preisverwaltung/EinlagehinzufügenModal";
+import { useEinlagen } from "@/hooks/einlagen/useEinlagen";
+
+interface Insole {
+    id: string;
+    name: string;
+    description: string;
+    price: number;
+    image: string;
+    selected: boolean;
+}
 
 export default function PreisverwaltungPage() {
-  const { prices, loading, createNewPrice, updateExistingPrice, deleteExistingPrice, fetchPrices } = usePriceManagement();
-  const [fussanalyse, setFussanalyse] = useState("");
-  const [einlagenversorgung, setEinlagenversorgung] = useState("");
-  const [editingPrice, setEditingPrice] = useState<any>(null);
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [priceToDelete, setPriceToDelete] = useState<any>(null);
+    const { create, update, removeMultiple, getAll, isLoading } = useEinlagen();
+    const [insoles, setInsoles] = useState<Insole[]>([]);
+    const [isInitialLoading, setIsInitialLoading] = useState(true);
+    const [modalOpen, setModalOpen] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [editingInsole, setEditingInsole] = useState<Insole | null>(null);
+    const [newCover, setNewCover] = useState("");
+    const [selectedMaterials, setSelectedMaterials] = useState<string[]>([]);
 
-  // Load existing prices on component mount
-  useEffect(() => {
-    fetchPrices();
-  }, []);
+    const fetchEinlagen = useCallback(async () => {
+        try {
+            const response = await getAll(1, 100);
+            if (response?.data) {
+                const formattedInsoles: Insole[] = response.data.map((item: any) => ({
+                    id: item.id,
+                    name: item.name,
+                    description: item.description || "",
+                    price: item.price,
+                    image: item.image || "#CCCCCC",
+                    selected: false,
+                }));
+                setInsoles(formattedInsoles);
+            }
+        } catch (error) {
+            console.error("Error fetching einlagen:", error);
+        } finally {
+            setIsInitialLoading(false);
+        }
+    }, [getAll]);
 
-  const handleSave = async () => {
-    if (!fussanalyse && !einlagenversorgung) {
-      alert("Bitte geben Sie mindestens einen Preis ein.");
-      return;
-    }
+    // Fetch einlagen on component mount
+    useEffect(() => {
+        fetchEinlagen();
+    }, [fetchEinlagen]);
 
-    try {
-      const priceData = {
-        fußanalyse: fussanalyse ? parseFloat(fussanalyse) : 0,
-        einlagenversorgung: einlagenversorgung ? parseFloat(einlagenversorgung) : 0
-      };
+    const handleInsoleSelect = (id: string) => {
+        setInsoles((prev) =>
+            prev.map((insole) =>
+                insole.id === id ? { ...insole, selected: !insole.selected } : insole
+            )
+        );
+    };
 
-      if (editingPrice) {
-        // Update existing price
-        await updateExistingPrice(editingPrice.id, priceData);
-        setEditingPrice(null);
-      } else {
-        // Create new price
-        await createNewPrice(priceData);
-      }
-      
-      // Clear form after successful save
-      setFussanalyse("");
-      setEinlagenversorgung("");
-      
-      // Refresh the price list
-      fetchPrices();
-    } catch (error) {
-      console.error("Error saving prices:", error);
-      alert("Fehler beim Speichern der Preise.");
-    }
-  };
+    const handleMaterialToggle = (material: string) => {
+        setSelectedMaterials((prev) =>
+            prev.includes(material)
+                ? prev.filter((m) => m !== material)
+                : [...prev, material]
+        );
+    };
 
-  const handleEdit = (price: any) => {
-    setEditingPrice(price);
-    setFussanalyse(price.fußanalyse ? price.fußanalyse.toString() : "");
-    setEinlagenversorgung(price.einlagenversorgung ? price.einlagenversorgung.toString() : "");
-  };
+    const handleAddInsole = async (data: { id?: string; name: string; description: string; price: number; image?: string; imageFile?: File }) => {
+        try {
+            if (data.id && editingInsole) {
+                // Update existing insole
+                await update({
+                    id: data.id,
+                    name: data.name,
+                    description: data.description,
+                    price: data.price,
+                    image: data.image,
+                    imageFile: data.imageFile,
+                });
+                // Refresh the list
+                await fetchEinlagen();
+                setEditingInsole(null);
+                setModalOpen(false);
+            } else {
+                // Create new insole
+                await create({
+                    name: data.name,
+                    description: data.description,
+                    price: data.price,
+                    image: data.image,
+                    imageFile: data.imageFile,
+                });
+                // Refresh the list
+                await fetchEinlagen();
+                setModalOpen(false);
+            }
+        } catch (error) {
+            console.error("Error saving einlage:", error);
+            // Don't close modal on error so user can retry
+        }
+    };
 
-  const handleDeleteClick = (price: any) => {
-    setPriceToDelete(price);
-    setDeleteModalOpen(true);
-  };
+    const handleDeleteClick = () => {
+        setDeleteConfirmOpen(true);
+    };
 
-  const handleDeleteConfirm = async () => {
-    if (!priceToDelete?.id) return;
-    
-    try {
-      await deleteExistingPrice(priceToDelete.id);
-      fetchPrices(); // Refresh the list
-      setDeleteModalOpen(false);
-      setPriceToDelete(null);
-    } catch (error) {
-      console.error("Error deleting price:", error);
-      alert("Fehler beim Löschen des Preises.");
-    }
-  };
+    const handleDeleteSelected = async () => {
+        const selectedIds = insoles.filter((insole) => insole.selected).map((insole) => insole.id);
+        if (selectedIds.length > 0) {
+            try {
+                await removeMultiple(selectedIds);
+                // Refresh the list
+                await fetchEinlagen();
+                setDeleteConfirmOpen(false);
+            } catch (error) {
+                console.error("Error deleting einlagen:", error);
+            }
+        }
+    };
 
-  const handleDeleteCancel = () => {
-    setDeleteModalOpen(false);
-    setPriceToDelete(null);
-  };
+    const handleUpdateInsole = (insole: Insole) => {
+        setEditingInsole(insole);
+        setModalOpen(true);
+    };
 
-  const handleCancel = () => {
-    setEditingPrice(null);
-    setFussanalyse("");
-    setEinlagenversorgung("");
-  };
+    const selectedCount = insoles.filter((insole) => insole.selected).length;
 
-  return (
-    <div className="max-w-3xl mx-auto mt-10 font-sans">
-      <h1 className="text-4xl font-bold mb-2">Preisverwaltung</h1>
-      <p className="mb-8">
-        Legen Sie Standardpreise an, um sie später bei Aufträgen schnell auszuwählen.
-      </p>
-
-      <div className="mb-6">
-        <label className="font-semibold block mb-2">Fußanalyse</label>
-        <Input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="z.B. 25 €"
-          value={fussanalyse}
-          onChange={e => setFussanalyse(e.target.value)}
-          className="border border-gray-600"
-        />
-      </div>
-
-      <div className="mb-6">
-        <label className="font-semibold block mb-2">Einlagenversorgung</label>
-        <Input
-          type="number"
-          min="0"
-          step="0.01"
-          placeholder="z.B. 170 €"
-          value={einlagenversorgung}
-          onChange={e => setEinlagenversorgung(e.target.value)}
-          className="border border-gray-600"
-        />
-      </div>
-
-      <div className="flex gap-4 mt-8">
-        <Button 
-          type="button" 
-          className="flex-1 cursor-pointer"
-          onClick={handleSave}
-          disabled={loading}
-        >
-          {loading ? "Speichern..." : editingPrice ? "Aktualisieren" : "Speichern"}
-        </Button>
-        {editingPrice && (
-          <Button 
-            type="button" 
-            variant="outline"
-            onClick={handleCancel}
-            className="px-6 cursor-pointer"
-          >
-            Abbrechen
-          </Button>
-        )}
-      </div>
-
-      {/* Simple Price Table */}
-      {prices && prices.length > 0 && (
-        <div className="mt-12">
-          <h2 className="text-2xl font-bold mb-4">Gespeicherte Preise</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-50">
-                  <th className="border border-gray-300 px-4 py-2 text-left">Fußanalyse (€)</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Einlagenversorgung (€)</th>
-                  <th className="border border-gray-300 px-4 py-2 text-left">Erstellt am</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">Aktionen</th>
-                </tr>
-              </thead>
-              <tbody>
-                {prices && prices.length > 0 ? prices.map((price, index) => (
-                  <tr key={price?.id || `price-${index}`} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 px-4 py-2">
-                      {price?.fußanalyse ? price.fußanalyse.toFixed(2) : "0.00"}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {price?.einlagenversorgung ? price.einlagenversorgung.toFixed(2) : "0.00"}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      {price?.createdAt ? new Date(price.createdAt).toLocaleDateString('de-DE') : "-"}
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      <div className="flex gap-2 justify-center">
+    return (
+        <div className="  p-6 bg-white min-h-screen">
+            {/* Header with Add Button and Action Buttons */}
+            <div className="flex justify-between items-center mb-8">
+                {selectedCount > 0 && (
+                    <div className="flex gap-3">
                         <button
-                          onClick={() => handleEdit(price)}
-                          className="p-1 cursor-pointer text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
-                          title="Bearbeiten"
+                            onClick={handleDeleteClick}
+                            className="border border-red-500 text-red-500 rounded-[5px] px-4 py-2 font-bold uppercase text-sm tracking-wide bg-white hover:bg-red-50 cursor-pointer flex items-center gap-2"
                         >
-                          <Edit className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4" />
+                            Löschen ({selectedCount})
                         </button>
-                        <button
-                          onClick={() => handleDeleteClick(price)}
-                          className="p-1 cursor-pointer text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-                          title="Löschen"
-                          disabled={!price?.id}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={4} className="border border-gray-300 px-4 py-8 text-center text-gray-500">
-                      Keine Preise gefunden
-                    </td>
-                  </tr>
+                    </div>
                 )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      <Dialog open={deleteModalOpen} onOpenChange={setDeleteModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Preis löschen</DialogTitle>
-            <DialogDescription>
-              Sind Sie sicher, dass Sie diesen Preis löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
-            </DialogDescription>
-          </DialogHeader>
-          {priceToDelete && (
-            <div className="py-4">
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <span className="font-medium">Fußanalyse:</span>
-                    <p className="text-lg">{priceToDelete.fußanalyse ? priceToDelete.fußanalyse.toFixed(2) : "0.00"} €</p>
-                  </div>
-                  <div>
-                    <span className="font-medium">Einlagenversorgung:</span>
-                    <p className="text-lg">{priceToDelete.einlagenversorgung ? priceToDelete.einlagenversorgung.toFixed(2) : "0.00"} €</p>
-                  </div>
-                </div>
-              </div>
+                <button
+                    onClick={() => {
+                        setEditingInsole(null);
+                        setModalOpen(true);
+                    }}
+                    className="border cursor-pointer border-black rounded-[5px] px-4 py-2 font-bold uppercase text-sm tracking-wide bg-white hover:bg-gray-50 text-black ml-auto"
+                >
+                    EINLAGE HINZUFÜGEN
+                </button>
             </div>
-          )}
-          <DialogFooter>
-            <Button className="cursor-pointer" variant="outline" onClick={handleDeleteCancel}>
-              Abbrechen
-            </Button>
-            <Button 
-              className="cursor-pointer"
-              variant="destructive" 
-              onClick={handleDeleteConfirm}
-              disabled={loading}
-            >
-              {loading ? "Löschen..." : "Löschen"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
+
+            {/* Add/Edit Modal */}
+            <EinlagehinzufügenModal
+                open={modalOpen}
+                onOpenChange={(open) => {
+                    setModalOpen(open);
+                    if (!open) {
+                        setEditingInsole(null);
+                    }
+                }}
+                onSubmit={handleAddInsole}
+                editingInsole={editingInsole}
+                isLoading={isLoading}
+            />
+
+            {/* Delete Confirmation Modal */}
+            <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">
+                            Einlagen löschen bestätigen
+                        </DialogTitle>
+                        <DialogDescription>
+                            Sind Sie sicher, dass Sie {selectedCount} Einlage(n) löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={() => setDeleteConfirmOpen(false)}
+                            disabled={isLoading}
+                            className="cursor-pointer"
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            onClick={handleDeleteSelected}
+                            disabled={isLoading}
+                            className="bg-red-600 cursor-pointer hover:bg-red-700 text-white"
+                        >
+                            {isLoading ? "Löschen..." : "Ja, löschen"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Insole Cards Section */}
+            <div className="space-y-4 mb-12">
+                {isInitialLoading ? (
+                    // Shimmer Loading Effect
+                    Array.from({ length: 3 }).map((_, index) => (
+                        <div
+                            key={`shimmer-${index}`}
+                            className="bg-gray-50 border border-gray-300 rounded-[5px] p-4 flex items-center gap-6 relative"
+                        >
+                            {/* Image Shimmer */}
+                            <div className="flex-shrink-0">
+                                <div className="w-16 h-16 rounded-sm bg-gray-200 animate-pulse" />
+                            </div>
+
+                            {/* Content Shimmer */}
+                            <div className="flex-1 flex flex-col justify-between min-h-[64px] pr-8">
+                                <div className="space-y-2">
+                                    {/* Name Shimmer */}
+                                    <div className="h-5 bg-gray-200 animate-pulse rounded w-48" />
+                                    {/* Description Shimmer */}
+                                    <div className="h-4 bg-gray-200 animate-pulse rounded w-64" />
+                                </div>
+                                {/* Price Shimmer */}
+                                <div className="text-right mt-2">
+                                    <div className="h-5 bg-gray-200 animate-pulse rounded w-32 ml-auto" />
+                                </div>
+                            </div>
+
+                            {/* Checkbox Shimmer */}
+                            <div className="absolute top-4 right-4">
+                                <div className="h-5 w-5 bg-gray-200 animate-pulse rounded" />
+                            </div>
+                        </div>
+                    ))
+                ) : (
+                    insoles.map((insole) => (
+                        <div
+                            key={insole.id}
+                            className="bg-gray-50 border border-gray-300 rounded-[5px] p-4 flex items-center gap-6 relative group hover:shadow-md transition-shadow"
+                        >
+                            {/* Checkbox in top right */}
+                            <div className="absolute top-4 right-4 z-10">
+                                <Checkbox
+                                    checked={insole.selected}
+                                    onChange={() => handleInsoleSelect(insole.id)}
+                                    className="h-5 w-5 border-black border"
+                                />
+                            </div>
+
+                            {/* Update Button - Show on Hover */}
+                            <div className="absolute top-4 right-12 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                <button
+                                    onClick={() => handleUpdateInsole(insole)}
+                                    className="bg-blue-500 text-white rounded-[5px] px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-blue-600 cursor-pointer"
+                                >
+                                    <Edit className="w-3 h-3" />
+                                    Bearbeiten
+                                </button>
+                            </div>
+
+                            {/* Insole Image */}
+                            <div className="flex-shrink-0">
+                                {insole.image.startsWith('data:') || insole.image.startsWith('http') ? (
+                                    <div className="w-16 h-16 rounded-sm overflow-hidden relative">
+                                        <Image
+                                            src={insole.image}
+                                            alt={insole.name}
+                                            fill
+                                            className="object-cover"
+                                            unoptimized
+                                        />
+                                    </div>
+                                ) : (
+                                    <div
+                                        className="w-16 h-16 rounded-sm"
+                                        style={{ backgroundColor: insole.image }}
+                                    />
+                                )}
+                            </div>
+
+                            {/* Insole Details */}
+                            <div className="flex-1 flex flex-col justify-between min-h-[64px] pr-8">
+                                <div>
+                                    <h3 className="font-bold text-base uppercase mb-1 text-black">
+                                        {insole.name}
+                                    </h3>
+                                    <p className="text-sm text-black">{insole.description}</p>
+                                </div>
+                                <div className="text-right mt-2">
+                                    <span className="font-bold text-black">
+                                        Preis: {insole.price.toFixed(2).replace(".", ",")}€
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    ))
+                )}
+            </div>
+
+            {/* Überzüge Verwalten Section */}
+            <div className="mt-12">
+                <h2 className="font-bold text-lg mb-4 text-black">
+                    Überzüge Verwalten
+                </h2>
+
+                {/* Input Field */}
+                <Input
+                    type="text"
+                    placeholder="Neuen Überzug Eingeben....."
+                    value={newCover}
+                    onChange={(e) => setNewCover(e.target.value)}
+                    className="border-gray-300 rounded-[5px] mb-4 bg-white"
+                />
+
+                {/* Material Tags */}
+                <div className="flex gap-3">
+                    {["Leder", "Microfaser"].map((material) => (
+                        <button
+                            key={material}
+                            onClick={() => handleMaterialToggle(material)}
+                            className={`px-4 py-2 rounded-full border border-black text-sm font-medium transition-colors ${selectedMaterials.includes(material)
+                                ? "bg-black text-white"
+                                : "bg-gray-50 text-black hover:bg-gray-100"
+                                }`}
+                        >
+                            {material}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
 }
