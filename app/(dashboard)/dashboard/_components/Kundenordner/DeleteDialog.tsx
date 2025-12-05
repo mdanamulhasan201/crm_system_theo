@@ -10,7 +10,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { Document } from '../../../kundenordner/[id]/_types'
+import { Document } from '../../../../../types/types'
 
 interface DeleteDialogProps {
     open: boolean

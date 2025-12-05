@@ -1,6 +1,6 @@
 'use client'
 
-import { DocumentType, TableFilter, documentTypeLabels, tableFilterLabels } from '../../../kundenordner/[id]/_types'
+import { DocumentType, TableFilter, documentTypeLabels, tableFilterLabels } from '../../../../../types/types'
 
 interface FilterTabsProps {
     activeFilter: DocumentType

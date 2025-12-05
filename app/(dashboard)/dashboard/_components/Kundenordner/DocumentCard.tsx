@@ -1,7 +1,7 @@
 'use client'
 
 import { Eye, Download, Trash2, FileText } from 'lucide-react'
-import { Document, documentTypeLabels } from '../../../kundenordner/[id]/_types'
+import { Document, documentTypeLabels } from '../../../../../types/types'
 
 interface DocumentCardProps {
     doc: Document

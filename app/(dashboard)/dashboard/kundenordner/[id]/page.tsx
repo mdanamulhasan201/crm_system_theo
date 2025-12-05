@@ -194,7 +194,7 @@ export default function KundenordnerPage() {
                 </Button>
             </div>
             <div className='mb-20 p-4 space-y-6'>
-                <TopNavigation />
+                <TopNavigation activeTab='dokumente' />
 
                 <SearchActionBar
                     searchQuery={searchQuery}
