@@ -68,7 +68,6 @@ interface ScanningFormProps {
 }
 
 // Constants
-const EINLAGE_OPTIONS: EinlageType[] = ['Alltagseinlage', 'Sporteinlage', 'Businesseinlage'];
 const UBERZUG_OPTIONS = ['Leder', 'Microfaser Schwarz', 'Microfaser Beige'];
 const MENGE_OPTIONS = ['1 paar', '2 paar', '3 paar', '4 paar', '5 paar'];
 const DIAGNOSIS_CODE_TO_LABEL: Record<string, string> = {
@@ -111,9 +110,9 @@ const parseBooleanValue = (value: unknown) => {
     return false;
 };
 
-const mapEinlageType = (value?: string | null) => {
+const mapEinlageType = (value?: string | null, options: string[] = []) => {
     if (!value) return undefined;
-    return EINLAGE_OPTIONS.find((option) => option === value) as EinlageType | undefined;
+    return options.find((option: string) => option === value) as EinlageType | undefined;
 };
 
 export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
@@ -135,6 +134,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
         supply,
         setSupply,
         selectedEinlage,
+        einlageOptions,
         handleDiagnosisSelect,
         handleVersorgungCardSelect,
         handleEinlageButtonClick,
@@ -217,10 +217,13 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
         if (typeof prefillOrderData.versorgung_laut_arzt !== 'undefined') {
             setVersorgung_laut_arzt(prefillOrderData.versorgung_laut_arzt ?? '');
         }
-        const derivedEinlage = mapEinlageType(prefillOrderData.einlagentyp);
-        if (derivedEinlage) {
-            handleEinlageButtonClick(derivedEinlage);
-            setEinlagentyp(derivedEinlage);
+        // Only map einlagentyp if einlageOptions are available
+        if (einlageOptions && einlageOptions.length > 0) {
+            const derivedEinlage = mapEinlageType(prefillOrderData.einlagentyp, einlageOptions);
+            if (derivedEinlage) {
+                handleEinlageButtonClick(derivedEinlage);
+                setEinlagentyp(derivedEinlage);
+            }
         }
         if (typeof prefillOrderData.überzug !== 'undefined') {
             setÜberzug(prefillOrderData.überzug ?? '');
@@ -275,6 +278,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
         setSelectedDiagnosis,
         setSupply,
         setSelectedVersorgungId,
+        einlageOptions,
     ]);
 
     // Listen for order data updates
@@ -403,7 +407,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                 <ProductSelectionSection
                     einlagentyp={einlagentyp}
                     selectedEinlage={selectedEinlage}
-                    einlageOptions={EINLAGE_OPTIONS}
+                    einlageOptions={einlageOptions}
                     showEinlageDropdown={showEinlageDropdown}
                     onEinlageToggle={() => setShowEinlageDropdown(!showEinlageDropdown)}
                     onEinlageSelect={handleEinlageSelect}

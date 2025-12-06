@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { getAllVersorgungen } from '@/apis/versorgungApis';
+import { getAllEinlagen } from '@/apis/einlagenApis';
 import { addCustomerVersorgung, getSingleCustomer, updateSingleCustomer } from '@/apis/customerApis';
 
-export type EinlageType = 'Alltagseinlage' | 'Sporteinlage' | 'Businesseinlage';
+export type EinlageType = string; // Now dynamic from API
 
 const diagnosisOptions = [
     'Plantarfasziitis',
@@ -72,6 +73,7 @@ export const useScanningFormData = (
     const [loadingVersorgung, setLoadingVersorgung] = useState(false);
     const [hasDataLoaded, setHasDataLoaded] = useState(false);
     const [selectedVersorgungId, setSelectedVersorgungId] = useState<string | null>(null);
+    const [einlageOptions, setEinlageOptions] = useState<string[]>([]); // Dynamic Einlagentyp options from API
 
     // Editable fields
     const [diagnosis, setDiagnosis] = useState('');
@@ -80,7 +82,7 @@ export const useScanningFormData = (
     const [editingSupply, setEditingSupply] = useState(false);
 
     // Buttons
-    const [selectedEinlage, setSelectedEinlage] = useState<EinlageType>('Alltagseinlage');
+    const [selectedEinlage, setSelectedEinlage] = useState<EinlageType>('');
 
     // Checkboxes
     const [manualEntry, setManualEntry] = useState(false);
@@ -109,14 +111,11 @@ export const useScanningFormData = (
     const [isSaving, setIsSaving] = useState(false);
     const [isSavingDiagnosis, setIsSavingDiagnosis] = useState(false);
 
-    const statusMap = useMemo(
-        () => ({
-            Alltagseinlage: 'Alltagseinlagen',
-            Sporteinlage: 'Sporteinlagen',
-            Businesseinlage: 'Businesseinlagen',
-        }),
-        [],
-    );
+    // Refs to prevent duplicate API calls
+    const hasFetchedSupplyStatuses = useRef(false);
+    const isFetchingVersorgungen = useRef(false);
+    const lastFetchedStatus = useRef<string | null>(null);
+    const lastFetchedDiagnosis = useRef<string | null | undefined>(null);
 
     // Refresh customer
     const refreshCustomerData = async () => {
@@ -138,11 +137,77 @@ export const useScanningFormData = (
         }
     };
 
-    // Initial fetch by status
-    useEffect(() => {
-        void fetchVersorgungData(statusMap[selectedEinlage]);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // Fetch versorgungen by status name (memoized to prevent duplicate calls)
+    const fetchVersorgungenByStatus = useCallback(async (statusName: string, diagnosisStatus?: string | null) => {
+        // Prevent duplicate calls with same parameters
+        const cacheKey = `${statusName}_${diagnosisStatus || 'null'}`;
+        if (
+            isFetchingVersorgungen.current ||
+            (lastFetchedStatus.current === statusName && lastFetchedDiagnosis.current === diagnosisStatus)
+        ) {
+            return;
+        }
+
+        isFetchingVersorgungen.current = true;
+        lastFetchedStatus.current = statusName;
+        lastFetchedDiagnosis.current = diagnosisStatus;
+        setLoadingVersorgung(true);
+        
+        try {
+            const response = await getAllVersorgungen(statusName, 1, 1000);
+            const allData = response.data || [];
+            
+            // Filter by diagnosis_status if provided
+            let filtered = allData;
+            if (diagnosisStatus !== undefined && diagnosisStatus !== null) {
+                // Show only items with matching diagnosis_status
+                filtered = filtered.filter((item: any) => item.diagnosis_status === diagnosisStatus);
+            } else {
+                // Show only items with null diagnosis_status when no diagnosis is selected
+                filtered = filtered.filter((item: any) => item.diagnosis_status === null || item.diagnosis_status === undefined);
+            }
+            
+            setVersorgungData(filtered);
+            setHasDataLoaded(true);
+        } catch (error) {
+            console.error('Error fetching versorgungen:', error);
+            setVersorgungData([]);
+        } finally {
+            setLoadingVersorgung(false);
+            isFetchingVersorgungen.current = false;
+        }
     }, []);
+
+    // Fetch supply statuses from the supply-status API (memoized)
+    const fetchSupplyStatuses = useCallback(async () => {
+        if (hasFetchedSupplyStatuses.current) {
+            return;
+        }
+        hasFetchedSupplyStatuses.current = true;
+
+        try {
+            const response = await getAllEinlagen(1, 1000);
+            // Use the status array from the response
+            const statusNames = response.status || [];
+            setEinlageOptions(statusNames);
+            
+            // Set first option as default if available
+            if (statusNames.length > 0 && !selectedEinlage) {
+                setSelectedEinlage(statusNames[0]);
+                // Fetch versorgungen for the first status
+                await fetchVersorgungenByStatus(statusNames[0]);
+            }
+        } catch (error) {
+            console.error('Error fetching supply statuses:', error);
+            setEinlageOptions([]);
+            hasFetchedSupplyStatuses.current = false; // Reset on error so it can retry
+        }
+    }, [selectedEinlage, fetchVersorgungenByStatus]);
+
+    // Initial fetch supply statuses for Einlagentyp dropdown (only once on mount)
+    useEffect(() => {
+        void fetchSupplyStatuses();
+    }, [fetchSupplyStatuses]);
 
     // Sync diagnosis from customer
     useEffect(() => {
@@ -151,83 +216,61 @@ export const useScanningFormData = (
         }
     }, [customer?.ausfuhrliche_diagnose]);
 
-    // Helper to find matching versorgung
-    const findMatchingVersorgung = (
-        buttonType: EinlageType,
+    // Helper to find matching versorgung (now based on supplyStatus.name, memoized)
+    const findMatchingVersorgung = useCallback((
+        supplyStatusName: EinlageType,
         diagnosisStatus?: string,
     ) => {
         if (!customer?.versorgungen) return null;
-        const targetStatus = statusMap[buttonType];
+        // Try to match by supplyStatus name or versorgung name
         return customer.versorgungen.find((versorgung: any) => {
-            const statusMatches = versorgung.status === targetStatus;
+            // Check if versorgung has supplyStatus that matches
+            const statusMatches = versorgung.supplyStatus?.name === supplyStatusName || 
+                                  versorgung.name === supplyStatusName ||
+                                  versorgung.status === supplyStatusName;
             if (diagnosisStatus) {
                 return statusMatches && versorgung.diagnosis_status === diagnosisStatus;
             }
-            return statusMatches && versorgung.diagnosis_status === null;
+            return statusMatches && (versorgung.diagnosis_status === null || versorgung.diagnosis_status === undefined);
         });
-    };
+    }, [customer?.versorgungen]);
 
     // Update supply when inputs change
     useEffect(() => {
-        if (customer?.versorgungen) {
+        if (customer?.versorgungen && selectedEinlage) {
             const currentDiagnosisStatus = selectedDiagnosis ? diagnosisMapping[selectedDiagnosis] : undefined;
             const matchingVersorgung = findMatchingVersorgung(selectedEinlage, currentDiagnosisStatus);
             if (matchingVersorgung) {
-                setSupply(matchingVersorgung.versorgung);
+                setSupply(matchingVersorgung.versorgung || matchingVersorgung.name || '');
                 setSelectedVersorgungId(matchingVersorgung.id);
             } else {
-                if (!selectedDiagnosis) {
-                    const fallbackVersorgung = customer.versorgungen.find(
-                        (v: any) => v.status === statusMap[selectedEinlage],
-                    );
-                    if (fallbackVersorgung) {
-                        setSupply(fallbackVersorgung.versorgung);
-                        setSelectedVersorgungId(fallbackVersorgung.id);
-                    } else {
-                        setSupply('');
-                        setSelectedVersorgungId(null);
-                    }
-                } else {
-                    setSupply('');
-                    setSelectedVersorgungId(null);
-                }
+                setSupply('');
+                setSelectedVersorgungId(null);
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [customer?.versorgungen, selectedEinlage, selectedDiagnosis]);
 
-    // API calls
-    const fetchVersorgungData = async (status: string) => {
-        setLoadingVersorgung(true);
-        try {
-            const response = await getAllVersorgungen(status, 1, 10, '');
-            setVersorgungData(response.data || []);
-            setHasDataLoaded(true);
-        } catch (error) {
-            setVersorgungData([]);
-        } finally {
-            setLoadingVersorgung(false);
-        }
-    };
 
-    const fetchVersorgungDataByDiagnosis = async (
+    // API calls (kept for backward compatibility, memoized)
+    const fetchVersorgungData = useCallback(async (status: string) => {
+        if (status) {
+            await fetchVersorgungenByStatus(status);
+        }
+    }, [fetchVersorgungenByStatus]);
+
+    const fetchVersorgungDataByDiagnosis = useCallback(async (
         diagnosisStatus: string,
         status: string = '',
     ) => {
-        setLoadingVersorgung(true);
-        try {
-            const response = await getAllVersorgungen(status, 1, 10, diagnosisStatus);
-            setVersorgungData(response.data || []);
-            setHasDataLoaded(true);
-        } catch (error) {
-            setVersorgungData([]);
-        } finally {
-            setLoadingVersorgung(false);
+        const statusToUse = status || selectedEinlage;
+        if (statusToUse) {
+            await fetchVersorgungenByStatus(statusToUse, diagnosisStatus);
         }
-    };
+    }, [selectedEinlage, fetchVersorgungenByStatus]);
 
-    // Handlers
-    const handleDiagnosisSelect = (value: string) => {
+    // Handlers (memoized to prevent re-renders)
+    const handleDiagnosisSelect = useCallback(async (value: string) => {
         setSelectedDiagnosis(value);
         setShowDiagnosisDropdown(false);
 
@@ -235,7 +278,7 @@ export const useScanningFormData = (
             const diagnosisStatus = diagnosisMapping[value];
             const matchingVersorgung = findMatchingVersorgung(selectedEinlage, diagnosisStatus);
             if (matchingVersorgung) {
-                setSupply(matchingVersorgung.versorgung);
+                setSupply(matchingVersorgung.versorgung || matchingVersorgung.name || '');
                 setSelectedVersorgungId(matchingVersorgung.id);
             } else {
                 setSupply('');
@@ -243,69 +286,38 @@ export const useScanningFormData = (
             }
         }
 
-        if (value && diagnosisMapping[value]) {
-            void fetchVersorgungDataByDiagnosis(
-                diagnosisMapping[value],
-                statusMap[selectedEinlage],
-            );
+        if (value && diagnosisMapping[value] && selectedEinlage) {
+            await fetchVersorgungenByStatus(selectedEinlage, diagnosisMapping[value]);
         }
-    };
+    }, [customer?.versorgungen, selectedEinlage, findMatchingVersorgung, fetchVersorgungenByStatus]);
 
-    const handleVersorgungCardSelect = async (item: any) => {
+    const handleVersorgungCardSelect = (item: any) => {
         setSupply(item.versorgung);
         setSelectedVersorgungId(item.id);
         setShowSupplyDropdown(false);
-        if (customer?.id && item.id) {
-            try {
-                await addCustomerVersorgung(customer.id, item.id);
-                toast.success(`Versorgung zu ${customer.vorname || 'Kunde'} hinzugefügt`);
-                await refreshCustomerData();
-            } catch (error) {
-                // eslint-disable-next-line no-console
-                console.error('Error assigning versorgung to customer:', error);
-                toast.error('Fehler beim Zuweisen der Versorgung');
-            }
-        }
     };
 
-    const handleEinlageButtonClick = (einlageType: EinlageType) => {
+    const handleEinlageButtonClick = useCallback(async (einlageType: EinlageType) => {
         setSelectedEinlage(einlageType);
+        
+        // Fetch versorgungen for the selected status
+        const diagnosisStatus = selectedDiagnosis ? diagnosisMapping[selectedDiagnosis] : null;
+        await fetchVersorgungenByStatus(einlageType, diagnosisStatus);
+        
         if (customer?.versorgungen) {
             const currentDiagnosisStatus = selectedDiagnosis ? diagnosisMapping[selectedDiagnosis] : undefined;
             const matchingVersorgung = findMatchingVersorgung(einlageType, currentDiagnosisStatus);
             if (matchingVersorgung) {
-                setSupply(matchingVersorgung.versorgung);
+                setSupply(matchingVersorgung.versorgung || matchingVersorgung.name || '');
                 setSelectedVersorgungId(matchingVersorgung.id);
             } else {
-                if (!selectedDiagnosis) {
-                    const fallbackVersorgung = customer.versorgungen.find(
-                        (v: any) => v.status === statusMap[einlageType],
-                    );
-                    if (fallbackVersorgung) {
-                        setSupply(fallbackVersorgung.versorgung);
-                        setSelectedVersorgungId(fallbackVersorgung.id);
-                    } else {
-                        setSupply('');
-                        setSelectedVersorgungId(null);
-                    }
-                } else {
-                    setSupply('');
-                    setSelectedVersorgungId(null);
-                }
+                setSupply('');
+                setSelectedVersorgungId(null);
             }
         } else {
             setSelectedVersorgungId(null);
         }
-
-        if (selectedDiagnosis && diagnosisMapping[selectedDiagnosis]) {
-            void fetchVersorgungDataByDiagnosis(
-                diagnosisMapping[selectedDiagnosis],
-                statusMap[einlageType],
-            );
-        } else {
-            void fetchVersorgungData(statusMap[einlageType]);
-        }
-    };
+    }, [selectedDiagnosis, customer?.versorgungen, findMatchingVersorgung, fetchVersorgungenByStatus]);
 
     const handleDiagnosisEdit = () => setEditingDiagnosis(true);
 
@@ -387,10 +399,8 @@ export const useScanningFormData = (
         const normalizedSupply = normalize(supply);
         const derivedFromApi = versorgungData.find((v: any) => normalize(v?.versorgung) === normalizedSupply);
         const customerList: any[] = Array.isArray(customer?.versorgungen) ? customer!.versorgungen : [];
-        const preferredStatus = statusMap[selectedEinlage];
-        const derivedFromCustomerPreferred = customerList.find((v: any) => normalize(v?.versorgung) === normalizedSupply && v?.status === preferredStatus);
         const derivedFromCustomerAny = customerList.find((v: any) => normalize(v?.versorgung) === normalizedSupply);
-        return derivedFromApi?.id || derivedFromCustomerPreferred?.id || derivedFromCustomerAny?.id || selectedVersorgungId || null;
+        return derivedFromApi?.id || derivedFromCustomerAny?.id || selectedVersorgungId || null;
     };
 
     // order create
@@ -404,12 +414,15 @@ export const useScanningFormData = (
         setIsSaving(false);
     };
 
-    const clearDiagnosisAndReloadOptions = () => {
+    const clearDiagnosisAndReloadOptions = useCallback(async () => {
         setSelectedDiagnosis('');
-        setVersorgungData([]);
-        setHasDataLoaded(false);
-        void fetchVersorgungData(statusMap[selectedEinlage]);
-    };
+        if (selectedEinlage) {
+            // Reset cache to allow refetch
+            lastFetchedStatus.current = null;
+            lastFetchedDiagnosis.current = null;
+            await fetchVersorgungenByStatus(selectedEinlage, null);
+        }
+    }, [selectedEinlage, fetchVersorgungenByStatus]);
 
     return {
         diagnosisOptions,
@@ -437,6 +450,8 @@ export const useScanningFormData = (
         editingSupply,
         // buttons
         selectedEinlage,
+        // dynamic einlage options from API
+        einlageOptions,
         // checkboxes
         manualEntry,
         setManualEntry,
