@@ -57,3 +57,30 @@ export const deleteEinlage = async (id: string) => {
         throw error;
     }
 }
+
+
+
+// customer-settings/settings body te pass hobe laser_print_prices, cover_types 
+export const getCustomerSettings = async (laser_print_prices: any, cover_types: any ) => {
+    try {
+        const response = await axiosClient.post('/customer-settings/settings', {
+            laser_print_prices,
+            cover_types,
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// get settign data 
+export const getSettingData = async () => {
+    try {
+        const response = await axiosClient.get('/customer-settings/settings');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+

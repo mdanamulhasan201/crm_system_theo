@@ -85,7 +85,7 @@ export default function RezeptePage() {
                                 </label>
                                 <Input
                                     type='text'
-                                    defaultValue='AOK Bayern'
+                                    placeholder='AOK Bayern'
                                     className='w-full bg-gray-50'
                                     readOnly
                                 />
@@ -96,7 +96,7 @@ export default function RezeptePage() {
                                 </label>
                                 <Input
                                     type='text'
-                                    defaultValue='A123456789'
+                                    placeholder='A123456789'
                                     className='w-full bg-gray-50'
                                     readOnly
                                 />
@@ -177,7 +177,7 @@ export default function RezeptePage() {
                                     Ärztliche Diagnose *
                                 </label>
                                 <Textarea
-                                    defaultValue='Plattfuß beidseits, erworbene Fehlstellung'
+                                    placeholder='Plattfuß beidseits, erworbene Fehlstellung'
                                     className='w-full min-h-[80px]'
                                     readOnly
                                 />
@@ -188,7 +188,7 @@ export default function RezeptePage() {
                                 </label>
                                 <Input
                                     type='text'
-                                    defaultValue='Einlage nach Maß beidseits'
+                                    placeholder='Einlage nach Maß beidseits'
                                     className='w-full bg-gray-50'
                                     readOnly
                                 />
@@ -199,7 +199,7 @@ export default function RezeptePage() {
                                 </label>
                                 <Input
                                     type='text'
-                                    defaultValue='4 Wochen (gesetzlich)'
+                                        placeholder='4 Wochen (gesetzlich)'
                                     className='w-full bg-gray-50'
                                     readOnly
                                 />
@@ -239,7 +239,7 @@ export default function RezeptePage() {
                                 </label>
                                 <Input
                                     type='text'
-                                    placeholder='z.B. 6789'
+                                    placeholder=''
                                     className='w-full'
                                 />
                             </div>
