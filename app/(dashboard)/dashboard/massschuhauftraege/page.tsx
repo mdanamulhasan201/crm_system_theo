@@ -15,6 +15,7 @@ export default function MassschuhauftraegePage() {
     const [showPopup, setShowPopup] = useState(false);
     const [showPopup2, setShowPopup2] = useState(false);
     const [tabClicked, setTabClicked] = useState<number>(0);
+    const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const router = useRouter()
     const handleStart = () => {
         router.push('/dashboard/massschuhauftraege-deatils/1');
@@ -58,9 +59,16 @@ export default function MassschuhauftraegePage() {
                 onClick={() => {
                     setShowPopup(true)
                 }}
-                setTabClicked={setTabClicked} tabClicked={tabClicked}
+                setTabClicked={setTabClicked} 
+                tabClicked={tabClicked}
+                selectedOrderId={selectedOrderId}
             />
-            <ProductionView tabClicked={tabClicked} />
+            <ProductionView 
+                tabClicked={tabClicked} 
+                onOrderSelect={setSelectedOrderId}
+                selectedOrderId={selectedOrderId}
+                onTabChange={setTabClicked}
+            />
 
             <CardDeatilsPage />
         </div>

@@ -1,24 +1,14 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { faCheck, faSpinner, faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ConfirmationPopup from "./ConfirmationPopup";
 import Image from "next/image";
+import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder";
+import { useUpdateMassschuheOrderStatus } from "@/hooks/massschuhe/useUpdateMassschuheOrderStatus";
 
-// Function to generate a random European-style name
-function generateRandomEuropeanNames() {
-    const firstNames = [
-        "Luca", "Sofia", "Marek", "Anna", "Jonas", "Elena", "Mateo", "Klara", "Nils", "Eva",
-        "Pavel", "Isabelle", "Leon", "Marta", "Erik", "Sara", "Jan", "Petra", "David", "Laura",
-    ];
-    const lastNames = [
-        "Schmidt", "Novak", "Rossi", "Kovacs", "Dubois", "Bianchi", "Popescu", "Horvat", "Nielsen", "Keller",
-        "Martin", "Silva", "Fischer", "Kraus", "Varga", "Muller", "Ricci", "Dumont", "Santos", "Petrov",
-    ];
-
-    const first = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const last = lastNames[Math.floor(Math.random() * lastNames.length)];
-    return `${first} ${last}`;
-}
+// Constants
+const STATUS_ORDER = ["Leistenerstellung", "Bettungsherstellung", "Halbprobenerstellung", "Schaftherstellung", "Bodenherstellung", "Geliefert"];
+const CARD_ORDER = ["leistenerstellung", "bettungsherstellung", "halbprobenerstellung", "schafterstellung", "bodenerstellung", "geliefert"];
 
 // Card data configuration
 const cardsData = [
@@ -26,100 +16,306 @@ const cardsData = [
         id: "leistenerstellung",
         image: "/spec-6.png",
         title: "Leistenerstellung",
-        progressState: "inProgress1",
-        tabIndex: 1, // "Leisten Erstellung" tab
+        tabIndex: 1,
     },
     {
         id: "bettungsherstellung",
         image: "/spec-5.png",
         title: "Bettungsherstellung",
-        progressState: "inProgress2",
-        tabIndex: 2, // "Bettungs Erstellung" tab
+        tabIndex: 2,
     },
     {
         id: "halbprobenerstellung",
         image: "/spec-4.png",
         title: "Halbprobenerstellung",
-        progressState: "inProgress3",
-        tabIndex: 3, // "Halbproben Erstellung" tab
+        tabIndex: 3,
         hasPdfButton: true,
     },
     {
         id: "schafterstellung",
         image: "/spec-3.png",
         title: "Schafterstellung",
-        progressState: "inProgress5",
-        tabIndex: 4, // "Schaft Erstellung" tab
+        tabIndex: 4,
         hasSpecialButtons: true,
     },
     {
         id: "bodenerstellung",
         image: "/spec-2.png",
         title: "Bodenerstellung",
-        progressState: "inProgress4",
-        tabIndex: 5, // "Boden Erstellung" tab
+        tabIndex: 5,
         hasBodenButtons: true,
     },
     {
         id: "geliefert",
         image: "/spec-1.png",
         title: "Geliefert",
-        progressState: null,
-        tabIndex: 6, // "Geliefert / Abgeschlossen" tab
+        tabIndex: 6,
         isWaiting: true,
     },
 ] as const;
+
+// Map status names to card IDs
+const statusToCardIdMap: Record<string, string> = {
+    "Leistenerstellung": "leistenerstellung",
+    "Bettungsherstellung": "bettungsherstellung",
+    "Halbprobenerstellung": "halbprobenerstellung",
+    "Schaftherstellung": "schafterstellung",
+    "Bodenherstellung": "bodenerstellung",
+    "Geliefert": "geliefert",
+};
+
+// Helper functions for status checking
+const hasValue = (value: string | null | undefined): boolean => {
+    return value !== null && value !== undefined && value !== "";
+};
+
+const hasStarted = (history: any): boolean => {
+    return hasValue(history?.startedAt) || hasValue(history?.started);
+};
+
+const isFinished = (history: any): boolean => {
+    return hasValue(history?.finished) || hasValue(history?.finishedAt);
+};
 
 export default function ChangesOrderProgress({
     onClick,
     onClick2,
     setTabClicked,
+    selectedOrderId,
 }: {
     onClick: () => void;
     onClick2: () => void;
     tabClicked: number;
     setTabClicked: (tab: number) => void;
+    selectedOrderId: string | null;
 }) {
+    const { order, refetch: refetchOrder } = useGetSingleMassschuheOrder(selectedOrderId);
+    const { updateStatus } = useUpdateMassschuheOrderStatus();
+
+    // Button states for schafterstellung
     const [isButton1, setIsButton1] = useState(true);
     const [isButton2, setIsButton2] = useState(false);
     const [showPdf, setShowPdf] = useState(false);
+
+    // Button states for bodenerstellung
     const [isBodenButton1, setIsBodenButton1] = useState(false);
     const [isBodenButton2, setIsBodenButton2] = useState(false);
     const [showBodenPdf, setShowBodenPdf] = useState(false);
 
-    const [inProgress1, setInProgress1] = useState(false);
-    const [inProgress2, setInProgress2] = useState(false);
-    const [inProgress3, setInProgress3] = useState(false);
-    const [inProgress4, setInProgress4] = useState(false);
-    const [inProgress5, setInProgress5] = useState(false);
-
     const [showConfirmPopup, setShowConfirmPopup] = useState(false);
     const [pendingProgressAction, setPendingProgressAction] = useState<(() => void) | null>(null);
 
-    const [currentDateTime, setCurrentDateTime] = useState("");
+    // Get status history for a card
+    const getStatusHistory = useMemo(() => {
+        return (cardId: string) => {
+            if (!order?.statusHistory) return null;
+            
+            const statusName = Object.keys(statusToCardIdMap).find(
+                key => statusToCardIdMap[key] === cardId
+            );
+            
+            if (!statusName) return null;
+            return order.statusHistory.find(history => history.status === statusName) || null;
+        };
+    }, [order?.statusHistory]);
+
+    // Check if a status is completed
+    const isStatusCompleted = useMemo(() => {
+        return (cardId: string) => {
+            const history = getStatusHistory(cardId);
+            return history ? isFinished(history) : false;
+        };
+    }, [getStatusHistory]);
+
+    // Get current active status (IN FERTIGUNG)
+    const getCurrentActiveStatus = () => {
+        if (!order?.statusHistory || order.statusHistory.length === 0) {
+            return "Leistenerstellung";
+        }
+        
+        // Find status that is started but not finished
+        for (const statusName of STATUS_ORDER) {
+            const history = order.statusHistory.find(h => h.status === statusName);
+            if (history && hasStarted(history) && !isFinished(history)) {
+                return statusName;
+            }
+        }
+        
+        // Auto-advance: find next status after completed ones
+        for (let i = 0; i < STATUS_ORDER.length; i++) {
+            const statusName = STATUS_ORDER[i];
+            const history = order.statusHistory.find(h => h.status === statusName);
+            
+            if (!isFinished(history)) {
+                if (i === 0) {
+                    return statusName;
+                }
+                
+                const prevStatus = STATUS_ORDER[i - 1];
+                const prevHistory = order.statusHistory.find(h => h.status === prevStatus);
+                if (prevHistory && isFinished(prevHistory)) {
+                    return statusName;
+                }
+            }
+        }
+        
+        return null;
+    };
+
+    // Get next pending status (IN BEARBEITUNG)
+    const getNextPendingStatus = () => {
+        const currentStatus = getCurrentActiveStatus();
+        
+        if (!currentStatus) {
+            if (!order?.statusHistory || order.statusHistory.length === 0) {
+                return "Leistenerstellung";
+            }
+            // Find first non-completed status
+            for (let i = 0; i < STATUS_ORDER.length; i++) {
+                const statusName = STATUS_ORDER[i];
+                const history = order.statusHistory.find(h => h.status === statusName);
+                
+                if (!isFinished(history)) {
+                    if (i === 0 || isFinished(order.statusHistory.find(h => h.status === STATUS_ORDER[i - 1]))) {
+                        return statusName;
+                    }
+                }
+            }
+            return null;
+        }
+        
+        // Find next status after current
+        const currentIndex = STATUS_ORDER.indexOf(currentStatus);
+        if (currentIndex >= 0 && currentIndex < STATUS_ORDER.length - 1) {
+            const nextStatus = STATUS_ORDER[currentIndex + 1];
+            const nextHistory = order?.statusHistory?.find(h => h.status === nextStatus);
+            if (!nextHistory || (!hasStarted(nextHistory) && !isFinished(nextHistory))) {
+                return nextStatus;
+            }
+        }
+        
+        return null;
+    };
+
+    // Status checkers
+    const isCurrentStatus = (cardId: string) => {
+        const currentStatus = getCurrentActiveStatus();
+        if (!currentStatus) return false;
+        return statusToCardIdMap[currentStatus] === cardId;
+    };
+
+    const isBeforeCurrentStatus = (cardId: string) => {
+        const currentStatus = getCurrentActiveStatus();
+        if (!currentStatus) return false;
+        
+        const currentCardId = statusToCardIdMap[currentStatus];
+        if (!currentCardId) return false;
+        
+        const cardIndex = CARD_ORDER.indexOf(cardId);
+        const currentIndex = CARD_ORDER.indexOf(currentCardId);
+        return cardIndex < currentIndex;
+    };
+
+    const isNextStatus = (cardId: string) => {
+        const currentStatus = getCurrentActiveStatus();
+        if (!currentStatus) return false;
+        
+        const currentCardId = statusToCardIdMap[currentStatus];
+        if (!currentCardId) return false;
+        
+        const currentIndex = CARD_ORDER.indexOf(currentCardId);
+        const cardIndex = CARD_ORDER.indexOf(cardId);
+        
+        if (cardIndex === currentIndex + 1) {
+            const nextStatusName = Object.keys(statusToCardIdMap).find(
+                key => statusToCardIdMap[key] === cardId
+            );
+            if (!nextStatusName) return false;
+            
+            const nextHistory = order?.statusHistory?.find(h => h.status === nextStatusName);
+            if (nextHistory) {
+                return !hasStarted(nextHistory) && !isFinished(nextHistory);
+            }
+            return true;
+        }
+        
+        return false;
+    };
+
+    const isPendingToStart = (cardId: string) => {
+        const currentStatus = getCurrentActiveStatus();
+        if (currentStatus) return false;
+        
+        const nextPendingStatus = getNextPendingStatus();
+        if (!nextPendingStatus) return false;
+        
+        return statusToCardIdMap[nextPendingStatus] === cardId;
+    };
+
+    // Update button states based on order data
+    useEffect(() => {
+        if (!order?.statusHistory) {
+            setIsButton1(true);
+            setIsButton2(false);
+            setShowPdf(false);
+            setIsBodenButton1(false);
+            setIsBodenButton2(false);
+            setShowBodenPdf(false);
+            return;
+        }
+
+        const schafterHistory = order.statusHistory.find(h => h.status === "Schaftherstellung");
+        const bodenHistory = order.statusHistory.find(h => h.status === "Bodenherstellung");
+
+        // Update schafterstellung button states
+        if (schafterHistory && isFinished(schafterHistory)) {
+            setIsButton1(false);
+            setShowPdf(true);
+        } else if (schafterHistory && hasStarted(schafterHistory)) {
+            setIsButton1(false);
+            setIsButton2(false);
+        }
+
+        // Update bodenerstellung button states
+        if (bodenHistory && isFinished(bodenHistory)) {
+            setIsBodenButton1(false);
+            setIsBodenButton2(false);
+            setShowBodenPdf(true);
+        } else if (isFinished(schafterHistory) && !hasStarted(bodenHistory)) {
+            setIsBodenButton1(true);
+            setIsBodenButton2(false);
+        }
+    }, [order?.statusHistory]);
 
     useEffect(() => {
-        const now = new Date();
-        const day = String(now.getDate()).padStart(2, "0");
-        const month = String(now.getMonth() + 1).padStart(2, "0");
-        const year = String(now.getFullYear()).slice(-2);
-        const hours = String(now.getHours()).padStart(2, "0");
-        const minutes = String(now.getMinutes()).padStart(2, "0");
+        if (showPdf) {
+            const timer = setTimeout(() => {
+                setIsBodenButton1(true);
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }, [showPdf]);
 
-        const ampm = now.getHours() >= 12 ? "PM" : "AM";
-        const formatted = `${day}.${month}.${year} ${hours}:${minutes}${ampm}`;
-
-        setCurrentDateTime(formatted);
-    }, []);
-
-    const handleProgressToggle = (action: () => void) => {
-        setPendingProgressAction(() => action);
+    const handleProgressToggle = (action: () => void, newStatus?: string) => {
+        setPendingProgressAction(() => async () => {
+            if (newStatus && selectedOrderId) {
+                try {
+                    await updateStatus([selectedOrderId], newStatus);
+                    await refetchOrder();
+                    action();
+                } catch (error) {
+                    console.error("Failed to update status:", error);
+                }
+            } else {
+                action();
+            }
+        });
         setShowConfirmPopup(true);
     };
 
-    const handleConfirmToggle = () => {
+    const handleConfirmToggle = async () => {
         if (pendingProgressAction) {
-            pendingProgressAction();
+            await pendingProgressAction();
         }
         setShowConfirmPopup(false);
         setPendingProgressAction(null);
@@ -130,189 +326,117 @@ export default function ChangesOrderProgress({
         setPendingProgressAction(null);
     };
 
-    useEffect(() => {
-        if (showPdf) {
-            const timer = setTimeout(() => {
-                setIsBodenButton1(true);
-            }, 500);
-
-            return () => clearTimeout(timer);
+    const toggleProgress = (cardId: string) => {
+        const statusName = Object.keys(statusToCardIdMap).find(
+            key => statusToCardIdMap[key] === cardId
+        );
+        if (statusName) {
+            return () => handleProgressToggle(() => {}, statusName);
         }
-    }, [showPdf]);
-
-    const getProgressState = (progressState: string | null) => {
-        if (!progressState) return null;
-        switch (progressState) {
-            case "inProgress1":
-                return inProgress1;
-            case "inProgress2":
-                return inProgress2;
-            case "inProgress3":
-                return inProgress3;
-            case "inProgress4":
-                return inProgress4;
-            case "inProgress5":
-                return inProgress5;
-            default:
-                return null;
-        }
-    };
-
-    const toggleProgress = (progressState: string | null) => {
-        if (!progressState) return;
-        switch (progressState) {
-            case "inProgress1":
-                return () => handleProgressToggle(() => setInProgress1(!inProgress1));
-            case "inProgress2":
-                return () => handleProgressToggle(() => setInProgress2(!inProgress2));
-            case "inProgress3":
-                return () => handleProgressToggle(() => setInProgress3(!inProgress3));
-            case "inProgress4":
-                return () => handleProgressToggle(() => setInProgress4(!inProgress4));
-            case "inProgress5":
-                return () => handleProgressToggle(() => setInProgress5(!inProgress5));
-            default:
-                return () => { };
-        }
+        return () => {};
     };
 
     const renderCard = (card: (typeof cardsData)[number]) => {
-        const isInProgress = card.progressState ? getProgressState(card.progressState) : false;
-        const isCompleted = card.progressState ? !getProgressState(card.progressState) : false;
+        const isCompleted = isStatusCompleted(card.id);
+        const statusHistory = getStatusHistory(card.id);
+        const isCurrent = isCurrentStatus(card.id);
+        const isNext = isNextStatus(card.id);
+        const isPending = isPendingToStart(card.id);
 
-        // Status circle logic
+        // Status circle
         const renderStatusCircle = () => {
-            if (card.id === "geliefert") {
+            if (isCompleted) {
                 return (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-500">
-                        <FontAwesomeIcon icon={faSpinner} />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white">
+                        <FontAwesomeIcon icon={faCheck} className="h-5 w-5" />
                     </div>
                 );
             }
-
-            if (card.id === "schafterstellung") {
-                if (isButton1 || inProgress5) {
-                    return (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-white">
-                            <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                        </div>
-                    );
-                }
+            
+            if (isCurrent || isPending) {
                 return (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white">
-                        <FontAwesomeIcon icon={faCheck} />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white">
+                        <FontAwesomeIcon icon={faSpinner} className="h-5 w-5 animate-spin" />
                     </div>
                 );
             }
-
-            if (card.id === "bodenerstellung") {
-                if (isBodenButton1 || isBodenButton2 || showBodenPdf) {
-                    if (showBodenPdf) {
-                        return !inProgress4 ? (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white">
-                                <FontAwesomeIcon icon={faCheck} />
-                            </div>
-                        ) : (
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-white">
-                                <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                            </div>
-                        );
-                    }
-                    return (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-white">
-                            <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
-                        </div>
-                    );
-                }
-                // Waiting state - show static spinner like Geliefert
+            
+            if (isNext) {
                 return (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 text-slate-500">
-                        <FontAwesomeIcon icon={faSpinner} />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white">
+                        <FontAwesomeIcon icon={faSpinner} className="h-5 w-5" />
                     </div>
                 );
             }
-
-            // Default status circle for other cards
-            return isCompleted ? (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500 text-white">
-                    <FontAwesomeIcon icon={faCheck} />
-                </div>
-            ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-500 text-white">
-                    <FontAwesomeIcon icon={faSpinner} className="animate-spin" />
+            
+            return (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500">
+                    <FontAwesomeIcon icon={faSpinner} className="h-5 w-5" />
                 </div>
             );
         };
 
-        // Status text logic
+        // Status text
         const renderStatusText = () => {
-            if (card.id === "schafterstellung") {
-                return isButton1 ? "IN BEARBEITUNG" : inProgress5 ? "IN BEARBEITUNG" : "ABGESCHLOSSEN";
-            }
-            if (card.id === "bodenerstellung") {
-                if (isBodenButton1 || isBodenButton2) return "IN BEARBEITUNG";
-                if (showBodenPdf) return "ABGESCHLOSSEN";
-                return "WARTEND";
-            }
-            if (card.id === "geliefert") {
-                return "WARTEND";
-            }
-            return isCompleted ? "ABGESCHLOSSEN" : "IN FERTIGUNG";
+            if (isCompleted) return "ABGESCHLOSSEN";
+            if (isCurrent || isPending) return "IN FERTIGUNG";
+            if (isNext) return "IN BEARBEITUNG";
+            return "WARTEND";
         };
 
         return (
-            <div key={card.id} className="flex flex-col items-center px-2 py-4 text-center">
-                <Image src={card.image} alt={card.title} width={200} height={800} className="mb-3 h-16 w-auto object-contain sm:h-20" />
-                <div className="mb-4 flex items-center justify-center">{renderStatusCircle()}</div>
-                <div className="mt-1 text-base font-semibold text-slate-900 md:text-lg">{card.title}</div>
-                <div className="text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">
-                    {renderStatusText()}
+            <div key={card.id} className="flex flex-col items-center justify-start px-2 py-4 text-center">
+                <Image src={card.image} alt={card.title} width={200} height={800} className="mb-4 h-16 w-auto object-contain sm:h-20" />
+                <div className="mb-4 flex h-10 w-10 shrink-0 items-center justify-center">{renderStatusCircle()}</div>
+                <div className="mb-2 text-base font-semibold text-slate-900 md:text-lg">{card.title}</div>
+                <div className="flex min-h-[24px] w-full items-center justify-center text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">
+                    <span className="whitespace-nowrap">{renderStatusText()}</span>
                 </div>
 
                 {/* Date-time section for completed cards */}
-                {isCompleted && card.id !== "geliefert" && card.id !== "schafterstellung" && card.id !== "bodenerstellung" && (
+                {isCompleted && card.id !== "geliefert" && card.id !== "schafterstellung" && card.id !== "bodenerstellung" && statusHistory && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
                         <div>
-                            <span className="font-medium text-slate-500">Started:</span> <span>10.04.25 16:43PM</span>
+                            <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
                         </div>
                         <div>
-                            <span className="font-medium text-slate-500">Finished:</span> <span>10.04.25 16:43PM</span>
+                            <span className="font-medium text-slate-500">Finished:</span> <span>{statusHistory.finished || "-"}</span>
                         </div>
                         <div>
                             <span className="font-medium text-slate-500">Completed By:</span>{" "}
-                            <span>{generateRandomEuropeanNames()}</span>
+                            <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
                         </div>
                     </div>
                 )}
 
-                {/* Special date-time for schafterstellung */}
-                {card.id === "schafterstellung" && showPdf && (
+                {/* Date-time for schafterstellung */}
+                {card.id === "schafterstellung" && showPdf && statusHistory && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
                         <div>
-                            <span className="font-medium text-slate-500">Started:</span> <span>{currentDateTime}</span>
+                            <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
                         </div>
                         <div>
-                            <span className="font-medium text-slate-500">Finished:</span> <span>{currentDateTime}</span>
+                            <span className="font-medium text-slate-500">Finished:</span> <span>{statusHistory.finished || "-"}</span>
                         </div>
                         <div>
                             <span className="font-medium text-slate-500">Completed By:</span>{" "}
-                            <span>{generateRandomEuropeanNames()}</span>
+                            <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
                         </div>
                     </div>
                 )}
 
-                {/* Special date-time for bodenerstellung */}
-                {card.id === "bodenerstellung" && showBodenPdf && (
+                {/* Date-time for bodenerstellung */}
+                {card.id === "bodenerstellung" && showBodenPdf && statusHistory && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
                         <div>
-                            <span className="font-medium text-slate-500">Started:</span> <span>{currentDateTime}</span>
+                            <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
                         </div>
                         <div>
-                            <span className="font-medium text-slate-500">Finished:</span> <span>{currentDateTime}</span>
+                            <span className="font-medium text-slate-500">Finished:</span> <span>{statusHistory.finished || "-"}</span>
                         </div>
                         <div>
                             <span className="font-medium text-slate-500">Completed By:</span>{" "}
-                            <span>{generateRandomEuropeanNames()}</span>
+                            <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
                         </div>
                     </div>
                 )}
@@ -337,10 +461,18 @@ export default function ChangesOrderProgress({
                         {isButton1 && (
                             <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                     setIsButton1(false);
                                     setIsButton2(true);
                                     setTabClicked(card.tabIndex);
+                                    if (selectedOrderId) {
+                                        try {
+                                            await updateStatus([selectedOrderId], "Schaftherstellung");
+                                            await refetchOrder();
+                                        } catch (error) {
+                                            console.error("Failed to update status:", error);
+                                        }
+                                    }
                                 }}
                                 className="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
                             >
@@ -350,20 +482,28 @@ export default function ChangesOrderProgress({
                         {isButton2 && (
                             <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                     setIsButton2(false);
                                     setShowPdf(true);
+                                    if (selectedOrderId) {
+                                        try {
+                                            await updateStatus([selectedOrderId], "Schaftherstellung");
+                                            await refetchOrder();
+                                        } catch (error) {
+                                            console.error("Failed to update status:", error);
+                                        }
+                                    }
                                 }}
                                 className="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
                             >
                                 Als abgeschlossen markieren
                             </button>
                         )}
-                        {showPdf && (
+                        {showPdf && !isCompleted && isCurrent && (
                             <button
                                 type="button"
                                 className="mt-3 inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
-                                onClick={() => handleProgressToggle(() => setInProgress5(!inProgress5))}
+                                onClick={toggleProgress(card.id)}
                             >
                                 <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
                             </button>
@@ -390,9 +530,17 @@ export default function ChangesOrderProgress({
                         {isBodenButton2 && (
                             <button
                                 type="button"
-                                onClick={() => {
+                                onClick={async () => {
                                     setIsBodenButton2(false);
                                     setShowBodenPdf(true);
+                                    if (selectedOrderId) {
+                                        try {
+                                            await updateStatus([selectedOrderId], "Bodenherstellung");
+                                            await refetchOrder();
+                                        } catch (error) {
+                                            console.error("Failed to update status:", error);
+                                        }
+                                    }
                                 }}
                                 className="mt-4 cursor-pointer inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
                             >
@@ -411,35 +559,37 @@ export default function ChangesOrderProgress({
                                 >
                                     Details anzeigen
                                 </button>
-                                <button
-                                    type="button"
-                                    className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
-                                    onClick={() => handleProgressToggle(() => setInProgress4(!inProgress4))}
-                                >
-                                    <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
-                                </button>
+                                {!isCompleted && isCurrent && (
+                                    <button
+                                        type="button"
+                                        className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
+                                        onClick={toggleProgress(card.id)}
+                                    >
+                                        <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
+                                    </button>
+                                )}
                             </>
                         )}
                     </>
                 )}
 
-                {/* Back arrow button for standard cards */}
-                {!("hasPdfButton" in card) && !("hasSpecialButtons" in card) && !("hasBodenButtons" in card) && !("isWaiting" in card) && (
+                {/* Arrow button for standard cards - only show when IN FERTIGUNG */}
+                {!("hasPdfButton" in card) && !("hasSpecialButtons" in card) && !("hasBodenButtons" in card) && !("isWaiting" in card) && !isCompleted && isCurrent && (
                     <button
                         type="button"
                         className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
-                        onClick={toggleProgress(card.progressState)}
+                        onClick={toggleProgress(card.id)}
                     >
                         <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
                     </button>
                 )}
 
-                {/* Back arrow for halbprobenerstellung */}
-                {"hasPdfButton" in card && card.hasPdfButton && (
+                {/* Arrow button for halbprobenerstellung - only show when IN FERTIGUNG */}
+                {"hasPdfButton" in card && card.hasPdfButton && !isCompleted && isCurrent && (
                     <button
                         type="button"
                         className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
-                        onClick={() => handleProgressToggle(() => setInProgress3(!inProgress3))}
+                        onClick={toggleProgress(card.id)}
                     >
                         <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
                     </button>
@@ -448,10 +598,13 @@ export default function ChangesOrderProgress({
         );
     };
 
+    if (!selectedOrderId) {
+        return null;
+    }
+
     return (
         <>
-            {/* Responsive grid for all progress cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-10 lg:grid-cols-4 xl:grid-cols-6 py-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 lg:grid-cols-3 xl:grid-cols-6 py-10 items-start">
                 {cardsData.map((card) => renderCard(card))}
             </div>
 

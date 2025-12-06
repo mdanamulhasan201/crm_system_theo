@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'problems-automotive-wishes-six.trycloudflare.com',
+        hostname: 'film-example-lite-opposition.trycloudflare.com',
       },
       {
         // local host
