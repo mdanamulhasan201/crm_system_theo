@@ -17,8 +17,8 @@ const statusMap: Record<number, string> = {
   1: "Leistenerstellung",
   2: "Bettungsherstellung",
   3: "Halbprobenerstellung",
-  4: "Schaftherstellung",
-  5: "Bodenherstellung",
+  4: "Schafterstellung",
+  5: "Bodenerstellung",
   6: "Geliefert",
 };
 
@@ -28,8 +28,8 @@ const statusToTabMap: Record<string, number> = {
   "Leistenerstellung": 1,
   "Bettungsherstellung": 2,
   "Halbprobenerstellung": 3,
-  "Schaftherstellung": 4,
-  "Bodenherstellung": 5,
+  "Schafterstellung": 4,
+  "Bodenerstellung": 5,
   "Geliefert": 6,
 };
 

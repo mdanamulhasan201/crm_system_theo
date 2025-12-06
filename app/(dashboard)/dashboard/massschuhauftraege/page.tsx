@@ -62,6 +62,7 @@ export default function MassschuhauftraegePage() {
                 setTabClicked={setTabClicked} 
                 tabClicked={tabClicked}
                 selectedOrderId={selectedOrderId}
+                onTabChange={setTabClicked}
             />
             <ProductionView 
                 tabClicked={tabClicked} 

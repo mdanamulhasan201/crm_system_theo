@@ -7,7 +7,7 @@ import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMass
 import { useUpdateMassschuheOrderStatus } from "@/hooks/massschuhe/useUpdateMassschuheOrderStatus";
 
 // Constants
-const STATUS_ORDER = ["Leistenerstellung", "Bettungsherstellung", "Halbprobenerstellung", "Schaftherstellung", "Bodenherstellung", "Geliefert"];
+const STATUS_ORDER = ["Leistenerstellung", "Bettungsherstellung", "Halbprobenerstellung", "Schafterstellung", "Bodenerstellung", "Geliefert"];
 const CARD_ORDER = ["leistenerstellung", "bettungsherstellung", "halbprobenerstellung", "schafterstellung", "bodenerstellung", "geliefert"];
 
 // Card data configuration
@@ -59,8 +59,8 @@ const statusToCardIdMap: Record<string, string> = {
     "Leistenerstellung": "leistenerstellung",
     "Bettungsherstellung": "bettungsherstellung",
     "Halbprobenerstellung": "halbprobenerstellung",
-    "Schaftherstellung": "schafterstellung",
-    "Bodenherstellung": "bodenerstellung",
+    "Schafterstellung": "schafterstellung",
+    "Bodenerstellung": "bodenerstellung",
     "Geliefert": "geliefert",
 };
 
@@ -82,12 +82,14 @@ export default function ChangesOrderProgress({
     onClick2,
     setTabClicked,
     selectedOrderId,
+    onTabChange,
 }: {
     onClick: () => void;
     onClick2: () => void;
     tabClicked: number;
     setTabClicked: (tab: number) => void;
     selectedOrderId: string | null;
+    onTabChange?: (tab: number) => void;
 }) {
     const { order, refetch: refetchOrder } = useGetSingleMassschuheOrder(selectedOrderId);
     const { updateStatus } = useUpdateMassschuheOrderStatus();
@@ -128,7 +130,7 @@ export default function ChangesOrderProgress({
     }, [getStatusHistory]);
 
     // Get current active status (IN FERTIGUNG)
-    const getCurrentActiveStatus = () => {
+    const getCurrentActiveStatus = useMemo(() => {
         if (!order?.statusHistory || order.statusHistory.length === 0) {
             return "Leistenerstellung";
         }
@@ -160,11 +162,11 @@ export default function ChangesOrderProgress({
         }
         
         return null;
-    };
+    }, [order?.statusHistory]);
 
     // Get next pending status (IN BEARBEITUNG)
-    const getNextPendingStatus = () => {
-        const currentStatus = getCurrentActiveStatus();
+    const getNextPendingStatus = useMemo(() => {
+        const currentStatus = getCurrentActiveStatus;
         
         if (!currentStatus) {
             if (!order?.statusHistory || order.statusHistory.length === 0) {
@@ -195,17 +197,17 @@ export default function ChangesOrderProgress({
         }
         
         return null;
-    };
+    }, [getCurrentActiveStatus, order?.statusHistory]);
 
     // Status checkers
     const isCurrentStatus = (cardId: string) => {
-        const currentStatus = getCurrentActiveStatus();
+        const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
         return statusToCardIdMap[currentStatus] === cardId;
     };
 
     const isBeforeCurrentStatus = (cardId: string) => {
-        const currentStatus = getCurrentActiveStatus();
+        const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
         
         const currentCardId = statusToCardIdMap[currentStatus];
@@ -217,7 +219,7 @@ export default function ChangesOrderProgress({
     };
 
     const isNextStatus = (cardId: string) => {
-        const currentStatus = getCurrentActiveStatus();
+        const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
         
         const currentCardId = statusToCardIdMap[currentStatus];
@@ -243,10 +245,10 @@ export default function ChangesOrderProgress({
     };
 
     const isPendingToStart = (cardId: string) => {
-        const currentStatus = getCurrentActiveStatus();
+        const currentStatus = getCurrentActiveStatus;
         if (currentStatus) return false;
         
-        const nextPendingStatus = getNextPendingStatus();
+        const nextPendingStatus = getNextPendingStatus;
         if (!nextPendingStatus) return false;
         
         return statusToCardIdMap[nextPendingStatus] === cardId;
@@ -264,8 +266,8 @@ export default function ChangesOrderProgress({
             return;
         }
 
-        const schafterHistory = order.statusHistory.find(h => h.status === "Schaftherstellung");
-        const bodenHistory = order.statusHistory.find(h => h.status === "Bodenherstellung");
+        const schafterHistory = order.statusHistory.find(h => h.status === "Schafterstellung");
+        const bodenHistory = order.statusHistory.find(h => h.status === "Bodenerstellung");
 
         // Update schafterstellung button states
         if (schafterHistory && isFinished(schafterHistory)) {
@@ -301,6 +303,8 @@ export default function ChangesOrderProgress({
             if (newStatus && selectedOrderId) {
                 try {
                     await updateStatus([selectedOrderId], newStatus);
+                    // Small delay to ensure backend has processed the update
+                    await new Promise(resolve => setTimeout(resolve, 300));
                     await refetchOrder();
                     action();
                 } catch (error) {
@@ -410,7 +414,7 @@ export default function ChangesOrderProgress({
                 )}
 
                 {/* Date-time for schafterstellung */}
-                {card.id === "schafterstellung" && showPdf && statusHistory && (
+                {card.id === "schafterstellung" && showPdf && statusHistory && hasStarted(statusHistory) && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
                         <div>
                             <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
@@ -418,15 +422,35 @@ export default function ChangesOrderProgress({
                         <div>
                             <span className="font-medium text-slate-500">Finished:</span> <span>{statusHistory.finished || "-"}</span>
                         </div>
-                        <div>
-                            <span className="font-medium text-slate-500">Completed By:</span>{" "}
-                            <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
-                        </div>
+                        {isFinished(statusHistory) && (
+                            <div>
+                                <span className="font-medium text-slate-500">Completed By:</span>{" "}
+                                <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
+                            </div>
+                        )}
                     </div>
                 )}
 
                 {/* Date-time for bodenerstellung */}
-                {card.id === "bodenerstellung" && showBodenPdf && statusHistory && (
+                {card.id === "bodenerstellung" && showBodenPdf && statusHistory && hasStarted(statusHistory) && (
+                    <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
+                        <div>
+                            <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
+                        </div>
+                        <div>
+                            <span className="font-medium text-slate-500">Finished:</span> <span>{statusHistory.finished || "-"}</span>
+                        </div>
+                        {isFinished(statusHistory) && (
+                            <div>
+                                <span className="font-medium text-slate-500">Completed By:</span>{" "}
+                                <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Date-time for geliefert */}
+                {card.id === "geliefert" && isCompleted && statusHistory && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
                         <div>
                             <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
@@ -448,6 +472,7 @@ export default function ChangesOrderProgress({
                         onClick={() => {
                             onClick();
                             setTabClicked(card.tabIndex);
+                            onTabChange?.(card.tabIndex);
                         }}
                         className="mt-4 cursor-pointer inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
                     >
@@ -467,7 +492,7 @@ export default function ChangesOrderProgress({
                                     setTabClicked(card.tabIndex);
                                     if (selectedOrderId) {
                                         try {
-                                            await updateStatus([selectedOrderId], "Schaftherstellung");
+                                            await updateStatus([selectedOrderId], "Schafterstellung");
                                             await refetchOrder();
                                         } catch (error) {
                                             console.error("Failed to update status:", error);
@@ -482,24 +507,16 @@ export default function ChangesOrderProgress({
                         {isButton2 && (
                             <button
                                 type="button"
-                                onClick={async () => {
+                                onClick={() => {
                                     setIsButton2(false);
                                     setShowPdf(true);
-                                    if (selectedOrderId) {
-                                        try {
-                                            await updateStatus([selectedOrderId], "Schaftherstellung");
-                                            await refetchOrder();
-                                        } catch (error) {
-                                            console.error("Failed to update status:", error);
-                                        }
-                                    }
                                 }}
                                 className="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
                             >
                                 Als abgeschlossen markieren
                             </button>
                         )}
-                        {showPdf && !isCompleted && isCurrent && (
+                        {showPdf && (isCurrent || isNext) && (
                             <button
                                 type="button"
                                 className="mt-3 inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
@@ -521,6 +538,7 @@ export default function ChangesOrderProgress({
                                     setIsBodenButton1(false);
                                     setIsBodenButton2(true);
                                     setTabClicked(card.tabIndex);
+                                    onTabChange?.(card.tabIndex);
                                 }}
                                 className="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
                             >
@@ -535,7 +553,7 @@ export default function ChangesOrderProgress({
                                     setShowBodenPdf(true);
                                     if (selectedOrderId) {
                                         try {
-                                            await updateStatus([selectedOrderId], "Bodenherstellung");
+                                            await updateStatus([selectedOrderId], "Bodenerstellung");
                                             await refetchOrder();
                                         } catch (error) {
                                             console.error("Failed to update status:", error);
@@ -559,7 +577,7 @@ export default function ChangesOrderProgress({
                                 >
                                     Details anzeigen
                                 </button>
-                                {!isCompleted && isCurrent && (
+                                {showBodenPdf && (isCurrent || isNext) && (
                                     <button
                                         type="button"
                                         className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
@@ -586,6 +604,17 @@ export default function ChangesOrderProgress({
 
                 {/* Arrow button for halbprobenerstellung - only show when IN FERTIGUNG */}
                 {"hasPdfButton" in card && card.hasPdfButton && !isCompleted && isCurrent && (
+                    <button
+                        type="button"
+                        className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
+                        onClick={toggleProgress(card.id)}
+                    >
+                        <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
+                    </button>
+                )}
+
+                {/* Arrow button for geliefert - only show when IN FERTIGUNG */}
+                {"isWaiting" in card && card.isWaiting && !isCompleted && (isCurrent || isNext) && (
                     <button
                         type="button"
                         className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
