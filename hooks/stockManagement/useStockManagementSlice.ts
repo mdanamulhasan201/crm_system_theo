@@ -6,6 +6,8 @@ interface SizeData {
     quantity: number;
     // Optional per-size minimum quantity, sent to backend as `mindestmenge`
     mindestmenge?: number;
+    autoOrderLimit?: number;
+    orderQuantity?: number;
 }
 
 interface ProductFormData {
@@ -87,6 +89,20 @@ export const useStockManagementSlice = () => {
         const minStockLevel = formData.minStockLevel || 0;
         const stockStatus = determineStockStatus(formData.sizeQuantities, minStockLevel);
 
+        // Transform sizeQuantities to convert camelCase to snake_case for backend
+        const transformedGroessenMengen: { [key: string]: any } = {};
+        Object.keys(formData.sizeQuantities).forEach(size => {
+            const sizeData = formData.sizeQuantities[size];
+            transformedGroessenMengen[size] = {
+                length: sizeData.length,
+                quantity: sizeData.quantity,
+                ...(sizeData.mindestmenge !== undefined && { mindestmenge: sizeData.mindestmenge }),
+                // Always include auto_order_limit and auto_order_quantity, even if undefined
+                auto_order_limit: sizeData.autoOrderLimit !== undefined ? sizeData.autoOrderLimit : null,
+                auto_order_quantity: sizeData.orderQuantity !== undefined ? sizeData.orderQuantity : null
+            };
+        });
+
         return {
             produktname: formData.Produktname,
             hersteller: formData.Hersteller,
@@ -94,7 +110,7 @@ export const useStockManagementSlice = () => {
             lagerort: formData.Lagerort || '',
             mindestbestand: minStockLevel,
             historie: `Product created on ${new Date().toISOString().split('T')[0]}`,
-            groessenMengen: formData.sizeQuantities,
+            groessenMengen: transformedGroessenMengen,
             purchase_price: formData.purchase_price,
             selling_price: formData.selling_price,
             Status: stockStatus

@@ -11,6 +11,8 @@ interface SizeData {
     quantity: number;
     // Per-size minimum quantity, maps to backend field `mindestmenge`
     mindestmenge?: number;
+    autoOrderLimit?: number;
+    orderQuantity?: number;
 }
 
 interface NewProduct {
@@ -46,7 +48,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
         Produktkürzel: '',
         purchase_price: 0,
         selling_price: 0,
-        sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
+        sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0, autoOrderLimit: undefined, orderQuantity: undefined }]))
     });
 
     const handleNewProductChange = (field: keyof NewProduct, value: string | number) => {
@@ -88,6 +90,30 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
             }
         }));
     };
+    const handleAutoOrderLimitChange = (size: string, value: string) => {
+        setNewProduct(prev => ({
+            ...prev,
+            sizeQuantities: {
+                ...prev.sizeQuantities,
+                [size]: {
+                    ...prev.sizeQuantities[size],
+                    autoOrderLimit: value === '' ? undefined : (parseInt(value) || undefined)
+                }
+            }
+        }));
+    };
+    const handleOrderQuantityChange = (size: string, value: string) => {
+        setNewProduct(prev => ({
+            ...prev,
+            sizeQuantities: {
+                ...prev.sizeQuantities,
+                [size]: {
+                    ...prev.sizeQuantities[size],
+                    orderQuantity: value === '' ? undefined : (parseInt(value) || undefined)
+                }
+            }
+        }));
+    };
     const handleIncreaseAllSizes = () => {
         if (!increaseAllSizesInput || increaseAllSizesInput.trim() === '') {
             return;
@@ -116,6 +142,23 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
         setCumulativeIncreaseValue(prev => prev + numValue);
         setIncreaseAllSizesInput('');
     };
+    // Helper function to transform sizeQuantities from camelCase to snake_case for backend
+    const transformSizeQuantitiesForBackend = (sizeQuantities: { [key: string]: SizeData }) => {
+        const transformed: { [key: string]: any } = {};
+        Object.keys(sizeQuantities).forEach(size => {
+            const sizeData = sizeQuantities[size];
+            transformed[size] = {
+                length: sizeData.length,
+                quantity: sizeData.quantity,
+                ...(sizeData.mindestmenge !== undefined && { mindestmenge: sizeData.mindestmenge }),
+                // Always include auto_order_limit and auto_order_quantity, even if undefined
+                auto_order_limit: sizeData.autoOrderLimit !== undefined ? sizeData.autoOrderLimit : null,
+                auto_order_quantity: sizeData.orderQuantity !== undefined ? sizeData.orderQuantity : null
+            };
+        });
+        return transformed;
+    };
+
     const handleAddProduct = async () => {
         try {
             clearError();
@@ -127,7 +170,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                     artikelnummer: newProduct.Produktkürzel,
                     mindestbestand: 0,
                     // do not send 'historie' on update; backend model doesn't accept it
-                    groessenMengen: newProduct.sizeQuantities,
+                    groessenMengen: transformSizeQuantitiesForBackend(newProduct.sizeQuantities),
                     purchase_price: newProduct.purchase_price,
                     selling_price: newProduct.selling_price,
                     Status: 'In Stock'
@@ -166,7 +209,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 Produktkürzel: '',
                 purchase_price: 0,
                 selling_price: 0,
-                sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
+                sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0, autoOrderLimit: undefined, orderQuantity: undefined }]))
             });
             setIncreaseAllSizesInput('');
             setCumulativeIncreaseValue(0);
@@ -194,12 +237,20 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                         const sizeData = product.groessenMengen[size];
                         // Check if it's already in the new format {length, quantity}
                         if (typeof sizeData === 'object' && 'length' in sizeData && 'quantity' in sizeData) {
-                            convertedSizeQuantities[size] = sizeData as SizeData;
+                            const data = sizeData as any;
+                            convertedSizeQuantities[size] = {
+                                ...sizeData as SizeData,
+                                // Transform snake_case from backend to camelCase for frontend
+                                autoOrderLimit: data.auto_order_limit ?? data.autoOrderLimit ?? undefined,
+                                orderQuantity: data.auto_order_quantity ?? data.orderQuantity ?? undefined
+                            };
                         } else {
                             // Old format: just a number, convert to new format
                             convertedSizeQuantities[size] = {
                                 quantity: sizeData as number,
-                                length: product.groessenLaengen?.[size] ? parseFloat(product.groessenLaengen[size]) || 0 : 0
+                                length: product.groessenLaengen?.[size] ? parseFloat(product.groessenLaengen[size]) || 0 : 0,
+                                autoOrderLimit: undefined,
+                                orderQuantity: undefined
                             };
                         }
                     });
@@ -213,7 +264,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                     selling_price: product.selling_price,
                     sizeQuantities: Object.keys(convertedSizeQuantities).length > 0
                         ? convertedSizeQuantities
-                        : Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
+                        : Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0, autoOrderLimit: undefined, orderQuantity: undefined }]))
                 });
                 // Reset increase all sizes field when editing
                 setIncreaseAllSizesInput('');
@@ -235,7 +286,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                 Produktkürzel: '',
                 purchase_price: 0,
                 selling_price: 0,
-                sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0 }]))
+                sizeQuantities: Object.fromEntries(sizeColumns.map(size => [size, { length: 0, quantity: 0, autoOrderLimit: undefined, orderQuantity: undefined }]))
             });
             setIncreaseAllSizesInput('');
             setCumulativeIncreaseValue(0);
@@ -341,6 +392,8 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                             <TableHead className="font-medium">Bestand</TableHead>
                                             <TableHead className="font-medium">Länge (cm)</TableHead>
                                             <TableHead className="font-medium">Mindestmenge</TableHead>
+                                            <TableHead className="font-medium">Auto-Bestellgrenze</TableHead>
+                                            <TableHead className="font-medium">Bestellmenge</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
@@ -374,6 +427,26 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         placeholder="0"
                                                         value={newProduct.sizeQuantities[size]?.mindestmenge ?? ''}
                                                         onChange={e => handleNewProductMinQuantityChange(size, e.target.value)}
+                                                        className="w-full"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        placeholder=" 3"
+                                                        value={newProduct.sizeQuantities[size]?.autoOrderLimit !== undefined ? newProduct.sizeQuantities[size]?.autoOrderLimit : ''}
+                                                        onChange={e => handleAutoOrderLimitChange(size, e.target.value)}
+                                                        className="w-full"
+                                                    />
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Input
+                                                        type="number"
+                                                        min={0}
+                                                        placeholder="10"
+                                                        value={newProduct.sizeQuantities[size]?.orderQuantity !== undefined ? newProduct.sizeQuantities[size]?.orderQuantity : ''}
+                                                        onChange={e => handleOrderQuantityChange(size, e.target.value)}
                                                         className="w-full"
                                                     />
                                                 </TableCell>

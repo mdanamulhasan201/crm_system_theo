@@ -19,6 +19,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import SettingsLayout from "@/components/Settings/SettingsLayout";
 import { BiGlobe } from "react-icons/bi";
+import { GrOrderedList } from "react-icons/gr";
 
 const sidebarData = [
     {
@@ -112,6 +113,12 @@ const sidebarData = [
         icon: HelpCircle,
         label: "Fragen",
         href: "/dashboard/settings-profile/fragen"
+    },
+    {
+        id: "automatische-orders",
+        icon: GrOrderedList,
+        label: "Automatische Orders",
+        href: "/dashboard/settings-profile/automatische-orders"
     }
 
 
