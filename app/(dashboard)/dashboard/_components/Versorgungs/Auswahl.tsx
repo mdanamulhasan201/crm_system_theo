@@ -1,6 +1,6 @@
 
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import useEmblaCarousel from 'embla-carousel-react'
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -80,17 +80,25 @@ export default function Auswahl() {
     const [modalCategory, setModalCategory] = useState<'alltagseinlagen' | 'sporteinlagen' | 'businesseinlagen'>('alltagseinlagen');
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState(filterCategories[0]);
+    const [dropdownOpen, setDropdownOpen] = useState(false);
 
     // Fetch data from API based on selected diagnosis
-    const fetchVersorgungen = async () => {
+    const fetchVersorgungen = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
             const diagnosisStatus = diagnosisMapping[selectedCategory];
-            const response = await getAllVersorgungen('', 1, 1000, diagnosisStatus);
+            const response = await getAllVersorgungen('', 1, 1000);
 
             if (response.data && Array.isArray(response.data)) {
-                const transformedData = response.data.map((item: any) => ({
+                // Filter by diagnosis_status on client side
+                let filteredData = response.data;
+                if (diagnosisStatus) {
+                    filteredData = filteredData.filter((item: any) => item.diagnosis_status === diagnosisStatus);
+                }
+
+                const transformedData = filteredData.map((item: any) => ({
                     id: item.id || item._id,
                     name: item.name || 'Unnamed Versorgung',
                     rohlingHersteller: item.rohlingHersteller || 'N/A',
@@ -111,15 +119,12 @@ export default function Auswahl() {
         } finally {
             setLoading(false);
         }
-    };
-
-    const [selectedCategory, setSelectedCategory] = useState(filterCategories[0]);
-    const [dropdownOpen, setDropdownOpen] = useState(false);
+    }, [selectedCategory]);
 
     // Fetch data when selected category changes
     useEffect(() => {
         fetchVersorgungen();
-    }, [selectedCategory]);
+    }, [fetchVersorgungen]);
 
 
 
