@@ -35,7 +35,7 @@ const filterCategories = [
     "Diabetisches Fußsyndrom"
 ];
 
-// Mapping from display names to API values
+
 const diagnosisMapping: { [key: string]: string } = {
     "Plantarfasziitis": "PLANTARFASZIITIS",
     "Fersensporn": "FERSENSPORN",
