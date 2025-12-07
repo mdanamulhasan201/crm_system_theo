@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import CardStatistik from '../_components/Massschuhauftraeges/CardS'
 import MassschuhaufträgeChart from '../_components/Massschuhauftraeges/MassschuhaufträgeChart'
 import CustomerSearch from '../_components/Massschuhauftraeges/CustomerSearch'
@@ -16,7 +16,18 @@ export default function MassschuhauftraegePage() {
     const [showPopup2, setShowPopup2] = useState(false);
     const [tabClicked, setTabClicked] = useState<number>(0);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    const refetchProductionViewRef = useRef<(() => void) | null>(null);
     const router = useRouter()
+    
+    // Stable callback to set refetch function
+    const handleRefetchReady = useCallback((refetch: () => void) => {
+        refetchProductionViewRef.current = refetch;
+    }, []);
+    
+    // Stable callback to call refetch
+    const handleRefetchProductionView = useCallback(() => {
+        refetchProductionViewRef.current?.();
+    }, []);
     const handleStart = () => {
         router.push('/dashboard/massschuhauftraege-deatils/1');
     };
@@ -63,12 +74,14 @@ export default function MassschuhauftraegePage() {
                 tabClicked={tabClicked}
                 selectedOrderId={selectedOrderId}
                 onTabChange={setTabClicked}
+                onRefetchProductionView={handleRefetchProductionView}
             />
             <ProductionView 
                 tabClicked={tabClicked} 
                 onOrderSelect={setSelectedOrderId}
                 selectedOrderId={selectedOrderId}
                 onTabChange={setTabClicked}
+                onRefetchReady={handleRefetchReady}
             />
 
             <CardDeatilsPage />

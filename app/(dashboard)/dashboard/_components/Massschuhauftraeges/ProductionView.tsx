@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useGetAllMassschuheOrder, MassschuheOrderData } from "@/hooks/massschuhe/useGetAllMassschuheOrder";
 
 const tabs = [
@@ -33,14 +33,18 @@ const statusToTabMap: Record<string, number> = {
   "Geliefert": 6,
 };
 
-const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChange }: { 
+const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChange, onRefetchReady }: { 
   tabClicked: number; 
   onOrderSelect?: (orderId: string) => void;
   selectedOrderId?: string | null;
   onTabChange?: (tab: number) => void;
+  onRefetchReady?: (refetch: () => void) => void;
 }) => {
   const [activeTab, setActiveTab] = useState(tabClicked);
   const [page, setPage] = useState(1);
+  const [displayCount, setDisplayCount] = useState(10); 
+  const [allOrders, setAllOrders] = useState<MassschuheOrderData[]>([]); 
+  const [isLoadingMore, setIsLoadingMore] = useState(false); 
   const limit = 10;
 
   // Get status filter based on active tab
@@ -53,8 +57,33 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
     statusFilter === "Versorgungs Start" ? undefined : statusFilter
   );
 
-  // Use orders directly since filtering is done server-side
-  const filteredOrders = orders;
+  // Accumulate orders when new data is fetched
+  useEffect(() => {
+    if (orders.length > 0) {
+      if (page === 1) {
+        // Reset on first page or tab change
+        setAllOrders(orders);
+        setDisplayCount(10);
+      } else {
+        // Append new orders when loading next page
+        setAllOrders(prev => {
+          // Avoid duplicates
+          const existingIds = new Set(prev.map(o => o.id));
+          const newOrders = orders.filter(o => !existingIds.has(o.id));
+          return [...prev, ...newOrders];
+        });
+      }
+      setIsLoadingMore(false);
+    }
+  }, [orders, page]);
+
+  // Track if this is initial load or load more
+  const isInitialLoad = page === 1 && allOrders.length === 0;
+
+  // Filter and limit orders to display
+  const filteredOrders = useMemo(() => {
+    return allOrders.slice(0, displayCount);
+  }, [allOrders, displayCount]);
 
   // Format date
   const formatDate = (dateString: string | null) => {
@@ -86,15 +115,43 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
       (history: any) => history.status === order.status
     );
     
-    // Return the finished date if it exists, otherwise "-"
-    return currentStatusHistory?.finished || "-";
+    if (!currentStatusHistory) return "-";
+    
+    // The 'finished' field is already formatted (e.g., "07.12.25 09:39AM")
+    // Return it directly if it exists
+    const finished = currentStatusHistory.finished;
+    if (finished && finished !== "null" && finished !== "undefined" && finished !== null) {
+      return finished;
+    }
+    
+    // If 'finished' is null but 'finishedAt' exists, format it
+    const finishedAt = currentStatusHistory.finishedAt;
+    if (finishedAt) {
+      try {
+        const date = new Date(finishedAt);
+        // Check if date is valid
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString("de-DE", { 
+            day: "2-digit", 
+            month: "2-digit", 
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+          });
+        }
+      } catch {
+        // Fall through to return "-"
+      }
+    }
+    
+    return "-";
   };
 
   // Find selected order to get its status
   const selectedOrder = useMemo(() => {
     if (!selectedOrderId) return null;
-    return orders.find(order => order.id === selectedOrderId);
-  }, [selectedOrderId, orders]);
+    return allOrders.find(order => order.id === selectedOrderId);
+  }, [selectedOrderId, allOrders]);
 
   // Handle order selection (without tab switching)
   const handleOrderSelect = (order: MassschuheOrderData) => {
@@ -110,16 +167,48 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
         onOrderSelect?.(firstOrder.id);
       }
     }
-  }, [activeTab, filteredOrders, selectedOrderId, loading, onOrderSelect]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, filteredOrders.length, selectedOrderId, loading]);
 
   useEffect(() => {
     setActiveTab(tabClicked);
   }, [tabClicked]);
 
-  // Reset page whenever active tab changes
+  // Reset page and accumulated orders whenever active tab changes
   useEffect(() => {
     setPage(1);
+    setAllOrders([]);
+    setDisplayCount(10);
   }, [activeTab]);
+
+  // Handle "Mehr anzeigen" button click
+  const handleLoadMore = () => {
+    const newDisplayCount = displayCount + 10;
+    setDisplayCount(newDisplayCount);
+    
+    // If we need more data than we have, fetch next page
+    if (newDisplayCount > allOrders.length && pagination?.hasNextPage && !loading && !isLoadingMore) {
+      setIsLoadingMore(true);
+      setPage(prev => prev + 1);
+    }
+  };
+
+  // Custom refetch that resets accumulated orders
+  const customRefetch = useCallback(() => {
+    setPage(1);
+    setAllOrders([]);
+    setDisplayCount(10);
+    refetch();
+  }, [refetch]);
+
+  // Expose refetch function to parent component (only once or when refetch changes)
+  const refetchRef = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (customRefetch && customRefetch !== refetchRef.current) {
+      refetchRef.current = customRefetch;
+      onRefetchReady?.(customRefetch);
+    }
+  }, [customRefetch, onRefetchReady]);
 
   return (
     <div className="w-full mt-6">
@@ -158,7 +247,7 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
             </tr>
           </thead>
           <tbody>
-            {loading ? (
+            {isInitialLoad && loading ? (
               <tr>
                 <td colSpan={8} className="text-center py-8 text-slate-500">
                   Laden...
@@ -219,15 +308,15 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
       </div>
 
       {/* Show More Button */}
-      {pagination && pagination.hasNextPage && (
+      {(pagination?.hasNextPage || displayCount < allOrders.length) && (
         <div className="flex justify-center mt-8">
           <button
             type="button"
-            onClick={() => setPage(prev => prev + 1)}
-            disabled={loading}
+            onClick={handleLoadMore}
+            disabled={isLoadingMore || loading}
             className="bg-white border border-emerald-500 text-emerald-500 rounded-lg px-6 py-3 font-medium text-sm sm:text-base cursor-pointer transition-colors hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? "Laden..." : "Mehr anzeigen"}
+            {isLoadingMore || loading ? "Laden..." : "Mehr anzeigen"}
           </button>
         </div>
       )}

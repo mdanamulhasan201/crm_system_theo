@@ -83,6 +83,7 @@ export default function ChangesOrderProgress({
     setTabClicked,
     selectedOrderId,
     onTabChange,
+    onRefetchProductionView,
 }: {
     onClick: () => void;
     onClick2: () => void;
@@ -90,6 +91,7 @@ export default function ChangesOrderProgress({
     setTabClicked: (tab: number) => void;
     selectedOrderId: string | null;
     onTabChange?: (tab: number) => void;
+    onRefetchProductionView?: () => void;
 }) {
     const { order, refetch: refetchOrder } = useGetSingleMassschuheOrder(selectedOrderId);
     const { updateStatus } = useUpdateMassschuheOrderStatus();
@@ -306,6 +308,8 @@ export default function ChangesOrderProgress({
                     // Small delay to ensure backend has processed the update
                     await new Promise(resolve => setTimeout(resolve, 300));
                     await refetchOrder();
+                    // Refetch ProductionView to update the Fertigstellung column
+                    onRefetchProductionView?.();
                     action();
                 } catch (error) {
                     console.error("Failed to update status:", error);
@@ -494,6 +498,8 @@ export default function ChangesOrderProgress({
                                         try {
                                             await updateStatus([selectedOrderId], "Schafterstellung");
                                             await refetchOrder();
+                                            // Refetch ProductionView to update the Fertigstellung column
+                                            onRefetchProductionView?.();
                                         } catch (error) {
                                             console.error("Failed to update status:", error);
                                         }
@@ -555,6 +561,8 @@ export default function ChangesOrderProgress({
                                         try {
                                             await updateStatus([selectedOrderId], "Bodenerstellung");
                                             await refetchOrder();
+                                            // Refetch ProductionView to update the Fertigstellung column
+                                            onRefetchProductionView?.();
                                         } catch (error) {
                                             console.error("Failed to update status:", error);
                                         }
