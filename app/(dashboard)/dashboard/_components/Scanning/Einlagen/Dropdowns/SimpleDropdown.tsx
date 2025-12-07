@@ -8,6 +8,7 @@ interface SimpleDropdownProps {
     isOpen: boolean;
     onToggle: () => void;
     onSelect: (value: string) => void;
+    error?: string;
 }
 
 export default function SimpleDropdown({
@@ -18,6 +19,7 @@ export default function SimpleDropdown({
     isOpen,
     onToggle,
     onSelect,
+    error,
 }: SimpleDropdownProps) {
     return (
         <div className="relative">
@@ -26,7 +28,9 @@ export default function SimpleDropdown({
             </div>
             <div className="relative">
                 <div
-                    className="p-3 sm:p-2 border border-gray-300 rounded cursor-pointer flex justify-between items-center min-h-[44px]"
+                    className={`p-3 sm:p-2 border rounded cursor-pointer flex justify-between items-center min-h-[44px] ${
+                        error ? 'border-red-500' : 'border-gray-300'
+                    }`}
                     onClick={onToggle}
                 >
                     <span className={`text-sm sm:text-base truncate pr-2 ${value ? '' : 'text-gray-400'}`}>
@@ -45,6 +49,9 @@ export default function SimpleDropdown({
                         />
                     </svg>
                 </div>
+                {error && (
+                    <p className="text-red-500 text-sm mt-1">{error}</p>
+                )}
                 {isOpen && (
                     <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
                         {options.map((option) => (

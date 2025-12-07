@@ -24,6 +24,7 @@ interface SupplySectionProps {
     selectedVersorgungId: string | null;
     supply: string;
     onVersorgungCardSelect: (item: VersorgungItem) => void;
+    versorgungError?: string;
 }
 
 export default function SupplySection({
@@ -39,6 +40,7 @@ export default function SupplySection({
     selectedVersorgungId,
     supply,
     onVersorgungCardSelect,
+    versorgungError,
 }: SupplySectionProps) {
     return (
         <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -157,7 +159,9 @@ export default function SupplySection({
                     </div>
                 )}
 
-                <div className="p-2 border border-gray-300 rounded min-h-[100px] bg-gray-50">
+                <div className={`p-2 border rounded min-h-[100px] bg-gray-50 ${
+                    versorgungError ? 'border-red-500' : 'border-gray-300'
+                }`}>
                     {selectedVersorgungId && versorgungData.length > 0 ? (
                         (() => {
                             const selectedItem = versorgungData.find(
@@ -195,6 +199,9 @@ export default function SupplySection({
                         supply || <span className="text-gray-400 italic">Keine Versorgung ausgewählt</span>
                     )}
                 </div>
+                {versorgungError && (
+                    <p className="text-red-500 text-sm mt-1">{versorgungError}</p>
+                )}
             </div>
         </div>
     );

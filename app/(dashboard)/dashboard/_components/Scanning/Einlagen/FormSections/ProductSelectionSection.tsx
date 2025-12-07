@@ -10,18 +10,21 @@ interface ProductSelectionSectionProps {
     showEinlageDropdown: boolean;
     onEinlageToggle: () => void;
     onEinlageSelect: (value: EinlageType) => void;
+    einlagentypError?: string;
     // Überzug
     überzug: string;
     uberzugOptions: string[];
     showUberzugDropdown: boolean;
     onUberzugToggle: () => void;
     onUberzugSelect: (value: string) => void;
+    überzugError?: string;
     // Menge
     menge: string;
     mengeOptions: string[];
     showMengeDropdown: boolean;
     onMengeToggle: () => void;
     onMengeSelect: (value: string) => void;
+    mengeError?: string;
 }
 
 export default function ProductSelectionSection({
@@ -31,16 +34,19 @@ export default function ProductSelectionSection({
     showEinlageDropdown,
     onEinlageToggle,
     onEinlageSelect,
+    einlagentypError,
     überzug,
     uberzugOptions,
     showUberzugDropdown,
     onUberzugToggle,
     onUberzugSelect,
+    überzugError,
     menge,
     mengeOptions,
     showMengeDropdown,
     onMengeToggle,
     onMengeSelect,
+    mengeError,
 }: ProductSelectionSectionProps) {
     return (
         <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
@@ -53,6 +59,7 @@ export default function ProductSelectionSection({
                     isOpen={showEinlageDropdown}
                     onToggle={onEinlageToggle}
                     onSelect={(value) => onEinlageSelect(value as EinlageType)}
+                    error={einlagentypError}
                 />
             </div>
 
@@ -67,6 +74,7 @@ export default function ProductSelectionSection({
                             isOpen={showUberzugDropdown}
                             onToggle={onUberzugToggle}
                             onSelect={onUberzugSelect}
+                            error={überzugError}
                         />
                     </div>
 
@@ -79,6 +87,7 @@ export default function ProductSelectionSection({
                             isOpen={showMengeDropdown}
                             onToggle={onMengeToggle}
                             onSelect={onMengeSelect}
+                            error={mengeError}
                         />
                     </div>
                 </div>

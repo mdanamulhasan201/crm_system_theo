@@ -1,4 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import toast from 'react-hot-toast';
 import { useScanningFormData } from '@/hooks/customer/useScanningFormData';
 import type { EinlageType } from '@/hooks/customer/useScanningFormData';
 import { useCreateOrder } from '@/hooks/orders/useCreateOrder';
@@ -15,6 +19,7 @@ import ProductSelectionSection from './Einlagen/FormSections/ProductSelectionSec
 import SupplySection from './Einlagen/FormSections/SupplySection';
 import AdditionalFieldsSection from './Einlagen/FormSections/AdditionalFieldsSection';
 import WerkstattzettelModal from './WerkstattzettelModal';
+import { getSettingData } from '@/apis/einlagenApis';
 
 interface Customer {
     id: string;
@@ -68,7 +73,6 @@ interface ScanningFormProps {
 }
 
 // Constants
-const UBERZUG_OPTIONS = ['Leder', 'Microfaser Schwarz', 'Microfaser Beige'];
 const MENGE_OPTIONS = ['1 paar', '2 paar', '3 paar', '4 paar', '5 paar'];
 const DIAGNOSIS_CODE_TO_LABEL: Record<string, string> = {
     PLANTARFASZIITIS: 'Plantarfasziitis',
@@ -87,6 +91,21 @@ const DIAGNOSIS_CODE_TO_LABEL: Record<string, string> = {
     STRESSFRAKTUREN_IM_FUSS: 'Stressfrakturen im Fußbereich',
     DIABETISCHES_FUSSSYNDROM: 'Diabetisches Fußsyndrom',
 };
+
+// Validation Schema
+const einlagenFormSchema = z.object({
+    ausführliche_diagnose: z.string().min(1, 'Ausführliche Diagnose ist erforderlich'),
+    versorgung_laut_arzt: z.string().optional(),
+    einlagentyp: z.string().min(1, 'Einlagentyp ist erforderlich'),
+    überzug: z.string().min(1, 'Überzug ist erforderlich'),
+    menge: z.string().min(1, 'Menge ist erforderlich'),
+    versorgung: z.string().min(1, 'Versorgung ist erforderlich'),
+    versorgung_note: z.string().optional(),
+    schuhmodell_wählen: z.string().optional(),
+    kostenvoranschlag: z.boolean().nullable().optional(),
+});
+
+type EinlagenFormData = z.infer<typeof einlagenFormSchema>;
 
 const formatMengeValue = (value?: number | string | null) => {
     if (typeof value === 'number' && Number.isFinite(value)) {
@@ -116,6 +135,30 @@ const mapEinlageType = (value?: string | null, options: string[] = []) => {
 };
 
 export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
+    // React Hook Form setup
+    const {
+        register,
+        handleSubmit,
+        formState: { errors },
+        setValue,
+        watch,
+        trigger,
+    } = useForm<EinlagenFormData>({
+        resolver: zodResolver(einlagenFormSchema),
+        mode: 'onChange',
+        defaultValues: {
+            ausführliche_diagnose: '',
+            versorgung_laut_arzt: '',
+            einlagentyp: '',
+            überzug: '',
+            menge: '',
+            versorgung: '',
+            versorgung_note: '',
+            schuhmodell_wählen: '',
+            kostenvoranschlag: null,
+        },
+    });
+
     // Scanning form data hook
     const {
         diagnosisOptions,
@@ -190,13 +233,78 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
     const [realOrderData, setRealOrderData] = useState<any>(null);
     const [showUserInfoUpdateModal, setShowUserInfoUpdateModal] = useState(false);
     const [formDataForOrder, setFormDataForOrder] = useState<any>(null);
+    
+    // Settings data state
+    const [coverTypes, setCoverTypes] = useState<string[]>([]);
+    const [loadingSettings, setLoadingSettings] = useState(false);
+
+    // Fetch settings data on mount
+    useEffect(() => {
+        const fetchSettings = async () => {
+            setLoadingSettings(true);
+            try {
+                const response = await getSettingData();
+                if (response?.data?.cover_types && Array.isArray(response.data.cover_types)) {
+                    setCoverTypes(response.data.cover_types);
+                }
+            } catch (error) {
+                console.error('Failed to fetch settings:', error);
+            } finally {
+                setLoadingSettings(false);
+            }
+        };
+        fetchSettings();
+    }, []);
+
+    // Sync form values with React Hook Form
+    useEffect(() => {
+        if (ausführliche_diagnose !== undefined) {
+            setValue('ausführliche_diagnose', ausführliche_diagnose);
+        }
+        if (versorgung_laut_arzt !== undefined) {
+            setValue('versorgung_laut_arzt', versorgung_laut_arzt);
+        }
+        if (einlagentyp) {
+            setValue('einlagentyp', einlagentyp);
+        }
+        if (überzug) {
+            setValue('überzug', überzug);
+        }
+        if (menge) {
+            setValue('menge', menge);
+        }
+        if (supply) {
+            setValue('versorgung', supply);
+        }
+        if (versorgung_note !== undefined) {
+            setValue('versorgung_note', versorgung_note);
+        }
+        if (schuhmodell_wählen !== undefined) {
+            setValue('schuhmodell_wählen', schuhmodell_wählen);
+        }
+        if (kostenvoranschlag !== undefined) {
+            setValue('kostenvoranschlag', kostenvoranschlag);
+        }
+    }, [
+        ausführliche_diagnose,
+        versorgung_laut_arzt,
+        einlagentyp,
+        überzug,
+        menge,
+        supply,
+        versorgung_note,
+        schuhmodell_wählen,
+        kostenvoranschlag,
+        setValue,
+    ]);
 
     // Sync einlagentyp when selectedEinlage changes
     useEffect(() => {
         if (selectedEinlage && !einlagentyp) {
             setEinlagentyp(selectedEinlage as string);
+            setValue('einlagentyp', selectedEinlage as string);
         }
-    }, [selectedEinlage, einlagentyp, setEinlagentyp]);
+    }, [selectedEinlage, einlagentyp, setEinlagentyp, setValue]);
 
     // Reset prefill tracker when order changes back to null
     useEffect(() => {
@@ -332,7 +440,21 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
         setShowConfirmModal(false);
     };
 
-    const handleSpeichernClick = () => {
+    const handleSpeichernClick = async () => {
+        // Trigger validation for all fields
+        const isValid = await trigger();
+        
+        if (!isValid) {
+            // Show error toast with first error message
+            const firstError = Object.values(errors)[0];
+            if (firstError?.message) {
+                toast.error(firstError.message as string);
+            } else {
+                toast.error('Bitte füllen Sie alle erforderlichen Felder aus');
+            }
+            return;
+        }
+
         const formData = collectFormData({
             ausführliche_diagnose,
             versorgung_laut_arzt,
@@ -383,6 +505,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                     rightValue={versorgung_laut_arzt}
                     rightPlaceholder="Versorgung laut Arzt eingeben..."
                     rightOnChange={setVersorgung_laut_arzt}
+                    leftError={errors.ausführliche_diagnose?.message}
                 />
 
                 {/* Diagnosis Section */}
@@ -410,15 +533,21 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                     einlageOptions={einlageOptions}
                     showEinlageDropdown={showEinlageDropdown}
                     onEinlageToggle={() => setShowEinlageDropdown(!showEinlageDropdown)}
-                    onEinlageSelect={handleEinlageSelect}
+                    onEinlageSelect={(value) => {
+                        handleEinlageSelect(value);
+                        setValue('einlagentyp', value);
+                    }}
+                    einlagentypError={errors.einlagentyp?.message}
                     überzug={überzug}
-                    uberzugOptions={UBERZUG_OPTIONS}
+                    uberzugOptions={coverTypes}
                     showUberzugDropdown={showUberzugDropdown}
                     onUberzugToggle={() => setShowUberzugDropdown(!showUberzugDropdown)}
                     onUberzugSelect={(value) => {
                         setÜberzug(value);
                         setShowUberzugDropdown(false);
+                        setValue('überzug', value);
                     }}
+                    überzugError={errors.überzug?.message}
                     menge={menge}
                     mengeOptions={MENGE_OPTIONS}
                     showMengeDropdown={showMengeDropdown}
@@ -426,7 +555,9 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                     onMengeSelect={(value) => {
                         setMenge(value);
                         setShowMengeDropdown(false);
+                        setValue('menge', value);
                     }}
+                    mengeError={errors.menge?.message}
                 />
 
                 {/* Supply Section */}
@@ -443,6 +574,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                     selectedVersorgungId={selectedVersorgungId}
                     supply={supply}
                     onVersorgungCardSelect={handleVersorgungCardSelect}
+                    versorgungError={errors.versorgung?.message}
                 />
 
                 {/* Additional Fields Section */}

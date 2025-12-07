@@ -1,8 +1,7 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ScanData } from '@/types/scan'
-import { usePriceManagement } from '@/hooks/priceManagement/usePriceManagement'
 import { useCreateOrder } from '@/hooks/orders/useCreateOrder'
 import { useUpdateCustomerInfo } from '@/hooks/customer/useUpdateCustomerInfo'
 import toast from 'react-hot-toast'
@@ -10,6 +9,7 @@ import { useWerkstattzettelForm } from '../../../../../hooks/einlagen/useWerksta
 import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSection'
 import PriceSection from './Werkstattzettel/FormSections/PriceSection'
 import { createWerkstattzettelPayload } from './utils/formDataUtils'
+import { getSettingData } from '@/apis/einlagenApis'
 
 interface FormData {
   ausführliche_diagnose?: string
@@ -46,19 +46,65 @@ export default function WerkstattzettelModal({
   onContinue,
   onShowOrderConfirmation,
 }: UserInfoUpdateModalProps) {
-  const { prices, loading: pricesLoading, fetchPrices } = usePriceManagement()
   const { customOrderCreates, isCreating } = useCreateOrder()
   const { updateCustomerInfo, isUpdating } = useUpdateCustomerInfo()
 
   // Use custom hook for form state management
   const form = useWerkstattzettelForm(scanData, isOpen, formData)
 
-  // Fetch prices when modal opens (only once)
-  useEffect(() => {
-    if (isOpen && prices.length === 0) {
-      fetchPrices(1, 100)
+  // Settings data state
+  const [laserPrintPrices, setLaserPrintPrices] = useState<number[]>([])
+  const [pricesLoading, setPricesLoading] = useState(false)
+
+  // Extract Einlagenversorgung price from selected versorgung
+  const einlagenversorgungPrice = React.useMemo(() => {
+    const selectedData = formData?.selectedVersorgungData
+    if (!selectedData) {
+      return []
     }
-  }, [isOpen, fetchPrices, prices.length])
+    
+    // Check for price in supplyStatus
+    const price = selectedData?.supplyStatus?.price
+    if (price !== undefined && price !== null && !isNaN(Number(price))) {
+      const priceNumber = Number(price)
+      return [priceNumber]
+    }
+    
+    return []
+  }, [formData?.selectedVersorgungData])
+
+  // Auto-set Einlagenversorgung price when versorgung is selected
+  useEffect(() => {
+    if (isOpen && formData?.selectedVersorgungData?.supplyStatus?.price) {
+      const price = String(formData.selectedVersorgungData.supplyStatus.price)
+      // Always update the price when versorgung changes, even if there's already a value
+      if (form.insoleSupplyPrice !== price) {
+        form.setInsoleSupplyPrice(price)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, formData?.selectedVersorgungData?.supplyStatus?.price])
+
+  // Fetch settings data when modal opens
+  useEffect(() => {
+    const fetchSettings = async () => {
+      if (isOpen) {
+        setPricesLoading(true)
+        try {
+          const response = await getSettingData()
+          if (response?.data?.laser_print_prices && Array.isArray(response.data.laser_print_prices)) {
+            setLaserPrintPrices(response.data.laser_print_prices)
+          }
+        } catch (error) {
+          console.error('Failed to fetch settings:', error)
+          toast.error('Fehler beim Laden der Einstellungen')
+        } finally {
+          setPricesLoading(false)
+        }
+      }
+    }
+    fetchSettings()
+  }, [isOpen])
 
   // Get workshopNote settings
   const workshopNote = (scanData as any)?.workshopNote
@@ -201,7 +247,8 @@ export default function WerkstattzettelModal({
             onCustomFootPriceChange={form.setCustomFootPrice}
             customInsolePrice={form.customInsolePrice}
             onCustomInsolePriceChange={form.setCustomInsolePrice}
-            prices={prices}
+            laserPrintPrices={laserPrintPrices}
+            einlagenversorgungPrices={einlagenversorgungPrice}
             pricesLoading={pricesLoading}
           />
         </div>

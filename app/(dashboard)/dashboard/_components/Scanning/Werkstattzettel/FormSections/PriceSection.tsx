@@ -3,12 +3,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 
-interface Price {
-  id: string
-  fußanalyse: number
-  einlagenversorgung: number
-}
-
 interface PriceSectionProps {
   footAnalysisPrice: string
   onFootAnalysisPriceChange: (value: string) => void
@@ -18,7 +12,8 @@ interface PriceSectionProps {
   onCustomFootPriceChange: (value: string) => void
   customInsolePrice: string
   onCustomInsolePriceChange: (value: string) => void
-  prices: Price[]
+  laserPrintPrices: number[]
+  einlagenversorgungPrices: number[]
   pricesLoading: boolean
 }
 
@@ -31,7 +26,8 @@ export default function PriceSection({
   onCustomFootPriceChange,
   customInsolePrice,
   onCustomInsolePriceChange,
-  prices,
+  laserPrintPrices,
+  einlagenversorgungPrices,
   pricesLoading,
 }: PriceSectionProps) {
   return (
@@ -43,19 +39,25 @@ export default function PriceSection({
           <Select value={footAnalysisPrice} onValueChange={onFootAnalysisPriceChange}>
             <SelectTrigger className="w-full">
               <SelectValue
-                placeholder={pricesLoading ? 'Lade Preise...' : 'Preis auswählen'}
+                placeholder={pricesLoading ? 'Lade Preise...' : laserPrintPrices.length > 0 ? 'Preis auswählen' : 'Kein Preis verfügbar'}
               />
             </SelectTrigger>
             <SelectContent>
-              {prices.map((price) => (
-                <SelectItem
-                  className="cursor-pointer"
-                  key={`foot-${price.id}`}
-                  value={String(price.fußanalyse)}
-                >
-                  {price.fußanalyse}€
+              {laserPrintPrices.length > 0 ? (
+                laserPrintPrices.map((price, index) => (
+                  <SelectItem
+                    className="cursor-pointer"
+                    key={`foot-${index}`}
+                    value={String(price)}
+                  >
+                    {price}€
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-price" disabled>
+                  Kein Preis verfügbar
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
           {footAnalysisPrice === 'custom' && (
@@ -74,19 +76,25 @@ export default function PriceSection({
           <Select value={insoleSupplyPrice} onValueChange={onInsoleSupplyPriceChange}>
             <SelectTrigger className="w-full">
               <SelectValue
-                placeholder={pricesLoading ? 'Lade Preise...' : 'Preis auswählen'}
+                placeholder={pricesLoading ? 'Lade Preise...' : einlagenversorgungPrices.length > 0 ? 'Preis auswählen' : 'Kein Preis verfügbar'}
               />
             </SelectTrigger>
             <SelectContent>
-              {prices.map((price) => (
-                <SelectItem
-                  className="cursor-pointer"
-                  key={`insole-${price.id}`}
-                  value={String(price.einlagenversorgung)}
-                >
-                  {price.einlagenversorgung}€
+              {einlagenversorgungPrices.length > 0 ? (
+                einlagenversorgungPrices.map((price, index) => (
+                  <SelectItem
+                    className="cursor-pointer"
+                    key={`insole-${index}`}
+                    value={String(price)}
+                  >
+                    {price}€
+                  </SelectItem>
+                ))
+              ) : (
+                <SelectItem value="no-price" disabled>
+                  Kein Preis verfügbar
                 </SelectItem>
-              ))}
+              )}
             </SelectContent>
           </Select>
           {insoleSupplyPrice === 'custom' && (
