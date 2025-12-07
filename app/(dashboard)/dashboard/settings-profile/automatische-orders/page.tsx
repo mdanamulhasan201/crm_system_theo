@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
+import { getAutomatischeOrders } from '@/apis/setting/automatischeordersApis'
 
 interface Manufacturer {
   id: string
@@ -18,15 +19,30 @@ export default function AutomatischeOrdersPage() {
   const router = useRouter()
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([
     { id: 'orthotech', name: 'Orthotech', enabled: true },
-    { id: 'spannrit', name: 'Spannrit', enabled: false },
+    { id: 'opannrit', name: 'Spannrit', enabled: false },
   ])
   const [newLocation, setNewLocation] = useState('')
   const [locations, setLocations] = useState<string[]>([])
 
-  const handleToggleManufacturer = (id: string) => {
-    setManufacturers(manufacturers.map(m => 
+  const handleToggleManufacturer = async (id: string) => {
+    const updatedManufacturers = manufacturers.map(m => 
       m.id === id ? { ...m, enabled: !m.enabled } : m
-    ))
+    )
+    setManufacturers(updatedManufacturers)
+    
+    // Prepare the data to send to API
+    const status = {
+      orthotech: updatedManufacturers.find(m => m.id === 'orthotech')?.enabled || false,
+      opannrit: updatedManufacturers.find(m => m.id === 'opannrit')?.enabled || false,
+    }
+    
+    try {
+      await getAutomatischeOrders(status)
+    } catch (error) {
+      console.error('Error updating automatische orders:', error)
+      // Revert the change on error
+      setManufacturers(manufacturers)
+    }
   }
 
   const handleAddLocation = () => {
