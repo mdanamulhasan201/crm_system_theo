@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'film-example-lite-opposition.trycloudflare.com',
+        hostname: 'belt-silent-indicator-origin.trycloudflare.com',
       },
       {
         // local host
