@@ -19,6 +19,8 @@ interface OrderTableRowProps {
     onHistoryClick?: (orderId: string, orderNumber: string) => void;
     onScanClick?: (orderId: string, orderNumber: string, customerName: string) => void;
     onVersorgungClick?: (orderId: string, orderNumber: string, customerName: string) => void;
+    onBarcodeStickerClick?: (orderId: string, orderNumber: string, autoGenerate?: boolean) => void;
+    onStatusClickGenerateAndSend?: (orderId: string, orderNumber: string) => void;
 }
 
 export default function OrderTableRow({
@@ -34,6 +36,8 @@ export default function OrderTableRow({
     onHistoryClick,
     onScanClick,
     onVersorgungClick,
+    onBarcodeStickerClick,
+    onStatusClickGenerateAndSend,
 }: OrderTableRowProps) {
     const getStatusBadgeColor = (status: string) => {
         const normalizedStatus = status.replace(/_/g, ' ');
@@ -124,7 +128,18 @@ export default function OrderTableRow({
                 )}
             </TableCell>
             <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
-                <span className={`px-1 sm:px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(order.displayStatus)}`}>
+                <span 
+                    className={`px-1 sm:px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(order.displayStatus)} ${
+                        order.displayStatus?.replace(/_/g, ' ') === 'Abholbereit/Versandt' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                    }`}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        const normalizedStatus = order.displayStatus?.replace(/_/g, ' ');
+                        if (normalizedStatus === 'Abholbereit/Versandt' && onStatusClickGenerateAndSend) {
+                            onStatusClickGenerateAndSend(order.id, order.bestellnummer);
+                        }
+                    }}
+                >
                     {order.displayStatus}
                 </span>
             </TableCell>
@@ -196,6 +211,7 @@ export default function OrderTableRow({
                     onDelete={onDelete}
                     onInvoiceDownload={onInvoiceDownload}
                     onPriorityClick={onPriorityClick}
+                    onBarcodeStickerClick={onBarcodeStickerClick}
                 />
             </TableCell>
         </TableRow>

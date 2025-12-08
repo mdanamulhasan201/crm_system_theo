@@ -49,10 +49,35 @@ export const generatePdfFromElement = async (
 
     const imgData = canvas.toDataURL(`image/${format}`, quality);
 
-    // Create PDF
-    const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210; 
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // Create PDF - use custom size if width/height are provided, otherwise use A4
+    let pdf: jsPDF;
+    let imgWidth: number;
+    let imgHeight: number;
+
+    if (width && height && width !== 794 && height !== 1123) {
+        // Custom size (e.g., for stickers)
+        // Convert pixels to mm (assuming 96 DPI: 1px = 0.264583mm)
+        const widthMm = (width * 0.264583);
+        const heightMm = (height * 0.264583);
+        pdf = new jsPDF({
+            orientation: widthMm > heightMm ? 'landscape' : 'portrait',
+            unit: 'mm',
+            format: [widthMm, heightMm]
+        });
+        // Use actual canvas dimensions to maintain aspect ratio
+        imgWidth = widthMm;
+        imgHeight = (canvas.height * widthMm) / canvas.width;
+        // Ensure we don't exceed the page height
+        if (imgHeight > heightMm) {
+            imgHeight = heightMm;
+            imgWidth = (canvas.width * heightMm) / canvas.height;
+        }
+    } else {
+        // Standard A4
+        pdf = new jsPDF('p', 'mm', 'a4');
+        imgWidth = 210;
+        imgHeight = (canvas.height * imgWidth) / canvas.width;
+    }
 
     pdf.addImage(imgData, format.toUpperCase(), 0, 0, imgWidth, imgHeight);
 

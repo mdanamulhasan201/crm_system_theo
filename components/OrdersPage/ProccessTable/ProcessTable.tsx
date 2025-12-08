@@ -12,8 +12,11 @@ import PaginationControls from "./PaginationControls";
 import HistorySidebar from "./HistorySidebar";
 import VersorgungModal from "./VersorgungModal";
 import ScanPictureModal from "./ScanPictureModal";
+import BarcodeStickerModal from "./BarcodeSticker/BarcodeStickerModal";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
+import { getBarCodeData, sendPdfToCustomer } from '@/apis/barCodeGenerateApis';
+import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import toast from 'react-hot-toast';
 
 export default function ProcessTable() {
@@ -60,6 +63,41 @@ export default function ProcessTable() {
     const [scanOrderId, setScanOrderId] = useState<string | null>(null);
     const [scanOrderNumber, setScanOrderNumber] = useState<string | null>(null);
     const [scanCustomerName, setScanCustomerName] = useState<string | null>(null);
+    const [showBarcodeStickerModal, setShowBarcodeStickerModal] = useState(false);
+    const [barcodeStickerOrderId, setBarcodeStickerOrderId] = useState<string | null>(null);
+    const [barcodeStickerOrderNumber, setBarcodeStickerOrderNumber] = useState<string | null>(null);
+    const [autoGenerateBarcode, setAutoGenerateBarcode] = useState(false);
+    const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
+
+    // Direct generate and send PDF when status is clicked
+    const handleStatusClickGenerateAndSend = async (orderId: string, orderNumber: string) => {
+        if (isGeneratingBarcode) return;
+        
+        setIsGeneratingBarcode(true);
+        try {
+            // Fetch barcode data
+            const response = await getBarCodeData(orderId);
+            if (!response.success || !response.data) {
+                toast.error('Fehler beim Laden der Barcode-Daten');
+                setIsGeneratingBarcode(false);
+                return;
+            }
+
+            const barcodeData = response.data;
+
+            // Open modal with auto-generate to handle PDF generation
+            setBarcodeStickerOrderId(orderId);
+            setBarcodeStickerOrderNumber(orderNumber);
+            setAutoGenerateBarcode(true);
+            setShowBarcodeStickerModal(true);
+            
+            // The modal will handle generation and sending
+        } catch (error) {
+            console.error('Failed to start PDF generation:', error);
+            toast.error('Fehler beim Starten der PDF-Generierung');
+            setIsGeneratingBarcode(false);
+        }
+    };
 
     const {
         showConfirmModal,
@@ -274,6 +312,13 @@ export default function ProcessTable() {
                                 onCheckboxChange={handleSelectOrder}
                                 onDelete={(id) => handleDeleteOrder(id, (id: string | null) => setSelectedOrderId(id))}
                                 onInvoiceDownload={handleInvoiceDownload}
+                                onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
+                                    setBarcodeStickerOrderId(orderId);
+                                    setBarcodeStickerOrderNumber(orderNumber);
+                                    setAutoGenerateBarcode(autoGenerate || false);
+                                    setShowBarcodeStickerModal(true);
+                                }}
+                                onStatusClickGenerateAndSend={handleStatusClickGenerateAndSend}
                                 onPriorityClick={(orderData) => {
                                     setPriorityModalOrder(orderData);
                                     setPrioritySelection(orderData.priority || 'Normal');
@@ -455,6 +500,20 @@ export default function ProcessTable() {
                 }}
                 orderId={scanOrderId}
                 orderNumber={scanOrderNumber || undefined}
+            />
+
+            {/* Barcode Sticker Modal */}
+            <BarcodeStickerModal
+                isOpen={showBarcodeStickerModal}
+                onClose={() => {
+                    setShowBarcodeStickerModal(false);
+                    setBarcodeStickerOrderId(null);
+                    setBarcodeStickerOrderNumber(null);
+                    setAutoGenerateBarcode(false);
+                }}
+                orderId={barcodeStickerOrderId || ''}
+                orderNumber={barcodeStickerOrderNumber || undefined}
+                autoGenerate={autoGenerateBarcode}
             />
         </div>
     );

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Trash2, ClipboardEdit, AlertTriangle } from "lucide-react";
+import { Trash2, ClipboardEdit, AlertTriangle, QrCode } from "lucide-react";
 import { OrderData } from "@/contexts/OrdersContext";
 
 interface OrderActionsProps {
@@ -8,6 +8,7 @@ interface OrderActionsProps {
     onDelete: (orderId: string) => void;
     onInvoiceDownload: (orderId: string) => void;
     onPriorityClick: (order: OrderData) => void;
+    onBarcodeStickerClick?: (orderId: string, orderNumber: string) => void;
 }
 
 export default function OrderActions({
@@ -16,7 +17,12 @@ export default function OrderActions({
     onDelete,
     onInvoiceDownload,
     onPriorityClick,
+    onBarcodeStickerClick,
 }: OrderActionsProps) {
+    // Check if order status is "Abholbereit/Versandt"
+    const normalizedStatus = order.displayStatus?.replace(/_/g, ' ') || '';
+    const isAbholbereit = normalizedStatus === 'Abholbereit/Versandt';
+
     return (
         <div className="flex gap-1 sm:gap-2 justify-center">
             <Button
@@ -60,6 +66,20 @@ export default function OrderActions({
             >
                 <ClipboardEdit className={`h-3 w-3 ${order.invoice ? 'text-blue-600' : 'text-gray-400'}`} />
             </Button>
+            {isAbholbereit && onBarcodeStickerClick && (
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 cursor-pointer w-6 sm:h-8 sm:w-8 p-0 hover:bg-green-100"
+                    title="Barcode-Sticker generieren"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        onBarcodeStickerClick(order.id, order.bestellnummer);
+                    }}
+                >
+                    <QrCode className="h-3 w-3 text-green-600" />
+                </Button>
+            )}
         </div>
     );
 }

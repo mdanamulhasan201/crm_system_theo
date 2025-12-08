@@ -4679,6 +4679,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsbarcode@npm:^3.12.1":
+  version: 3.12.1
+  resolution: "jsbarcode@npm:3.12.1"
+  checksum: 10c0/0bd3f276dcce0afab9a995e4c52da0e755a7a6bb8eaa85510886fcb9eb80f4608df26fc2c0114ba9f324d9003076e3049bf49b2c0534e9e7677ce46ec939e4e9
+  languageName: node
+  linkType: hard
+
 "json-buffer@npm:3.0.1":
   version: 3.0.1
   resolution: "json-buffer@npm:3.0.1"
@@ -6437,6 +6444,7 @@ __metadata:
     html2canvas: "npm:^1.4.1"
     html2pdf.js: "npm:^0.12.1"
     input-otp: "npm:^1.4.2"
+    jsbarcode: "npm:^3.12.1"
     jspdf: "npm:^3.0.1"
     lucide-react: "npm:^0.511.0"
     next: "npm:15.3.6"

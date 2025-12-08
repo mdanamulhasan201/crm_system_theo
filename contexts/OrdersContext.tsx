@@ -77,7 +77,11 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         kundenname: `${apiOrder.customer.vorname} ${apiOrder.customer.nachname}`,
         status: apiOrder.orderStatus,
         displayStatus: getLabelFromApiStatus(apiOrder.orderStatus),
-        preis: `${(apiOrder.fußanalyse + apiOrder.einlagenversorgung).toFixed(2)} €`,
+        preis: apiOrder.totalPrice 
+            ? `${apiOrder.totalPrice.toFixed(2)} €`
+            : (apiOrder.fußanalyse !== null && apiOrder.einlagenversorgung !== null)
+                ? `${((apiOrder.fußanalyse || 0) + (apiOrder.einlagenversorgung || 0)).toFixed(2)} €`
+                : '—',
         zahlung: formatPaymentStatus(apiOrder.bezahlt),
         beschreibung: werkstattzettel?.versorgung || apiOrder.product.versorgung || apiOrder.product.status,
         abholort: "Abholung Innsbruck oder Wird mit Post versandt",
