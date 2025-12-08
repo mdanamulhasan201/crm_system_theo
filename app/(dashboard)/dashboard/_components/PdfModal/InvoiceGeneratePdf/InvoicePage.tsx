@@ -15,7 +15,10 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
         return new Date(dateString).toLocaleDateString('de-DE');
     };
 
-    const formatPrice = (price: number) => {
+    const formatPrice = (price: number | null | undefined) => {
+        if (price === null || price === undefined || isNaN(price)) {
+            return '0.00 €';
+        }
         return price.toFixed(2) + ' €';
     };
 
@@ -147,7 +150,12 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
                                         <p style={{ margin: 0 }}>Email: {data.customer?.email || '-'}</p>
                                     </div>
                                     <div style={{ marginBottom: '15px' }}>
-                                        <p style={{ margin: 0 }}>Telefon: {((data as any)?.werkstattzettel?.telefon) || data.customer?.telefonnummer || '-'}</p>
+                                        <p style={{ margin: 0 }}>Telefon: {
+                                            (data as any)?.telefon || 
+                                            ((data as any)?.werkstattzettel?.telefon) || 
+                                            (data.customer as any)?.telefon ||
+                                            '-'
+                                        }</p>
                                     </div>
                                     <div style={{ marginBottom: '15px' }}>
                                         <p style={{ margin: 0 }}>Wohnort: {data.customer?.wohnort || '-'}</p>

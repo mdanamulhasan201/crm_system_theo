@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ScanData } from '@/types/scan'
-import { useCreateOrder } from '@/hooks/orders/useCreateOrder'
-import { useUpdateCustomerInfo } from '@/hooks/customer/useUpdateCustomerInfo'
 import toast from 'react-hot-toast'
 import { useWerkstattzettelForm } from '../../../../../hooks/einlagen/useWerkstattzettelForm'
 import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSection'
@@ -46,8 +44,6 @@ export default function WerkstattzettelModal({
   onContinue,
   onShowOrderConfirmation,
 }: UserInfoUpdateModalProps) {
-  const { customOrderCreates, isCreating } = useCreateOrder()
-  const { updateCustomerInfo, isUpdating } = useUpdateCustomerInfo()
 
   // Use custom hook for form state management
   const form = useWerkstattzettelForm(scanData, isOpen, formData)
@@ -129,22 +125,8 @@ export default function WerkstattzettelModal({
     }
 
     try {
-      const parsedFoot = Number(form.footAnalysisPrice)
-      const parsedInsole = Number(form.insoleSupplyPrice)
-
-      // First update prices on the customer record
-      const priceUpdateSuccess = await updateCustomerInfo(scanData.id, {
-        fußanalyse: isNaN(parsedFoot) ? 0 : parsedFoot,
-        einlagenversorgung: isNaN(parsedInsole) ? 0 : parsedInsole,
-      })
-
-      if (!priceUpdateSuccess) {
-        toast.error('Preis-Update fehlgeschlagen')
-        return
-      }
-
       // Create payload using utility function
-      const payload = createWerkstattzettelPayload(
+      const werkstattzettelPayload = createWerkstattzettelPayload(
         {
           vorname: form.vorname,
           nachname: form.nachname,
@@ -165,18 +147,14 @@ export default function WerkstattzettelModal({
         scanData.id
       )
 
-      const res = await customOrderCreates(scanData.id, payload)
-      const createdId = (res as any)?.data?.id ?? (res as any)?.id
-      if (createdId) {
-        try {
-          localStorage.setItem('werkstattzettelId', createdId)
-        } catch {
-          // Ignore localStorage errors
-        }
+      // Combine formData with werkstattzettel payload
+      const combinedFormData = {
+        ...formData,
+        ...werkstattzettelPayload,
       }
 
       onOpenChange(false)
-      onShowOrderConfirmation?.(formData || undefined)
+      onShowOrderConfirmation?.(combinedFormData || undefined)
     } catch (err: any) {
       const apiMessage =
         err?.response?.data?.message || err?.message || 'Speichern fehlgeschlagen'
@@ -260,7 +238,6 @@ export default function WerkstattzettelModal({
             className="cursor-pointer"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isCreating || isUpdating}
           >
             Abbrechen
           </Button>
@@ -268,9 +245,8 @@ export default function WerkstattzettelModal({
             type="button"
             className="cursor-pointer"
             onClick={handleSave}
-            disabled={isCreating || isUpdating}
           >
-            {isCreating || isUpdating ? 'loading...' : 'Continue'}
+            Continue
           </Button>
         </div>
       </DialogContent>

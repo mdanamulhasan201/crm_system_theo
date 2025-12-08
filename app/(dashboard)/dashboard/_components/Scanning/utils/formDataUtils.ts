@@ -52,7 +52,7 @@ export function createWerkstattzettelPayload(
     email: formData.email || undefined,
     geschaeftsstandort: formData.geschaeftsstandort || undefined,
     mitarbeiter: formData.mitarbeiter || undefined,
-    employeeId: formData.employeeId || undefined,
+    employeeId: formData.employeeId || undefined, // This will be mapped to werkstattEmployeeId in order payload
     fertigstellungBis: fertigIso,
     versorgung: formData.versorgung || undefined,
     bezahlt: formData.bezahlt || undefined, // Now accepts string format like "Privat - Bezahlt"

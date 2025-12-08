@@ -233,6 +233,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
     const [realOrderData, setRealOrderData] = useState<any>(null);
     const [showUserInfoUpdateModal, setShowUserInfoUpdateModal] = useState(false);
     const [formDataForOrder, setFormDataForOrder] = useState<any>(null);
+    const [orderPrices, setOrderPrices] = useState<{ fussanalysePreis: number; einlagenversorgungPreis: number } | null>(null);
     
     // Settings data state
     const [coverTypes, setCoverTypes] = useState<string[]>([]);
@@ -392,34 +393,72 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
     // Listen for order data updates
     useEffect(() => {
         const handleOrderDataUpdate = (event: any) => {
-            setRealOrderData(event.detail.orderData);
+            const orderData = event.detail.orderData;
+            // Ensure prices are never null/undefined - use form prices as fallback
+            if (orderData) {
+                // If API returns null prices, use the prices from formDataForOrder
+                orderData.fußanalyse = orderData.fußanalyse ?? orderPrices?.fussanalysePreis ?? 0;
+                orderData.einlagenversorgung = orderData.einlagenversorgung ?? orderPrices?.einlagenversorgungPreis ?? 0;
+                orderData.totalPrice = orderData.totalPrice ?? (orderData.fußanalyse + orderData.einlagenversorgung);
+            }
+            setRealOrderData(orderData);
         };
 
         window.addEventListener('orderDataUpdated', handleOrderDataUpdate);
         return () => {
             window.removeEventListener('orderDataUpdated', handleOrderDataUpdate);
         };
-    }, []);
+    }, [orderPrices]);
 
     // Handlers
     const handleClosePdfModal = () => {
         setShowPdfModal(false);
         setCurrentOrderId(undefined);
         setRealOrderData(null);
+        setOrderPrices(null);
     };
 
     const handleConfirmOrder = async () => {
         const resolvedId = resolveVersorgungIdFromText();
-        const werkstattzettelId =
-            typeof window !== 'undefined' ? localStorage.getItem('werkstattzettelId') || undefined : undefined;
 
         if (customer?.id && resolvedId && formDataForOrder) {
             try {
+                // Combine all form data (Einlagen + Werkstattzettel) into one payload
+                // All fields are sent inline to /customer-orders/create
+                // Store prices for fallback if API returns null
+                const fussanalysePreis = Number(formDataForOrder.fussanalysePreis) || 0;
+                const einlagenversorgungPreis = Number(formDataForOrder.einlagenversorgungPreis) || 0;
+                setOrderPrices({ fussanalysePreis, einlagenversorgungPreis });
+
                 const orderPayload = {
                     customerId: customer.id,
                     versorgungId: resolvedId,
-                    werkstattzettelId: werkstattzettelId,
-                    ...formDataForOrder,
+                    // Einlagen fields
+                    einlagentyp: formDataForOrder.einlagentyp || '',
+                    überzug: formDataForOrder.überzug || '',
+                    menge: formDataForOrder.menge || 1,
+                    versorgung_note: formDataForOrder.versorgung_note || '',
+                    schuhmodell_wählen: formDataForOrder.schuhmodell_wählen || '',
+                    kostenvoranschlag: formDataForOrder.kostenvoranschlag || false,
+                    ausführliche_diagnose: formDataForOrder.ausführliche_diagnose || '',
+                    versorgung_laut_arzt: formDataForOrder.versorgung_laut_arzt || '',
+                    // Werkstattzettel fields (inline)
+                    kundenName: formDataForOrder.kundenName || '',
+                    auftragsDatum: formDataForOrder.auftragsDatum || '',
+                    wohnort: formDataForOrder.wohnort || '',
+                    telefon: formDataForOrder.telefon || '',
+                    email: formDataForOrder.email || '',
+                    geschaeftsstandort: formDataForOrder.geschaeftsstandort || '',
+                    mitarbeiter: formDataForOrder.mitarbeiter || '',
+                    fertigstellungBis: formDataForOrder.fertigstellungBis || '',
+                    versorgung: formDataForOrder.versorgung || '',
+                    bezahlt: formDataForOrder.bezahlt || '',
+                    // Prices - send both field name formats to ensure API receives them
+                    fussanalysePreis: fussanalysePreis,
+                    einlagenversorgungPreis: einlagenversorgungPreis,
+                    fußanalyse: fussanalysePreis, // Also send as fußanalyse in case API expects this
+                    einlagenversorgung: einlagenversorgungPreis, // Also send as einlagenversorgung in case API expects this
+                    werkstattEmployeeId: formDataForOrder.employeeId || formDataForOrder.werkstattEmployeeId || '',
                 };
 
                 const result = await createOrderAndGeneratePdf(
@@ -481,7 +520,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
         setShowEinlageDropdown(false);
     };
 
-    // Create order data for PDF
+    // Create order data for PDF - ensure we always have a valid object
     const orderData = createOrderData({
         customer,
         realOrderData,
@@ -490,7 +529,49 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
         supply,
         ausführliche_diagnose,
         diagnosis,
-    });
+    }) || (customer ? {
+        id: 'temp-id',
+        customerId: customer.id,
+        partnerId: 'temp-partner-id',
+        fußanalyse: 0,
+        einlagenversorgung: 0,
+        totalPrice: 0,
+        productId: 'temp-product-id',
+        orderStatus: 'Started',
+        statusUpdate: new Date().toISOString(),
+        invoice: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        customer: {
+            id: customer.id,
+            customerNumber: 0,
+            vorname: customer.vorname || '',
+            nachname: customer.nachname || '',
+            email: customer.email || '',
+            telefonnummer: '',
+            wohnort: '',
+        },
+        partner: {
+            id: 'temp-partner-id',
+            name: 'FeetFirst Partner',
+            email: 'partner@feetfirst.com',
+            image: '/images/pdfLogo.png',
+            role: 'Partner',
+        },
+        product: {
+            id: 'temp-product-id',
+            name: einlagentyp || selectedEinlage || 'Einlage',
+            rohlingHersteller: 'Standard',
+            artikelHersteller: 'Standard',
+            versorgung: supply || 'Standard Versorgung',
+            material: 'Standard Material',
+            langenempfehlung: {},
+            status: 'Active',
+            diagnosis_status: ausführliche_diagnose || diagnosis || null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        },
+    } : null);
 
     return (
         <div>
@@ -629,7 +710,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                 orderId={currentOrderId}
             />
 
-            {/* Hidden InvoicePage component for PDF generation */}
+            {/* Hidden InvoicePage component for PDF generation - Always render to ensure element exists */}
             {orderData && (
                 <div style={{ position: 'absolute', left: '-9999px', top: 0 }}>
                     <InvoicePage

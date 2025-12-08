@@ -53,7 +53,25 @@ export const useCreateOrder = () => {
                 });
                 window.dispatchEvent(updateEvent);
 
-                await new Promise(resolve => setTimeout(resolve, 100));
+                // Wait for the DOM to update and ensure the invoice-print-area element exists
+                let retries = 0;
+                const maxRetries = 10;
+                while (retries < maxRetries) {
+                    const element = document.getElementById('invoice-print-area');
+                    if (element) {
+                        break;
+                    }
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    retries++;
+                }
+
+                // Additional delay to ensure React has rendered the updated data
+                await new Promise(resolve => setTimeout(resolve, 200));
+
+                const element = document.getElementById('invoice-print-area');
+                if (!element) {
+                    throw new Error('Invoice print area element not found. Please try generating PDF from the order details page.');
+                }
 
                 const pdfBlob = await generatePdfFromElement('invoice-print-area', pdfPresets.balanced);
 
