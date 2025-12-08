@@ -17,16 +17,27 @@ export default function MassschuhauftraegePage() {
     const [tabClicked, setTabClicked] = useState<number>(0);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const refetchProductionViewRef = useRef<(() => void) | null>(null);
+    const refetchCardStatistikRef = useRef<(() => void) | null>(null);
     const router = useRouter()
     
-    // Stable callback to set refetch function
+    // Stable callback to set refetch function for ProductionView
     const handleRefetchReady = useCallback((refetch: () => void) => {
         refetchProductionViewRef.current = refetch;
     }, []);
     
-    // Stable callback to call refetch
+    // Stable callback to call refetch for ProductionView
     const handleRefetchProductionView = useCallback(() => {
         refetchProductionViewRef.current?.();
+    }, []);
+
+    // Stable callback to set refetch function for CardStatistik
+    const handleCardStatistikRefetchReady = useCallback((refetch: () => void) => {
+        refetchCardStatistikRef.current = refetch;
+    }, []);
+
+    // Stable callback to call refetch for CardStatistik
+    const handleRefetchCardStatistik = useCallback(() => {
+        refetchCardStatistikRef.current?.();
     }, []);
     const handleStart = () => {
         router.push('/dashboard/massschuhauftraege-deatils/1');
@@ -59,7 +70,7 @@ export default function MassschuhauftraegePage() {
                     infoText="Alle Angaben können am Ende nochmals überprüft werden."
                 />
             )}
-            <CardStatistik />
+            <CardStatistik onRefetchReady={handleCardStatistikRefetchReady} />
             <MassschuhaufträgeChart />
             <CustomerSearch />
 
@@ -75,6 +86,7 @@ export default function MassschuhauftraegePage() {
                 selectedOrderId={selectedOrderId}
                 onTabChange={setTabClicked}
                 onRefetchProductionView={handleRefetchProductionView}
+                onRefetchCardStatistik={handleRefetchCardStatistik}
             />
             <ProductionView 
                 tabClicked={tabClicked} 

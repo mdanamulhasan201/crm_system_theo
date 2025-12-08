@@ -128,7 +128,7 @@ export default function Lager() {
         };
 
         fetchProducts();
-    }, [getAllProducts]);
+    }, []);
 
 
 

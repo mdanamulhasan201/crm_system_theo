@@ -84,6 +84,7 @@ export default function ChangesOrderProgress({
     selectedOrderId,
     onTabChange,
     onRefetchProductionView,
+    onRefetchCardStatistik,
 }: {
     onClick: () => void;
     onClick2: () => void;
@@ -92,6 +93,7 @@ export default function ChangesOrderProgress({
     selectedOrderId: string | null;
     onTabChange?: (tab: number) => void;
     onRefetchProductionView?: () => void;
+    onRefetchCardStatistik?: () => void;
 }) {
     const { order, refetch: refetchOrder } = useGetSingleMassschuheOrder(selectedOrderId);
     const { updateStatus } = useUpdateMassschuheOrderStatus();
@@ -310,6 +312,8 @@ export default function ChangesOrderProgress({
                     await refetchOrder();
                     // Refetch ProductionView to update the Fertigstellung column
                     onRefetchProductionView?.();
+                    // Refetch CardStatistik to update statistics in real-time
+                    onRefetchCardStatistik?.();
                     action();
                 } catch (error) {
                     console.error("Failed to update status:", error);
@@ -500,6 +504,8 @@ export default function ChangesOrderProgress({
                                             await refetchOrder();
                                             // Refetch ProductionView to update the Fertigstellung column
                                             onRefetchProductionView?.();
+                                            // Refetch CardStatistik to update statistics in real-time
+                                            onRefetchCardStatistik?.();
                                         } catch (error) {
                                             console.error("Failed to update status:", error);
                                         }
@@ -563,6 +569,8 @@ export default function ChangesOrderProgress({
                                             await refetchOrder();
                                             // Refetch ProductionView to update the Fertigstellung column
                                             onRefetchProductionView?.();
+                                            // Refetch CardStatistik to update statistics in real-time
+                                            onRefetchCardStatistik?.();
                                         } catch (error) {
                                             console.error("Failed to update status:", error);
                                         }

@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'belt-silent-indicator-origin.trycloudflare.com',
+        hostname: 'counting-enjoyed-daughters-airports.trycloudflare.com',
       },
       {
         // local host

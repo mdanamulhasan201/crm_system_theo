@@ -34,3 +34,24 @@ export const updateMassschuheOrderStatus = async (orderIds: string[], status: st
         throw error;
     }
 }
+
+// get massschuhe order status data /massschuhe-order/stats
+export const getMassschuheOrderData = async () => {
+    try {
+        const response = await axiosClient.get(`/massschuhe-order/stats`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// get chart data /massschuhe-order/stats/chart
+export const getMassschuheOrderChartData = async () => {
+    try {
+        const response = await axiosClient.get(`/massschuhe-order/stats/revenue`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
