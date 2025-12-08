@@ -394,9 +394,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
     useEffect(() => {
         const handleOrderDataUpdate = (event: any) => {
             const orderData = event.detail.orderData;
-            // Ensure prices are never null/undefined - use form prices as fallback
             if (orderData) {
-                // If API returns null prices, use the prices from formDataForOrder
                 orderData.fußanalyse = orderData.fußanalyse ?? orderPrices?.fussanalysePreis ?? 0;
                 orderData.einlagenversorgung = orderData.einlagenversorgung ?? orderPrices?.einlagenversorgungPreis ?? 0;
                 orderData.totalPrice = orderData.totalPrice ?? (orderData.fußanalyse + orderData.einlagenversorgung);
@@ -423,9 +421,6 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
 
         if (customer?.id && resolvedId && formDataForOrder) {
             try {
-                // Combine all form data (Einlagen + Werkstattzettel) into one payload
-                // All fields are sent inline to /customer-orders/create
-                // Store prices for fallback if API returns null
                 const fussanalysePreis = Number(formDataForOrder.fussanalysePreis) || 0;
                 const einlagenversorgungPreis = Number(formDataForOrder.einlagenversorgungPreis) || 0;
                 setOrderPrices({ fussanalysePreis, einlagenversorgungPreis });
@@ -433,7 +428,6 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                 const orderPayload = {
                     customerId: customer.id,
                     versorgungId: resolvedId,
-                    // Einlagen fields
                     einlagentyp: formDataForOrder.einlagentyp || '',
                     überzug: formDataForOrder.überzug || '',
                     menge: formDataForOrder.menge || 1,
@@ -442,7 +436,6 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                     kostenvoranschlag: formDataForOrder.kostenvoranschlag || false,
                     ausführliche_diagnose: formDataForOrder.ausführliche_diagnose || '',
                     versorgung_laut_arzt: formDataForOrder.versorgung_laut_arzt || '',
-                    // Werkstattzettel fields (inline)
                     kundenName: formDataForOrder.kundenName || '',
                     auftragsDatum: formDataForOrder.auftragsDatum || '',
                     wohnort: formDataForOrder.wohnort || '',
@@ -453,11 +446,10 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                     fertigstellungBis: formDataForOrder.fertigstellungBis || '',
                     versorgung: formDataForOrder.versorgung || '',
                     bezahlt: formDataForOrder.bezahlt || '',
-                    // Prices - send both field name formats to ensure API receives them
                     fussanalysePreis: fussanalysePreis,
                     einlagenversorgungPreis: einlagenversorgungPreis,
-                    fußanalyse: fussanalysePreis, // Also send as fußanalyse in case API expects this
-                    einlagenversorgung: einlagenversorgungPreis, // Also send as einlagenversorgung in case API expects this
+                    fußanalyse: fussanalysePreis, 
+                    einlagenversorgung: einlagenversorgungPreis,
                     werkstattEmployeeId: formDataForOrder.employeeId || formDataForOrder.werkstattEmployeeId || '',
                 };
 
@@ -473,18 +465,15 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                     setShowPdfModal(true);
                 }
             } catch (error) {
-                // Error toast is already handled inside useCreateOrder.createOrderAndGeneratePdf
             }
         }
         setShowConfirmModal(false);
     };
 
     const handleSpeichernClick = async () => {
-        // Trigger validation for all fields
         const isValid = await trigger();
         
         if (!isValid) {
-            // Show error toast with first error message
             const firstError = Object.values(errors)[0];
             if (firstError?.message) {
                 toast.error(firstError.message as string);
@@ -520,7 +509,6 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
         setShowEinlageDropdown(false);
     };
 
-    // Create order data for PDF - ensure we always have a valid object
     const orderData = createOrderData({
         customer,
         realOrderData,
