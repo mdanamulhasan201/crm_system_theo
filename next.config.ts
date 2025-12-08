@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'counting-enjoyed-daughters-airports.trycloudflare.com',
+        hostname: 'twins-clinics-yeast-owns.trycloudflare.com',
       },
       {
         // local host
