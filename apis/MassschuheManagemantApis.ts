@@ -55,3 +55,25 @@ export const getMassschuheOrderChartData = async () => {
         throw error;
     }
 }
+
+
+// get bottom card data /massschuhe-order/stats/bottom-card
+export const getBottomCardData = async () => {
+    try {
+        const response = await axiosClient.get(`/massschuhe-order/stats/footer-analysis`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// chart data /massschuhe-order/stats/production-timeline?year=2025 
+export const getProductionTimelineData = async (year: number) => {
+    try {
+        const response = await axiosClient.get(`/massschuhe-order/stats/production-timeline?year=${year}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
