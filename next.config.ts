@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'protect-permits-barnes-representations.trycloudflare.com',
+        hostname: 'twins-clinics-yeast-owns.trycloudflare.com',
       },
       {
         // local host

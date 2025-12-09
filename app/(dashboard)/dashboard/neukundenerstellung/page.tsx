@@ -21,7 +21,9 @@ export default function Neukundenerstellung() {
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [city, setCity] = useState('');
+    const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
+    const [insuranceNumber, setInsuranceNumber] = useState('');
     const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
     const [billingType, setBillingType] = useState('');
     const [consent, setConsent] = useState(false);
@@ -40,10 +42,12 @@ export default function Neukundenerstellung() {
             formData.append('nachname', lastName);
             formData.append('wohnort', city);
             formData.append('email', email);
+            formData.append('telefon', phone);
             if (birthDate) {
                 // API expects field name "geburtsdatum"
                 formData.append('geburtsdatum', birthDate.toISOString().split('T')[0]);
             }
+            formData.append('land', insuranceNumber);
             formData.append('billingType', billingType);
             formData.append('consent', consent ? 'true' : 'false');
 
@@ -150,18 +154,18 @@ export default function Neukundenerstellung() {
                     {/* Wohnort with smart suggestions (DE & IT) */}
                     <WohnortInput value={city} onChange={setCity} />
 
-                    {/* Email & Geburtsdatum */}
+                    {/* Telefonnummer & Geburtsdatum */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                E-Mail
+                                Telefonnummer
                             </label>
                             <Input
-                                type="email"
+                                type="tel"
                                 className="w-full"
-                                placeholder="Ex. johngmail.com.."
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="0049 123 456789"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
                             />
                         </div>
                         <div>
@@ -188,12 +192,44 @@ export default function Neukundenerstellung() {
                                 <PopoverContent className="w-auto p-0" align="start">
                                     <Calendar
                                         mode="single"
+                                        captionLayout="dropdown"
+                                        fromYear={1900}
+                                        toYear={new Date().getFullYear()}
+                                        defaultMonth={birthDate ?? new Date(1990, 0, 1)}
                                         selected={birthDate}
                                         onSelect={setBirthDate}
                                         initialFocus
                                     />
                                 </PopoverContent>
                             </Popover>
+                        </div>
+                    </div>
+
+                    {/* E-Mail & Versicherungsnummer */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                E-Mail
+                            </label>
+                            <Input
+                                type="email"
+                                className="w-full"
+                                placeholder="Ex. johngmail.com.."
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Versicherungsnummer
+                            </label>
+                            <Input
+                                type="text"
+                                className="w-full"
+                                placeholder="65 120692 M 123"
+                                value={insuranceNumber}
+                                onChange={(e) => setInsuranceNumber(e.target.value)}
+                            />
                         </div>
                     </div>
 

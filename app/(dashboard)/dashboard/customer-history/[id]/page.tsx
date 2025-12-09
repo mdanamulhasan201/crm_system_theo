@@ -54,6 +54,14 @@ export default function CustomerHistory() {
         router.push(`/dashboard/customer-info/${params.id}`);
     }
 
+    const normalizeGender = (value: string | undefined) => {
+        const v = (value || '').toLowerCase();
+        if (v === 'male' || v === 'mann') return 'MALE';
+        if (v === 'female' || v === 'frau') return 'frau';
+        if (v.includes('keine')) return 'keine';
+        return '';
+    };
+
     // Helper function to format date for date input
     const formatDateForInput = (dateString: string | undefined) => {
         if (!dateString) return '';
@@ -67,7 +75,7 @@ export default function CustomerHistory() {
 
     const handleEditClick = () => {
         setEditFormData({
-            gender: scanData.gender || '',
+            gender: normalizeGender(scanData.gender),
             geburtsdatum: formatDateForInput(scanData.geburtsdatum),
             straße: scanData.straße || '',
             land: scanData.land || '',
@@ -122,7 +130,7 @@ export default function CustomerHistory() {
     const handleCancelClick = () => {
         setIsEditing(false);
         setEditFormData({
-            gender: scanData.gender || '',
+            gender: normalizeGender(scanData.gender),
             geburtsdatum: formatDateForInput(scanData.geburtsdatum),
             straße: scanData.straße || '',
             land: scanData.land || '',
@@ -273,7 +281,7 @@ export default function CustomerHistory() {
                         <input
                             type="radio"
                             name="gender"
-                            checked={isEditing ? editFormData.gender === 'MALE' : scanData.gender === 'MALE'}
+                            checked={isEditing ? editFormData.gender === 'MALE' : normalizeGender(scanData.gender) === 'MALE'}
                             onChange={isEditing ? () => handleInputChange('gender', 'MALE') : undefined}
                             disabled={!isEditing}
                             className="cursor-pointer"
@@ -284,12 +292,23 @@ export default function CustomerHistory() {
                         <input
                             type="radio"
                             name="gender"
-                            checked={isEditing ? editFormData.gender === 'FEMALE' : scanData.gender === 'FEMALE'}
-                            onChange={isEditing ? () => handleInputChange('gender', 'FEMALE') : undefined}
+                            checked={isEditing ? editFormData.gender === 'frau' : normalizeGender(scanData.gender) === 'frau'}
+                            onChange={isEditing ? () => handleInputChange('gender', 'frau') : undefined}
                             disabled={!isEditing}
                             className="cursor-pointer"
                         />
                         <span className="text-sm font-medium">Women</span>
+                    </label>
+                    <label className="flex items-center gap-2 border px-4 py-2 rounded-md bg-gray-50">
+                        <input
+                            type="radio"
+                            name="gender"
+                            checked={isEditing ? editFormData.gender === 'keine' : normalizeGender(scanData.gender) === 'keine'}
+                            onChange={isEditing ? () => handleInputChange('gender', 'keine') : undefined}
+                            disabled={!isEditing}
+                            className="cursor-pointer"
+                        />
+                        <span className="text-sm font-medium">Keine Angabe</span>
                     </label>
                 </div>
 
