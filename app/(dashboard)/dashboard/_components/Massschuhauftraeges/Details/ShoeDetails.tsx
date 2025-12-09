@@ -6,7 +6,6 @@ import { normalizeUnderscores, parseEuroFromText } from "./HelperFunctions"
 import { GROUPS, shoe } from "./ShoeData"
 import PDFPopup from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
-import '@/components/CSS/general-style.css'
 
 type OptionDef = {
     id: string

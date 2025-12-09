@@ -39,7 +39,7 @@ function InlineLabelWithInputs({
       {parts.map((part: string, idx: number) => (
         <React.Fragment key={idx}>
           <span>{part}</span>
-          {idx < parts.length - 1 && <span className="pdf-inline-value">{values[idx] || "___"}</span>}
+          {idx < parts.length - 1 && <span className="inline-block min-w-[40px] px-1 border-b border-[#36a866] text-[#36a866] font-medium">{values[idx] || "___"}</span>}
         </React.Fragment>
       ))}
     </span>
@@ -246,42 +246,45 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   }
 
   return (
-    <div className="pdf-modal-overlay">
-      <div className="pdf-modal-container">
-        <div className="pdf-modal-header">
-          <h2 className="pdf-modal-title">Your PDF is Ready</h2>
-          <button onClick={onClose} className="pdf-modal-close" title="Close">
+    <div className="fixed inset-0 w-screen h-screen bg-black/50 z-[9999] flex items-center justify-center">
+      <div className="bg-white w-[80vw] min-h-[80vh] rounded-2xl shadow-2xl overflow-hidden animate-[fadeIn_0.3s] relative flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 relative">
+          <h2 className="text-xl font-semibold text-slate-900 font-['Poppins'] m-0">Your PDF is Ready</h2>
+          <button onClick={onClose} className="absolute right-6 top-6 bg-none border-none text-2xl text-slate-500 cursor-pointer transition-colors p-0 w-6 h-6 flex items-center justify-center hover:text-slate-800" title="Close">
             <CloseIcon />
           </button>
         </div>
 
-        <div className="pdf-preview-wrapper">
-          <div className="pdf-preview-scroll">
-            <div className="pdf-fixed-width" ref={contentRef}>
-              <div className="pdf-image">
-                <div className="pdf-file-header-section">
-                  <div className="pdf-header-top">
-                    <div className="pdf-logo-section">
-                      <div className="pdf-logo-placeholder">
-                        <img src="/Logo.png" alt="Logo" className="pdf-logo-image" />
+        {/* Preview Wrapper */}
+        <div className="flex flex-col items-center shadow-md bg-slate-100 p-4 rounded-2xl m-4 break-inside-avoid">
+          <div className="max-h-[60vh] overflow-y-auto">
+            <div className="w-[794px] flex flex-col min-h-screen" ref={contentRef}>
+              <div className="p-8 min-h-[600px] bg-white flex-1">
+                {/* PDF Header */}
+                <div className="p-8 bg-white border-b border-slate-200">
+                  <div className="flex gap-6 items-start">
+                    <div className="flex-shrink-0">
+                      <div className="w-[90px] h-[90px] flex items-center justify-center font-bold font-['Poppins']">
+                        <img src="/Logo.png" alt="Logo" />
                       </div>
                     </div>
-                    <div className="pdf-header-info">
-                      <div className="pdf-header-title">Businesseinlage</div>
-                      <div className="pdf-header-details">
-                        <div className="pdf-detail-row">
-                          <span className="pdf-detail-label">Brugger Theo</span>
+                    <div className="flex-1">
+                      <div className="text-slate-900 font-['Poppins'] text-base font-medium mb-2">Businesseinlage</div>
+                      <div className="flex flex-col gap-1">
+                        <div className="text-sm text-slate-900 font-['Poppins'] font-medium">
+                          <span>Brugger Theo</span>
                         </div>
-                        <div className="pdf-detail-row">
-                          <span className="pdf-detail-label">
+                        <div className="text-sm text-slate-900 font-['Poppins'] font-medium">
+                          <span>
                             Bestellnr:
-                            <span className="pdf-detail-value"> #121212 </span>
+                            <span className="text-[10px]"> #121212 </span>
                           </span>
                         </div>
-                        <div className="pdf-detail-row">
-                          <span className="pdf-detail-label">
+                        <div className="text-sm text-slate-900 font-['Poppins'] font-medium">
+                          <span>
                             Liefertermin:
-                            <span className="pdf-detail-value"> 10.02.2025 </span>
+                            <span className="text-[10px]"> 10.02.2025 </span>
                           </span>
                         </div>
                       </div>
@@ -314,32 +317,28 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   if (g.options.length === 1 && g.options[0].label === "mm" && g.id === "absatzhoehe") {
                     return (
                       <React.Fragment key={g.id}>
-                        <div className={`pdf-question-group pdf-no-break ${index === 0 ? " padding-t-10" : ""}`}>
-                          <div className="   ">
-                            <div className="`pdf-question-text `">{g.question}</div>
-                            <div className="text-display-group w-40 ">
-                              <div className="text-display-box">
+                        <div className={`flex flex-col gap-2.5 py-2.5 break-inside-avoid ${index === 0 ? "pt-5" : ""}`}>
+                          <div>
+                            <div className="font-['Poppins'] font-medium text-sm leading-[18px] text-slate-900 flex-shrink-0 min-w-[300px]">{g.question}</div>
+                            <div className="relative w-[200px] mt-2.5">
+                              <div className="w-full py-3 px-4 pr-10 border border-slate-300 rounded-lg font-['Poppins'] text-sm leading-5 text-slate-700 bg-slate-50 flex items-center box-border">
                                 <span>{selectedOptionId}</span>
-                                <span className="text-display-unit">mm</span>
+                                <span className="absolute right-4 top-1/2 -translate-y-1/2 font-['Poppins'] font-medium text-sm leading-5 text-slate-500 pointer-events-none">mm</span>
                               </div>
                             </div>
                           </div>
                         </div>
-                        <hr className="divider-hr" />
+                        <hr className="border-t border-slate-200 my-7" />
                       </React.Fragment>
                     )
                   }
                   // Default rendering for other fields
                   return (
                     <React.Fragment key={g.id}>
-                      <div
-                        className={`${
-                          index === 0 ? " padding-t-10 pdf-question-group" : "pdf-question-group"
-                        } pdf-no-break`}
-                      >
-                        <div className="pdf-question-row w-100">
-                          <div className="pdf-question-text w-40">{g.question}</div>
-                          <div className="pdf-options-inline pdf-flex-wrap w-60">
+                      <div className={`flex flex-col gap-2.5 py-2.5 break-inside-avoid ${index === 0 ? "pt-5" : ""}`}>
+                        <div className="flex items-center gap-4 w-full">
+                          <div className="font-['Poppins'] font-medium text-sm leading-[18px] text-slate-900 flex-shrink-0 w-[40%]">{g.question}</div>
+                          <div className="flex items-center gap-6 flex-1 flex-wrap w-[60%]">
                             {g.options.map((opt: OptionDef) => {
                               const isSelected = selectedOptionId === opt.id
                               const placeholderCount =
@@ -349,14 +348,14 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                               return (
                                 <label
                                   key={opt.id}
-                                  className={`pdf-option-inline ${
-                                    isSelected ? "pdf-selected" : "pdf-unselected"
-                                  } pdf-flex-wrap`}
+                                  className={`font-['Poppins'] font-normal text-xs leading-5 flex items-center gap-2 cursor-default whitespace-nowrap flex-wrap ${
+                                    isSelected ? "text-slate-900 font-medium" : "text-slate-900 font-medium"
+                                  }`}
                                 >
                                   {isSelected ? (
-                                    <span className="pdf-checkmark-circle">✓</span>
+                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded bg-[#36a866] text-white font-semibold text-xs flex-shrink-0">✓</span>
                                   ) : (
-                                    <span className="pdf-checkbox-empty"></span>
+                                    <span className="inline-block w-5 h-5 border-[1.5px] border-slate-300 rounded flex-shrink-0"></span>
                                   )}
                                   {placeholderCount > 0 ? (
                                     <InlineLabelWithInputs option={opt} values={inputsForThisOpt} />
@@ -369,7 +368,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           </div>
                         </div>
                       </div>
-                      <hr className="divider-hr" />
+                      <hr className="border-t border-slate-200 my-7" />
                     </React.Fragment>
                   )
                 })}
@@ -381,13 +380,13 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     textAreas.bettung_wuensche ||
                     textAreas.leisten_probleme ||
                     textAreas.leisten_wuensche) && (
-                    <div className="bg-white rounded-xl shadow-sm p-6 mt-4 pdf-no-break">
+                    <div className="bg-white rounded-xl shadow-sm p-6 mt-4 break-inside-avoid">
                       <div className="space-y-4">
                         {textAreas?.bettung_korrektur_bereich_1 && (
-                          <div className="pdf-note-block ">
-                            <div className="pdf-question-text">Korrekturbereich (Bettung)</div>
+                          <div className="flex flex-col gap-2">
+                            <div className="font-['Poppins'] font-medium text-sm leading-[18px] text-slate-900">Korrekturbereich (Bettung)</div>
                             <textarea
-                              className="description-text-area"
+                              className="w-full min-h-[100px] border border-slate-300 rounded-xl p-3 font-['Poppins'] text-sm leading-5 text-slate-700 resize-y outline-none bg-slate-50"
                               readOnly
                               aria-label="Korrekturbereich (Bettung)"
                               value={textAreas.bettung_korrektur_bereich_1}
@@ -395,10 +394,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           </div>
                         )}
                         {textAreas?.bettung_korrektur_bereich_2 && (
-                          <div className="pdf-note-block  mt-4 ">
-                            <div className="pdf-question-text">Spezielle Fußprobleme (Bettung)</div>
+                          <div className="flex flex-col gap-2 mt-4">
+                            <div className="font-['Poppins'] font-medium text-sm leading-[18px] text-slate-900">Spezielle Fußprobleme (Bettung)</div>
                             <textarea
-                              className="description-text-area"
+                              className="w-full min-h-[100px] border border-slate-300 rounded-xl p-3 font-['Poppins'] text-sm leading-5 text-slate-700 resize-y outline-none bg-slate-50"
                               readOnly
                               aria-label="Spezielle Fußprobleme (Bettung)"
                               value={textAreas.bettung_korrektur_bereich_2}
@@ -406,10 +405,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           </div>
                         )}
                         {textAreas?.bettung_wuensche && (
-                          <div className="pdf-note-block    mt-4 ">
-                            <div className="pdf-question-text">Anmerkungen / Wünsche zur Bettung</div>
+                          <div className="flex flex-col gap-2 mt-4">
+                            <div className="font-['Poppins'] font-medium text-sm leading-[18px] text-slate-900">Anmerkungen / Wünsche zur Bettung</div>
                             <textarea
-                              className="description-text-area"
+                              className="w-full min-h-[100px] border border-slate-300 rounded-xl p-3 font-['Poppins'] text-sm leading-5 text-slate-700 resize-y outline-none bg-slate-50"
                               readOnly
                               aria-label="Anmerkungen / Wünsche zur Bettung"
                               value={textAreas.bettung_wuensche}
@@ -417,10 +416,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           </div>
                         )}
                         {textAreas?.leisten_probleme && (
-                          <div className="pdf-note-block  mt-4 ">
-                            <div className="pdf-question-text">Spezielle Fußprobleme (Leisten)</div>
+                          <div className="flex flex-col gap-2 mt-4">
+                            <div className="font-['Poppins'] font-medium text-sm leading-[18px] text-slate-900">Spezielle Fußprobleme (Leisten)</div>
                             <textarea
-                              className="description-text-area"
+                              className="w-full min-h-[100px] border border-slate-300 rounded-xl p-3 font-['Poppins'] text-sm leading-5 text-slate-700 resize-y outline-none bg-slate-50"
                               readOnly
                               aria-label="Spezielle Fußprobleme (Leisten)"
                               value={textAreas.leisten_probleme}
@@ -428,10 +427,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           </div>
                         )}
                         {textAreas?.leisten_wuensche && (
-                          <div className="pdf-note-block  mt-4 ">
-                            <div className="pdf-question-text">Anmerkungen / Wünsche zum Leisten</div>
+                          <div className="flex flex-col gap-2 mt-4">
+                            <div className="font-['Poppins'] font-medium text-sm leading-[18px] text-slate-900">Anmerkungen / Wünsche zum Leisten</div>
                             <textarea
-                              className="description-text-area"
+                              className="w-full min-h-[100px] border border-slate-300 rounded-xl p-3 font-['Poppins'] text-sm leading-5 text-slate-700 resize-y outline-none bg-slate-50"
                               readOnly
                               aria-label="Anmerkungen / Wünsche zum Leisten"
                               value={textAreas.leisten_wuensche}
@@ -442,32 +441,33 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     </div>
                   )}
               </div>
-              <div className="pdf-info-footer">
-                <div className="pdf-info-item">+39 366 5087742</div>
-                <div className="pdf-info-item">FeetF1rst SRLS</div>
-                <div className="pdf-info-item">Info@feetf1st.com</div>
+              {/* Footer */}
+              <div className="flex justify-between items-center py-6 px-8 gap-2.5 bg-black flex-shrink-0 mt-auto">
+                <div className="text-white font-['Poppins'] text-base font-medium leading-5">+39 366 5087742</div>
+                <div className="text-white font-['Poppins'] text-base font-medium leading-5">FeetF1rst SRLS</div>
+                <div className="text-white font-['Poppins'] text-base font-medium leading-5">Info@feetf1st.com</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="pdf-modal-footer">
-          <div className="pdf-modal-row">
-            <button className="pdf-modal-back" onClick={onClose}>
+        {/* Modal Footer */}
+        <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white z-10 sticky bottom-0 left-0 right-0">
+          <div className="w-full flex justify-between items-center pt-4">
+            <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-['Poppins'] font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onClose}>
               Zurück
             </button>
-            <div className="pdf-modal-actions">
-              <button className="pdf-modal-action" onClick={handleDownloadPDF}>
+            <div className="flex gap-3">
+              <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-['Poppins'] font-medium flex items-center gap-2 cursor-pointer transition-colors hover:bg-slate-50" onClick={handleDownloadPDF}>
                 Download
                 <DownloadIcon />
               </button>
-              <button className="pdf-modal-action pdf-modal-print" onClick={handlePrint}>
+              <button className="py-4 px-[74px] rounded-lg border-none bg-[#36a866] text-white text-sm font-['Poppins'] font-semibold flex items-center gap-2 cursor-pointer transition-colors hover:bg-[#2e8b5e]" onClick={handlePrint}>
                 Print
                 <PrintIcon />
               </button>
-                <button className="pdf-modal-action  " onClick={onConfirm}>
+              <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-['Poppins'] font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onConfirm}>
                 Abschließen
-                
               </button>
             </div>
           </div>
