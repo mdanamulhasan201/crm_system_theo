@@ -1,11 +1,10 @@
 'use client';
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import BarcodeSticker from './BarcodeSticker';
 import { getBarCodeData, sendPdfToCustomer } from '@/apis/barCodeGenerateApis';
-import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
+import { generateBarcodeStickerPdfCanvas } from '@/lib/directPdfGenerator';
 import toast from 'react-hot-toast';
 
 interface BarcodeStickerModalProps {
@@ -45,41 +44,38 @@ export default function BarcodeStickerModal({
     }, [orderId]);
 
     const generatePdf = useCallback(async () => {
-        if (!barcodeData) return;
+        if (!barcodeData) {
+            toast.error('Bitte warten Sie, bis die Daten geladen sind');
+            return;
+        }
 
         try {
             setGenerating(true);
             
-            // Wait a bit for barcode to render
-            await new Promise(resolve => setTimeout(resolve, 500));
-
-            // Use custom preset for sticker size (smaller than A4)
-            const pdfBlob = await generatePdfFromElement('barcode-sticker-print-area', {
-                ...pdfPresets.highQuality,
-                width: 400,
-                height: 250,
-            });
+            // Generate PDF directly using canvas approach (no html2canvas dependency)
+            const pdfBlob = await generateBarcodeStickerPdfCanvas(barcodeData);
 
             // Create download link
             const url = URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');
             link.href = url;
             link.download = `barcode_sticker_${orderNumber || orderId}_${new Date().toISOString().split('T')[0]}.pdf`;
-
+            
             // Trigger download
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-
+            
             // Clean up
             URL.revokeObjectURL(url);
-
+            
             toast.success('Barcode-Sticker PDF erfolgreich generiert!');
 
             // Automatically send PDF to customer with file
             try {
                 const fileName = `barcode_sticker_${orderNumber || orderId}_${new Date().toISOString().split('T')[0]}.pdf`;
                 const sendResponse = await sendPdfToCustomer(orderId, pdfBlob, fileName);
+                
                 if (sendResponse.success) {
                     toast.success('PDF erfolgreich an Kunden gesendet!');
                 } else {
@@ -108,7 +104,7 @@ export default function BarcodeStickerModal({
     // Auto-generate PDF when data is loaded and autoGenerate is true
     useEffect(() => {
         if (autoGenerate && barcodeData && !loading && !generating) {
-            // Use setTimeout to ensure barcode is rendered
+            // Small delay to ensure component is mounted
             const timer = setTimeout(() => {
                 generatePdf().then(() => {
                     // Close modal after successful generation and send
@@ -118,7 +114,8 @@ export default function BarcodeStickerModal({
                         }, 2000);
                     }
                 });
-            }, 1000);
+            }, 500);
+            
             return () => clearTimeout(timer);
         }
     }, [barcodeData, autoGenerate, loading, generating, generatePdf, onClose]);
@@ -129,7 +126,7 @@ export default function BarcodeStickerModal({
                 <DialogHeader>
                     <DialogTitle>Barcode-Sticker generieren</DialogTitle>
                 </DialogHeader>
-
+                
                 <div className="space-y-4">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
@@ -143,7 +140,7 @@ export default function BarcodeStickerModal({
                             <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
                                 <BarcodeSticker data={barcodeData} />
                             </div>
-
+                            
                             <div className="flex justify-end gap-2">
                                 <Button
                                     variant="outline"
