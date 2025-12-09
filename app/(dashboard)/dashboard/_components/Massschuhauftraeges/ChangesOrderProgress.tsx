@@ -405,6 +405,18 @@ export default function ChangesOrderProgress({
                     <span className="whitespace-nowrap">{renderStatusText()}</span>
                 </div>
 
+                {/* Date-time section for IN FERTIGUNG cards (not completed yet) */}
+                {!isCompleted && (isCurrent || isPending) && card.id !== "geliefert" && card.id !== "schafterstellung" && card.id !== "bodenerstellung" && statusHistory && hasStarted(statusHistory) && (
+                    <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
+                        <div>
+                            <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
+                        </div>
+                        <div>
+                            <span className="font-medium text-slate-500">Finished:</span> <span className="text-amber-500">Offen</span>
+                        </div>
+                    </div>
+                )}
+
                 {/* Date-time section for completed cards */}
                 {isCompleted && card.id !== "geliefert" && card.id !== "schafterstellung" && card.id !== "bodenerstellung" && statusHistory && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
@@ -421,8 +433,20 @@ export default function ChangesOrderProgress({
                     </div>
                 )}
 
-                {/* Date-time for schafterstellung */}
-                {card.id === "schafterstellung" && showPdf && statusHistory && hasStarted(statusHistory) && (
+                {/* Date-time for schafterstellung - IN FERTIGUNG */}
+                {card.id === "schafterstellung" && !isCompleted && (isCurrent || isPending) && statusHistory && hasStarted(statusHistory) && (
+                    <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
+                        <div>
+                            <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
+                        </div>
+                        <div>
+                            <span className="font-medium text-slate-500">Finished:</span> <span className="text-amber-500">Offen</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Date-time for schafterstellung - Completed */}
+                {card.id === "schafterstellung" && isCompleted && statusHistory && hasStarted(statusHistory) && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
                         <div>
                             <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
@@ -430,17 +454,27 @@ export default function ChangesOrderProgress({
                         <div>
                             <span className="font-medium text-slate-500">Finished:</span> <span>{statusHistory.finished || "-"}</span>
                         </div>
-                        {isFinished(statusHistory) && (
-                            <div>
-                                <span className="font-medium text-slate-500">Completed By:</span>{" "}
-                                <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
-                            </div>
-                        )}
+                        <div>
+                            <span className="font-medium text-slate-500">Completed By:</span>{" "}
+                            <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
+                        </div>
                     </div>
                 )}
 
-                {/* Date-time for bodenerstellung */}
-                {card.id === "bodenerstellung" && showBodenPdf && statusHistory && hasStarted(statusHistory) && (
+                {/* Date-time for bodenerstellung - IN FERTIGUNG */}
+                {card.id === "bodenerstellung" && !isCompleted && (isCurrent || isPending) && statusHistory && hasStarted(statusHistory) && (
+                    <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
+                        <div>
+                            <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
+                        </div>
+                        <div>
+                            <span className="font-medium text-slate-500">Finished:</span> <span className="text-amber-500">Offen</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Date-time for bodenerstellung - Completed */}
+                {card.id === "bodenerstellung" && isCompleted && statusHistory && hasStarted(statusHistory) && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
                         <div>
                             <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
@@ -448,16 +482,26 @@ export default function ChangesOrderProgress({
                         <div>
                             <span className="font-medium text-slate-500">Finished:</span> <span>{statusHistory.finished || "-"}</span>
                         </div>
-                        {isFinished(statusHistory) && (
-                            <div>
-                                <span className="font-medium text-slate-500">Completed By:</span>{" "}
-                                <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
-                            </div>
-                        )}
+                        <div>
+                            <span className="font-medium text-slate-500">Completed By:</span>{" "}
+                            <span>{(order as any)?.employee?.employeeName || order?.durchgeführt_von || "-"}</span>
+                        </div>
                     </div>
                 )}
 
-                {/* Date-time for geliefert */}
+                {/* Date-time for geliefert - IN FERTIGUNG */}
+                {card.id === "geliefert" && !isCompleted && (isCurrent || isPending) && statusHistory && hasStarted(statusHistory) && (
+                    <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
+                        <div>
+                            <span className="font-medium text-slate-500">Started:</span> <span>{statusHistory.started || "-"}</span>
+                        </div>
+                        <div>
+                            <span className="font-medium text-slate-500">Finished:</span> <span className="text-amber-500">Offen</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* Date-time for geliefert - Completed */}
                 {card.id === "geliefert" && isCompleted && statusHistory && (
                     <div className="mt-3 space-y-1 text-xs text-slate-600 md:text-sm">
                         <div>

@@ -109,23 +109,23 @@ export default function CardStatistik({ onRefetchReady }: { onRefetchReady?: (re
         {
             id: 'active',
             title: 'Aktive Masschuhaufträge',
-            count: statsData.active.current,
-            trendLabel: `${Math.abs(statsData.active.changePercent)}%`,
-            // current > previous = high (green/up), current < previous = low (red/down)
-            trendColor: statsData.active.current > statsData.active.previous ? 'text-emerald-500' : 'text-rose-500',
-            isUp: statsData.active.current > statsData.active.previous,
-            data: statsData.active.current > statsData.active.previous ? staticGreenData : staticRedData,
-            stroke: statsData.active.current > statsData.active.previous ? '#22c55e' : '#ef4444',
-        },
-        {
-            id: 'waiting',
-            title: 'Aufträge warten auf Versorgungstart',
             count: statsData.waitingToStart.current,
             trendLabel: `${Math.abs(statsData.waitingToStart.changePercent)}%`,
+            // current > previous = high (green/up), current < previous = low (red/down)
             trendColor: statsData.waitingToStart.current > statsData.waitingToStart.previous ? 'text-emerald-500' : 'text-rose-500',
             isUp: statsData.waitingToStart.current > statsData.waitingToStart.previous,
             data: statsData.waitingToStart.current > statsData.waitingToStart.previous ? staticGreenData : staticRedData,
             stroke: statsData.waitingToStart.current > statsData.waitingToStart.previous ? '#22c55e' : '#ef4444',
+        },
+        {
+            id: 'waiting',
+            title: 'Aufträge warten auf Versorgungstart',
+            count: statsData.active.current,
+            trendLabel: `${Math.abs(statsData.active.changePercent)}%`,
+            trendColor: statsData.active.current > statsData.active.previous ? 'text-emerald-500' : 'text-rose-500',
+            isUp: statsData.active.current > statsData.active.previous,
+            data: statsData.active.current > statsData.active.previous ? staticGreenData : staticRedData,
+            stroke: statsData.active.current > statsData.active.previous ? '#22c55e' : '#ef4444',
         },
         {
             id: 'completed',
