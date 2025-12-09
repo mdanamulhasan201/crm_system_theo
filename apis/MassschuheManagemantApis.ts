@@ -77,3 +77,14 @@ export const getProductionTimelineData = async (year: number) => {
         throw error;
     }
 }
+
+
+// /massschuhe-order/stats/production-summary
+export const getProductionSummaryData = async () => {
+    try {
+        const response = await axiosClient.get(`/massschuhe-order/stats/production-summary`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
