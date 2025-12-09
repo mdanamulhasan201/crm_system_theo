@@ -85,6 +85,8 @@ export default function ChangesOrderProgress({
     onTabChange,
     onRefetchProductionView,
     onRefetchCardStatistik,
+    onRefetchChart,
+    onUpdateOrder,
 }: {
     onClick: () => void;
     onClick2: () => void;
@@ -94,6 +96,8 @@ export default function ChangesOrderProgress({
     onTabChange?: (tab: number) => void;
     onRefetchProductionView?: () => void;
     onRefetchCardStatistik?: () => void;
+    onRefetchChart?: () => void;
+    onUpdateOrder?: (orderId: string, updatedData: any) => void;
 }) {
     const { order, refetch: refetchOrder } = useGetSingleMassschuheOrder(selectedOrderId);
     const { updateStatus } = useUpdateMassschuheOrderStatus();
@@ -309,11 +313,18 @@ export default function ChangesOrderProgress({
                     await updateStatus([selectedOrderId], newStatus);
                     // Small delay to ensure backend has processed the update
                     await new Promise(resolve => setTimeout(resolve, 300));
-                    await refetchOrder();
-                    // Refetch ProductionView to update the Fertigstellung column
-                    onRefetchProductionView?.();
+                    const updatedOrder = await refetchOrder();
+                    // Update only the specific order in ProductionView (no full reload)
+                    if (updatedOrder && onUpdateOrder) {
+                        onUpdateOrder(selectedOrderId, {
+                            status: updatedOrder.status,
+                            statusHistory: updatedOrder.statusHistory,
+                        });
+                    }
                     // Refetch CardStatistik to update statistics in real-time
                     onRefetchCardStatistik?.();
+                    // Refetch Chart to update revenue data in real-time
+                    onRefetchChart?.();
                     action();
                 } catch (error) {
                     console.error("Failed to update status:", error);
@@ -545,11 +556,18 @@ export default function ChangesOrderProgress({
                                     if (selectedOrderId) {
                                         try {
                                             await updateStatus([selectedOrderId], "Schafterstellung");
-                                            await refetchOrder();
-                                            // Refetch ProductionView to update the Fertigstellung column
-                                            onRefetchProductionView?.();
+                                            const updatedOrder = await refetchOrder();
+                                            // Update only the specific order in ProductionView (no full reload)
+                                            if (updatedOrder && onUpdateOrder) {
+                                                onUpdateOrder(selectedOrderId, {
+                                                    status: updatedOrder.status,
+                                                    statusHistory: updatedOrder.statusHistory,
+                                                });
+                                            }
                                             // Refetch CardStatistik to update statistics in real-time
                                             onRefetchCardStatistik?.();
+                                            // Refetch Chart to update revenue data in real-time
+                                            onRefetchChart?.();
                                         } catch (error) {
                                             console.error("Failed to update status:", error);
                                         }
@@ -610,11 +628,18 @@ export default function ChangesOrderProgress({
                                     if (selectedOrderId) {
                                         try {
                                             await updateStatus([selectedOrderId], "Bodenerstellung");
-                                            await refetchOrder();
-                                            // Refetch ProductionView to update the Fertigstellung column
-                                            onRefetchProductionView?.();
+                                            const updatedOrder = await refetchOrder();
+                                            // Update only the specific order in ProductionView (no full reload)
+                                            if (updatedOrder && onUpdateOrder) {
+                                                onUpdateOrder(selectedOrderId, {
+                                                    status: updatedOrder.status,
+                                                    statusHistory: updatedOrder.statusHistory,
+                                                });
+                                            }
                                             // Refetch CardStatistik to update statistics in real-time
                                             onRefetchCardStatistik?.();
+                                            // Refetch Chart to update revenue data in real-time
+                                            onRefetchChart?.();
                                         } catch (error) {
                                             console.error("Failed to update status:", error);
                                         }

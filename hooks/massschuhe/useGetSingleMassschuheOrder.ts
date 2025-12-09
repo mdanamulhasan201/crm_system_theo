@@ -13,7 +13,7 @@ export const useGetSingleMassschuheOrder = (id: string | null) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const fetchOrder = async (orderId: string) => {
+    const fetchOrder = async (orderId: string): Promise<MassschuheOrderData | null> => {
         try {
             setLoading(true);
             setError(null);
@@ -21,11 +21,14 @@ export const useGetSingleMassschuheOrder = (id: string | null) => {
             
             if (response.success) {
                 setOrder(response.data);
+                return response.data;
             } else {
                 setError(response.message || 'Failed to fetch massschuhe order');
+                return null;
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : 'An error occurred while fetching massschuhe order');
+            return null;
         } finally {
             setLoading(false);
         }
@@ -39,10 +42,11 @@ export const useGetSingleMassschuheOrder = (id: string | null) => {
         }
     }, [id]);
 
-    const refetch = () => {
+    const refetch = async (): Promise<MassschuheOrderData | null> => {
         if (id) {
-            fetchOrder(id);
+            return await fetchOrder(id);
         }
+        return null;
     };
 
     return {

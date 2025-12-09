@@ -18,6 +18,8 @@ export default function MassschuhauftraegePage() {
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const refetchProductionViewRef = useRef<(() => void) | null>(null);
     const refetchCardStatistikRef = useRef<(() => void) | null>(null);
+    const refetchChartRef = useRef<(() => void) | null>(null);
+    const updateOrderRef = useRef<((orderId: string, updatedData: any) => void) | null>(null);
     const router = useRouter()
     
     // Stable callback to set refetch function for ProductionView
@@ -38,6 +40,26 @@ export default function MassschuhauftraegePage() {
     // Stable callback to call refetch for CardStatistik
     const handleRefetchCardStatistik = useCallback(() => {
         refetchCardStatistikRef.current?.();
+    }, []);
+
+    // Stable callback to set refetch function for Chart
+    const handleChartRefetchReady = useCallback((refetch: () => void) => {
+        refetchChartRef.current = refetch;
+    }, []);
+
+    // Stable callback to call refetch for Chart
+    const handleRefetchChart = useCallback(() => {
+        refetchChartRef.current?.();
+    }, []);
+
+    // Stable callback to set update function for ProductionView
+    const handleUpdateOrderReady = useCallback((updateFn: (orderId: string, updatedData: any) => void) => {
+        updateOrderRef.current = updateFn;
+    }, []);
+
+    // Stable callback to update single order in ProductionView (without full reload)
+    const handleUpdateOrder = useCallback((orderId: string, updatedData: any) => {
+        updateOrderRef.current?.(orderId, updatedData);
     }, []);
     const handleStart = () => {
         router.push('/dashboard/massschuhauftraege-deatils/1');
@@ -71,7 +93,7 @@ export default function MassschuhauftraegePage() {
                 />
             )}
             <CardStatistik onRefetchReady={handleCardStatistikRefetchReady} />
-            <MassschuhaufträgeChart />
+            <MassschuhaufträgeChart onRefetchReady={handleChartRefetchReady} />
             <CustomerSearch />
 
             <ChangesOrderProgress
@@ -87,6 +109,8 @@ export default function MassschuhauftraegePage() {
                 onTabChange={setTabClicked}
                 onRefetchProductionView={handleRefetchProductionView}
                 onRefetchCardStatistik={handleRefetchCardStatistik}
+                onRefetchChart={handleRefetchChart}
+                onUpdateOrder={handleUpdateOrder}
             />
             <ProductionView 
                 tabClicked={tabClicked} 
@@ -94,6 +118,7 @@ export default function MassschuhauftraegePage() {
                 selectedOrderId={selectedOrderId}
                 onTabChange={setTabClicked}
                 onRefetchReady={handleRefetchReady}
+                onUpdateOrderReady={handleUpdateOrderReady}
             />
 
             <CardDeatilsPage />

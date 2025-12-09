@@ -103,7 +103,7 @@ function CustomDateTick(props: any) {
     );
 }
 
-export default function MassschuhaufträgeChart() {
+export default function MassschuhaufträgeChart({ onRefetchReady }: { onRefetchReady?: (refetch: () => void) => void }) {
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [loading, setLoading] = useState(true);
@@ -134,6 +134,13 @@ export default function MassschuhaufträgeChart() {
     useEffect(() => {
         fetchChartData();
     }, [fetchChartData]);
+
+    // Expose refetch function to parent component
+    useEffect(() => {
+        if (onRefetchReady) {
+            onRefetchReady(fetchChartData);
+        }
+    }, [onRefetchReady, fetchChartData]);
 
     // Transform API data to chart format and sort by date
     const transformedData = chartData?.points

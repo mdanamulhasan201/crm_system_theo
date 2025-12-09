@@ -33,12 +33,13 @@ const statusToTabMap: Record<string, number> = {
   "Geliefert": 6,
 };
 
-const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChange, onRefetchReady }: { 
+const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChange, onRefetchReady, onUpdateOrderReady }: { 
   tabClicked: number; 
   onOrderSelect?: (orderId: string) => void;
   selectedOrderId?: string | null;
   onTabChange?: (tab: number) => void;
   onRefetchReady?: (refetch: () => void) => void;
+  onUpdateOrderReady?: (updateFn: (orderId: string, updatedData: Partial<MassschuheOrderData>) => void) => void;
 }) => {
   const [activeTab, setActiveTab] = useState(tabClicked);
   const [page, setPage] = useState(1);
@@ -104,28 +105,30 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
     return total > 0 ? total.toFixed(2) : "-";
   };
 
-  // Get finished date from statusHistory
+  // Get finished date from statusHistory - only show when "Geliefert" is completed
   const getFinishedDate = (order: any) => {
     if (!order.statusHistory || order.statusHistory.length === 0) {
       return "-";
     }
     
-    // Find the statusHistory entry that matches the current status
-    const currentStatusHistory = order.statusHistory.find(
-      (history: any) => history.status === order.status
+    // Only show date when "Geliefert" (final delivery) status is completed
+    const geliefertHistory = order.statusHistory.find(
+      (history: any) => history.status === "Geliefert"
     );
     
-    if (!currentStatusHistory) return "-";
+    // If Geliefert status doesn't exist or is not finished, return "-"
+    if (!geliefertHistory) return "-";
     
-    // The 'finished' field is already formatted (e.g., "07.12.25 09:39AM")
-    // Return it directly if it exists
-    const finished = currentStatusHistory.finished;
+    // Check if Geliefert is finished
+    const finished = geliefertHistory.finished;
+    const finishedAt = geliefertHistory.finishedAt;
+    
+    // If finished field exists and has value
     if (finished && finished !== "null" && finished !== "undefined" && finished !== null) {
       return finished;
     }
     
     // If 'finished' is null but 'finishedAt' exists, format it
-    const finishedAt = currentStatusHistory.finishedAt;
     if (finishedAt) {
       try {
         const date = new Date(finishedAt);
@@ -201,6 +204,15 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
     refetch();
   }, [refetch]);
 
+  // Update a single order without full reload
+  const updateSingleOrder = useCallback((orderId: string, updatedData: Partial<MassschuheOrderData>) => {
+    setAllOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { ...order, ...updatedData }
+        : order
+    ));
+  }, []);
+
   // Expose refetch function to parent component (only once or when refetch changes)
   const refetchRef = useRef<(() => void) | null>(null);
   useEffect(() => {
@@ -209,6 +221,15 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
       onRefetchReady?.(customRefetch);
     }
   }, [customRefetch, onRefetchReady]);
+
+  // Expose update single order function to parent component
+  const updateOrderRef = useRef<((orderId: string, updatedData: Partial<MassschuheOrderData>) => void) | null>(null);
+  useEffect(() => {
+    if (updateSingleOrder && updateSingleOrder !== updateOrderRef.current) {
+      updateOrderRef.current = updateSingleOrder;
+      onUpdateOrderReady?.(updateSingleOrder);
+    }
+  }, [updateSingleOrder, onUpdateOrderReady]);
 
   return (
     <div className="w-full mt-6">

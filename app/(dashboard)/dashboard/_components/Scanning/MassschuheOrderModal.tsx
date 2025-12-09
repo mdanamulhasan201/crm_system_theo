@@ -3,9 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePriceManagement } from '@/hooks/priceManagement/usePriceManagement';
-import { CalendarIcon } from 'lucide-react';
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -85,8 +82,6 @@ export default function MassschuheOrderModal({
     onSubmit,
     isLoading = false
 }: MassschuheOrderModalProps) {
-    const { prices, loading: pricesLoading, fetchPrices } = usePriceManagement();
-
     // Order modal form state
     const [orderDate, setOrderDate] = useState<string>(new Date().toISOString().slice(0, 10));
     const [fertigstellungDate, setFertigstellungDate] = useState<string>('');
@@ -103,14 +98,6 @@ export default function MassschuheOrderModal({
     const completionDays =
         (customer as any)?.workshopNote?.completionDays ??
         (customer as any)?.partner?.workshopNote?.completionDays;
-
-    // Fetch prices on mount
-    useEffect(() => {
-        if (isOpen) {
-            fetchPrices();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [isOpen]);
 
     // Set default location from customer wohnort
     useEffect(() => {
@@ -147,31 +134,6 @@ export default function MassschuheOrderModal({
             }
         }
     }, [isOpen, user?.hauptstandort, customer, completionDays]);
-
-    const handleOrderDateChange = (value: string) => {
-        setOrderDate(value);
-        if (value) {
-            const nextDelivery = getRequiredDeliveryDate(value, completionDays);
-            setFertigstellungDate(nextDelivery);
-        } else {
-            setFertigstellungDate('');
-        }
-    };
-
-    const handleFertigstellungDateChange = (value: string) => {
-        if (value && orderDate) {
-            const requiredDate = getRequiredDeliveryDate(orderDate, completionDays);
-            if (new Date(value) < new Date(requiredDate)) {
-                const daysText = completionDays ? `${completionDays} Tage` : '5 Tage';
-                toast.error(`Fertigstellung muss mindestens ${daysText} nach Auftragsdatum sein. Minimum: ${requiredDate}`);
-                setFertigstellungDate(requiredDate);
-                return;
-            }
-        }
-        setFertigstellungDate(value);
-    };
-
-    const deliveryMinDate = orderDate ? getRequiredDeliveryDate(orderDate, completionDays) : undefined;
 
     const handleSubmit = async () => {
         if (!customer?.id) {
@@ -355,56 +317,34 @@ export default function MassschuheOrderModal({
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Fußanalyse</label>
-                                    <Select value={selectedFußanalyse} onValueChange={setSelectedFußanalyse}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder={pricesLoading ? "Lade Preise..." : "Auswählen"} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {prices.map((price) => (
-                                                <SelectItem key={`foot-${price.id}`} value={String(price.fußanalyse)}>
-                                                    Basis Analyse - €{price.fußanalyse}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Fußanalyse (€)</label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={selectedFußanalyse}
+                                        onChange={(e) => setSelectedFußanalyse(e.target.value)}
+                                        placeholder="Preis eingeben"
+                                        className="w-full"
+                                    />
                                 </div>
 
                                 <div>
-                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Einlagenversorgung</label>
-                                    <Select value={selectedEinlagenversorgung} onValueChange={setSelectedEinlagenversorgung}>
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder={pricesLoading ? "Lade Preise..." : "Auswählen"} />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {prices.map((price) => (
-                                                <SelectItem key={`insole-${price.id}`} value={String(price.einlagenversorgung)}>
-                                                    Standard Einlagen - €{price.einlagenversorgung}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Einlagenversorgung (€)</label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={selectedEinlagenversorgung}
+                                        onChange={(e) => setSelectedEinlagenversorgung(e.target.value)}
+                                        placeholder="Preis eingeben"
+                                        className="w-full"
+                                    />
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    {/* KONTROLLE & AKTIONEN Section */}
-                    {/* <div className="bg-white rounded-lg border border-gray-200 p-6">
-                        <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">KONTROLLE & AKTIONEN</h3>
-
-                        <div>
-                            <label className="text-sm font-medium text-gray-600 mb-2 block">Notiz</label>
-                            <Textarea
-                                id="order-note"
-                                value={orderNote}
-                                onChange={(e) => setOrderNote(e.target.value)}
-                                placeholder="Notiz hinzufügen..."
-                                className="w-full min-h-[100px]"
-                                rows={4}
-                            />
-                        </div>
-                    </div> */}
                 </div>
 
                 <DialogFooter className="flex gap-2 sm:gap-2">
@@ -413,7 +353,7 @@ export default function MassschuheOrderModal({
                         variant="outline"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="flex-1"
+                        className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Abbrechen
                     </Button>
@@ -421,12 +361,15 @@ export default function MassschuheOrderModal({
                         type="button"
                         onClick={handleSubmit}
                         disabled={isLoading}
-                        className="flex-1 bg-[#62A07C] hover:bg-[#4A8A5F] text-white"
+                        className="flex-1 bg-[#62A07C] hover:bg-[#4A8A5F] text-white min-w-[140px] flex items-center justify-center gap-2"
                     >
                         {isLoading ? (
                             <>
-                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Wird gespeichert...
+                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Wird gespeichert...</span>
                             </>
                         ) : (
                             'Weiter'
