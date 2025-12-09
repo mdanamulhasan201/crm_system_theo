@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import toast from 'react-hot-toast'
+import AddProductShimmer from '@/components/ShimmerEffect/Product/AddProductShimmer'
 
 interface SizeData {
     length: number;
@@ -315,16 +316,19 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                             <p className="text-sm">{error}</p>
                         </div>
                     )}
-                    <form onSubmit={e => { e.preventDefault(); handleAddProduct(); }} className="space-y-6">
+                    <form onSubmit={e => { e.preventDefault(); handleAddProduct(); }} className="space-y-6 relative">
+                        {/* Shimmer overlay when updating */}
+                        {isLoading && editProductId && <AddProductShimmer />}
+                        
                         {/* Row 1: Produktname and Hersteller */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Produktname</label>
-                                <Input value={newProduct.Produktname} onChange={e => handleNewProductChange('Produktname', e.target.value)} required />
+                                <Input value={newProduct.Produktname} onChange={e => handleNewProductChange('Produktname', e.target.value)} required disabled={!!(isLoading && editProductId)} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Hersteller</label>
-                                <Input value={newProduct.Hersteller} onChange={e => handleNewProductChange('Hersteller', e.target.value)} required />
+                                <Input value={newProduct.Hersteller} onChange={e => handleNewProductChange('Hersteller', e.target.value)} required disabled={!!(isLoading && editProductId)} />
                             </div>
                         </div>
 
@@ -332,7 +336,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Artikelnummer</label>
-                                <Input value={newProduct.Produktkürzel} onChange={e => handleNewProductChange('Produktkürzel', e.target.value)} required />
+                                <Input value={newProduct.Produktkürzel} onChange={e => handleNewProductChange('Produktkürzel', e.target.value)} required disabled={!!(isLoading && editProductId)} />
                             </div>
                         </div>
 
@@ -340,11 +344,11 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Einkaufspreis (€)</label>
-                                <Input type="number" step="0.01" min={0} value={newProduct.purchase_price} onChange={e => handleNewProductChange('purchase_price', parseFloat(e.target.value) || 0)} required />
+                                <Input type="number" step="0.01" min={0} value={newProduct.purchase_price} onChange={e => handleNewProductChange('purchase_price', parseFloat(e.target.value) || 0)} required disabled={!!(isLoading && editProductId)} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Verkaufspreis (€)</label>
-                                <Input type="number" step="0.01" min={0} value={newProduct.selling_price} onChange={e => handleNewProductChange('selling_price', parseFloat(e.target.value) || 0)} required />
+                                <Input type="number" step="0.01" min={0} value={newProduct.selling_price} onChange={e => handleNewProductChange('selling_price', parseFloat(e.target.value) || 0)} required disabled={!!(isLoading && editProductId)} />
                             </div>
                         </div>
 
@@ -371,11 +375,13 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                         }}
                                         placeholder="Anzahl eingeben..."
                                         className="flex-1"
+                                        disabled={!!(isLoading && editProductId)}
                                     />
                                     <Button
                                         type="button"
                                         onClick={handleIncreaseAllSizes}
                                         className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
+                                        disabled={!!(isLoading && editProductId)}
                                     >
                                         Hinzufügen
                                     </Button>
@@ -407,6 +413,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.quantity || 0}
                                                         onChange={e => handleNewProductSizeChange(size, e.target.value)}
                                                         className="w-full"
+                                                        disabled={!!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -418,6 +425,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         onChange={e => handleNewProductLengthChange(size, e.target.value)}
                                                         placeholder="z.B. 150"
                                                         className="w-full"
+                                                        disabled={!!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -428,6 +436,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.mindestmenge ?? ''}
                                                         onChange={e => handleNewProductMinQuantityChange(size, e.target.value)}
                                                         className="w-full"
+                                                        disabled={!!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -438,6 +447,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.autoOrderLimit !== undefined ? newProduct.sizeQuantities[size]?.autoOrderLimit : ''}
                                                         onChange={e => handleAutoOrderLimitChange(size, e.target.value)}
                                                         className="w-full"
+                                                        disabled={!!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -448,6 +458,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.orderQuantity !== undefined ? newProduct.sizeQuantities[size]?.orderQuantity : ''}
                                                         onChange={e => handleOrderQuantityChange(size, e.target.value)}
                                                         className="w-full"
+                                                        disabled={!!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                             </TableRow>

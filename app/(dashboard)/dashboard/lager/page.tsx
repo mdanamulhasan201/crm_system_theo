@@ -303,11 +303,7 @@ export default function Lager() {
 
 
             {/* Product Management Table */}
-            {isLoadingProducts ? (
-                <div className="flex justify-center items-center py-8">
-                    <div className="text-lg">Lade Produkte...</div>
-                </div>
-            ) : error ? (
+            {error ? (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4">
                     <p className="font-medium">Fehler beim Laden der Produkte</p>
                     <p className="text-sm">{error}</p>
@@ -322,6 +318,7 @@ export default function Lager() {
                     onLagerortChange={handleLagerortChange}
                     onUpdateProduct={handleUpdateProduct}
                     onDeleteProduct={handleDeleteProduct}
+                    isLoading={isLoadingProducts}
                 />
             )}
 

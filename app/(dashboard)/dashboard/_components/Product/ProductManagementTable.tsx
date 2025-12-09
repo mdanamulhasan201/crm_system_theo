@@ -22,6 +22,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { useAuth } from '@/contexts/AuthContext'
 import AddProduct from './AddProduct'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
+import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
 
 interface SizeData {
     length: number;
@@ -68,6 +69,7 @@ interface ProductManagementTableProps {
     onLagerortChange: (productId: string, newLagerort: string) => void
     onUpdateProduct: (product: Product) => void
     onDeleteProduct: (product: Product) => void
+    isLoading?: boolean
 }
 
 export default function ProductManagementTable({
@@ -78,7 +80,8 @@ export default function ProductManagementTable({
     getLowStockSizes,
     onLagerortChange,
     onUpdateProduct,
-    onDeleteProduct
+    onDeleteProduct,
+    isLoading = false
 }: ProductManagementTableProps) {
     const { user } = useAuth();
     const { getProductById } = useStockManagementSlice();
@@ -97,6 +100,10 @@ export default function ProductManagementTable({
         }
         return undefined;
     };
+
+    if (isLoading) {
+        return <ProductManagementTableShimmer sizeColumns={sizeColumns} rows={5} />
+    }
 
     return (
         <>

@@ -263,10 +263,12 @@ export default function MassschuhaufträgeChart() {
                                     strokeWidth={3}
                                     dot={(props: any) => {
                                         // Show dot for all points, but make non-zero values more prominent
-                                        const { cx, cy, payload } = props;
+                                        const { cx, cy, payload, index } = props;
+                                        const key = `dot-${payload.date}-${index}`;
                                         if (payload.value > 0) {
                                             return (
                                                 <circle
+                                                    key={key}
                                                     cx={cx}
                                                     cy={cy}
                                                     r={5}
@@ -279,6 +281,7 @@ export default function MassschuhaufträgeChart() {
                                         // Smaller dot for zero values
                                         return (
                                             <circle
+                                                key={key}
                                                 cx={cx}
                                                 cy={cy}
                                                 r={2}
