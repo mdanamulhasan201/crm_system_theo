@@ -155,15 +155,22 @@ export default function Customers() {
                     {suggestions.map((suggestion) => (
                         <div
                             key={suggestion.id}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer border-b border-gray-100 last:border-b-0"
+                            className="px-4 py-3 hover:bg-[#61A175]/10 cursor-pointer border-b border-gray-100 last:border-b-0 transition"
                             onMouseDown={(e) => {
                                 e.preventDefault() // Prevent input blur
                                 handleSuggestionSelect(suggestion)
                             }}
                         >
-                            <div className="font-medium text-sm">{suggestion.name}</div>
-                            <div className="text-xs text-gray-500">{suggestion.email}</div>
-                            <div className="text-xs text-gray-500">{suggestion.phone}</div>
+                            <div className="font-semibold text-sm text-slate-900">{suggestion.name}</div>
+                            <div className="text-xs text-slate-500 mt-1">
+                                {suggestion.email && <span>Email: {suggestion.email}</span>}
+                                {suggestion.phone && (
+                                    <span className="ml-2">Telefon: {suggestion.phone}</span>
+                                )}
+                                {suggestion.location && (
+                                    <span className="ml-2">Ort: {suggestion.location}</span>
+                                )}
+                            </div>
                         </div>
                     ))}
                 </div>

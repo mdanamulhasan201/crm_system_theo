@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { searchCustomers } from '@/apis/customerApis'
+import { searchCustomers, getSingleCustomer } from '@/apis/customerApis'
 import useDebounce from '@/hooks/useDebounce'
 
 interface CustomerData {
@@ -91,9 +91,9 @@ export const useSearchCustomer = () => {
             const phoneParam = type === 'phone' ? searchTerm : '';
             const emailParam = type === 'email' ? searchTerm : '';
 
-            const response = await searchCustomers(searchTerm, 1, 10, nameParam, emailParam, phoneParam);
+            const response = await searchCustomers(searchTerm, 1, 10, nameParam, emailParam, phoneParam, '', '');
 
-            if (response && response.data) {
+            if (response && response.data && response.data.length > 0) {
                 const suggestions = response.data.map((customer: any) => {
                     const mappedCustomer = {
                         id: customer.id,
@@ -115,9 +115,32 @@ export const useSearchCustomer = () => {
                     setEmailSuggestions(suggestions);
                     setShowEmailSuggestions(suggestions.length > 0);
                 }
+            } else {
+                // Clear suggestions if no results
+                if (type === 'name') {
+                    setNameSuggestions([]);
+                    setShowNameSuggestions(false);
+                } else if (type === 'phone') {
+                    setPhoneSuggestions([]);
+                    setShowPhoneSuggestions(false);
+                } else if (type === 'email') {
+                    setEmailSuggestions([]);
+                    setShowEmailSuggestions(false);
+                }
             }
         } catch (error) {
             console.error('Error fetching suggestions:', error);
+            // Clear suggestions on error
+            if (type === 'name') {
+                setNameSuggestions([]);
+                setShowNameSuggestions(false);
+            } else if (type === 'phone') {
+                setPhoneSuggestions([]);
+                setShowPhoneSuggestions(false);
+            } else if (type === 'email') {
+                setEmailSuggestions([]);
+                setShowEmailSuggestions(false);
+            }
         } finally {
             setSuggestionLoading(false);
         }
@@ -126,6 +149,7 @@ export const useSearchCustomer = () => {
     // Main search function
     const handleSearch = async () => {
         setLoading(true);
+        setNotFound(false);
 
         try {
             if (!searchName && !searchPhone && !searchEmail) {
@@ -135,21 +159,9 @@ export const useSearchCustomer = () => {
                 return;
             }
 
-            // If we have a selected suggestion, use it directly
+            // If we have a selected suggestion, fetch full customer data
             if (selectedSuggestion) {
-                const foundCustomer: CustomerData = {
-                    id: selectedSuggestion.id,
-                    nameKunde: selectedSuggestion.name,
-                    Telefon: selectedSuggestion.phone,
-                    email: selectedSuggestion.email,
-                    Geburtsdatum: '',
-                    Geschäftstandort: selectedSuggestion.location,
-                    createdAt: new Date().toISOString()
-                };
-
-                setSelectedCustomer(foundCustomer);
-                setNotFound(false);
-                setLoading(false);
+                await fetchFullCustomerData(selectedSuggestion.id);
                 return;
             }
 
@@ -158,39 +170,44 @@ export const useSearchCustomer = () => {
 
             // First try: Search by name if available
             if (searchName) {
-                response = await searchCustomers(searchName, 1, 10, searchName, '', '');
+                response = await searchCustomers(searchName, 1, 10, searchName, '', '', '', '');
             }
 
             // If no result and phone available, try phone search
             if ((!response || !response.data || response.data.length === 0) && searchPhone) {
-                response = await searchCustomers(searchPhone, 1, 10, '', '', searchPhone);
+                response = await searchCustomers(searchPhone, 1, 10, '', '', searchPhone, '', '');
             }
 
             // If no result and email available, try email search  
             if ((!response || !response.data || response.data.length === 0) && searchEmail) {
-                response = await searchCustomers(searchEmail, 1, 10, '', searchEmail, '');
+                response = await searchCustomers(searchEmail, 1, 10, '', searchEmail, '', '', '');
             }
 
             // If still no result, try general search
             if (!response || !response.data || response.data.length === 0) {
                 const searchTerm = searchName || searchPhone || searchEmail;
-                response = await searchCustomers(searchTerm, 1, 10, searchName || '', searchEmail || '', searchPhone || '');
+                response = await searchCustomers(searchTerm, 1, 10, searchName || '', searchEmail || '', searchPhone || '', '', '');
             }
 
             if (response && response.data && response.data.length > 0) {
                 const customer = response.data[0];
-                const foundCustomer: CustomerData = {
-                    id: customer.id,
-                    nameKunde: customer.name || customer.nameKunde || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
-                    Telefon: customer.phone || customer.Telefon || customer.telefon || '',
-                    email: customer.email || '',
-                    Geburtsdatum: customer.Geburtsdatum || '',
-                    Geschäftstandort: customer.location || customer.Geschäftstandort || customer.wohnort || '',
-                    createdAt: customer.createdAt || new Date().toISOString()
-                };
-
-                setSelectedCustomer(foundCustomer);
-                setNotFound(false);
+                // Fetch full customer data using getSingleCustomer
+                if (customer.id) {
+                    await fetchFullCustomerData(customer.id);
+                } else {
+                    // Fallback: use search result if no ID available
+                    const foundCustomer: CustomerData = {
+                        id: customer.id,
+                        nameKunde: customer.name || customer.nameKunde || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
+                        Telefon: customer.phone || customer.Telefon || customer.telefon || '',
+                        email: customer.email || '',
+                        Geburtsdatum: customer.Geburtsdatum || customer.geburtsdatum || '',
+                        Geschäftstandort: customer.location || customer.Geschäftstandort || customer.wohnort || '',
+                        createdAt: customer.createdAt || new Date().toISOString()
+                    };
+                    setSelectedCustomer(foundCustomer);
+                    setNotFound(false);
+                }
             } else {
                 setSelectedCustomer(null);
                 setNotFound(true);
@@ -204,7 +221,7 @@ export const useSearchCustomer = () => {
         }
     };
 
-    // Handle suggestion selection
+    // Handle suggestion selection - only fill fields, don't search automatically
     const handleSuggestionSelect = (suggestion: SuggestionItem) => {
         // Set all field values
         setSearchName(suggestion.name || '');
@@ -224,9 +241,47 @@ export const useSearchCustomer = () => {
         setPhoneSuggestions([]);
         setEmailSuggestions([]);
 
-        // Clear any previous card display
+        // Don't fetch customer data here - wait for "Suchen" button click
+        // Clear any previous customer display
         setSelectedCustomer(null);
         setNotFound(false);
+    };
+
+    // Fetch full customer data by ID
+    const fetchFullCustomerData = async (customerId: string) => {
+        setLoading(true);
+        setNotFound(false);
+        try {
+            const response = await getSingleCustomer(customerId);
+            const customer = Array.isArray((response as any)?.data)
+                ? (response as any).data[0]
+                : Array.isArray(response)
+                    ? (response as any)[0]
+                    : (response as any)?.data ?? response;
+
+            if (customer) {
+                const foundCustomer: CustomerData = {
+                    id: customer.id,
+                    nameKunde: customer.name || customer.nameKunde || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
+                    Telefon: customer.phone || customer.Telefon || customer.telefon || '',
+                    email: customer.email || '',
+                    Geburtsdatum: customer.Geburtsdatum || customer.geburtsdatum || '',
+                    Geschäftstandort: customer.location || customer.Geschäftstandort || customer.wohnort || '',
+                    createdAt: customer.createdAt || new Date().toISOString()
+                };
+                setSelectedCustomer(foundCustomer);
+                setNotFound(false);
+            } else {
+                setSelectedCustomer(null);
+                setNotFound(true);
+            }
+        } catch (error) {
+            console.error('Error fetching customer:', error);
+            setSelectedCustomer(null);
+            setNotFound(true);
+        } finally {
+            setLoading(false);
+        }
     };
 
     // Handle clicking outside to close suggestions
