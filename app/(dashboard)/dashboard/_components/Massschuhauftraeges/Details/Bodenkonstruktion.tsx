@@ -492,24 +492,7 @@ export default function Bodenkonstruktion() {
                         setShowModal(false)
                         setShowModal2(true)
                     }}
-                    filteredGroups={GROUPS2.filter((g) => {
-                        const sel = selected[g.id]
-                        if (g.fieldType === "text" && sel && sel.trim() !== "") {
-                            return true
-                        }
-                        if (sel && sel !== "" && sel !== null) {
-                            const opt = g.options.find((o) => o.id === sel)
-                            if (opt && opt.label && !["Keine", "Select"].includes(opt.label.trim())) {
-                                return true
-                            }
-                            const inputs = optionInputs[g.id]?.[sel] || []
-                            if (inputs.some((val) => val && val.trim() !== "")) {
-                                return true
-                            }
-                        }
-                        const optInputs = optionInputs[g.id] || {}
-                        return Object.values(optInputs).some((arr) => arr.some((val) => val && val.trim() !== ""))
-                    })}
+                    allGroups={GROUPS2}
                     selected={selected}
                     optionInputs={optionInputs}
                     textAreas={textAreas}

@@ -2,6 +2,12 @@ import type { GroupDef, GroupDef2 } from "./Types";
 
 export const GROUPS: GroupDef[] = [
   {
+    id: "bettungskonfigurator_header",
+    question: "Bettungskonfigurator",
+    fieldType: "section",
+    options: [],
+  },
+  {
     id: "bettung",
     question: "Soll die Bettung neutral oder korrigierend erstellt werden?",
     options: [
@@ -75,6 +81,20 @@ export const GROUPS: GroupDef[] = [
     ],
   },
   {
+    id: "korrektur_bereich",
+    question: "Wenn eine Korrektur nötig ist: In welchem Bereich?",
+    fieldType: "textarea",
+    placeholder: "Wenn eine Korrektur nötig ist: In welchem Bereich?",
+    options: [],
+  },
+  {
+    id: "fussproblem_bettung",
+    question: "Gibt es ein spezielles Fußproblem, das wir bei der Fertigung unbedingt berücksichtigen müssen?",
+    fieldType: "textarea",
+    placeholder: "z. B. Verkürzung – bitte Seite & Höhe angeben, Spitzfuß – Korrekturhöhe, Knickfuß, Spreizfuß usw.",
+    options: [],
+  },
+  {
     id: "vertiefungen",
     question: "Vertiefungen / Aussparungen",
     options: [
@@ -115,6 +135,19 @@ export const GROUPS: GroupDef[] = [
         label: "Nein, vorhandene Stärke: ___ mm (exakt eintragen, wichtig für Passform)",
       },
     ],
+  },
+  {
+    id: "bettung_wuensche",
+    question: "Hast du sonstige Anmerkungen oder Wünsche zu der Bettung.",
+    fieldType: "textarea",
+    placeholder: "Haben Sie sonstige Anmerkungen oder Wünsche zur Bettung?",
+    options: [],
+  },
+  {
+    id: "leistenkonfigurator_header",
+    question: "Leistenkonfigurator",
+    fieldType: "section",
+    options: [],
   },
   {
     id: "leisten_platzhalter",
@@ -169,6 +202,20 @@ export const GROUPS: GroupDef[] = [
       { id: "mittelfuss", label: "Verbesserte Mittelfußrolle" },
       { id: "ballen", label: "Verbesserte Ballenrolle" },
     ],
+  },
+  {
+    id: "fussproblem_leisten",
+    question: "Gibt es spezielle Fußprobleme, die wir bei der Fertigung unbedingt berücksichtigen müssen?",
+    fieldType: "textarea",
+    placeholder: "Textfield",
+    options: [],
+  },
+  {
+    id: "leisten_wuensche",
+    question: "Hast du sonstige Anmerkungen oder Wünsche zum Leisten.",
+    fieldType: "textarea",
+    placeholder: "Textfield",
+    options: [],
   },
 ]
 

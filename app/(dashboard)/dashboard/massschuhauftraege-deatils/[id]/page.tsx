@@ -12,9 +12,10 @@ export default function MassschuhauftraegeDeatilsPage() {
         <div>
             {
                 id === "1" ? (
-                    <Bodenkonstruktion />
-                ) : id === "2" ? (
                     <ShoeDetails />
+                ) : id === "2" ? (
+                    <Bodenkonstruktion />
+
                 ) : (
                     <div>Invalid ID</div>
                 )
