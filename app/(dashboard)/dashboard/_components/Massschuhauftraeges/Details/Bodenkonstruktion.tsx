@@ -359,6 +359,9 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         const einlagenversorgungPrice = order.einlagenversorgung ?? 0
         const totalPrice = fußanalysePrice + einlagenversorgungPrice
         
+        // Get footer data from order.user or order.partner
+        const partnerData = (order as any).partner || (order as any).user
+        
         return {
             orderNumber: order.orderNumber ? `#${order.orderNumber}` : `#${order.id?.slice(0, 8) || '000000'}`,
             customerName: order.kunde || 'Kunde',
@@ -366,7 +369,12 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             deliveryDate: formattedDeliveryDate,
             status: order.status,
             filiale: order.filiale,
-            totalPrice: totalPrice > 0 ? totalPrice : undefined
+            totalPrice: totalPrice > 0 ? totalPrice : undefined,
+            // Footer data from order
+            footerPhone: partnerData?.phone || undefined,
+            footerEmail: partnerData?.email || undefined,
+            footerBusinessName: partnerData?.busnessName || undefined,
+            footerImage: partnerData?.image || null
         }
     }, [order])
 

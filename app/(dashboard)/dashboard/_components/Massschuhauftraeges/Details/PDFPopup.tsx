@@ -13,6 +13,11 @@ export interface OrderDataForPDF {
   status?: string
   filiale?: string
   totalPrice?: number
+  // Footer data from order
+  footerPhone?: string
+  footerEmail?: string
+  footerBusinessName?: string
+  footerImage?: string | null
 }
 
 interface PDFPopupProps {
@@ -111,6 +116,12 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   const displayProductName = orderData?.productName || "Maßschuh"
   const displayDeliveryDate = orderData?.deliveryDate || "-"
 
+  // Footer data from order
+  const footerPhone = orderData?.footerPhone || "+39 366 5087742"
+  const footerBusinessName = orderData?.footerBusinessName || "FeetF1rst SRLS"
+  const footerEmail = orderData?.footerEmail || "Info@feetf1st.com"
+  const footerImage = orderData?.footerImage || null
+
   // Base64 encoded checkbox images
   const CHECKBOX_CHECKED = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSI0IiBmaWxsPSIjMjJjNTVlIi8+PHBhdGggZD0iTTQgOUw3LjUgMTIuNUwxNCA1LjUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=";
   const CHECKBOX_UNCHECKED = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB4PSIxIiB5PSIxIiB3aWR0aD0iMTYiIGhlaWdodD0iMTYiIHJ4PSIzIiBmaWxsPSJ3aGl0ZSIgc3Ryb2tlPSIjNmI3MjgwIiBzdHJva2Utd2lkdGg9IjIiLz48L3N2Zz4=";
@@ -172,7 +183,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     if (footer && footer.parentNode) footer.parentNode.removeChild(footer)
 
     const opt = {
-      margin: [0, 0, 45, 0], // [top, left, bottom, right] - bottom margin for footer space
+      margin: [40, 40, 80, 40], // [top, left, bottom, right] - equal margins, bottom accounts for footer (40pt) + spacing (40pt)
       filename: "document.pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
@@ -194,7 +205,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
         }
       },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+      pagebreak: { mode: ["css", "legacy"], avoid: [] },
     }
     const html2pdfModule = (await import('html2pdf.js')) as any
     const html2pdf = html2pdfModule.default || html2pdfModule
@@ -216,9 +227,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             pdf.rect(0, pageHeight - 40, pageWidth, 40, "F")
             pdf.setTextColor(255, 255, 255)
             pdf.setFontSize(11)
-            pdf.text("+39 366 5087742", 40, pageHeight - 15)
-            pdf.text("FeetF1rst SRLS", pageWidth / 2, pageHeight - 15, { align: "center" })
-            pdf.text("Info@feetf1st.com", pageWidth - 40, pageHeight - 15, { align: "right" })
+            pdf.text(footerPhone, 40, pageHeight - 15)
+            pdf.text(footerBusinessName, pageWidth / 2, pageHeight - 15, { align: "center" })
+            pdf.text(footerEmail, pageWidth - 40, pageHeight - 15, { align: "right" })
           }
 
           pdf.save("document.pdf")
@@ -246,7 +257,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     if (footer && footer.parentNode) footer.parentNode.removeChild(footer)
 
     const opt = {
-      margin: [0, 0, 45, 0], // [top, left, bottom, right] - bottom margin for footer space
+      margin: [40, 40, 80, 40], // [top, left, bottom, right] - equal margins, bottom accounts for footer (40pt) + spacing (40pt)
       filename: "document.pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
@@ -268,7 +279,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
         }
       },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+      pagebreak: { mode: ["css", "legacy"], avoid: [] },
     }
     const html2pdfModule = (await import('html2pdf.js')) as any
     const html2pdf = html2pdfModule.default || html2pdfModule
@@ -290,9 +301,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             pdf.rect(0, pageHeight - 40, pageWidth, 40, "F")
             pdf.setTextColor(255, 255, 255)
             pdf.setFontSize(11)
-            pdf.text("+39 366 5087742", 40, pageHeight - 15)
-            pdf.text("FeetF1rst SRLS", pageWidth / 2, pageHeight - 15, { align: "center" })
-            pdf.text("Info@feetf1st.com", pageWidth - 40, pageHeight - 15, { align: "right" })
+            pdf.text(footerPhone, 40, pageHeight - 15)
+            pdf.text(footerBusinessName, pageWidth / 2, pageHeight - 15, { align: "center" })
+            pdf.text(footerEmail, pageWidth - 40, pageHeight - 15, { align: "right" })
           }
    
           const pdfBlob = pdf.output("blob")
@@ -375,9 +386,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             <div className="bg-white" style={{ width: '794px', minHeight: '1123px',  }}>
               {/* Header - outer has padding, inner content has border */}
               <div className="pt-6 pb-2 px-10">
-                <div className="flex gap-6 items-start pb-3 border-b-2 border-gray-300">
-                  <div className="w-[70px] h-[70px] flex items-center justify-center flex-shrink-0">
-                    <img src="/Logo.png" alt="Logo" className="max-w-full max-h-full" />
+                <div className="flex gap-6 items-center pb-3 border-b-2 border-gray-300">
+                  <div className="w-[70px] h-[70px] flex items-center justify-center flex-shrink-0 aspect-square overflow-hidden">
+                    <img src={footerImage || "/Logo.png"} alt="Logo" className="w-full h-full object-contain aspect-square" />
                   </div>
                   <div>
                     <div className="text-lg font-semibold text-slate-800 mb-2">{displayProductName}</div>
@@ -468,9 +479,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
               {/* Footer */}
               <div className="mt-auto bg-black py-4 px-10 flex justify-between items-center">
-                <span className="text-white text-xs">+39 366 5087742</span>
-                <span className="text-white text-xs">FeetF1rst SRLS</span>
-                <span className="text-white text-xs">Info@feetf1st.com</span>
+                <span className="text-white text-xs">{footerPhone}</span>
+                <span className="text-white text-xs">{footerBusinessName}</span>
+                <span className="text-white text-xs">{footerEmail}</span>
               </div>
             </div>
           </div>
@@ -478,12 +489,12 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
         {/* ============ HIDDEN PDF CONTENT (for PDF generation - uses inline styles) ============ */}
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-          <div ref={pdfContentRef} style={{ width: '794px', minHeight: '1123px', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', fontFamily: 'Poppins, Arial, sans-serif' }}>
+          <div ref={pdfContentRef} style={{ width: '794px', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', fontFamily: 'Poppins, Arial, sans-serif' }}>
             {/* Header - outer has padding, inner content has border */}
-            <div style={{ padding: '24px 40px 8px 40px', background: '#ffffff' }}>
-              <div style={{ display: 'flex', gap: '24px', alignItems: 'flex-start', paddingBottom: '12px', borderBottom: '2px solid #d1d5db' }}>
-                <div style={{ width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <img src="/Logo.png" alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%' }} />
+            <div style={{ padding: '10px 40px 8px 40px', background: '#ffffff' }}>
+              <div style={{ display: 'flex', gap: '24px', alignItems: 'center', paddingBottom: '12px', borderBottom: '2px solid #d1d5db' }}>
+                <div style={{ width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, aspectRatio: '1/1', overflow: 'hidden' }}>
+                  <img src={footerImage || "/Logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', aspectRatio: '1/1' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>{displayProductName}</div>
@@ -497,7 +508,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             </div>
 
             {/* Body - same horizontal padding as header */}
-            <div style={{ padding: '12px 40px 24px 40px', flex: 1, background: '#ffffff' }}>
+            <div style={{ padding: '8px 40px 40px 40px', flex: 1, background: '#ffffff' }}>
               {showDetails ? (
                 <>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste Halbprobe</div>
@@ -574,9 +585,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
             {/* Footer placeholder (removed during PDF gen, added via jsPDF) */}
             <div className="pdf-info-footer" style={{ marginTop: 'auto', backgroundColor: '#000000', padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#ffffff', fontSize: '12px' }}>+39 366 5087742</span>
-              <span style={{ color: '#ffffff', fontSize: '12px' }}>FeetF1rst SRLS</span>
-              <span style={{ color: '#ffffff', fontSize: '12px' }}>Info@feetf1st.com</span>
+              <span style={{ color: '#ffffff', fontSize: '12px' }}>{footerPhone}</span>
+              <span style={{ color: '#ffffff', fontSize: '12px' }}>{footerBusinessName}</span>
+              <span style={{ color: '#ffffff', fontSize: '12px' }}>{footerEmail}</span>
             </div>
           </div>
         </div>

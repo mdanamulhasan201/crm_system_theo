@@ -313,7 +313,7 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
     // Prepare order data for PDF
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
         if (!order) return {}
-
+        
         // Format delivery date
         let formattedDeliveryDate = '-'
         if (order.delivery_date) {
@@ -328,12 +328,15 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
                 formattedDeliveryDate = order.delivery_date
             }
         }
-
+        
         // Calculate total price from order
         const fußanalysePrice = order.fußanalyse ?? 0
         const einlagenversorgungPrice = order.einlagenversorgung ?? 0
         const totalPrice = fußanalysePrice + einlagenversorgungPrice
-
+        
+        // Get footer data from order.user or order.partner
+        const partnerData = (order as any).partner || (order as any).user
+        
         return {
             orderNumber: order.orderNumber ? `#${order.orderNumber}` : `#${order.id?.slice(0, 8) || '000000'}`,
             customerName: order.kunde || 'Kunde',
@@ -341,7 +344,12 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
             deliveryDate: formattedDeliveryDate,
             status: order.status,
             filiale: order.filiale,
-            totalPrice: totalPrice > 0 ? totalPrice : undefined
+            totalPrice: totalPrice > 0 ? totalPrice : undefined,
+            // Footer data from order
+            footerPhone: partnerData?.phone || undefined,
+            footerEmail: partnerData?.email || undefined,
+            footerBusinessName: partnerData?.busnessName || undefined,
+            footerImage: partnerData?.image || null
         }
     }, [order])
 

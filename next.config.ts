@@ -16,6 +16,10 @@ const nextConfig: NextConfig = {
         hostname: 'quotations-pierce-patrol-sur.trycloudflare.com',
       },
       {
+        protocol: 'https',
+        hostname: 'chips-owen-eligibility-baby.trycloudflare.com',
+      },
+      {
         // local host
         protocol: 'http',
         hostname: '192.168.7.12',
