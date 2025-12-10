@@ -3,6 +3,18 @@
 import React, { useRef } from "react"
 
 import { CloseIcon, DownloadIcon, PrintIcon } from "./Icons"
+
+// Order data interface for dynamic PDF content
+export interface OrderDataForPDF {
+  orderNumber?: string
+  customerName?: string
+  productName?: string
+  deliveryDate?: string
+  status?: string
+  filiale?: string
+  totalPrice?: number
+}
+
 interface PDFPopupProps {
   isOpen: boolean
   onClose: () => void
@@ -19,6 +31,7 @@ interface PDFPopupProps {
     [key: string]: string | undefined
   }
   showDetails?: boolean
+  orderData?: OrderDataForPDF
 }
 
 type OptionDef = { id: string; label: string }
@@ -88,8 +101,15 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   textAreas,
   showDetails,
   onConfirm,
+  orderData,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
+
+  // Default values if orderData is not provided
+  const displayOrderNumber = orderData?.orderNumber || "#000000"
+  const displayCustomerName = orderData?.customerName || "Kunde"
+  const displayProductName = orderData?.productName || "Maßschuh"
+  const displayDeliveryDate = orderData?.deliveryDate || "-"
 
   // Base64 encoded checkbox images
   const CHECKBOX_CHECKED = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHJ4PSI0IiBmaWxsPSIjMjJjNTVlIi8+PHBhdGggZD0iTTQgOUw3LjUgMTIuNUwxNCA1LjUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiLz48L3N2Zz4=";
@@ -343,7 +363,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
       <div className="bg-white w-[80vw] min-h-[80vh] rounded-2xl shadow-2xl overflow-hidden animate-[fadeIn_0.3s] relative flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200 relative">
-          <h2 className="text-xl font-semibold text-slate-900 font-['Poppins'] m-0">Your PDF is Ready</h2>
+          <h2 className="text-xl font-semibold text-slate-900  m-0">Your PDF is Ready</h2>
           <button onClick={onClose} className="absolute right-6 top-6 bg-none border-none text-2xl text-slate-500 cursor-pointer transition-colors p-0 w-6 h-6 flex items-center justify-center hover:text-slate-800" title="Close">
             <CloseIcon />
           </button>
@@ -358,17 +378,17 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 <div className="flex gap-6 items-start pb-3 border-b-2 border-gray-300">
                   <div className="w-[70px] h-[70px] flex items-center justify-center flex-shrink-0">
                     <img src="/Logo.png" alt="Logo" className="max-w-full max-h-full" />
-                    </div>
-                    <div>
-                    <div className="text-lg font-semibold text-slate-800 mb-2">Businesseinlage</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-semibold text-slate-800 mb-2">{displayProductName}</div>
                     <div className="text-sm text-slate-800 leading-relaxed">
-                      <div><span className="font-medium">Brugger Theo</span></div>
-                      <div><span className="font-medium">Bestellnr:</span> <span className="text-xs text-slate-500">#121212</span></div>
-                      <div><span className="font-medium">Liefertermin:</span> <span className="text-xs text-slate-500">10.02.2025</span></div>
-                    </div>
+                      <div><span className="font-medium">{displayCustomerName}</span></div>
+                      <div><span className="font-medium">Bestellnr:</span> <span className="text-xs text-slate-500">{displayOrderNumber}</span></div>
+                      <div><span className="font-medium">Liefertermin:</span> <span className="text-xs text-slate-500">{displayDeliveryDate}</span></div>
                     </div>
                   </div>
                 </div>
+              </div>
 
               {/* Body - same horizontal padding as header */}
               <div className="pt-3 pb-6 px-10 flex-1">
@@ -466,11 +486,11 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   <img src="/Logo.png" alt="Logo" style={{ maxWidth: '100%', maxHeight: '100%' }} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Businesseinlage</div>
+                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>{displayProductName}</div>
                   <div style={{ fontSize: '13px', color: '#1e293b', lineHeight: 1.6 }}>
-                    <div><span style={{ fontWeight: 500 }}>Brugger Theo</span></div>
-                    <div><span style={{ fontWeight: 500 }}>Bestellnr:</span> <span style={{ fontSize: '11px', color: '#64748b' }}>#121212</span></div>
-                    <div><span style={{ fontWeight: 500 }}>Liefertermin:</span> <span style={{ fontSize: '11px', color: '#64748b' }}>10.02.2025</span></div>
+                    <div><span style={{ fontWeight: 500 }}>{displayCustomerName}</span></div>
+                    <div><span style={{ fontWeight: 500 }}>Bestellnr:</span> <span style={{ fontSize: '11px', color: '#64748b' }}>{displayOrderNumber}</span></div>
+                    <div><span style={{ fontWeight: 500 }}>Liefertermin:</span> <span style={{ fontSize: '11px', color: '#64748b' }}>{displayDeliveryDate}</span></div>
                   </div>
                 </div>
               </div>
@@ -564,19 +584,19 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
         {/* Modal Footer */}
         <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white z-10 sticky bottom-0 left-0 right-0">
           <div className="w-full flex justify-between items-center pt-4">
-            <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-['Poppins'] font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onClose}>
+            <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onClose}>
               Zurück
             </button>
             <div className="flex gap-3">
-              <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-['Poppins'] font-medium flex items-center gap-2 cursor-pointer transition-colors hover:bg-slate-50" onClick={handleDownloadPDF}>
+              <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium flex items-center gap-2 cursor-pointer transition-colors hover:bg-slate-50" onClick={handleDownloadPDF}>
                 Download
                 <DownloadIcon />
               </button>
-              <button className="py-4 px-[74px] rounded-lg border-none bg-[#36a866] text-white text-sm font-['Poppins'] font-semibold flex items-center gap-2 cursor-pointer transition-colors hover:bg-[#2e8b5e]" onClick={handlePrint}>
+              <button className="py-4 px-[74px] rounded-lg border-none bg-[#36a866] text-white text-sm  font-semibold flex items-center gap-2 cursor-pointer transition-colors hover:bg-[#2e8b5e]" onClick={handlePrint}>
                 Print
                 <PrintIcon />
               </button>
-              <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm font-['Poppins'] font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onConfirm}>
+              <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onConfirm}>
                 Abschließen
               </button>
             </div>

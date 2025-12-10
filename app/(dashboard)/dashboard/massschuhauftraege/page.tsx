@@ -62,10 +62,18 @@ export default function MassschuhauftraegePage() {
         updateOrderRef.current?.(orderId, updatedData);
     }, []);
     const handleStart = () => {
-        router.push('/dashboard/massschuhauftraege-deatils/1');
+        // Pass order ID as query parameter
+        const url = selectedOrderId 
+            ? `/dashboard/massschuhauftraege-deatils/1?orderId=${selectedOrderId}`
+            : '/dashboard/massschuhauftraege-deatils/1';
+        router.push(url);
     };
     const handleStart2 = () => {
-        router.push('/dashboard/massschuhauftraege-deatils/2');
+        // Pass order ID as query parameter
+        const url = selectedOrderId 
+            ? `/dashboard/massschuhauftraege-deatils/2?orderId=${selectedOrderId}`
+            : '/dashboard/massschuhauftraege-deatils/2';
+        router.push(url);
     };
     return (
         <div>

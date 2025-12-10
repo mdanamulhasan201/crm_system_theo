@@ -4,8 +4,9 @@ import { useRouter } from "next/navigation"
 import { GroupDef } from "./Types"
 import { normalizeUnderscores, parseEuroFromText } from "./HelperFunctions"
 import { GROUPS, shoe } from "./ShoeData"
-import PDFPopup from "./PDFPopup"
+import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
+import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder"
 
 type OptionDef = {
     id: string
@@ -240,8 +241,8 @@ function OptionGroup({
                                 />
                                 <div
                                     className={`h-5 w-5 border-2 rounded cursor-pointer transition-all flex items-center justify-center ${isChecked
-                                            ? 'bg-green-500 border-green-500'
-                                            : 'bg-white border-gray-300 hover:border-green-400'
+                                        ? 'bg-green-500 border-green-500'
+                                        : 'bg-white border-gray-300 hover:border-green-400'
                                         }`}
                                     onClick={() => handleSelect(opt.id)}
                                 >
@@ -287,7 +288,11 @@ function OptionGroup({
     )
 }
 
-export default function ShoeDetails() {
+interface ShoeDetailsProps {
+    orderId?: string | null
+}
+
+export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
     const [selected, setSelected] = useState<SelectedState>({})
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [showModal2, setShowModal2] = useState(false)
@@ -301,6 +306,44 @@ export default function ShoeDetails() {
     })
     const [showModal, setShowModal] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
+
+    // Fetch order data if orderId is provided
+    const { order } = useGetSingleMassschuheOrder(orderId ?? null)
+
+    // Prepare order data for PDF
+    const orderDataForPDF: OrderDataForPDF = useMemo(() => {
+        if (!order) return {}
+
+        // Format delivery date
+        let formattedDeliveryDate = '-'
+        if (order.delivery_date) {
+            try {
+                const date = new Date(order.delivery_date)
+                formattedDeliveryDate = date.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                })
+            } catch {
+                formattedDeliveryDate = order.delivery_date
+            }
+        }
+
+        // Calculate total price from order
+        const fußanalysePrice = order.fußanalyse ?? 0
+        const einlagenversorgungPrice = order.einlagenversorgung ?? 0
+        const totalPrice = fußanalysePrice + einlagenversorgungPrice
+
+        return {
+            orderNumber: order.orderNumber ? `#${order.orderNumber}` : `#${order.id?.slice(0, 8) || '000000'}`,
+            customerName: order.kunde || 'Kunde',
+            productName: 'Halbprobenerstellung',
+            deliveryDate: formattedDeliveryDate,
+            status: order.status,
+            filiale: order.filiale,
+            totalPrice: totalPrice > 0 ? totalPrice : undefined
+        }
+    }, [order])
 
     const setGroup = (groupId: string, optId: string | null) => {
         setSelected((prev) => ({ ...prev, [groupId]: optId }))
@@ -318,7 +361,13 @@ export default function ShoeDetails() {
         return sum
     }, [selected])
 
-    const grandTotal = useMemo(() => shoe.price + extraPriceTotal, [extraPriceTotal])
+    // Use order total price if available, otherwise calculate from shoe price + extras
+    const grandTotal = useMemo(() => {
+        if (order && orderDataForPDF.totalPrice && orderDataForPDF.totalPrice > 0) {
+            return orderDataForPDF.totalPrice
+        }
+        return shoe.price + extraPriceTotal
+    }, [order, orderDataForPDF.totalPrice, extraPriceTotal])
 
     const requiredCheckboxGroups = useMemo(
         () => GROUPS.filter(g => !g.fieldType || g.fieldType === "checkbox").filter(g => g.fieldType !== "section" && g.fieldType !== "textarea"),
@@ -362,10 +411,12 @@ export default function ShoeDetails() {
 
                         {/* Product Info Section */}
                         <div className="flex-1">
-                            <h2 className="text-2xl font-bold text-black mb-2">{shoe.name}</h2>
-                            <p className="text-lg text-black mb-2">{shoe.brand}</p>
+                            <h2 className="text-2xl font-bold text-black mb-2">{orderDataForPDF.productName || shoe.name}</h2>
+                            <p className="text-lg text-black mb-2">
+                                Kunde: <span className="font-medium">{orderDataForPDF.customerName || shoe.brand}</span>
+                            </p>
                             <p className="text-base text-black mb-4">
-                                Bestellnr: <span className="font-bold">#123456789</span> &nbsp; Liefertermin: <span className="font-bold">12.04.2024</span>
+                                Bestellnr: <span className="font-bold">{orderDataForPDF.orderNumber || '#123456789'}</span> &nbsp; Liefertermin: <span className="font-bold">{orderDataForPDF.deliveryDate || '12.04.2024'}</span>
                             </p>
                         </div>
                     </div>
@@ -445,6 +496,7 @@ export default function ShoeDetails() {
                     optionInputs={optionInputs}
                     textAreas={textAreas}
                     showDetails={true}
+                    orderData={orderDataForPDF}
                 />
             )}
 

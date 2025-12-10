@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation"
 import { GroupDef2 } from "./Types"
 import { normalizeUnderscores, parseEuroFromText } from "./HelperFunctions"
 import { GROUPS2, shoe2 } from "./ShoeData"
-import PDFPopup from "./PDFPopup"
+import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
 import { FaArrowLeft } from "react-icons/fa"
+import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder"
 
 type OptionDef = {
     id: string
@@ -316,7 +317,11 @@ function OptionGroup({
     )
 }
 
-export default function Bodenkonstruktion() {
+interface BodenkonstruktionProps {
+    orderId?: string | null
+}
+
+export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff" })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [showModal2, setShowModal2] = useState(false)
@@ -326,6 +331,44 @@ export default function Bodenkonstruktion() {
     })
     const [showModal, setShowModal] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
+
+    // Fetch order data if orderId is provided
+    const { order } = useGetSingleMassschuheOrder(orderId ?? null)
+
+    // Prepare order data for PDF
+    const orderDataForPDF: OrderDataForPDF = useMemo(() => {
+        if (!order) return {}
+        
+        // Format delivery date
+        let formattedDeliveryDate = '-'
+        if (order.delivery_date) {
+            try {
+                const date = new Date(order.delivery_date)
+                formattedDeliveryDate = date.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                })
+            } catch {
+                formattedDeliveryDate = order.delivery_date
+            }
+        }
+        
+        // Calculate total price from order
+        const fußanalysePrice = order.fußanalyse ?? 0
+        const einlagenversorgungPrice = order.einlagenversorgung ?? 0
+        const totalPrice = fußanalysePrice + einlagenversorgungPrice
+        
+        return {
+            orderNumber: order.orderNumber ? `#${order.orderNumber}` : `#${order.id?.slice(0, 8) || '000000'}`,
+            customerName: order.kunde || 'Kunde',
+            productName: 'Bodenerstellung',
+            deliveryDate: formattedDeliveryDate,
+            status: order.status,
+            filiale: order.filiale,
+            totalPrice: totalPrice > 0 ? totalPrice : undefined
+        }
+    }, [order])
 
     const setGroup = (groupId: string, optId: string | null) => {
         setSelected((prev) => ({ ...prev, [groupId]: optId }))
@@ -354,7 +397,13 @@ export default function Bodenkonstruktion() {
         return sum
     }, [selected])
 
-    const grandTotal = useMemo(() => shoe2.price + extraPriceTotal, [extraPriceTotal])
+    // Use order total price if available, otherwise calculate from shoe price + extras
+    const grandTotal = useMemo(() => {
+        if (order && orderDataForPDF.totalPrice && orderDataForPDF.totalPrice > 0) {
+            return orderDataForPDF.totalPrice
+        }
+        return shoe2.price + extraPriceTotal
+    }, [order, orderDataForPDF.totalPrice, extraPriceTotal])
 
     const requiredCheckboxGroups = useMemo(
         () => GROUPS2.filter(g => !g.fieldType || g.fieldType === "checkbox"),
@@ -403,10 +452,12 @@ export default function Bodenkonstruktion() {
 
                         {/* Product Info Section */}
                         <div className="flex-1">
-                            <h2 className="text-2xl font-bold text-black mb-2">{shoe2.name}</h2>
-                            <p className="text-lg text-black mb-2">{shoe2.brand}</p>
+                            <h2 className="text-2xl font-bold text-black mb-2">{orderDataForPDF.productName || shoe2.name}</h2>
+                            <p className="text-lg text-black mb-2">
+                                Kunde: <span className="font-medium">{orderDataForPDF.customerName || shoe2.brand}</span>
+                            </p>
                             <p className="text-base text-black mb-4">
-                                Bestellnr: <span className="font-bold">#121212</span> &nbsp; Voraussichtlicher Liefertermin: <span>10.02.2025</span>
+                                Bestellnr: <span className="font-bold">{orderDataForPDF.orderNumber || '#121212'}</span> &nbsp; Voraussichtlicher Liefertermin: <span>{orderDataForPDF.deliveryDate || '10.02.2025'}</span>
                             </p>
                             <p className="text-sm text-black underline cursor-pointer">
                                 Bild hier hochladen, wenn die Bodenkonstruktion nach Vorlage erfolgen soll.
@@ -496,6 +547,7 @@ export default function Bodenkonstruktion() {
                     selected={selected}
                     optionInputs={optionInputs}
                     textAreas={textAreas}
+                    orderData={orderDataForPDF}
                 />
             )}
 
