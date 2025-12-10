@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'twins-clinics-yeast-owns.trycloudflare.com',
+        hostname: 'quotations-pierce-patrol-sur.trycloudflare.com',
       },
       {
         // local host
