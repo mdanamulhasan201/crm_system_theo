@@ -100,9 +100,9 @@ export const addCustomerVersorgung = async (customerId: string, versorgungId: st
 
 
 
-export const searchCustomers = async (searchData: any, page: number, limit: number, name: string, email: string, phone: string) => {
+export const searchCustomers = async (searchData: any, page: number, limit: number, name: string, email: string, phone: string, geburtsdatum: string, kundennummer: string) => {
     try {
-        const response = await axiosClient.get(`/customers/search?limit=${limit}&search=${searchData}&location=${searchData}&email=${email}&phone=${phone}&location=${searchData}&name=${name}`);
+        const response = await axiosClient.get(`/customers/search?limit=${limit}&search=${searchData}&location=${searchData}&email=${email}&phone=${phone}&location=${searchData}&name=${name}&geburtsdatum=${geburtsdatum}&kundennummer=${kundennummer}`);
         return response.data;
     } catch (error) {
         throw error;
