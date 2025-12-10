@@ -40,7 +40,9 @@ export const useFootExercises = () => {
                 10, // limit
                 query, // name
                 query, // email
-                '' // phone
+                '', // phone
+                '', // geburtsdatum
+                '' // kundennummer
             );
             
             if (response.success && response.data) {
