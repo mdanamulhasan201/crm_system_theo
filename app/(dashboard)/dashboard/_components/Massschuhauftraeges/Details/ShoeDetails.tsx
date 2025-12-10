@@ -7,6 +7,7 @@ import { GROUPS, shoe } from "./ShoeData"
 import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
 import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder"
+import { FaArrowLeft } from "react-icons/fa"
 
 type OptionDef = {
     id: string
@@ -313,7 +314,7 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
     // Prepare order data for PDF
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
         if (!order) return {}
-        
+
         // Format delivery date
         let formattedDeliveryDate = '-'
         if (order.delivery_date) {
@@ -328,15 +329,15 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
                 formattedDeliveryDate = order.delivery_date
             }
         }
-        
+
         // Calculate total price from order
         const fußanalysePrice = order.fußanalyse ?? 0
         const einlagenversorgungPrice = order.einlagenversorgung ?? 0
         const totalPrice = fußanalysePrice + einlagenversorgungPrice
-        
+
         // Get footer data from order.user or order.partner
         const partnerData = (order as any).partner || (order as any).user
-        
+
         return {
             orderNumber: order.orderNumber ? `#${order.orderNumber}` : `#${order.id?.slice(0, 8) || '000000'}`,
             customerName: order.kunde || 'Kunde',
@@ -399,15 +400,19 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
 
     return (
         <div className="relative bg-white">
+            {/* back button */}
+            <button className="px-6 cursor-pointer py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50" onClick={() => router.back()}>
+                <FaArrowLeft />
+            </button>
             {/* Header Section */}
-            <div className="mb-8">
+            <div className="my-8">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-3xl font-bold text-black">Welcome Back!</h1>
                 </div>
 
                 {/* Product Card */}
                 <div className="bg-gray-100  p-4">
-                    <div className="flex gap-6">
+                    <div className="flex justify-center items-center gap-6">
                         {/* Image Section */}
                         <div className="bg-white rounded-lg p-4 flex-shrink-0">
                             <img
@@ -475,16 +480,16 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
 
                 <div className="flex justify-end gap-4 mt-8">
                     <button
-                        className="px-6 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
+                        className="px-6 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
                         onClick={() => router.back()}
                     >
                         Abbrechen
                     </button>
                     <button
-                        className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold"
+                        className="px-6 py-2 cursor-pointer bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold"
                         onClick={handleWeiterClick}
                     >
-                        Book Now €{grandTotal.toFixed(2)}
+                        Weiter €{grandTotal.toFixed(2)}
                     </button>
                 </div>
             </div>

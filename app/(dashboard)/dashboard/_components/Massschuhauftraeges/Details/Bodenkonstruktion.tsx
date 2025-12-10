@@ -436,11 +436,11 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     return (
         <div className="relative bg-white ">
             {/* back button */}
-            <button className="px-6 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50" onClick={() => router.back()}>
+            <button className="px-6 cursor-pointer py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50" onClick={() => router.back()}>
                 <FaArrowLeft />
             </button>
             {/* Header Section */}
-            <div className="mb-8">
+            <div className="my-8">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-3xl font-bold text-black">FeetF1rst Massschuhpartner</h1>
 
@@ -448,7 +448,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
                 {/* Product Card */}
                 <div className="bg-gray-100 rounded-2xl p-4">
-                    <div className="flex gap-6">
+                    <div className="flex justify-center items-center gap-6">
                         {/* Image Section */}
                         <div className="bg-white rounded-lg p-4 flex-shrink-0">
                             <img
