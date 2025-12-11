@@ -1,17 +1,14 @@
 'use client'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { balanceMassschuheOrder } from '@/apis/MassschuheManagemantApis';
 
 interface ChartDataPoint {
     date: string;
     value: number;
 }
 
-interface BalanceVerlaufChartProps {
-    data?: ChartDataPoint[];
-}
-
-// Sample data matching the design
+// Sample fallback data
 const defaultData: ChartDataPoint[] = [
     { date: '23/03', value: 0.2 },
     { date: '24/03', value: 1.8 },
@@ -22,17 +19,37 @@ const defaultData: ChartDataPoint[] = [
     { date: '29/03', value: 6.8 },
     { date: '30/03', value: 7.0 },
     { date: '31/03', value: 5.4 },
-    { date: '01/04', value: 5.2 },
-    { date: '02/04', value: 5.6 },
-    { date: '03/04', value: 7.4 },
-    { date: '04/04', value: 9.0 },
-    { date: '05/04', value: 7.8 },
-    { date: '06/04', value: 5.4 },
-    { date: '07/04', value: 6.2 },
-    { date: '08/04', value: 5.8 },
 ];
 
-export default function BalanceVerlaufChart({ data = defaultData }: BalanceVerlaufChartProps) {
+export default function BalanceVerlaufChart() {
+    const [chartData, setChartData] = useState<ChartDataPoint[]>(defaultData);
+    const [loading, setLoading] = useState(false);
+    const interval = Math.max(0, Math.floor(chartData.length / 8));
+
+    useEffect(() => {
+        const fetchChart = async () => {
+            try {
+                setLoading(true);
+                const response = await balanceMassschuheOrder();
+                const daily = (response as any)?.data?.dailyData ?? (response as any)?.dailyData;
+                if (Array.isArray(daily) && daily.length > 0) {
+                    const mapped: ChartDataPoint[] = daily.map((item: any) => ({
+                        date: new Date(item.date).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' }),
+                        value: typeof item.value === 'number' ? item.value : Number(item.value) || 0,
+                    }));
+                    setChartData(mapped);
+                } else {
+                    setChartData(defaultData);
+                }
+            } catch (error) {
+                console.error('Failed to fetch balance chart:', error);
+                setChartData(defaultData);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchChart();
+    }, []);
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
@@ -54,10 +71,10 @@ export default function BalanceVerlaufChart({ data = defaultData }: BalanceVerla
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-full">
             <h2 className="text-xl font-bold text-gray-800 mb-4">Balance Verlauf</h2>
             
-            <div className="w-full h-[220px]">
+            <div className="w-full h-56 sm:h-64 md:h-72">
                 <ResponsiveContainer width="100%" height="100%">
                     <LineChart
-                        data={data}
+                        data={chartData}
                         margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
                     >
                         <XAxis
@@ -65,7 +82,7 @@ export default function BalanceVerlaufChart({ data = defaultData }: BalanceVerla
                             axisLine={false}
                             tickLine={false}
                             tick={{ fontSize: 11, fill: '#6B7280' }}
-                            interval={0}
+                            interval={interval}
                             angle={0}
                         />
                         <YAxis

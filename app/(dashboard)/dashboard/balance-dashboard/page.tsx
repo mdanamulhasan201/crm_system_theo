@@ -16,10 +16,10 @@ export default function BalanceDashboard() {
 
             {/* Top Row: Aktuelle Balance + Balance Verlauf Chart */}
             <div className="flex flex-col lg:flex-row gap-4 w-full">
-                <div className="w-full lg:w-5/12">
+                <div className="w-full lg:w-4/12">
                     <AktuelleBalance />
                 </div>
-                <div className="w-full lg:w-7/12">
+                <div className="w-full lg:w-8/12">
                     <BalanceVerlaufChart />
                 </div>
             </div>
