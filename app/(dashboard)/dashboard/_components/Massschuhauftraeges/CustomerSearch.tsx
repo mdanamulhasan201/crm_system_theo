@@ -32,7 +32,13 @@ interface SuggestionItem {
     location: string;
 }
 
-export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect }: { onCustomerSelect?: (customer: CustomerData | null) => void; onCustomerIdSelect?: (customerId: string | null) => void }) {
+type SelectedOrderInfo = {
+    arztliche_diagnose?: string;
+    usführliche_diagnose?: string;
+    note?: string;
+};
+
+export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, selectedOrder }: { onCustomerSelect?: (customer: CustomerData | null) => void; onCustomerIdSelect?: (customerId: string | null) => void; selectedOrder?: SelectedOrderInfo | null }) {
     const [name, setName] = useState('');
     const [birth, setBirth] = useState('');
     const [customerNumber, setCustomerNumber] = useState('');
@@ -45,6 +51,9 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect }:
     const [imageError, setImageError] = useState(false);
     const [notFound, setNotFound] = useState(false);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+    const [showModal, setShowModal] = useState(false);
+    const [modalTitle, setModalTitle] = useState('');
+    const [modalContent, setModalContent] = useState('');
 
     const debouncedName = useDebounce(name, 300);
     const nameInputRef = useRef<HTMLInputElement>(null);
@@ -280,6 +289,15 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect }:
         onCustomerIdSelect?.(selectedCustomer?.id || null);
     }, [selectedCustomer, onCustomerSelect, onCustomerIdSelect]);
 
+    // When selected order changes, populate notes from order
+    useEffect(() => {
+        if (selectedOrder) {
+            setNotes(selectedOrder.note || '');
+        } else {
+            setNotes('');
+        }
+    }, [selectedOrder]);
+
     // Clear all search fields and reset state
     const handleClear = () => {
         setName('');
@@ -490,10 +508,24 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect }:
                             {/* Order Information - Only show when customer is selected */}
                             <div className="flex flex-col gap-4 w-full lg:w-8/12">
                                 <div className="flex flex-col gap-2 text-sm text-slate-800 sm:flex-row sm:gap-4">
-                                    <button className="text-left underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
+                                    <button
+                                        className="text-left underline underline-offset-4 hover:text-[#61A175] cursor-pointer"
+                                        onClick={() => {
+                                            setModalTitle('Ärztliche Diagnose');
+                                            setModalContent(selectedOrder?.arztliche_diagnose || 'Keine Daten verfügbar');
+                                            setShowModal(true);
+                                        }}
+                                    >
                                         Ärztliche Diagnose öffnen
                                     </button>
-                                    <button className="text-left underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
+                                    <button
+                                        className="text-left underline underline-offset-4 hover:text-[#61A175] cursor-pointer"
+                                        onClick={() => {
+                                            setModalTitle('Diagnose');
+                                            setModalContent(selectedOrder?.usführliche_diagnose || 'Keine Daten verfügbar');
+                                            setShowModal(true);
+                                        }}
+                                    >
                                         Diagnose
                                     </button>
                                 </div>
@@ -515,9 +547,16 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect }:
                                         <p className="text-sm text-slate-500">
                                             Wenn eine Korrektur nötig ist: In welchem Bereich?
                                         </p>
-                                        <button className="mt-2 text-sm underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
-                                            Ärztliche Diagnose öffnen
-                                        </button>
+                            <button
+                                className="mt-2 text-sm underline underline-offset-4 hover:text-[#61A175] cursor-pointer"
+                                onClick={() => {
+                                    setModalTitle('Ärztliche Diagnose');
+                                    setModalContent(selectedOrder?.arztliche_diagnose || 'Keine Daten verfügbar');
+                                    setShowModal(true);
+                                }}
+                            >
+                                Ärztliche Diagnose öffnen
+                            </button>
                                     </div>
 
                                     <div className="flex sm:flex-col md:flex-row gap-4">
@@ -532,6 +571,38 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect }:
                             </div>
                         </>
                     ) : null}
+                </div>
+            )}
+
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl">
+                        <div className="flex items-start justify-between">
+                            <div>
+                                <h3 className="text-lg font-semibold text-slate-900">{modalTitle}</h3>
+                            </div>
+                            <button
+                                type="button"
+                                className="text-slate-500 hover:text-slate-700 cursor-pointer"
+                                onClick={() => setShowModal(false)}
+                                aria-label="Close"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="mt-4 max-h-72 overflow-y-auto text-sm text-slate-700 whitespace-pre-wrap">
+                            {modalContent || 'Keine Daten verfügbar'}
+                        </div>
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setShowModal(false)}
+                                className="rounded-lg bg-[#61A175] px-4 py-2 text-sm font-semibold text-white hover:bg-[#61A175]/80 cursor-pointer"
+                            >
+                                Schließen
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </section>

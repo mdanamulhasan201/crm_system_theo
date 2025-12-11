@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import CardDeatilsPage from '../_components/Massschuhauftraeges/CardDeatilsPage';
 import { getAllMassschuheOrder } from '@/apis/MassschuheManagemantApis';
 import { MassschuheOrderData } from '@/hooks/massschuhe/useGetAllMassschuheOrder';
+import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
 
 export default function MassschuhauftraegePage() {
     const [showPopup, setShowPopup] = useState(false);
@@ -79,6 +80,9 @@ export default function MassschuhauftraegePage() {
             : '/dashboard/massschuhauftraege-deatils/2';
         router.push(url);
     };
+
+    // Fetch currently selected order details
+    const { order: selectedOrder } = useGetSingleMassschuheOrder(selectedOrderId);
 
     // Helper function to check if an order is running (not completed)
     const isOrderRunning = (order: MassschuheOrderData): boolean => {
@@ -222,6 +226,7 @@ export default function MassschuhauftraegePage() {
             <CustomerSearch 
                 onCustomerSelect={setSelectedCustomer} 
                 onCustomerIdSelect={handleCustomerIdSelect}
+                selectedOrder={selectedOrder}
             />
 
             {selectedCustomer && (
