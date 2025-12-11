@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation"
 import { GroupDef } from "./Types"
 import { normalizeUnderscores, parseEuroFromText } from "./HelperFunctions"
 import { GROUPS, shoe } from "./ShoeData"
-import PDFPopup from "./PDFPopup"
+import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
+import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder"
+import { FaArrowLeft } from "react-icons/fa"
 
 type OptionDef = {
     id: string
@@ -51,6 +53,37 @@ function TextField({
                 />
                 <span className="text-base text-gray-700 px-3 py-2 bg-transparent border-l border-gray-300">mm</span>
             </div>
+        </div>
+    )
+}
+
+function TextAreaField({
+    def,
+    value,
+    onChange,
+}: {
+    def: GroupDef
+    value: string
+    onChange: (value: string) => void
+}) {
+    return (
+        <div className="mb-6">
+            <label className="block text-base font-bold text-gray-800 mb-2">{def.question}</label>
+            <textarea
+                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[100px]"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={def.placeholder || def.question}
+                aria-label={def.question}
+            />
+        </div>
+    )
+}
+
+function SectionHeader({ title }: { title: string }) {
+    return (
+        <div className="bg-gray-100 rounded-lg p-4 mb-6 mt-8">
+            <h2 className="text-xl font-bold text-gray-800">{title}</h2>
         </div>
     )
 }
@@ -209,8 +242,8 @@ function OptionGroup({
                                 />
                                 <div
                                     className={`h-5 w-5 border-2 rounded cursor-pointer transition-all flex items-center justify-center ${isChecked
-                                            ? 'bg-green-500 border-green-500'
-                                            : 'bg-white border-gray-300 hover:border-green-400'
+                                        ? 'bg-green-500 border-green-500'
+                                        : 'bg-white border-gray-300 hover:border-green-400'
                                         }`}
                                     onClick={() => handleSelect(opt.id)}
                                 >
@@ -256,20 +289,70 @@ function OptionGroup({
     )
 }
 
-export default function ShoeDetails() {
+interface ShoeDetailsProps {
+    orderId?: string | null
+}
+
+export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
     const [selected, setSelected] = useState<SelectedState>({})
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [showModal2, setShowModal2] = useState(false)
     const router = useRouter()
     const [textAreas, setTextAreas] = useState<TextAreasState>({
-        bettung_korrektur_bereich_1: "",
-        bettung_korrektur_bereich_2: "",
+        korrektur_bereich: "",
+        fussproblem_bettung: "",
         bettung_wuensche: "",
-        leisten_probleme: "",
+        fussproblem_leisten: "",
         leisten_wuensche: "",
     })
     const [showModal, setShowModal] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
+
+    // Fetch order data if orderId is provided
+    const { order } = useGetSingleMassschuheOrder(orderId ?? null)
+
+    // Prepare order data for PDF
+    const orderDataForPDF: OrderDataForPDF = useMemo(() => {
+        if (!order) return {}
+
+        // Format delivery date
+        let formattedDeliveryDate = '-'
+        if (order.delivery_date) {
+            try {
+                const date = new Date(order.delivery_date)
+                formattedDeliveryDate = date.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                })
+            } catch {
+                formattedDeliveryDate = order.delivery_date
+            }
+        }
+
+        // Calculate total price from order
+        const fußanalysePrice = order.fußanalyse ?? 0
+        const einlagenversorgungPrice = order.einlagenversorgung ?? 0
+        const totalPrice = fußanalysePrice + einlagenversorgungPrice
+
+        // Get footer data from order.user or order.partner
+        const partnerData = (order as any).partner || (order as any).user
+
+        return {
+            orderNumber: order.orderNumber ? `#${order.orderNumber}` : `#${order.id?.slice(0, 8) || '000000'}`,
+            customerName: order.kunde || 'Kunde',
+            productName: 'Halbprobenerstellung',
+            deliveryDate: formattedDeliveryDate,
+            status: order.status,
+            filiale: order.filiale,
+            totalPrice: totalPrice > 0 ? totalPrice : undefined,
+            // Footer data from order
+            footerPhone: partnerData?.phone || undefined,
+            footerEmail: partnerData?.email || undefined,
+            footerBusinessName: partnerData?.busnessName || undefined,
+            footerImage: partnerData?.image || null
+        }
+    }, [order])
 
     const setGroup = (groupId: string, optId: string | null) => {
         setSelected((prev) => ({ ...prev, [groupId]: optId }))
@@ -287,10 +370,16 @@ export default function ShoeDetails() {
         return sum
     }, [selected])
 
-    const grandTotal = useMemo(() => shoe.price + extraPriceTotal, [extraPriceTotal])
+    // Use order total price if available, otherwise calculate from shoe price + extras
+    const grandTotal = useMemo(() => {
+        if (order && orderDataForPDF.totalPrice && orderDataForPDF.totalPrice > 0) {
+            return orderDataForPDF.totalPrice
+        }
+        return shoe.price + extraPriceTotal
+    }, [order, orderDataForPDF.totalPrice, extraPriceTotal])
 
     const requiredCheckboxGroups = useMemo(
-        () => GROUPS.filter(g => !g.fieldType || g.fieldType === "checkbox"),
+        () => GROUPS.filter(g => !g.fieldType || g.fieldType === "checkbox").filter(g => g.fieldType !== "section" && g.fieldType !== "textarea"),
         []
     )
 
@@ -311,16 +400,19 @@ export default function ShoeDetails() {
 
     return (
         <div className="relative bg-white">
+            {/* back button */}
+            <button className="px-6 cursor-pointer py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50" onClick={() => router.back()}>
+                <FaArrowLeft />
+            </button>
             {/* Header Section */}
-            <div className="mb-8">
+            <div className="my-8">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-3xl font-bold text-black">FeetF1rst Massschuhpartner</h1>
-
+                    <h1 className="text-3xl font-bold text-black">Welcome Back!</h1>
                 </div>
 
                 {/* Product Card */}
                 <div className="bg-gray-100  p-4">
-                    <div className="flex gap-6">
+                    <div className="flex justify-center items-center gap-6">
                         {/* Image Section */}
                         <div className="bg-white rounded-lg p-4 flex-shrink-0">
                             <img
@@ -332,10 +424,12 @@ export default function ShoeDetails() {
 
                         {/* Product Info Section */}
                         <div className="flex-1">
-                            <h2 className="text-2xl font-bold text-black mb-2">{shoe.name}</h2>
-                            <p className="text-lg text-black mb-2">{shoe.brand}</p>
+                            <h2 className="text-2xl font-bold text-black mb-2">{orderDataForPDF.productName || shoe.name}</h2>
+                            <p className="text-lg text-black mb-2">
+                                Kunde: <span className="font-medium">{orderDataForPDF.customerName || shoe.brand}</span>
+                            </p>
                             <p className="text-base text-black mb-4">
-                                Bestellnr: <span className="font-bold">#121212</span> &nbsp; Voraussichtlicher Liefertermin: <span>10.02.2025</span>
+                                Bestellnr: <span className="font-bold">{orderDataForPDF.orderNumber || '#123456789'}</span> &nbsp; Liefertermin: <span className="font-bold">{orderDataForPDF.deliveryDate || '12.04.2024'}</span>
                             </p>
                         </div>
                     </div>
@@ -344,112 +438,39 @@ export default function ShoeDetails() {
 
             {/* Checklist Section */}
             <div className="bg-white rounded-lg p-4 mx-auto">
-                <h2 className="text-2xl font-bold text-gray-800 mb-8">Checkliste Halbprobe</h2>
-                <p className="text-sm text-gray-600 font-bold mb-6 leading-relaxed">
-                    Überprüfen Sie während der Anprobe die wichtigsten Punkte zur Stabilität und zum Komfort und notieren Sie eventuelle Änderungswünsche.
-                </p>
 
                 {GROUPS.map((g) => (
                     <React.Fragment key={g.id}>
-                        {g.fieldType === "text" ? (
-                            <TextField def={g} selected={selected[g.id] ?? null} onSelect={(value) => setGroup(g.id, value)} />
+                        {g.fieldType === "section" ? (
+                            <SectionHeader title={g.question} />
+                        ) : g.fieldType === "textarea" ? (
+                            <>
+                                <TextAreaField
+                                    def={g}
+                                    value={textAreas[g.id] ?? ""}
+                                    onChange={(value) => setTextAreas((prev) => ({ ...prev, [g.id]: value }))}
+                                />
+                                <hr className="border-gray-200 my-4" />
+                            </>
+                        ) : g.fieldType === "text" ? (
+                            <>
+                                <TextField def={g} selected={selected[g.id] ?? null} onSelect={(value) => setGroup(g.id, value)} />
+                                <hr className="border-gray-200 my-4" />
+                            </>
                         ) : (
-                            <OptionGroup
-                                def={g}
-                                selected={selected[g.id] ?? null}
-                                onSelect={(optId) => setGroup(g.id, optId)}
-                                optionInputs={optionInputs}
-                                setOptionInputs={setOptionInputs}
-                            />
+                            <>
+                                <OptionGroup
+                                    def={g}
+                                    selected={selected[g.id] ?? null}
+                                    onSelect={(optId) => setGroup(g.id, optId)}
+                                    optionInputs={optionInputs}
+                                    setOptionInputs={setOptionInputs}
+                                />
+                                <hr className="border-gray-200 my-4" />
+                            </>
                         )}
-                        <hr className="border-gray-200 my-4" />
                     </React.Fragment>
                 ))}
-
-                {/* Text Areas Section */}
-                {(textAreas.bettung_korrektur_bereich_1 ||
-                    textAreas.bettung_korrektur_bereich_2 ||
-                    textAreas.bettung_wuensche ||
-                    textAreas.leisten_probleme ||
-                    textAreas.leisten_wuensche) && (
-                        <div className="mt-6 space-y-4">
-                            {textAreas.bettung_korrektur_bereich_1 !== undefined && (
-                                <div>
-                                    <label className="block text-base font-bold text-gray-800 mb-2">Korrekturbereich (Bettung)</label>
-                                    <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[100px]"
-                                        value={textAreas.bettung_korrektur_bereich_1}
-                                        onChange={(e) =>
-                                            setTextAreas((prev) => ({
-                                                ...prev,
-                                                bettung_korrektur_bereich_1: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
-                            )}
-                            {textAreas.bettung_korrektur_bereich_2 !== undefined && (
-                                <div>
-                                    <label className="block text-base font-bold text-gray-800 mb-2">Spezielle Fußprobleme (Bettung)</label>
-                                    <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[100px]"
-                                        value={textAreas.bettung_korrektur_bereich_2}
-                                        onChange={(e) =>
-                                            setTextAreas((prev) => ({
-                                                ...prev,
-                                                bettung_korrektur_bereich_2: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
-                            )}
-                            {textAreas.bettung_wuensche !== undefined && (
-                                <div>
-                                    <label className="block text-base font-bold text-gray-800 mb-2">Anmerkungen / Wünsche zur Bettung</label>
-                                    <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[100px]"
-                                        value={textAreas.bettung_wuensche}
-                                        onChange={(e) =>
-                                            setTextAreas((prev) => ({
-                                                ...prev,
-                                                bettung_wuensche: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
-                            )}
-                            {textAreas.leisten_probleme !== undefined && (
-                                <div>
-                                    <label className="block text-base font-bold text-gray-800 mb-2">Spezielle Fußprobleme (Leisten)</label>
-                                    <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[100px]"
-                                        value={textAreas.leisten_probleme}
-                                        onChange={(e) =>
-                                            setTextAreas((prev) => ({
-                                                ...prev,
-                                                leisten_probleme: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
-                            )}
-                            {textAreas.leisten_wuensche !== undefined && (
-                                <div>
-                                    <label className="block text-base font-bold text-gray-800 mb-2">Anmerkungen / Wünsche zum Leisten</label>
-                                    <textarea
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[100px]"
-                                        value={textAreas.leisten_wuensche}
-                                        onChange={(e) =>
-                                            setTextAreas((prev) => ({
-                                                ...prev,
-                                                leisten_wuensche: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
-                            )}
-                        </div>
-                    )}
 
                 {checkboxError && (
                     <div className="mb-4 text-red-600 text-sm">
@@ -459,13 +480,13 @@ export default function ShoeDetails() {
 
                 <div className="flex justify-end gap-4 mt-8">
                     <button
-                        className="px-6 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
+                        className="px-6 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
                         onClick={() => router.back()}
                     >
                         Abbrechen
                     </button>
                     <button
-                        className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold"
+                        className="px-6 py-2 cursor-pointer bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold"
                         onClick={handleWeiterClick}
                     >
                         Weiter €{grandTotal.toFixed(2)}
@@ -483,28 +504,12 @@ export default function ShoeDetails() {
                         setShowModal(false)
                         setShowModal2(true)
                     }}
-                    filteredGroups={GROUPS.filter((g) => {
-                        const sel = selected[g.id]
-                        if (g.fieldType === "text" && sel && sel.trim() !== "") {
-                            return true
-                        }
-                        if (sel && sel !== "" && sel !== null) {
-                            const opt = g.options.find((o) => o.id === sel)
-                            if (opt && opt.label && !["Keine", "Select"].includes(opt.label.trim())) {
-                                return true
-                            }
-                            const inputs = optionInputs[g.id]?.[sel] || []
-                            if (inputs.some((val) => val && val.trim() !== "")) {
-                                return true
-                            }
-                        }
-                        const optInputs = optionInputs[g.id] || {}
-                        return Object.values(optInputs).some((arr) => arr.some((val) => val && val.trim() !== ""))
-                    })}
+                    allGroups={GROUPS.filter((g) => g.fieldType !== "section" && g.fieldType !== "textarea")}
                     selected={selected}
                     optionInputs={optionInputs}
                     textAreas={textAreas}
                     showDetails={true}
+                    orderData={orderDataForPDF}
                 />
             )}
 

@@ -88,3 +88,25 @@ export const getProductionSummaryData = async () => {
         throw error;
     }
 }
+
+// changes express/standard flag of massschuhe order
+// PATCH /massschuhe-order/update-order/:id  with body { express: boolean }
+export const updateMassschuheOrderChangesStatus = async (orderId: string, express: boolean) => {
+    try {
+        const response = await axiosClient.patch(`/massschuhe-order/update-order/${orderId}`, { express });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// balance massschuhe order /custom_shafts/total-price-resio
+export const balanceMassschuheOrder = async () => {
+    try {
+        const response = await axiosClient.get(`/custom_shafts/total-price-resio`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

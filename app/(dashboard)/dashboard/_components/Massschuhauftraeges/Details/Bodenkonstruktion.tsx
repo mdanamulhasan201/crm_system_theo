@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation"
 import { GroupDef2 } from "./Types"
 import { normalizeUnderscores, parseEuroFromText } from "./HelperFunctions"
 import { GROUPS2, shoe2 } from "./ShoeData"
-import PDFPopup from "./PDFPopup"
+import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
 import { FaArrowLeft } from "react-icons/fa"
+import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder"
 
 type OptionDef = {
     id: string
@@ -316,7 +317,11 @@ function OptionGroup({
     )
 }
 
-export default function Bodenkonstruktion() {
+interface BodenkonstruktionProps {
+    orderId?: string | null
+}
+
+export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff" })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [showModal2, setShowModal2] = useState(false)
@@ -326,6 +331,52 @@ export default function Bodenkonstruktion() {
     })
     const [showModal, setShowModal] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
+
+    // Fetch order data if orderId is provided
+    const { order } = useGetSingleMassschuheOrder(orderId ?? null)
+
+    // Prepare order data for PDF
+    const orderDataForPDF: OrderDataForPDF = useMemo(() => {
+        if (!order) return {}
+        
+        // Format delivery date
+        let formattedDeliveryDate = '-'
+        if (order.delivery_date) {
+            try {
+                const date = new Date(order.delivery_date)
+                formattedDeliveryDate = date.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric'
+                })
+            } catch {
+                formattedDeliveryDate = order.delivery_date
+            }
+        }
+        
+        // Calculate total price from order
+        const fußanalysePrice = order.fußanalyse ?? 0
+        const einlagenversorgungPrice = order.einlagenversorgung ?? 0
+        const totalPrice = fußanalysePrice + einlagenversorgungPrice
+        
+        // Get footer data from order.user or order.partner
+        const partnerData = (order as any).partner || (order as any).user
+        
+        return {
+            orderNumber: order.orderNumber ? `#${order.orderNumber}` : `#${order.id?.slice(0, 8) || '000000'}`,
+            customerName: order.kunde || 'Kunde',
+            productName: 'Bodenerstellung',
+            deliveryDate: formattedDeliveryDate,
+            status: order.status,
+            filiale: order.filiale,
+            totalPrice: totalPrice > 0 ? totalPrice : undefined,
+            // Footer data from order
+            footerPhone: partnerData?.phone || undefined,
+            footerEmail: partnerData?.email || undefined,
+            footerBusinessName: partnerData?.busnessName || undefined,
+            footerImage: partnerData?.image || null
+        }
+    }, [order])
 
     const setGroup = (groupId: string, optId: string | null) => {
         setSelected((prev) => ({ ...prev, [groupId]: optId }))
@@ -354,7 +405,13 @@ export default function Bodenkonstruktion() {
         return sum
     }, [selected])
 
-    const grandTotal = useMemo(() => shoe2.price + extraPriceTotal, [extraPriceTotal])
+    // Use order total price if available, otherwise calculate from shoe price + extras
+    const grandTotal = useMemo(() => {
+        if (order && orderDataForPDF.totalPrice && orderDataForPDF.totalPrice > 0) {
+            return orderDataForPDF.totalPrice
+        }
+        return shoe2.price + extraPriceTotal
+    }, [order, orderDataForPDF.totalPrice, extraPriceTotal])
 
     const requiredCheckboxGroups = useMemo(
         () => GROUPS2.filter(g => !g.fieldType || g.fieldType === "checkbox"),
@@ -379,11 +436,11 @@ export default function Bodenkonstruktion() {
     return (
         <div className="relative bg-white ">
             {/* back button */}
-            <button className="px-6 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50" onClick={() => router.back()}>
+            <button className="px-6 cursor-pointer py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50" onClick={() => router.back()}>
                 <FaArrowLeft />
             </button>
             {/* Header Section */}
-            <div className="mb-8">
+            <div className="my-8">
                 <div className="flex justify-between items-center mb-6">
                     <h1 className="text-3xl font-bold text-black">FeetF1rst Massschuhpartner</h1>
 
@@ -391,7 +448,7 @@ export default function Bodenkonstruktion() {
 
                 {/* Product Card */}
                 <div className="bg-gray-100 rounded-2xl p-4">
-                    <div className="flex gap-6">
+                    <div className="flex justify-center items-center gap-6">
                         {/* Image Section */}
                         <div className="bg-white rounded-lg p-4 flex-shrink-0">
                             <img
@@ -403,10 +460,12 @@ export default function Bodenkonstruktion() {
 
                         {/* Product Info Section */}
                         <div className="flex-1">
-                            <h2 className="text-2xl font-bold text-black mb-2">{shoe2.name}</h2>
-                            <p className="text-lg text-black mb-2">{shoe2.brand}</p>
+                            <h2 className="text-2xl font-bold text-black mb-2">{orderDataForPDF.productName || shoe2.name}</h2>
+                            <p className="text-lg text-black mb-2">
+                                Kunde: <span className="font-medium">{orderDataForPDF.customerName || shoe2.brand}</span>
+                            </p>
                             <p className="text-base text-black mb-4">
-                                Bestellnr: <span className="font-bold">#121212</span> &nbsp; Voraussichtlicher Liefertermin: <span>10.02.2025</span>
+                                Bestellnr: <span className="font-bold">{orderDataForPDF.orderNumber || '#121212'}</span> &nbsp; Voraussichtlicher Liefertermin: <span>{orderDataForPDF.deliveryDate || '10.02.2025'}</span>
                             </p>
                             <p className="text-sm text-black underline cursor-pointer">
                                 Bild hier hochladen, wenn die Bodenkonstruktion nach Vorlage erfolgen soll.
@@ -492,27 +551,11 @@ export default function Bodenkonstruktion() {
                         setShowModal(false)
                         setShowModal2(true)
                     }}
-                    filteredGroups={GROUPS2.filter((g) => {
-                        const sel = selected[g.id]
-                        if (g.fieldType === "text" && sel && sel.trim() !== "") {
-                            return true
-                        }
-                        if (sel && sel !== "" && sel !== null) {
-                            const opt = g.options.find((o) => o.id === sel)
-                            if (opt && opt.label && !["Keine", "Select"].includes(opt.label.trim())) {
-                                return true
-                            }
-                            const inputs = optionInputs[g.id]?.[sel] || []
-                            if (inputs.some((val) => val && val.trim() !== "")) {
-                                return true
-                            }
-                        }
-                        const optInputs = optionInputs[g.id] || {}
-                        return Object.values(optInputs).some((arr) => arr.some((val) => val && val.trim() !== ""))
-                    })}
+                    allGroups={GROUPS2}
                     selected={selected}
                     optionInputs={optionInputs}
                     textAreas={textAreas}
+                    orderData={orderDataForPDF}
                 />
             )}
 

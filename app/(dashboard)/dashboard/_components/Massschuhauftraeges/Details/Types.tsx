@@ -7,7 +7,8 @@ export type OptionDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text" // Added fieldType to distinguish field types
+    fieldType?: "checkbox" | "select" | "text" | "textarea" | "section" // Added fieldType to distinguish field types
+    placeholder?: string
   }
   
   export type GroupDef2 = {
