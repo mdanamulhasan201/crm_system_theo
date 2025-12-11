@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'maximum-perfume-invitations-parade.trycloudflare.com',
+        hostname: 'rim-kiss-utilization-src.trycloudflare.com',
       },
       {
         // local host

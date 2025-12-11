@@ -10,7 +10,7 @@ import ProductionView from '../_components/Massschuhauftraeges/ProductionView';
 import WelcomePopup from '../_components/Massschuhauftraeges/WelcomePopup';
 import { useRouter } from 'next/navigation';
 import CardDeatilsPage from '../_components/Massschuhauftraeges/CardDeatilsPage';
-import { getAllMassschuheOrder } from '@/apis/MassschuheManagemantApis';
+import { getAllMassschuheOrder, updateMassschuheOrderChangesStatus } from '@/apis/MassschuheManagemantApis';
 import { MassschuheOrderData } from '@/hooks/massschuhe/useGetAllMassschuheOrder';
 import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
 
@@ -82,7 +82,24 @@ export default function MassschuhauftraegePage() {
     };
 
     // Fetch currently selected order details
-    const { order: selectedOrder } = useGetSingleMassschuheOrder(selectedOrderId);
+    const { order: selectedOrder, refetch: refetchSelectedOrder } = useGetSingleMassschuheOrder(selectedOrderId);
+
+    // Toggle express / standard for the selected order
+    const handleSetExpressStatus = useCallback(async (express: boolean) => {
+        if (!selectedOrderId) return;
+        try {
+            await updateMassschuheOrderChangesStatus(selectedOrderId, express);
+            const updated = await refetchSelectedOrder();
+            if (updated && updateOrderRef.current) {
+                updateOrderRef.current(selectedOrderId, { express: updated.express });
+            }
+            // Keep other widgets in sync; table is updated locally above
+            handleRefetchCardStatistik();
+            handleRefetchChart();
+        } catch (error) {
+            console.error('Failed to update express status:', error);
+        }
+    }, [selectedOrderId, refetchSelectedOrder, handleRefetchProductionView, handleRefetchCardStatistik, handleRefetchChart]);
 
     // Helper function to check if an order is running (not completed)
     const isOrderRunning = (order: MassschuheOrderData): boolean => {
@@ -227,6 +244,7 @@ export default function MassschuhauftraegePage() {
                 onCustomerSelect={setSelectedCustomer} 
                 onCustomerIdSelect={handleCustomerIdSelect}
                 selectedOrder={selectedOrder}
+                onSetExpressStatus={handleSetExpressStatus}
             />
 
             {selectedCustomer && (

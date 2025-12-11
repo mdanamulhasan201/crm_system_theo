@@ -278,14 +278,19 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
                 </td>
               </tr>
             ) : (
-              filteredOrders.map((order) => (
+              filteredOrders.map((order) => {
+                const isSelected = selectedOrderId === order.id;
+                const isExpress = order.express === true;
+                const rowClass = isSelected
+                  ? "bg-emerald-50 hover:bg-emerald-100"
+                  : isExpress
+                    ? "bg-red-50 hover:bg-red-100"
+                    : "hover:bg-slate-50";
+
+                return (
                 <tr 
                   key={order.id} 
-                  className={`border-b border-slate-100 transition-colors cursor-pointer ${
-                    selectedOrderId === order.id 
-                      ? "bg-emerald-50 hover:bg-emerald-100" 
-                      : "hover:bg-slate-50"
-                  }`}
+                  className={`border-b border-slate-100 transition-colors cursor-pointer ${rowClass}`}
                   onClick={() => handleOrderSelect(order)}
                 >
                   <td className="text-left py-4 px-2.5 sm:px-3 text-sm text-slate-600 whitespace-nowrap">
@@ -296,6 +301,11 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
                   </td>
                   <td className="text-left py-4 px-2.5 sm:px-3 text-sm text-slate-600 whitespace-nowrap">
                     {order.status}
+                    {isExpress && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[11px] font-semibold text-red-700">
+                        Express
+                      </span>
+                    )}
                   </td>
                   <td className="text-left py-4 px-2.5 sm:px-3 text-sm text-slate-600 whitespace-nowrap">
                     {calculatePrice(order.fußanalyse, order.einlagenversorgung) === "-" ? "-" : `${calculatePrice(order.fußanalyse, order.einlagenversorgung)} €`}
@@ -313,7 +323,7 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
                     {getFinishedDate(order)}
                   </td>
                 </tr>
-              ))
+              )})
             )}
           </tbody>
         </table>

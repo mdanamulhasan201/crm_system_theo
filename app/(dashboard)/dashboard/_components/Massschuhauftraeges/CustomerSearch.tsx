@@ -36,9 +36,10 @@ type SelectedOrderInfo = {
     arztliche_diagnose?: string;
     usführliche_diagnose?: string;
     note?: string;
+    express?: boolean;
 };
 
-export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, selectedOrder }: { onCustomerSelect?: (customer: CustomerData | null) => void; onCustomerIdSelect?: (customerId: string | null) => void; selectedOrder?: SelectedOrderInfo | null }) {
+export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, selectedOrder, onSetExpressStatus }: { onCustomerSelect?: (customer: CustomerData | null) => void; onCustomerIdSelect?: (customerId: string | null) => void; selectedOrder?: SelectedOrderInfo | null; onSetExpressStatus?: (express: boolean) => Promise<void> }) {
     const [name, setName] = useState('');
     const [birth, setBirth] = useState('');
     const [customerNumber, setCustomerNumber] = useState('');
@@ -54,6 +55,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
     const [showModal, setShowModal] = useState(false);
     const [modalTitle, setModalTitle] = useState('');
     const [modalContent, setModalContent] = useState('');
+    const [expressLoading, setExpressLoading] = useState(false);
 
     const debouncedName = useDebounce(name, 300);
     const nameInputRef = useRef<HTMLInputElement>(null);
@@ -560,10 +562,44 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                     </div>
 
                                     <div className="flex sm:flex-col md:flex-row gap-4">
-                                        <button className="rounded-xl bg-[#61A175] px-10 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#61A175]/80 cursor-pointer">
+                                        <button
+                                            disabled={expressLoading}
+                                            onClick={async () => {
+                                                if (selectedOrder?.express === false) return;
+                                                if (!onSetExpressStatus) return;
+                                                try {
+                                                    setExpressLoading(true);
+                                                    await onSetExpressStatus(false);
+                                                } finally {
+                                                    setExpressLoading(false);
+                                                }
+                                            }}
+                                            className={`rounded-xl px-10 py-3 text-sm font-semibold uppercase transition cursor-pointer ${
+                                                selectedOrder?.express
+                                                    ? 'border border-[#61A175] text-[#61A175] hover:bg-[#61A175]/10 bg-white'
+                                                    : 'bg-[#61A175] text-white hover:bg-[#61A175]/80'
+                                            } ${expressLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        >
                                             Standard
                                         </button>
-                                        <button className="rounded-xl border border-[#61A175] px-10 py-3 text-sm font-semibold uppercase text-[#61A175] transition hover:bg-[#61A175]/10 cursor-pointer">
+                                        <button
+                                            disabled={expressLoading}
+                                            onClick={async () => {
+                                                if (selectedOrder?.express === true) return;
+                                                if (!onSetExpressStatus) return;
+                                                try {
+                                                    setExpressLoading(true);
+                                                    await onSetExpressStatus(true);
+                                                } finally {
+                                                    setExpressLoading(false);
+                                                }
+                                            }}
+                                            className={`rounded-xl px-10 py-3 text-sm font-semibold uppercase transition cursor-pointer ${
+                                                selectedOrder?.express
+                                                    ? 'bg-red-500 text-white hover:bg-red-600'
+                                                    : 'border border-red-500 text-red-500 hover:bg-red-50'
+                                            } ${expressLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        >
                                             Expressauftrag
                                         </button>
                                     </div>

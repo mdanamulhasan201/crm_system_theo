@@ -25,6 +25,7 @@ export interface MassschuheOrderData {
     userId: string;
     employeeId: string;
     customerId: string;
+    express?: boolean;
     createdAt: string;
     updatedAt: string;
     employee?: {
