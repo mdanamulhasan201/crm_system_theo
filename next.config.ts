@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'twins-clinics-yeast-owns.trycloudflare.com',
+        hostname: 'universal-atom-yale-sponsorship.trycloudflare.com',
       },
       {
         // local host
