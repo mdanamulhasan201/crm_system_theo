@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
         hostname: 'chips-owen-eligibility-baby.trycloudflare.com',
       },
       {
+        protocol: 'https',
+        hostname: 'maximum-perfume-invitations-parade.trycloudflare.com',
+      },
+      {
         // local host
         protocol: 'http',
         hostname: '192.168.7.12',
