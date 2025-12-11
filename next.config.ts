@@ -24,7 +24,6 @@ const nextConfig: NextConfig = {
         hostname: 'korean-found-squad-cats.trycloudflare.com',
       },
       {
-        // local host
         protocol: 'http',
         hostname: '192.168.7.12',
         port: '3001',
