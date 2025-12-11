@@ -162,16 +162,7 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
     onOrderSelect?.(order.id);
   };
 
-  // Auto-select first order when Versorgungs Start tab is active and no order is selected
-  useEffect(() => {
-    if (activeTab === 0 && !selectedOrderId && filteredOrders.length > 0 && !loading) {
-      const firstOrder = filteredOrders[0];
-      if (firstOrder && firstOrder.id) {
-        onOrderSelect?.(firstOrder.id);
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, filteredOrders.length, selectedOrderId, loading]);
+  // Removed auto-select - orders will only be selected when clicked or when customer is searched
 
   useEffect(() => {
     setActiveTab(tabClicked);

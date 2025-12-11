@@ -32,7 +32,7 @@ interface SuggestionItem {
     location: string;
 }
 
-export default function CustomerSearch() {
+export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect }: { onCustomerSelect?: (customer: CustomerData | null) => void; onCustomerIdSelect?: (customerId: string | null) => void }) {
     const [name, setName] = useState('');
     const [birth, setBirth] = useState('');
     const [customerNumber, setCustomerNumber] = useState('');
@@ -274,6 +274,12 @@ export default function CustomerSearch() {
         }
     }, [name, birth, customerNumber]);
 
+    // Notify parent when customer selection changes
+    useEffect(() => {
+        onCustomerSelect?.(selectedCustomer);
+        onCustomerIdSelect?.(selectedCustomer?.id || null);
+    }, [selectedCustomer, onCustomerSelect, onCustomerIdSelect]);
+
     // Clear all search fields and reset state
     const handleClear = () => {
         setName('');
@@ -294,6 +300,8 @@ export default function CustomerSearch() {
                 Auftragssuche
             </h1>
 
+
+{/* Customer Search Form */}
             <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 rounded-lg bg-white md:items-center md:gap-4">
                 {/* Note: Last column spans button container */}
                 {/* Name Field with Suggestions */}
@@ -421,149 +429,111 @@ export default function CustomerSearch() {
                 </div>
             </form>
 
-            <div className="flex flex-col lg:flex-row gap-6 bg-white w-full mt-10">
-                {/* Customer Information - Only show when customer is selected */}
-                {notFound ? (
-                    <div className="rounded-3xl border border-[#e2eef2] p-6 text-center w-full lg:w-4/12">
-                        <div className="flex flex-col items-center justify-center h-full">
-                            <p className="text-lg font-semibold text-slate-700 mb-2">Kein Kunde gefunden</p>
-                            <p className="text-sm text-slate-500">Bitte versuchen Sie es mit anderen Suchkriterien</p>
+{/* Customer Information */}
+            {(selectedCustomer || notFound) && (
+                <div className="flex flex-col lg:flex-row gap-6 bg-white w-full mt-10">
+                    {/* Customer Information - Only show when customer is selected */}
+                    {notFound ? (
+                        <div className="rounded-3xl border border-[#e2eef2] p-6 text-center w-full lg:w-4/12">
+                            <div className="flex flex-col items-center justify-center h-full">
+                                <p className="text-lg font-semibold text-slate-700 mb-2">Kein Kunde gefunden</p>
+                                <p className="text-sm text-slate-500">Bitte versuchen Sie es mit anderen Suchkriterien</p>
+                            </div>
                         </div>
-                    </div>
-                ) : selectedCustomer ? (
-                    <div className="rounded-3xl border border-[#e2eef2] p-6 text-center w-full lg:w-4/12">
-                        <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-4 border-emerald-100 bg-emerald-50 flex items-center justify-center">
-                            {(selectedCustomer.profileImage || selectedCustomer.image) && !imageError ? (
-                                <Image
-                                    src={selectedCustomer.profileImage || selectedCustomer.image || ''}
-                                    width={80}
-                                    height={80}
-                                    alt={selectedCustomer.name || 'Customer'}
-                                    className="h-full w-full object-cover"
-                                    onError={() => {
-                                        setImageError(true);
-                                    }}
-                                />
-                            ) : (
-                                <span className="text-2xl font-bold text-[#61A175]">
-                                    {(selectedCustomer.name || selectedCustomer.vorname || 'C')[0].toUpperCase()}
-                                </span>
-                            )}
-                        </div>
-                        <h2 className="text-xl font-semibold text-slate-900 mb-2">
-                            {selectedCustomer.name || `${selectedCustomer.vorname || ''} ${selectedCustomer.nachname || ''}`.trim()}
-                        </h2>
-                        <p className="text-sm text-slate-500">
-                            Beauftragt am{' '}
-                            <span className="font-semibold text-slate-700">
-                                {formatDate(selectedCustomer.createdAt)}
-                            </span>
-                        </p>
-                        <p className="text-sm text-slate-500">
-                            Ort:{' '}
-                            <span className="font-semibold text-slate-700">
-                                {selectedCustomer.location || selectedCustomer.wohnort || 'N/A'}
-                            </span>
-                        </p>
+                    ) : selectedCustomer ? (
+                        <>
+                            <div className="rounded-3xl border border-[#e2eef2] p-6 text-center w-full lg:w-4/12">
+                                <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-4 border-emerald-100 bg-emerald-50 flex items-center justify-center">
+                                    {(selectedCustomer.profileImage || selectedCustomer.image) && !imageError ? (
+                                        <Image
+                                            src={selectedCustomer.profileImage || selectedCustomer.image || ''}
+                                            width={80}
+                                            height={80}
+                                            alt={selectedCustomer.name || 'Customer'}
+                                            className="h-full w-full object-cover"
+                                            onError={() => {
+                                                setImageError(true);
+                                            }}
+                                        />
+                                    ) : (
+                                        <span className="text-2xl font-bold text-[#61A175]">
+                                            {(selectedCustomer.name || selectedCustomer.vorname || 'C')[0].toUpperCase()}
+                                        </span>
+                                    )}
+                                </div>
+                                <h2 className="text-xl font-semibold text-slate-900 mb-2">
+                                    {selectedCustomer.name || `${selectedCustomer.vorname || ''} ${selectedCustomer.nachname || ''}`.trim()}
+                                </h2>
+                                <p className="text-sm text-slate-500">
+                                    Beauftragt am{' '}
+                                    <span className="font-semibold text-slate-700">
+                                        {formatDate(selectedCustomer.createdAt)}
+                                    </span>
+                                </p>
+                                <p className="text-sm text-slate-500">
+                                    Ort:{' '}
+                                    <span className="font-semibold text-slate-700">
+                                        {selectedCustomer.location || selectedCustomer.wohnort || 'N/A'}
+                                    </span>
+                                </p>
 
-                        <div className="mt-6 space-y-3">
-                            <button className="w-full rounded-xl bg-[#61A175] py-3 text-sm font-semibold text-white transition hover:bg-[#61A175]/80 cursor-pointer">
-                                Scan ansehen
-                            </button>
-                            <button className="w-full rounded-xl border border-[#61A175] py-3 text-sm font-semibold text-[#61A175] transition hover:bg-[#61A175]/10 cursor-pointer">
-                                Kundendaten ansehen
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="rounded-3xl border border-[#e2eef2] p-6 text-center w-full lg:w-4/12">
-                        <div className="mx-auto mb-4 h-20 w-20 overflow-hidden rounded-full border-4 border-emerald-100 bg-emerald-50 flex items-center justify-center">
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="h-12 w-12 text-[#61A175]"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={1.5}
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
-                                />
-                            </svg>
-                        </div>
-                        <h2 className="text-xl font-semibold text-slate-900 mb-2">
-                            &nbsp;
-                        </h2>
-                        <p className="text-sm text-slate-500">
-                            Beauftragt am{' '}
-                            <span className="font-semibold text-slate-700">
-                                &nbsp;
-                            </span>
-                        </p>
-                        <p className="text-sm text-slate-500">
-                            Ort:{' '}
-                            <span className="font-semibold text-slate-700">
-                                &nbsp;
-                            </span>
-                        </p>
+                                <div className="mt-6 space-y-3">
+                                    <button className="w-full rounded-xl bg-[#61A175] py-3 text-sm font-semibold text-white transition hover:bg-[#61A175]/80 cursor-pointer">
+                                        Scan ansehen
+                                    </button>
+                                    <button className="w-full rounded-xl border border-[#61A175] py-3 text-sm font-semibold text-[#61A175] transition hover:bg-[#61A175]/10 cursor-pointer">
+                                        Kundendaten ansehen
+                                    </button>
+                                </div>
+                            </div>
 
-                        <div className="mt-6 space-y-3">
-                            <button className="w-full rounded-xl bg-[#61A175] py-3 text-sm font-semibold text-white transition hover:bg-[#61A175]/80 cursor-pointer">
-                                Scan ansehen
-                            </button>
-                            <button className="w-full rounded-xl border border-[#61A175] py-3 text-sm font-semibold text-[#61A175] transition hover:bg-[#61A175]/10 cursor-pointer">
-                                Kundendaten ansehen
-                            </button>
-                        </div>
-                    </div>
-                )}
+                            {/* Order Information - Only show when customer is selected */}
+                            <div className="flex flex-col gap-4 w-full lg:w-8/12">
+                                <div className="flex flex-col gap-2 text-sm text-slate-800 sm:flex-row sm:gap-4">
+                                    <button className="text-left underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
+                                        Ärztliche Diagnose öffnen
+                                    </button>
+                                    <button className="text-left underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
+                                        Diagnose
+                                    </button>
+                                </div>
 
-                {/* Order Information - Always visible */}
-                <div className="flex flex-col gap-4 w-full lg:w-8/12">
-                    <div className="flex flex-col gap-2 text-sm text-slate-800 sm:flex-row sm:gap-4">
-                        <button className="text-left underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
-                            Ärztliche Diagnose öffnen
-                        </button>
-                        <button className="text-left underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
-                            Diagnose
-                        </button>
-                    </div>
+                                <div>
+                                    <p className="text-base font-semibold text-slate-700">
+                                        Notizen:
+                                    </p>
+                                    <textarea
+                                        value={notes}
+                                        onChange={(e) => setNotes(e.target.value)}
+                                        placeholder="Notizen"
+                                        className="mt-2 h-40 w-full resize-none rounded-2xl border border-[#d7e4ef] px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#61A175] focus:ring-2 focus:ring-[#61A175]/30"
+                                    />
+                                </div>
 
-                    <div>
-                        <p className="text-base font-semibold text-slate-700">
-                            Notizen:
-                        </p>
-                        <textarea
-                            value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
-                            placeholder="Notizen"
-                            className="mt-2 h-40 w-full resize-none rounded-2xl border border-[#d7e4ef] px-4 py-3 text-sm text-slate-700 outline-none transition focus:border-[#61A175] focus:ring-2 focus:ring-[#61A175]/30"
-                        />
-                    </div>
+                                <div className="flex flex-col xl:flex-row justify-between items-center gap-4">
+                                    <div>
+                                        <p className="text-sm text-slate-500">
+                                            Wenn eine Korrektur nötig ist: In welchem Bereich?
+                                        </p>
+                                        <button className="mt-2 text-sm underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
+                                            Ärztliche Diagnose öffnen
+                                        </button>
+                                    </div>
 
-                    <div className="flex flex-col xl:flex-row justify-between items-center gap-4">
-                        <div>
-                            <p className="text-sm text-slate-500">
-                                Wenn eine Korrektur nötig ist: In welchem Bereich?
-                            </p>
-                            <button className="mt-2 text-sm underline underline-offset-4 hover:text-[#61A175] cursor-pointer">
-                                Ärztliche Diagnose öffnen
-                            </button>
-                        </div>
-
-                        <div className="flex sm:flex-col md:flex-row gap-4">
-                            <button className="rounded-xl bg-[#61A175] px-10 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#61A175]/80 cursor-pointer">
-                                Standard
-                            </button>
-                            <button className="rounded-xl border border-[#61A175] px-10 py-3 text-sm font-semibold uppercase text-[#61A175] transition hover:bg-[#61A175]/10 cursor-pointer">
-                                Expressauftrag
-                            </button>
-                        </div>
-                    </div>
+                                    <div className="flex sm:flex-col md:flex-row gap-4">
+                                        <button className="rounded-xl bg-[#61A175] px-10 py-3 text-sm font-semibold uppercase text-white transition hover:bg-[#61A175]/80 cursor-pointer">
+                                            Standard
+                                        </button>
+                                        <button className="rounded-xl border border-[#61A175] px-10 py-3 text-sm font-semibold uppercase text-[#61A175] transition hover:bg-[#61A175]/10 cursor-pointer">
+                                            Expressauftrag
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </>
+                    ) : null}
                 </div>
-            </div>
+            )}
         </section>
     );
 }
