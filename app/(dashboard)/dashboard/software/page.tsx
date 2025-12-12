@@ -8,9 +8,14 @@ import Image from 'next/image'
 import ContactPage from '@/components/Contact/ContactPage'
 import { IoIosCall } from 'react-icons/io'
 import { getCategoriesProducts } from '@/apis/productsApis'
+import FAQ from '../_components/Software/FAQ'
+import VersionPage from '../_components/Software/Version'
+import RelesHistory from '../_components/Software/RelesHistory'
+import VideosTutorial from '../_components/Software/VideosTutorial'
+import Hotline from '../_components/Software/Hotline'
 
 interface Color {
-    id: string; 
+    id: string;
     colorName: string;
     colorCode: string;
     images: {
@@ -224,11 +229,13 @@ export default function Software() {
 
     return (
         <div className="">
-            <div className='flex flex-col items-center justify-center gap-2 mb-8'>
-                <h1 className='text-4xl font-bold text-center uppercase'>SOFTWARE 1.3</h1>
-                <p className='text-center text-sm text-gray-700 uppercase'>FEETF1RST COPYRIGHT 2025</p>
+            <h1 className='text-4xl font-bold capitalize text-center mb-10'>Support & Updates</h1>
+            <div className='flex flex-col gap-6'>
+                <FAQ />
+                <VersionPage />
+                <RelesHistory />
+                <VideosTutorial />
             </div>
-
             <div className='flex flex-col gap-6 mb-8'>
                 <h1 className='text-2xl font-bold uppercase'>NEUERUNGEN</h1>
                 <p className='text-sm text-gray-700 leading-8'>
@@ -265,6 +272,8 @@ export default function Software() {
 
             {/* contact form */}
             <ContactPage />
+
+            <Hotline />
 
 
             {/* footer */}

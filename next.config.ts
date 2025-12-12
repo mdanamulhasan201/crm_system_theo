@@ -28,6 +28,10 @@ const nextConfig: NextConfig = {
         hostname: '192.168.7.12',
         port: '3001',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'commondatastorage.googleapis.com',
       }
     ],
   },
