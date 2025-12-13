@@ -204,17 +204,17 @@ export default function CustomerHistory() {
                             onClick={handleDeleteClick}
                             variant="outline"
                             disabled={isDeleting}
-                            className="flex items-center gap-2 cursor-pointer hover:bg-red-50 hover:border-red-300"
+                            className="flex items-center  gap-2 cursor-pointer hover:bg-red-50 hover:border-red-300"
                         >
                             {isDeleting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                    Deleting...
+                                    Löschen...
                                 </>
                             ) : (
                                 <>
                                     <Trash className="w-4 h-4" />
-                                    Delete
+                                    Löschen
                                 </>
                             )}
                         </Button>
@@ -229,7 +229,7 @@ export default function CustomerHistory() {
                                 className="flex items-center gap-2 cursor-pointer"
                             >
                                 <Edit className="w-4 h-4" />
-                                Edit
+                                Bearbeiten
                             </Button>
                         ) : (
                             <>
@@ -239,7 +239,7 @@ export default function CustomerHistory() {
                                     disabled={isUpdating}
                                     className="cursor-pointer"
                                 >
-                                    Cancel
+                                    Abbrechen
                                 </Button>
                                 <Button
                                     onClick={handleSaveClick}
@@ -247,7 +247,7 @@ export default function CustomerHistory() {
                                     className="bg-[#61A07B] hover:bg-[#528c68] text-white cursor-pointer"
                                 >
                                     {isUpdating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {isUpdating ? 'Saving...' : 'Save'}
+                                    {isUpdating ? 'Speichern...' : 'Speichern'}
                                 </Button>
                             </>
                         )}
