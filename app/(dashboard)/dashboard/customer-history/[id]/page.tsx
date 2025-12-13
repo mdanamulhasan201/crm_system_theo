@@ -37,7 +37,8 @@ export default function CustomerHistory() {
         ort: '',
         telefon: '',
         telefonnummer: '',
-        wohnort: ''
+        wohnort: '',
+        billingType: ''
     });
     const [isPopUpOpen, setIsPopUpOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -82,7 +83,8 @@ export default function CustomerHistory() {
             ort: scanData.ort || '',
             telefon: scanData.telefon || '',
             telefonnummer: scanData.telefonnummer || '',
-            wohnort: scanData.wohnort || ''
+            wohnort: scanData.wohnort || '',
+            billingType: scanData.billingType || ''
         });
         setIsEditing(true);
     }
@@ -100,6 +102,11 @@ export default function CustomerHistory() {
 
             // Add wohnort (always include it, even if empty, to allow clearing)
             updateData.wohnort = editFormData.wohnort || '';
+
+            // Add billingType if it's being edited
+            if (editFormData.billingType) {
+                updateData.billingType = editFormData.billingType;
+            }
 
             // Use telefonnummer if original data had it or if user entered a value
             // Otherwise fall back to telefon
@@ -137,7 +144,8 @@ export default function CustomerHistory() {
             ort: scanData.ort || '',
             telefon: scanData.telefon || '',
             telefonnummer: scanData.telefonnummer || '',
-            wohnort: scanData.wohnort || ''
+            wohnort: scanData.wohnort || '',
+            billingType: scanData.billingType || ''
         });
     }
 
@@ -407,13 +415,31 @@ export default function CustomerHistory() {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Kostenträger</label>
-                        <input
-                            type="text"
-                            className={`w-full p-2 border rounded-md ${isPrivatBilling ? 'border-gray-300 bg-gray-50' : 'border-gray-300 bg-gray-50'}`}
-                            value={isPrivatBilling ? (scanData.billingType || '') : ''}
-                            placeholder="Kostenträger"
-                            readOnly
-                        />
+                        {isEditing ? (
+                            <select
+                                className="w-full p-2 border rounded-md border-gray-300 bg-white"
+                                value={editFormData.billingType || ''}
+                                onChange={(e) => handleInputChange('billingType', e.target.value)}
+                            >
+                                <option value="">Select...</option>
+                                <option value="krankenkasse">Krankenkasse</option>
+                                <option value="privat">Privat</option>
+                            </select>
+                        ) : (
+                            <input
+                                type="text"
+                                className="w-full p-2 border rounded-md border-gray-300 bg-gray-50"
+                                value={
+                                    scanData.billingType === 'privat' 
+                                        ? 'Privat' 
+                                        : scanData.billingType === 'krankenkasse' 
+                                        ? 'Krankenkasse' 
+                                        : (scanData.billingType || '')
+                                }
+                                placeholder="Kostenträger"
+                                readOnly
+                            />
+                        )}
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Telefon</label>
