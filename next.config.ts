@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'address-housewares-repository-duplicate.trycloudflare.com',
+        hostname: 'download-rhode-ceremony-feet.trycloudflare.com',
       },
       {
         protocol: 'https',
