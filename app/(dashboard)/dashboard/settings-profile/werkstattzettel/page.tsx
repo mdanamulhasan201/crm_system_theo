@@ -60,7 +60,7 @@ export default function WerkstattzettelPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto mt-10 font-sans">
+    <div className="w-full mt-10 font-sans">
       <h1 className="text-4xl font-bold mb-2">Werkstattzettel</h1>
       <p className="mb-8">
         Konfigurieren Sie hier die Optionen für Ihren Werkstattzettel.
@@ -143,21 +143,31 @@ export default function WerkstattzettelPage() {
         <label className="font-semibold block mb-2">
           Standardberechnung des Fertigstellungsdatums
         </label>
-        <Select
-          value={settings.werktage?.toString() || ""}
-          onValueChange={(value) => updateSetting('werktage', parseInt(value))}
-        >
-          <SelectTrigger className="w-full border-gray-600">
-            <SelectValue placeholder="Tage auswählen" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="3">3 Tage</SelectItem>
-            <SelectItem value="7">7 Tage</SelectItem>
-            <SelectItem value="14">14 Tage</SelectItem>
-            <SelectItem value="20">20 Tage</SelectItem>
-            <SelectItem value="30">30 Tage</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-4 items-center">
+          <Input
+            type="number"
+            min="1"
+            placeholder="Anzahl eingeben"
+            value={settings.werktage?.toString() || ""}
+            onChange={(e) => {
+              const value = e.target.value === "" ? undefined : parseInt(e.target.value);
+              updateSetting('werktage', value || undefined);
+            }}
+            className="border border-gray-600 w-32"
+          />
+          <Select
+            value={settings.werktageUnit || "tag"}
+            onValueChange={(value) => updateSetting('werktageUnit', value as "tag" | "monat")}
+          >
+            <SelectTrigger className="w-40 border-gray-600">
+              <SelectValue placeholder="Einheit auswählen" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tag">Tag</SelectItem>
+              {/* <SelectItem value="monat">Monat</SelectItem> */}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="mb-8">

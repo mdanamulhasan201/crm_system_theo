@@ -18,6 +18,7 @@ interface WerkstattzettelSettings {
   mitarbeiter: string;
   mitarbeiterId: string;
   werktage: number | undefined;
+  werktageUnit: "tag" | "monat";
   abholstandort: "geschaeft" | "eigen";
   pickupLocation: string;
   firmenlogo: "ja" | "nein";
@@ -30,6 +31,7 @@ export const useWerkstattzettel = () => {
     mitarbeiter: "",
     mitarbeiterId: "",
     werktage: undefined,
+    werktageUnit: "tag",
     abholstandort: "geschaeft",
     pickupLocation: "",
     firmenlogo: "ja",
@@ -83,11 +85,18 @@ export const useWerkstattzettel = () => {
 
         if (data && Object.keys(data).length > 0) {
           const isGeschaeft = data.sameAsBusiness;
+          const completionDays = data.completionDays ? parseInt(data.completionDays) : undefined;
+          // If completionDays is divisible by 30 and >= 30, assume it was stored as months
+          const isMonth = completionDays && completionDays >= 30 && completionDays % 30 === 0;
+          const werktageValue = isMonth ? completionDays / 30 : completionDays;
+          const werktageUnit = isMonth ? "monat" : "tag";
+          
           setSettings(prev => ({
             ...prev,
             mitarbeiterId: data.employeeId || "",
             mitarbeiter: data.employeeName || "",
-            werktage: data.completionDays ? parseInt(data.completionDays) : undefined,
+            werktage: werktageValue,
+            werktageUnit: werktageUnit,
             pickupLocation: data.pickupLocation || "",
             abholstandort: isGeschaeft ? "geschaeft" : "eigen",
             firmenlogo: data.showCompanyLogo !== undefined ? (data.showCompanyLogo ? "ja" : "nein") : "ja",
@@ -143,8 +152,8 @@ export const useWerkstattzettel = () => {
   };
 
   const saveWerkstattzettel = async () => {
-    if (!settings.werktage) {
-      toast.error('Bitte wählen Sie die Anzahl der Tage aus.');
+    if (!settings.werktage || settings.werktage <= 0) {
+      toast.error('Bitte geben Sie eine gültige Anzahl ein.');
       return;
     }
 
@@ -155,9 +164,14 @@ export const useWerkstattzettel = () => {
         ? settings.pickupLocation.trim()
         : '';
 
+      // Convert to days: if unit is month, multiply by 30
+      const completionDaysInDays = settings.werktageUnit === "monat" 
+        ? settings.werktage * 30 
+        : settings.werktage;
+
       const werkstattzettelData: Werkstattzettel = {
         employeeId: settings.mitarbeiterId || "",
-        completionDays: settings.werktage.toString(),
+        completionDays: completionDaysInDays.toString(),
         sameAsBusiness: settings.abholstandort === "geschaeft",
         showCompanyLogo: settings.firmenlogo === "ja",
         autoShowAfterPrint: settings.auftragSofort === "ja",
@@ -174,11 +188,18 @@ export const useWerkstattzettel = () => {
         const updatedData = response?.data;
         if (updatedData && Object.keys(updatedData).length > 0) {
           const isGeschaeft = updatedData.sameAsBusiness;
+          const completionDays = updatedData.completionDays ? parseInt(updatedData.completionDays) : undefined;
+          // If completionDays is divisible by 30 and >= 30, assume it was stored as months
+          const isMonth = completionDays && completionDays >= 30 && completionDays % 30 === 0;
+          const werktageValue = isMonth ? completionDays / 30 : completionDays;
+          const werktageUnit = isMonth ? "monat" : "tag";
+          
           setSettings(prev => ({
             ...prev,
             mitarbeiterId: updatedData.employeeId || "",
             mitarbeiter: updatedData.employeeName || "",
-            werktage: updatedData.completionDays ? parseInt(updatedData.completionDays) : undefined,
+            werktage: werktageValue,
+            werktageUnit: werktageUnit,
             pickupLocation: updatedData.pickupLocation || "",
             abholstandort: isGeschaeft ? "geschaeft" : "eigen",
             firmenlogo: updatedData.showCompanyLogo !== undefined ? (updatedData.showCompanyLogo ? "ja" : "nein") : "ja",
