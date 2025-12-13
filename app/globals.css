@@ -182,17 +182,20 @@ input[type="time"].time-input::-webkit-calendar-picker-indicator {
 
 /* Custom scrollbar styles for BulkActionsBar */
 .overflow-x-auto::-webkit-scrollbar {
-  height: 6px;
+  height: 8px;
+  display: block;
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
   background: #dbeafe;
-  border-radius: 3px;
+  border-radius: 4px;
+  margin: 0 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
   background: #93c5fd;
-  border-radius: 3px;
+  border-radius: 4px;
+  min-width: 20px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {

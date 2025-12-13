@@ -26,6 +26,7 @@ export interface OrderData {
     invoice: string | null;
     priority: 'Dringend' | 'Normal';
     isPrioritized: boolean;
+    KrankenkasseStatus?: string | null;
 }
 
 interface OrdersContextType {
@@ -57,6 +58,7 @@ interface OrdersContextType {
     refreshOrderData: (orderId: string) => Promise<void>;
     bulkUpdateOrderStatus: (orderIds: string[], newStatus: string) => Promise<void>;
     updateOrderPriority: (orderId: string, priority: 'Dringend' | 'Normal') => Promise<void>;
+    updateBulkKrankenkasseStatus: (orderIds: string[], krankenkasseStatus: string) => void;
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
@@ -95,6 +97,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         invoice: apiOrder.invoice,
         priority,
         isPrioritized: priority === 'Dringend',
+        KrankenkasseStatus: apiOrder.KrankenkasseStatus || null,
     };
 };
 
@@ -415,6 +418,17 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         triggerStatsRefresh();
     };
 
+    // Optimistically update KrankenkasseStatus for multiple orders
+    const updateBulkKrankenkasseStatus = (orderIds: string[], krankenkasseStatus: string) => {
+        setOrders(prev => {
+            return prev.map(order =>
+                orderIds.includes(order.id)
+                    ? { ...order, KrankenkasseStatus: krankenkasseStatus }
+                    : order
+            );
+        });
+    };
+
     const refreshOrderData = async (orderId: string) => {
         try {
             const response = await getSingleOrder(orderId);
@@ -455,6 +469,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             refreshOrderData,
             bulkUpdateOrderStatus,
             updateOrderPriority,
+            updateBulkKrankenkasseStatus,
             orderIdFromSearch, // Expose orderId from URL
         }}>
             {children}

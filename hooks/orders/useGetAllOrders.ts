@@ -14,6 +14,7 @@ export interface ApiOrderData {
     createdAt: string;
     updatedAt: string;
     priority?: string | null;
+    KrankenkasseStatus?: string | null;
     customer: {
         id: string;
         vorname: string;

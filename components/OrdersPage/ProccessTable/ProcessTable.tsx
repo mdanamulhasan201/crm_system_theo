@@ -36,11 +36,12 @@ export default function ProcessTable() {
         deleteBulkOrders,
         bulkUpdateOrderStatus,
         updateOrderPriority,
+        updateBulkKrankenkasseStatus,
         orderIdFromSearch, // Get orderId from URL
     } = useOrders();
 
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
-    
+
     // When orderId is in URL, select that order in the table
     useEffect(() => {
         if (orderIdFromSearch && orders.some(order => order.id === orderIdFromSearch)) {
@@ -82,7 +83,7 @@ export default function ProcessTable() {
     // Direct generate and send PDF when status is clicked
     const handleStatusClickGenerateAndSend = async (orderId: string, orderNumber: string) => {
         if (isGeneratingBarcode) return;
-        
+
         setIsGeneratingBarcode(true);
         try {
             // Fetch barcode data
@@ -100,7 +101,7 @@ export default function ProcessTable() {
             setBarcodeStickerOrderNumber(orderNumber);
             setAutoGenerateBarcode(true);
             setShowBarcodeStickerModal(true);
-            
+
             // The modal will handle generation and sending
         } catch (error) {
             console.error('Failed to start PDF generation:', error);
@@ -167,7 +168,7 @@ export default function ProcessTable() {
     const isAllSelected = memoizedOrders.length > 0 && selectedOrderIds.length === memoizedOrders.length;
     const isSomeSelected = selectedOrderIds.length > 0 && selectedOrderIds.length < memoizedOrders.length;
 
-    // Clear selection when orders change
+    // Clear selection when orders change (but preserve selection if orders still exist)
     useEffect(() => {
         if (orders.length > 0 && selectedOrderId) {
             const orderExists = orders.some(order => order.id === selectedOrderId);
@@ -175,13 +176,17 @@ export default function ProcessTable() {
                 setSelectedOrderId(null);
             }
         }
+
         // Clean up multiselect for orders that no longer exist
+        // But preserve selection if orders still exist (to prevent unchecking during updates)
         if (selectedOrderIds.length > 0) {
             const validIds = selectedOrderIds.filter(id =>
                 orders.some(order => order.id === id)
             );
-            if (validIds.length !== selectedOrderIds.length) {
-                setSelectedOrderIds(validIds);
+            // Only update if some orders were actually removed (not just a data refresh)
+            // This prevents clearing selection when orders are refetched with same IDs
+            if (validIds.length < selectedOrderIds.length && validIds.length >= 0) {
+                setSelectedOrderIds(validIds.length > 0 ? validIds : []);
             }
         }
     }, [orders, selectedOrderId, selectedOrderIds]);
@@ -227,12 +232,22 @@ export default function ProcessTable() {
         if (orderIds.length === 0) return;
         setIsUpdatingKrankenkasseStatus(true);
         try {
+            // Optimistically update the UI immediately (no table reload needed)
+            updateBulkKrankenkasseStatus(orderIds, krankenkasseStatus);
+
+            // Then update on the server
             await getKrankenKasseStatus(orderIds, krankenkasseStatus);
             toast.success(`Krankenkasse-Status erfolgreich aktualisiert`);
-            setSelectedOrderIds([]);
+
+            // Don't refetch - optimistic update already shows the change
+            // This prevents table reload and preserves selection
+            // The data is already updated in the UI via optimistic update
+
         } catch (error) {
             console.error('Failed to update Krankenkasse status:', error);
             toast.error('Fehler beim Aktualisieren des Krankenkasse-Status');
+            // Only refetch on error to revert the optimistic update
+            refetch();
         } finally {
             setIsUpdatingKrankenkasseStatus(false);
         }
@@ -289,6 +304,7 @@ export default function ProcessTable() {
             ) : (
                 <BulkActionsBar
                     selectedOrderIds={selectedOrderIds}
+                    selectedOrders={memoizedOrders.filter(order => selectedOrderIds.includes(order.id))}
                     onClearSelection={() => setSelectedOrderIds([])}
                     onBulkDelete={handleBulkDelete}
                     onBulkStatusChange={handleBulkStatusChange}
@@ -451,10 +467,10 @@ export default function ProcessTable() {
                                 <button
                                     key={option}
                                     className={`w-full border rounded-lg py-2 px-3 text-sm font-medium cursor-pointer transition ${prioritySelection === option
-                                            ? option === 'Dringend'
-                                                ? 'border-red-500 bg-red-50 text-red-600'
-                                                : 'border-gray-400 bg-gray-100 text-gray-700'
-                                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                                        ? option === 'Dringend'
+                                            ? 'border-red-500 bg-red-50 text-red-600'
+                                            : 'border-gray-400 bg-gray-100 text-gray-700'
+                                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
                                         }`}
                                     onClick={() => setPrioritySelection(option)}
                                 >
