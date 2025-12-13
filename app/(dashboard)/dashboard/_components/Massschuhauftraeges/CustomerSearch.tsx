@@ -39,7 +39,7 @@ type SelectedOrderInfo = {
     express?: boolean;
 };
 
-export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, selectedOrder, onSetExpressStatus }: { onCustomerSelect?: (customer: CustomerData | null) => void; onCustomerIdSelect?: (customerId: string | null) => void; selectedOrder?: SelectedOrderInfo | null; onSetExpressStatus?: (express: boolean) => Promise<void> }) {
+export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, selectedOrder, onSetExpressStatus, initialCustomerId }: { onCustomerSelect?: (customer: CustomerData | null) => void; onCustomerIdSelect?: (customerId: string | null) => void; selectedOrder?: SelectedOrderInfo | null; onSetExpressStatus?: (express: boolean) => Promise<void>; initialCustomerId?: string | null }) {
     const [name, setName] = useState('');
     const [birth, setBirth] = useState('');
     const [customerNumber, setCustomerNumber] = useState('');
@@ -61,55 +61,50 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
     const nameInputRef = useRef<HTMLInputElement>(null);
     const suggestionsRef = useRef<HTMLDivElement>(null);
 
-    // Fetch suggestions when typing in name field
-    useEffect(() => {
-        const fetchSuggestions = async () => {
-            if (debouncedName && debouncedName.length > 1) {
-                setSuggestionLoading(true);
-                try {
-                    const response = await searchCustomers(
-                        debouncedName,
-                        1,
-                        10,
-                        debouncedName, // name
-                        '', // email
-                        '', // phone
-                        '', // geburtsdatum
-                        '' // kundennummer
-                    );
+    const normalizeCustomer = (customer: any): CustomerData => ({
+        ...customer,
+        name: customer.name || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
+        wohnort: customer.location || customer.wohnort,
+    });
 
-                    if (response && response.data && response.data.length > 0) {
-                        const mappedSuggestions = response.data.map((customer: any) => ({
-                            id: customer.id,
-                            name: customer.name || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
-                            email: customer.email || '',
-                            geburtsdatum: customer.geburtsdatum || '',
-                            customerNumber: customer.customerNumber || 0,
-                            location: customer.location || customer.wohnort || '',
-                        }));
-                        setSuggestions(mappedSuggestions);
-                        setShowSuggestions(true);
-                    } else {
-                        setSuggestions([]);
-                        setShowSuggestions(false);
-                    }
-                } catch (error) {
-                    console.error('Error fetching suggestions:', error);
+    useEffect(() => {
+        if (!debouncedName || debouncedName.length <= 1) {
+            setSuggestions([]);
+            setShowSuggestions(false);
+            return;
+        }
+
+        const fetchSuggestions = async () => {
+            setSuggestionLoading(true);
+            try {
+                const response = await searchCustomers(debouncedName, 1, 10, debouncedName, '', '', '', '');
+                if (response?.data?.length > 0) {
+                    const mappedSuggestions = response.data.map((customer: any) => ({
+                        id: customer.id,
+                        name: customer.name || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
+                        email: customer.email || '',
+                        geburtsdatum: customer.geburtsdatum || '',
+                        customerNumber: customer.customerNumber || 0,
+                        location: customer.location || customer.wohnort || '',
+                    }));
+                    setSuggestions(mappedSuggestions);
+                    setShowSuggestions(true);
+                } else {
                     setSuggestions([]);
                     setShowSuggestions(false);
-                } finally {
-                    setSuggestionLoading(false);
                 }
-            } else {
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
                 setSuggestions([]);
                 setShowSuggestions(false);
+            } finally {
+                setSuggestionLoading(false);
             }
         };
 
         fetchSuggestions();
     }, [debouncedName]);
 
-    // Handle suggestion selection - only fill fields, don't show customer data yet
     const handleSuggestionSelect = (suggestion: SuggestionItem) => {
         setName(suggestion.name);
         setBirth(suggestion.geburtsdatum ? new Date(suggestion.geburtsdatum).toLocaleDateString('de-DE') : '');
@@ -120,64 +115,24 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
         setNotFound(false);
     };
 
-    // Handle search button click
     const handleSearchClick = async () => {
-        if (!name && !birth && !customerNumber) {
-            return;
-        }
+        if (!name && !birth && !customerNumber) return;
         setNotFound(false);
-
-        if (selectedCustomerId) {
-            await handleSearchById(selectedCustomerId);
-        } else {
-            await performSearch();
-        }
+        selectedCustomerId ? await handleSearchById(selectedCustomerId) : await performSearch();
     };
 
-    // Perform search with current form values
     const performSearch = async () => {
         setSearchLoading(true);
         setNotFound(false);
         try {
-            const response = await searchCustomers(
-                name || birth || customerNumber,
-                1,
-                10,
-                name,
-                '',
-                '',
-                birth,
-                customerNumber
-            );
-
-            if (response && response.data && response.data.length > 0) {
+            const response = await searchCustomers(name || birth || customerNumber, 1, 10, name, '', '', birth, customerNumber);
+            if (response?.data?.length > 0) {
                 const customer = response.data[0];
-                if (customer.id) {
-                    const fullCustomer = await fetchCustomerById(customer.id);
-                    if (fullCustomer) {
-                        setSelectedCustomer(fullCustomer);
-                        setNotes(fullCustomer.ausfuhrliche_diagnose || '');
-                        setNotFound(false);
-                    } else {
-                        const normalizedCustomer: CustomerData = {
-                            ...customer,
-                            name: customer.name || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
-                            wohnort: customer.location || customer.wohnort,
-                        };
-                        setSelectedCustomer(normalizedCustomer);
-                        setNotes(customer.ausfuhrliche_diagnose || '');
-                        setNotFound(false);
-                    }
-                } else {
-                    const normalizedCustomer: CustomerData = {
-                        ...customer,
-                        name: customer.name || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
-                        wohnort: customer.location || customer.wohnort,
-                    };
-                    setSelectedCustomer(normalizedCustomer);
-                    setNotes(customer.ausfuhrliche_diagnose || '');
-                    setNotFound(false);
-                }
+                const fullCustomer = customer.id ? await fetchCustomerById(customer.id) : null;
+                const finalCustomer = fullCustomer || normalizeCustomer(customer);
+                setSelectedCustomer(finalCustomer);
+                setNotes(finalCustomer.ausfuhrliche_diagnose || '');
+                setNotFound(false);
             } else {
                 setSelectedCustomer(null);
                 setNotFound(true);
@@ -191,7 +146,6 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
         }
     };
 
-    // Fetch customer by ID
     const fetchCustomerById = async (customerId: string): Promise<CustomerData | null> => {
         try {
             const response = await getSingleCustomer(customerId);
@@ -200,23 +154,13 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                 : Array.isArray(response)
                     ? (response as any)[0]
                     : (response as any)?.data ?? response;
-
-            if (customer) {
-                const normalizedCustomer: CustomerData = {
-                    ...customer,
-                    name: customer.name || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
-                    wohnort: customer.location || customer.wohnort,
-                };
-                return normalizedCustomer;
-            }
-            return null;
+            return customer ? normalizeCustomer(customer) : null;
         } catch (error) {
             console.error('Error fetching customer:', error);
             return null;
         }
     };
 
-    // Handle search by customer ID
     const handleSearchById = async (customerId: string) => {
         setSearchLoading(true);
         setNotFound(false);
@@ -239,7 +183,15 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
         }
     };
 
-    // Handle click outside to close suggestions
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return '';
+        try {
+            return new Date(dateString).toLocaleDateString('de-DE');
+        } catch {
+            return dateString;
+        }
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
@@ -251,24 +203,10 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                 setShowSuggestions(false);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Format date for display
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return '';
-        try {
-            return new Date(dateString).toLocaleDateString('de-DE');
-        } catch {
-            return dateString;
-        }
-    };
-
-    // Clear notes and reset image error when customer is deselected
     useEffect(() => {
         if (!selectedCustomer) {
             setNotes('');
@@ -278,29 +216,43 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
         }
     }, [selectedCustomer]);
 
-    // Reset selectedCustomerId when form fields are manually changed
     useEffect(() => {
         if (!name && !birth && !customerNumber) {
             setSelectedCustomerId(null);
         }
     }, [name, birth, customerNumber]);
 
-    // Notify parent when customer selection changes
     useEffect(() => {
         onCustomerSelect?.(selectedCustomer);
         onCustomerIdSelect?.(selectedCustomer?.id || null);
     }, [selectedCustomer, onCustomerSelect, onCustomerIdSelect]);
 
-    // When selected order changes, populate notes from order
     useEffect(() => {
-        if (selectedOrder) {
-            setNotes(selectedOrder.note || '');
-        } else {
-            setNotes('');
+        if (initialCustomerId && initialCustomerId !== selectedCustomerId && !selectedCustomer) {
+            const fetchAndPopulateCustomer = async () => {
+                try {
+                    const customer = await fetchCustomerById(initialCustomerId);
+                    if (customer) {
+                        setName(customer.name || `${customer.vorname || ''} ${customer.nachname || ''}`.trim());
+                        setBirth(customer.geburtsdatum ? new Date(customer.geburtsdatum).toLocaleDateString('de-DE') : '');
+                        setCustomerNumber(customer.customerNumber?.toString() || '');
+                        setSelectedCustomerId(customer.id);
+                        setSelectedCustomer(customer);
+                        setNotes(customer.ausfuhrliche_diagnose || '');
+                        setNotFound(false);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch customer by ID:', error);
+                }
+            };
+            fetchAndPopulateCustomer();
         }
+    }, [initialCustomerId, selectedCustomerId, selectedCustomer]);
+
+    useEffect(() => {
+        setNotes(selectedOrder?.note || '');
     }, [selectedOrder]);
 
-    // Clear all search fields and reset state
     const handleClear = () => {
         setName('');
         setBirth('');
@@ -312,6 +264,8 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
         setNotFound(false);
         setSelectedCustomerId(null);
         setImageError(false);
+        onCustomerSelect?.(null);
+        onCustomerIdSelect?.(null);
     };
 
     return (
@@ -321,10 +275,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
             </h1>
 
 
-{/* Customer Search Form */}
             <form className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 rounded-lg bg-white md:items-center md:gap-4">
-                {/* Note: Last column spans button container */}
-                {/* Name Field with Suggestions */}
                 <div className="flex-1 relative" ref={nameInputRef}>
                     <label>
                         <span className="sr-only">Name</span>
@@ -392,7 +343,6 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                     )}
                 </div>
 
-                {/* Birth Date Field */}
                 <label className="flex-1">
                     <span className="sr-only">Geburtsdatum</span>
                     <input
@@ -404,7 +354,6 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                     />
                 </label>
 
-                {/* Customer Number Field */}
                 <label className="flex-1">
                     <span className="sr-only">Kundennummer</span>
                     <input
@@ -449,10 +398,8 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                 </div>
             </form>
 
-{/* Customer Information */}
             {(selectedCustomer || notFound) && (
                 <div className="flex flex-col lg:flex-row gap-6 bg-white w-full mt-10">
-                    {/* Customer Information - Only show when customer is selected */}
                     {notFound ? (
                         <div className="rounded-3xl border border-[#e2eef2] p-6 text-center w-full lg:w-4/12">
                             <div className="flex flex-col items-center justify-center h-full">
@@ -507,7 +454,6 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                 </div>
                             </div>
 
-                            {/* Order Information - Only show when customer is selected */}
                             <div className="flex flex-col gap-4 w-full lg:w-8/12">
                                 <div className="flex flex-col gap-2 text-sm text-slate-800 sm:flex-row sm:gap-4">
                                     <button
@@ -549,16 +495,16 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                         <p className="text-sm text-slate-500">
                                             Wenn eine Korrektur nötig ist: In welchem Bereich?
                                         </p>
-                            <button
-                                className="mt-2 text-sm underline underline-offset-4 hover:text-[#61A175] cursor-pointer"
-                                onClick={() => {
-                                    setModalTitle('Ärztliche Diagnose');
-                                    setModalContent(selectedOrder?.arztliche_diagnose || 'Keine Daten verfügbar');
-                                    setShowModal(true);
-                                }}
-                            >
-                                Ärztliche Diagnose öffnen
-                            </button>
+                                        <button
+                                            className="mt-2 text-sm underline underline-offset-4 hover:text-[#61A175] cursor-pointer"
+                                            onClick={() => {
+                                                setModalTitle('Ärztliche Diagnose');
+                                                setModalContent(selectedOrder?.arztliche_diagnose || 'Keine Daten verfügbar');
+                                                setShowModal(true);
+                                            }}
+                                        >
+                                            Ärztliche Diagnose öffnen
+                                        </button>
                                     </div>
 
                                     <div className="flex sm:flex-col md:flex-row gap-4">
@@ -574,11 +520,10 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                                     setExpressLoading(false);
                                                 }
                                             }}
-                                            className={`rounded-xl px-10 py-3 text-sm font-semibold uppercase transition cursor-pointer ${
-                                                selectedOrder?.express
+                                            className={`rounded-xl px-10 py-3 text-sm font-semibold uppercase transition cursor-pointer ${selectedOrder?.express
                                                     ? 'border border-[#61A175] text-[#61A175] hover:bg-[#61A175]/10 bg-white'
                                                     : 'bg-[#61A175] text-white hover:bg-[#61A175]/80'
-                                            } ${expressLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                } ${expressLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             Standard
                                         </button>
@@ -594,11 +539,10 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                                     setExpressLoading(false);
                                                 }
                                             }}
-                                            className={`rounded-xl px-10 py-3 text-sm font-semibold uppercase transition cursor-pointer ${
-                                                selectedOrder?.express
+                                            className={`rounded-xl px-10 py-3 text-sm font-semibold uppercase transition cursor-pointer ${selectedOrder?.express
                                                     ? 'bg-red-500 text-white hover:bg-red-600'
                                                     : 'border border-red-500 text-red-500 hover:bg-red-50'
-                                            } ${expressLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                                } ${expressLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             Expressauftrag
                                         </button>

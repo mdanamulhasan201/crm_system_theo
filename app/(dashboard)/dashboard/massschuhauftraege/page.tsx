@@ -270,8 +270,17 @@ export default function MassschuhauftraegePage() {
         // Clear selected order when customer is cleared
         if (!customerId) {
             setSelectedOrderId(null);
+            // Clear orderId from URL when customer is cleared
+            const params = new URLSearchParams();
+            searchParamsFromUrl.forEach((value, key) => {
+                if (key !== 'orderId') {
+                    params.set(key, value);
+                }
+            });
+            const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+            router.replace(newUrl, { scroll: false });
         }
-    }, []);
+    }, [router, pathname, searchParamsFromUrl]);
     return (
         <div>
             {showPopup && (
@@ -304,6 +313,7 @@ export default function MassschuhauftraegePage() {
                 onCustomerIdSelect={handleCustomerIdSelect}
                 selectedOrder={selectedOrder}
                 onSetExpressStatus={handleSetExpressStatus}
+                initialCustomerId={selectedCustomerId}
             />
 
             {selectedCustomer && (
