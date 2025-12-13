@@ -51,7 +51,7 @@ export default function BulkActionsBar({
             </div>
             <div className="flex gap-2">
                 <Select value={statusValue || undefined} onValueChange={handleBulkStatusChange}>
-                    <SelectTrigger className="w-[220px] text-xs  cursor-pointer bg-white border-none">
+                    <SelectTrigger className="w-[220px] text-xs  cursor-pointer bg-white border-none py-4">
                         <SelectValue placeholder="Status ändern" />
                     </SelectTrigger>
                     <SelectContent>
@@ -66,7 +66,7 @@ export default function BulkActionsBar({
                     <Button
                         variant="outline"
                         size="sm"
-                        className="text-xs py-4"
+                        className="text-xs py-4 cursor-pointer"
                     >
                         <CheckCircle2 className="h-3 w-3 mr-1" />
                         Als genehmigt markieren
@@ -75,7 +75,7 @@ export default function BulkActionsBar({
                         variant="destructive"
                         size="sm"
                         onClick={handleBulkDelete}
-                        className="text-xs"
+                        className="text-xs cursor-pointer"
                     >
                         <Trash2 className="h-3 w-3 mr-1" />
                         Ausgewählte löschen

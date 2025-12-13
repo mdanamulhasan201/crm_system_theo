@@ -43,7 +43,7 @@ export default function PaginationControls({
                         size="sm"
                         onClick={() => onPageChange(currentPage - 1)}
                         disabled={!pagination.hasPrevPage}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 cursor-pointer"
                     >
                         <ChevronLeft className="h-4 w-4" />
                         Zurück
@@ -58,7 +58,7 @@ export default function PaginationControls({
                         size="sm"
                         onClick={() => onPageChange(currentPage + 1)}
                         disabled={!pagination.hasNextPage}
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 cursor-pointer"
                     >
                         Weiter
                         <ChevronRight className="h-4 w-4" />

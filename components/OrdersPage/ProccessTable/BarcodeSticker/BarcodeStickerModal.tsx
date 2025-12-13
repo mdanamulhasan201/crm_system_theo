@@ -146,13 +146,14 @@ export default function BarcodeStickerModal({
                                     variant="outline"
                                     onClick={onClose}
                                     disabled={generating}
+                                    className="cursor-pointer"
                                 >
                                     Abbrechen
                                 </Button>
                                 <Button
                                     onClick={generatePdf}
                                     disabled={generating}
-                                    className="bg-[#62A17C] hover:bg-[#62A17C]/90"
+                                    className="bg-[#62A17C] hover:bg-[#62A17C]/90 cursor-pointer"
                                 >
                                     {generating ? (
                                         <>
