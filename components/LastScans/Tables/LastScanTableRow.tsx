@@ -52,19 +52,40 @@ export function LastScanTableRow({
             <TableCell>{row.customerNumber ?? '—'}</TableCell>
             <TableCell>
                 <div className="flex flex-col gap-1">
-                    {krankenkasse !== '—' && (
-                        <span className="text-xs font-medium text-gray-700">
-                            {krankenkasse}
-                        </span>
-                    )}
-                    {kostenträger !== '—' && (
-                        <span className="text-xs font-medium text-gray-700">
-                            {kostenträger}
-                        </span>
-                    )}
-                    {krankenkasse === '—' && kostenträger === '—' && (
-                        <span className="text-gray-400">—</span>
-                    )}
+                    {(() => {
+                        const hasOrders = row.latestOrder || row.latestMassschuheOrder;
+                        
+                        // If no orders, show billingType
+                        if (!hasOrders && row.billingType?.trim()) {
+                            const billingTypeLabel = row.billingType === 'krankenkasse' ? 'Krankenkasse' : 
+                                                   row.billingType === 'privat' ? 'Privat' : 
+                                                   row.billingType;
+                            return (
+                                <span className="text-xs font-medium text-gray-700">
+                                    {billingTypeLabel}
+                                </span>
+                            );
+                        }
+                        
+                        // If orders exist, show krankenkasse and kostenträger as before
+                        if (krankenkasse !== '—') {
+                            return (
+                                <span className="text-xs font-medium text-gray-700">
+                                    {krankenkasse}
+                                </span>
+                            );
+                        }
+                        
+                        if (kostenträger !== '—') {
+                            return (
+                                <span className="text-xs font-medium text-gray-700">
+                                    {kostenträger}
+                                </span>
+                            );
+                        }
+                        
+                        return <span className="text-gray-400">—</span>;
+                    })()}
                 </div>
             </TableCell>
             <TableCell>

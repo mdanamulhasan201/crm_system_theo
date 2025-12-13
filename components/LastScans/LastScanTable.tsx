@@ -351,6 +351,19 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
             const excelData = rowsToExport.map((row) => {
                 const latestScreenerDate = row.latestScreener?.createdAt ?? null;
                 const customerFullName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim();
+                
+                // Determine Krankenkasse: if no orders, show billingType; otherwise show krankenkasse
+                const hasOrders = row.latestOrder || row.latestMassschuheOrder;
+                let krankenkasseValue = '—';
+                if (!hasOrders && row.billingType?.trim()) {
+                    krankenkasseValue = row.billingType === 'krankenkasse' ? 'Krankenkasse' : 
+                                      row.billingType === 'privat' ? 'Privat' : 
+                                      row.billingType;
+                } else if (row.krankenkasse?.trim()) {
+                    krankenkasseValue = row.krankenkasse.trim();
+                }
+                
+                // Determine Kundentyp: show order types (Einlagen/Massschuhe) when orders exist
                 const customerTypes: string[] = [];
                 if (row.latestMassschuheOrder) customerTypes.push('Massschuhe');
                 if (row.latestOrder) customerTypes.push('Einlagen');
@@ -375,7 +388,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                 return {
                     'Kunde': customerFullName || '—',
                     'Kundennummer': row.customerNumber ?? '—',
-                    'Krankenkasse': row.krankenkasse?.trim() || '—',
+                    'Krankenkasse': krankenkasseValue,
                     'Kostenträger': row.kostenträger?.trim() || '—',
                     'Kundentyp': kundentyp,
                     'Neuester Scan': latestScreenerDate ? formatDate(latestScreenerDate) : 'Kein Scan',

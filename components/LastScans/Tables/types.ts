@@ -27,6 +27,7 @@ export interface LastScanRow {
     krankenkasse?: string | null;
     kostenträger?: string | null;
     kundentyp?: string | null;
+    billingType?: string | null;
     totalOrders?: number;
     completedOrders?: number;
     latestOrder?: LatestOrder | null;

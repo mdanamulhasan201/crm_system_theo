@@ -33,21 +33,42 @@ export const getOrderStatusClass = (status?: string | null) => {
 export const getKundentypBadges = (row: LastScanRow) => {
     const badges: { label: string; className: string }[] = [];
 
-    if (row.latestMassschuheOrder) {
-        badges.push({
-            label: 'Massschuhe',
-            className: 'bg-purple-100 text-purple-700',
-        });
-    }
+    // Check if customer has any orders
+    const hasOrders = row.latestOrder || row.latestMassschuheOrder;
 
-    if (row.latestOrder) {
-        badges.push({
-            label: 'Einlagen',
-            className: 'bg-blue-100 text-blue-700',
-        });
-    }
+    if (hasOrders) {
+        // If orders exist, show order types (Einlagen/Massschuhe) or Kostenträger
+        if (row.latestMassschuheOrder) {
+            badges.push({
+                label: 'Massschuhe',
+                className: 'bg-purple-100 text-purple-700',
+            });
+        }
 
-    if (badges.length === 0) {
+        if (row.latestOrder) {
+            badges.push({
+                label: 'Einlagen',
+                className: 'bg-blue-100 text-blue-700',
+            });
+        }
+
+        // If no order types but has Kostenträger, show it
+        if (!row.latestOrder && !row.latestMassschuheOrder && row.kostenträger?.trim()) {
+            badges.push({
+                label: row.kostenträger.trim(),
+                className: 'bg-blue-100 text-blue-700',
+            });
+        }
+
+        // If no badges added, show dash
+        if (badges.length === 0) {
+            badges.push({
+                label: '—',
+                className: 'bg-gray-100 text-gray-600',
+            });
+        }
+    } else {
+        // If no orders, show nothing or dash
         badges.push({
             label: '—',
             className: 'bg-gray-100 text-gray-600',
