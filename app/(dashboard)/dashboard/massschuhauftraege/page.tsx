@@ -8,24 +8,27 @@ import ChangesOrderProgress from '../_components/Massschuhauftraeges/ChangesOrde
 
 import ProductionView from '../_components/Massschuhauftraeges/ProductionView';
 import WelcomePopup from '../_components/Massschuhauftraeges/WelcomePopup';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import CardDeatilsPage from '../_components/Massschuhauftraeges/CardDeatilsPage';
 import { getAllMassschuheOrder, updateMassschuheOrderChangesStatus } from '@/apis/MassschuheManagemantApis';
 import { MassschuheOrderData } from '@/hooks/massschuhe/useGetAllMassschuheOrder';
 import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
 
 export default function MassschuhauftraegePage() {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParamsFromUrl = useSearchParams();
     const [showPopup, setShowPopup] = useState(false);
     const [showPopup2, setShowPopup2] = useState(false);
     const [tabClicked, setTabClicked] = useState<number>(0);
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
     const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
+    const [isInitialized, setIsInitialized] = useState(false);
     const refetchProductionViewRef = useRef<(() => void) | null>(null);
     const refetchCardStatistikRef = useRef<(() => void) | null>(null);
     const refetchChartRef = useRef<(() => void) | null>(null);
     const updateOrderRef = useRef<((orderId: string, updatedData: any) => void) | null>(null);
-    const router = useRouter()
     
     // Stable callback to set refetch function for ProductionView
     const handleRefetchReady = useCallback((refetch: () => void) => {
@@ -204,6 +207,40 @@ export default function MassschuhauftraegePage() {
 
         fetchCustomerRunningOrder();
     }, [selectedCustomerId]);
+
+    // Read orderId from URL when page loads
+    useEffect(() => {
+        const orderIdFromUrl = searchParamsFromUrl.get('orderId');
+        if (orderIdFromUrl && !isInitialized) {
+            setSelectedOrderId(orderIdFromUrl);
+            setIsInitialized(true);
+        } else if (!orderIdFromUrl) {
+            setIsInitialized(true);
+        }
+    }, [searchParamsFromUrl, isInitialized]);
+
+    // Update URL when order is selected
+    useEffect(() => {
+        if (!isInitialized) return;
+        
+        const params = new URLSearchParams();
+        
+        // Keep other URL parameters
+        searchParamsFromUrl.forEach((value, key) => {
+            if (key !== 'orderId') {
+                params.set(key, value);
+            }
+        });
+        
+        // Add orderId to URL if we have one
+        if (selectedOrderId) {
+            params.set('orderId', selectedOrderId);
+        }
+        
+        // Update URL without page reload
+        const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+        router.replace(newUrl, { scroll: false });
+    }, [selectedOrderId, isInitialized, router, pathname, searchParamsFromUrl]);
 
     // Handle customer ID selection
     const handleCustomerIdSelect = useCallback((customerId: string | null) => {

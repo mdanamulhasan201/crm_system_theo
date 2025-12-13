@@ -78,7 +78,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         kundenname: `${apiOrder.customer.vorname} ${apiOrder.customer.nachname}`,
         status: apiOrder.orderStatus,
         displayStatus: getLabelFromApiStatus(apiOrder.orderStatus),
-        preis: apiOrder.totalPrice 
+        preis: apiOrder.totalPrice
             ? `${apiOrder.totalPrice.toFixed(2)} €`
             : (apiOrder.fußanalyse !== null && apiOrder.einlagenversorgung !== null)
                 ? `${((apiOrder.fußanalyse || 0) + (apiOrder.einlagenversorgung || 0)).toFixed(2)} €`
@@ -102,7 +102,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     const pathname = usePathname();
     const searchParamsFromUrl = useSearchParams();
     const [currentPage, setCurrentPage] = useState(1);
-    const [selectedDays, setSelectedDays] = useState(30); 
+    const [selectedDays, setSelectedDays] = useState(30);
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
     const [searchParams, setSearchParamsState] = useState({
         customerNumber: '',
@@ -120,9 +120,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const { orders: apiOrders, loading, error, pagination, refetch } = useGetAllOrders(
-        currentPage, 
-        10, 
-        selectedDays, 
+        currentPage,
+        10,
+        selectedDays,
         selectedStatus || undefined,
         searchParams.customerNumber || undefined,
         searchParams.orderNumber || undefined,
@@ -137,7 +137,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         const mappedOrders = apiOrders.map(mapApiDataToOrderData);
         setOrders(mappedOrders);
         setPrioritizedOrders(mappedOrders.filter(order => order.priority === 'Dringend'));
-        
+
         // If we searched and got results, extract the order ID from the first order
         if (mappedOrders.length > 0 && (searchParams.orderNumber || searchParams.customerNumber || searchParams.customerName)) {
             const firstOrder = mappedOrders[0];
@@ -156,7 +156,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             const urlOrderNumber = searchParamsFromUrl.get('orderNumber') || '';
             const urlCustomerName = searchParamsFromUrl.get('customerName') || '';
             const urlOrderId = searchParamsFromUrl.get('orderId') || '';
-            
+
             if (urlCustomerNumber || urlOrderNumber || urlCustomerName || urlOrderId) {
                 setSearchParamsState({
                     customerNumber: urlCustomerNumber,
@@ -174,34 +174,31 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     // Update URL when search params change
     useEffect(() => {
         if (!isInitialized) return;
-        
+
         const params = new URLSearchParams();
-        
+
         // Add all existing search params except our search params
         searchParamsFromUrl.forEach((value, key) => {
             if (!['customerNumber', 'orderNumber', 'customerName', 'orderId'].includes(key)) {
                 params.set(key, value);
             }
         });
-        
+
         // Add our search params if they have values
         if (searchParams.customerNumber) {
             params.set('customerNumber', searchParams.customerNumber);
         }
-        
-        if (searchParams.orderNumber) {
-            params.set('orderNumber', searchParams.orderNumber);
-        }
-        
+
+
         if (searchParams.customerName) {
             params.set('customerName', searchParams.customerName);
         }
-        
-        // Show orderId in URL if available
+
+        // Show orderId in URL if available (this is what we want to show)
         if (orderIdFromSearch) {
             params.set('orderId', orderIdFromSearch);
         }
-        
+
         const queryString = params.toString();
         const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
         router.replace(newUrl, { scroll: false });
@@ -218,7 +215,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                 orderNumber: params.orderNumber ?? prev.orderNumber,
                 customerName: params.customerName ?? prev.customerName,
             };
-            
+
             // Only update if values actually changed
             if (
                 newParams.customerNumber === prev.customerNumber &&
@@ -227,7 +224,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             ) {
                 return prev;
             }
-            
+
             return newParams;
         });
     }, []);
@@ -247,16 +244,16 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
         setOrders(prevOrders => {
             const newOrders = prevOrders.filter(o => o.id !== orderId);
-            
+
             if (prevOrders.length === 1 && currentPage > 1) {
                 setCurrentPage(currentPage - 1);
             } else if (newOrders.length === 0 && currentPage > 1) {
                 setCurrentPage(currentPage - 1);
             }
-            
+
             return newOrders;
         });
-        
+
         setPrioritizedOrders(prevPrioritized => prevPrioritized.filter(o => o.id !== orderId));
         triggerStatsRefresh();
     };
@@ -271,10 +268,10 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             } else if (newOrders.length === 0 && currentPage > 1) {
                 setCurrentPage(currentPage - 1);
             }
-            
+
             return newOrders;
         });
-        
+
         setPrioritizedOrders(prevPrioritized => prevPrioritized.filter(o => o.id !== orderId));
         triggerStatsRefresh();
     };
@@ -284,15 +281,15 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
         setOrders(prevOrders => {
             const newOrders = prevOrders.filter(o => !orderIds.includes(o.id));
-            
+
             // Adjust page if needed
             if (newOrders.length === 0 && currentPage > 1) {
                 setCurrentPage(currentPage - 1);
             }
-            
+
             return newOrders;
         });
-        
+
         setPrioritizedOrders(prevPrioritized => prevPrioritized.filter(o => !orderIds.includes(o.id)));
         triggerStatsRefresh();
     };
