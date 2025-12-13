@@ -10,7 +10,7 @@ import ProductionView from '../_components/Massschuhauftraeges/ProductionView';
 import WelcomePopup from '../_components/Massschuhauftraeges/WelcomePopup';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import CardDeatilsPage from '../_components/Massschuhauftraeges/CardDeatilsPage';
-import { getAllMassschuheOrder, updateMassschuheOrderChangesStatus } from '@/apis/MassschuheManagemantApis';
+import { getAllMassschuheOrder, updateMassschuheOrderChangesStatus, getMassschuheOrderById } from '@/apis/MassschuheManagemantApis';
 import { MassschuheOrderData } from '@/hooks/massschuhe/useGetAllMassschuheOrder';
 import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
 
@@ -208,11 +208,33 @@ export default function MassschuhauftraegePage() {
         fetchCustomerRunningOrder();
     }, [selectedCustomerId]);
 
-    // Read orderId from URL when page loads
+    // Read orderId from URL when page loads and fetch order to get customer info
     useEffect(() => {
         const orderIdFromUrl = searchParamsFromUrl.get('orderId');
         if (orderIdFromUrl && !isInitialized) {
-            setSelectedOrderId(orderIdFromUrl);
+            // Fetch order by ID to get customer information
+            const fetchOrderAndSetCustomer = async () => {
+                try {
+                    const response = await getMassschuheOrderById(orderIdFromUrl);
+                    if (response && response.success && response.data) {
+                        const order = response.data;
+                        // Set the order ID
+                        setSelectedOrderId(orderIdFromUrl);
+                        // Set customer ID from order so customer search shows the customer
+                        if (order.customerId) {
+                            setSelectedCustomerId(order.customerId);
+                        }
+                    } else {
+                        // If fetch fails, just set the order ID
+                        setSelectedOrderId(orderIdFromUrl);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch order by ID:', error);
+                    // If fetch fails, just set the order ID
+                    setSelectedOrderId(orderIdFromUrl);
+                }
+            };
+            fetchOrderAndSetCustomer();
             setIsInitialized(true);
         } else if (!orderIdFromUrl) {
             setIsInitialized(true);

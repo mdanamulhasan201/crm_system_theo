@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -13,8 +13,17 @@ type SearchForm = {
 };
 
 export default function AuftragssuchePage() {
-    const { register, handleSubmit, watch, reset } = useForm<SearchForm>();
-    const { searchParams, setSearchParams, clearSearchParams } = useOrders();
+    const { register, handleSubmit, watch, reset, setValue } = useForm<SearchForm>();
+    const { searchParams, setSearchParams, clearSearchParams, orderIdFromSearch } = useOrders();
+    
+    // Populate form fields from searchParams when they change (same as normal search)
+    useEffect(() => {
+        if (searchParams.orderNumber || searchParams.customerNumber || searchParams.customerName) {
+            setValue('bestellnummer', searchParams.orderNumber || '');
+            setValue('kundennummer', searchParams.customerNumber || '');
+            setValue('name', searchParams.customerName || '');
+        }
+    }, [searchParams.orderNumber, searchParams.customerNumber, searchParams.customerName, setValue]);
 
     // Watch form values for button disable state
     const bestellnummer = watch('bestellnummer') || '';
@@ -68,7 +77,8 @@ export default function AuftragssuchePage() {
     };
 
     const allFieldsEmpty = !bestellnummer && !kundennummer && !name;
-    const hasActiveSearch = searchParams.customerNumber || searchParams.orderNumber || searchParams.customerName;
+    const hasActiveSearch = searchParams.customerNumber || searchParams.orderNumber || searchParams.customerName || orderIdFromSearch;
+    const showClearButton = hasActiveSearch || !allFieldsEmpty;
 
     return (
         <div className="flex-1 flex flex-col items-center justify-center py-6">
@@ -107,7 +117,7 @@ export default function AuftragssuchePage() {
                     >
                         Suchen
                     </Button>
-                    {hasActiveSearch && (
+                    {showClearButton && (
                         <Button 
                             type="button" 
                             variant="outline"
@@ -121,7 +131,10 @@ export default function AuftragssuchePage() {
             </form>
             {hasActiveSearch && (
                 <div className="w-full max-w-xs mt-4 text-center text-sm text-gray-600">
-                    <p>Aktive Suche:</p>
+                    <p className="font-semibold mb-1">Aktive Suche:</p>
+                    {orderIdFromSearch && (
+                        <p className="text-xs text-gray-500 mb-2">Auftrags-ID: {orderIdFromSearch.substring(0, 8)}...</p>
+                    )}
                     {searchParams.orderNumber && <p>Bestellnummer: {searchParams.orderNumber}</p>}
                     {searchParams.customerNumber && <p>Kundennummer: {searchParams.customerNumber}</p>}
                     {searchParams.customerName && <p>Name: {searchParams.customerName}</p>}

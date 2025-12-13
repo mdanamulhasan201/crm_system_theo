@@ -35,9 +35,17 @@ export default function ProcessTable() {
         deleteBulkOrders,
         bulkUpdateOrderStatus,
         updateOrderPriority,
+        orderIdFromSearch, // Get orderId from URL
     } = useOrders();
 
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+    
+    // When orderId is in URL, select that order in the table
+    useEffect(() => {
+        if (orderIdFromSearch && orders.some(order => order.id === orderIdFromSearch)) {
+            setSelectedOrderId(orderIdFromSearch);
+        }
+    }, [orderIdFromSearch, orders]);
     const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
     const [showBulkDeleteModal, setShowBulkDeleteModal] = useState(false);
     const [isBulkDeleting, setIsBulkDeleting] = useState(false);

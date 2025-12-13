@@ -42,6 +42,7 @@ interface OrdersContextType {
         orderNumber: string;
         customerName: string;
     };
+    orderIdFromSearch: string; // Add this to expose orderId from URL
     setCurrentPage: (page: number) => void;
     setSelectedDays: (days: number) => void;
     setSelectedStatus: (status: string | null) => void;
@@ -114,6 +115,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     const [prioritizedOrders, setPrioritizedOrders] = useState<OrderData[]>([]);
     const [statsRefreshKey, setStatsRefreshKey] = useState(0);
     const [isInitialized, setIsInitialized] = useState(false);
+    const orderIdFetchedRef = React.useRef<string>(''); // Track which orderId we've already fetched
+    const ordersRef = React.useRef<OrderData[]>([]); // Track orders without causing re-renders
 
     const triggerStatsRefresh = useCallback(() => {
         setStatsRefreshKey(prev => prev + 1);
@@ -132,22 +135,120 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         // Always update orders, even if empty array
-        // console.log('OrdersContext: Updating orders with apiOrders:', apiOrders.length, 'items');
-        // console.log('OrdersContext: Current selectedStatus:', selectedStatus);
         const mappedOrders = apiOrders.map(mapApiDataToOrderData);
-        setOrders(mappedOrders);
-        setPrioritizedOrders(mappedOrders.filter(order => order.priority === 'Dringend'));
+
+        // Update ref
+        ordersRef.current = mappedOrders;
+
+        // Read current orderIdFromSearch value
+        const currentOrderId = orderIdFromSearch;
+
+        // If orderId is in URL, filter to show only that specific order
+        if (currentOrderId) {
+            const filteredOrders = mappedOrders.filter(order => order.id === currentOrderId);
+            if (filteredOrders.length > 0) {
+                // Show only the order with matching ID
+                setOrders(filteredOrders);
+                setPrioritizedOrders(filteredOrders.filter(order => order.priority === 'Dringend'));
+
+                const foundOrder = apiOrders.find(apiOrder => apiOrder.id === currentOrderId);
+                if (foundOrder) {
+                    const orderNumber = foundOrder.orderNumber?.toString() || '';
+
+                    // Set only orderNumber in search params, not customer data
+                    if (orderNumber && !searchParams.orderNumber) {
+                        setSearchParamsState({
+                            customerNumber: '',
+                            orderNumber: orderNumber,
+                            customerName: '',
+                        });
+                    }
+                }
+
+                return;
+            }
+            // If not found in search results, show all orders (will be handled by fetch useEffect)
+            setOrders(mappedOrders);
+            setPrioritizedOrders(mappedOrders.filter(order => order.priority === 'Dringend'));
+        } else {
+            // Normal behavior - show all orders
+            setOrders(mappedOrders);
+            setPrioritizedOrders(mappedOrders.filter(order => order.priority === 'Dringend'));
+        }
 
         // If we searched and got results, extract the order ID from the first order
-        if (mappedOrders.length > 0 && (searchParams.orderNumber || searchParams.customerNumber || searchParams.customerName)) {
+        // Only do this if orderIdFromSearch is not already set (to avoid loops)
+        const urlOrderId = searchParamsFromUrl.get('orderId');
+        if (mappedOrders.length > 0 && (searchParams.orderNumber || searchParams.customerNumber || searchParams.customerName) && !currentOrderId && !urlOrderId) {
             const firstOrder = mappedOrders[0];
-            if (firstOrder.id && firstOrder.id !== orderIdFromSearch) {
+            if (firstOrder.id) {
                 setOrderIdFromSearch(firstOrder.id);
             }
-        } else if (!searchParams.orderNumber && !searchParams.customerNumber && !searchParams.customerName) {
+        } else if (!searchParams.orderNumber && !searchParams.customerNumber && !searchParams.customerName && !currentOrderId && !urlOrderId) {
+            // Only clear if not set from URL
             setOrderIdFromSearch('');
         }
-    }, [apiOrders, searchParams.orderNumber, searchParams.customerNumber, searchParams.customerName, orderIdFromSearch]);
+    }, [apiOrders, searchParams.orderNumber, searchParams.customerNumber, searchParams.customerName, orderIdFromSearch, searchParamsFromUrl]);
+
+    // When orderId is in URL but not in search results, fetch it directly and show ONLY that order
+    useEffect(() => {
+        if (!orderIdFromSearch || !isInitialized) return;
+
+        // Skip if we've already processed this orderId
+        if (orderIdFetchedRef.current === orderIdFromSearch) return;
+
+        // Check current orders using ref (doesn't cause re-render)
+        const currentOrdersSnapshot = ordersRef.current;
+        const orderExists = currentOrdersSnapshot.some(order => order.id === orderIdFromSearch);
+
+        if (orderExists && currentOrdersSnapshot.length > 1) {
+            // If order exists and we have multiple orders, show only that order
+            const filteredOrder = currentOrdersSnapshot.find(order => order.id === orderIdFromSearch);
+            if (filteredOrder) {
+                orderIdFetchedRef.current = orderIdFromSearch;
+                setOrders([filteredOrder]);
+                setPrioritizedOrders(filteredOrder.priority === 'Dringend' ? [filteredOrder] : []);
+                return;
+            }
+        }
+
+        // If order is not in list, fetch it and show ONLY that order
+        if (!orderExists) {
+            const fetchOrderById = async () => {
+                try {
+                    const response = await getSingleOrder(orderIdFromSearch);
+                    if (response && response.success && response.data) {
+                        const order = response.data;
+                        const mappedOrder = mapApiDataToOrderData(order);
+
+                        // Extract only orderNumber (Bestellnummer) for AuftragssuchePage
+                        const orderNumber = order.orderNumber?.toString() || '';
+
+                        // Set only orderNumber in search params, not customer data
+                        if (orderNumber && !searchParams.orderNumber) {
+                            setSearchParamsState({
+                                customerNumber: '',
+                                orderNumber: orderNumber,
+                                customerName: '',
+                            });
+                        }
+
+                        // Mark as fetched
+                        orderIdFetchedRef.current = orderIdFromSearch;
+                        // Update ref
+                        ordersRef.current = [mappedOrder];
+                        // Show ONLY this order in the table
+                        setOrders([mappedOrder]);
+                        setPrioritizedOrders(mappedOrder.priority === 'Dringend' ? [mappedOrder] : []);
+                    }
+                } catch (error) {
+                    console.error('Failed to fetch order by ID:', error);
+                }
+            };
+
+            fetchOrderById();
+        }
+    }, [orderIdFromSearch, isInitialized]);
 
     // Initialize search params from URL on mount
     useEffect(() => {
@@ -157,43 +258,29 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             const urlCustomerName = searchParamsFromUrl.get('customerName') || '';
             const urlOrderId = searchParamsFromUrl.get('orderId') || '';
 
-            if (urlCustomerNumber || urlOrderNumber || urlCustomerName || urlOrderId) {
+            if (urlOrderId) {
+                // If orderId is in URL, just set it - don't trigger search
+                // The order will be fetched and shown directly
+                setOrderIdFromSearch(urlOrderId);
+                // Don't set search params to avoid triggering unnecessary search
+            } else if (urlCustomerNumber || urlOrderNumber || urlCustomerName) {
                 setSearchParamsState({
                     customerNumber: urlCustomerNumber,
                     orderNumber: urlOrderNumber,
                     customerName: urlCustomerName,
                 });
-                if (urlOrderId) {
-                    setOrderIdFromSearch(urlOrderId);
-                }
             }
             setIsInitialized(true);
         }
     }, [searchParamsFromUrl, isInitialized]);
 
-    // Update URL when search params change
+    // Update URL when search params change - only show orderId
     useEffect(() => {
         if (!isInitialized) return;
 
         const params = new URLSearchParams();
 
-        // Add all existing search params except our search params
-        searchParamsFromUrl.forEach((value, key) => {
-            if (!['customerNumber', 'orderNumber', 'customerName', 'orderId'].includes(key)) {
-                params.set(key, value);
-            }
-        });
-
-        // Add our search params if they have values
-        if (searchParams.customerNumber) {
-            params.set('customerNumber', searchParams.customerNumber);
-        }
-
-
-        if (searchParams.customerName) {
-            params.set('customerName', searchParams.customerName);
-        }
-
+        // Only keep orderId in URL, remove all other search params
         // Show orderId in URL if available (this is what we want to show)
         if (orderIdFromSearch) {
             params.set('orderId', orderIdFromSearch);
@@ -202,7 +289,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         const queryString = params.toString();
         const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
         router.replace(newUrl, { scroll: false });
-    }, [searchParams, orderIdFromSearch, isInitialized, router, pathname, searchParamsFromUrl]);
+    }, [orderIdFromSearch, isInitialized, router, pathname]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -236,6 +323,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             customerName: '',
         });
         setOrderIdFromSearch('');
+        orderIdFetchedRef.current = ''; // Reset the fetched ref so it can fetch again if needed
         // URL will be updated by the useEffect above
     }, []);
 
@@ -367,6 +455,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             refreshOrderData,
             bulkUpdateOrderStatus,
             updateOrderPriority,
+            orderIdFromSearch, // Expose orderId from URL
         }}>
             {children}
         </OrdersContext.Provider>

@@ -87,14 +87,43 @@ export function LastScanTableRow({
                     <span className="text-orange-500">No order</span>
                 ) : (
                     <div className="flex flex-col gap-1">
-                        {orderEntries.map((entry, index) => (
-                            <div key={`${entry.label}-${index}`} className={cn('flex flex-col', entry.className)}>
-                                <span>{entry.label}</span>
-                                {entry.date && (
-                                    <span className="text-xs text-gray-400">{formatDate(entry.date)}</span>
-                                )}
-                            </div>
-                        ))}
+                        {orderEntries.map((entry, index) => {
+                            // Determine which order ID to use and which page to navigate to
+                            let orderId: string | null = null;
+                            let targetUrl: string | null = null;
+                            
+                            if (entry.label === 'Massschuhe' && row.latestMassschuheOrder?.id) {
+                                orderId = row.latestMassschuheOrder.id;
+                                targetUrl = `/dashboard/massschuhauftraege?orderId=${orderId}`;
+                            } else if (row.latestOrder?.id) {
+                                orderId = row.latestOrder.id;
+                                targetUrl = `/dashboard/orders?orderId=${orderId}`;
+                            }
+                            
+                            if (targetUrl && orderId) {
+                                return (
+                                    <Link
+                                        key={`${entry.label}-${index}`}
+                                        href={targetUrl}
+                                        className={cn('flex flex-col hover:underline cursor-pointer', entry.className)}
+                                    >
+                                        <span>{entry.label}</span>
+                                        {entry.date && (
+                                            <span className="text-xs text-gray-400">{formatDate(entry.date)}</span>
+                                        )}
+                                    </Link>
+                                );
+                            }
+                            
+                            return (
+                                <div key={`${entry.label}-${index}`} className={cn('flex flex-col', entry.className)}>
+                                    <span>{entry.label}</span>
+                                    {entry.date && (
+                                        <span className="text-xs text-gray-400">{formatDate(entry.date)}</span>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </TableCell>
