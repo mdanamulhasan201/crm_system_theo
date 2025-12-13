@@ -333,15 +333,6 @@ export default function AppointmentModal({
                                                 <Input
                                                     type="time"
                                                     className="time-input pr-10 cursor-pointer"
-                                                    onClick={(e) => {
-                                                        try { (e.currentTarget as any).showPicker?.(); } catch { }
-                                                    }}
-                                                    onFocus={(e) => {
-                                                        try { (e.currentTarget as any).showPicker?.(); } catch { }
-                                                    }}
-                                                    onTouchStart={(e) => {
-                                                        try { (e.currentTarget as any).showPicker?.(); } catch { }
-                                                    }}
                                                     {...field}
                                                 />
                                                 <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />

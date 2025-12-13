@@ -149,4 +149,33 @@ input[type="time"].time-input::-webkit-calendar-picker-indicator {
   opacity: 0.001; /* tiny visible to preserve click behavior */
   position: absolute;
   right: 0.5rem;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* Safari-specific fixes for time input */
+@supports (-webkit-appearance: none) {
+  input[type="time"].time-input {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  input[type="time"].time-input::-webkit-inner-spin-button,
+  input[type="time"].time-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+  
+  /* Ensure Safari time picker is clickable */
+  input[type="time"].time-input::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    position: absolute;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+    z-index: 1;
+  }
 }
