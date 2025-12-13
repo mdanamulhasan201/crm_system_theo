@@ -179,3 +179,28 @@ input[type="time"].time-input::-webkit-calendar-picker-indicator {
     z-index: 1;
   }
 }
+
+/* Custom scrollbar styles for BulkActionsBar */
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #dbeafe;
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: #93c5fd;
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: #60a5fa;
+}
+
+/* Firefox scrollbar */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: #93c5fd #dbeafe;
+}

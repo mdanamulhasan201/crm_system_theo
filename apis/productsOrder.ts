@@ -199,3 +199,15 @@ export const getPicture2324 = async (orderId: string) => {
         throw new Error(error.response.data.message || 'Failed to fetch picture 23-24');
     }
 }
+
+// /customer-orders/kranken-kasse-status
+
+
+export const getKrankenKasseStatus = async (orderIds: string[], krankenkasseStatus: string) => {
+    try {
+        const response = await axiosClient.patch('/customer-orders/kranken-kasse-status', { orderIds, krankenkasseStatus });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

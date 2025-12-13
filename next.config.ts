@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'chips-owen-eligibility-baby.trycloudflare.com',
+        hostname: 'freedom-frames-demonstrate-chips.trycloudflare.com',
       },
       {
         protocol: 'https',

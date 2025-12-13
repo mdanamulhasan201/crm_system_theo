@@ -15,8 +15,9 @@ import ScanPictureModal from "./ScanPictureModal";
 import BarcodeStickerModal from "./BarcodeSticker/BarcodeStickerModal";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
-import { getBarCodeData, sendPdfToCustomer } from '@/apis/barCodeGenerateApis';
-import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
+import { getBarCodeData } from '@/apis/barCodeGenerateApis';
+import { getKrankenKasseStatus } from '@/apis/productsOrder';
+
 import toast from 'react-hot-toast';
 
 export default function ProcessTable() {
@@ -76,6 +77,7 @@ export default function ProcessTable() {
     const [barcodeStickerOrderNumber, setBarcodeStickerOrderNumber] = useState<string | null>(null);
     const [autoGenerateBarcode, setAutoGenerateBarcode] = useState(false);
     const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
+    const [isUpdatingKrankenkasseStatus, setIsUpdatingKrankenkasseStatus] = useState(false);
 
     // Direct generate and send PDF when status is clicked
     const handleStatusClickGenerateAndSend = async (orderId: string, orderNumber: string) => {
@@ -220,6 +222,22 @@ export default function ProcessTable() {
         }
     };
 
+    // Handle bulk Krankenkasse status update
+    const handleBulkKrankenkasseStatus = async (orderIds: string[], krankenkasseStatus: string) => {
+        if (orderIds.length === 0) return;
+        setIsUpdatingKrankenkasseStatus(true);
+        try {
+            await getKrankenKasseStatus(orderIds, krankenkasseStatus);
+            toast.success(`Krankenkasse-Status erfolgreich aktualisiert`);
+            setSelectedOrderIds([]);
+        } catch (error) {
+            console.error('Failed to update Krankenkasse status:', error);
+            toast.error('Fehler beim Aktualisieren des Krankenkasse-Status');
+        } finally {
+            setIsUpdatingKrankenkasseStatus(false);
+        }
+    };
+
     useEffect(() => {
         if (selectedOrderIds.length === 0) {
             setBulkStatusSelectValue("");
@@ -276,6 +294,8 @@ export default function ProcessTable() {
                     onBulkStatusChange={handleBulkStatusChange}
                     statusValue={bulkStatusSelectValue}
                     onStatusValueChange={setBulkStatusSelectValue}
+                    onBulkKrankenkasseStatus={handleBulkKrankenkasseStatus}
+                    isUpdatingKrankenkasseStatus={isUpdatingKrankenkasseStatus}
                 />
             )}
 

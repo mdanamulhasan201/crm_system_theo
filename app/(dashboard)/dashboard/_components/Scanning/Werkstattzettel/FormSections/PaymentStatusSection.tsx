@@ -81,7 +81,7 @@ export default function PaymentStatusSection({
 
     return (
         <div className="space-y-2">
-            <Label className="text-sm font-medium text-gray-700">Bezahlt</Label>
+            <Label className="text-sm font-medium text-gray-700">Kostenträger</Label>
             <div className="flex gap-3">
                 {/* Payment Type Dropdown */}
                 <div className="flex-1">
