@@ -12,7 +12,7 @@ type SearchForm = {
     name: string;
 };
 
-export default function AuftragssucheCard() {
+export default function AuftragssuchePage() {
     const { register, handleSubmit, watch, reset } = useForm<SearchForm>();
     const { searchParams, setSearchParams, clearSearchParams } = useOrders();
 

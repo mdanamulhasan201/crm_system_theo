@@ -6,8 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import ProcessTable from '@/components/OrdersPage/ProccessTable/ProcessTable';
 import { OrdersProvider } from '@/contexts/OrdersContext';
 import { useRevenueOverview } from '@/hooks/orders/useRevenueOverview';
-import AuftragssucheCard from '@/components/OrdersPage/AuftragssucheCard/AuftragssucheCard';
 import OrdersHeaderShimmer from '@/components/ShimmerEffect/Orders/OrdersHeaderShimmer';
+import AuftragssuchePage from '@/components/OrdersPage/AuftragssuchePage/AuftragssuchePage';
 
 export default function Orders() {
     return (
@@ -160,8 +160,8 @@ function OrdersPageContent() {
                         </div>
                     </div>
                     <div className='border-r border-gray-300 mr-5 hidden md:block'></div>
-                    {/* Auftragssuche */}
-                    <AuftragssucheCard />
+                    {/* search order */}
+                    <AuftragssuchePage />
                 </div>
             </div>
             {/* <HighPriorityCard /> */}

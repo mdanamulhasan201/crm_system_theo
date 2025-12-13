@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useGetAllOrders, ApiOrderData } from '@/hooks/orders/useGetAllOrders';
 import { deleteOrder as deleteOrderApi, deleteGroupOrder, getSingleOrder, getAllOrders, groupOrderStatusUpdate, updateOrderPriority as updateOrderPriorityApi } from '@/apis/productsOrder';
 import { getLabelFromApiStatus } from '@/lib/orderStatusMappings';
@@ -97,6 +98,9 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
 };
 
 export function OrdersProvider({ children }: { children: ReactNode }) {
+    const router = useRouter();
+    const pathname = usePathname();
+    const searchParamsFromUrl = useSearchParams();
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedDays, setSelectedDays] = useState(30); 
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
@@ -105,9 +109,11 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         orderNumber: '',
         customerName: '',
     });
+    const [orderIdFromSearch, setOrderIdFromSearch] = useState<string>('');
     const [orders, setOrders] = useState<OrderData[]>([]);
     const [prioritizedOrders, setPrioritizedOrders] = useState<OrderData[]>([]);
     const [statsRefreshKey, setStatsRefreshKey] = useState(0);
+    const [isInitialized, setIsInitialized] = useState(false);
 
     const triggerStatsRefresh = useCallback(() => {
         setStatsRefreshKey(prev => prev + 1);
@@ -131,7 +137,75 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         const mappedOrders = apiOrders.map(mapApiDataToOrderData);
         setOrders(mappedOrders);
         setPrioritizedOrders(mappedOrders.filter(order => order.priority === 'Dringend'));
-    }, [apiOrders]);
+        
+        // If we searched and got results, extract the order ID from the first order
+        if (mappedOrders.length > 0 && (searchParams.orderNumber || searchParams.customerNumber || searchParams.customerName)) {
+            const firstOrder = mappedOrders[0];
+            if (firstOrder.id && firstOrder.id !== orderIdFromSearch) {
+                setOrderIdFromSearch(firstOrder.id);
+            }
+        } else if (!searchParams.orderNumber && !searchParams.customerNumber && !searchParams.customerName) {
+            setOrderIdFromSearch('');
+        }
+    }, [apiOrders, searchParams.orderNumber, searchParams.customerNumber, searchParams.customerName, orderIdFromSearch]);
+
+    // Initialize search params from URL on mount
+    useEffect(() => {
+        if (!isInitialized) {
+            const urlCustomerNumber = searchParamsFromUrl.get('customerNumber') || '';
+            const urlOrderNumber = searchParamsFromUrl.get('orderNumber') || '';
+            const urlCustomerName = searchParamsFromUrl.get('customerName') || '';
+            const urlOrderId = searchParamsFromUrl.get('orderId') || '';
+            
+            if (urlCustomerNumber || urlOrderNumber || urlCustomerName || urlOrderId) {
+                setSearchParamsState({
+                    customerNumber: urlCustomerNumber,
+                    orderNumber: urlOrderNumber,
+                    customerName: urlCustomerName,
+                });
+                if (urlOrderId) {
+                    setOrderIdFromSearch(urlOrderId);
+                }
+            }
+            setIsInitialized(true);
+        }
+    }, [searchParamsFromUrl, isInitialized]);
+
+    // Update URL when search params change
+    useEffect(() => {
+        if (!isInitialized) return;
+        
+        const params = new URLSearchParams();
+        
+        // Add all existing search params except our search params
+        searchParamsFromUrl.forEach((value, key) => {
+            if (!['customerNumber', 'orderNumber', 'customerName', 'orderId'].includes(key)) {
+                params.set(key, value);
+            }
+        });
+        
+        // Add our search params if they have values
+        if (searchParams.customerNumber) {
+            params.set('customerNumber', searchParams.customerNumber);
+        }
+        
+        if (searchParams.orderNumber) {
+            params.set('orderNumber', searchParams.orderNumber);
+        }
+        
+        if (searchParams.customerName) {
+            params.set('customerName', searchParams.customerName);
+        }
+        
+        // Show orderId in URL if available
+        if (orderIdFromSearch) {
+            params.set('orderId', orderIdFromSearch);
+        }
+        
+        const queryString = params.toString();
+        const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
+        router.replace(newUrl, { scroll: false });
+    }, [searchParams, orderIdFromSearch, isInitialized, router, pathname, searchParamsFromUrl]);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -164,6 +238,8 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             orderNumber: '',
             customerName: '',
         });
+        setOrderIdFromSearch('');
+        // URL will be updated by the useEffect above
     }, []);
 
     const deleteOrder = async (orderId: string) => {
