@@ -85,14 +85,21 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
                                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium border border-blue-200"
                                         >
                                             <span className="max-w-[200px] truncate">{label}</span>
-                                            <button
-                                                type="button"
+                                            <span
+                                                role="button"
+                                                tabIndex={0}
                                                 onClick={(e) => handleRemove(diagnosisValue, e)}
-                                                className="hover:bg-blue-100 rounded-full p-0.5 transition-colors flex-shrink-0"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault()
+                                                        handleRemove(diagnosisValue, e as any)
+                                                    }
+                                                }}
+                                                className="hover:bg-blue-100 rounded-full p-0.5 transition-colors flex-shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-1"
                                                 aria-label={`Remove ${label}`}
                                             >
                                                 <X className="h-3.5 w-3.5 text-blue-600" />
-                                            </button>
+                                            </span>
                                         </span>
                                     )
                                 })

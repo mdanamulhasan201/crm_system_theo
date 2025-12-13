@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'freedom-frames-demonstrate-chips.trycloudflare.com',
+        hostname: 'address-housewares-repository-duplicate.trycloudflare.com',
       },
       {
         protocol: 'https',
