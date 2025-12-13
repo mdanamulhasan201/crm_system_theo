@@ -26,6 +26,7 @@ export default function Customers() {
         searchName,
         searchPhone,
         searchEmail,
+        searchLocation,
 
         // Search Result States
         selectedCustomer,
@@ -36,15 +37,18 @@ export default function Customers() {
         nameSuggestions,
         phoneSuggestions,
         emailSuggestions,
+        locationSuggestions,
         showNameSuggestions,
         showPhoneSuggestions,
         showEmailSuggestions,
+        showLocationSuggestions,
         suggestionLoading,
 
         // Refs for Input Focus Management
         nameInputRef,
         phoneInputRef,
         emailInputRef,
+        locationInputRef,
 
         // Search Actions
         handleSearch,
@@ -55,11 +59,13 @@ export default function Customers() {
         handleNameChange,
         handlePhoneChange,
         handleEmailChange,
+        handleLocationChange,
 
         // Suggestion Visibility Controls
         setShowNameSuggestions,
         setShowPhoneSuggestions,
-        setShowEmailSuggestions
+        setShowEmailSuggestions,
+        setShowLocationSuggestions
     } = useSearchCustomer()
 
     // ===== EVENT HANDLERS =====
@@ -107,6 +113,11 @@ export default function Customers() {
     const clearEmailField = () => {
         handleEmailChange('')
         setShowEmailSuggestions(false)
+    }
+
+    const clearLocationField = () => {
+        handleLocationChange('')
+        setShowLocationSuggestions(false)
     }
 
     const handleCustomerInfo = (customerId: string) => {
@@ -315,6 +326,18 @@ export default function Customers() {
                         emailSuggestions,
                         showEmailSuggestions,
                         clearEmailField
+                    )}
+
+                    {/* Location Input */}
+                    {renderSearchInput(
+                        locationInputRef,
+                        "Ort",
+                        searchLocation,
+                        handleLocationChange,
+                        () => setShowLocationSuggestions(locationSuggestions.length > 0),
+                        locationSuggestions,
+                        showLocationSuggestions,
+                        clearLocationField
                     )}
 
                     {/* Search Button */}

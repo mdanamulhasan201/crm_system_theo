@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'korean-found-squad-cats.trycloudflare.com',
+        hostname: 'download-rhode-ceremony-feet.trycloudflare.com',
       },
       {
         protocol: 'http',

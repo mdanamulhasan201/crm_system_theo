@@ -27,6 +27,7 @@ export const useSearchCustomer = () => {
     const [searchName, setSearchName] = useState('');
     const [searchPhone, setSearchPhone] = useState('');
     const [searchEmail, setSearchEmail] = useState('');
+    const [searchLocation, setSearchLocation] = useState('');
 
     // Search result states
     const [selectedCustomer, setSelectedCustomer] = useState<CustomerData | null>(null);
@@ -37,9 +38,11 @@ export const useSearchCustomer = () => {
     const [nameSuggestions, setNameSuggestions] = useState<SuggestionItem[]>([]);
     const [phoneSuggestions, setPhoneSuggestions] = useState<SuggestionItem[]>([]);
     const [emailSuggestions, setEmailSuggestions] = useState<SuggestionItem[]>([]);
+    const [locationSuggestions, setLocationSuggestions] = useState<SuggestionItem[]>([]);
     const [showNameSuggestions, setShowNameSuggestions] = useState(false);
     const [showPhoneSuggestions, setShowPhoneSuggestions] = useState(false);
     const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
+    const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
     const [suggestionLoading, setSuggestionLoading] = useState(false);
     const [selectedSuggestion, setSelectedSuggestion] = useState<SuggestionItem | null>(null);
 
@@ -47,11 +50,13 @@ export const useSearchCustomer = () => {
     const debouncedName = useDebounce(searchName, 300);
     const debouncedPhone = useDebounce(searchPhone, 300);
     const debouncedEmail = useDebounce(searchEmail, 300);
+    const debouncedLocation = useDebounce(searchLocation, 300);
 
     // Refs for dropdown positioning
     const nameInputRef = useRef<HTMLInputElement>(null);
     const phoneInputRef = useRef<HTMLInputElement>(null);
     const emailInputRef = useRef<HTMLInputElement>(null);
+    const locationInputRef = useRef<HTMLInputElement>(null);
 
     // Fetch suggestions for name field
     useEffect(() => {
@@ -83,13 +88,24 @@ export const useSearchCustomer = () => {
         }
     }, [debouncedEmail, selectedSuggestion]);
 
+    // Fetch suggestions for location field
+    useEffect(() => {
+        if (debouncedLocation && debouncedLocation.length > 1 && !selectedSuggestion) {
+            fetchSuggestions(debouncedLocation, 'location');
+        } else {
+            setLocationSuggestions([]);
+            setShowLocationSuggestions(false);
+        }
+    }, [debouncedLocation, selectedSuggestion]);
+
     // Function to fetch suggestions from API
-    const fetchSuggestions = async (searchTerm: string, type: 'name' | 'phone' | 'email') => {
+    const fetchSuggestions = async (searchTerm: string, type: 'name' | 'phone' | 'email' | 'location') => {
         try {
             setSuggestionLoading(true);
             const nameParam = type === 'name' ? searchTerm : '';
             const phoneParam = type === 'phone' ? searchTerm : '';
             const emailParam = type === 'email' ? searchTerm : '';
+            const locationParam = type === 'location' ? searchTerm : '';
 
             const response = await searchCustomers(searchTerm, 1, 10, nameParam, emailParam, phoneParam, '', '');
 
@@ -114,6 +130,9 @@ export const useSearchCustomer = () => {
                 } else if (type === 'email') {
                     setEmailSuggestions(suggestions);
                     setShowEmailSuggestions(suggestions.length > 0);
+                } else if (type === 'location') {
+                    setLocationSuggestions(suggestions);
+                    setShowLocationSuggestions(suggestions.length > 0);
                 }
             } else {
                 // Clear suggestions if no results
@@ -126,6 +145,9 @@ export const useSearchCustomer = () => {
                 } else if (type === 'email') {
                     setEmailSuggestions([]);
                     setShowEmailSuggestions(false);
+                } else if (type === 'location') {
+                    setLocationSuggestions([]);
+                    setShowLocationSuggestions(false);
                 }
             }
         } catch (error) {
@@ -140,6 +162,9 @@ export const useSearchCustomer = () => {
             } else if (type === 'email') {
                 setEmailSuggestions([]);
                 setShowEmailSuggestions(false);
+            } else if (type === 'location') {
+                setLocationSuggestions([]);
+                setShowLocationSuggestions(false);
             }
         } finally {
             setSuggestionLoading(false);
@@ -152,7 +177,7 @@ export const useSearchCustomer = () => {
         setNotFound(false);
 
         try {
-            if (!searchName && !searchPhone && !searchEmail) {
+            if (!searchName && !searchPhone && !searchEmail && !searchLocation) {
                 setSelectedCustomer(null);
                 setNotFound(false);
                 setLoading(false);
@@ -183,9 +208,14 @@ export const useSearchCustomer = () => {
                 response = await searchCustomers(searchEmail, 1, 10, '', searchEmail, '', '', '');
             }
 
+            // If no result and location available, try location search
+            if ((!response || !response.data || response.data.length === 0) && searchLocation) {
+                response = await searchCustomers(searchLocation, 1, 10, '', '', '', '', '');
+            }
+
             // If still no result, try general search
             if (!response || !response.data || response.data.length === 0) {
-                const searchTerm = searchName || searchPhone || searchEmail;
+                const searchTerm = searchName || searchPhone || searchEmail || searchLocation;
                 response = await searchCustomers(searchTerm, 1, 10, searchName || '', searchEmail || '', searchPhone || '', '', '');
             }
 
@@ -227,6 +257,7 @@ export const useSearchCustomer = () => {
         setSearchName(suggestion.name || '');
         setSearchPhone(suggestion.phone || '');
         setSearchEmail(suggestion.email || '');
+        setSearchLocation(suggestion.location || '');
 
         // Store the selected suggestion for later use
         setSelectedSuggestion(suggestion);
@@ -235,11 +266,13 @@ export const useSearchCustomer = () => {
         setShowNameSuggestions(false);
         setShowPhoneSuggestions(false);
         setShowEmailSuggestions(false);
+        setShowLocationSuggestions(false);
 
         // Clear suggestion arrays to prevent auto-showing
         setNameSuggestions([]);
         setPhoneSuggestions([]);
         setEmailSuggestions([]);
+        setLocationSuggestions([]);
 
         // Don't fetch customer data here - wait for "Suchen" button click
         // Clear any previous customer display
@@ -290,11 +323,13 @@ export const useSearchCustomer = () => {
             if (
                 nameInputRef.current && !nameInputRef.current.contains(event.target as Node) &&
                 phoneInputRef.current && !phoneInputRef.current.contains(event.target as Node) &&
-                emailInputRef.current && !emailInputRef.current.contains(event.target as Node)
+                emailInputRef.current && !emailInputRef.current.contains(event.target as Node) &&
+                locationInputRef.current && !locationInputRef.current.contains(event.target as Node)
             ) {
                 setShowNameSuggestions(false);
                 setShowPhoneSuggestions(false);
                 setShowEmailSuggestions(false);
+                setShowLocationSuggestions(false);
             }
         };
 
@@ -312,12 +347,15 @@ export const useSearchCustomer = () => {
         setSearchName('');
         setSearchPhone('');
         setSearchEmail('');
+        setSearchLocation('');
         setNameSuggestions([]);
         setPhoneSuggestions([]);
         setEmailSuggestions([]);
+        setLocationSuggestions([]);
         setShowNameSuggestions(false);
         setShowPhoneSuggestions(false);
         setShowEmailSuggestions(false);
+        setShowLocationSuggestions(false);
     };
 
     // Handle name input change
@@ -339,11 +377,18 @@ export const useSearchCustomer = () => {
         setSelectedSuggestion(null);
     };
 
+    // Handle location input change
+    const handleLocationChange = (value: string) => {
+        setSearchLocation(value);
+        setSelectedSuggestion(null);
+    };
+
     return {
         // Search input states
         searchName,
         searchPhone,
         searchEmail,
+        searchLocation,
         
         // Search result states
         selectedCustomer,
@@ -354,9 +399,11 @@ export const useSearchCustomer = () => {
         nameSuggestions,
         phoneSuggestions,
         emailSuggestions,
+        locationSuggestions,
         showNameSuggestions,
         showPhoneSuggestions,
         showEmailSuggestions,
+        showLocationSuggestions,
         suggestionLoading,
         selectedSuggestion,
         
@@ -364,11 +411,13 @@ export const useSearchCustomer = () => {
         nameInputRef,
         phoneInputRef,
         emailInputRef,
+        locationInputRef,
         
         // Actions
         setSearchName,
         setSearchPhone,
         setSearchEmail,
+        setSearchLocation,
         setSelectedCustomer,
         handleSearch,
         handleSuggestionSelect,
@@ -376,10 +425,12 @@ export const useSearchCustomer = () => {
         handleNameChange,
         handlePhoneChange,
         handleEmailChange,
+        handleLocationChange,
         
         // Suggestion visibility controls
         setShowNameSuggestions,
         setShowPhoneSuggestions,
-        setShowEmailSuggestions
+        setShowEmailSuggestions,
+        setShowLocationSuggestions
     };
 };
