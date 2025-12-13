@@ -19,7 +19,7 @@ export interface VersorgungCard {
     materialien: string | string[]
     laenge: string
     // Optional: only set when eine Diagnose verknüpft ist
-    diagnosis_status?: string
+    diagnosis_status?: string | string[]
 }
 
 interface StorageProduct {
@@ -44,7 +44,7 @@ export interface VersorgungModalProps {
     category: 'alltagseinlagen' | 'sporteinlagen' | 'businesseinlagen'
     editingCard: VersorgungCard | null
     onSubmit: (formData: Omit<VersorgungCard, 'id'>) => void
-    selectedDiagnosis?: string
+    selectedDiagnosis?: string | string[]
     supplyStatusId?: string
 }
 
@@ -80,7 +80,13 @@ export default function VersorgungModal({
     const [form, setForm] = useState(INITIAL_FORM_STATE)
     const [isLoading, setIsLoading] = useState(false)
     const [success, setSuccess] = useState<string | null>(null)
-    const [selectedDiagnosisState, setSelectedDiagnosisState] = useState<string>(selectedDiagnosis || '')
+    const [selectedDiagnosisState, setSelectedDiagnosisState] = useState<string[]>(
+        selectedDiagnosis
+            ? Array.isArray(selectedDiagnosis)
+                ? selectedDiagnosis
+                : [selectedDiagnosis]
+            : []
+    )
     const [pendingStoreId, setPendingStoreId] = useState<string | null>(null)
     const [isFetchingSingleVersorgung, setIsFetchingSingleVersorgung] = useState(false)
 
@@ -144,9 +150,20 @@ export default function VersorgungModal({
         setMaterialienInput('')
 
         if (editingCard?.diagnosis_status) {
-            setSelectedDiagnosisState(editingCard.diagnosis_status)
+            // Handle both string (old format) and array (new format)
+            const diagnosis: string[] = Array.isArray(editingCard.diagnosis_status)
+                ? editingCard.diagnosis_status
+                : editingCard.diagnosis_status
+                    ? editingCard.diagnosis_status.split(',').map(d => d.trim()).filter(Boolean)
+                    : []
+            setSelectedDiagnosisState(diagnosis)
         } else {
-            setSelectedDiagnosisState(selectedDiagnosis || '')
+            const diagnosis: string[] = selectedDiagnosis
+                ? Array.isArray(selectedDiagnosis)
+                    ? selectedDiagnosis
+                    : [selectedDiagnosis]
+                : []
+            setSelectedDiagnosisState(diagnosis)
         }
 
         if (editingCard) {
@@ -223,7 +240,7 @@ export default function VersorgungModal({
                 material: materialienArray, // Send as array
                 ...(supplyStatusId ? { supplyStatusId: supplyStatusId } : { status: getCategoryStatus() }),
                 storeId: selectedProduct?.id || null,
-                ...(selectedDiagnosisState && { diagnosis_status: selectedDiagnosisState })
+                ...(selectedDiagnosisState.length > 0 && { diagnosis_status: selectedDiagnosisState })
             }
 
             let response
@@ -271,7 +288,15 @@ export default function VersorgungModal({
                     laenge: versorgungData.laenge || '',
                 })
 
-                setSelectedDiagnosisState(versorgungData.diagnosis_status || selectedDiagnosis || '')
+                // Handle both string (old format) and array (new format)
+                const diagnosis = versorgungData.diagnosis_status
+                    ? Array.isArray(versorgungData.diagnosis_status)
+                        ? versorgungData.diagnosis_status
+                        : versorgungData.diagnosis_status.split(',').map((d: string) => d.trim()).filter(Boolean)
+                    : selectedDiagnosis
+                        ? [selectedDiagnosis]
+                        : []
+                setSelectedDiagnosisState(diagnosis)
                 setPendingStoreId(versorgungData.storeId || null)
             }
         } catch (err) {
@@ -304,7 +329,7 @@ export default function VersorgungModal({
             setSuccess(null)
             setIsLoading(false)
             setSelectedProduct(null)
-            setSelectedDiagnosisState('')
+            setSelectedDiagnosisState([])
         }
     }, [editingCard, open, resetForm, fetchSingleVersorgung])
 
