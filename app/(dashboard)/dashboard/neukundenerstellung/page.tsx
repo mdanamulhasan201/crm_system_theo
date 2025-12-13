@@ -20,7 +20,7 @@ export default function Neukundenerstellung() {
     const [gender, setGender] = useState<'mann' | 'frau' | 'keine'>('mann');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [city, setCity] = useState('');
+    const [address, setAddress] = useState('');
     const [phone, setPhone] = useState('');
     const [email, setEmail] = useState('');
     const [insuranceNumber, setInsuranceNumber] = useState('');
@@ -40,7 +40,7 @@ export default function Neukundenerstellung() {
             // API expects German field names
             formData.append('vorname', firstName);
             formData.append('nachname', lastName);
-            formData.append('wohnort', city);
+            formData.append('wohnort', address);
             formData.append('email', email);
             formData.append('telefon', phone);
             if (birthDate) {
@@ -151,8 +151,8 @@ export default function Neukundenerstellung() {
                         </div>
                     </div>
 
-                    {/* Wohnort with smart suggestions (DE & IT) */}
-                    <WohnortInput value={city} onChange={setCity} />
+                    {/* Wohnort with full address (Location + Exact Address) */}
+                    <WohnortInput value={address} onChange={setAddress} />
 
                     {/* Telefonnummer & Geburtsdatum */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">

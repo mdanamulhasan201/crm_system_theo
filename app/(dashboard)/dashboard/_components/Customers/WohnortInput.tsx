@@ -75,7 +75,7 @@ export default function WohnortInput({ value, onChange }: WohnortInputProps) {
         <Input
           type="text"
           className="w-full"
-          placeholder="Ex. Berlin"
+          placeholder="Ex. Musterstraße 123, Berlin, DE"
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
@@ -103,14 +103,17 @@ export default function WohnortInput({ value, onChange }: WohnortInputProps) {
               </div>
             ) : (
               suggestions.map((s) => {
+                // Use full display_name which includes street, city, country
+                const fullAddress = s.display_name || '';
                 const address = s.address || {};
-                const label =
+                const countryCode = (address.country_code || '').toUpperCase();
+
+                // Extract city/town for display
+                const cityLabel =
                   address.city ||
                   address.town ||
                   address.village ||
-                  s.display_name ||
                   '';
-                const countryCode = (address.country_code || '').toUpperCase();
 
                 return (
                   <button
@@ -118,16 +121,17 @@ export default function WohnortInput({ value, onChange }: WohnortInputProps) {
                     type="button"
                     className="flex w-full flex-col items-start px-3 py-2 text-left text-xs hover:bg-gray-50"
                     onClick={() => {
-                      onChange(
-                        countryCode ? `${label}, ${countryCode}` : label,
-                      );
+                      // Set the full address (includes street, city, country)
+                      onChange(fullAddress);
                       setShowSuggestions(false);
                     }}
                   >
-                    <span className="font-medium text-gray-800">{label}</span>
-                    {s.display_name && (
+                    <span className="font-medium text-gray-800">
+                      {fullAddress}
+                    </span>
+                    {cityLabel && (
                       <span className="mt-0.5 line-clamp-1 text-[11px] text-gray-500">
-                        {s.display_name}
+                        {cityLabel} {countryCode ? `, ${countryCode}` : ''}
                       </span>
                     )}
                   </button>
