@@ -95,7 +95,27 @@ export default function Auswahl() {
                 // Filter by diagnosis_status on client side
                 let filteredData = response.data;
                 if (diagnosisStatus) {
-                    filteredData = filteredData.filter((item: any) => item.diagnosis_status === diagnosisStatus);
+                    // Handle both array (new format) and string (old format) for backward compatibility
+                    filteredData = filteredData.filter((item: any) => {
+                        const itemDiagnosis = item.diagnosis_status;
+                        if (Array.isArray(itemDiagnosis)) {
+                            // New format: check if array includes the diagnosis code
+                            return itemDiagnosis.includes(diagnosisStatus);
+                        } else if (typeof itemDiagnosis === 'string') {
+                            // Old format: direct string comparison
+                            return itemDiagnosis === diagnosisStatus;
+                        }
+                        return false;
+                    });
+                } else {
+                    // When no diagnosis selected, show items with empty/null diagnosis
+                    filteredData = filteredData.filter((item: any) => {
+                        const itemDiagnosis = item.diagnosis_status;
+                        if (Array.isArray(itemDiagnosis)) {
+                            return itemDiagnosis.length === 0;
+                        }
+                        return itemDiagnosis === null || itemDiagnosis === undefined;
+                    });
                 }
 
                 const transformedData = filteredData.map((item: any) => ({

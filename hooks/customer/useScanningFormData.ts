@@ -161,10 +161,27 @@ export const useScanningFormData = (
             let filtered = allData;
             if (diagnosisStatus !== undefined && diagnosisStatus !== null) {
                 // Show only items with matching diagnosis_status
-                filtered = filtered.filter((item: any) => item.diagnosis_status === diagnosisStatus);
+                // Handle both array (new format) and string (old format) for backward compatibility
+                filtered = filtered.filter((item: any) => {
+                    const itemDiagnosis = item.diagnosis_status;
+                    if (Array.isArray(itemDiagnosis)) {
+                        // New format: check if array includes the diagnosis code
+                        return itemDiagnosis.includes(diagnosisStatus);
+                    } else if (typeof itemDiagnosis === 'string') {
+                        // Old format: direct string comparison
+                        return itemDiagnosis === diagnosisStatus;
+                    }
+                    return false;
+                });
             } else {
-                // Show only items with null diagnosis_status when no diagnosis is selected
-                filtered = filtered.filter((item: any) => item.diagnosis_status === null || item.diagnosis_status === undefined);
+                // Show only items with null/undefined/empty array diagnosis_status when no diagnosis is selected
+                filtered = filtered.filter((item: any) => {
+                    const itemDiagnosis = item.diagnosis_status;
+                    if (Array.isArray(itemDiagnosis)) {
+                        return itemDiagnosis.length === 0;
+                    }
+                    return itemDiagnosis === null || itemDiagnosis === undefined;
+                });
             }
             
             setVersorgungData(filtered);
@@ -229,9 +246,21 @@ export const useScanningFormData = (
                                   versorgung.name === supplyStatusName ||
                                   versorgung.status === supplyStatusName;
             if (diagnosisStatus) {
-                return statusMatches && versorgung.diagnosis_status === diagnosisStatus;
+                // Handle both array (new format) and string (old format)
+                const itemDiagnosis = versorgung.diagnosis_status;
+                if (Array.isArray(itemDiagnosis)) {
+                    return statusMatches && itemDiagnosis.includes(diagnosisStatus);
+                } else if (typeof itemDiagnosis === 'string') {
+                    return statusMatches && itemDiagnosis === diagnosisStatus;
+                }
+                return false;
             }
-            return statusMatches && (versorgung.diagnosis_status === null || versorgung.diagnosis_status === undefined);
+            // When no diagnosis selected, show items with empty/null diagnosis
+            const itemDiagnosis = versorgung.diagnosis_status;
+            if (Array.isArray(itemDiagnosis)) {
+                return statusMatches && itemDiagnosis.length === 0;
+            }
+            return statusMatches && (itemDiagnosis === null || itemDiagnosis === undefined);
         });
     }, [customer?.versorgungen]);
 

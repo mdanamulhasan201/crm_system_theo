@@ -8,7 +8,7 @@ interface VersorgungItem {
     rohlingHersteller: string;
     artikelHersteller: string;
     versorgung: string;
-    material: string;
+    material: string | string[];
 }
 
 interface SupplySectionProps {
@@ -142,7 +142,10 @@ export default function SupplySection({
                                             <span className="font-medium">Versorgung:</span> {item.versorgung}
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            <span className="font-medium">Material:</span> {item.material}
+                                            <span className="font-medium">Material:</span>{' '}
+                                            {Array.isArray(item.material) 
+                                                ? item.material.join(', ') 
+                                                : item.material}
                                         </div>
                                     </div>
                                 );
@@ -186,7 +189,10 @@ export default function SupplySection({
                                             {selectedItem.versorgung}
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            <span className="font-medium">Material:</span> {selectedItem.material}
+                                            <span className="font-medium">Material:</span>{' '}
+                                            {Array.isArray(selectedItem.material) 
+                                                ? selectedItem.material.join(', ') 
+                                                : selectedItem.material}
                                         </div>
                                     </div>
                                 );
