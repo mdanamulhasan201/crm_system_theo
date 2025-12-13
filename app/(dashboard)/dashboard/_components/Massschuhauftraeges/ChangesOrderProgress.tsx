@@ -99,8 +99,9 @@ export default function ChangesOrderProgress({
     onRefetchChart?: () => void;
     onUpdateOrder?: (orderId: string, updatedData: any) => void;
 }) {
-    const { order, refetch: refetchOrder } = useGetSingleMassschuheOrder(selectedOrderId);
+    const { order, refetch: refetchOrder, loading } = useGetSingleMassschuheOrder(selectedOrderId);
     const { updateStatus } = useUpdateMassschuheOrderStatus();
+
 
     // Button states for schafterstellung
     const [isButton1, setIsButton1] = useState(true);
@@ -119,11 +120,11 @@ export default function ChangesOrderProgress({
     const getStatusHistory = useMemo(() => {
         return (cardId: string) => {
             if (!order?.statusHistory) return null;
-            
+
             const statusName = Object.keys(statusToCardIdMap).find(
                 key => statusToCardIdMap[key] === cardId
             );
-            
+
             if (!statusName) return null;
             return order.statusHistory.find(history => history.status === statusName) || null;
         };
@@ -142,7 +143,7 @@ export default function ChangesOrderProgress({
         if (!order?.statusHistory || order.statusHistory.length === 0) {
             return "Leistenerstellung";
         }
-        
+
         // Find status that is started but not finished
         for (const statusName of STATUS_ORDER) {
             const history = order.statusHistory.find(h => h.status === statusName);
@@ -150,17 +151,17 @@ export default function ChangesOrderProgress({
                 return statusName;
             }
         }
-        
+
         // Auto-advance: find next status after completed ones
         for (let i = 0; i < STATUS_ORDER.length; i++) {
             const statusName = STATUS_ORDER[i];
             const history = order.statusHistory.find(h => h.status === statusName);
-            
+
             if (!isFinished(history)) {
                 if (i === 0) {
                     return statusName;
                 }
-                
+
                 const prevStatus = STATUS_ORDER[i - 1];
                 const prevHistory = order.statusHistory.find(h => h.status === prevStatus);
                 if (prevHistory && isFinished(prevHistory)) {
@@ -168,14 +169,14 @@ export default function ChangesOrderProgress({
                 }
             }
         }
-        
+
         return null;
     }, [order?.statusHistory]);
 
     // Get next pending status (IN BEARBEITUNG)
     const getNextPendingStatus = useMemo(() => {
         const currentStatus = getCurrentActiveStatus;
-        
+
         if (!currentStatus) {
             if (!order?.statusHistory || order.statusHistory.length === 0) {
                 return "Leistenerstellung";
@@ -184,7 +185,7 @@ export default function ChangesOrderProgress({
             for (let i = 0; i < STATUS_ORDER.length; i++) {
                 const statusName = STATUS_ORDER[i];
                 const history = order.statusHistory.find(h => h.status === statusName);
-                
+
                 if (!isFinished(history)) {
                     if (i === 0 || isFinished(order.statusHistory.find(h => h.status === STATUS_ORDER[i - 1]))) {
                         return statusName;
@@ -193,7 +194,7 @@ export default function ChangesOrderProgress({
             }
             return null;
         }
-        
+
         // Find next status after current
         const currentIndex = STATUS_ORDER.indexOf(currentStatus);
         if (currentIndex >= 0 && currentIndex < STATUS_ORDER.length - 1) {
@@ -203,7 +204,7 @@ export default function ChangesOrderProgress({
                 return nextStatus;
             }
         }
-        
+
         return null;
     }, [getCurrentActiveStatus, order?.statusHistory]);
 
@@ -217,10 +218,10 @@ export default function ChangesOrderProgress({
     const isBeforeCurrentStatus = (cardId: string) => {
         const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
-        
+
         const currentCardId = statusToCardIdMap[currentStatus];
         if (!currentCardId) return false;
-        
+
         const cardIndex = CARD_ORDER.indexOf(cardId);
         const currentIndex = CARD_ORDER.indexOf(currentCardId);
         return cardIndex < currentIndex;
@@ -229,36 +230,36 @@ export default function ChangesOrderProgress({
     const isNextStatus = (cardId: string) => {
         const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
-        
+
         const currentCardId = statusToCardIdMap[currentStatus];
         if (!currentCardId) return false;
-        
+
         const currentIndex = CARD_ORDER.indexOf(currentCardId);
         const cardIndex = CARD_ORDER.indexOf(cardId);
-        
+
         if (cardIndex === currentIndex + 1) {
             const nextStatusName = Object.keys(statusToCardIdMap).find(
                 key => statusToCardIdMap[key] === cardId
             );
             if (!nextStatusName) return false;
-            
+
             const nextHistory = order?.statusHistory?.find(h => h.status === nextStatusName);
             if (nextHistory) {
                 return !hasStarted(nextHistory) && !isFinished(nextHistory);
             }
             return true;
         }
-        
+
         return false;
     };
 
     const isPendingToStart = (cardId: string) => {
         const currentStatus = getCurrentActiveStatus;
         if (currentStatus) return false;
-        
+
         const nextPendingStatus = getNextPendingStatus;
         if (!nextPendingStatus) return false;
-        
+
         return statusToCardIdMap[nextPendingStatus] === cardId;
     };
 
@@ -354,9 +355,9 @@ export default function ChangesOrderProgress({
             key => statusToCardIdMap[key] === cardId
         );
         if (statusName) {
-            return () => handleProgressToggle(() => {}, statusName);
+            return () => handleProgressToggle(() => { }, statusName);
         }
-        return () => {};
+        return () => { };
     };
 
     const renderCard = (card: (typeof cardsData)[number]) => {
@@ -375,7 +376,7 @@ export default function ChangesOrderProgress({
                     </div>
                 );
             }
-            
+
             if (isCurrent || isPending) {
                 return (
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white">
@@ -383,7 +384,7 @@ export default function ChangesOrderProgress({
                     </div>
                 );
             }
-            
+
             if (isNext) {
                 return (
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500 text-white">
@@ -391,7 +392,7 @@ export default function ChangesOrderProgress({
                     </div>
                 );
             }
-            
+
             return (
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-200 text-slate-500">
                     <FontAwesomeIcon icon={faSpinner} className="h-5 w-5" />
@@ -716,11 +717,30 @@ export default function ChangesOrderProgress({
         return null;
     }
 
+    const showShimmer = loading || !order;
+
     return (
         <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 lg:grid-cols-3 xl:grid-cols-6 py-10 items-start">
-                {cardsData.map((card) => renderCard(card))}
-            </div>
+            {showShimmer ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 lg:grid-cols-3 xl:grid-cols-6 py-10 items-start">
+                    {cardsData.map((card) => (
+                        <div key={card.id} className="flex flex-col items-center justify-start px-2 py-4 text-center">
+                            <div className="mb-4 h-16 w-20 bg-gray-200 animate-pulse rounded"></div>
+                            <div className="mb-4 h-10 w-10 bg-gray-200 animate-pulse rounded-full"></div>
+                            <div className="mb-2 h-5 bg-gray-200 animate-pulse rounded w-24"></div>
+                            <div className="h-4 bg-gray-200 animate-pulse rounded w-20 mb-3"></div>
+                            <div className="mt-3 space-y-1">
+                                <div className="h-3 bg-gray-200 animate-pulse rounded w-16"></div>
+                                <div className="h-3 bg-gray-200 animate-pulse rounded w-16"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 lg:grid-cols-3 xl:grid-cols-6 py-10 items-start">
+                    {cardsData.map((card) => renderCard(card))}
+                </div>
+            )}
 
             {showConfirmPopup && (
                 <ConfirmationPopup

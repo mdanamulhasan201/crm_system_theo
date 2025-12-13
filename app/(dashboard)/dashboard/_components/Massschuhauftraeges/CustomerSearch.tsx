@@ -8,15 +8,15 @@ import useDebounce from '@/hooks/useDebounce';
 interface CustomerData {
     id: string;
     customerNumber: number;
-    name?: string; // From search API response
+    name?: string; 
     vorname?: string;
     nachname?: string;
     email: string;
     geburtsdatum: string;
     wohnort?: string;
-    location?: string; // From search API response
+    location?: string;
     telefon?: string;
-    phone?: string; // From search API response
+    phone?: string; 
     ausfuhrliche_diagnose?: string;
     createdAt?: string;
     profileImage?: string;
@@ -56,6 +56,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
     const [modalTitle, setModalTitle] = useState('');
     const [modalContent, setModalContent] = useState('');
     const [expressLoading, setExpressLoading] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(false);
 
     const debouncedName = useDebounce(name, 300);
     const nameInputRef = useRef<HTMLInputElement>(null);
@@ -230,6 +231,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
     useEffect(() => {
         if (initialCustomerId && initialCustomerId !== selectedCustomerId && !selectedCustomer) {
             const fetchAndPopulateCustomer = async () => {
+                setInitialLoading(true);
                 try {
                     const customer = await fetchCustomerById(initialCustomerId);
                     if (customer) {
@@ -243,6 +245,8 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                     }
                 } catch (error) {
                     console.error('Failed to fetch customer by ID:', error);
+                } finally {
+                    setInitialLoading(false);
                 }
             };
             fetchAndPopulateCustomer();
@@ -398,7 +402,33 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                 </div>
             </form>
 
-            {(selectedCustomer || notFound) && (
+            {(searchLoading || initialLoading) ? (
+                <div className="flex flex-col lg:flex-row gap-6 bg-white w-full mt-10">
+                    <div className="rounded-3xl border border-[#e2eef2] p-6 w-full lg:w-4/12">
+                        <div className="flex flex-col items-center">
+                            <div className="w-20 h-20 rounded-full bg-gray-200 animate-pulse mb-4"></div>
+                            <div className="h-6 bg-gray-200 animate-pulse rounded w-32 mb-2"></div>
+                            <div className="h-4 bg-gray-200 animate-pulse rounded w-24 mb-2"></div>
+                            <div className="h-4 bg-gray-200 animate-pulse rounded w-28"></div>
+                            <div className="mt-6 w-full space-y-3">
+                                <div className="h-10 bg-gray-200 animate-pulse rounded-xl"></div>
+                                <div className="h-10 bg-gray-200 animate-pulse rounded-xl"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex flex-col gap-4 w-full lg:w-8/12">
+                        <div className="h-4 bg-gray-200 animate-pulse rounded w-32 mb-4"></div>
+                        <div className="h-40 bg-gray-200 animate-pulse rounded-2xl"></div>
+                        <div className="flex justify-between items-center mt-4">
+                            <div className="h-4 bg-gray-200 animate-pulse rounded w-48"></div>
+                            <div className="flex gap-4">
+                                <div className="h-10 bg-gray-200 animate-pulse rounded-xl w-32"></div>
+                                <div className="h-10 bg-gray-200 animate-pulse rounded-xl w-32"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ) : (selectedCustomer || notFound) && (
                 <div className="flex flex-col lg:flex-row gap-6 bg-white w-full mt-10">
                     {notFound ? (
                         <div className="rounded-3xl border border-[#e2eef2] p-6 text-center w-full lg:w-4/12">
