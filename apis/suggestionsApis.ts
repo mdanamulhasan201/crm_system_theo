@@ -5,6 +5,7 @@ interface SuggestionData {
     email: string;
     phone: string;
     firma: string;
+    category?: string;
     suggestion: string;
 }
 

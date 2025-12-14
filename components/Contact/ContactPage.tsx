@@ -19,12 +19,14 @@ interface ContactFormValues {
     firma: string
     email: string
     telefon: string
+    category: string
     message: string
 }
 export default function ContactPage() {
     const form = useForm<ContactFormValues>({
         defaultValues: {
             name: "",
+            category: '',
             firma: "",
             email: "",
             telefon: "",
@@ -40,6 +42,7 @@ export default function ContactPage() {
                 email: data.email,
                 phone: data.telefon,
                 firma: data.firma,
+                category: data.category,
                 suggestion: data.message,
             };
 
@@ -55,7 +58,7 @@ export default function ContactPage() {
     }
 
     return (
-        <div className="mt-14">
+        <div className="my-14">
             <h1 className="text-2xl font-bold mb-6 capitalize">VERBESSERUNGSVORSCHLAG/MODELLWUNSCH</h1>
 
             <Form {...form}>
@@ -81,7 +84,9 @@ export default function ContactPage() {
                                             className={form.formState.errors.name ? "border-red-500" : "border border-gray-500"}
                                         />
                                     </FormControl>
-                                    <FormMessage />
+                                    <div className="min-h-[20px]">
+                                        <FormMessage />
+                                    </div>
                                 </FormItem>
                             )}
                         />
@@ -100,7 +105,9 @@ export default function ContactPage() {
                                             className={form.formState.errors.firma ? "border-red-500" : "border border-gray-500"}
                                         />
                                     </FormControl>
-                                    <FormMessage />
+                                    <div className="min-h-[20px]">
+                                        <FormMessage />
+                                    </div>
                                 </FormItem>
                             )}
                         />
@@ -128,7 +135,9 @@ export default function ContactPage() {
                                             className={form.formState.errors.email ? "border-red-500" : "border border-gray-500"}
                                         />
                                     </FormControl>
-                                    <FormMessage />
+                                    <div className="min-h-[20px]">
+                                        <FormMessage />
+                                    </div>
                                 </FormItem>
                             )}
                         />
@@ -154,11 +163,46 @@ export default function ContactPage() {
                                             className={form.formState.errors.telefon ? "border-red-500" : "border border-gray-500"}
                                         />
                                     </FormControl>
-                                    <FormMessage />
+                                    <div className="min-h-[20px]">
+                                        <FormMessage />
+                                    </div>
                                 </FormItem>
                             )}
                         />
                     </div>
+
+                    <FormField
+                        control={form.control}
+                        name="category"
+                        rules={{ required: "Kategorie ist erforderlich" }}
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>KATEGORIE AUSWÄHLEN</FormLabel>
+                                <FormControl>
+                                    <select
+                                        {...field}
+                                        className={`w-full px-3 py-2 rounded-md border bg-transparent text-sm cursor-pointer ${form.formState.errors.category ? "border-red-500" : "border border-gray-500"}`}
+                                    >
+                                        <option value="">Kategorie auswählen</option>
+                                        <option value="Allgemein">Allgemein</option>
+                                        <option value="Kundenverwaltung">Kundenverwaltung</option>
+                                        <option value="Einlagenaufträge">Einlagenaufträge</option>
+                                        <option value="Maßschuh & Maßschäfte">Maßschuh & Maßschäfte</option>
+                                        <option value="Produktverwaltung">Produktverwaltung</option>
+                                        <option value="Sammelbestellungen">Sammelbestellungen</option>
+                                        <option value="Terminkalender">Terminkalender</option>
+                                        <option value="Mitarbeiterbereich">Mitarbeiterbereich</option>
+                                        <option value="Design/UI">Design/UI</option>
+                                        <option value="Technisches Problem">Technisches Problem</option>
+                                        <option value="Sonstige">Sonstige</option>
+                                    </select>
+                                </FormControl>
+                                <div className="min-h-[20px]">
+                                    <FormMessage />
+                                </div>
+                            </FormItem>
+                        )}
+                    />
 
                     <FormField
                         control={form.control}
@@ -180,7 +224,9 @@ export default function ContactPage() {
                                         {...field}
                                     />
                                 </FormControl>
-                                <FormMessage />
+                                <div className="min-h-[20px]">
+                                    <FormMessage />
+                                </div>
                             </FormItem>
                         )}
                     />

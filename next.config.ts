@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'shower-injuries-finished-slip.trycloudflare.com',
+        hostname: 'korean-found-squad-cats.trycloudflare.com',
       },
       {
         protocol: 'https',
