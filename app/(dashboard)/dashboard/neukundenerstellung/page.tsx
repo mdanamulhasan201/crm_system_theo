@@ -54,9 +54,14 @@ export default function Neukundenerstellung() {
             await addCustomer(formData);
             toast.success('Kunde wurde erfolgreich erstellt.');
             history.back();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            toast.error('Kunde konnte nicht erstellt werden.');
+            // Versuche, die Fehlermeldung der API zu lesen
+            const apiMessage =
+                error?.response?.data?.message ||
+                error?.message ||
+                'Kunde konnte nicht erstellt werden.';
+            toast.error(apiMessage);
         } finally {
             setIsSubmitting(false);
         }
