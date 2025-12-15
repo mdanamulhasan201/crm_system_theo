@@ -1,13 +1,8 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { postBasicSettings, getBasicSettings } from '@/apis/setting/basicSettingsApis'
+import toast from 'react-hot-toast'
 
 export default function BasicSettings() {
     // Define the type for the field keys
@@ -23,34 +18,45 @@ export default function BasicSettings() {
         address: false,
     };
 
-    // Initial state for shipping settings
-    const initialShippingSettings = {
-        shippingTime: '',
-        shippingCost: '',
-        shippingReminder: '',
-        productionTime: '',
-        lowStockThreshold: '',
-        employees: '',
-        prices: '',
-        businessLocation: ''
-    };
-
     // State for required fields
     const [requiredFields, setRequiredFields] = useState<Record<FieldKey, boolean>>(initialRequiredFields);
-
-    // State for shipping settings
-    const [shippingSettings, setShippingSettings] = useState(initialShippingSettings);
+    const [initialRequiredFieldsState, setInitialRequiredFieldsState] = useState<Record<FieldKey, boolean>>(initialRequiredFields);
 
     // State to track if there are any changes
     const [hasChanges, setHasChanges] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
 
-    // Check for changes whenever states change
+    // Load existing settings from API on mount
     useEffect(() => {
-        const requiredFieldsChanged = JSON.stringify(requiredFields) !== JSON.stringify(initialRequiredFields);
-        const shippingSettingsChanged = JSON.stringify(shippingSettings) !== JSON.stringify(initialShippingSettings);
-        
-        setHasChanges(requiredFieldsChanged || shippingSettingsChanged);
-    }, [requiredFields, shippingSettings]);
+        const fetchSettings = async () => {
+            try {
+                const response = await getBasicSettings();
+                const data = response?.data;
+                if (data) {
+                    const mapped: Record<FieldKey, boolean> = {
+                        firstName: !!data.vorname,
+                        lastName: !!data.nachname,
+                        dob: !!data.geburtsdatum,
+                        email: !!data.email,
+                        phone: !!data.telefon,
+                        address: !!data.adresse,
+                    };
+                    setRequiredFields(mapped);
+                    setInitialRequiredFieldsState(mapped);
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Einstellungen:', error);
+            }
+        };
+
+        fetchSettings();
+    }, []);
+
+    // Check for changes whenever required fields change
+    useEffect(() => {
+        const requiredFieldsChanged = JSON.stringify(requiredFields) !== JSON.stringify(initialRequiredFieldsState);
+        setHasChanges(requiredFieldsChanged);
+    }, [requiredFields, initialRequiredFieldsState]);
 
     const handleCheckboxChange = (field: FieldKey) => {
         setRequiredFields(prev => ({
@@ -59,24 +65,39 @@ export default function BasicSettings() {
         }));
     };
 
-    const handleShippingSettingChange = (setting: keyof typeof shippingSettings, value: string) => {
-        setShippingSettings(prev => ({
-            ...prev,
-            [setting]: value,
-        }));
-    };
+    const handleSaveSettings = async () => {
+        try {
+            setIsSaving(true);
 
-    const handleSaveSettings = () => {
-        // Here you would typically save to your backend/API
-        // console.log('Saving settings:', { requiredFields, shippingSettings });
-        // Add your API call here
-        alert('Einstellungen gespeichert!');
-        setHasChanges(false);
+            const payload = {
+                vorname: requiredFields.firstName,
+                nachname: requiredFields.lastName,
+                geburtsdatum: requiredFields.dob,
+                email: requiredFields.email,
+                telefon: requiredFields.phone,
+                adresse: requiredFields.address,
+            };
+
+            const response = await postBasicSettings(payload);
+            if (response?.success) {
+                // Update initial state baseline so hasChanges resets
+                setInitialRequiredFieldsState(requiredFields);
+                toast.success('Einstellungen gespeichert!');
+                setHasChanges(false);
+            } else {
+                toast.error('Speichern fehlgeschlagen.');
+            }
+        } catch (error) {
+            console.error('Fehler beim Speichern der Einstellungen:', error);
+            toast.error('Fehler beim Speichern der Einstellungen.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleResetSettings = () => {
         setRequiredFields(initialRequiredFields);
-        setShippingSettings(initialShippingSettings);
+        setInitialRequiredFieldsState(initialRequiredFields);
         setHasChanges(false);
     };
 
@@ -118,6 +139,23 @@ export default function BasicSettings() {
 
             {/* Dashboard & Basic Configuration (Shipping Settings) */}
             
+            <div className="flex justify-end gap-3">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleResetSettings}
+                    disabled={!hasChanges}
+                >
+                    Zurücksetzen
+                </Button>
+                <Button
+                    type="button"
+                    onClick={handleSaveSettings}
+                    disabled={!hasChanges || isSaving}
+                >
+                    {isSaving ? 'Speichern...' : 'Speichern'}
+                </Button>
+            </div>
         </div>
     )
 }
