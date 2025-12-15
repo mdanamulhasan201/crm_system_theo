@@ -31,9 +31,7 @@ export default function PriceSection({
   pricesLoading,
 }: PriceSectionProps) {
   return (
-    <div className="border-t pt-6">
-      <h3 className="text-lg font-semibold mb-4">Preise</h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-3">
           <Label className="text-base font-semibold">Fußanalyse</Label>
           <Select value={footAnalysisPrice} onValueChange={onFootAnalysisPriceChange}>
@@ -108,7 +106,6 @@ export default function PriceSection({
           )}
         </div>
       </div>
-    </div>
   )
 }
 

@@ -17,7 +17,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'download-rhode-ceremony-feet.trycloudflare.com',
+        hostname: 'nextel-suburban-procedure-giving.trycloudflare.com',
       },
       {
         protocol: 'https',

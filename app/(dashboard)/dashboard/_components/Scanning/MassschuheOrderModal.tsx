@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
+import { MapPin, FileText, StickyNote } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeDeliveryDate, getRequiredDeliveryDate } from './utils/dateUtils';
@@ -39,12 +40,14 @@ interface OrderFormData {
     note: string;
     halbprobe_geplant: boolean;
     kostenvoranschlag: boolean;
+    statusBezahlt?: boolean;
     datumAuftrag: string;
     fertigstellungBis?: string;
     filiale: string;
     paymentType: 'krankenkasse' | 'privat';
     fußanalyse?: number;
     einlagenversorgung?: number;
+    quantity?: number;
     orderNote?: string;
     location?: string;
     // Additional fields for API
@@ -91,6 +94,8 @@ export default function MassschuheOrderModal({
     const [selectedEinlagenversorgung, setSelectedEinlagenversorgung] = useState<string>('');
     const [orderNote, setOrderNote] = useState<string>('');
     const [selectedLocation, setSelectedLocation] = useState<string>('');
+    const [isPaid, setIsPaid] = useState<boolean>(true);
+    const [quantity, setQuantity] = useState<number>(1);
 
     const { user } = useAuth();
 
@@ -166,6 +171,8 @@ export default function MassschuheOrderModal({
         const customerPhone = customer.telefonnummer || customer.telefon || '';
         const customerEmail = customer.email || '';
 
+        const qty = quantity || 1;
+
         const orderData: OrderFormData = {
             customerId: customer.id,
             employeeId: formData.selectedEmployeeId,
@@ -180,8 +187,10 @@ export default function MassschuheOrderModal({
             fertigstellungBis: fertigstellungDate || undefined,
             filiale: filiale,
             paymentType: paymentType,
-            fußanalyse: paymentType === 'privat' ? parseFloat(selectedFußanalyse) : undefined,
-            einlagenversorgung: paymentType === 'privat' ? parseFloat(selectedEinlagenversorgung) : undefined,
+            statusBezahlt: isPaid,
+            fußanalyse: paymentType === 'privat' ? parseFloat(selectedFußanalyse) * qty : undefined,
+            einlagenversorgung: paymentType === 'privat' ? parseFloat(selectedEinlagenversorgung) * qty : undefined,
+            quantity: paymentType === 'privat' ? qty : undefined,
             orderNote: orderNote,
             location: selectedLocation || undefined,
             // Additional fields
@@ -205,46 +214,94 @@ export default function MassschuheOrderModal({
 
                 <div className="space-y-6 py-4">
                     {/* AUFTRAGSÜBERSICHT Section */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-                        <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">AUFTRAGSÜBERSICHT</h3>
+                    <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+                        <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase mb-2">
+                            AUFTRAGSÜBERSICHT
+                        </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-4">
                             <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Kunde</label>
-                                <p className="text-gray-900 font-medium">{customer?.vorname || ''} {customer?.nachname || ''}</p>
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Kunde</label>
+                                <p className="text-gray-900 font-semibold text-sm">
+                                    {customer?.vorname || ''} {customer?.nachname || ''}
+                                </p>
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">E-Mail</label>
-                                <p className="text-gray-900">{customer?.email || '-'}</p>
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Telefon</label>
+                                <p className="text-gray-900 font-semibold text-sm">
+                                    {customer?.telefonnummer || customer?.telefon || '-'}
+                                </p>
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Telefon</label>
-                                <p className="text-gray-900">{customer?.telefonnummer || customer?.telefon || '-'}</p>
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">E-Mail</label>
+                                <p className="text-gray-900 text-sm">{customer?.email || '-'}</p>
                             </div>
 
-
-
-
-
                             <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Datum des Auftrags</label>
-                                <p className="text-gray-900">
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Datum des Auftrags</label>
+                                <p className="text-gray-900 text-sm">
                                     {orderDate ? new Date(orderDate).toLocaleDateString('de-DE') : '-'}
                                 </p>
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Wohnort</label>
-                                <p className="text-gray-900">{filiale || customer?.wohnort || '-'}</p>
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Fertigstellung bis</label>
+                                <p className="text-gray-900 text-sm">
+                                    {fertigstellungDate ? new Date(fertigstellungDate).toLocaleDateString('de-DE') : '-'}
+                                </p>
                             </div>
 
                             <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Fertigstellung</label>
-                                <p className="text-gray-900">
-                                    {fertigstellungDate ? new Date(fertigstellungDate).toLocaleDateString('de-DE') : '-'}
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Filiale</label>
+                                <p className="text-gray-900 text-sm">{filiale || customer?.wohnort || '-'}</p>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Versorgung</label>
+                                <p className="text-gray-900 text-sm">
+                                    {formData.arztlicheDiagnose ? formData.arztlicheDiagnose.slice(0, 40) + (formData.arztlicheDiagnose.length > 40 ? '…' : '') : '-'}
                                 </p>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-medium text-gray-500 mb-1 block">Status</label>
+                                <div className="flex items-center gap-4 mt-1">
+                                    <span className="text-gray-900 font-semibold text-sm">Bezahlt</span>
+                                    {/* Ja checkbox */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPaid(true)}
+                                        className="flex items-center gap-2 text-xs text-gray-700"
+                                    >
+                                        <span
+                                            className={cn(
+                                                "w-4 h-4 rounded-[4px] border transition-colors",
+                                                isPaid
+                                                    ? "border-[#1E76FF] bg-[#1E76FF]"
+                                                    : "border-[#d0d7e6] bg-white"
+                                            )}
+                                        />
+                                        <span>Ja</span>
+                                    </button>
+                                    {/* Nein checkbox */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsPaid(false)}
+                                        className="flex items-center gap-2 text-xs text-gray-700"
+                                    >
+                                        <span
+                                            className={cn(
+                                                "w-4 h-4 rounded-[4px] border transition-colors",
+                                                !isPaid
+                                                    ? "border-[#1E76FF] bg-[#1E76FF]"
+                                                    : "border-[#d0d7e6] bg-white"
+                                            )}
+                                        />
+                                        <span>Nein</span>
+                                    </button>
+                                </div>
                             </div>
 
                             {!!user?.hauptstandort?.length && (
@@ -267,12 +324,33 @@ export default function MassschuheOrderModal({
                                     </Select>
                                 </div>
                             )}
+                        </div>
 
+                        {/* Durchgeführt von + Menge */}
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Durchgeführt von</label>
                                 <p className="text-gray-900 font-medium">
                                     {formData.selectedEmployee || 'Nicht ausgewählt'}
                                 </p>
+                            </div>
+                            <div>
+                                <label className="text-sm font-medium text-gray-600 mb-1 block">Menge</label>
+                                <Select
+                                    value={quantity.toString()}
+                                    onValueChange={(value) => setQuantity(parseInt(value, 10))}
+                                >
+                                    <SelectTrigger className="w-full rounded-2xl border border-[#dde3ee] bg-white h-11 px-4">
+                                        <SelectValue placeholder="Menge wählen" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="1">1 Paar</SelectItem>
+                                        <SelectItem value="2">2 Paare</SelectItem>
+                                        <SelectItem value="3">3 Paare</SelectItem>
+                                        <SelectItem value="4">4 Paare</SelectItem>
+                                        <SelectItem value="5">5 Paare</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
                     </div>
@@ -310,40 +388,78 @@ export default function MassschuheOrderModal({
                         </div>
                     </div>
 
-                    {/* PREISAUSWAHL Section - Only show when Privat is selected */}
+                    {/* PREISAUSWAHL Section - shown when Privat is selected (like screenshot) */}
                     {paymentType === 'privat' && (
                         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
                             <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">PREISAUSWAHL</h3>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Fußanalyse (€)</label>
+                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Fußanalyse</label>
                                     <Input
                                         type="number"
                                         step="0.01"
                                         min="0"
                                         value={selectedFußanalyse}
                                         onChange={(e) => setSelectedFußanalyse(e.target.value)}
-                                        placeholder="Preis eingeben"
+                                        placeholder="Basis Analyse - €45"
                                         className="w-full"
                                     />
                                 </div>
 
                                 <div>
-                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Einlagenversorgung (€)</label>
+                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Einlagenversorgung</label>
                                     <Input
                                         type="number"
                                         step="0.01"
                                         min="0"
                                         value={selectedEinlagenversorgung}
                                         onChange={(e) => setSelectedEinlagenversorgung(e.target.value)}
-                                        placeholder="Preis eingeben"
+                                        placeholder="Standard Einlagen - €180"
                                         className="w-full"
                                     />
                                 </div>
                             </div>
                         </div>
                     )}
+
+                    {/* KONTROLLE & AKTIONEN Section */}
+                    <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+                        <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
+                            KONTROLLE & AKTIONEN
+                        </h3>
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#1E76FF]">
+                                    <MapPin className="w-4 h-4" />
+                                </div>
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-medium text-gray-500">Abholung</span>
+                                    <span className="text-sm font-semibold text-gray-900">
+                                        {filiale || customer?.wohnort || selectedLocation || '-'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
+                                >
+                                    <FileText className="w-4 h-4 text-gray-700" />
+                                    <span>PDF anzeigen</span>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
+                                >
+                                    <StickyNote className="w-4 h-4 text-gray-700" />
+                                    <span>Notiz hinzufügen</span>
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
 

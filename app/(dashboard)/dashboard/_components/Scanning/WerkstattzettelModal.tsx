@@ -171,64 +171,74 @@ export default function WerkstattzettelModal({
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
         <DialogHeader className="relative">
-          <DialogTitle className="text-xl font-bold">Werkstattzettel</DialogTitle>
+          <DialogTitle className="text-2xl font-bold">Werkstattzettel</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-6 mt-6">
-          {/* Customer Information Section */}
-          <CustomerInfoSection
-            data={{
-              vorname: form.vorname,
-              nachname: form.nachname,
-              wohnort: form.wohnort,
-              email: form.email,
-              mitarbeiter: form.mitarbeiter,
-              versorgung: form.versorgung,
-              datumAuftrag: form.datumAuftrag,
-              telefonnummer: form.telefonnummer,
-              geschaeftsstandort: form.geschaeftsstandort,
-              fertigstellungBis: form.fertigstellungBis,
-              fertigstellungBisTime: form.fertigstellungBisTime,
-              bezahlt: form.bezahlt,
-              onNameChange: handleNameChange,
-              onWohnortChange: form.setWohnort,
-              onEmailChange: form.setEmail,
-              onMitarbeiterChange: form.setMitarbeiter,
-              onVersorgungChange: form.setVersorgung,
-              onDatumAuftragChange: form.setDatumAuftrag,
-              onTelefonnummerChange: form.setTelefonnummer,
-              onGeschaeftsstandortChange: form.setGeschaeftsstandort,
-              onFertigstellungBisChange: form.handleDeliveryDateChange,
-              onFertigstellungBisTimeChange: form.setFertigstellungBisTime,
-              onBezahltChange: form.setBezahlt,
-              employeeSearchText: form.employeeSearchText,
-              employeeSuggestions: form.employeeSuggestions,
-              employeeLoading: form.employeeLoading,
-              isEmployeeDropdownOpen: form.isEmployeeDropdownOpen,
-              onEmployeeDropdownChange: form.handleEmployeeDropdownChange,
-              onEmployeeSearchChange: form.handleEmployeeSearchChange,
-              locations,
-              isLocationDropdownOpen: form.isLocationDropdownOpen,
-              onLocationDropdownChange: form.handleLocationDropdownChange,
-              completionDays,
-              sameAsBusiness,
-            }}
-          />
+          {/* Customer Information Section - styled as overview card */}
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
+              AUFTRAGSÜBERSICHT
+            </h3>
+            <CustomerInfoSection
+              data={{
+                vorname: form.vorname,
+                nachname: form.nachname,
+                wohnort: form.wohnort,
+                email: form.email,
+                mitarbeiter: form.mitarbeiter,
+                versorgung: form.versorgung,
+                datumAuftrag: form.datumAuftrag,
+                telefonnummer: form.telefonnummer,
+                geschaeftsstandort: form.geschaeftsstandort,
+                fertigstellungBis: form.fertigstellungBis,
+                fertigstellungBisTime: form.fertigstellungBisTime,
+                bezahlt: form.bezahlt,
+                onNameChange: handleNameChange,
+                onWohnortChange: form.setWohnort,
+                onEmailChange: form.setEmail,
+                onMitarbeiterChange: form.setMitarbeiter,
+                onVersorgungChange: form.setVersorgung,
+                onDatumAuftragChange: form.setDatumAuftrag,
+                onTelefonnummerChange: form.setTelefonnummer,
+                onGeschaeftsstandortChange: form.setGeschaeftsstandort,
+                onFertigstellungBisChange: form.handleDeliveryDateChange,
+                onFertigstellungBisTimeChange: form.setFertigstellungBisTime,
+                onBezahltChange: form.setBezahlt,
+                employeeSearchText: form.employeeSearchText,
+                employeeSuggestions: form.employeeSuggestions,
+                employeeLoading: form.employeeLoading,
+                isEmployeeDropdownOpen: form.isEmployeeDropdownOpen,
+                onEmployeeDropdownChange: form.handleEmployeeDropdownChange,
+                onEmployeeSearchChange: form.handleEmployeeSearchChange,
+                locations,
+                isLocationDropdownOpen: form.isLocationDropdownOpen,
+                onLocationDropdownChange: form.handleLocationDropdownChange,
+                completionDays,
+                sameAsBusiness,
+              }}
+            />
+          </div>
 
-          {/* Price Section */}
-          <PriceSection
-            footAnalysisPrice={form.footAnalysisPrice}
-            onFootAnalysisPriceChange={form.setFootAnalysisPrice}
-            insoleSupplyPrice={form.insoleSupplyPrice}
-            onInsoleSupplyPriceChange={form.setInsoleSupplyPrice}
-            customFootPrice={form.customFootPrice}
-            onCustomFootPriceChange={form.setCustomFootPrice}
-            customInsolePrice={form.customInsolePrice}
-            onCustomInsolePriceChange={form.setCustomInsolePrice}
-            laserPrintPrices={laserPrintPrices}
-            einlagenversorgungPrices={einlagenversorgungPrice}
-            pricesLoading={pricesLoading}
-          />
+          {/* Price Section - styled card */}
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
+              PREISE
+            </h3>
+            <PriceSection
+              footAnalysisPrice={form.footAnalysisPrice}
+              onFootAnalysisPriceChange={form.setFootAnalysisPrice}
+              insoleSupplyPrice={form.insoleSupplyPrice}
+              onInsoleSupplyPriceChange={form.setInsoleSupplyPrice}
+              customFootPrice={form.customFootPrice}
+              onCustomFootPriceChange={form.setCustomFootPrice}
+              customInsolePrice={form.customInsolePrice}
+              onCustomInsolePriceChange={form.setCustomInsolePrice}
+              laserPrintPrices={laserPrintPrices}
+              einlagenversorgungPrices={einlagenversorgungPrice}
+              pricesLoading={pricesLoading}
+            />
+          </div>
         </div>
 
         {/* Action Buttons */}

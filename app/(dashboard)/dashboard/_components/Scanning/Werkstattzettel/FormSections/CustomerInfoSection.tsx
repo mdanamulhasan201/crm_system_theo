@@ -1,10 +1,11 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import EmployeeDropdown from '../Dropdowns/EmployeeDropdown'
 import LocationDropdown from '../Dropdowns/LocationDropdown'
 import PaymentStatusSection from './PaymentStatusSection'
 import { calculateDeliveryDate, getMinimumDeliveryDate } from '../../utils/dateUtils'
+import { cn } from '@/lib/utils'
 
 interface CustomerInfoSectionData {
   // Form values
@@ -93,6 +94,14 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     sameAsBusiness = true,
     completionDays,
   } = data
+
+  const [editableField, setEditableField] = useState<string | null>(null)
+
+  const makeEditable = (field: string) => {
+    setEditableField(field)
+  }
+
+  const isEditable = (field: string) => editableField === field
   const handleNameChange = (fullName: string) => {
     const nameParts = fullName.split(' ')
     onNameChange(nameParts[0] || '', nameParts.slice(1).join(' ') || '')
@@ -119,31 +128,43 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       {/* Left Column */}
       <div className="space-y-4">
-        <div className="space-y-2">
+        <div className="space-y-2" onClick={() => makeEditable('name')}>
           <Label className="text-sm font-medium text-gray-700">Name Kunde</Label>
           <Input
             placeholder="Einkaufspreis"
             value={`${vorname} ${nachname}`.trim()}
             onChange={(e) => handleNameChange(e.target.value)}
+            readOnly={!isEditable('name')}
+            className={cn(
+              !isEditable('name') && 'bg-gray-50 cursor-pointer'
+            )}
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2" onClick={() => makeEditable('wohnort')}>
           <Label className="text-sm font-medium text-gray-700">Wohnort</Label>
           <Input
             placeholder="Hamburg"
             value={wohnort}
             onChange={(e) => onWohnortChange(e.target.value)}
+            readOnly={!isEditable('wohnort')}
+            className={cn(
+              !isEditable('wohnort') && 'bg-gray-50 cursor-pointer'
+            )}
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2" onClick={() => makeEditable('email')}>
           <Label className="text-sm font-medium text-gray-700">E-Mail</Label>
           <Input
             type="email"
             placeholder="Mustermann.Max@gmail.com"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
+            readOnly={!isEditable('email')}
+            className={cn(
+              !isEditable('email') && 'bg-gray-50 cursor-pointer'
+            )}
           />
         </div>
 
@@ -161,34 +182,46 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2" onClick={() => makeEditable('versorgung')}>
           <Label className="text-sm font-medium text-gray-700">Versorgung</Label>
           <Input
             placeholder="Rohling 339821769, mit Pelotte"
             value={versorgung}
             onChange={(e) => onVersorgungChange(e.target.value)}
+            readOnly={!isEditable('versorgung')}
+            className={cn(
+              !isEditable('versorgung') && 'bg-gray-50 cursor-pointer'
+            )}
           />
         </div>
       </div>
 
       {/* Right Column */}
       <div className="space-y-4">
-        <div className="space-y-2">
+        <div className="space-y-2" onClick={() => makeEditable('datumAuftrag')}>
           <Label className="text-sm font-medium text-gray-700">Datum des Auftrags</Label>
           <Input
             type="date"
             placeholder="01.02.2025"
             value={datumAuftrag}
             onChange={(e) => handleOrderDateChange(e.target.value)}
+            readOnly={!isEditable('datumAuftrag')}
+            className={cn(
+              !isEditable('datumAuftrag') && 'bg-gray-50 cursor-pointer'
+            )}
           />
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2" onClick={() => makeEditable('telefonnummer')}>
           <Label className="text-sm font-medium text-gray-700">Telefon</Label>
           <Input
             placeholder="+49 432 234 23"
             value={telefonnummer}
             onChange={(e) => onTelefonnummerChange(e.target.value)}
+            readOnly={!isEditable('telefonnummer')}
+            className={cn(
+              !isEditable('telefonnummer') && 'bg-gray-50 cursor-pointer'
+            )}
           />
         </div>
 
@@ -204,11 +237,17 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
               onSelect={onGeschaeftsstandortChange}
             />
           ) : (
-            <Input
-              placeholder="Geschäftstandort eingeben"
-              value={geschaeftsstandort}
-              onChange={(e) => onGeschaeftsstandortChange(e.target.value)}
-            />
+            <div className="space-y-2" onClick={() => makeEditable('geschaeftsstandort')}>
+              <Input
+                placeholder="Geschäftstandort eingeben"
+                value={geschaeftsstandort}
+                onChange={(e) => onGeschaeftsstandortChange(e.target.value)}
+                readOnly={!isEditable('geschaeftsstandort')}
+                className={cn(
+                  !isEditable('geschaeftsstandort') && 'bg-gray-50 cursor-pointer'
+                )}
+              />
+            </div>
           )}
         </div>
 
