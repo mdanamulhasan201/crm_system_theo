@@ -197,7 +197,7 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
                 <div className={`${showLabels ? 'w-16 h-16' : 'w-12 h-12'}  p-2 flex items-center justify-center overflow-hidden bg-[#61A175]/15 rounded`}>
                     {user?.image ? (
                         <Image
-                            src={user.image}
+                            src={user.image.startsWith('http') ? user.image : `https://${user.image}`}
                             alt={user.name || 'User'}
                             width={showLabels ? 56 : 40}
                             height={showLabels ? 56 : 40}
