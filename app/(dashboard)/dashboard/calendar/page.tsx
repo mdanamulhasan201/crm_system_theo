@@ -70,6 +70,7 @@ interface AppointmentFormData {
     customerId?: string;
     employeeId?: string;
     employees?: Employee[];
+    reminder?: number | null;
 }
 
 
@@ -137,7 +138,8 @@ const WeeklyCalendar = () => {
             duration: 1,
             customerId: undefined,
             employeeId: undefined,
-            employees: []
+            employees: [],
+            reminder: null
         }
     });
 
@@ -153,7 +155,8 @@ const WeeklyCalendar = () => {
             duration: 1,
             customerId: undefined,
             employeeId: undefined,
-            employees: []
+            employees: [],
+            reminder: null
         }
     });
 
@@ -327,7 +330,8 @@ const WeeklyCalendar = () => {
                 duration: apt.duration || 1,
                 customerId: apt.customerId,
                 employeeId: firstEmployeeId,
-                employees: employeesArray
+                employees: employeesArray,
+                reminder: (apt as any).reminder || null
             });
 
             setIsEditModalOpen(true);
@@ -372,7 +376,7 @@ const WeeklyCalendar = () => {
                 <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 mb-6 sm:mb-10 w-full">
 
                     {/* Daily Calendar View - Responsive layout */}
-                    <div className="w-full lg:w-11/12 2xl:w-11/12">
+                    <div className="w-full lg:w-11/12 2xl:w-8/12">
                         <DailyCalendarView
                             key={currentSelectedDate.toDateString()}
                             selectedDate={currentSelectedDate}

@@ -15,6 +15,7 @@ export const createAppoinment = async (appointmentData: {
     userId?: string;
     customerId?: string;
     duration?: number;
+    reminder?: number | null;
 }) => {
     try {
         const response = await axiosClient.post('/v2/appointment', appointmentData);
@@ -53,7 +54,7 @@ export const getMyAppointments = async (params?: {
 // delete appointment
 export const deleteAppointment = async (appointmentId: string) => {
     try {
-        const response = await axiosClient.delete(`/appointment/${appointmentId}`);
+        const response = await axiosClient.delete(`/v2/appointment/${appointmentId}`);
         return response.data;
     } catch (error) {
         throw error;
@@ -64,7 +65,7 @@ export const deleteAppointment = async (appointmentId: string) => {
 // get single appointment
 export const getSingleAppointment = async (appointmentId: string) => {
     try {
-        const response = await axiosClient.get(`/appointment/${appointmentId}`);
+        const response = await axiosClient.get(`/v2/appointment/${appointmentId}`);
         return response.data;
     } catch (error) {
         throw error;
@@ -86,9 +87,10 @@ export const updateAppointment = async (appointmentId: string, appointmentData: 
     isClient: boolean;
     customerId?: string;
     duration?: number;
+    reminder?: number | null;
 }) => {
     try {
-        const response = await axiosClient.put(`/appointment/${appointmentId}`, appointmentData);
+        const response = await axiosClient.put(`/v2/appointment/${appointmentId}`, appointmentData);
         return response.data;
     } catch (error: any) {
         // If there's an error response with data, return it

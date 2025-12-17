@@ -63,6 +63,7 @@ interface SubmittedAppointmentData {
     customerId?: string;
     employeeId?: string;
     employees?: Employee[];
+    reminder?: number | null;
 }
 
 export const useAppoinment = () => {
@@ -155,6 +156,11 @@ export const useAppoinment = () => {
                 appointmentData.customerId = data.customerId;
             }
 
+            // Add reminder if provided (already in minutes)
+            if (data.reminder !== null && data.reminder !== undefined) {
+                appointmentData.reminder = data.reminder;
+            }
+
             // Add employees array as assignedTo
             if (data.employees && data.employees.length > 0) {
                 appointmentData.assignedTo = data.employees.map(emp => ({
@@ -245,6 +251,11 @@ export const useAppoinment = () => {
 
             if (isCustomerAppointment && data.customerId) {
                 appointmentData.customerId = data.customerId;
+            }
+
+            // Add reminder if provided (already in minutes)
+            if (data.reminder !== null && data.reminder !== undefined) {
+                appointmentData.reminder = data.reminder;
             }
 
             // Add employees array as assignedTo

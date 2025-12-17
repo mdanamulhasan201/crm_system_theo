@@ -9,12 +9,31 @@ type ProfileImageProps = {
   editable?: boolean
 }
 
+const normalizeImageSrc = (value?: string | null): string | null => {
+  if (!value) return null
+
+  if (
+    value.startsWith("http://") ||
+    value.startsWith("https://") ||
+    value.startsWith("data:")
+  ) {
+    return value
+  }
+
+  if (value.startsWith("/")) {
+    return value
+  }
+
+  // e.g. "fragrances-...trycloudflare.com/..." → add https://
+  return `https://${value}`
+}
+
 export default function ProfileImage({ src = null, onChange, editable = true }: ProfileImageProps) {
-  const [logo, setLogo] = useState<string | null>(src)
+  const [logo, setLogo] = useState<string | null>(normalizeImageSrc(src))
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    setLogo(src ?? null)
+    setLogo(normalizeImageSrc(src))
   }, [src])
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {

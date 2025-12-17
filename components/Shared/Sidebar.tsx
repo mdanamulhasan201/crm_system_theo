@@ -1,5 +1,5 @@
 'use client'
-import React from 'react';
+import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { IoClose, IoSearchOutline } from 'react-icons/io5';
@@ -11,6 +11,7 @@ import { RxDashboard } from "react-icons/rx";
 import {  HiOutlineChatBubbleOvalLeft } from "react-icons/hi2";
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
 import { TbActivityHeartbeat, TbUsers } from 'react-icons/tb';
 
 import type { IconType } from 'react-icons';
@@ -37,148 +38,135 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
     const { user } = useAuth();
     const pathname = usePathname();
     const showLabels = !isCollapsed;
+    const { isPathAllowed, loading: featureLoading } = useFeatureAccess();
 
-    const menuSections = [
-        {
-            id: '0',
-            standalone: true,
-            icon: RxDashboard,
-            label: 'Dashboard',
-            href: '/dashboard'
-        },
-        {
-            id: '1',
-            standalone: true,
-            icon: HiOutlineChatBubbleOvalLeft,
-            label: 'Teamchat',
-            href: '/dashboard/teamchat'
-        },
-        {
-            id: '1a',
-            standalone: true,
-            icon: IoSearchOutline,
-            label: 'Kundensuche',
-            href: '/dashboard/customers'
-        },
-        {
-            id: '1b',
-            standalone: true,
-            icon: FiUserPlus,
-            label: 'Neukundenerstellung',
-            href: '/dashboard/neukundenerstellung'
-        },
-        {
-            id: '1c',
-            standalone: true,
-            icon: Einlagenauftrag,
-            label: 'Einlagenaufträge',
-            // href: '/dashboard/einlagenauftraege'
-            href: '/dashboard/orders'
-        },
-        {
-            id: '1d',
-            standalone: true,
-            icon: Maßschuhaufträge,
-            label: 'Maßschuhaufträge',
-            href: '/dashboard/massschuhauftraege'
-        },
-        {
-            id: '1e',
-            standalone: true,
-            icon: Maßschäfte,
-            label: 'Maßschäfte',
-            href: '/dashboard/custom-shafts'
-        },
-        {
-            id: '2',
-            label: 'Aufträge & Produkte',
-            items: [
-                // { icon: HiShoppingCart, label: 'Aufträge', href: '/dashboard/orders' },
-                { icon: HiOutlineCube, label: 'Produktverwaltung', href: '/dashboard/lager' },
-                { icon: GrCubes, label: 'Sammelbestellungen', href: '/dashboard/group-orders' }
-
-            ]
-        },
-        {
-            id: '3',
-            label: 'Kundenmanagement',
-            items: [
-
-                { icon: Nachrichten, label: 'Nachrichten', href: '/dashboard/email/inbox' },
-                { icon: Terminkalender, label: 'Terminkalender', href: '/dashboard/calendar' }
-            ]
-        },
-
-
-        // {
-        //     id: '4',
-        //     label: 'Finanzen',
-        //     items: [
-        //         { icon: FaMoneyCheckAlt, label: 'Finanzen im Überblick', href: '/dashboard/finance' },
-        //         { icon: TbDashboardFilled, label: 'Dashboard FeetF1rst', href: '/dashboard/dashboard-feetfirst' },
-        //         { icon: RiDashboard2Line, label: 'Masschuhe', href: '/dashboard/masschuhe' },
-        //     ]
-        // },
-
-        {
-            id: '4',
-            label: 'Finanzen',
-            items: [
-                { icon: FiBarChart, label: 'Monatsstatistik', href: '/dashboard/monatsstatistik' },
-                { icon: TbUsers, label: 'Mitarbeitercontrolling', href: '/dashboard/mitarbeitercontrolling' },
-                { icon: TbActivityHeartbeat, label: 'Einlagencontrolling', href: '/dashboard/einlagencontrolling' },
-            ]
-        },
-        {
-            id: '5',
-            label: 'System & Einstellungen',
-            items: [
-                { icon: Fußübungen, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
-                { icon: Musterzettel, label: 'Musterzettel', href: '/dashboard/musterzettel' },
-                { icon: Einstellungen, label: 'Einstellungen', href: '/dashboard/settings' },
-            ]
-        }
-    ];
+    const menuSections = useMemo(
+        () => [
+            {
+                id: '0',
+                standalone: true,
+                icon: RxDashboard,
+                label: 'Dashboard',
+                href: '/dashboard'
+            },
+            {
+                id: '1',
+                standalone: true,
+                icon: HiOutlineChatBubbleOvalLeft,
+                label: 'Teamchat',
+                href: '/dashboard/teamchat'
+            },
+            {
+                id: '1a',
+                standalone: true,
+                icon: IoSearchOutline,
+                label: 'Kundensuche',
+                href: '/dashboard/customers'
+            },
+            {
+                id: '1b',
+                standalone: true,
+                icon: FiUserPlus,
+                label: 'Neukundenerstellung',
+                href: '/dashboard/neukundenerstellung'
+            },
+            {
+                id: '1c',
+                standalone: true,
+                icon: Einlagenauftrag,
+                label: 'Einlagenaufträge',
+                href: '/dashboard/orders'
+            },
+            {
+                id: '1d',
+                standalone: true,
+                icon: Maßschuhaufträge,
+                label: 'Maßschuhaufträge',
+                href: '/dashboard/massschuhauftraege'
+            },
+            {
+                id: '1e',
+                standalone: true,
+                icon: Maßschäfte,
+                label: 'Maßschäfte',
+                href: '/dashboard/custom-shafts'
+            },
+            {
+                id: '2',
+                label: 'Aufträge & Produkte',
+                items: [
+                    { icon: HiOutlineCube, label: 'Produktverwaltung', href: '/dashboard/lager' },
+                    { icon: GrCubes, label: 'Sammelbestellungen', href: '/dashboard/group-orders' }
+                ]
+            },
+            {
+                id: '3',
+                label: 'Kundenmanagement',
+                items: [
+                    { icon: Nachrichten, label: 'Nachrichten', href: '/dashboard/email/inbox' },
+                    { icon: Terminkalender, label: 'Terminkalender', href: '/dashboard/calendar' }
+                ]
+            },
+            {
+                id: '4',
+                label: 'Finanzen',
+                items: [
+                    { icon: FiBarChart, label: 'Monatsstatistik', href: '/dashboard/monatsstatistik' },
+                    { icon: TbUsers, label: 'Mitarbeitercontrolling', href: '/dashboard/mitarbeitercontrolling' },
+                    { icon: TbActivityHeartbeat, label: 'Einlagencontrolling', href: '/dashboard/einlagencontrolling' },
+                ]
+            },
+            {
+                id: '5',
+                label: 'System & Einstellungen',
+                items: [
+                    { icon: Fußübungen, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
+                    { icon: Musterzettel, label: 'Musterzettel', href: '/dashboard/musterzettel' },
+                    { icon: Einstellungen, label: 'Einstellungen', href: '/dashboard/settings' },
+                ]
+            }
+        ],
+        []
+    );
 
     type MenuItem =
         | { type: 'link'; key: string; icon: IconType | StaticImageData; label: string; href: string }
         | { type: 'divider'; key: string };
 
-    const menuItems: MenuItem[] = menuSections.flatMap((section, index) => {
-        const items = section.standalone
-            ? [{
-                type: 'link' as const,
-                key: section.id,
-                icon: section.icon,
-                label: section.label,
-                href: section.href
-            }]
-            : (section.items ?? []).map((item, subIndex) => ({
-                type: 'link' as const,
-                key: `${section.id}-${subIndex}`,
-                icon: item.icon,
-                label: item.label,
-                href: item.href
-            }));
+    const menuItems: MenuItem[] = useMemo(() => {
+        // While loading feature config, just show the full menu to avoid a flicker
+        const canShow = (href: string) => (featureLoading ? true : isPathAllowed(href));
 
-        const result: MenuItem[] = [];
-        // Add divider when:
-        // 1. Not the first section
-        // 2. Transitioning from standalone to group, or between groups
-        // 3. After first 4 standalone items (before Einlagenaufträge)
-        // 4. Don't add divider between other standalone items
-        if (index > 0 && items.length > 0) {
-            const prevSection = menuSections[index - 1];
-            // Add divider if:
-            // - Current is a group (not standalone) OR previous was a group
-            // - OR we're at Einlagenaufträge (id: '1c') after the first 4 standalone items
-            if (!section.standalone || !prevSection.standalone || section.id === '1c') {
-                result.push({ type: 'divider', key: `divider-${section.id}` });
+        return menuSections.flatMap((section, index) => {
+            const rawItems = section.standalone
+                ? [{
+                    type: 'link' as const,
+                    key: section.id,
+                    icon: section.icon,
+                    label: section.label,
+                    href: section.href
+                }]
+                : (section.items ?? []).map((item, subIndex) => ({
+                    type: 'link' as const,
+                    key: `${section.id}-${subIndex}`,
+                    icon: item.icon,
+                    label: item.label,
+                    href: item.href
+                }));
+
+            const items = rawItems.filter((item) => canShow(item.href));
+
+            const result: MenuItem[] = [];
+            if (index > 0 && items.length > 0) {
+                const prevSection = menuSections[index - 1];
+                if (!section.standalone || !prevSection.standalone || section.id === '1c') {
+                    result.push({ type: 'divider', key: `divider-${section.id}` });
+                }
             }
-        }
-        result.push(...items);
-        return result;
-    });
+            result.push(...items);
+            return result;
+        });
+    }, [menuSections, isPathAllowed, featureLoading]);
 
     // Get user first letter for avatar
     const getUserInitials = () => {

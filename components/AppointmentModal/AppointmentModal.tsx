@@ -31,6 +31,7 @@ interface AppointmentFormData {
     customerId?: string;
     employeeId?: string;
     employees?: Employee[];
+    reminder?: number | null;
 }
 
 interface SubmittedAppointmentData {
@@ -45,6 +46,7 @@ interface SubmittedAppointmentData {
     customerId?: string;
     employeeId?: string;
     employees?: Employee[];
+    reminder?: number | null;
 }
 
 interface AppointmentModalProps {
@@ -98,6 +100,17 @@ export default function AppointmentModal({
         { value: 3.5, label: '3.5 Stunden' }, // 3.5 hours
         { value: 4, label: '4 Stunden' },      // 4 hours
         { value: 5, label: '5 Stunden' },      // 5 hours
+    ];
+
+    const reminderOptions = [
+        { value: null, label: 'No reminder' },
+        { value: 5, label: '5 minutes before' },
+        { value: 10, label: '10 minutes before' },
+        { value: 30, label: '30 minutes before' },
+        { value: 60, label: '60 minutes before' },
+        { value: 180, label: '3 hours before' },
+        { value: 720, label: '12 hours before' },
+        { value: 1440, label: '24 hours before' },
     ];
 
     React.useEffect(() => {
@@ -522,6 +535,37 @@ export default function AppointmentModal({
                                             {...field}
                                         />
                                     </FormControl>
+                                </FormItem>
+                            )}
+                        />
+
+                        <FormField
+                            control={form.control}
+                            name="reminder"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Reminder (optional)</FormLabel>
+                                    <Select 
+                                        onValueChange={(value) => field.onChange(value === 'null' ? null : parseInt(value))} 
+                                        value={field.value === null || field.value === undefined ? 'null' : field.value.toString()}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger className="cursor-pointer">
+                                                <SelectValue placeholder="Reminder wählen" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent>
+                                            {reminderOptions.map((opt) => (
+                                                <SelectItem 
+                                                    key={opt.value === null ? 'null' : opt.value.toString()} 
+                                                    value={opt.value === null ? 'null' : opt.value.toString()} 
+                                                    className="cursor-pointer"
+                                                >
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </FormItem>
                             )}
                         />
