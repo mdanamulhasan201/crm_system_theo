@@ -47,13 +47,14 @@ export const FeatureAccessProvider = ({ children }: { children: React.ReactNode 
     }
   });
 
-  const [loading, setLoading] = useState<boolean>(() => features.length === 0);
+  const [loading, setLoading] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
 
     const fetchFeatures = async () => {
       try {
+        setLoading(true);
         const res = (await getAllDynamicRoutes()) as FeatureAccessResponse;
         if (!isMounted || !res?.success || !Array.isArray(res.data)) return;
 
@@ -77,17 +78,12 @@ export const FeatureAccessProvider = ({ children }: { children: React.ReactNode 
       }
     };
 
-    if (!features.length) {
-      setLoading(true);
-      fetchFeatures();
-    } else {
-      setLoading(false);
-    }
+    fetchFeatures();
 
     return () => {
       isMounted = false;
     };
-  }, [features.length]);
+  }, []);
 
   const isPathAllowed = useMemo(
     () =>
