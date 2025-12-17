@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'bundle-carried-guides-constitutes.trycloudflare.com',
+        hostname: 'download-rhode-ceremony-feet.trycloudflare.com',
       },
       {
         protocol: 'http',
