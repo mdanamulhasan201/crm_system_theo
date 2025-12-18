@@ -1,8 +1,9 @@
-'use client'
+"use client"
 import React, { useState, useEffect } from 'react';
 import Sidebar from '../Shared/Sidebar';
 import Navbar from '../Shared/Navbar';
 import TeamChat from '../Shared/TeamChat';
+import { NotificationProvider } from '@/contexts/NotificationContext';
 
 interface LayoutProps {
     children: React.ReactNode;
@@ -42,48 +43,55 @@ const DashboardLayout = ({ children }: LayoutProps) => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-100">
-            {/* Sidebar */}
-            <div
-                className={`fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-                    }`}
-            >
-                <Sidebar
-                    isCollapsed={isSidebarCollapsed}
-                    onClose={() => setIsSidebarOpen(false)}
-                />
-            </div>
-
-            {/* Main Content */}
-            <div
-                className={`flex-1 flex flex-col overflow-hidden transition-[margin] duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-80'}`}
-            >
-                <Navbar
-                    onMenuClick={toggleSidebarVisibility}
-                    onCollapseToggle={toggleSidebarCollapse}
-                    isSidebarOpen={isSidebarOpen}
-                    isSidebarCollapsed={isSidebarCollapsed}
-                />
-
-                {/* Overlay */}
-                {isSidebarOpen && (
-                    <div
-                        className="fixed inset-0 bg-black/50 z-30 sm:hidden"
-                        onClick={() => setIsSidebarOpen(false)}
+        /**
+         * Wrap the entire dashboard in the NotificationProvider so:
+         * - The navbar bell icon can access live notifications.
+         * - Any other component in the dashboard can also use notifications later.
+         */
+        <NotificationProvider>
+            <div className="flex h-screen bg-gray-100">
+                {/* Sidebar */}
+                <div
+                    className={`fixed inset-y-0 left-0 z-40 transition-transform duration-300 ease-in-out transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+                        }`}
+                >
+                    <Sidebar
+                        isCollapsed={isSidebarCollapsed}
+                        onClose={() => setIsSidebarOpen(false)}
                     />
-                )}
+                </div>
 
-                {/* Content Area */}
-                <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-4">
-                    {children}
-                </main>
+                {/* Main Content */}
+                <div
+                    className={`flex-1 flex flex-col overflow-hidden transition-[margin] duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-80'}`}
+                >
+                    <Navbar
+                        onMenuClick={toggleSidebarVisibility}
+                        onCollapseToggle={toggleSidebarCollapse}
+                        isSidebarOpen={isSidebarOpen}
+                        isSidebarCollapsed={isSidebarCollapsed}
+                    />
 
-                {/* Global Team Chat */}
-                {/* <TeamChat /> */}
+                    {/* Overlay */}
+                    {isSidebarOpen && (
+                        <div
+                            className="fixed inset-0 bg-black/50 z-30 sm:hidden"
+                            onClick={() => setIsSidebarOpen(false)}
+                        />
+                    )}
+
+                    {/* Content Area */}
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-4">
+                        {children}
+                    </main>
+
+                    {/* Global Team Chat */}
+                    {/* <TeamChat /> */}
+
+                </div>
 
             </div>
-
-        </div>
+        </NotificationProvider>
     );
 };
 

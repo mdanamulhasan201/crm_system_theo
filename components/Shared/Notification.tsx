@@ -1,9 +1,10 @@
-'use client'
-import React, { useState } from 'react'
+"use client"
+import React from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Card, CardContent } from '@/components/ui/card'
 import { IoNotificationsOutline } from 'react-icons/io5'
 import { HiCheck, HiX } from 'react-icons/hi'
+import { useNotifications } from '@/contexts/NotificationContext'
 
 // Badge component for notification count
 const Badge = ({ count }: { count: number }) => {
@@ -22,6 +23,8 @@ const NotificationItem = ({
     onMarkAsRead,
     onDelete
 }: {
+    // Keep the props inline here to avoid a hard dependency on context types.
+    // The context maps the backend data into this shape.
     notification: {
         id: string
         title: string
@@ -78,48 +81,20 @@ const NotificationItem = ({
 }
 
 export default function NotificationPage() {
-    const [notifications, setNotifications] = useState([
-        {
-            id: '1',
-            title: 'Neuer Auftrag erhalten',
-            message: 'Sie haben einen neuen Auftrag von Kunden John Doe erhalten',
-            time: '2 Minuten zuvor',
-            isRead: false,
-            type: 'info' as const
-        },
-        {
-            id: '2',
-            title: 'Zahlung erfolgreich',
-            message: 'Zahlung von 150€ wurde erfolgreich verarbeitet',
-            time: '1 Stunde zuvor',
-            isRead: false,
-            type: 'success' as const
-        },
-
-
-    ])
-
-    const unreadCount = notifications.filter(n => !n.isRead).length
-
-    const handleMarkAsRead = (id: string) => {
-        setNotifications(prev =>
-            prev.map(notification =>
-                notification.id === id
-                    ? { ...notification, isRead: true }
-                    : notification
-            )
-        )
-    }
-
-    const handleDelete = (id: string) => {
-        setNotifications(prev => prev.filter(notification => notification.id !== id))
-    }
-
-    const handleMarkAllAsRead = () => {
-        setNotifications(prev =>
-            prev.map(notification => ({ ...notification, isRead: true }))
-        )
-    }
+    /**
+     * Pulls live notifications from the NotificationContext.
+     * - `notifications` are loaded once from the REST API and then updated via Socket.IO.
+     * - `unreadCount` is derived in the context for convenience.
+     * - Action handlers update the local UI state (and can later call backend APIs).
+     */
+    const {
+        notifications,
+        unreadCount,
+        markAsRead,
+        deleteNotification,
+        markAllAsRead,
+        isLoading,
+    } = useNotifications()
 
     return (
         <Popover>
@@ -135,7 +110,7 @@ export default function NotificationPage() {
                         <h3 className="font-semibold text-gray-900">Benachrichtigungen</h3>
                         {unreadCount > 0 && (
                             <button
-                                onClick={handleMarkAllAsRead}
+                                onClick={markAllAsRead}
                                 className="text-xs text-blue-600 hover:text-blue-800 font-medium"
                             >
                                 Alle 
@@ -145,21 +120,25 @@ export default function NotificationPage() {
                 </div>
 
                 <div className="max-h-96 overflow-y-auto p-4">
-                    {notifications.length === 0 ? (
-                        <div className="text-center py-8">
-                            <IoNotificationsOutline className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                            <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
+                    {isLoading ? (
+                        <div className="text-center py-8 text-sm text-gray-500">
+                            Lädt Benachrichtigungen...
                         </div>
-                    ) : (
-                        notifications.map(notification => (
-                            <NotificationItem
-                                key={notification.id}
-                                notification={notification}
-                                onMarkAsRead={handleMarkAsRead}
-                                onDelete={handleDelete}
-                            />
-                        ))
-                    )}
+                    ) : notifications.length === 0 ? (
+                                <div className="text-center py-8">
+                                    <IoNotificationsOutline className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500 text-sm">Keine Benachrichtigungen</p>
+                                </div>
+                            ) : (
+                                notifications.map(notification => (
+                                    <NotificationItem
+                                        key={notification.id}
+                                        notification={notification}
+                                        onMarkAsRead={markAsRead}
+                                        onDelete={deleteNotification}
+                                    />
+                                ))
+                            )}
                 </div>
 
                 {notifications.length > 0 && (

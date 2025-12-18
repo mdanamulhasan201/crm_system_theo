@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'fragrances-passenger-fish-head.trycloudflare.com',
+        hostname: 'dirt-arab-thereafter-inspection.trycloudflare.com',
       },
       {
         protocol: 'http',
