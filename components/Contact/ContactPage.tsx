@@ -79,7 +79,7 @@ export default function ContactPage() {
                                     <FormLabel>NAME</FormLabel>
                                     <FormControl>
                                         <Input
-                                            placeholder=""
+                                            placeholder="Ihr Name"
                                             {...field}
                                             className={form.formState.errors.name ? "border-red-500" : "border border-gray-500"}
                                         />
@@ -100,7 +100,7 @@ export default function ContactPage() {
                                     <FormLabel>FIRMA</FormLabel>
                                     <FormControl>
                                         <Input
-                                            placeholder=""
+                                            placeholder="Ihre Firma"
                                             {...field}
                                             className={form.formState.errors.firma ? "border-red-500" : "border border-gray-500"}
                                         />
@@ -118,6 +118,7 @@ export default function ContactPage() {
                             control={form.control}
                             name="email"
                             rules={{
+                                
                                 required: "E-Mail ist erforderlich",
                                 pattern: {
                                     value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -130,7 +131,7 @@ export default function ContactPage() {
                                     <FormControl>
                                         <Input
                                             type="email"
-                                            placeholder=""
+                                            placeholder="Ihre E-Mail"
                                             {...field}
                                             className={form.formState.errors.email ? "border-red-500" : "border border-gray-500"}
                                         />
@@ -158,7 +159,7 @@ export default function ContactPage() {
                                     <FormControl>
                                         <Input
                                             type="tel"
-                                            placeholder=""
+                                            placeholder="Ihre Telefonnummer"
                                             {...field}
                                             className={form.formState.errors.telefon ? "border-red-500" : "border border-gray-500"}
                                         />
@@ -219,7 +220,7 @@ export default function ContactPage() {
                                 <FormLabel>VERBESSERUNGSVORSCHLAG ODER MODELLWUNSCH...</FormLabel>
                                 <FormControl>
                                     <Textarea
-                                        placeholder=""
+                                        placeholder="Ihre Nachricht"
                                         className={`min-h-[150px] ${form.formState.errors.message ? "border-red-500" : "border border-gray-500"}`}
                                         {...field}
                                     />

@@ -9,7 +9,7 @@ import {
   ReactNode,
 } from "react";
 import { initSocket, getSocket } from "@/lib/socket";
-import { getAllNotifications } from "@/apis/Notifications/NotificationsApis";
+import { getAllNotifications, getUnreadCount, markAsRead as markAsReadApi } from "@/apis/Notifications/NotificationsApis";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
@@ -33,9 +33,9 @@ interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
-  markAsRead: (id: string) => void;
+  markAsRead: (id: string) => Promise<void>;
   deleteNotification: (id: string) => void;
-  markAllAsRead: () => void;
+  markAllAsRead: () => Promise<void>;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(
@@ -99,6 +99,7 @@ function mapApiNotification(apiNotification: any): Notification {
 export function NotificationProvider({ children }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [serverUnreadCount, setServerUnreadCount] = useState<number>(0);
   const { user } = useAuth();
 
   // === INITIAL LOAD FROM REST API ===========================================
@@ -130,7 +131,23 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       }
     };
 
+    const loadUnreadCount = async () => {
+      try {
+        const response = await getUnreadCount();
+        if (!isMounted) return;
+        // Assuming the API returns { data: { count: number } } or { count: number }
+        const count = response.data?.count ?? response.count ?? 0;
+        setServerUnreadCount(count);
+      } catch (error) {
+        console.error(
+          "[NotificationProvider] Failed to load unread count:",
+          error
+        );
+      }
+    };
+
     loadInitialNotifications();
+    loadUnreadCount();
 
     return () => {
       isMounted = false;
@@ -151,10 +168,23 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
      * - "notification:read" → (optional) when a notification is marked as read elsewhere
      */
 
-    const handleNewNotification = (payload: any) => {
+    const handleNewNotification = async (payload: any) => {
     //   console.log("[NotificationContext] Received notification:", payload);
       const mapped = mapApiNotification(payload);
       setNotifications((prev) => [mapped, ...prev]);
+      
+      // Update unread count when new notification arrives
+      if (!mapped.isRead) {
+        setServerUnreadCount((prev) => prev + 1);
+        // Optionally refresh from server to ensure accuracy
+        try {
+          const response = await getUnreadCount();
+          const count = response.data?.count ?? response.count ?? 0;
+          setServerUnreadCount(count);
+        } catch (error) {
+          console.error("[NotificationProvider] Failed to refresh unread count after new notification:", error);
+        }
+      }
     };
 
     // Listen for "notification" event (matches your backend: io.to(partnerId).emit("notification", notification))
@@ -184,16 +214,24 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
   // === LOCAL ACTIONS (UI STATE) ============================================
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string) => {
+    // Only update local UI state for individual notification
+    // The API endpoint marks ALL notifications as read, so we don't call it for individual items
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
     );
 
-    // TODO: If you have a backend endpoint for this, call it here.
-    // Example:
-    // markNotificationAsRead(id).catch((err) => {
-    //   console.error("Failed to mark as read", err);
-    // });
+    // Update server unread count optimistically
+    setServerUnreadCount((prev) => Math.max(0, prev - 1));
+
+    // Refresh unread count from server to ensure sync
+    try {
+      const response = await getUnreadCount();
+      const count = response.data?.count ?? response.count ?? 0;
+      setServerUnreadCount(count);
+    } catch (error) {
+      console.error("[NotificationProvider] Failed to refresh unread count:", error);
+    }
   };
 
   const deleteNotification = (id: string) => {
@@ -202,16 +240,55 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     // TODO: Call delete API here when available.
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+  const markAllAsRead = async () => {
+    const unreadCount = notifications.filter((n) => !n.isRead).length;
+    
+    if (unreadCount === 0) return;
 
-    // TODO: Call "mark all as read" API here when available.
+    // Optimistically update UI
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    setServerUnreadCount(0);
+
+    // Call backend API to mark all notifications as read
+    try {
+      await markAsReadApi();
+      // Refresh unread count from server to ensure sync
+      const response = await getUnreadCount();
+      const count = response.data?.count ?? response.count ?? 0;
+      setServerUnreadCount(count);
+      // Reload notifications to get accurate read status from server
+      const notificationsResponse = await getAllNotifications(1, 20);
+      const apiNotifications = Array.isArray(notificationsResponse.data)
+        ? notificationsResponse.data
+        : [];
+      setNotifications(apiNotifications.map(mapApiNotification));
+    } catch (error) {
+      console.error("[NotificationProvider] Failed to mark all as read:", error);
+      // Refresh unread count to get accurate value
+      try {
+        const response = await getUnreadCount();
+        const count = response.data?.count ?? response.count ?? 0;
+        setServerUnreadCount(count);
+        // Reload notifications to get accurate read status
+        const notificationsResponse = await getAllNotifications(1, 20);
+        const apiNotifications = Array.isArray(notificationsResponse.data)
+          ? notificationsResponse.data
+          : [];
+        setNotifications(apiNotifications.map(mapApiNotification));
+      } catch (err) {
+        console.error("[NotificationProvider] Failed to refresh after mark all as read:", err);
+      }
+    }
   };
 
-  const unreadCount = useMemo(
-    () => notifications.filter((n) => !n.isRead).length,
-    [notifications]
-  );
+  // Use server unread count if available, otherwise fall back to local calculation
+  const unreadCount = useMemo(() => {
+    // If we have a server count, use it (more accurate)
+    // Otherwise calculate from local notifications
+    return serverUnreadCount > 0 || notifications.length > 0
+      ? serverUnreadCount || notifications.filter((n) => !n.isRead).length
+      : notifications.filter((n) => !n.isRead).length;
+  }, [notifications, serverUnreadCount]);
 
   const value: NotificationContextValue = {
     notifications,

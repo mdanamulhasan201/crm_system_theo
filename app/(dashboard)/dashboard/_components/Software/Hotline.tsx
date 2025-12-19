@@ -12,7 +12,7 @@ export default function Hotline() {
         <div className="w-full space-y-4">
             {/* Hotline and System Status Card */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="bg-gray-800 text-white px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="bg-black text-white px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                     {/* Left: Hotline */}
                     <div className="flex items-center gap-3">
                         <Phone className="w-5 h-5 shrink-0" />

@@ -37,7 +37,7 @@ export default function VersionPage() {
             {/* Header Section */}
             <div className="mb-8">
                 <h1 className="text-2xl md:text-3xl font-bold mb-2">
-                    NEUSTE VERSION: FEETF1RST SOFTWARE 1.2
+                    NEUSTE VERSION: FEETF1RST SOFTWARE 1.3
                 </h1>
                 <p className="text-sm md:text-base text-gray-600">
                     Immer auf dem neusten Stand - alle Verbesserungen im Überblick.
@@ -145,14 +145,12 @@ export default function VersionPage() {
             </div>
 
             {/* History Section */}
-            <div className="mt-8">
-                <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4">
-                    Historie
-                </h2>
+            {/* <div className="mt-8">
+                
                 <p className="text-sm md:text-base text-gray-600">
                     Weitere Versionen und Release Notes werden hier angezeigt.
                 </p>
-            </div>
+            </div> */}
         </div>
     )
 }

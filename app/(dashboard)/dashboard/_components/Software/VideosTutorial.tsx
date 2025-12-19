@@ -7,6 +7,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
+import Image from 'next/image'
 
 interface VideoTutorial {
     id: string
@@ -20,23 +21,23 @@ const videoTutorials: VideoTutorial[] = [
     {
         id: '1',
         title: 'EINLEITUNG',
-        description: 'Lernen Sie die neue FeetFirst-Software kennen - jetzt als Video.',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-        thumbnailUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/BigBuckBunny.jpg',
+        description: 'Lernen Sie die neue FeetF1rst-Software kennen - jetzt als Video.',
+        videoUrl: '',
+        thumbnailUrl: '',
     },
     {
         id: '2',
         title: 'OUTSOURCING',
         description: 'Maßschäfte und Konstruktionen - schnell, digital und ohne eigenen Aufwand.',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-        thumbnailUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ElephantsDream.jpg',
+        videoUrl: '',
+        thumbnailUrl: '',
     },
     {
         id: '3',
         title: 'SHOE FINDER',
-        description: 'Alles, was Sie über den FeetFirst Shoe Finder wissen müssen.',
-        videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-        thumbnailUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/images/ForBiggerBlazes.jpg',
+        description: 'Alles, was Sie über den FeetF1rst Shoe Finder wissen müssen.',
+        videoUrl: '',
+        thumbnailUrl: '',
     }
 ]
 
@@ -74,11 +75,19 @@ export default function VideosTutorial() {
                             {/* Video Preview (thumbnail) */}
                             <div className="w-full h-full relative">
                                 {/* Video Thumbnail */}
-                                <img
-                                    src={video.thumbnailUrl}
-                                    alt={video.title}
-                                    className="w-full h-full object-cover"
-                                />
+                                {video.thumbnailUrl ? (
+                                    <Image
+                                        width={500}
+                                        height={500}
+                                        src={video.thumbnailUrl}
+                                        alt={video.title}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                                        <span className="text-gray-400 text-sm">No thumbnail</span>
+                                    </div>
+                                )}
 
                                 {/* Play Button Overlay */}
                                 <div className="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/10 transition-colors">
@@ -115,14 +124,22 @@ export default function VideosTutorial() {
                         <div className="px-6 pb-6">
                             {/* Video Player */}
                             <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
-                                <video
-                                    src={selectedVideo.videoUrl}
-                                    controls
-                                    autoPlay
-                                    className="w-full h-full"
-                                >
-                                    Your browser does not support the video tag.
-                                </video>
+                                {selectedVideo.videoUrl ? (
+                                    <video
+                                        src={selectedVideo.videoUrl}
+                                        controls
+                                        autoPlay
+                                        className="w-full h-full"
+                                    >
+                                        Your browser does not support the video tag.
+                                    </video>
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center">
+                                        <p className="text-gray-400 text-center px-4">
+                                            Coming Soon
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Video Description in Modal */}

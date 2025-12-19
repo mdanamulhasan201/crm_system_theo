@@ -6,7 +6,6 @@ import Autoplay from 'embla-carousel-autoplay'
 import shoes from '@/public/images/products/shoes.png'
 import Image from 'next/image'
 import ContactPage from '@/components/Contact/ContactPage'
-import { IoIosCall } from 'react-icons/io'
 import { getCategoriesProducts } from '@/apis/productsApis'
 import FAQ from '../_components/Software/FAQ'
 import VersionPage from '../_components/Software/Version'
@@ -236,7 +235,7 @@ export default function Software() {
                 <RelesHistory />
                 <VideosTutorial />
             </div>
-            <div className='flex flex-col gap-6 mb-8'>
+            {/* <div className='flex flex-col gap-6 mb-8'>
                 <h1 className='text-2xl font-bold uppercase'>NEUERUNGEN</h1>
                 <p className='text-sm text-gray-700 leading-8'>
                     Willkommen bei der FeetF1rst Software – Ihre neue Schaltzentrale für eine perfekte Fußversorgung!
@@ -256,13 +255,13 @@ export default function Software() {
                         {showMore ? 'WENIGER ANZEIGEN' : 'MEHR ANZEIGEN'}
                     </button>
                 </div>
-            </div>
+            </div> */}
 
             {/* Carousel Section */}
             <div className="mt-14">
-                <div className="text-center mb-6">
+                {/* <div className="text-center mb-6">
                     <h2 className="text-2xl font-bold uppercase mb-5">JETZT NEU IM SHOE FINDER FEETFIRST</h2>
-                </div>
+                </div> */}
                 {loading ? (
                     <div className="text-center">Loading...</div>
                 ) : (
@@ -277,7 +276,7 @@ export default function Software() {
 
 
             {/* footer */}
-            <div className='bg-[#121212] text-white p-4 mt-14 flex items-center gap-2'>
+            {/* <div className='bg-[#121212] text-white p-4 mt-14 flex items-center gap-2'>
                 <div className='flex items-center gap-5'>
                     <div className='border border-white rounded-full p-1'>
                         <IoIosCall className='text-2xl' />
@@ -287,7 +286,7 @@ export default function Software() {
                         <p className='text-sm text-white capitalize'>ALTERNATIV ERREICHEN SIE UNS JEDERZEIT UNTER +39 366 508 7742</p>
                     </div>
                 </div>
-            </div>
+            </div> */}
         </div>
     )
 }
