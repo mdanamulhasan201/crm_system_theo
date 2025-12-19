@@ -30,7 +30,7 @@ export const initSocket = (userId?: string | null): Socket | null => {
 
   // Configure socket to match your backend settings
   socket = io(socketUrl, {
-    transports: ["polling", "websocket"], // Try polling first, then upgrade to websocket
+    transports: ["polling", "websocket"], 
     path: "/socket.io",
     withCredentials: true,
     // reconnection: true,
