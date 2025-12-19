@@ -12,7 +12,6 @@ import { getCustomerSettings, getSettingData } from "@/apis/einlagenApis";
 import toast from "react-hot-toast";
 
 const INPUT_ID = "cover-input";
-const MATERIALS = ["Leder", "Microfaser"] as const;
 
 interface Insole {
     id: string;
@@ -514,7 +513,7 @@ export default function PreisverwaltungPage() {
                     </Button>
                 </div>
 
-                <div className="flex gap-3 mb-6">
+                {/* <div className="flex gap-3 mb-6">
                     {MATERIALS.map((material) => (
                         <button
                             key={material}
@@ -527,10 +526,10 @@ export default function PreisverwaltungPage() {
                             {material}
                         </button>
                     ))}
-                </div>
+                </div> */}
 
                 {/* Save Button for Cover List */}
-                {coverList.length > 0 && (
+                {/* {coverList.length > 0 && (
                     <div className="mt-6 flex items-center gap-3">
 
                         <span className="text-sm text-gray-500 flex items-center gap-1">
@@ -538,7 +537,7 @@ export default function PreisverwaltungPage() {
                             {coverList.length} {coverList.length === 1 ? "Überzug" : "Überzüge"} bereit zum Speichern
                         </span>
                     </div>
-                )}
+                )} */}
             </div>
 
             {/* Fussanalyse Price Section */}
