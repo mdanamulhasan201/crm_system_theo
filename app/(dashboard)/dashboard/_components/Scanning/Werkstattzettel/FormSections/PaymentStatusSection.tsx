@@ -27,13 +27,23 @@ export default function PaymentStatusSection({
             return { type: 'Privat', status: 'Offen' }
         }
 
-        // Handle new format: "Privat - Bezahlt" or "Krankenkasse - Genehmigt"
+        // Handle new format: "Privat_Bezahlt" or "Krankenkasse_Genehmigt" (underscore format)
+        if (val.includes('_')) {
+            const underscoreIndex = val.indexOf('_')
+            const type = val.substring(0, underscoreIndex)
+            const status = val.substring(underscoreIndex + 1)
+            // Normalize status: capitalize first letter for display
+            const normalizedStatus = status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()
+            return { type: type as PaymentType, status: normalizedStatus }
+        }
+
+        // Handle old format: "Privat - Bezahlt" or "Krankenkasse - Genehmigt" (backward compatibility)
         if (val.includes(' - ')) {
             const [type, status] = val.split(' - ')
             return { type: type as PaymentType, status }
         }
 
-        // Handle format: "Privat|Bezahlt"
+        // Handle format: "Privat|Bezahlt" (backward compatibility)
         if (val.includes('|')) {
             const [type, status] = val.split('|')
             return { type: type as PaymentType, status }
@@ -58,11 +68,11 @@ export default function PaymentStatusSection({
 
         // Set default status based on type
         if (newType === 'Privat') {
-            const newValue = 'Privat - Bezahlt'
+            const newValue = 'Privat_Bezahlt'
             setStatus('Bezahlt')
             onChange(newValue)
         } else if (newType === 'Krankenkasse') {
-            const newValue = 'Krankenkasse - Genehmigt'
+            const newValue = 'Krankenkasse_Genehmigt'
             setStatus('Genehmigt')
             onChange(newValue)
         } else {
@@ -74,7 +84,9 @@ export default function PaymentStatusSection({
     const handleStatusChange = (newStatus: string) => {
         setStatus(newStatus)
         if (paymentType) {
-            const newValue = `${paymentType} - ${newStatus}`
+            // Format: "Privat_Bezahlt" or "Privat_offen" (lowercase for "offen")
+            const formattedStatus = newStatus === 'Offen' ? 'offen' : newStatus
+            const newValue = `${paymentType}_${formattedStatus}`
             onChange(newValue)
         }
     }

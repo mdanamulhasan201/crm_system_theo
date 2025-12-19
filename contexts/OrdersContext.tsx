@@ -16,6 +16,7 @@ export interface OrderData {
     displayStatus: string;
     preis: string;
     zahlung: string;
+    bezahlt?: string | boolean | null; // Raw payment status value
     beschreibung: string;
     abholort: string;
     fertigstellung: string;
@@ -59,6 +60,7 @@ interface OrdersContextType {
     bulkUpdateOrderStatus: (orderIds: string[], newStatus: string) => Promise<void>;
     updateOrderPriority: (orderId: string, priority: 'Dringend' | 'Normal') => Promise<void>;
     updateBulkKrankenkasseStatus: (orderIds: string[], krankenkasseStatus: string) => void;
+    updateBulkPaymentStatus: (orderIds: string[], paymentStatus: string) => void;
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
@@ -87,6 +89,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
                 ? `${((apiOrder.fußanalyse || 0) + (apiOrder.einlagenversorgung || 0)).toFixed(2)} €`
                 : '—',
         zahlung: formatPaymentStatus(apiOrder.bezahlt),
+        bezahlt: apiOrder.bezahlt || werkstattzettel?.bezahlt || null, // Store raw payment status
         beschreibung: werkstattzettel?.versorgung || apiOrder.product.versorgung || apiOrder.product.status,
         abholort: "Abholung Innsbruck oder Wird mit Post versandt",
         fertigstellung: new Date(apiOrder.statusUpdate || apiOrder.createdAt).toLocaleDateString('de-DE'),
@@ -429,6 +432,21 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         });
     };
 
+    // Optimistically update payment status (bezahlt) for multiple orders
+    const updateBulkPaymentStatus = (orderIds: string[], paymentStatus: string) => {
+        setOrders(prev => {
+            return prev.map(order =>
+                orderIds.includes(order.id)
+                    ? { 
+                        ...order, 
+                        bezahlt: paymentStatus,
+                        zahlung: formatPaymentStatus(paymentStatus)
+                    }
+                    : order
+            );
+        });
+    };
+
     const refreshOrderData = async (orderId: string) => {
         try {
             const response = await getSingleOrder(orderId);
@@ -470,6 +488,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             bulkUpdateOrderStatus,
             updateOrderPriority,
             updateBulkKrankenkasseStatus,
+            updateBulkPaymentStatus,
             orderIdFromSearch, // Expose orderId from URL
         }}>
             {children}

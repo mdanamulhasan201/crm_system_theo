@@ -100,20 +100,26 @@ export function initializeFormData(scanData: any, formData?: any) {
     datumAuftrag: scanData?.datumAuftrag || today,
     geschaeftsstandort: locationValue,
     bezahlt: (() => {
-      // Convert boolean to new string format
+      // Convert boolean to new string format (underscore format)
       const bezahltValue = scanData?.bezahlt
       if (typeof bezahltValue === 'boolean') {
-        return bezahltValue ? 'Privat - Bezahlt' : 'Privat - Offen'
+        return bezahltValue ? 'Privat_Bezahlt' : 'Privat_offen'
       }
       if (typeof bezahltValue === 'string') {
         // Handle old string format
         if (bezahltValue === 'true' || bezahltValue === 'True' || bezahltValue === 'Ja') {
-          return 'Privat - Bezahlt'
+          return 'Privat_Bezahlt'
         }
         if (bezahltValue === 'false' || bezahltValue === 'False' || bezahltValue === 'Nein') {
-          return 'Privat - Offen'
+          return 'Privat_offen'
         }
-        // Return as-is if already in new format
+        // Convert old dash format to underscore format
+        if (bezahltValue.includes(' - ')) {
+          const [type, status] = bezahltValue.split(' - ')
+          const formattedStatus = status === 'Offen' ? 'offen' : status
+          return `${type}_${formattedStatus}`
+        }
+        // Return as-is if already in underscore format
         return bezahltValue
       }
       return ''

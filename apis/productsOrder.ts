@@ -200,12 +200,30 @@ export const getPicture2324 = async (orderId: string) => {
     }
 }
 
-// /customer-orders/kranken-kasse-status
+// //customer-orders/payment-status
 
 
+export const getPaymentStatus = async (orderIds: string[], paymentStatus: string, bezahlt?: string) => {
+    try {
+        const payload: any = { orderIds, paymentStatus };
+        if (bezahlt) {
+            payload.bezahlt = bezahlt;
+        }
+        const response = await axiosClient.patch('/customer-orders/payment-status', payload);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// Alias for Krankenkasse status updates (for backward compatibility)
 export const getKrankenKasseStatus = async (orderIds: string[], krankenkasseStatus: string) => {
     try {
-        const response = await axiosClient.patch('/customer-orders/kranken-kasse-status', { orderIds, krankenkasseStatus });
+        const response = await axiosClient.patch('/customer-orders/payment-status', { 
+            orderIds, 
+            paymentStatus: krankenkasseStatus,
+            bezahlt: krankenkasseStatus 
+        });
         return response.data;
     } catch (error) {
         throw error;

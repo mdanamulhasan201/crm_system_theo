@@ -16,7 +16,7 @@ import BarcodeStickerModal from "./BarcodeSticker/BarcodeStickerModal";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getKrankenKasseStatus } from '@/apis/productsOrder';
+import { getKrankenKasseStatus, getPaymentStatus } from '@/apis/productsOrder';
 
 import toast from 'react-hot-toast';
 
@@ -37,6 +37,7 @@ export default function ProcessTable() {
         bulkUpdateOrderStatus,
         updateOrderPriority,
         updateBulkKrankenkasseStatus,
+        updateBulkPaymentStatus,
         orderIdFromSearch, // Get orderId from URL
     } = useOrders();
 
@@ -79,6 +80,7 @@ export default function ProcessTable() {
     const [autoGenerateBarcode, setAutoGenerateBarcode] = useState(false);
     const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
     const [isUpdatingKrankenkasseStatus, setIsUpdatingKrankenkasseStatus] = useState(false);
+    const [isUpdatingPaymentStatus, setIsUpdatingPaymentStatus] = useState(false);
 
     // Direct generate and send PDF when status is clicked
     const handleStatusClickGenerateAndSend = async (orderId: string, orderNumber: string) => {
@@ -253,6 +255,31 @@ export default function ProcessTable() {
         }
     };
 
+    // Handle bulk payment status update with optimistic update
+    const handleBulkPaymentStatus = async (orderIds: string[], paymentStatus: string) => {
+        if (orderIds.length === 0) return;
+        setIsUpdatingPaymentStatus(true);
+        try {
+            // Optimistically update the UI immediately (no table reload needed)
+            updateBulkPaymentStatus(orderIds, paymentStatus);
+
+            // Then update on the server
+            await getPaymentStatus(orderIds, paymentStatus, paymentStatus);
+            toast.success(`${orderIds.length} ${orderIds.length === 1 ? 'Auftrag' : 'Aufträge'} Zahlungsstatus erfolgreich aktualisiert`);
+
+            // Don't refetch - optimistic update already shows the change
+            // This prevents table reload and preserves selection
+            setSelectedOrderIds([]);
+        } catch (error) {
+            console.error('Failed to update payment status:', error);
+            toast.error('Fehler beim Aktualisieren des Zahlungsstatus');
+            // Only refetch on error to revert the optimistic update
+            refetch();
+        } finally {
+            setIsUpdatingPaymentStatus(false);
+        }
+    };
+
     useEffect(() => {
         if (selectedOrderIds.length === 0) {
             setBulkStatusSelectValue("");
@@ -312,6 +339,8 @@ export default function ProcessTable() {
                     onStatusValueChange={setBulkStatusSelectValue}
                     onBulkKrankenkasseStatus={handleBulkKrankenkasseStatus}
                     isUpdatingKrankenkasseStatus={isUpdatingKrankenkasseStatus}
+                    onBulkPaymentStatus={handleBulkPaymentStatus}
+                    isUpdatingPaymentStatus={isUpdatingPaymentStatus}
                 />
             )}
 

@@ -61,13 +61,16 @@ export default function OrderTableRow({
         }
 
         const colors = getPaymentStatusColor(order.zahlung);
-        // Format display text - show shorter version if it contains " - "
-        const displayText = order.zahlung.includes(' - ')
+        // Format display text - replace underscores with spaces for better readability
+        let displayText = order.zahlung.includes(' - ')
             ? order.zahlung.split(' - ').join(' • ') // Replace " - " with " • " for better display
             : order.zahlung;
+        
+        // Replace underscores with spaces for better display
+        displayText = displayText.replace(/_/g, ' ');
 
         return (
-            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text}`}>
+            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text} break-words`} style={{ wordBreak: 'break-word' }}>
                 {displayText}
             </span>
         );
@@ -89,6 +92,7 @@ export default function OrderTableRow({
             </span>
         );
     };
+
 
     return (
         <TableRow
@@ -146,8 +150,10 @@ export default function OrderTableRow({
             <TableCell className="text-center text-xs sm:text-sm w-[90px] min-w-[90px] max-w-[90px] whitespace-normal break-words overflow-hidden">
                 {order.preis}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[120px] min-w-[120px] max-w-[120px] whitespace-normal break-words overflow-hidden hidden md:table-cell">
-                {renderPaymentStatus()}
+            <TableCell className="text-center text-xs sm:text-sm w-[200px] min-w-[200px] max-w-[200px] break-words hidden md:table-cell">
+                <div className="flex flex-col items-center gap-1.5 py-1 px-1">
+                    {renderPaymentStatus()}
+                </div>
             </TableCell>
             <TableCell className="text-center text-xs sm:text-sm w-[120px] min-w-[120px] max-w-[120px] whitespace-normal break-words overflow-hidden hidden lg:table-cell">
                 {order.erstelltAm}

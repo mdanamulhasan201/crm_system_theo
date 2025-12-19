@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'dirt-arab-thereafter-inspection.trycloudflare.com',
+        hostname: 'interior-corporate-equation-magnet.trycloudflare.com',
       },
       {
         protocol: 'http',
