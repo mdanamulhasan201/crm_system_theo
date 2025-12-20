@@ -56,6 +56,7 @@ export default function SettingsProfileLayout({
             if (path.endsWith("/sprache")) return BiGlobe;
             if (path.endsWith("/fragen")) return HelpCircle;
             if (path.endsWith("/automatische-orders")) return GrOrderedList;
+            if (path.endsWith("/automatisches")) return GrOrderedList;
             return Settings;
         };
 
@@ -148,6 +149,12 @@ export default function SettingsProfileLayout({
                     icon: GrOrderedList,
                     label: "Automatische Orders",
                     href: "/dashboard/settings-profile/automatische-orders"
+                },
+                {
+                    id: "automatische",
+                    icon: GrOrderedList,
+                    label: "Automatische",
+                    href: "/dashboard/settings-profile/automatisches"
                 }
             ];
         }
