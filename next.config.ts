@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'interior-corporate-equation-magnet.trycloudflare.com',
+        hostname: 'earnings-reporting-discharge-triple.trycloudflare.com',
       },
       {
         protocol: 'http',

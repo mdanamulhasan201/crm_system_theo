@@ -171,7 +171,7 @@ export const getCustomerOrdersByCustomerId = async (customerId: string, page: nu
 // customer order history get customer-orders/history/orders/89ca7ae3-c37d-4e39-b152-ae68d91f464b
 export const getCustomerOrderHistory = async (orderId: string) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/history/orders/${orderId}`);
+        const response = await axiosClient.get(`/customer-orders/order-history/${orderId}`);
         return response.data;
     } catch (error: any) {
         throw new Error(error.response.data.message || 'Failed to fetch customer order history');

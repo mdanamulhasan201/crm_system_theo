@@ -5,6 +5,9 @@ export interface StepDuration {
     status: string;
     statusDisplay: string;
     duration: string;
+    durationMs?: number;
+    startDate?: string;
+    endDate?: string;
     assignee: string;
     assigneeId: string;
     assigneeType: string;
@@ -13,26 +16,69 @@ export interface StepDuration {
 export interface ChangeLogEntry {
     id: string;
     date: string;
+    timestamp?: string;
     user: string;
     action: string;
-    note: string;
+    description?: string;
+    note?: string;
     type: string;
     details: {
-        partnerId: string;
-        employeeId: string;
+        partnerId: string | null;
+        employeeId: string | null;
+        paymentFrom?: string;
+        paymentTo?: string;
     };
+}
+
+export interface PaymentStatusHistoryEntry {
+    id: string;
+    date: string;
+    timestamp: string;
+    user: string;
+    paymentFrom: string;
+    paymentTo: string;
+    paymentFromDisplay: string;
+    paymentToDisplay: string;
+    details: {
+        partnerId: string | null;
+        employeeId: string | null;
+    };
+}
+
+export interface BarcodeInfo {
+    createdAt: string;
+    timestamp: string;
+    hasBarcode: boolean;
+}
+
+export interface OrderHistorySummary {
+    currentStatus: string;
+    currentPaymentStatus: string;
+    totalEvents: number;
+    totalPaymentChanges: number;
+    hasBarcodeScan: boolean;
 }
 
 export interface OrderHistoryData {
     orderNumber: number;
     stepDurations: StepDuration[];
     changeLog: ChangeLogEntry[];
-    totalEntries: number;
+    paymentStatusHistory?: PaymentStatusHistoryEntry[];
+    barcodeInfo?: BarcodeInfo;
+    summary?: OrderHistorySummary;
+    totalEntries?: number;
 }
 
-export interface OrderHistoryResponse {
+export interface OrderHistoryApiResponse {
     success: boolean;
-    data: OrderHistoryData;
+    data: {
+        orderNumber: number;
+        stepDurationOverview: StepDuration[];
+        changeLog: ChangeLogEntry[];
+        paymentStatusHistory?: PaymentStatusHistoryEntry[];
+        barcodeInfo?: BarcodeInfo;
+        summary?: OrderHistorySummary;
+    };
 }
 
 export const useOrderHistory = (orderId: string | null) => {
@@ -51,9 +97,19 @@ export const useOrderHistory = (orderId: string | null) => {
             setLoading(true);
             setError(null);
             try {
-                const response: OrderHistoryResponse = await getCustomerOrderHistory(orderId);
+                const response: OrderHistoryApiResponse = await getCustomerOrderHistory(orderId);
                 if (response.success) {
-                    setData(response.data);
+                    // Map API response to component format
+                    const mappedData: OrderHistoryData = {
+                        orderNumber: response.data.orderNumber,
+                        stepDurations: response.data.stepDurationOverview || [],
+                        changeLog: response.data.changeLog || [],
+                        paymentStatusHistory: response.data.paymentStatusHistory,
+                        barcodeInfo: response.data.barcodeInfo,
+                        summary: response.data.summary,
+                        totalEntries: response.data.changeLog?.length || 0,
+                    };
+                    setData(mappedData);
                 } else {
                     setError('Failed to fetch order history');
                 }

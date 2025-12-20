@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { X, Download, Clock, User } from 'lucide-react';
+import { X, Download, Clock, User, CheckCircle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useOrderHistory } from '@/hooks/orders/useOrderHistory';
 
@@ -60,6 +60,64 @@ export default function HistorySidebar({
             csvRows.push([]);
         }
 
+        // Add Summary section
+        if (data.summary) {
+            csvRows.push(['Zusammenfassung']);
+            csvRows.push(['Aktueller Status', data.summary.currentStatus || '']);
+            csvRows.push(['Aktueller Zahlungsstatus', data.summary.currentPaymentStatus || '']);
+            csvRows.push(['Gesamtanzahl Ereignisse', String(data.summary.totalEvents || 0)]);
+            csvRows.push(['Anzahl Zahlungsänderungen', String(data.summary.totalPaymentChanges || 0)]);
+            csvRows.push(['Barcode gescannt', data.summary.hasBarcodeScan ? 'Ja' : 'Nein']);
+            csvRows.push([]);
+        }
+
+        // Add Payment Status History section
+        if (data.paymentStatusHistory && data.paymentStatusHistory.length > 0) {
+            csvRows.push(['Zahlungsstatus Historie']);
+            csvRows.push([
+                'Datum',
+                'Zeit',
+                'Benutzer',
+                'Von',
+                'Nach',
+                'Partner-ID',
+                'Mitarbeiter-ID',
+            ]);
+
+            data.paymentStatusHistory.forEach((entry) => {
+                const date = entry.timestamp ? new Date(entry.timestamp) : new Date(entry.date);
+                const dateStr = date.toLocaleDateString('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                });
+                const timeStr = date.toLocaleTimeString('de-DE', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                });
+
+                csvRows.push([
+                    dateStr,
+                    timeStr,
+                    entry.user || '',
+                    entry.paymentFromDisplay || entry.paymentFrom || '',
+                    entry.paymentToDisplay || entry.paymentTo || '',
+                    entry.details?.partnerId || '',
+                    entry.details?.employeeId || '',
+                ]);
+            });
+            csvRows.push([]);
+        }
+
+        // Add Barcode Info section
+        if (data.barcodeInfo) {
+            csvRows.push(['Barcode Informationen']);
+            csvRows.push(['Erstellt am', data.barcodeInfo.createdAt || '']);
+            csvRows.push(['Barcode vorhanden', data.barcodeInfo.hasBarcode ? 'Ja' : 'Nein']);
+            csvRows.push([]);
+        }
+
         // Add Change Log section
         if (data.changeLog && data.changeLog.length > 0) {
             csvRows.push(['Änderungsprotokoll']);
@@ -68,6 +126,7 @@ export default function HistorySidebar({
                 'Zeit',
                 'Benutzer',
                 'Aktion',
+                'Beschreibung',
                 'Notiz',
                 'Typ',
                 'Partner-ID',
@@ -75,7 +134,7 @@ export default function HistorySidebar({
             ]);
 
             data.changeLog.forEach((entry) => {
-                const date = new Date(entry.date);
+                const date = entry.timestamp ? new Date(entry.timestamp) : new Date(entry.date);
                 const dateStr = date.toLocaleDateString('de-DE', {
                     day: '2-digit',
                     month: '2-digit',
@@ -92,6 +151,7 @@ export default function HistorySidebar({
                     timeStr,
                     entry.user || '',
                     entry.action || '',
+                    entry.description || '',
                     entry.note || '',
                     entry.type || '',
                     entry.details?.partnerId || '',
@@ -119,7 +179,22 @@ export default function HistorySidebar({
 
     const formatDate = (dateString: string) => {
         try {
-            const date = new Date(dateString);
+            // Handle both formatted date strings and ISO timestamps
+            let date: Date;
+            if (dateString.includes('T') || dateString.includes('Z')) {
+                // ISO timestamp format
+                date = new Date(dateString);
+            } else {
+                // Try parsing as formatted date string (e.g., "20. Dezember 2025, 11:07")
+                // If it's already formatted, try to parse it, otherwise use as is
+                const parsed = new Date(dateString);
+                if (isNaN(parsed.getTime())) {
+                    // If parsing fails, return the original string
+                    return dateString;
+                }
+                date = parsed;
+            }
+            
             const months = [
                 'Januar',
                 'Februar',
@@ -216,6 +291,125 @@ export default function HistorySidebar({
                             </div>
                         ) : (
                             <div className="space-y-10">
+                                {/* Summary Section */}
+                                {data.summary && (
+                                    <div className="bg-blue-50 rounded-lg p-5 border border-blue-200">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <Info className="h-5 w-5 text-blue-600" />
+                                            <h3 className="text-base font-medium text-gray-900">
+                                                Zusammenfassung
+                                            </h3>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Aktueller Status</p>
+                                                <p className="text-sm font-medium text-gray-900">{data.summary.currentStatus}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Zahlungsstatus</p>
+                                                <p className="text-sm font-medium text-gray-900">{data.summary.currentPaymentStatus}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Gesamtanzahl Ereignisse</p>
+                                                <p className="text-sm font-medium text-gray-900">{data.summary.totalEvents}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Zahlungsänderungen</p>
+                                                <p className="text-sm font-medium text-gray-900">{data.summary.totalPaymentChanges}</p>
+                                            </div>
+                                        </div>
+                                        {data.summary.hasBarcodeScan && (
+                                            <div className="mt-3 flex items-center gap-2">
+                                                <CheckCircle className="h-4 w-4 text-green-600" />
+                                                <p className="text-xs text-gray-600">Barcode wurde gescannt</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Barcode Info Section */}
+                                {data.barcodeInfo && (
+                                    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Barcode Informationen</p>
+                                                <p className="text-sm font-medium text-gray-900">
+                                                    {data.barcodeInfo.hasBarcode ? 'Barcode vorhanden' : 'Kein Barcode'}
+                                                </p>
+                                                {data.barcodeInfo.createdAt && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        Erstellt: {data.barcodeInfo.createdAt}
+                                                    </p>
+                                                )}
+                                            </div>
+                                            {data.barcodeInfo.hasBarcode && (
+                                                <CheckCircle className="h-5 w-5 text-green-600" />
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Payment Status History */}
+                                {data.paymentStatusHistory && data.paymentStatusHistory.length > 0 && (
+                                    <div>
+                                        <h3 className="text-base font-normal text-gray-900 mb-5">
+                                            Zahlungsstatus Historie
+                                        </h3>
+                                        <div className="relative">
+                                            {data.paymentStatusHistory.length > 1 && (
+                                                <div 
+                                                    className="absolute left-[5px] w-[1px] bg-gray-300"
+                                                    style={{
+                                                        top: '10px',
+                                                        bottom: '10px',
+                                                        zIndex: 0,
+                                                    }}
+                                                />
+                                            )}
+                                            <div className="space-y-4">
+                                                {data.paymentStatusHistory.map((entry, index) => (
+                                                    <div
+                                                        key={entry.id || index}
+                                                        className="relative flex gap-4"
+                                                    >
+                                                        <div className="relative flex-shrink-0" style={{ width: '12px' }}>
+                                                            <div 
+                                                                className="absolute left-[3px] w-[3px] bg-white"
+                                                                style={{ 
+                                                                    top: '6px',
+                                                                    height: '12px',
+                                                                    zIndex: 6,
+                                                                }}
+                                                            />
+                                                            <div className="relative z-10 flex items-center justify-center mt-2">
+                                                                <div className="w-2 h-2 rounded-full bg-green-600 shadow-sm"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-normal text-gray-500 mb-1">
+                                                                {formatDate(entry.timestamp || entry.date)}
+                                                            </p>
+                                                            <p className="text-sm font-normal text-gray-900 leading-relaxed">
+                                                                <span className="font-semibold text-gray-900">
+                                                                    {entry.user}
+                                                                </span>{' '}
+                                                                Zahlungsstatus geändert:{' '}
+                                                                <span className="text-gray-600">
+                                                                    {entry.paymentFromDisplay || entry.paymentFrom}
+                                                                </span>
+                                                                {' → '}
+                                                                <span className="font-medium text-green-700">
+                                                                    {entry.paymentToDisplay || entry.paymentTo}
+                                                                </span>
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Schritt-Dauer Übersicht */}
                                 {data.stepDurations && data.stepDurations.length > 0 && (
                                     <div>
@@ -307,7 +501,7 @@ export default function HistorySidebar({
                                                         {/* Content */}
                                                         <div className="flex-1 min-w-0">
                                                             <p className="text-sm font-normal text-gray-500 mb-1">
-                                                                {formatDate(entry.date)}
+                                                                {formatDate(entry.timestamp || entry.date)}
                                                             </p>
                                                             <p className="text-sm font-normal text-gray-900 leading-relaxed">
                                                                 <span className="font-semibold text-gray-900">
@@ -315,6 +509,11 @@ export default function HistorySidebar({
                                                                 </span>{' '}
                                                                 {entry.action}
                                                             </p>
+                                                            {entry.description && entry.description !== entry.action && (
+                                                                <p className="text-xs text-gray-600 mt-1">
+                                                                    {entry.description}
+                                                                </p>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 ))}
@@ -324,7 +523,9 @@ export default function HistorySidebar({
                                 )}
 
                                 {(!data.stepDurations || data.stepDurations.length === 0) &&
-                                    (!data.changeLog || data.changeLog.length === 0) && (
+                                    (!data.changeLog || data.changeLog.length === 0) &&
+                                    (!data.paymentStatusHistory || data.paymentStatusHistory.length === 0) &&
+                                    !data.summary && (
                                         <div className="text-center py-20">
                                             <p className="text-gray-600">
                                                 Keine Historie-Daten verfügbar
