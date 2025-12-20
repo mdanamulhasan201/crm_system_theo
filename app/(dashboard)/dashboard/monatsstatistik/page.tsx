@@ -1,4 +1,6 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import Card from '../_components/Monatsstatistik/Allgemeines/Card';
 import Chart from '../_components/Monatsstatistik/Allgemeines/Chart';
 import DonutChart from '../_components/Monatsstatistik/Allgemeines/DonutChart';
@@ -6,8 +8,30 @@ import Wochenstatistik from '../_components/Monatsstatistik/Wochenstatistik/Woch
 import KundenstatistikEinlagen from '../_components/Monatsstatistik/KundenstatistikEinlagen/KundenstatistikEinlagen';
 import KundenstatistikMassschuhe from '../_components/Monatsstatistik/KundenstatistikMassschuhe/KundenstatistikMassschuhe';
 import Reklamationen from '../_components/Monatsstatistik/Reklamationen/Reklamationen';
+import { getInsoleAndShoesRevenueData } from '@/apis/monatsstatistikApis';
 
 export default function Monatsstatistik() {
+    const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchRevenueData = async () => {
+            try {
+                setLoading(true);
+                const response = await getInsoleAndShoesRevenueData();
+                if (response.success && response.data) {
+                    setTotalRevenue(response.data.totalRevenue);
+                }
+            } catch (error) {
+                console.error('Error fetching revenue data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchRevenueData();
+    }, []);
+
     return (
         <>
 
@@ -22,7 +46,7 @@ export default function Monatsstatistik() {
                     <div className='lg:col-span-1 flex flex-col gap-4 sm:gap-6 h-full w-full'>
                         <Card
                             title="Gesamtumsatz (letzte 30 Tage)"
-                            value="17010,53€"
+                            value={loading ? undefined : (totalRevenue ?? 0)}
                         />
                         <div className='flex-1 min-h-[300px] sm:min-h-[350px] w-full'>
                             <DonutChart />
