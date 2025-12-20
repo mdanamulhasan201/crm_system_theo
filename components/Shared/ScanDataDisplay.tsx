@@ -7,6 +7,7 @@ import { RiArrowDownSLine } from 'react-icons/ri'
 import { ScanData } from '@/types/scan'
 import { useAuth } from '@/contexts/AuthContext'
 import { generateFeetPdf } from '@/lib/FootPdfGenerate'
+import EditableImageCanvas, { DrawingToolbar } from './EditableImageCanvas'
 
 interface ScanDataDisplayProps {
     scanData: ScanData
@@ -36,13 +37,18 @@ export default function ScanDataDisplay({
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [drawingMode, setDrawingMode] = useState<'pen' | 'eraser'>('pen');
+    const [brushSize, setBrushSize] = useState(3);
+    const [brushColor, setBrushColor] = useState('#000000');
 
     // Helper function to check if screenerFile exists
     const hasScreenerFile = useMemo(() => {
         return scanData?.screenerFile && Array.isArray(scanData.screenerFile) && scanData.screenerFile.length > 0;
     }, [scanData?.screenerFile]);
 
-    const toggleZoom = () => setIsZoomed(!isZoomed);
+    const toggleZoom = () => {
+        setIsZoomed(!isZoomed);
+    };
 
     const availableScanDates = useMemo(() => {
 
@@ -107,7 +113,9 @@ export default function ScanDataDisplay({
                 setSelectedScanDate(latestDate);
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [defaultSelectedDate, availableScanDates]);
+
 
     const handleDateSelect = (date: string) => {
         setSelectedScanDate(date);
@@ -301,58 +309,44 @@ export default function ScanDataDisplay({
             {/* Zoom Mode - Show only images when zoomed */}
             {isZoomed ? (
                 <div className="relative mb-8">
-                    <div className="flex justify-center mb-4">
-                        <button
-                            onClick={toggleZoom}
-                            className="bg-red-500 cursor-pointer hover:bg-red-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg transition-all duration-300 ease-out flex items-center gap-1 md:gap-2 text-sm md:text-base"
-                            title="Exit zoom mode"
-                        >
-                            <span>✕</span>
-                            <span className="hidden sm:inline">Exit Zoom</span>
-                        </button>
-                    </div>
+                    {/* Drawing Toolbar */}
+                    <DrawingToolbar
+                        drawingMode={drawingMode}
+                        setDrawingMode={setDrawingMode}
+                        brushSize={brushSize}
+                        setBrushSize={setBrushSize}
+                        brushColor={brushColor}
+                        setBrushColor={setBrushColor}
+                        onExitZoom={toggleZoom}
+                    />
 
-                    {/* Responsive image layout */}
+                    {/* Responsive image layout with canvas overlay */}
                     <div className="flex flex-col lg:flex-row justify-center items-center gap-4 lg:gap-8">
-                        {/* Left foot image - Responsive sizing */}
-                        <div className="text-center w-full lg:w-auto">
-                            <h3 className="text-base md:text-lg font-semibold mb-2 md:mb-4 text-gray-700">Right Foot</h3>
-                            <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto">
-                                {getLatestData('picture_23') ? (
-                                    <Image
-                                        src={getLatestData('picture_23')!}
-                                        alt="Right foot scan - Plantaransicht"
-                                        width={400}
-                                        height={600}
-                                        className="w-full h-auto rounded-lg "
-                                    />
-                                ) : (
-                                    <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px] bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500 text-sm md:text-base">
-                                        No right foot scan image available
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        {/* Right foot image */}
+                        {getLatestData('picture_23') && (
+                            <EditableImageCanvas
+                                imageUrl={getLatestData('picture_23')!}
+                                alt="Right foot scan - Plantaransicht"
+                                title="Right Foot"
+                                downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
+                                drawingMode={drawingMode}
+                                brushSize={brushSize}
+                                brushColor={brushColor}
+                            />
+                        )}
 
-                        {/* Right foot image - Responsive sizing */}
-                        <div className="text-center w-full lg:w-auto">
-                            <h3 className="text-base md:text-lg font-semibold mb-2 md:mb-4 text-gray-700">Left Foot</h3>
-                            <div className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto">
-                                {getLatestData('picture_24') ? (
-                                    <Image
-                                        src={getLatestData('picture_24')!}
-                                        alt="Left foot scan - Plantaransicht"
-                                        width={400}
-                                        height={600}
-                                        className="w-full h-auto rounded-lg"
-                                    />
-                                ) : (
-                                    <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px] bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500 text-sm md:text-base">
-                                        No left foot scan image available
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        {/* Left foot image */}
+                        {getLatestData('picture_24') && (
+                            <EditableImageCanvas
+                                imageUrl={getLatestData('picture_24')!}
+                                alt="Left foot scan - Plantaransicht"
+                                title="Left Foot"
+                                downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
+                                drawingMode={drawingMode}
+                                brushSize={brushSize}
+                                brushColor={brushColor}
+                            />
+                        )}
                     </div>
                 </div>
             ) : (
