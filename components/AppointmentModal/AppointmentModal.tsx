@@ -73,7 +73,7 @@ export default function AppointmentModal({
     const employees = form.watch('employees') || [];
     const [currentEmployeeSearch, setCurrentEmployeeSearch] = React.useState('');
 
-    const clientTerminOptions = [
+    const clientTerminOptions = React.useMemo(() => [
         { value: 'fussanalyse-laufanalyse', label: 'Fußanalyse / Laufanalyse' },
         { value: 'massnehmen', label: 'Maßnehmen' },
         { value: 'anprobe-abholung', label: 'Anprobe / Abholung' },
@@ -81,15 +81,15 @@ export default function AppointmentModal({
         { value: 'beratung-rezept-einloesung', label: 'Beratung / Rezept-Einlösung' },
         { value: 'hausbesuch', label: 'Hausbesuch' },
         { value: 'sonstiges', label: 'Sonstiges' },
-    ];
+    ], []);
 
-    const otherTerminOptions = [
+    const otherTerminOptions = React.useMemo(() => [
         { value: 'teammeeting-fallbesprechung', label: 'Teammeeting / Fallbesprechung' },
         { value: 'fortbildung-schulung', label: 'Fortbildung / Schulung' },
         { value: 'verwaltung-dokumentation', label: 'Verwaltung / Dokumentation' },
         { value: 'interne-sprechstunde-besprechung', label: 'Interne Sprechstunde / Besprechung' },
         { value: 'externe-termine-kooperation', label: 'Externe Termine / Kooperation' },
-    ];
+    ], []);
 
     const durationOptions = [
         { value: 0.17, label: '10 Minuten' }, // 10/60 = 0.17 hours
@@ -119,7 +119,7 @@ export default function AppointmentModal({
         if (currentTermin && !validValues.includes(currentTermin)) {
             form.setValue('termin', '');
         }
-    }, [isClientEvent]);
+    }, [isClientEvent, form, clientTerminOptions, otherTerminOptions]);
 
     const {
         searchName,
@@ -133,6 +133,27 @@ export default function AppointmentModal({
         setShowNameSuggestions,
         clearSearch,
     } = useSearchCustomer();
+
+    // Sync searchName with form's kunde value when modal opens or form value changes
+    React.useEffect(() => {
+        if (isOpen && isClientEvent) {
+            const kundeValue = form.getValues('kunde');
+            if (kundeValue) {
+                setSearchName(kundeValue);
+            }
+        } else if (!isClientEvent) {
+            // Clear searchName when switching to non-client event
+            setSearchName('');
+        }
+    }, [isOpen, isClientEvent, form, setSearchName]);
+
+    // Watch form's kunde value and sync with searchName
+    const kundeValue = form.watch('kunde');
+    React.useEffect(() => {
+        if (isOpen && isClientEvent && kundeValue && kundeValue !== searchName) {
+            setSearchName(kundeValue);
+        }
+    }, [kundeValue, isOpen, isClientEvent, searchName, setSearchName]);
 
     const {
         searchText: employeeSearchText,
@@ -228,7 +249,7 @@ export default function AppointmentModal({
 
     return (
         <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-xl max-h-screen overflow-y-auto">
+            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[95vh] overflow-y-auto">
                 <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6">
                     <div className="flex justify-between items-center">
                         <h3 className="text-lg font-semibold">{title}</h3>
