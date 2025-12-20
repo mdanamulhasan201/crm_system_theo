@@ -6,10 +6,11 @@ import { getPicture2324 } from '@/apis/productsOrder';
 export interface Picture2324Data {
     customerName: string;
     versorgungName: string;
-    diagnosisStatus: string | null;
+    diagnosisStatus: string[] | null;
     material: string | null;
     picture_23: string | null;
     picture_24: string | null;
+    fertigstellungBis?: string;
 }
 
 export interface Picture2324Response {
