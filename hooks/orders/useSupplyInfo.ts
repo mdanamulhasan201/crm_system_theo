@@ -5,18 +5,28 @@ export interface SupplyProduct {
     id: string;
     name: string;
     material: string;
-    langenempfehlung: Record<string, number> | null;
+    langenempfehlung: Record<string, any> | null;
     rohlingHersteller: string;
     artikelHersteller: string;
     versorgung: string;
     status: string;
-    diagnosis_status: string | null;
+    diagnosis_status: string[] | null;
+}
+
+export interface FootLength {
+    fusslange1: string;
+    fusslange2: string;
+    targetLength: number;
+    matchedSize: string;
 }
 
 export interface SupplyInfoData {
     orderNumber: number;
     productId: string;
     product: SupplyProduct;
+    footLength?: FootLength;
+    fertigstellungBis?: string;
+    customerName?: string;
 }
 
 export interface SupplyInfoResponse {
