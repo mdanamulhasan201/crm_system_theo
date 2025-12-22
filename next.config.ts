@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'layers-acid-specifications-stevens.trycloudflare.com',
+        hostname: 'mazda-ambien-recall-pierre.trycloudflare.com',
       },
       {
         protocol: 'http',
