@@ -107,12 +107,25 @@ export default function BulkActionsBar({
 
         const buttons: React.ReactElement[] = [];
 
-        // If Privat_Bezahlt - no button
+        // If Privat_Bezahlt - show button to change back to Privat_offen
         if (currentPaymentStatus === 'Privat_Bezahlt') {
-            return null;
+            buttons.push(
+                <Button
+                    key="privat-offen"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onBulkPaymentStatus(selectedOrderIds, 'Privat_offen')}
+                    disabled={isUpdatingPaymentStatus}
+                    className="text-xs py-2 sm:py-3 lg:py-4 cursor-pointer whitespace-nowrap flex-shrink-0 bg-orange-50 border-orange-300 text-orange-700 hover:bg-orange-100"
+                >
+                    <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                    Privat Offen
+                </Button>
+            );
+            return buttons;
         }
 
-        // If Privat_offen - show Privat_Bezahlt button (but not Krankenkasse_Ungenehmigt)
+        // If Privat_offen - show Privat_Bezahlt button
         if (currentPaymentStatus === 'Privat_offen') {
             buttons.push(
                 <Button
@@ -130,7 +143,7 @@ export default function BulkActionsBar({
             return buttons;
         }
 
-        // If Krankenkasse_Ungenehmigt - show Krankenkasse_Genehmigt button at the top
+        // If Krankenkasse_Ungenehmigt - show Krankenkasse_Genehmigt button
         if (currentPaymentStatus === 'Krankenkasse_Ungenehmigt') {
             buttons.push(
                 <Button
@@ -148,9 +161,22 @@ export default function BulkActionsBar({
             return buttons;
         }
 
-        // If Krankenkasse_Genehmigt - show nothing
+        // If Krankenkasse_Genehmigt - show button to change back to Krankenkasse_Ungenehmigt
         if (currentPaymentStatus === 'Krankenkasse_Genehmigt') {
-            return null;
+            buttons.push(
+                <Button
+                    key="krankenkasse-ungenehmigt"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onBulkPaymentStatus(selectedOrderIds, 'Krankenkasse_Ungenehmigt')}
+                    disabled={isUpdatingPaymentStatus}
+                    className="text-xs py-2 sm:py-3 lg:py-4 cursor-pointer whitespace-nowrap flex-shrink-0 bg-red-50 border-red-300 text-red-700 hover:bg-red-100"
+                >
+                    <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                    <span className="hidden sm:inline">Krankenkasse </span>Ungenehmigt
+                </Button>
+            );
+            return buttons;
         }
 
         return null;
