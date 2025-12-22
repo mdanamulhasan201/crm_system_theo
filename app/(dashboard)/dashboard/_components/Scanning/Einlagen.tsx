@@ -463,8 +463,12 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                 if (orderId) {
                     setCurrentOrderId(orderId);
                     setShowPdfModal(true);
+                    // Close Werkstattzettel modal only after successful order creation
+                    setShowUserInfoUpdateModal(false);
                 }
             } catch (error) {
+                console.error('Error while creating order:', error);
+                toast.error('Fehler beim Erstellen der Bestellung. Bitte versuchen Sie es erneut.');
             }
         }
         setShowConfirmModal(false);

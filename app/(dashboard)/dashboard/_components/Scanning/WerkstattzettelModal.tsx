@@ -48,6 +48,9 @@ export default function WerkstattzettelModal({
   // Use custom hook for form state management
   const form = useWerkstattzettelForm(scanData, isOpen, formData)
 
+  // Local validation error state
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
   // Settings data state
   const [laserPrintPrices, setLaserPrintPrices] = useState<number[]>([])
   const [pricesLoading, setPricesLoading] = useState(false)
@@ -118,9 +121,116 @@ export default function WerkstattzettelModal({
   // Get completionDays for date calculations
   const completionDays = workshopNote?.completionDays
 
+  // Basic validation for required fields
+  const validateForm = () => {
+    const errors: Record<string, string> = {}
+
+    const fullNameValid = !!(form.vorname?.trim() || form.nachname?.trim())
+    if (!fullNameValid) {
+      errors.name = 'Name ist erforderlich'
+    }
+    if (!form.versorgung?.trim()) {
+      errors.versorgung = 'Versorgung ist erforderlich'
+    }
+    if (!form.datumAuftrag) {
+      errors.datumAuftrag = 'Datum des Auftrags ist erforderlich'
+    }
+    if (!form.geschaeftsstandort?.trim()) {
+      errors.geschaeftsstandort = 'Geschäftstandort ist erforderlich'
+    }
+    if (!form.fertigstellungBis) {
+      errors.fertigstellungBis = 'Fertigstellungsdatum ist erforderlich'
+    }
+    if (!form.footAnalysisPrice) {
+      errors.footAnalysisPrice = 'Preis für Fußanalyse ist erforderlich'
+    }
+    if (!form.insoleSupplyPrice) {
+      errors.insoleSupplyPrice = 'Preis für Einlagenversorgung ist erforderlich'
+    }
+    if (!form.bezahlt?.trim()) {
+      errors.bezahlt = 'Kostenträger ist erforderlich'
+    }
+
+    // If custom prices are selected, the custom value must not be empty
+    if (form.footAnalysisPrice === 'custom' && !form.customFootPrice?.trim()) {
+      errors.customFootPrice = 'Benutzerdefinierter Preis für Fußanalyse ist erforderlich'
+    }
+    if (form.insoleSupplyPrice === 'custom' && !form.customInsolePrice?.trim()) {
+      errors.customInsolePrice = 'Benutzerdefinierter Preis für Einlagenversorgung ist erforderlich'
+    }
+
+    setFieldErrors(errors)
+
+    if (Object.keys(errors).length > 0) {
+      toast.error('Bitte füllen Sie alle Pflichtfelder im Werkstattzettel aus.')
+      return false
+    }
+
+    return true
+  }
+
+  // Clear errors reactively when values become valid
+  useEffect(() => {
+    setFieldErrors((prev) => {
+      const next = { ...prev }
+
+      const fullNameValid = !!(form.vorname?.trim() || form.nachname?.trim())
+      if (fullNameValid && next.name) {
+        delete next.name
+      }
+      if (form.versorgung?.trim() && next.versorgung) {
+        delete next.versorgung
+      }
+      if (form.datumAuftrag && next.datumAuftrag) {
+        delete next.datumAuftrag
+      }
+      if (form.geschaeftsstandort?.trim() && next.geschaeftsstandort) {
+        delete next.geschaeftsstandort
+      }
+      if (form.fertigstellungBis && next.fertigstellungBis) {
+        delete next.fertigstellungBis
+      }
+      if (form.footAnalysisPrice && next.footAnalysisPrice) {
+        delete next.footAnalysisPrice
+      }
+      if (form.insoleSupplyPrice && next.insoleSupplyPrice) {
+        delete next.insoleSupplyPrice
+      }
+      if (form.customFootPrice?.trim() && next.customFootPrice) {
+        delete next.customFootPrice
+      }
+      if (form.customInsolePrice?.trim() && next.customInsolePrice) {
+        delete next.customInsolePrice
+      }
+      if (form.bezahlt?.trim() && next.bezahlt) {
+        delete next.bezahlt
+      }
+
+      return next
+    })
+  }, [
+    form.vorname,
+    form.nachname,
+    form.versorgung,
+    form.datumAuftrag,
+    form.geschaeftsstandort,
+    form.fertigstellungBis,
+    form.footAnalysisPrice,
+    form.insoleSupplyPrice,
+    form.customFootPrice,
+    form.customInsolePrice,
+    form.bezahlt,
+  ])
+
   const handleSave = async () => {
     if (!scanData?.id) {
       toast.error('Customer ID not found')
+      return
+    }
+
+    // Validate before saving
+    const isValid = validateForm()
+    if (!isValid) {
       return
     }
 
@@ -153,7 +263,9 @@ export default function WerkstattzettelModal({
         ...werkstattzettelPayload,
       }
 
-      onOpenChange(false)
+      // Do NOT close the Werkstattzettel modal here.
+      // We only show the order confirmation modal and
+      // keep this modal open until the order flow succeeds.
       onShowOrderConfirmation?.(combinedFormData || undefined)
     } catch (err: any) {
       const apiMessage =
@@ -216,6 +328,12 @@ export default function WerkstattzettelModal({
                 onLocationDropdownChange: form.handleLocationDropdownChange,
                 completionDays,
                 sameAsBusiness,
+                nameError: fieldErrors.name,
+                versorgungError: fieldErrors.versorgung,
+                datumAuftragError: fieldErrors.datumAuftrag,
+                geschaeftsstandortError: fieldErrors.geschaeftsstandort,
+                fertigstellungBisError: fieldErrors.fertigstellungBis,
+                paymentError: fieldErrors.bezahlt,
               }}
             />
           </div>
@@ -237,6 +355,10 @@ export default function WerkstattzettelModal({
               laserPrintPrices={laserPrintPrices}
               einlagenversorgungPrices={einlagenversorgungPrice}
               pricesLoading={pricesLoading}
+              footAnalysisPriceError={fieldErrors.footAnalysisPrice}
+              insoleSupplyPriceError={fieldErrors.insoleSupplyPrice}
+              customFootPriceError={fieldErrors.customFootPrice}
+              customInsolePriceError={fieldErrors.customInsolePrice}
             />
           </div>
         </div>
