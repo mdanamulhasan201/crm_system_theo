@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     PieChart,
     Pie,
@@ -8,20 +8,34 @@ import {
     ResponsiveContainer,
     Tooltip,
 } from 'recharts';
+import { getInsurancePaymentComparisonData } from '@/apis/monatsstatistikApis';
 
-const orderData = [
-    { name: 'Neukunden', value: 45 },
-    { name: 'Neukunden durch App', value: 28 },
-    { name: 'Bestandskunden Nachbestellungen', value: 15 },
-    { name: 'Bestandskunden neuer Auffrag', value: 22 },
-];
+interface PaymentData {
+    Privat: {
+        count: number;
+        percentage: number;
+    };
+    Insurance: {
+        count: number;
+        percentage: number;
+    };
+}
 
-const customerData = [
-    { name: 'Privatkunden', value: 35, color: '#065f46' },
-    { name: 'Krankenkasse', value: 75, color: '#10b981' },
-];
+interface OrderCategoriesData {
+    completedOrders: number;
+    newCustomers: number;
+    existingCustomersRepeat: number;
+    existingCustomersNew: number;
+    newCustomersViaApp: number;
+}
 
-const totalOrders = orderData.reduce((sum, item) => sum + item.value, 0);
+interface ApiResponse {
+    success: boolean;
+    data: {
+        payment: PaymentData;
+        orderCategories: OrderCategoriesData;
+    };
+}
 
 const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -40,7 +54,73 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function AuftragskategorienKundenvergleich() {
-    const maxValue = Math.max(...orderData.map(d => d.value));
+    const [orderData, setOrderData] = useState<{ name: string; value: number }[]>([]);
+    const [customerData, setCustomerData] = useState<{ name: string; value: number; color: string }[]>([]);
+    const [totalOrders, setTotalOrders] = useState<number>(0);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+                
+                const response: ApiResponse = await getInsurancePaymentComparisonData();
+                if (response.success && response.data) {
+                    const { payment, orderCategories } = response.data;
+
+                    // Transform orderCategories to orderData
+                    const transformedOrderData = [
+                        { name: 'Neukunden', value: orderCategories.newCustomers },
+                        { name: 'Neukunden durch App', value: orderCategories.newCustomersViaApp },
+                        { name: 'Bestandskunden Nachbestellungen', value: orderCategories.existingCustomersRepeat },
+                        { name: 'Bestandskunden neuer Auffrag', value: orderCategories.existingCustomersNew },
+                    ];
+                    setOrderData(transformedOrderData);
+                    setTotalOrders(orderCategories.completedOrders);
+
+                    // Transform payment to customerData
+                    const transformedCustomerData = [
+                        { name: 'Privatkunden', value: payment.Privat.count, color: '#065f46' },
+                        { name: 'Krankenkasse', value: payment.Insurance.count, color: '#10b981' },
+                    ];
+                    setCustomerData(transformedCustomerData);
+                }
+            } catch (err) {
+                console.error('Error fetching insurance payment comparison data:', err);
+                setError('Fehler beim Laden der Daten');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    const maxValue = orderData.length > 0 
+        ? Math.max(...orderData.map(d => d.value), 1) 
+        : 1;
+
+    if (loading) {
+        return (
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col h-full">
+                <div className="flex-1 flex items-center justify-center min-h-[250px]">
+                    <div className="animate-pulse text-gray-400">Laden...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col h-full">
+                <div className="flex-1 flex items-center justify-center min-h-[250px]">
+                    <p className="text-red-500">{error}</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col h-full">

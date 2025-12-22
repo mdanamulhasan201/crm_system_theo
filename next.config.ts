@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'earnings-reporting-discharge-triple.trycloudflare.com',
+        hostname: 'layers-acid-specifications-stevens.trycloudflare.com',
       },
       {
         protocol: 'http',

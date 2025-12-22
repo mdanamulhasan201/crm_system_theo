@@ -125,3 +125,14 @@ export const getShoeQuantityPerStatusData = async (year: string, month: string) 
         throw error;
     }
 }
+
+
+// /v2/dashboard-overview/insurance-payment-comparison
+export const getInsurancePaymentComparisonData = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/dashboard-overview/insurance-payment-comparison`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
