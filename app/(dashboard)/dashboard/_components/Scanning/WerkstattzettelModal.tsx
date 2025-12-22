@@ -22,6 +22,7 @@ interface FormData {
   employeeName?: string
   employeeId?: string
   selectedVersorgungData?: any
+  screenerId?: string | null
 }
 
 interface UserInfoUpdateModalProps {

@@ -23,6 +23,7 @@ export default function ScanningData() {
     const [prefillOrderData, setPrefillOrderData] = useState<any | null>(null);
     const [orderPrefillError, setOrderPrefillError] = useState<string | null>(null);
     const [orderPrefillLoading, setOrderPrefillLoading] = useState(false);
+    const [selectedScreenerId, setSelectedScreenerId] = useState<string | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -79,7 +80,11 @@ export default function ScanningData() {
                     Back
                 </Button>
             </div>
-            <ScannningDataPage scanData={scanData} selectedForm={selectedForm} />
+            <ScannningDataPage 
+                scanData={scanData} 
+                selectedForm={selectedForm}
+                onScreenerIdChange={setSelectedScreenerId}
+            />
             <hr className='my-10 border-gray-500' />
             {orderId && orderPrefillLoading && (
                 <div className="text-sm text-gray-500 mb-4">Auftrag wird geladen...</div>
@@ -115,6 +120,7 @@ export default function ScanningData() {
                 <Einlagen
                     customer={scanData}
                     prefillOrderData={prefillOrderData}
+                    screenerId={selectedScreenerId}
                     onCustomerUpdate={(updatedCustomer) => {
                         updateCustomer(updatedCustomer);
                     }}
