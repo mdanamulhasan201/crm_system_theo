@@ -328,7 +328,7 @@ export default function HistorySidebar({
                                 )}
 
                                 {/* Barcode Info Section */}
-                                {data.barcodeInfo && (
+                                {/* {data.barcodeInfo && (
                                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -347,7 +347,7 @@ export default function HistorySidebar({
                                             )}
                                         </div>
                                     </div>
-                                )}
+                                )} */}
 
                                 {/* Payment Status History */}
                                 {data.paymentStatusHistory && data.paymentStatusHistory.length > 0 && (
