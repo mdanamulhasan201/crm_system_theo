@@ -31,7 +31,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'commondatastorage.googleapis.com',
+        hostname: 'activation-country-later-relevant.trycloudflare.com',
       }
     ],
   },
