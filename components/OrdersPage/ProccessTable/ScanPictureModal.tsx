@@ -229,6 +229,16 @@ export default function ScanPictureModal({
                                     )}
                                 </div>
 
+                                {/* Insole Stock Section */}
+                                {data.insoleStock && (
+                                    <ul className="space-y-1.5">
+                                        <li className="text-sm text-gray-900 flex items-center">
+                                            <span className="w-1.5 h-1.5 bg-[#61A175] rounded-full mr-2"></span>
+                                            {data.insoleStock.produktname} - {data.insoleStock.size} mm
+                                        </li>
+                                    </ul>
+                                )}
+
                                 {/* Foot Selection Buttons */}
                                 <div className="pt-2">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
@@ -328,6 +338,16 @@ export default function ScanPictureModal({
                                     <p className="text-sm text-gray-500">Keine Materialien angegeben</p>
                                 )}
                             </div>
+
+                            {/* Insole Stock Section */}
+                            {data.insoleStock && (
+                                <ul className="space-y-1.5">
+                                    <li className="text-sm text-gray-900 flex items-center">
+                                        <span className="w-1.5 h-1.5 bg-[#61A175] rounded-full mr-2"></span>
+                                        {data.insoleStock.produktname} - {data.insoleStock.size} mm
+                                    </li>
+                                </ul>
+                            )}
                         </div>
                     )}
                 </div>

@@ -20,11 +20,26 @@ export interface FootLength {
     matchedSize: string;
 }
 
+export interface FootSize {
+    fusslange1: number;
+    fusslange2: number;
+    largerFusslange: number;
+}
+
+export interface Store {
+    produktname: string;
+    hersteller: string;
+    matchedSize: string;
+    length: number;
+}
+
 export interface SupplyInfoData {
     orderNumber: number;
     productId: string;
     product: SupplyProduct;
     footLength?: FootLength;
+    footSize?: FootSize;
+    store?: Store;
     fertigstellungBis?: string;
     customerName?: string;
 }

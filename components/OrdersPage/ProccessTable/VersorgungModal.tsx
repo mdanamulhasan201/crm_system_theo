@@ -218,6 +218,82 @@ export default function VersorgungModal({
                                 </div>
                             )}
 
+                            {/* Foot Size Section */}
+                            {data.footSize && (
+                                <div>
+                                    {/* <h3 className="text-sm font-normal text-gray-600 mb-4">Fußlänge</h3> */}
+                                    <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Fußlänge 1</p>
+                                                <p className="text-base font-medium text-gray-900">
+                                                    {data.footSize.fusslange1} mm
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Fußlänge 2</p>
+                                                <p className="text-base font-medium text-gray-900">
+                                                    {data.footSize.fusslange2} mm
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200">
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Größere Fußlänge</p>
+                                                <p className="text-base font-semibold text-gray-900">
+                                                    {data.footSize.largerFusslange} mm
+                                                </p>
+                                            </div>
+                                            {data.store?.matchedSize && (
+                                                <div>
+                                                    <p className="text-xs text-gray-600 mb-1">Passende Größe</p>
+                                                    <p className="text-base font-semibold text-[#61A175]">
+                                                        Größe {data.store.matchedSize}
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Store Section */}
+                            {data.store && (
+                                <div>
+                                    <h3 className="text-sm font-normal text-gray-600 mb-4">Store</h3>
+                                    <div className="bg-gray-50 rounded-lg p-4 space-y-3 border border-gray-200">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Produktname</p>
+                                                <p className="text-base font-medium text-gray-900">
+                                                    {data.store.produktname}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Hersteller</p>
+                                                <p className="text-base font-medium text-gray-900">
+                                                    {data.store.hersteller}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-200">
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Passende Größe</p>
+                                                <p className="text-base font-semibold text-[#61A175]">
+                                                    Größe {data.store.matchedSize}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-600 mb-1">Länge</p>
+                                                <p className="text-base font-semibold text-gray-900">
+                                                    {data.store.length} mm
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Rohling Hersteller Section */}
                             {data.product?.rohlingHersteller && (
                                 <div>

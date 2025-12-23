@@ -3,6 +3,12 @@
 import { useState, useEffect } from 'react';
 import { getPicture2324 } from '@/apis/productsOrder';
 
+export interface InsoleStock {
+    produktname: string;
+    hersteller: string;
+    size: string;
+}
+
 export interface Picture2324Data {
     customerName: string;
     versorgungName: string;
@@ -11,6 +17,8 @@ export interface Picture2324Data {
     picture_23: string | null;
     picture_24: string | null;
     fertigstellungBis?: string;
+    insoleStock?: InsoleStock;
+    versorgung?: string;
 }
 
 export interface Picture2324Response {
