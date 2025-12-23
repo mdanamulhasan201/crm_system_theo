@@ -231,7 +231,6 @@ export default function Software() {
             <h1 className='text-4xl font-bold capitalize text-center mb-10'>Support & Updates</h1>
             <div className='flex flex-col gap-6'>
                 <FAQ />
-                <VersionPage />
                 <RelesHistory />
                 <VideosTutorial />
             </div>

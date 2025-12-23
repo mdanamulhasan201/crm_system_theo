@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'magical-char-florists-areas.trycloudflare.com',
+        hostname: 'mazda-ambien-recall-pierre.trycloudflare.com',
       },
       {
         protocol: 'http',
