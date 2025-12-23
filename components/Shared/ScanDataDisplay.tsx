@@ -19,6 +19,7 @@ interface ScanDataDisplayProps {
     defaultSelectedDate?: string | null
     onDateChange?: (date: string | null) => void
     availableDates?: string[]
+    onZoomChange?: (isZoomed: boolean) => void
 }
 
 export default function ScanDataDisplay({
@@ -30,7 +31,8 @@ export default function ScanDataDisplay({
     onDataChange,
     defaultSelectedDate = null,
     onDateChange,
-    availableDates: propAvailableDates
+    availableDates: propAvailableDates,
+    onZoomChange
 }: ScanDataDisplayProps) {
     const { user } = useAuth();
     const [selectedScanDate, setSelectedScanDate] = useState<string>(defaultSelectedDate || '');
@@ -47,7 +49,9 @@ export default function ScanDataDisplay({
     }, [scanData?.screenerFile]);
 
     const toggleZoom = () => {
-        setIsZoomed(!isZoomed);
+        const newZoomState = !isZoomed;
+        setIsZoomed(newZoomState);
+        onZoomChange?.(newZoomState);
     };
 
     const availableScanDates = useMemo(() => {
@@ -306,46 +310,52 @@ export default function ScanDataDisplay({
                 )}
             </div>
 
-            {/* Zoom Mode - Show only images when zoomed */}
+            {/* Zoom Mode - Show only images when zoomed - Full Screen */}
             {isZoomed ? (
-                <div className="relative mb-8">
+                <div className="fixed inset-0 z-[9998] bg-white overflow-y-auto">
                     {/* Drawing Toolbar */}
-                    <DrawingToolbar
-                        drawingMode={drawingMode}
-                        setDrawingMode={setDrawingMode}
-                        brushSize={brushSize}
-                        setBrushSize={setBrushSize}
-                        brushColor={brushColor}
-                        setBrushColor={setBrushColor}
-                        onExitZoom={toggleZoom}
-                    />
+                    <div className="sticky top-0 z-[9999] bg-white border-b border-gray-200 shadow-sm">
+                        <DrawingToolbar
+                            drawingMode={drawingMode}
+                            setDrawingMode={setDrawingMode}
+                            brushSize={brushSize}
+                            setBrushSize={setBrushSize}
+                            brushColor={brushColor}
+                            setBrushColor={setBrushColor}
+                            onExitZoom={toggleZoom}
+                        />
+                    </div>
 
-                    {/* Responsive image layout with canvas overlay */}
-                    <div className="flex flex-col lg:flex-row justify-center items-center gap-4 lg:gap-8">
+                    {/* Full screen responsive image layout with canvas overlay */}
+                    <div className="flex flex-col lg:flex-row justify-center items-center gap-4 lg:gap-8 p-4 lg:p-8 min-h-[calc(100vh-80px)]">
                         {/* Right foot image */}
                         {getLatestData('picture_23') && (
-                            <EditableImageCanvas
-                                imageUrl={getLatestData('picture_23')!}
-                                alt="Right foot scan - Plantaransicht"
-                                title="Right Foot"
-                                downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
-                                drawingMode={drawingMode}
-                                brushSize={brushSize}
-                                brushColor={brushColor}
-                            />
+                            <div className="w-full lg:w-1/2 max-w-4xl">
+                                <EditableImageCanvas
+                                    imageUrl={getLatestData('picture_23')!}
+                                    alt="Right foot scan - Plantaransicht"
+                                    title="Right Foot"
+                                    downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
+                                    drawingMode={drawingMode}
+                                    brushSize={brushSize}
+                                    brushColor={brushColor}
+                                />
+                            </div>
                         )}
 
                         {/* Left foot image */}
                         {getLatestData('picture_24') && (
-                            <EditableImageCanvas
-                                imageUrl={getLatestData('picture_24')!}
-                                alt="Left foot scan - Plantaransicht"
-                                title="Left Foot"
-                                downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
-                                drawingMode={drawingMode}
-                                brushSize={brushSize}
-                                brushColor={brushColor}
-                            />
+                            <div className="w-full lg:w-1/2 max-w-4xl">
+                                <EditableImageCanvas
+                                    imageUrl={getLatestData('picture_24')!}
+                                    alt="Left foot scan - Plantaransicht"
+                                    title="Left Foot"
+                                    downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
+                                    drawingMode={drawingMode}
+                                    brushSize={brushSize}
+                                    brushColor={brushColor}
+                                />
+                            </div>
                         )}
                     </div>
                 </div>

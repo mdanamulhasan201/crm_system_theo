@@ -23,6 +23,7 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
     const [modalType, setModalType] = useState<'image' | 'stl' | null>(null);
     const [stlUrl, setStlUrl] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
+    const [isZoomed, setIsZoomed] = useState(false);
 
     // Use the existing hook for customer data management with date filtering
     const { customer: currentScanData, availableDates, updateCustomer, refreshCustomer, isUpdating, error } = useSingleCustomer(scanData.id, selectedDate);
@@ -250,6 +251,7 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
                         onDateChange={handleDateChange}
                         availableDates={availableDates}
                         defaultSelectedDate={selectedDate || null}
+                        onZoomChange={setIsZoomed}
                     >
                         {/* Additional content for the scan data section */}
                         {isChanged && (
@@ -266,17 +268,21 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
                         )}
                     </ScanDataDisplay>
                 </div>
-                <div className='w-full xl:w-4/12'>
-                    {selectedForm === 'einlagen' ? (
-                        <EinlagenQuestions customer={displayData} />
-                    ) : (
-                        <MassschuheQuestions customer={displayData} />
-                    )}
-                </div>
+                {/* Hide questions section when zoomed */}
+                {!isZoomed && (
+                    <div className='w-full xl:w-4/12'>
+                        {selectedForm === 'einlagen' ? (
+                            <EinlagenQuestions customer={displayData} />
+                        ) : (
+                            <MassschuheQuestions customer={displayData} />
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* button section - now using latest data sorted by updatedAt */}
-            <div className="mt-8 flex flex-col md:flex-row justify-between space-y-4 md:space-y-0">
+            {/* button section - now using latest data sorted by updatedAt - Hide when zoomed */}
+            {!isZoomed && (
+                <div className="mt-8 flex flex-col md:flex-row justify-between space-y-4 md:space-y-0">
                 <div className="flex justify-center md:justify-start">
                     <div className="flex flex-wrap space-x-2">
                         <button className="border border-gray-300 cursor-pointer bg-white hover:bg-gray-100 px-4 py-1 text-sm my-1" onClick={() => openModal(getLatestData('picture_10'), 'Fersenneigung (Links)')}>Fersenneigung</button>
@@ -295,6 +301,7 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
                     </div>
                 </div>
             </div>
+            )}
         </>
     )
 }
