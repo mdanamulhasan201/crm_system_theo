@@ -29,7 +29,7 @@ export const getSingleOrder = async (orderId: string) => {
 // invoice pdf save 
 export const saveInvoicePdf = async (orderId: string, formData: FormData) => {
     try {
-        const response = await axiosClient.post(`/customer-orders/upload-invoice-only/${orderId}`, formData, {
+        const response = await axiosClient.post(`/customer-orders/manage/upload-invoice-only/${orderId}`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -43,7 +43,7 @@ export const saveInvoicePdf = async (orderId: string, formData: FormData) => {
 // pdf send to customer  
 export const pdfSendToCustomer = async (orderId: string, formData: FormData) => {
     try {
-        const response = await axiosClient.post(`/customer-orders/send-invoice/${orderId}`);
+        const response = await axiosClient.post(`/customer-orders/manage/send-invoice/${orderId}`);
         return response.data;
     } catch (error) {
         throw error;
@@ -84,7 +84,7 @@ export const getAllOrders = async (
 // update order status
 export const updateOrderStatus = async (orderId: string, orderStatus: string) => {
     try {
-        const response = await axiosClient.patch(`/customer-orders/status/${orderId}`, { orderStatus });
+        const response = await axiosClient.patch(`/customer-orders/manage/status/${orderId}`, { orderStatus });
         return response.data;
     } catch (error) {
         throw error;
@@ -105,7 +105,7 @@ export const deleteOrder = async (orderId: string) => {
 // dashabord data for order /customer-orders/stats/retio?year=&month=
 export const RevenueOverview = async (year: string, month: string) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/stats/retio?year=${year}&month=${month}`);
+        const response = await axiosClient.get(`/customer-orders/track/stats/retio?year=${year}&month=${month}`);
         return response.data;
     } catch (error) {
         throw error;
@@ -141,7 +141,7 @@ export const deleteGroupOrder = async (orderIds: string[]) => {
 // group order status changes  
 export const groupOrderStatusUpdate = async (orderIds: string[], orderStatus: string) => {
     try {
-        const response = await axiosClient.patch('/customer-orders/status/multiple/update', { orderIds, orderStatus });
+        const response = await axiosClient.patch('/customer-orders/manage/status/multiple/update', { orderIds, orderStatus });
         return response.data;
     } catch (error) {
         throw error;
@@ -150,7 +150,7 @@ export const groupOrderStatusUpdate = async (orderIds: string[], orderStatus: st
 
 export const updateOrderPriority = async (orderId: string, priority: string) => {
     try {
-        const response = await axiosClient.patch(`/customer-orders/update/priority/${orderId}`, { priority });
+        const response = await axiosClient.patch(`/customer-orders/manage/update/priority/${orderId}`, { priority });
         return response.data;
     } catch (error) {
         throw error;
@@ -171,18 +171,18 @@ export const getCustomerOrdersByCustomerId = async (customerId: string, page: nu
 // customer order history get customer-orders/history/orders/89ca7ae3-c37d-4e39-b152-ae68d91f464b
 export const getCustomerOrderHistory = async (orderId: string) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/order-history/${orderId}`);
+        const response = await axiosClient.get(`/customer-orders/track/order-history/${orderId}`);
         return response.data;
     } catch (error: any) {
         throw new Error(error.response.data.message || 'Failed to fetch customer order history');
     }
 }
 
-//  get supply info  /customer-orders/supply-info/89ca7ae3-c37d-4e39-b152-ae68d91f464b
+//  get supply info  /customer-orders/track/supply-infoo/89ca7ae3-c37d-4e39-b152-ae68d91f464b
 
 export const getSupplyInfo = async (orderId: string) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/supply-info/${orderId}`);
+        const response = await axiosClient.get(`/customer-orders/track/supply-info/${orderId}`);
         return response.data;
     } catch (error: any) {
         throw new Error(error.response.data.message || 'Failed to fetch supply info');
@@ -190,10 +190,10 @@ export const getSupplyInfo = async (orderId: string) => {
 }
 
 
-// get picture 23-24 of order customer-orders/picture-23-24/id
+// get picture 23-24 of order /customer-orders/track/picture-23-24/id
 export const getPicture2324 = async (orderId: string) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/picture-23-24/${orderId}`);
+        const response = await axiosClient.get(`/customer-orders/track/picture-23-24/${orderId}`);
         return response.data;
     } catch (error: any) {
         throw new Error(error.response.data.message || 'Failed to fetch picture 23-24');
@@ -209,7 +209,7 @@ export const getPaymentStatus = async (orderIds: string[], paymentStatus: string
         if (bezahlt) {
             payload.bezahlt = bezahlt;
         }
-        const response = await axiosClient.patch('/customer-orders/payment-status', payload);
+        const response = await axiosClient.patch('/customer-orders/manage/payment-status', payload);
         return response.data;
     } catch (error) {
         throw error;
@@ -219,7 +219,7 @@ export const getPaymentStatus = async (orderIds: string[], paymentStatus: string
 // Alias for Krankenkasse status updates (for backward compatibility)
 export const getKrankenKasseStatus = async (orderIds: string[], krankenkasseStatus: string) => {
     try {
-        const response = await axiosClient.patch('/customer-orders/payment-status', { 
+        const response = await axiosClient.patch('/customer-orders/manage/payment-status', { 
             orderIds, 
             paymentStatus: krankenkasseStatus,
             bezahlt: krankenkasseStatus 

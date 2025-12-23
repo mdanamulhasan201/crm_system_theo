@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'layers-acid-specifications-stevens.trycloudflare.com',
+        hostname: 'appreciation-earliest-attributes-doctors.trycloudflare.com',
       },
       {
         protocol: 'http',
