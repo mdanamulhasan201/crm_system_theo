@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 export default function BasicSettings() {
     // Define the type for the field keys
-    type FieldKey = 'firstName' | 'lastName' | 'dob' | 'email' | 'phone' | 'address';
+    type FieldKey = 'firstName' | 'lastName' | 'dob' | 'email' | 'phone' | 'address' | 'versicherungsnummer' | 'abrechnungstyp';
     
     // Initial state for required fields
     const initialRequiredFields = {
@@ -16,6 +16,8 @@ export default function BasicSettings() {
         email: false,
         phone: false,
         address: false,
+        versicherungsnummer: false,
+        abrechnungstyp: false,
     };
 
     // State for required fields
@@ -34,12 +36,14 @@ export default function BasicSettings() {
                 const data = response?.data;
                 if (data) {
                     const mapped: Record<FieldKey, boolean> = {
-                        firstName: !!data.vorname,
-                        lastName: !!data.nachname,
-                        dob: !!data.geburtsdatum,
-                        email: !!data.email,
-                        phone: !!data.telefon,
-                        address: !!data.adresse,
+                        firstName: Boolean(data.vorname ?? false),
+                        lastName: Boolean(data.nachname ?? false),
+                        dob: Boolean(data.geburtsdatum ?? false),
+                        email: Boolean(data.email ?? false),
+                        phone: Boolean(data.telefon ?? false),
+                        address: Boolean(data.adresse ?? false),
+                        versicherungsnummer: Boolean(data.versicherungsnummer ?? false),
+                        abrechnungstyp: Boolean(data.abrechnungstyp ?? false),
                     };
                     setRequiredFields(mapped);
                     setInitialRequiredFieldsState(mapped);
@@ -61,7 +65,7 @@ export default function BasicSettings() {
     const handleCheckboxChange = (field: FieldKey) => {
         setRequiredFields(prev => ({
             ...prev,
-            [field]: !prev[field],
+            [field]: !(prev[field] ?? false),
         }));
     };
 
@@ -76,6 +80,8 @@ export default function BasicSettings() {
                 email: requiredFields.email,
                 telefon: requiredFields.phone,
                 adresse: requiredFields.address,
+                versicherungsnummer: requiredFields.versicherungsnummer,
+                abrechnungstyp: requiredFields.abrechnungstyp,
             };
 
             const response = await postBasicSettings(payload);
@@ -111,28 +117,36 @@ export default function BasicSettings() {
                 <p className="text-base font-semibold mb-3 mt-2">Pflichtfelder definieren</p>
                 <div className="space-y-2 ml-2">
                     <label className="flex items-center text-base">
-                        <input type="checkbox" checked={requiredFields.firstName} onChange={() => handleCheckboxChange('firstName')} className="mr-2 w-4 h-4" />
+                        <input type="checkbox" checked={requiredFields.firstName ?? false} onChange={() => handleCheckboxChange('firstName')} className="mr-2 w-4 h-4" />
                         Vorname
                     </label>
                     <label className="flex items-center text-base">
-                        <input type="checkbox" checked={requiredFields.lastName} onChange={() => handleCheckboxChange('lastName')} className="mr-2 w-4 h-4" />
+                        <input type="checkbox" checked={requiredFields.lastName ?? false} onChange={() => handleCheckboxChange('lastName')} className="mr-2 w-4 h-4" />
                         Nachname
                     </label>
                     <label className="flex items-center text-base">
-                        <input type="checkbox" checked={requiredFields.dob} onChange={() => handleCheckboxChange('dob')} className="mr-2 w-4 h-4" />
+                        <input type="checkbox" checked={requiredFields.dob ?? false} onChange={() => handleCheckboxChange('dob')} className="mr-2 w-4 h-4" />
                         Geburtsdatum
                     </label>
                     <label className="flex items-center text-base">
-                        <input type="checkbox" checked={requiredFields.email} onChange={() => handleCheckboxChange('email')} className="mr-2 w-4 h-4" />
+                        <input type="checkbox" checked={requiredFields.email ?? false} onChange={() => handleCheckboxChange('email')} className="mr-2 w-4 h-4" />
                         E-Mail Adresse
                     </label>
                     <label className="flex items-center text-base">
-                        <input type="checkbox" checked={requiredFields.phone} onChange={() => handleCheckboxChange('phone')} className="mr-2 w-4 h-4" />
+                        <input type="checkbox" checked={requiredFields.phone ?? false} onChange={() => handleCheckboxChange('phone')} className="mr-2 w-4 h-4" />
                         Telefonnummer
                     </label>
                     <label className="flex items-center text-base">
-                        <input type="checkbox" checked={requiredFields.address} onChange={() => handleCheckboxChange('address')} className="mr-2 w-4 h-4" />
+                        <input type="checkbox" checked={requiredFields.address ?? false} onChange={() => handleCheckboxChange('address')} className="mr-2 w-4 h-4" />
                         Adresse
+                    </label>
+                    <label className="flex items-center text-base">
+                        <input type="checkbox" checked={requiredFields.versicherungsnummer ?? false} onChange={() => handleCheckboxChange('versicherungsnummer')} className="mr-2 w-4 h-4" />
+                        Versicherungsnummer
+                    </label>
+                    <label className="flex items-center text-base">
+                        <input type="checkbox" checked={requiredFields.abrechnungstyp ?? false} onChange={() => handleCheckboxChange('abrechnungstyp')} className="mr-2 w-4 h-4" />
+                        Abrechnungstyp
                     </label>
                 </div>
             </div>
