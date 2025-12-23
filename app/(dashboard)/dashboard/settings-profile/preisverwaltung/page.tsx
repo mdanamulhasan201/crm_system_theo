@@ -97,14 +97,14 @@ export default function PreisverwaltungPage() {
         }, 0);
     }, []);
 
-    const handleMaterialToggle = (material: string) => {
-        setCoverList((prev) =>
-            prev.includes(material)
-                ? prev.filter((item) => item !== material)
-                : [...prev, material]
-        );
-        focusInput();
-    };
+    // const handleMaterialToggle = (material: string) => {
+    //     setCoverList((prev) =>
+    //         prev.includes(material)
+    //             ? prev.filter((item) => item !== material)
+    //             : [...prev, material]
+    //     );
+    //     focusInput();
+    // };
 
     const handleCoverInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;

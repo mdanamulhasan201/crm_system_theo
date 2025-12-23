@@ -37,23 +37,30 @@ export const useEinlagen = () => {
         setIsLoading(true);
         setError(null);
         try {
-            // Validate image is required
-            if (!data.imageFile && (!data.image || (typeof data.image === 'string' && !data.image.startsWith('data:') && !data.image.startsWith('http')))) {
-                const errorMessage = 'Bild ist erforderlich. Bitte wählen Sie ein Bild aus.';
+            // Validate required fields
+            if (!data.name || !data.name.trim()) {
+                const errorMessage = 'EINLAGE ist erforderlich';
+                setError(errorMessage);
+                toast.error(errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            if (!data.price || data.price <= 0) {
+                const errorMessage = 'Preis ist erforderlich und muss eine gültige positive Zahl sein';
                 setError(errorMessage);
                 toast.error(errorMessage);
                 throw new Error(errorMessage);
             }
 
             const formData = new FormData();
-            formData.append('name', data.name);
+            formData.append('name', data.name.trim());
             formData.append('price', data.price.toString());
 
             if (data.description) {
                 formData.append('description', data.description);
             }
 
-            // Handle image - File or data URL
+            // Handle image - File or data URL (optional)
             if (data.imageFile instanceof File) {
                 formData.append('image', data.imageFile);
             } else if (data.image && typeof data.image === 'string' && data.image.startsWith('data:')) {
@@ -129,8 +136,23 @@ export const useEinlagen = () => {
         setIsLoading(true);
         setError(null);
         try {
+            // Validate required fields
+            if (!data.name || !data.name.trim()) {
+                const errorMessage = 'EINLAGE ist erforderlich';
+                setError(errorMessage);
+                toast.error(errorMessage);
+                throw new Error(errorMessage);
+            }
+
+            if (!data.price || data.price <= 0) {
+                const errorMessage = 'Preis ist erforderlich und muss eine gültige positive Zahl sein';
+                setError(errorMessage);
+                toast.error(errorMessage);
+                throw new Error(errorMessage);
+            }
+
             const formData = new FormData();
-            formData.append('name', data.name);
+            formData.append('name', data.name.trim());
             formData.append('price', data.price.toString());
 
             if (data.description) {

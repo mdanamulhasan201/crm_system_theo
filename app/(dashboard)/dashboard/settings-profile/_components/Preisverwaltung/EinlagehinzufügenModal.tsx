@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import ImageUpload from "./ImageUplaod";
+import toast from "react-hot-toast";
 
 interface EinlagehinzufügenModalProps {
     open: boolean;
@@ -19,6 +20,8 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
     const [price, setPrice] = useState("");
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
+    const [nameError, setNameError] = useState("");
+    const [priceError, setPriceError] = useState("");
 
     // Update form when editingInsole changes
     useEffect(() => {
@@ -40,6 +43,8 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
             setPrice("");
             setImagePreview(null);
             setImageFile(null);
+            setNameError("");
+            setPriceError("");
         }
     }, [editingInsole, open]);
 
@@ -48,13 +53,41 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
         setImageFile(file);
     };
 
-    const handleSubmit = async () => {
-        if (!name.trim() || !price) {
-            return;
+    const validateForm = () => {
+        let isValid = true;
+        setNameError("");
+        setPriceError("");
+
+        // Validate EINLAGE (name) - required
+        if (!name.trim()) {
+            setNameError("EINLAGE ist erforderlich");
+            isValid = false;
         }
-        
-        if (!editingInsole && !imageFile && !imagePreview) {
-            return; 
+
+        // Validate Preis (price) - required and must be a valid positive number
+        if (!price.trim()) {
+            setPriceError("Preis ist erforderlich");
+            isValid = false;
+        } else {
+            const priceValue = parseFloat(price);
+            if (isNaN(priceValue) || priceValue <= 0) {
+                setPriceError("Preis muss eine gültige positive Zahl sein");
+                isValid = false;
+            }
+        }
+
+        return isValid;
+    };
+
+    const handleSubmit = async () => {
+        // Clear previous errors
+        setNameError("");
+        setPriceError("");
+
+        // Validate form
+        if (!validateForm()) {
+            toast.error("Bitte füllen Sie alle erforderlichen Felder aus");
+            return;
         }
         
         if (onSubmit) {
@@ -63,7 +96,7 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                     id: editingInsole?.id,
                     name: name.trim(),
                     description,
-                    price: parseFloat(price) || 0,
+                    price: parseFloat(price),
                     image: imagePreview || editingInsole?.image || undefined,
                     imageFile: imageFile || undefined,
                 });
@@ -73,6 +106,8 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                 setPrice("");
                 setImagePreview(null);
                 setImageFile(null);
+                setNameError("");
+                setPriceError("");
             } catch (error) {
                 // Error handling is done in the parent component/hook
             }
@@ -101,21 +136,27 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                         <div className="flex-1 space-y-4">
                             {/* EINLAGE Input */}
                             <div>
-                                <label className="block font-bold text-sm mb-2 text-black">
-                                    EINLAGE
+                                <label className="block font-bold text-sm mb-2 text-black uppercase">
+                                    EINLAGE <span className="text-red-500">*</span>
                                 </label>
                                 <Input
                                     type="text"
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    className="border-gray-300 rounded-[5px] bg-white"
+                                    onChange={(e) => {
+                                        setName(e.target.value);
+                                        if (nameError) setNameError("");
+                                    }}
+                                    className={`border-gray-300 rounded-[5px] bg-white ${nameError ? "border-red-500" : ""}`}
                                     placeholder=""
                                 />
+                                {nameError && (
+                                    <p className="text-red-500 text-xs mt-1">{nameError}</p>
+                                )}
                             </div>
 
                             {/* Eigenschaften Input */}
                             <div>
-                                <label className="block font-normal text-sm mb-2 text-black">
+                                <label className="block font-bold text-sm mb-2 text-black uppercase">
                                     Eigenschaften
                                 </label>
                                 <Input
@@ -129,20 +170,27 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
 
                             {/* Preis Input */}
                             <div>
-                                <label className="block font-bold text-sm mb-2 text-black">
-                                    Preis
+                                <label className="block font-bold text-sm mb-2 text-black uppercase">
+                                    Preis  <span className="text-red-500">*</span>
                                 </label>
                                 <div className="flex items-center gap-2">
                                     <Input
                                         type="number"
                                         value={price}
-                                        onChange={(e) => setPrice(e.target.value)}
-                                        className="border-gray-300 rounded-[5px] bg-white flex-1"
+                                        onChange={(e) => {
+                                            setPrice(e.target.value);
+                                            if (priceError) setPriceError("");
+                                        }}
+                                        className={`border-gray-300 rounded-[5px] bg-white flex-1 ${priceError ? "border-red-500" : ""}`}
                                         placeholder=""
                                         step="0.01"
+                                        min="0"
                                     />
                                     <span className="text-black font-medium">EUR</span>
                                 </div>
+                                {priceError && (
+                                    <p className="text-red-500 text-xs mt-1">{priceError}</p>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -152,14 +200,14 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                         <Button
                             variant="outline"
                             onClick={() => onOpenChange(false)}
-                            className="border-black rounded-[5px] px-4 py-2"
+                            className="border-black cursor-pointer rounded-[5px] px-4 py-2"
                         >
                             Abbrechen
                         </Button>
                         <Button
                             onClick={handleSubmit}
-                            disabled={isLoading || !name.trim() || !price || (!editingInsole && !imageFile && !imagePreview)}
-                            className="bg-black text-white rounded-[5px] px-4 py-2 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={isLoading}
+                            className="bg-black text-white cursor-pointer rounded-[5px] px-4 py-2 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? "Speichern..." : "Speichern"}
                         </Button>

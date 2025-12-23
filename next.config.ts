@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'appreciation-earliest-attributes-doctors.trycloudflare.com',
+        hostname: 'magical-char-florists-areas.trycloudflare.com',
       },
       {
         protocol: 'http',
