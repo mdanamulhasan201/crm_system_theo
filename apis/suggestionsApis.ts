@@ -16,10 +16,18 @@ interface EmailData {
     suggestion: string;
 }
 
-//post suggestion
-export const postSuggestion = async (data: SuggestionData) => {
+//post suggestion - accepts FormData for file uploads
+export const postSuggestion = async (data: FormData | SuggestionData): Promise<any> => {
     try {
-        const response = await axiosClient.post('/suggestions/improvement', data);
+        const config = data instanceof FormData 
+            ? {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+            : {};
+        
+        const response = await axiosClient.post('/suggestions/improvement', data as any, config);
         return response.data;
     } catch (error) {
         throw error;

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Button } from "@/components/ui/button"
 import {
@@ -9,51 +9,63 @@ import {
     FormLabel,
     FormMessage,
 } from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { postSuggestion } from '@/apis/suggestionsApis'
 import toast from 'react-hot-toast'
 
 interface ContactFormValues {
-    name: string
-    firma: string
-    email: string
-    telefon: string
     category: string
     message: string
+    images: FileList | null
 }
 export default function ContactPage() {
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+    const fileInputRef = useRef<HTMLInputElement>(null)
+
     const form = useForm<ContactFormValues>({
         defaultValues: {
-            name: "",
             category: '',
-            firma: "",
-            email: "",
-            telefon: "",
             message: "",
+            images: null,
         },
         mode: "onBlur",
     })
 
     async function onSubmit(data: ContactFormValues) {
         try {
-            const suggestionData = {
-                name: data.name,
-                email: data.email,
-                phone: data.telefon,
-                firma: data.firma,
-                category: data.category,
-                suggestion: data.message,
-            };
+            // Create FormData for file upload
+            const formData = new FormData()
+            formData.append('category', data.category)
+            formData.append('suggestion', data.message)
+            
+            // Append all selected images
+            if (data.images && data.images.length > 0) {
+                Array.from(data.images).forEach((file, index) => {
+                    formData.append('images', file)
+                })
+            }
 
-            const response = await postSuggestion(suggestionData);
+            const response = await postSuggestion(formData);
             // console.log('Success:', response);
             form.reset();
+            setSelectedFiles([]);
+            // Clear file input field
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
             toast.success('Ihre Nachricht wurde erfolgreich gesendet!');
 
         } catch (error) {
-            // toast.error(error as string);
+            toast.error('Fehler beim Senden der Nachricht');
             // console.error('Submission error:', error);
+        }
+    }
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files
+        if (files) {
+            setSelectedFiles(Array.from(files))
+            form.setValue('images', files)
         }
     }
 
@@ -62,115 +74,12 @@ export default function ContactPage() {
             <h1 className="text-2xl font-bold mb-6 capitalize">VERBESSERUNGSVORSCHLAG/MODELLWUNSCH</h1>
 
             <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4" encType="multipart/form-data">
                     {form.formState.errors.root && (
                         <div className="text-red-500 text-sm mb-4">
                             {form.formState.errors.root.message}
                         </div>
                     )}
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="name"
-                            rules={{ required: "Name ist erforderlich" }}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>NAME</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="Ihr Name"
-                                            {...field}
-                                            className={form.formState.errors.name ? "border-red-500" : "border border-gray-500"}
-                                        />
-                                    </FormControl>
-                                    <div className="min-h-[20px]">
-                                        <FormMessage />
-                                    </div>
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="firma"
-                            rules={{ required: "Firma ist erforderlich" }}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>FIRMA</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            placeholder="Ihre Firma"
-                                            {...field}
-                                            className={form.formState.errors.firma ? "border-red-500" : "border border-gray-500"}
-                                        />
-                                    </FormControl>
-                                    <div className="min-h-[20px]">
-                                        <FormMessage />
-                                    </div>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="email"
-                            rules={{
-                                
-                                required: "E-Mail ist erforderlich",
-                                pattern: {
-                                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                                    message: "Ungültige E-Mail-Adresse"
-                                }
-                            }}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>E-MAIL</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="email"
-                                            placeholder="Ihre E-Mail"
-                                            {...field}
-                                            className={form.formState.errors.email ? "border-red-500" : "border border-gray-500"}
-                                        />
-                                    </FormControl>
-                                    <div className="min-h-[20px]">
-                                        <FormMessage />
-                                    </div>
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="telefon"
-                            rules={{
-                                required: "Telefon ist erforderlich",
-                                pattern: {
-                                    value: /^[0-9+\-\s()]*$/,
-                                    message: "Ungültige Telefonnummer"
-                                }
-                            }}
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>TELEFON</FormLabel>
-                                    <FormControl>
-                                        <Input
-                                            type="tel"
-                                            placeholder="Ihre Telefonnummer"
-                                            {...field}
-                                            className={form.formState.errors.telefon ? "border-red-500" : "border border-gray-500"}
-                                        />
-                                    </FormControl>
-                                    <div className="min-h-[20px]">
-                                        <FormMessage />
-                                    </div>
-                                </FormItem>
-                            )}
-                        />
-                    </div>
 
                     <FormField
                         control={form.control}
@@ -225,6 +134,43 @@ export default function ContactPage() {
                                         {...field}
                                     />
                                 </FormControl>
+                                <div className="min-h-[20px]">
+                                    <FormMessage />
+                                </div>
+                            </FormItem>
+                        )}
+                    />
+
+                    <FormField
+                        control={form.control}
+                        name="images"
+                        render={({ field: { onChange, value, ref, ...field } }) => (
+                            <FormItem>
+                                <FormLabel>BILDER</FormLabel>
+                                <FormControl>
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        className={`w-full px-3 py-2 rounded-md border bg-transparent text-sm cursor-pointer file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-[#5B8B7F] file:text-white hover:file:bg-[#4a7268] ${form.formState.errors.images ? "border-red-500" : "border border-gray-500"}`}
+                                        onChange={(e) => {
+                                            handleFileChange(e);
+                                            onChange(e.target.files);
+                                        }}
+                                        {...field}
+                                    />
+                                </FormControl>
+                                {selectedFiles.length > 0 && (
+                                    <div className="mt-2 space-y-1">
+                                        <p className="text-sm text-gray-600">Ausgewählte Dateien:</p>
+                                        {selectedFiles.map((file, index) => (
+                                            <p key={index} className="text-xs text-gray-500">
+                                                {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                                            </p>
+                                        ))}
+                                    </div>
+                                )}
                                 <div className="min-h-[20px]">
                                     <FormMessage />
                                 </div>
