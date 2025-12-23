@@ -3,7 +3,7 @@ import axiosClient from "@/lib/axiosClient";
 //generate bar code data get /customer-orders/barcode-label/id
 export const getBarCodeData = async (id: string) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/track/barcode-labe/${id}`);
+        const response = await axiosClient.get(`/customer-orders/track/barcode-label/${id}`);
         return response.data;
     } catch (error: any) {
         // If there's an error response with data, return it
