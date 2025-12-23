@@ -81,8 +81,8 @@ export default function ScanningData() {
     if (!scanData) return <div>Scan not found</div>;
 
 
-     // handle versorgungs page
-     const handleVersorgungsPage = (e: React.MouseEvent) => {
+    // handle versorgungs page
+    const handleVersorgungsPage = (e: React.MouseEvent) => {
         e.preventDefault();
         setIsVersorgungLoading(true);
         router.push(`/dashboard/scanning-data/${scanData?.id}`);
@@ -124,14 +124,32 @@ export default function ScanningData() {
             {/* backbutton */}
             <div className='mb-6'>
                 <div className='flex justify-between items-center gap-4'>
-                    <Button
-                        onClick={() => router.back()}
-                        variant="outline"
-                        className="flex items-center gap-2 cursor-pointer"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back
-                    </Button>
+                    <div className=''>
+                        <div className="flex gap-8 mt-4">
+                            {/* Versorgung starten */}
+                            <div className="flex flex-col items-center">
+                                <button
+                                    onClick={handleVersorgungsPage}
+                                    disabled={isVersorgungLoading}
+                                    className="p-5 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Image src={userload} alt="Versorgung starten" width={70} height={70} />
+                                </button>
+                                <span className="mt-2 text-center text-sm font-normal">Versorgung starten</span>
+                            </div>
+                            {/* Kundendaten -historie */}
+                            <div className="flex flex-col items-center">
+                                <button
+                                    onClick={handleHistoryPage}
+                                    disabled={isHistoryLoading}
+                                    className="p-5 cursor-pointer flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <Image src={userImg} alt="Kundendaten -historie" width={60} height={60} />
+                                </button>
+                                <span className="mt-2 text-center text-sm font-normal">Kundendaten -historie</span>
+                            </div>
+                        </div>
+                    </div>
                     <button
                         onClick={() => {
                             setAddScanningModalOpen(true);
@@ -147,32 +165,7 @@ export default function ScanningData() {
                 </div>
             </div>
 
-            <div className='mb-6'>
-                <div className="flex gap-8 mt-4">
-                    {/* Versorgung starten */}
-                    <div className="flex flex-col items-center">
-                        <button
-                            onClick={handleVersorgungsPage}
-                            disabled={isVersorgungLoading}
-                            className="p-5 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Image src={userload} alt="Versorgung starten" width={70} height={70} />
-                        </button>
-                        <span className="mt-2 text-center text-sm font-normal">Versorgung starten</span>
-                    </div>
-                    {/* Kundendaten -historie */}
-                    <div className="flex flex-col items-center">
-                        <button
-                            onClick={handleHistoryPage}
-                            disabled={isHistoryLoading}
-                            className="p-5 cursor-pointer flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <Image src={userImg} alt="Kundendaten -historie" width={60} height={60} />
-                        </button>
-                        <span className="mt-2 text-center text-sm font-normal">Kundendaten -historie</span>
-                    </div>
-                </div>
-            </div>
+
             <ScannningDataPage
                 scanData={scanData}
                 selectedForm={selectedForm}
