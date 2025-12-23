@@ -5,6 +5,7 @@ import Link from "next/link";
 import { getPaymentStatusColor } from "@/lib/paymentStatusUtils";
 import { History, Scan, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface OrderTableRowProps {
     order: OrderData;
@@ -132,20 +133,50 @@ export default function OrderTableRow({
                 )}
             </TableCell>
             <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
-                <span 
-                    className={`px-1 sm:px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(order.displayStatus)} ${
-                        order.displayStatus?.replace(/_/g, ' ') === 'Abholbereit/Versandt' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
-                    }`}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        const normalizedStatus = order.displayStatus?.replace(/_/g, ' ');
-                        if (normalizedStatus === 'Abholbereit/Versandt' && onStatusClickGenerateAndSend) {
-                            onStatusClickGenerateAndSend(order.id, order.bestellnummer);
-                        }
-                    }}
-                >
-                    {order.displayStatus}
-                </span>
+                <div className="flex flex-col items-center gap-2">
+                    <span 
+                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(order.displayStatus)} ${
+                            order.displayStatus?.replace(/_/g, ' ') === 'Abholbereit/Versandt' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                        }`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            const normalizedStatus = order.displayStatus?.replace(/_/g, ' ');
+                            if (normalizedStatus === 'Abholbereit/Versandt' && onStatusClickGenerateAndSend) {
+                                onStatusClickGenerateAndSend(order.id, order.bestellnummer);
+                            }
+                        }}
+                    >
+                        {order.displayStatus}
+                    </span>
+                    {order.employee?.employeeName && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div 
+                                        className="flex flex-col items-center gap-1 cursor-pointer"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-[#61A175] text-white flex items-center justify-center text-xs font-semibold hover:bg-blue-600 transition-colors">
+                                            {order.employee.employeeName.charAt(0).toUpperCase()}
+                                        </div>
+                                        {/* <span className="text-xs text-gray-600 max-w-[100px] truncate">
+                                            {order.employee.employeeName.split(' ')[0]}
+                                        </span> */}
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg">
+                                    <div className="flex flex-col gap-1">
+                                        <div className="font-semibold text-sm">{order.employee.employeeName}</div>
+                                        <div className="text-xs text-gray-300">{order.employee.email}</div>
+                                        {order.employee.accountName && (
+                                            <div className="text-xs text-gray-400 mt-1">Account: {order.employee.accountName}</div>
+                                        )}
+                                    </div>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                </div>
             </TableCell>
             <TableCell className="text-center text-xs sm:text-sm w-[90px] min-w-[90px] max-w-[90px] whitespace-normal break-words overflow-hidden">
                 {order.preis}

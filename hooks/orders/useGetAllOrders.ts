@@ -44,6 +44,11 @@ export interface ApiOrderData {
         versorgung: string | null;
         bezahlt: string | boolean | null;
     } | null;
+    employee?: {
+        accountName: string;
+        employeeName: string;
+        email: string;
+    } | null;
 }
 
 export interface PaginationData {
