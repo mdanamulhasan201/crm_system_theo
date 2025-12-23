@@ -6,7 +6,7 @@ import toast from 'react-hot-toast'
 
 export default function BasicSettings() {
     // Define the type for the field keys
-    type FieldKey = 'firstName' | 'lastName' | 'dob' | 'email' | 'phone' | 'address' | 'versicherungsnummer' | 'abrechnungstyp';
+    type FieldKey = 'firstName' | 'lastName' | 'dob' | 'email' | 'phone' | 'address' | 'land' | 'billingType';
     
     // Initial state for required fields
     const initialRequiredFields = {
@@ -16,8 +16,10 @@ export default function BasicSettings() {
         email: false,
         phone: false,
         address: false,
-        versicherungsnummer: false,
-        abrechnungstyp: false,
+        land: false,
+        billingType: false,
+
+        
     };
 
     // State for required fields
@@ -42,8 +44,8 @@ export default function BasicSettings() {
                         email: Boolean(data.email ?? false),
                         phone: Boolean(data.telefon ?? false),
                         address: Boolean(data.adresse ?? false),
-                        versicherungsnummer: Boolean(data.versicherungsnummer ?? false),
-                        abrechnungstyp: Boolean(data.abrechnungstyp ?? false),
+                        land: Boolean(data.land ?? false),
+                        billingType: Boolean(data.billingType ?? false),
                     };
                     setRequiredFields(mapped);
                     setInitialRequiredFieldsState(mapped);
@@ -80,8 +82,8 @@ export default function BasicSettings() {
                 email: requiredFields.email,
                 telefon: requiredFields.phone,
                 adresse: requiredFields.address,
-                versicherungsnummer: requiredFields.versicherungsnummer,
-                abrechnungstyp: requiredFields.abrechnungstyp,
+                land: requiredFields.land,
+                billingType: requiredFields.billingType,
             };
 
             const response = await postBasicSettings(payload);
@@ -141,11 +143,11 @@ export default function BasicSettings() {
                         Adresse
                     </label>
                     <label className="flex items-center text-base">
-                        <input type="checkbox" checked={requiredFields.versicherungsnummer ?? false} onChange={() => handleCheckboxChange('versicherungsnummer')} className="mr-2 w-4 h-4" />
+                        <input type="checkbox" checked={requiredFields.land ?? false} onChange={() => handleCheckboxChange('land')} className="mr-2 w-4 h-4" />
                         Versicherungsnummer
                     </label>
                     <label className="flex items-center text-base">
-                        <input type="checkbox" checked={requiredFields.abrechnungstyp ?? false} onChange={() => handleCheckboxChange('abrechnungstyp')} className="mr-2 w-4 h-4" />
+                        <input type="checkbox" checked={requiredFields.billingType ?? false} onChange={() => handleCheckboxChange('billingType')} className="mr-2 w-4 h-4" />
                         Abrechnungstyp
                     </label>
                 </div>

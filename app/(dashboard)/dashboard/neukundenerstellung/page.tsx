@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -13,7 +13,19 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { addCustomer } from '@/apis/customerApis';
+import { getBasicSettings } from '@/apis/setting/basicSettingsApis';
 import WohnortInput from '../_components/Customers/WohnortInput';
+
+interface RequiredFields {
+    vorname: boolean;
+    nachname: boolean;
+    geburtsdatum: boolean;
+    email: boolean;
+    telefon: boolean;
+    adresse: boolean;
+    land: boolean;
+    billingType: boolean;
+}
 
 export default function Neukundenerstellung() {
     const [gender, setGender] = useState<'mann' | 'frau' | 'keine'>('mann');
@@ -26,8 +38,82 @@ export default function Neukundenerstellung() {
     const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
     const [billingType, setBillingType] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [requiredFields, setRequiredFields] = useState<RequiredFields>({
+        vorname: false,
+        nachname: false,
+        geburtsdatum: false,
+        email: false,
+        telefon: false,
+        adresse: false,
+        land: false,
+        billingType: false,
+    });
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+    // Fetch required fields settings
+    useEffect(() => {
+        const fetchRequiredFields = async () => {
+            try {
+                const response = await getBasicSettings();
+                if (response?.success && response?.data) {
+                    setRequiredFields({
+                        vorname: Boolean(response.data.vorname ?? false),
+                        nachname: Boolean(response.data.nachname ?? false),
+                        geburtsdatum: Boolean(response.data.geburtsdatum ?? false),
+                        email: Boolean(response.data.email ?? false),
+                        telefon: Boolean(response.data.telefon ?? false),
+                        adresse: Boolean(response.data.adresse ?? false),
+                        land: Boolean(response.data.land ?? false),
+                        billingType: Boolean(response.data.billingType ?? false),
+                    });
+                }
+            } catch (error) {
+                console.error('Fehler beim Laden der Pflichtfelder:', error);
+            }
+        };
+        fetchRequiredFields();
+    }, []);
+
+    // Validate form based on required fields
+    const validateForm = (): boolean => {
+        const errors: Record<string, string> = {};
+
+        if (requiredFields.vorname && !firstName.trim()) {
+            errors.firstName = 'Vorname ist erforderlich';
+        }
+        if (requiredFields.nachname && !lastName.trim()) {
+            errors.lastName = 'Nachname ist erforderlich';
+        }
+        if (requiredFields.geburtsdatum && !birthDate) {
+            errors.birthDate = 'Geburtsdatum ist erforderlich';
+        }
+        if (requiredFields.email && !email.trim()) {
+            errors.email = 'E-Mail ist erforderlich';
+        }
+        if (requiredFields.telefon && !phone.trim()) {
+            errors.phone = 'Telefonnummer ist erforderlich';
+        }
+        if (requiredFields.adresse && !address.trim()) {
+            errors.address = 'Adresse ist erforderlich';
+        }
+        if (requiredFields.land && !insuranceNumber.trim()) {
+            errors.insuranceNumber = 'Versicherungsnummer ist erforderlich';
+        }
+        if (requiredFields.billingType && !billingType.trim()) {
+            errors.billingType = 'Abrechnungstyp ist erforderlich';
+        }
+
+        setFieldErrors(errors);
+        return Object.keys(errors).length === 0;
+    };
 
     const handleSubmit = async () => {
+        // Validate form before submitting
+        if (!validateForm()) {
+            toast.error('Bitte füllen Sie alle Pflichtfelder aus.');
+            return;
+        }
+
         try {
             setIsSubmitting(true);
 
@@ -61,6 +147,22 @@ export default function Neukundenerstellung() {
             setIsSubmitting(false);
         }
     };
+
+    // Clear errors when fields become valid
+    useEffect(() => {
+        setFieldErrors((prev) => {
+            const next = { ...prev };
+            if (firstName.trim() && next.firstName) delete next.firstName;
+            if (lastName.trim() && next.lastName) delete next.lastName;
+            if (birthDate && next.birthDate) delete next.birthDate;
+            if (email.trim() && next.email) delete next.email;
+            if (phone.trim() && next.phone) delete next.phone;
+            if (address.trim() && next.address) delete next.address;
+            if (insuranceNumber.trim() && next.insuranceNumber) delete next.insuranceNumber;
+            if (billingType.trim() && next.billingType) delete next.billingType;
+            return next;
+        });
+    }, [firstName, lastName, birthDate, email, phone, address, insuranceNumber, billingType]);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
@@ -127,50 +229,67 @@ export default function Neukundenerstellung() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Vorname
+                                Vorname {requiredFields.vorname && <span className="text-red-500">*</span>}
                             </label>
                             <Input
                                 type="text"
-                                className="w-full"
+                                className={cn("w-full", fieldErrors.firstName && "border-red-500")}
                                 placeholder="Ex. john....."
                                 value={firstName}
                                 onChange={(e) => setFirstName(e.target.value)}
                             />
+                            {fieldErrors.firstName && (
+                                <p className="text-red-500 text-xs mt-1">{fieldErrors.firstName}</p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Nachname
+                                Nachname {requiredFields.nachname && <span className="text-red-500">*</span>}
                             </label>
                             <Input
                                 type="text"
-                                className="w-full"
+                                className={cn("w-full", fieldErrors.lastName && "border-red-500")}
                                 placeholder="Ex. De....."
                                 value={lastName}
                                 onChange={(e) => setLastName(e.target.value)}
                             />
+                            {fieldErrors.lastName && (
+                                <p className="text-red-500 text-xs mt-1">{fieldErrors.lastName}</p>
+                            )}
                         </div>
                     </div>
 
                     {/* Wohnort with full address (Location + Exact Address) */}
-                    <WohnortInput value={address} onChange={setAddress} />
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Adresse {requiredFields.adresse && <span className="text-red-500">*</span>}
+                        </label>
+                        <WohnortInput value={address} onChange={setAddress} />
+                        {fieldErrors.address && (
+                            <p className="text-red-500 text-xs mt-1">{fieldErrors.address}</p>
+                        )}
+                    </div>
 
                     {/* Telefonnummer & Geburtsdatum */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Telefonnummer
+                                Telefonnummer {requiredFields.telefon && <span className="text-red-500">*</span>}
                             </label>
                             <Input
                                 type="tel"
-                                className="w-full"
+                                className={cn("w-full", fieldErrors.phone && "border-red-500")}
                                 placeholder="0049 123 456789"
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
                             />
+                            {fieldErrors.phone && (
+                                <p className="text-red-500 text-xs mt-1">{fieldErrors.phone}</p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Geburtsdatum
+                                Geburtsdatum {requiredFields.geburtsdatum && <span className="text-red-500">*</span>}
                             </label>
                             <Popover>
                                 <PopoverTrigger asChild>
@@ -178,7 +297,8 @@ export default function Neukundenerstellung() {
                                         variant="outline"
                                         className={cn(
                                             'w-full justify-between px-3 py-2 text-sm font-normal',
-                                            !birthDate && 'text-gray-400'
+                                            !birthDate && 'text-gray-400',
+                                            fieldErrors.birthDate && 'border-red-500'
                                         )}
                                     >
                                         {birthDate ? (
@@ -202,6 +322,9 @@ export default function Neukundenerstellung() {
                                     />
                                 </PopoverContent>
                             </Popover>
+                            {fieldErrors.birthDate && (
+                                <p className="text-red-500 text-xs mt-1">{fieldErrors.birthDate}</p>
+                            )}
                         </div>
                     </div>
 
@@ -209,37 +332,43 @@ export default function Neukundenerstellung() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                E-Mail
+                                E-Mail {requiredFields.email && <span className="text-red-500">*</span>}
                             </label>
                             <Input
                                 type="email"
-                                className="w-full"
+                                className={cn("w-full", fieldErrors.email && "border-red-500")}
                                 placeholder="Ex. johngmail.com.."
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                             />
+                            {fieldErrors.email && (
+                                <p className="text-red-500 text-xs mt-1">{fieldErrors.email}</p>
+                            )}
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Versicherungsnummer
+                                Versicherungsnummer {requiredFields.land && <span className="text-red-500">*</span>}
                             </label>
                             <Input
                                 type="text"
-                                className="w-full"
+                                className={cn("w-full", fieldErrors.insuranceNumber && "border-red-500")}
                                 placeholder="65 120692 M 123"
                                 value={insuranceNumber}
                                 onChange={(e) => setInsuranceNumber(e.target.value)}
                             />
+                            {fieldErrors.insuranceNumber && (
+                                <p className="text-red-500 text-xs mt-1">{fieldErrors.insuranceNumber}</p>
+                            )}
                         </div>
                     </div>
 
                     {/* Abrechnungstyp */}
                     <div className="text-sm">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Abrechnungstyp
+                            Abrechnungstyp {requiredFields.billingType && <span className="text-red-500">*</span>}
                         </label>
                         <Select value={billingType} onValueChange={setBillingType}>
-                            <SelectTrigger className="w-full">
+                            <SelectTrigger className={cn("w-full", fieldErrors.billingType && "border-red-500")}>
                                 <SelectValue placeholder="Auswählen" />
                             </SelectTrigger>
                             <SelectContent>
@@ -247,6 +376,9 @@ export default function Neukundenerstellung() {
                                 <SelectItem value="krankenkasse">Krankenkasse</SelectItem>
                             </SelectContent>
                         </Select>
+                        {fieldErrors.billingType && (
+                            <p className="text-red-500 text-xs mt-1">{fieldErrors.billingType}</p>
+                        )}
                     </div>
 
                 </div>
