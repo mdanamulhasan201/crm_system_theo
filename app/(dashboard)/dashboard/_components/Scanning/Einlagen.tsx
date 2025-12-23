@@ -68,6 +68,7 @@ interface PrefillOrderData {
 interface ScanningFormProps {
     customer?: Customer;
     prefillOrderData?: PrefillOrderData | null;
+    screenerId?: string | null;
     onCustomerUpdate?: (updatedCustomer: Customer) => void;
     onDataRefresh?: () => void;
 }
@@ -134,7 +135,7 @@ const mapEinlageType = (value?: string | null, options: string[] = []) => {
     return options.find((option: string) => option === value) as EinlageType | undefined;
 };
 
-export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
+export default function Einlagen({ customer, prefillOrderData, screenerId, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
     // React Hook Form setup
     const {
         register,
@@ -451,6 +452,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                     fußanalyse: fussanalysePreis, 
                     einlagenversorgung: einlagenversorgungPreis,
                     werkstattEmployeeId: formDataForOrder.employeeId || formDataForOrder.werkstattEmployeeId || '',
+                    screenerId: formDataForOrder.screenerId || null,
                 };
 
                 const result = await createOrderAndGeneratePdf(
@@ -463,8 +465,12 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
                 if (orderId) {
                     setCurrentOrderId(orderId);
                     setShowPdfModal(true);
+                    // Close Werkstattzettel modal only after successful order creation
+                    setShowUserInfoUpdateModal(false);
                 }
             } catch (error) {
+                console.error('Error while creating order:', error);
+                toast.error('Fehler beim Erstellen der Bestellung. Bitte versuchen Sie es erneut.');
             }
         }
         setShowConfirmModal(false);
@@ -498,6 +504,7 @@ export default function Einlagen({ customer, prefillOrderData, onCustomerUpdate,
             selectedEmployeeId,
             versorgungData,
             selectedVersorgungId,
+            screenerId,
         });
         setFormDataForOrder(formData);
         setShowUserInfoUpdateModal(true);

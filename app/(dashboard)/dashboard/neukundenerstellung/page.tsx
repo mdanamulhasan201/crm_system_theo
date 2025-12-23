@@ -7,7 +7,6 @@ import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -26,12 +25,9 @@ export default function Neukundenerstellung() {
     const [insuranceNumber, setInsuranceNumber] = useState('');
     const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
     const [billingType, setBillingType] = useState('');
-    const [consent, setConsent] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async () => {
-        if (!consent) return;
-
         try {
             setIsSubmitting(true);
 
@@ -49,7 +45,6 @@ export default function Neukundenerstellung() {
             }
             formData.append('land', insuranceNumber);
             formData.append('billingType', billingType);
-            formData.append('consent', consent ? 'true' : 'false');
 
             await addCustomer(formData);
             toast.success('Kunde wurde erfolgreich erstellt.');
@@ -69,7 +64,7 @@ export default function Neukundenerstellung() {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <div>
@@ -254,22 +249,10 @@ export default function Neukundenerstellung() {
                         </Select>
                     </div>
 
-                    {/* Checkbox */}
-                    <div className="flex items-start gap-3 text-xs md:text-sm text-gray-600">
-                        <Checkbox
-                            className="mt-1"
-                            checked={consent}
-                            onChange={(e) => setConsent(e.target.checked)}
-                        />
-                        <p>
-                            Ich stimme den Datenschutzrichtlinien zu und bin damit einverstanden, E-Mails zum Zweck
-                            der Aktivierung der FeetF1rst App zu erhalten.
-                        </p>
-                    </div>
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+                <div className="flex justify-end gap-3 px-6 ">
                     <button
                         type="button"
                         onClick={() => history.back()}
@@ -279,9 +262,9 @@ export default function Neukundenerstellung() {
                     </button>
                     <button
                         type="button"
-                        disabled={!consent || isSubmitting}
+                        disabled={isSubmitting}
                         className={`px-5 py-2 rounded-lg text-sm font-semibold ${
-                            consent && !isSubmitting
+                            !isSubmitting
                                 ? 'bg-[#61A175] text-white hover:bg-[#4f8360]'
                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}

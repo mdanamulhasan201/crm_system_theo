@@ -8,6 +8,7 @@ import { MapPin, FileText, StickyNote } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeDeliveryDate, getRequiredDeliveryDate } from './utils/dateUtils';
+import { getSettingData } from '@/apis/einlagenApis';
 
 interface Customer {
     id: string;
@@ -96,6 +97,8 @@ export default function MassschuheOrderModal({
     const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [isPaid, setIsPaid] = useState<boolean>(true);
     const [quantity, setQuantity] = useState<number>(1);
+    const [laserPrintPrices, setLaserPrintPrices] = useState<number[]>([]);
+    const [pricesLoading, setPricesLoading] = useState(false);
 
     const { user } = useAuth();
 
@@ -103,6 +106,26 @@ export default function MassschuheOrderModal({
     const completionDays =
         (customer as any)?.workshopNote?.completionDays ??
         (customer as any)?.partner?.workshopNote?.completionDays;
+
+    // Fetch laser print prices from settings when modal opens
+    useEffect(() => {
+        const fetchSettings = async () => {
+            if (!isOpen) return;
+            setPricesLoading(true);
+            try {
+                const response = await getSettingData();
+                if (response?.data?.laser_print_prices && Array.isArray(response.data.laser_print_prices)) {
+                    setLaserPrintPrices(response.data.laser_print_prices);
+                }
+            } catch (error) {
+                console.error('Failed to fetch settings:', error);
+                toast.error('Fehler beim Laden der Preise');
+            } finally {
+                setPricesLoading(false);
+            }
+        };
+        fetchSettings();
+    }, [isOpen]);
 
     // Set default location from customer wohnort
     useEffect(() => {
@@ -130,6 +153,7 @@ export default function MassschuheOrderModal({
             setFertigstellungDate(deliveryFromApi || fallbackDelivery);
 
             setPaymentType(null);
+            // Reset price selections
             setSelectedFußanalyse('');
             setSelectedEinlagenversorgung('');
             setOrderNote('');
@@ -377,7 +401,13 @@ export default function MassschuheOrderModal({
                             <Button
                                 type="button"
                                 variant={paymentType === 'privat' ? 'default' : 'outline'}
-                                onClick={() => setPaymentType('privat')}
+                                onClick={() => {
+                                    setPaymentType('privat');
+                                    // When switching to Privat, preselect first available laser print price if not set
+                                    if (!selectedFußanalyse && laserPrintPrices.length > 0) {
+                                        setSelectedFußanalyse(String(laserPrintPrices[0]));
+                                    }
+                                }}
                                 className={cn(
                                     "flex-1",
                                     paymentType === 'privat' && "bg-[#62A07C] hover:bg-[#4A8A5F] text-white"
@@ -396,15 +426,39 @@ export default function MassschuheOrderModal({
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-sm font-medium text-gray-600 mb-2 block">Fußanalyse</label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
+                                    <Select
                                         value={selectedFußanalyse}
-                                        onChange={(e) => setSelectedFußanalyse(e.target.value)}
-                                        placeholder="Basis Analyse - €45"
-                                        className="w-full"
-                                    />
+                                        onValueChange={(value) => setSelectedFußanalyse(value)}
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <SelectValue
+                                                placeholder={
+                                                    pricesLoading
+                                                        ? 'Lade Preise...'
+                                                        : laserPrintPrices.length > 0
+                                                            ? 'Preis auswählen'
+                                                            : 'Kein Preis verfügbar'
+                                                }
+                                            />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {laserPrintPrices.length > 0 ? (
+                                                laserPrintPrices.map((price, index) => (
+                                                    <SelectItem
+                                                        key={`foot-${index}`}
+                                                        value={String(price)}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        {price}€
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="no-price" disabled>
+                                                    Kein Preis verfügbar
+                                                </SelectItem>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div>

@@ -42,6 +42,11 @@ export const useCreateOrder = () => {
             setLastOrderId(orderId);
             try { if (typeof window !== 'undefined') localStorage.removeItem('werkstattzettelId'); } catch { }
 
+            // Inform user immediately that the order was created
+            toast.success('Order created successfully!');
+            // Allow UI (e.g. confirmation modal button) to stop showing loading
+            setIsCreating(false);
+
             try {
                 const orderResponse = await getSingleOrder(orderId);
                 if (!orderResponse.success) {
@@ -53,48 +58,54 @@ export const useCreateOrder = () => {
                 });
                 window.dispatchEvent(updateEvent);
 
-                // Wait for the DOM to update and ensure the invoice-print-area element exists
-                let retries = 0;
-                const maxRetries = 10;
-                while (retries < maxRetries) {
-                    const element = document.getElementById('invoice-print-area');
-                    if (element) {
-                        break;
-                    }
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                    retries++;
-                }
-
-                // Additional delay to ensure React has rendered the updated data
-                await new Promise(resolve => setTimeout(resolve, 200));
-
-                const element = document.getElementById('invoice-print-area');
-                if (!element) {
-                    throw new Error('Invoice print area element not found. Please try generating PDF from the order details page.');
-                }
-
-                const pdfBlob = await generatePdfFromElement('invoice-print-area', pdfPresets.balanced);
-
-                // Save the PDF
-                const pdfFormData = new FormData();
-                pdfFormData.append('invoice', pdfBlob, `order_${orderId}.pdf`);
-                await saveInvoicePdf(orderId, pdfFormData);
-
-                if (autoSendToCustomer) {
+                // Run PDF generation and optional sending in the background
+                (async () => {
                     try {
-                        await sendPdfToCustomer(orderId);
-                        toast.success('Order created successfully!');
-                    } catch (sendError) {
-                        toast.success('Order created successfully!');
-                        toast.error('PDF saved but failed to send to customer');
+                        // Wait for the DOM to update and ensure the invoice-print-area element exists
+                        let retries = 0;
+                        const maxRetries = 10;
+                        while (retries < maxRetries) {
+                            const element = document.getElementById('invoice-print-area');
+                            if (element) {
+                                break;
+                            }
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                            retries++;
+                        }
+
+                        // Additional delay to ensure React has rendered the updated data
+                        await new Promise(resolve => setTimeout(resolve, 200));
+
+                        const element = document.getElementById('invoice-print-area');
+                        if (!element) {
+                            throw new Error('Invoice print area element not found. Please try generating PDF from the order details page.');
+                        }
+
+                        const pdfBlob = await generatePdfFromElement('invoice-print-area', pdfPresets.balanced);
+
+                        // Save the PDF
+                        const pdfFormData = new FormData();
+                        pdfFormData.append('invoice', pdfBlob, `order_${orderId}.pdf`);
+                        await saveInvoicePdf(orderId, pdfFormData);
+
+                        if (autoSendToCustomer) {
+                            try {
+                                await sendPdfToCustomer(orderId);
+                                toast.success('PDF sent to customer successfully!');
+                            } catch (sendError) {
+                                console.error('Failed to send PDF to customer', sendError);
+                                toast.error('PDF saved but failed to send to customer');
+                            }
+                        }
+                    } catch (pdfError) {
+                        console.error('Failed to generate/save PDF:', pdfError);
+                        toast.error('PDF generation failed');
                     }
-                } else {
-                    toast.success('Order created successfully!');
-                }
+                })();
             } catch (pdfError) {
-                console.error('Failed to generate/save PDF:', pdfError);
-                toast.success('Order created successfully!');
-                toast.error('PDF generation failed');
+                // console.error('Failed to prepare order data for PDF:', pdfError);
+                // Order is already created; only notify about PDF problem
+                toast.error('PDF generation preparation failed');
             }
 
             return response;

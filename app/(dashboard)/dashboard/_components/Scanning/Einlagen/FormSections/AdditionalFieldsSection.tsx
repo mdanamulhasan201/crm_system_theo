@@ -22,7 +22,7 @@ export default function AdditionalFieldsSection({
                 </div>
                 <Input
                     type="text"
-                    placeholder="Schuhmodell bessa mit bilder fa modellarten usw einfacher"
+                    placeholder="Manuelle Eintragen (Marke, Modell, Größe)"
                     value={schuhmodell_wählen}
                     onChange={(e) => onSchuhmodellChange(e.target.value)}
                 />

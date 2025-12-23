@@ -12,9 +12,10 @@ import MassschuheQuestions from '../Scanning/MassschuheQuestion';
 interface ScannningDataPageProps {
     scanData: ScanData;
     selectedForm?: 'einlagen' | 'massschuhe';
+    onScreenerIdChange?: (screenerId: string | null) => void;
 }
 
-export default function ScannningDataPage({ scanData, selectedForm = 'einlagen' }: ScannningDataPageProps) {
+export default function ScannningDataPage({ scanData, selectedForm = 'einlagen', onScreenerIdChange }: ScannningDataPageProps) {
     const router = useRouter();
     const [modalOpen, setModalOpen] = useState(false);
     const [modalImg, setModalImg] = useState<string | null>(null);
@@ -85,10 +86,37 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen' 
         }));
     };
 
+    // Use the data from hook or fallback to prop (moved before handleDateChange)
+    const displayData = currentScanData || scanData;
+
     // Handle date selection from ScanDataDisplay
     const handleDateChange = useCallback((date: string | null) => {
         setSelectedDate(date || undefined);
-    }, []);
+        
+        // Get current data at callback time
+        const currentData = currentScanData || scanData;
+        
+        // Find the screenerFile ID for the selected date
+        if (date && currentData?.screenerFile && Array.isArray(currentData.screenerFile)) {
+            const selectedScreenerFile = currentData.screenerFile.find(
+                file => file.updatedAt === date
+            );
+            const screenerId = selectedScreenerFile?.id || null;
+            onScreenerIdChange?.(screenerId);
+        } else {
+            // If no date selected, use the latest screenerFile ID
+            if (currentData?.screenerFile && Array.isArray(currentData.screenerFile) && currentData.screenerFile.length > 0) {
+                const latestScreenerFile = currentData.screenerFile.reduce((latest, item) => {
+                    const latestDate = new Date(latest.updatedAt);
+                    const currentDate = new Date(item.updatedAt);
+                    return currentDate > latestDate ? item : latest;
+                });
+                onScreenerIdChange?.(latestScreenerFile.id);
+            } else {
+                onScreenerIdChange?.(null);
+            }
+        }
+    }, [currentScanData, scanData, onScreenerIdChange]);
 
     // Memoized callback to handle data changes from date filter
     const handleDataChange = useCallback((filteredData: any) => {
@@ -159,8 +187,6 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen' 
         setModalOpen(true);
     };
 
-    // Use the data from hook or fallback to prop
-    const displayData = currentScanData || scanData;
 
     const latestScreener = React.useMemo(() => {
         if (Array.isArray(displayData.screenerFile) && displayData.screenerFile.length > 0) {
@@ -172,6 +198,22 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen' 
         }
         return null;
     }, [displayData.screenerFile]);
+
+    // Initialize screenerId on mount or when displayData changes
+    useEffect(() => {
+        if (displayData?.screenerFile && Array.isArray(displayData.screenerFile) && displayData.screenerFile.length > 0) {
+            if (selectedDate) {
+                const selectedScreenerFile = displayData.screenerFile.find(
+                    file => file.updatedAt === selectedDate
+                );
+                if (selectedScreenerFile) {
+                    onScreenerIdChange?.(selectedScreenerFile.id);
+                }
+            } else if (latestScreener) {
+                onScreenerIdChange?.(latestScreener.id);
+            }
+        }
+    }, [displayData, selectedDate, latestScreener, onScreenerIdChange]);
 
     const getLatestData = (fieldName: keyof Pick<ScanData, 'picture_10' | 'picture_23' | 'picture_11' | 'picture_24' | 'threed_model_left' | 'threed_model_right' | 'picture_17' | 'picture_16'>) => {
         if (latestScreener && latestScreener[fieldName]) {

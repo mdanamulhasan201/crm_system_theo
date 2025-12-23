@@ -16,7 +16,8 @@ interface BarcodeStickerData {
     customerNumber: number;
     orderNumber: number;
     orderStatus: string;
-    completedAt: string;
+    completedAt: string | null;
+    barcodeCreatedAt?: string | null;
     partnerAddress: string;
 }
 
@@ -98,20 +99,26 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     // TOP SECTION - Logo and Company Info
     let currentY = 10;
     
+    // Load all images in parallel for better performance
+    const imagePromises: Promise<HTMLImageElement | null>[] = [];
+    
     if (data.partner?.image) {
-        try {
-            const logoImg = await loadImage(data.partner.image);
-            const logoMaxWidth = 100;
-            const logoMaxHeight = 45;
-            const logoRatio = Math.min(logoMaxWidth / logoImg.width, logoMaxHeight / logoImg.height);
-            const logoWidth = logoImg.width * logoRatio;
-            const logoHeight = logoImg.height * logoRatio;
-            ctx.drawImage(logoImg, 12, currentY, logoWidth, logoHeight);
-        } catch {
-            ctx.font = 'bold 24px Arial';
-            ctx.fillStyle = '#dc2626';
-            ctx.fillText('logo not found', 12, currentY + 15);
-        }
+        imagePromises.push(loadImage(data.partner.image).catch(() => null));
+    } else {
+        imagePromises.push(Promise.resolve(null));
+    }
+    
+    imagePromises.push(loadImage(BRAND_LOGO).catch(() => null));
+    
+    // Draw partner logo
+    const logoImg = await imagePromises[0];
+    if (logoImg) {
+        const logoMaxWidth = 100;
+        const logoMaxHeight = 45;
+        const logoRatio = Math.min(logoMaxWidth / logoImg.width, logoMaxHeight / logoImg.height);
+        const logoWidth = logoImg.width * logoRatio;
+        const logoHeight = logoImg.height * logoRatio;
+        ctx.drawImage(logoImg, 12, currentY, logoWidth, logoHeight);
     } else {
         ctx.font = 'bold 24px Arial';
         ctx.fillStyle = '#dc2626';
@@ -125,11 +132,9 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     ctx.fillText(data.partner?.name || 'Partner Name', 255, currentY);
     
     // Brand logo (far right)
-    try {
-        const brandLogo = await loadImage(BRAND_LOGO);
+    const brandLogo = await imagePromises[1];
+    if (brandLogo) {
         ctx.drawImage(brandLogo, 368, currentY - 5, 20, 20);
-    } catch {
-        // Skip if brand logo fails to load
     }
     
     // Address (left-aligned within right section)
@@ -155,16 +160,19 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     
     // Customer number (aligned with partner name section)
     ctx.textAlign = 'left';
-    ctx.fillText(`Knd Nr: ${data.customerNumber || '-'}`, 255, currentY);
+    ctx.font = '10px Arial';
+    ctx.fillStyle = '#000000';
+    ctx.fillText(`Customer Number: ${data.customerNumber || '-'}`, 255, currentY);
     
     // Adjust currentY based on number of lines
     currentY += Math.max(22, customerLines.length * 18);
     ctx.textAlign = 'left';
     
-    // Production date
+    // Production date - use barcodeCreatedAt if completedAt is not available
+    const productionDate = data.completedAt || data.barcodeCreatedAt || '';
     ctx.font = '11px Arial';
     ctx.fillStyle = '#333333';
-    ctx.fillText(`Herstelldatum: ${formatDate(data.completedAt)}`, 12, currentY);
+    ctx.fillText(`Herstelldatum: ${formatDate(productionDate)}`, 12, currentY);
     
     currentY += 18;
     
@@ -196,14 +204,14 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     const iconStartX = 255; // Start from left of the right section
     const iconGap = 28;
     
-    // Load and draw care icons
-    try {
-        const [tempIcon, waterIcon, sunIcon] = await Promise.all([
-            loadImage(TEMPERATURE_ICON),
-            loadImage(WATER_DROP_ICON),
-            loadImage(SUN_ICON)
-        ]);
-        
+    // Load and draw care icons (already optimized with Promise.all)
+    const [tempIcon, waterIcon, sunIcon] = await Promise.all([
+        loadImage(TEMPERATURE_ICON).catch(() => null),
+        loadImage(WATER_DROP_ICON).catch(() => null),
+        loadImage(SUN_ICON).catch(() => null)
+    ]);
+    
+    if (tempIcon && waterIcon && sunIcon) {
         // Temperature icon
         ctx.drawImage(tempIcon, iconStartX, careY - 4, iconSize, iconSize);
         
@@ -212,7 +220,7 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
         
         // Sun icon
         ctx.drawImage(sunIcon, iconStartX + (iconGap * 2), careY - 4, iconSize, iconSize);
-    } catch {
+    } else {
         // Fallback - draw simple circles if images fail
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;

@@ -12,7 +12,8 @@ interface BarcodeStickerData {
     customerNumber: number;
     orderNumber: number;
     orderStatus: string;
-    completedAt: string;
+    completedAt: string | null;
+    barcodeCreatedAt?: string | null;
     partnerAddress: string;
 }
 
@@ -31,7 +32,9 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
     useEffect(() => {
         if (barcodeRef.current) {
             try {
-                JsBarcode(barcodeRef.current, getBarcodeValue(), {
+                const barcodeValue = data.orderNumber?.toString() || data.customerNumber?.toString() || '0';
+                const paddedValue = barcodeValue.padStart(10, '0');
+                JsBarcode(barcodeRef.current, paddedValue, {
                     format: 'CODE128',
                     width: 2,
                     height: 50,
@@ -112,7 +115,7 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                         {data.customer || 'Customer Name'}
                     </div>
                     <div style={{ fontSize: '11px', color: '#333' }}>
-                        Herstelldatum: {formatDate(data.completedAt)}
+                        Herstelldatum: {formatDate(data.completedAt || data.barcodeCreatedAt || '')}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
                         <span style={{
@@ -129,8 +132,8 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                 </div>
 
                 <div style={{ width: '145px', flexShrink: 0 }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>
-                        Knd Nr: {data.customerNumber || '-'}
+                    <div style={{ fontSize: '10px' }}>
+                        Customer Number: {data.customerNumber || '-'}
                     </div>
                 </div>
             </div>

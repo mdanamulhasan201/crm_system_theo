@@ -2,6 +2,7 @@ import React from 'react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
+import { cn } from '@/lib/utils'
 
 interface PriceSectionProps {
   footAnalysisPrice: string
@@ -15,6 +16,10 @@ interface PriceSectionProps {
   laserPrintPrices: number[]
   einlagenversorgungPrices: number[]
   pricesLoading: boolean
+  footAnalysisPriceError?: string
+  insoleSupplyPriceError?: string
+  customFootPriceError?: string
+  customInsolePriceError?: string
 }
 
 export default function PriceSection({
@@ -29,13 +34,22 @@ export default function PriceSection({
   laserPrintPrices,
   einlagenversorgungPrices,
   pricesLoading,
+  footAnalysisPriceError,
+  insoleSupplyPriceError,
+  customFootPriceError,
+  customInsolePriceError,
 }: PriceSectionProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-3">
           <Label className="text-base font-semibold">Fußanalyse</Label>
           <Select value={footAnalysisPrice} onValueChange={onFootAnalysisPriceChange}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger
+              className={cn(
+                'w-full',
+                footAnalysisPriceError && 'border-red-500 focus-visible:ring-red-500'
+              )}
+            >
               <SelectValue
                 placeholder={pricesLoading ? 'Lade Preise...' : laserPrintPrices.length > 0 ? 'Preis auswählen' : 'Kein Preis verfügbar'}
               />
@@ -64,15 +78,29 @@ export default function PriceSection({
               placeholder="Preis eingeben"
               value={customFootPrice}
               onChange={(e) => onCustomFootPriceChange(e.target.value)}
-              className="w-full mt-2"
+              className={cn(
+                'w-full mt-2',
+                customFootPriceError && 'border-red-500 focus-visible:ring-red-500'
+              )}
             />
+          )}
+          {customFootPriceError && (
+            <p className="text-xs text-red-500 mt-1">{customFootPriceError}</p>
+          )}
+          {footAnalysisPriceError && (
+            <p className="text-xs text-red-500 mt-1">{footAnalysisPriceError}</p>
           )}
         </div>
 
         <div className="space-y-3">
           <Label className="text-base font-semibold">Einlagenversorgung</Label>
           <Select value={insoleSupplyPrice} onValueChange={onInsoleSupplyPriceChange}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger
+              className={cn(
+                'w-full',
+                insoleSupplyPriceError && 'border-red-500 focus-visible:ring-red-500'
+              )}
+            >
               <SelectValue
                 placeholder={pricesLoading ? 'Lade Preise...' : einlagenversorgungPrices.length > 0 ? 'Preis auswählen' : 'Kein Preis verfügbar'}
               />
@@ -101,8 +129,17 @@ export default function PriceSection({
               placeholder="Preis eingeben"
               value={customInsolePrice}
               onChange={(e) => onCustomInsolePriceChange(e.target.value)}
-              className="w-full mt-2"
+              className={cn(
+                'w-full mt-2',
+                customInsolePriceError && 'border-red-500 focus-visible:ring-red-500'
+              )}
             />
+          )}
+          {customInsolePriceError && (
+            <p className="text-xs text-red-500 mt-1">{customInsolePriceError}</p>
+          )}
+          {insoleSupplyPriceError && (
+            <p className="text-xs text-red-500 mt-1">{insoleSupplyPriceError}</p>
           )}
         </div>
       </div>

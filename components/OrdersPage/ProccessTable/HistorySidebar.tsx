@@ -328,7 +328,7 @@ export default function HistorySidebar({
                                 )}
 
                                 {/* Barcode Info Section */}
-                                {data.barcodeInfo && (
+                                {/* {data.barcodeInfo && (
                                     <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                                         <div className="flex items-center justify-between">
                                             <div>
@@ -347,7 +347,7 @@ export default function HistorySidebar({
                                             )}
                                         </div>
                                     </div>
-                                )}
+                                )} */}
 
                                 {/* Payment Status History */}
                                 {data.paymentStatusHistory && data.paymentStatusHistory.length > 0 && (
@@ -448,7 +448,7 @@ export default function HistorySidebar({
                                 )}
 
                                 {/* Änderungsprotokoll */}
-                                {data.changeLog && data.changeLog.length > 0 && (
+                                {(data.changeLog && data.changeLog.length > 0) || (data.scannerInfo && data.scannerInfo.hasScanner) ? (
                                     <div>
                                         <div className="flex items-center justify-between mb-5">
                                             <h3 className="text-base font-normal text-gray-900">
@@ -466,7 +466,8 @@ export default function HistorySidebar({
                                         </div>
                                         <div className="relative">
                                             {/* Continuous background line */}
-                                            {data.changeLog.length > 1 && (
+                                            {((data.changeLog && data.changeLog.length > 0) || (data.scannerInfo && data.scannerInfo.hasScanner)) && 
+                                             ((data.changeLog?.length || 0) + (data.scannerInfo?.hasScanner ? 1 : 0)) > 1 && (
                                                 <div 
                                                     className="absolute left-[5px] w-[1px] bg-gray-300"
                                                     style={{
@@ -477,7 +478,45 @@ export default function HistorySidebar({
                                                 />
                                             )}
                                             <div className="space-y-4">
-                                                {data.changeLog.map((entry, index) => (
+                                                {/* Scanner Info Entry - Show first if available */}
+                                                {data.scannerInfo && data.scannerInfo.hasScanner && (
+                                                    <div className="relative flex gap-4">
+                                                        {/* Timeline Column */}
+                                                        <div className="relative flex-shrink-0" style={{ width: '12px' }}>
+                                                            {/* Vertical white gap - interrupts the line */}
+                                                            <div 
+                                                                className="absolute left-[3px] w-[3px] bg-white"
+                                                                style={{ 
+                                                                    top: '6px',
+                                                                    height: '12px',
+                                                                    zIndex: 6,
+                                                                }}
+                                                            />
+                                                            {/* Blue Dot - centered in the gap */}
+                                                            <div className="relative z-10 flex items-center justify-center mt-2">
+                                                                <div className="w-2 h-2 rounded-full bg-blue-600 shadow-sm"></div>
+                                                            </div>
+                                                        </div>
+                                                        {/* Content */}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-normal text-gray-500 mb-1">
+                                                                {formatDate(data.scannerInfo.timestamp || data.scannerInfo.scannedAt)}
+                                                            </p>
+                                                            <p className="text-sm font-normal text-gray-900 leading-relaxed">
+                                                                <span className="font-semibold text-gray-900">
+                                                                    System
+                                                                </span>{' '}
+                                                                Scan durchgeführt
+                                                            </p>
+                                                            <p className="text-xs text-gray-600 mt-1">
+                                                                Scan-Datum: {data.scannerInfo.scannedAt}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Change Log Entries */}
+                                                {data.changeLog && data.changeLog.map((entry, index) => (
                                                     <div
                                                         key={entry.id || index}
                                                         className="relative flex gap-4"
@@ -520,7 +559,7 @@ export default function HistorySidebar({
                                             </div>
                                         </div>
                                     </div>
-                                )}
+                                ) : null}
 
                                 {(!data.stepDurations || data.stepDurations.length === 0) &&
                                     (!data.changeLog || data.changeLog.length === 0) &&

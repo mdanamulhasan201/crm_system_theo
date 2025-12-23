@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 
 interface PaymentStatusSectionProps {
     value: string
     onChange: (value: string) => void
+    error?: string
 }
 
 type PaymentType = 'Privat' | 'Krankenkasse' | ''
@@ -14,6 +16,7 @@ type InsuranceStatus = 'Genehmigt' | 'Ungenehmigt'
 export default function PaymentStatusSection({
     value,
     onChange,
+    error,
 }: PaymentStatusSectionProps) {
     // Parse initial value
     const parseInitialValue = (val: string): { type: PaymentType; status: string } => {
@@ -98,7 +101,12 @@ export default function PaymentStatusSection({
                 {/* Payment Type Dropdown */}
                 <div className="flex-1">
                     <Select value={paymentType} onValueChange={handlePaymentTypeChange}>
-                        <SelectTrigger className="w-full">
+                    <SelectTrigger
+                        className={cn(
+                            'w-full',
+                            error && 'border-red-500 focus-visible:ring-red-500'
+                        )}
+                    >
                             <SelectValue placeholder="Zahlungsart auswählen..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -113,7 +121,12 @@ export default function PaymentStatusSection({
                     <div className="flex-1">
                         {paymentType === 'Privat' && (
                             <Select value={status} onValueChange={handleStatusChange}>
-                                <SelectTrigger className="w-full">
+                            <SelectTrigger
+                                className={cn(
+                                    'w-full',
+                                    error && 'border-red-500 focus-visible:ring-red-500'
+                                )}
+                            >
                                     <SelectValue placeholder="Status auswählen..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -125,7 +138,12 @@ export default function PaymentStatusSection({
 
                         {paymentType === 'Krankenkasse' && (
                             <Select value={status} onValueChange={handleStatusChange}>
-                                <SelectTrigger className="w-full">
+                            <SelectTrigger
+                                className={cn(
+                                    'w-full',
+                                    error && 'border-red-500 focus-visible:ring-red-500'
+                                )}
+                            >
                                     <SelectValue placeholder="Status auswählen..." />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -137,6 +155,9 @@ export default function PaymentStatusSection({
                     </div>
                 )}
             </div>
+            {error && (
+                <p className="text-xs text-red-500 mt-1">{error}</p>
+            )}
         </div>
     )
 }

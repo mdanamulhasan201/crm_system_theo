@@ -51,6 +51,14 @@ interface CustomerInfoSectionData {
 
   // Date calculations
   completionDays?: string | number
+
+  // Validation errors (optional)
+  nameError?: string
+  versorgungError?: string
+  datumAuftragError?: string
+  geschaeftsstandortError?: string
+  fertigstellungBisError?: string
+  paymentError?: string
 }
 
 interface CustomerInfoSectionProps {
@@ -93,6 +101,12 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     onLocationDropdownChange,
     sameAsBusiness = true,
     completionDays,
+    nameError,
+    versorgungError,
+    datumAuftragError,
+    geschaeftsstandortError,
+    fertigstellungBisError,
+    paymentError,
   } = data
 
   const [editableField, setEditableField] = useState<string | null>(null)
@@ -136,9 +150,13 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
             onChange={(e) => handleNameChange(e.target.value)}
             readOnly={!isEditable('name')}
             className={cn(
-              !isEditable('name') && 'bg-gray-50 cursor-pointer'
+              !isEditable('name') && 'bg-gray-50 cursor-pointer',
+              nameError && 'border-red-500 focus-visible:ring-red-500'
             )}
           />
+          {nameError && (
+            <p className="text-xs text-red-500 mt-1">{nameError}</p>
+          )}
         </div>
 
         <div className="space-y-2" onClick={() => makeEditable('wohnort')}>
@@ -190,9 +208,13 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
             onChange={(e) => onVersorgungChange(e.target.value)}
             readOnly={!isEditable('versorgung')}
             className={cn(
-              !isEditable('versorgung') && 'bg-gray-50 cursor-pointer'
+              !isEditable('versorgung') && 'bg-gray-50 cursor-pointer',
+              versorgungError && 'border-red-500 focus-visible:ring-red-500'
             )}
           />
+          {versorgungError && (
+            <p className="text-xs text-red-500 mt-1">{versorgungError}</p>
+          )}
         </div>
       </div>
 
@@ -207,9 +229,13 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
             onChange={(e) => handleOrderDateChange(e.target.value)}
             readOnly={!isEditable('datumAuftrag')}
             className={cn(
-              !isEditable('datumAuftrag') && 'bg-gray-50 cursor-pointer'
+              !isEditable('datumAuftrag') && 'bg-gray-50 cursor-pointer',
+              datumAuftragError && 'border-red-500 focus-visible:ring-red-500'
             )}
           />
+          {datumAuftragError && (
+            <p className="text-xs text-red-500 mt-1">{datumAuftragError}</p>
+          )}
         </div>
 
         <div className="space-y-2" onClick={() => makeEditable('telefonnummer')}>
@@ -226,7 +252,7 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
         </div>
 
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">Geschäftstandort</Label>
+          <Label className="text-sm font-medium text-gray-700">Filiale</Label>
           {sameAsBusiness ? (
             <LocationDropdown
               value={geschaeftsstandort}
@@ -244,10 +270,14 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
                 onChange={(e) => onGeschaeftsstandortChange(e.target.value)}
                 readOnly={!isEditable('geschaeftsstandort')}
                 className={cn(
-                  !isEditable('geschaeftsstandort') && 'bg-gray-50 cursor-pointer'
+                  !isEditable('geschaeftsstandort') && 'bg-gray-50 cursor-pointer',
+                  geschaeftsstandortError && 'border-red-500 focus-visible:ring-red-500'
                 )}
               />
             </div>
+          )}
+          {geschaeftsstandortError && (
+            <p className="text-xs text-red-500 mt-1">{geschaeftsstandortError}</p>
           )}
         </div>
 
@@ -259,6 +289,9 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
               placeholder="10.02.2025"
               value={fertigstellungBis}
               onChange={(e) => onFertigstellungBisChange(e.target.value)}
+              className={cn(
+                fertigstellungBisError && 'border-red-500 focus-visible:ring-red-500'
+              )}
               min={
                 datumAuftrag
                   ? (() => {
@@ -277,9 +310,16 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
               onChange={(e) => onFertigstellungBisTimeChange(e.target.value)}
             />
           </div>
+          {fertigstellungBisError && (
+            <p className="text-xs text-red-500 mt-1">{fertigstellungBisError}</p>
+          )}
         </div>
 
-        <PaymentStatusSection value={bezahlt} onChange={onBezahltChange} />
+        <PaymentStatusSection
+          value={bezahlt}
+          onChange={onBezahltChange}
+          error={paymentError}
+        />
       </div>
     </div>
   )

@@ -92,6 +92,7 @@ export function collectFormData({
     selectedEmployeeId,
     versorgungData,
     selectedVersorgungId,
+    screenerId,
 }: {
     ausführliche_diagnose: string;
     versorgung_laut_arzt: string;
@@ -107,6 +108,7 @@ export function collectFormData({
     selectedEmployeeId: string;
     versorgungData: any[];
     selectedVersorgungId: string | null;
+    screenerId?: string | null;
 }) {
     const mengeNumber = menge ? parseInt(menge.split(' ')[0]) || 1 : 1;
     const selectedVersorgungItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
@@ -124,6 +126,7 @@ export function collectFormData({
         employeeName: selectedEmployee || '',
         employeeId: selectedEmployeeId || '',
         selectedVersorgungData: selectedVersorgungItem || null,
+        screenerId: screenerId || null,
     };
 }
 

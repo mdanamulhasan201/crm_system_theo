@@ -54,7 +54,7 @@ export default function BarcodeStickerModal({
             
             // Generate PDF directly using canvas approach (no html2canvas dependency)
             const pdfBlob = await generateBarcodeStickerPdfCanvas(barcodeData);
-
+    
             // Create download link
             const url = URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');
@@ -71,20 +71,20 @@ export default function BarcodeStickerModal({
             
             toast.success('Barcode-Sticker PDF erfolgreich generiert!');
 
-            // Automatically send PDF to customer with file
-            try {
-                const fileName = `barcode_sticker_${orderNumber || orderId}_${new Date().toISOString().split('T')[0]}.pdf`;
-                const sendResponse = await sendPdfToCustomer(orderId, pdfBlob, fileName);
-                
-                if (sendResponse.success) {
-                    toast.success('PDF erfolgreich an Kunden gesendet!');
-                } else {
-                    toast.error('PDF konnte nicht an Kunden gesendet werden');
-                }
-            } catch (sendError) {
-                console.error('Failed to send PDF to customer:', sendError);
-                toast.error('Fehler beim Senden des PDFs an Kunden');
-            }
+            // Automatically send PDF to customer with file (non-blocking)
+            const fileName = `barcode_sticker_${orderNumber || orderId}_${new Date().toISOString().split('T')[0]}.pdf`;
+            sendPdfToCustomer(orderId, pdfBlob, fileName)
+                .then((sendResponse) => {
+                    if (sendResponse.success) {
+                        toast.success('PDF erfolgreich an Kunden gesendet!');
+                    } else {
+                        toast.error('PDF konnte nicht an Kunden gesendet werden');
+                    }
+                })
+                .catch((sendError) => {
+                    console.error('Failed to send PDF to customer:', sendError);
+                    toast.error('Fehler beim Senden des PDFs an Kunden');
+                });
         } catch (error) {
             console.error('Failed to generate PDF:', error);
             toast.error('Fehler beim Generieren des PDFs');

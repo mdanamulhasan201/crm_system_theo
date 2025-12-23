@@ -573,6 +573,7 @@ export default function ProcessTable() {
                 }}
                 orderId={scanOrderId}
                 orderNumber={scanOrderNumber || undefined}
+                customerName={scanCustomerName || undefined}
             />
 
             {/* Barcode Sticker Modal */}

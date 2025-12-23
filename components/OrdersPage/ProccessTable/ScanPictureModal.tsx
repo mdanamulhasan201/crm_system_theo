@@ -11,6 +11,7 @@ interface ScanPictureModalProps {
     onClose: () => void;
     orderId: string | null;
     orderNumber?: string;
+    customerName?: string;
 }
 
 export default function ScanPictureModal({
@@ -18,6 +19,7 @@ export default function ScanPictureModal({
     onClose,
     orderId,
     orderNumber,
+    customerName,
 }: ScanPictureModalProps) {
     const { data, loading, error } = usePicture2324(orderId);
     const [selectedFoot, setSelectedFoot] = useState<'left' | 'right' | null>(null);
@@ -99,7 +101,8 @@ export default function ScanPictureModal({
                 {/* Header */}
                 <div className="px-6 py-5 border-b border-gray-200 bg-white flex items-center justify-between">
                     <DialogTitle className="text-lg font-medium text-gray-900">
-                        Scan-Bilder{orderNumber ? ` – ${orderNumber}` : ''}
+                    Versorgung{orderNumber ? ` – ${orderNumber}` : ''}
+                        {customerName ? ` – ${customerName}` : ''}
                     </DialogTitle>
                 </div>
 

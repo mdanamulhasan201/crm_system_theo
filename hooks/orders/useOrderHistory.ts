@@ -46,9 +46,16 @@ export interface PaymentStatusHistoryEntry {
 }
 
 export interface BarcodeInfo {
-    createdAt: string;
-    timestamp: string;
+    createdAt: string | null;
+    timestamp: string | null;
+    barcodeLabel?: string | null;
     hasBarcode: boolean;
+}
+
+export interface ScannerInfo {
+    hasScanner: boolean;
+    scannedAt: string;
+    timestamp: string;
 }
 
 export interface OrderHistorySummary {
@@ -65,6 +72,7 @@ export interface OrderHistoryData {
     changeLog: ChangeLogEntry[];
     paymentStatusHistory?: PaymentStatusHistoryEntry[];
     barcodeInfo?: BarcodeInfo;
+    scannerInfo?: ScannerInfo;
     summary?: OrderHistorySummary;
     totalEntries?: number;
 }
@@ -77,6 +85,7 @@ export interface OrderHistoryApiResponse {
         changeLog: ChangeLogEntry[];
         paymentStatusHistory?: PaymentStatusHistoryEntry[];
         barcodeInfo?: BarcodeInfo;
+        scannerInfo?: ScannerInfo;
         summary?: OrderHistorySummary;
     };
 }
@@ -106,6 +115,7 @@ export const useOrderHistory = (orderId: string | null) => {
                         changeLog: response.data.changeLog || [],
                         paymentStatusHistory: response.data.paymentStatusHistory,
                         barcodeInfo: response.data.barcodeInfo,
+                        scannerInfo: response.data.scannerInfo,
                         summary: response.data.summary,
                         totalEntries: response.data.changeLog?.length || 0,
                     };
