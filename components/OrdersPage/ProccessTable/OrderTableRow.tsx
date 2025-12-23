@@ -156,7 +156,7 @@ export default function OrderTableRow({
                                         className="flex flex-col items-center gap-1 cursor-pointer"
                                         onClick={(e) => e.stopPropagation()}
                                     >
-                                        <div className="w-8 h-8 rounded-full bg-[#61A175] text-white flex items-center justify-center text-xs font-semibold hover:bg-blue-600 transition-colors">
+                                        <div className="w-8 h-8 rounded-full bg-[#61A175] text-white flex items-center justify-center text-xs font-semibold hover:bg-[#61A175]/80 transition-colors">
                                             {order.employee.employeeName.charAt(0).toUpperCase()}
                                         </div>
                                         {/* <span className="text-xs text-gray-600 max-w-[100px] truncate">
