@@ -76,6 +76,18 @@ const faqData = {
                 answer: 'Solange die Bestellung nicht versendet wurde, kann die Adresse im Dashboard angepasst werden.'
             },
             {
+                question: 'Wie sehe ich Lagerbewegungen?',
+                answer: 'Jede Bewegung wird automatisch protokolliert. In der Artikelansicht finden Sie eine komplette Historie aller Zu- und Abgänge.'
+            },
+            {
+                question: 'Kann ich eigene Lagerorte anlegen?',
+                answer: 'Aktuell ist das System auf ein Hauptlager ausgelegt. Ein zweiter Lagerplatz funktioniert in vielen Fällen bereits, wird aber gerade vollständig ausgebaut.'
+            },
+            {
+                question: 'Wie korrigiere ich fehlerhafte Lagerbuchungen?',
+                answer: 'Über „Bestand anpassen" lassen sich Mengen manuell korrigieren. Jede Änderung wird protokolliert, damit die gesamte Bewegungshistorie nachvollziehbar bleibt.'
+            },
+            {
                 question: 'Kann ich als Partner sehen, welcher Mitarbeiter die Einlage fertigt?',
                 answer: 'Ja. In der Auftragstabelle sieht man genau, wer den Kunden gemessen hat, wer die Versorgung erstellt hat, zu welcher Zeit das passiert ist und wann der Auftrag in Arbeit gesetzt wurde.'
             },
@@ -164,78 +176,26 @@ const faqData = {
     },
     sonstige: {
         title: 'Sonstige',
-        subsections: [
+        items: [
             {
-                title: '1. Bearbeitung & Auftragsstatus',
-                items: [
-                    {
-                        question: 'Wie lange dauert die Bearbeitung?',
-                        answer: '– Probeschuhe/Halbproben: 10–14 Werktage\n– Maßschäfte: 10 Werktage\n– Komplettfertigung (Schaft + Boden): 15 Werktage\n\nDas sind Maximalzeiten. Danach geht\'s direkt in den Versand. Bitte erst nach Ablauf nachfragen; bei dringenden Fällen: info@feetf1rst.com'
-                    },
-                    {
-                        question: 'Warum wird meine Bestellung nicht angezeigt?',
-                        answer: 'Sie erscheint auf der FeetF1rst Balance Seite. Wenn nicht: neu laden. Wenn immer noch nicht: Bestellung war unvollständig ⇒ neu anlegen.'
-                    }
-                ]
+                question: 'Kann ich mehrere Geräte gleichzeitig verwenden?',
+                answer: 'Ja. Die Software unterstützt parallele Sitzungen auf mehreren Geräten, solange Sie im selben Partnerkonto angemeldet sind.'
             },
             {
-                title: '2. Änderungen, Storno & Korrekturen',
-                items: [
-                    {
-                        question: 'Wie stornieren oder ändern ich eine Bestellung?',
-                        answer: 'Alles möglich, solange der Status nicht „In Produktion" zeigt. Danach ist der Zug abgefahren.'
-                    },
-                    {
-                        question: 'Ich habe einen falschen Scan hochgeladen – was tun?',
-                        answer: 'Auftrag stornieren und korrekt neu anlegen. Wenn schon in Bearbeitung: sofort Support.'
-                    },
-                    {
-                        question: 'Kann die Passform des Probeschuhs nachträglich verändert werden?',
-                        answer: 'Ja. Leisten lassen sich jederzeit nach der Anprobe anpassen (Formular). Bei großen Bettungsfehlern fertigen wir eine neue Bettung.'
-                    }
-                ]
+                question: 'Werden meine Einstellungen automatisch gespeichert?',
+                answer: 'Ja. Alle Anpassungen wie Filter, Sichtbarkeiten oder aktive Module werden automatisch gespeichert und beim nächsten Login wiederhergestellt.'
             },
             {
-                title: '3. Funktionen & Schaftbestellung',
-                items: [
-                    {
-                        question: 'Kann ich einen Auftrag duplizieren?',
-                        answer: 'Aktuell nicht. Feedback willkommen.'
-                    },
-                    {
-                        question: 'Kann ich eine frühere Konfiguration erneut verwenden?',
-                        answer: 'Ja. Im Kundenbereich unter Maßschuhauftrag duplizierbar. Alle Parameter bleiben identisch.'
-                    },
-                    {
-                        question: 'Können Partner eigene Schaftmodelle anlegen?',
-                        answer: 'Diese Funktion kommt bald.'
-                    },
-                    {
-                        question: 'Muss ich das Leder selbst bereitstellen?',
-                        answer: 'Nein, wir stellen das Leder. Optional kann eigenes geliefert werden.'
-                    },
-                    {
-                        question: 'Der Leisten-Import funktioniert nicht – was tun?',
-                        answer: 'Verbindung prüfen und erneut probieren. Wenn\'s hartnäckig bleibt: Fehlermeldung + Auftragsnummer + Scans an info@feetf1rst.com senden.'
-                    },
-                    {
-                        question: 'Sind Maßschäfte mit 3D-Scans verknüpft?',
-                        answer: 'Ja. Der Schaft basiert direkt auf dem individuellen Leisten-Scan.'
-                    }
-                ]
+                question: 'Kann ich Benutzerrechte individuell einschränken?',
+                answer: 'Ja. Rollen und Berechtigungen können pro Mitarbeiter definiert werden, damit nur relevante Bereiche zugänglich sind.'
             },
             {
-                title: '4. Rückgabe & Reklamation',
-                items: [
-                    {
-                        question: 'Wer trägt die Versandkosten bei einer Rückgabe?',
-                        answer: 'Der Kunde. Bei Produktionsfehlern zahlen wir Rück- und Neuversand.'
-                    },
-                    {
-                        question: 'Gibt es Rückerstattung bei Unzufriedenheit?',
-                        answer: 'Nein. Individuelle Produkte sind vom Widerruf ausgeschlossen. Erstattung nur bei Produktionsfehlern oder Fehlern unsererseits.'
-                    }
-                ]
+                question: 'Ist die Software mit anderen Scannern außer FeetF1rst kompatibel?',
+                answer: 'Nicht jeder Scanner ist kompatibel. Die Unterstützung hängt vom jeweiligen Modell und dessen Exportformaten ab. Senden Sie uns bitte ein Foto oder die Modellbezeichnung, damit wir die Kompatibilität prüfen können.'
+            },
+            {
+                question: 'Gibt es auch persönliche Einweisungen für Praxen oder Mitarbeitende?',
+                answer: 'Ja. Auf Anfrage bieten wir individuelle Online-Schulungen sowie persönliche Vor-Ort-Einweisungen an. Schreiben Sie bei Interesse bitte an info@feetf1rst.com'
             }
         ]
     }
@@ -342,7 +302,7 @@ export default function FAQ() {
             {renderSectionWithItems(faqData.auftragserstellung, 'auftragserstellung')}
             {renderSectionWithItems(faqData.lager, 'lager')}
             {renderSectionWithSubsections(faqData.bestellungen, 'bestellungen')}
-            {renderSectionWithSubsections(faqData.sonstige, 'sonstige')}
+            {renderSectionWithItems(faqData.sonstige, 'sonstige')}
         </div>
     )
 }
