@@ -189,7 +189,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
     };
 
     const handleScanDurchführen = (id: string) => {
-        router.push(`/dashboard/customer-info/${id}?manageCustomer=true`);
+        router.push(`/dashboard/scanning-data/${id}?manageCustomer=true`);
     };
 
     const handleDeleteClick = (row: LastScanRow) => {

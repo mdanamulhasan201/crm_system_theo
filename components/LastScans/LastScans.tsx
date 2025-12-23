@@ -94,7 +94,7 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
     const handleScanView = (id: number) => {
         setLoadingId(id);
         setTimeout(() => {
-            router.push(`/dashboard/customer-info/${id}`);
+            router.push(`/dashboard/scanning-data/${id}`);
         }, 500);
 
     }

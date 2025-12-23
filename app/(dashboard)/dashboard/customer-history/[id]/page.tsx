@@ -52,7 +52,7 @@ export default function CustomerHistory() {
 
     const handleVersorgung = () => {
 
-        router.push(`/dashboard/customer-info/${params.id}`);
+        router.push(`/dashboard/scanning-data/${params.id}`);
     }
 
     const normalizeGender = (value: string | undefined) => {

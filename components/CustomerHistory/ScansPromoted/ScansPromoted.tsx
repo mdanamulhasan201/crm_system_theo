@@ -89,7 +89,7 @@ export default function ScansPromoted({ customerData }: ScansPromotedProps) {
                                 <button
                                     onClick={() => {
                                         const query = targetDate ? `?scanDate=${encodeURIComponent(targetDate)}` : ''
-                                        router.push(`/dashboard/customer-info/${customerData.id}${query}`)
+                                        router.push(`/dashboard/scanning-data/${customerData.id}${query}`)
                                     }}
                                     className="bg-[#62A07C] px-10 hover:bg-[#62a07c77] cursor-pointer text-white text-sm py-2 rounded transition"
                                 >

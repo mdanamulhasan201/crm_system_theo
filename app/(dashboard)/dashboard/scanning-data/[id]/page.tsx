@@ -10,7 +10,11 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Einlagen from '@/app/(dashboard)/dashboard/_components/Scanning/Einlagen';
 import { getSingleOrder } from '@/apis/productsOrder';
-
+import userload from '@/public/images/scanning/userload.png'
+import userImg from '@/public/images/scanning/user.png'
+import Image from 'next/image'
+import CustomerModal from '@/components/CustomerModal/CustomerModal'
+import Loading from '@/components/Shared/Loading'
 
 
 export default function ScanningData() {
@@ -24,7 +28,9 @@ export default function ScanningData() {
     const [orderPrefillError, setOrderPrefillError] = useState<string | null>(null);
     const [orderPrefillLoading, setOrderPrefillLoading] = useState(false);
     const [selectedScreenerId, setSelectedScreenerId] = useState<string | null>(null);
-
+    const [isVersorgungLoading, setIsVersorgungLoading] = useState(false);
+    const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+    const [addScanningModalOpen, setAddScanningModalOpen] = useState(false);
     useEffect(() => {
         let isMounted = true;
         if (!orderId) {
@@ -62,26 +68,113 @@ export default function ScanningData() {
         };
     }, [orderId]);
 
+    // Check for query parameter to open manage customer modal automatically
+    useEffect(() => {
+        const manageCustomer = searchParams.get('manageCustomer');
+        if (manageCustomer === 'true') {
+            setAddScanningModalOpen(true);
+        }
+    }, [searchParams]);
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
     if (!scanData) return <div>Scan not found</div>;
 
+
+     // handle versorgungs page
+     const handleVersorgungsPage = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsVersorgungLoading(true);
+        router.push(`/dashboard/scanning-data/${scanData?.id}`);
+    };
+
+    // handle customer history page
+    const handleHistoryPage = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setIsHistoryLoading(true);
+        router.push(`/dashboard/customer-history/${scanData?.id}`);
+    };
+
     return (
         <div className="p-4">
+            {/* Full Page Loading Overlay */}
+            {(isVersorgungLoading || isHistoryLoading) && (
+                <Loading
+                    isFullPage={true}
+                    message={isVersorgungLoading ? "Starting Versorgung..." : "Loading Customer History..."}
+                />
+            )}
+
+            {/* Add New Scanning Modal */}
+            <CustomerModal
+                isOpen={addScanningModalOpen}
+                onClose={() => {
+                    setAddScanningModalOpen(false);
+                    // Remove query parameter when modal is closed
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('manageCustomer');
+                    router.replace(url.pathname + url.search);
+                }}
+                customerId={scanData?.id}
+                onSubmit={() => {
+                    refreshCustomer();
+                }}
+            />
+
             {/* backbutton */}
             <div className='mb-6'>
-                <Button
-                    onClick={() => router.back()}
-                    variant="outline"
-                    className="flex items-center gap-2 cursor-pointer"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </Button>
+                <div className='flex justify-between items-center gap-4'>
+                    <Button
+                        onClick={() => router.back()}
+                        variant="outline"
+                        className="flex items-center gap-2 cursor-pointer"
+                    >
+                        <ArrowLeft className="w-4 h-4" />
+                        Back
+                    </Button>
+                    <button
+                        onClick={() => {
+                            setAddScanningModalOpen(true);
+                            // Add query parameter to URL
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('manageCustomer', 'true');
+                            router.push(url.pathname + url.search);
+                        }}
+                        className='bg-[#62A07C] capitalize cursor-pointer text-white px-4 py-2 rounded hover:bg-[#62a07c98] transition text-sm'
+                    >
+                        manage customer
+                    </button>
+                </div>
             </div>
-            <ScannningDataPage 
-                scanData={scanData} 
+
+            <div className='mb-6'>
+                <div className="flex gap-8 mt-4">
+                    {/* Versorgung starten */}
+                    <div className="flex flex-col items-center">
+                        <button
+                            onClick={handleVersorgungsPage}
+                            disabled={isVersorgungLoading}
+                            className="p-5 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Image src={userload} alt="Versorgung starten" width={70} height={70} />
+                        </button>
+                        <span className="mt-2 text-center text-sm font-normal">Versorgung starten</span>
+                    </div>
+                    {/* Kundendaten -historie */}
+                    <div className="flex flex-col items-center">
+                        <button
+                            onClick={handleHistoryPage}
+                            disabled={isHistoryLoading}
+                            className="p-5 cursor-pointer flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Image src={userImg} alt="Kundendaten -historie" width={60} height={60} />
+                        </button>
+                        <span className="mt-2 text-center text-sm font-normal">Kundendaten -historie</span>
+                    </div>
+                </div>
+            </div>
+            <ScannningDataPage
+                scanData={scanData}
                 selectedForm={selectedForm}
                 onScreenerIdChange={setSelectedScreenerId}
             />

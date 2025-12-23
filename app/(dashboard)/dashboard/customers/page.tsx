@@ -71,7 +71,7 @@ export default function Customers() {
     // ===== EVENT HANDLERS =====
 
     const handleScanView = (customerId: string) => {
-        router.push(`/dashboard/customer-info/${customerId}`)
+        router.push(`/dashboard/scanning-data/${customerId}`)
     }
 
     const handleAddCustomerClick = () => {
@@ -121,7 +121,7 @@ export default function Customers() {
     }
 
     const handleCustomerInfo = (customerId: string) => {
-        router.push(`/dashboard/customer-info/${customerId}`)
+        router.push(`/dashboard/scanning-data/${customerId}`)
     }
 
     // ===== RENDER HELPERS =====

@@ -188,7 +188,7 @@ export default function KundenordnerPage() {
         <>
             {/* back button */}
             <div className='p-4 space-y-6'>
-                <Button onClick={() => router.push(`/dashboard/customer-info/${customerId}`)} variant='outline' className='flex items-center gap-2 cursor-pointer'>
+                <Button onClick={() => router.push(`/dashboard/scanning-data/${customerId}`)} variant='outline' className='flex items-center gap-2 cursor-pointer'>
                     <ArrowLeft className='w-4 h-4' />
                     Back
                 </Button>

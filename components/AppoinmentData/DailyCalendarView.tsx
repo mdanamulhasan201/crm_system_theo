@@ -359,7 +359,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                                     Kund:{' '}
                                                     {event.customerId ? (
                                                         <Link
-                                                            href={`/dashboard/customer-info/${event.customerId}`}
+                                                            href={`/dashboard/scanning-data/${event.customerId}`}
                                                             className="font-semibold text-blue-600 hover:underline"
                                                             onClick={(e) => e.stopPropagation()}
                                                         >
