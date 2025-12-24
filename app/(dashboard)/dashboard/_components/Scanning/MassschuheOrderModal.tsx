@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { initializeDeliveryDate, getRequiredDeliveryDate } from './utils/dateUtils';
 import { getSettingData } from '@/apis/einlagenApis';
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types';
+import { getAllLocations } from '@/apis/setting/locationManagementApis';
 
 interface Customer {
     id: string;
@@ -100,9 +101,10 @@ export default function MassschuheOrderModal({
     const [quantity, setQuantity] = useState<number>(1);
     const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
+    const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([]);
+    const [locationsLoading, setLocationsLoading] = useState(false);
 
     const { user } = useAuth();
-
 
     const completionDays =
         (customer as any)?.workshopNote?.completionDays ??
@@ -142,19 +144,61 @@ export default function MassschuheOrderModal({
         fetchSettings();
     }, [isOpen]);
 
-    // Set default location from customer wohnort
+    // Fetch locations from API when modal opens
     useEffect(() => {
-        if (customer && !filiale && isOpen) {
-            if (customer?.wohnort) {
-                setFiliale(customer.wohnort);
-            } else {
-                const hauptstandort = customer?.partner?.hauptstandort;
-                if (hauptstandort && Array.isArray(hauptstandort) && hauptstandort.length > 0) {
-                    setFiliale(hauptstandort[0]);
+        const fetchLocations = async () => {
+            if (!isOpen) return;
+            setLocationsLoading(true);
+            try {
+                const response = await getAllLocations(1, 100);
+                if (response?.success && response?.data && Array.isArray(response.data)) {
+                    setLocations(response.data);
+                } else if (Array.isArray(response?.data)) {
+                    setLocations(response.data);
                 }
+            } catch (error) {
+                console.error('Failed to fetch locations:', error);
+                // Don't show error toast, just use empty array as fallback
+                setLocations([]);
+            } finally {
+                setLocationsLoading(false);
+            }
+        };
+        fetchLocations();
+    }, [isOpen]);
+
+    // Set primary location immediately when locations are loaded
+    useEffect(() => {
+        if (locations.length > 0 && isOpen && !locationsLoading) {
+            const primaryLocation = locations.find(loc => loc.isPrimary);
+            const locationValue = primaryLocation 
+                ? (primaryLocation.description || primaryLocation.address)
+                : (locations[0].description || locations[0].address);
+            
+            // Always set both filiale and selectedLocation to primary (or first if no primary)
+            setFiliale(locationValue);
+            setSelectedLocation(locationValue);
+        }
+    }, [locations, isOpen, locationsLoading]);
+
+    // Fallback to customer location only if API locations are not available
+    useEffect(() => {
+        if (!isOpen) return;
+        if (locationsLoading) return; // Wait for API to finish
+        if (locations.length > 0) return; // Don't use fallback if API locations exist
+        
+        // Only use fallback if no API locations available
+        if (customer?.wohnort) {
+            setFiliale(customer.wohnort);
+            setSelectedLocation(customer.wohnort);
+        } else {
+            const hauptstandort = customer?.partner?.hauptstandort;
+            if (hauptstandort && Array.isArray(hauptstandort) && hauptstandort.length > 0) {
+                setFiliale(hauptstandort[0]);
+                setSelectedLocation(hauptstandort[0]);
             }
         }
-    }, [customer, filiale, isOpen]);
+    }, [locations, isOpen, customer, locationsLoading]);
 
     // Reset form when modal opens
     useEffect(() => {
@@ -172,10 +216,7 @@ export default function MassschuheOrderModal({
             setSelectedFußanalyse('');
             setSelectedEinlagenversorgung('');
             setOrderNote('');
-            setSelectedLocation('');
-            if (user?.hauptstandort && user.hauptstandort.length > 0) {
-                setSelectedLocation(user.hauptstandort[0] || '');
-            }
+            // Don't reset selectedLocation here - it will be set by the locations useEffect
         }
     }, [isOpen, user?.hauptstandort, customer, completionDays]);
 
@@ -343,7 +384,7 @@ export default function MassschuheOrderModal({
                                 </div>
                             </div>
 
-                            {!!user?.hauptstandort?.length && (
+                            {(locations.length > 0 || (user?.hauptstandort && user.hauptstandort.length > 0)) && (
                                 <div>
                                     <label className="text-sm font-medium text-gray-600 mb-1 block">Standort auswählen</label>
                                     <Select
@@ -351,14 +392,32 @@ export default function MassschuheOrderModal({
                                         onValueChange={(value) => setSelectedLocation(value)}
                                     >
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder="Standort wählen" />
+                                            <SelectValue placeholder={locationsLoading ? "Lade Standorte..." : "Standort wählen"} />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {user.hauptstandort.map((location) => (
-                                                <SelectItem key={location} value={location}>
-                                                    {location}
+                                            {locations.length > 0 ? (
+                                                locations.map((location) => (
+                                                    <SelectItem 
+                                                        key={location.id} 
+                                                        value={location.description || location.address}
+                                                    >
+                                                        {location.description || location.address}
+                                                        {location.isPrimary && (
+                                                            <span className="ml-2 text-xs text-blue-600">(Primary)</span>
+                                                        )}
+                                                    </SelectItem>
+                                                ))
+                                            ) : user?.hauptstandort && user.hauptstandort.length > 0 ? (
+                                                user.hauptstandort.map((location) => (
+                                                    <SelectItem key={location} value={location}>
+                                                        {location}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="no-location" disabled>
+                                                    Kein Standort verfügbar
                                                 </SelectItem>
-                                            ))}
+                                            )}
                                         </SelectContent>
                                     </Select>
                                 </div>

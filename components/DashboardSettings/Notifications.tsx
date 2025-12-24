@@ -303,7 +303,7 @@ export default function Notifications() {
                     {locations.map((location) => (
                         <div
                             key={location.id}
-                            className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                            className="bg-white border border-gray-200 rounded-lg p-6  transition-shadow"
                         >
                             <div className="flex items-start justify-between">
                                 <div className="flex-1">

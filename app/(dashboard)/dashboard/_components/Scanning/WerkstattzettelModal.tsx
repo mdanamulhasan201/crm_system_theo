@@ -8,6 +8,7 @@ import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSect
 import PriceSection from './Werkstattzettel/FormSections/PriceSection'
 import { createWerkstattzettelPayload } from './utils/formDataUtils'
 import { getSettingData } from '@/apis/einlagenApis'
+import { getAllLocations } from '@/apis/setting/locationManagementApis'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 
 interface FormData {
@@ -31,9 +32,6 @@ interface UserInfoUpdateModalProps {
   onOpenChange: (open: boolean) => void
   scanData: ScanData | null
   formData?: FormData | null
-  onInfoUpdate?: () => void
-  onContinue?: () => void
-  onCustomerUpdate?: (updatedCustomer: any) => void
   onShowOrderConfirmation?: (formData?: FormData) => void
 }
 
@@ -42,8 +40,6 @@ export default function WerkstattzettelModal({
   onOpenChange,
   scanData,
   formData,
-  onInfoUpdate,
-  onContinue,
   onShowOrderConfirmation,
 }: UserInfoUpdateModalProps) {
 
@@ -56,6 +52,8 @@ export default function WerkstattzettelModal({
   // Settings data state
   const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([])
   const [pricesLoading, setPricesLoading] = useState(false)
+  const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([])
+  const [locationsLoading, setLocationsLoading] = useState(false)
 
   // Extract Einlagenversorgung price from selected versorgung
   const einlagenversorgungPrice = React.useMemo(() => {
@@ -121,21 +119,54 @@ export default function WerkstattzettelModal({
     fetchSettings()
   }, [isOpen])
 
+  // Fetch locations from API when modal opens
+  useEffect(() => {
+    const fetchLocations = async () => {
+      if (isOpen) {
+        setLocationsLoading(true)
+        try {
+          const response = await getAllLocations(1, 100)
+          if (response?.success && response?.data && Array.isArray(response.data)) {
+            setLocations(response.data)
+          } else if (Array.isArray(response?.data)) {
+            setLocations(response.data)
+          }
+        } catch (error) {
+          console.error('Failed to fetch locations:', error)
+          // Don't show error toast, just use empty array as fallback
+          setLocations([])
+        } finally {
+          setLocationsLoading(false)
+        }
+      }
+    }
+    fetchLocations()
+  }, [isOpen])
+
   // Get workshopNote settings
   const workshopNote = (scanData as any)?.workshopNote
   const sameAsBusiness = workshopNote?.sameAsBusiness ?? true
   
-  // Get locations based on sameAsBusiness
-  // If sameAsBusiness is true, use pickupLocation array from workshopNote
-  // Otherwise, use partner.hauptstandort as fallback
-  const locations = sameAsBusiness && Array.isArray(workshopNote?.pickupLocation) && workshopNote.pickupLocation.length > 0
-    ? workshopNote.pickupLocation
-    : (scanData as any)?.partner?.hauptstandort && Array.isArray((scanData as any).partner.hauptstandort)
-      ? (scanData as any).partner.hauptstandort
-      : []
-
   // Get completionDays for date calculations
   const completionDays = workshopNote?.completionDays
+
+  // Convert locations to string array for dropdown (use description or address)
+  const locationOptions = locations.map(loc => loc.description || loc.address)
+
+  // Set primary location as default when locations are loaded (always override)
+  useEffect(() => {
+    if (locations.length > 0 && isOpen) {
+      const primaryLocation = locations.find(loc => loc.isPrimary)
+      if (primaryLocation) {
+        const locationValue = primaryLocation.description || primaryLocation.address
+        form.setGeschaeftsstandort(locationValue)
+      } else {
+        // If no primary, use first location
+        const locationValue = locations[0].description || locations[0].address
+        form.setGeschaeftsstandort(locationValue)
+      }
+    }
+  }, [locations, isOpen, form])
 
   // Basic validation for required fields
   const validateForm = () => {
@@ -339,7 +370,7 @@ export default function WerkstattzettelModal({
                 isEmployeeDropdownOpen: form.isEmployeeDropdownOpen,
                 onEmployeeDropdownChange: form.handleEmployeeDropdownChange,
                 onEmployeeSearchChange: form.handleEmployeeSearchChange,
-                locations,
+                locations: locationOptions,
                 isLocationDropdownOpen: form.isLocationDropdownOpen,
                 onLocationDropdownChange: form.handleLocationDropdownChange,
                 completionDays,
