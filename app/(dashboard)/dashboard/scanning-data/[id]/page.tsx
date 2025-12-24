@@ -125,7 +125,7 @@ export default function ScanningData() {
             <div className='mb-6'>
                 <div className='flex justify-between items-center gap-4'>
                     <div className=''>
-                        <div className="flex gap-8 mt-4">
+                        <div className="">
                             {/* Versorgung starten */}
                             <div className="flex flex-col items-center">
                                 {/* <button

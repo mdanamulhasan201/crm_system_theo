@@ -170,6 +170,11 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
         }
     };
 
+    // Handle image save from Zoom Mode
+    const handleImageSave = async () => {
+        await refreshCustomer(selectedDate);
+    };
+
     // Helper to open modal with image
     const openModal = (img: string | null, title: string) => {
         setModalImg(img);
@@ -252,6 +257,7 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
                         availableDates={availableDates}
                         defaultSelectedDate={selectedDate || null}
                         onZoomChange={setIsZoomed}
+                        onImageSave={handleImageSave}
                     >
                         {/* Additional content for the scan data section */}
                         {isChanged && (

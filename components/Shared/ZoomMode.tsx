@@ -1,0 +1,336 @@
+'use client'
+import { useState, useRef } from 'react'
+import { FaSave, FaPrint } from 'react-icons/fa'
+import { ScanData } from '@/types/scan'
+import { useAuth } from '@/contexts/AuthContext'
+import { generateFeetPdf } from '@/lib/FootPdfGenerate'
+import { updateSingleScannerFile } from '@/apis/customerApis'
+import EditableImageCanvas, { DrawingToolbar } from './EditableImageCanvas'
+import toast from 'react-hot-toast'
+
+interface ZoomModeProps {
+    scanData: ScanData
+    selectedScanData: any
+    hasScreenerFile: boolean
+    imageRefreshKey: number
+    onExit: () => void
+    onImageSave?: () => void | Promise<void>
+    onImageRefresh: () => void
+}
+
+export default function ZoomMode({
+    scanData,
+    selectedScanData,
+    hasScreenerFile,
+    imageRefreshKey,
+    onExit,
+    onImageSave,
+    onImageRefresh
+}: ZoomModeProps) {
+    const { user } = useAuth()
+    const [isDownloading, setIsDownloading] = useState(false)
+    const [isSaving, setIsSaving] = useState(false)
+    const [drawingMode, setDrawingMode] = useState<'pen' | 'eraser'>('pen')
+    const [brushSize, setBrushSize] = useState(3)
+    const [brushColor, setBrushColor] = useState('#000000')
+
+    // Refs to get edited image data from canvas components
+    const rightFootImageDataRef = useRef<(() => Promise<Blob | null>) | null>(null)
+    const leftFootImageDataRef = useRef<(() => Promise<Blob | null>) | null>(null)
+
+    // Get image URLs with paint priority
+    const getLeftImage = (): string | null => {
+        if (hasScreenerFile && selectedScanData) {
+            return (selectedScanData as any).paint_23 || selectedScanData.picture_23 || null
+        }
+        return (scanData as any).paint_23 || scanData.picture_23 || null
+    }
+
+    const getRightImage = (): string | null => {
+        if (hasScreenerFile && selectedScanData) {
+            return (selectedScanData as any).paint_24 || selectedScanData.picture_24 || null
+        }
+        return (scanData as any).paint_24 || scanData.picture_24 || null
+    }
+
+    // Save edited images
+    const handleSaveEditedImages = async () => {
+        try {
+            if (isSaving) return
+
+            if (!selectedScanData || !selectedScanData.id) {
+                toast.error('No scan file selected. Please select a scan date.')
+                return
+            }
+
+            const customerId = scanData.id
+            const screenerId = selectedScanData.id
+
+            // Get edited images from both canvases
+            const rightFootBlob = rightFootImageDataRef.current
+                ? await rightFootImageDataRef.current()
+                : null
+            const leftFootBlob = leftFootImageDataRef.current
+                ? await leftFootImageDataRef.current()
+                : null
+
+            if (!rightFootBlob || !leftFootBlob) {
+                toast.error('Failed to get edited images. Please try again.')
+                return
+            }
+
+            setIsSaving(true)
+
+            // Create FormData with paint_24 (right foot) and paint_23 (left foot)
+            const formData = new FormData()
+            formData.append('paint_24', rightFootBlob, 'paint_24.png')
+            formData.append('paint_23', leftFootBlob, 'paint_23.png')
+
+            // Call API to update scanner file
+            await updateSingleScannerFile(customerId, screenerId, formData)
+
+            toast.success('Images saved successfully!')
+
+            // Refresh images
+            onImageRefresh()
+
+            // Refresh data to show updated images instantly
+            if (onImageSave) {
+                await onImageSave()
+            }
+        } catch (error: any) {
+            console.error('Error saving images:', error)
+            toast.error(error?.response?.data?.message || 'Failed to save images. Please try again.')
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    // Print/Download PDF with edited images
+    const handlePrintEditedImages = async () => {
+        try {
+            if (isDownloading) return
+            setIsDownloading(true)
+
+            // Get edited images from both canvases
+            const rightFootBlob = rightFootImageDataRef.current
+                ? await rightFootImageDataRef.current()
+                : null
+            const leftFootBlob = leftFootImageDataRef.current
+                ? await leftFootImageDataRef.current()
+                : null
+
+            if (!rightFootBlob || !leftFootBlob) {
+                toast.error('Failed to get edited images. Please try again.')
+                return
+            }
+
+            // Convert blobs to data URLs for PDF generation
+            const rightImageDataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result as string)
+                reader.onerror = reject
+                reader.readAsDataURL(rightFootBlob)
+            })
+
+            const leftImageDataUrl = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader()
+                reader.onload = () => resolve(reader.result as string)
+                reader.onerror = reject
+                reader.readAsDataURL(leftFootBlob)
+            })
+
+            // Generate combined PDF with both edited feet images
+            const baseName = (scanData as any)?.customerNumber || scanData.id
+            const headerBase = {
+                logoUrl: user?.image || null,
+                customerFullName: `${scanData.vorname || ''} ${scanData.nachname || ''}`.trim(),
+                customerNumber: (scanData as any)?.customerNumber ?? null,
+                dateOfBirthText: scanData.geburtsdatum || null
+            } as const
+
+            // Get dynamic foot length values from selected scan data
+            const currentData = selectedScanData || scanData
+            const leftFootLength = parseFloat((currentData as any).fusslange2 as string) || 0
+            const rightFootLength = parseFloat((currentData as any).fusslange1 as string) || 0
+
+            const { combined } = await generateFeetPdf({
+                rightImageUrl: rightImageDataUrl,
+                leftImageUrl: leftImageDataUrl,
+                header: headerBase,
+                generateCombined: true,
+                leftFootLength,
+                rightFootLength
+            })
+
+            if (combined) {
+                // Create blob URL for PDF
+                const pdfUrl = URL.createObjectURL(combined)
+
+                // Create iframe to load PDF and trigger print
+                const iframe = document.createElement('iframe')
+                iframe.style.position = 'fixed'
+                iframe.style.right = '0'
+                iframe.style.bottom = '0'
+                iframe.style.width = '0'
+                iframe.style.height = '0'
+                iframe.style.border = '0'
+                iframe.src = pdfUrl
+
+                document.body.appendChild(iframe)
+
+                iframe.onload = () => {
+                    try {
+                        // Wait a bit for PDF to fully load
+                        setTimeout(() => {
+                            if (iframe.contentWindow) {
+                                iframe.contentWindow.focus()
+                                iframe.contentWindow.print()
+                            }
+                            // Clean up after printing
+                            setTimeout(() => {
+                                document.body.removeChild(iframe)
+                                URL.revokeObjectURL(pdfUrl)
+                            }, 1000)
+                        }, 500)
+                        toast.success('Opening print dialog...')
+                    } catch (error) {
+                        console.error('Print error:', error)
+                        // Fallback: download if print fails
+                        const a = document.createElement('a')
+                        a.href = pdfUrl
+                        a.download = `feet_scan_edited_${baseName}.pdf`
+                        document.body.appendChild(a)
+                        a.click()
+                        document.body.removeChild(a)
+                        document.body.removeChild(iframe)
+                        URL.revokeObjectURL(pdfUrl)
+                        toast.error('Print failed. PDF downloaded instead.')
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Failed to generate PDF:', err)
+            toast.error('PDF generation failed.')
+        } finally {
+            await new Promise((resolve) => setTimeout(resolve, 500))
+            setIsDownloading(false)
+        }
+    }
+
+    const leftImage = getLeftImage()
+    const rightImage = getRightImage()
+
+    return (
+        <div className="fixed inset-0 z-[9998] bg-gradient-to-br from-gray-50 to-gray-100 overflow-y-auto">
+            {/* Loading Overlay */}
+            {(isDownloading || isSaving) && (
+                <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white rounded-lg shadow-lg px-6 py-5 flex items-center gap-3">
+                        <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+                        <span className="text-gray-900 font-medium">
+                            {isSaving ? 'Saving images...' : 'Generating PDF...'}
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {/* Modern Drawing Toolbar */}
+            <div className="sticky top-0 z-[9999] bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+                        <DrawingToolbar
+                            drawingMode={drawingMode}
+                            setDrawingMode={setDrawingMode}
+                            brushSize={brushSize}
+                            setBrushSize={setBrushSize}
+                            brushColor={brushColor}
+                            setBrushColor={setBrushColor}
+                            onExitZoom={onExit}
+                        />
+                        <div className="flex items-center gap-3">
+                            {/* Print/Download PDF Button */}
+                            <button
+                                onClick={handlePrintEditedImages}
+                                disabled={isDownloading || !selectedScanData}
+                                className={`px-6 py-2.5 cursor-pointer rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg transform ${
+                                    isDownloading || !selectedScanData
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                }`}
+                                title="Print/Download edited images as PDF"
+                            >
+                                <FaPrint />
+                                <span className="hidden sm:inline">{isDownloading ? 'Generating...' : 'Print PDF'}</span>
+                            </button>
+                            {/* Save Button */}
+                            <button
+                                onClick={handleSaveEditedImages}
+                                disabled={isSaving || !selectedScanData}
+                                className={`px-6 py-2.5 cursor-pointer rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg transform ${
+                                    isSaving || !selectedScanData
+                                        ? 'bg-gray-400 cursor-not-allowed'
+                                        : 'bg-[#4A8A5F] hover:bg-[#4A8A5F]/80 text-white'
+                                }`}
+                                title="Save edited images"
+                            >
+                                <FaSave />
+                                <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save Images'}</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Full screen responsive image layout with canvas overlay */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+                <div className="flex flex-col xl:flex-row justify-center items-stretch xl:items-stretch gap-6 lg:gap-8 xl:gap-12 min-h-[calc(100vh-120px)]">
+                    {/* Left foot image */}
+                    {leftImage && (
+                        <div className="w-full xl:w-1/2 shrink-0 flex">
+                            <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50 flex flex-col w-full h-full">
+                                <EditableImageCanvas
+                                    key={`zoom-left-${leftImage}-${selectedScanData?.updatedAt || scanData.updatedAt}-${imageRefreshKey}`}
+                                    imageUrl={leftImage}
+                                    alt="Left foot scan - Plantaransicht"
+                                    title=""
+                                    downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
+                                    drawingMode={drawingMode}
+                                    brushSize={brushSize}
+                                    brushColor={brushColor}
+                                    isZoomMode={true}
+                                    onImageDataReady={(getImageData) => {
+                                        leftFootImageDataRef.current = getImageData
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Right foot image */}
+                    {rightImage && (
+                        <div className="w-full xl:w-1/2 shrink-0 flex">
+                            <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50 flex flex-col w-full h-full">
+                                <EditableImageCanvas
+                                    key={`zoom-right-${rightImage}-${selectedScanData?.updatedAt || scanData.updatedAt}-${imageRefreshKey}`}
+                                    imageUrl={rightImage}
+                                    alt="Right foot scan - Plantaransicht"
+                                    title=""
+                                    downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
+                                    drawingMode={drawingMode}
+                                    brushSize={brushSize}
+                                    brushColor={brushColor}
+                                    isZoomMode={true}
+                                    onImageDataReady={(getImageData) => {
+                                        rightFootImageDataRef.current = getImageData
+                                    }}
+                                />
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}
+

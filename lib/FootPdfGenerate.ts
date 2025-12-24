@@ -12,6 +12,11 @@ export interface FeetImagesPdfHeader {
 
 // Helper function to fetch image as data URL
 async function fetchImageAsDataUrl(url: string): Promise<string> {
+    // If it's already a data URL, return it directly
+    if (url.startsWith('data:')) {
+        return url;
+    }
+    
     const response = await fetch(url, { mode: 'cors' });
     const blob = await response.blob();
     return new Promise((resolve) => {
