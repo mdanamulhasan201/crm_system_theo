@@ -82,11 +82,11 @@ export default function ScanningData() {
 
 
     // handle versorgungs page
-    const handleVersorgungsPage = (e: React.MouseEvent) => {
-        e.preventDefault();
-        setIsVersorgungLoading(true);
-        router.push(`/dashboard/scanning-data/${scanData?.id}`);
-    };
+    // const handleVersorgungsPage = (e: React.MouseEvent) => {
+    //     e.preventDefault();
+    //     setIsVersorgungLoading(true);
+    //     router.push(`/dashboard/scanning-data/${scanData?.id}`);
+    // };
 
     // handle customer history page
     const handleHistoryPage = (e: React.MouseEvent) => {
@@ -128,14 +128,14 @@ export default function ScanningData() {
                         <div className="flex gap-8 mt-4">
                             {/* Versorgung starten */}
                             <div className="flex flex-col items-center">
-                                <button
+                                {/* <button
                                     onClick={handleVersorgungsPage}
                                     disabled={isVersorgungLoading}
                                     className="p-5 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <Image src={userload} alt="Versorgung starten" width={70} height={70} />
-                                </button>
-                                <span className="mt-2 text-center text-sm font-normal">Versorgung starten</span>
+                                </button> */}
+                                {/* <span className="mt-2 text-center text-sm font-normal">Versorgung starten</span> */}
                             </div>
                             {/* Kundendaten -historie */}
                             <div className="flex flex-col items-center">

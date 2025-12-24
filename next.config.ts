@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
       {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '1971',
+        pathname: '/**',
+      },
+      {
         protocol: 'https',
         hostname: 'activation-country-later-relevant.trycloudflare.com',
       }
