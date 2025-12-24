@@ -60,9 +60,9 @@ export default function LineChartComponent({ chartData }: { chartData: ChartData
                     <Line
                         type="monotone"
                         dataKey="value"
-                        stroke="#2563eb"
+                        stroke="#61A175"
                         strokeWidth={3}
-                        dot={{ r: 5, fill: '#2563eb' }}
+                        dot={{ r: 5, fill: '#61A175' }}
                         activeDot={{ r: 7, fill: '#f59e42' }}
                     />
                     {/* Highlight peak */}
