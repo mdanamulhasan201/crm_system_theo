@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeDeliveryDate, getRequiredDeliveryDate } from './utils/dateUtils';
 import { getSettingData } from '@/apis/einlagenApis';
+import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types';
 
 interface Customer {
     id: string;
@@ -97,7 +98,7 @@ export default function MassschuheOrderModal({
     const [selectedLocation, setSelectedLocation] = useState<string>('');
     const [isPaid, setIsPaid] = useState<boolean>(true);
     const [quantity, setQuantity] = useState<number>(1);
-    const [laserPrintPrices, setLaserPrintPrices] = useState<number[]>([]);
+    const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
 
     const { user } = useAuth();
@@ -115,7 +116,21 @@ export default function MassschuheOrderModal({
             try {
                 const response = await getSettingData();
                 if (response?.data?.laser_print_prices && Array.isArray(response.data.laser_print_prices)) {
-                    setLaserPrintPrices(response.data.laser_print_prices);
+                    // Handle both old format (numbers) and new format (objects with name and price)
+                    const formattedPrices: PriceItem[] = response.data.laser_print_prices
+                        .map((item: any) => {
+                            // Handle old format (just numbers)
+                            if (typeof item === 'number') {
+                                return { name: `Preis ${item}`, price: item };
+                            }
+                            // Handle new format (objects with name and price)
+                            if (item && typeof item === 'object' && item.name && item.price !== undefined) {
+                                return { name: item.name, price: item.price };
+                            }
+                            return null;
+                        })
+                        .filter((item: PriceItem | null): item is PriceItem => item !== null);
+                    setLaserPrintPrices(formattedPrices);
                 }
             } catch (error) {
                 console.error('Failed to fetch settings:', error);
@@ -405,7 +420,7 @@ export default function MassschuheOrderModal({
                                     setPaymentType('privat');
                                     // When switching to Privat, preselect first available laser print price if not set
                                     if (!selectedFußanalyse && laserPrintPrices.length > 0) {
-                                        setSelectedFußanalyse(String(laserPrintPrices[0]));
+                                        setSelectedFußanalyse(String(laserPrintPrices[0].price));
                                     }
                                 }}
                                 className={cn(
@@ -443,13 +458,13 @@ export default function MassschuheOrderModal({
                                         </SelectTrigger>
                                         <SelectContent>
                                             {laserPrintPrices.length > 0 ? (
-                                                laserPrintPrices.map((price, index) => (
+                                                laserPrintPrices.map((item, index) => (
                                                     <SelectItem
-                                                        key={`foot-${index}`}
-                                                        value={String(price)}
+                                                        key={`foot-${item.name}-${item.price}-${index}`}
+                                                        value={String(item.price)}
                                                         className="cursor-pointer"
                                                     >
-                                                        {price}€
+                                                        {item.name} - {item.price.toFixed(2).replace(".", ",")}€
                                                     </SelectItem>
                                                 ))
                                             ) : (

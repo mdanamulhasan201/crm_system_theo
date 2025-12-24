@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 
 interface PriceSectionProps {
   footAnalysisPrice: string
@@ -13,7 +14,7 @@ interface PriceSectionProps {
   onCustomFootPriceChange: (value: string) => void
   customInsolePrice: string
   onCustomInsolePriceChange: (value: string) => void
-  laserPrintPrices: number[]
+  laserPrintPrices: PriceItem[]
   einlagenversorgungPrices: number[]
   pricesLoading: boolean
   footAnalysisPriceError?: string
@@ -56,13 +57,13 @@ export default function PriceSection({
             </SelectTrigger>
             <SelectContent>
               {laserPrintPrices.length > 0 ? (
-                laserPrintPrices.map((price, index) => (
+                laserPrintPrices.map((item, index) => (
                   <SelectItem
                     className="cursor-pointer"
-                    key={`foot-${index}`}
-                    value={String(price)}
+                    key={`foot-${item.name}-${item.price}-${index}`}
+                    value={String(item.price)}
                   >
-                    {price}€
+                    {item.name} - {item.price.toFixed(2).replace(".", ",")}€
                   </SelectItem>
                 ))
               ) : (

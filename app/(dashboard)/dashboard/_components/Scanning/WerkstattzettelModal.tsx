@@ -8,6 +8,7 @@ import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSect
 import PriceSection from './Werkstattzettel/FormSections/PriceSection'
 import { createWerkstattzettelPayload } from './utils/formDataUtils'
 import { getSettingData } from '@/apis/einlagenApis'
+import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 
 interface FormData {
   ausführliche_diagnose?: string
@@ -53,7 +54,7 @@ export default function WerkstattzettelModal({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   // Settings data state
-  const [laserPrintPrices, setLaserPrintPrices] = useState<number[]>([])
+  const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([])
   const [pricesLoading, setPricesLoading] = useState(false)
 
   // Extract Einlagenversorgung price from selected versorgung
@@ -93,7 +94,21 @@ export default function WerkstattzettelModal({
         try {
           const response = await getSettingData()
           if (response?.data?.laser_print_prices && Array.isArray(response.data.laser_print_prices)) {
-            setLaserPrintPrices(response.data.laser_print_prices)
+            // Handle both old format (numbers) and new format (objects with name and price)
+            const formattedPrices: PriceItem[] = response.data.laser_print_prices
+              .map((item: any) => {
+                // Handle old format (just numbers)
+                if (typeof item === 'number') {
+                  return { name: `Preis ${item}`, price: item };
+                }
+                // Handle new format (objects with name and price)
+                if (item && typeof item === 'object' && item.name && item.price !== undefined) {
+                  return { name: item.name, price: item.price };
+                }
+                return null;
+              })
+              .filter((item: PriceItem | null): item is PriceItem => item !== null);
+            setLaserPrintPrices(formattedPrices);
           }
         } catch (error) {
           console.error('Failed to fetch settings:', error)
