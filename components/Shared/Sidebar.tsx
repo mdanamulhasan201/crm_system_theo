@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
 import { TbActivityHeartbeat, TbUsers } from 'react-icons/tb';
+import { HiArrowLeft } from 'react-icons/hi';
 
 import type { IconType } from 'react-icons';
 import type { StaticImageData } from 'next/image';
@@ -26,15 +27,17 @@ import Maßschuhaufträge from '@/public/images/dashboard/partner_sidebar/Maßsc
 import Musterzettel from '@/public/images/dashboard/partner_sidebar/Musterzettel.png';
 import Nachrichten from '@/public/images/dashboard/partner_sidebar/Nachrichten.png';
 import Terminkalender from '@/public/images/dashboard/partner_sidebar/Terminkalender.png';
+import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from 'react-icons/md';
 
 
 
 interface SidebarProps {
     isCollapsed: boolean;
     onClose: () => void;
+    onCollapseToggle: () => void;
 }
 
-export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
+export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: SidebarProps) {
     const { user } = useAuth();
     const pathname = usePathname();
     const showLabels = !isCollapsed;
@@ -177,11 +180,11 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
     };
 
     return (
-        <div className={`h-screen bg-white flex flex-col border-r border-gray-200 transition-all duration-300 w-80 ${isCollapsed ? 'md:w-20' : 'md:w-80'}`}>
+        <div className={`h-screen bg-white flex flex-col border-r border-gray-200 transition-all duration-300 w-80 ${isCollapsed ? 'md:w-28' : 'md:w-80'}`}>
 
 
             {/* Top Logo Section */}
-            <div className={`py-5 flex items-center ${showLabels ? 'px-3 justify-between' : 'px-2 justify-center '}`}>
+            <div className={`py-5 flex items-center ${showLabels ? 'px-3 justify-between' : 'px-2 justify-between'}`}>
                 <div className={`${showLabels ? 'w-16 h-16' : 'w-12 h-12'}  p-2 flex items-center justify-center overflow-hidden bg-[#61A175]/15 rounded`}>
                     {user?.image ? (
                         <Image
@@ -199,12 +202,25 @@ export default function Sidebar({ isCollapsed, onClose }: SidebarProps) {
                         )
                     )}
                 </div>
-                <button
-                    onClick={onClose}
-                    className="p-1 rounded-full hover:bg-gray-100 md:hidden"
-                >
-                    <IoClose className="h-6 w-6" />
-                </button>
+                <div className="flex items-center gap-2 -mr-3">
+                    
+                    <button
+                        onClick={onCollapseToggle}
+                        className="hidden md:flex border border-[#61A175] bg-gray-100 text-gray-600 cursor-pointer hover:text-gray-800 transition-all duration-300 p-1 rounded-s-lg hover:bg-gray-100"
+                        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    >
+                    
+                        <MdKeyboardArrowLeft
+                            className={`text-xl transform transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
+                        />
+                    </button>
+                    <button
+                        onClick={onClose}
+                        className="p-1 rounded-full hover:bg-gray-100 md:hidden"
+                    >
+                        <IoClose className="h-6 w-6" />
+                    </button>
+                </div>
             </div>
 
 

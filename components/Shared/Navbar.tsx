@@ -1,20 +1,18 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
 import { HiMenuAlt2, HiSearch, HiArrowLeft } from 'react-icons/hi';
-import logo from '@/public/images/logo.png'
-import Image from 'next/image';
 import NotificationPage from './Notification';
+import { useRouter } from 'next/navigation';
 
 interface NavbarProps {
     onMenuClick: () => void;
-    onCollapseToggle: () => void;
     isSidebarOpen: boolean;
-    isSidebarCollapsed: boolean;
 }
 
-export default function Navbar({ onMenuClick, onCollapseToggle, isSidebarOpen, isSidebarCollapsed }: NavbarProps) {
+export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
     const [isSearchVisible, setIsSearchVisible] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
+    const router = useRouter();
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -29,10 +27,14 @@ export default function Navbar({ onMenuClick, onCollapseToggle, isSidebarOpen, i
         };
     }, []);
 
+    const handleBack = () => {
+        router.back();
+    };
+
     return (
         <nav className="bg-white border-b border-gray-200">
             <div className="px-4 py-3 md:py-4 flex items-center justify-between relative">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ms-5">
                     <button
                         onClick={onMenuClick}
                         className="text-gray-600 cursor-pointer hover:text-gray-800 transition-all duration-300 md:hidden"
@@ -44,22 +46,14 @@ export default function Navbar({ onMenuClick, onCollapseToggle, isSidebarOpen, i
                         )}
                     </button>
                     <button
-                        onClick={onCollapseToggle}
+                        onClick={handleBack}
                         className="hidden md:flex text-gray-600 cursor-pointer hover:text-gray-800 transition-all duration-300"
-                        aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        aria-label="Go back"
                     >
-                        <HiArrowLeft
-                            className={`text-2xl transform transition-transform duration-300 ${isSidebarCollapsed ? 'rotate-180' : ''
-                                }`}
-                        />
+                        <HiArrowLeft className="text-2xl" />
                     </button>
                 </div>
 
-                <div className="hidden md:block">
-                    <div className='w-16 h-16'>
-                        <Image src={logo} alt="logo" width={100} height={100} className='w-full h-full object-contain' />
-                    </div>
-                </div>
                 <div className="flex items-center space-x-2 md:space-x-4">
                     <NotificationPage />
                     {/* search icon */}

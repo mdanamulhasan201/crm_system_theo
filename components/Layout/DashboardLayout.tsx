@@ -58,18 +58,17 @@ const DashboardLayout = ({ children }: LayoutProps) => {
                     <Sidebar
                         isCollapsed={isSidebarCollapsed}
                         onClose={() => setIsSidebarOpen(false)}
+                        onCollapseToggle={toggleSidebarCollapse}
                     />
                 </div>
 
                 {/* Main Content */}
                 <div
-                    className={`flex-1 flex flex-col overflow-hidden transition-[margin] duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-80'}`}
+                    className={`flex-1 flex flex-col overflow-hidden transition-[margin] duration-300 ml-0 ${isSidebarCollapsed ? 'md:ml-28' : 'md:ml-80'}`}
                 >
                     <Navbar
                         onMenuClick={toggleSidebarVisibility}
-                        onCollapseToggle={toggleSidebarCollapse}
                         isSidebarOpen={isSidebarOpen}
-                        isSidebarCollapsed={isSidebarCollapsed}
                     />
 
                     {/* Overlay */}
