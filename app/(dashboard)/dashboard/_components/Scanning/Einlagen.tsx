@@ -680,9 +680,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 onOpenChange={setShowUserInfoUpdateModal}
                 scanData={customer as ScanData}
                 formData={formDataForOrder}
-                onInfoUpdate={() => {
-                    onDataRefresh?.();
-                }}
                 onShowOrderConfirmation={(formData) => {
                     setFormDataForOrder(formData || formDataForOrder);
                     setShowConfirmModal(true);

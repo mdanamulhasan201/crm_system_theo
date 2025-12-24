@@ -17,6 +17,7 @@ interface FormData {
   einlagentyp?: string
   überzug?: string
   menge?: number
+  quantity?: number
   versorgung?: string
   versorgung_note?: string
   schuhmodell_wählen?: string
@@ -48,6 +49,9 @@ export default function WerkstattzettelModal({
 
   // Local validation error state
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  
+  // Track if default location has been set (to prevent overriding user changes)
+  const [hasSetDefaultLocation, setHasSetDefaultLocation] = useState(false)
 
   // Settings data state
   const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([])
@@ -153,20 +157,25 @@ export default function WerkstattzettelModal({
   // Convert locations to string array for dropdown (use description or address)
   const locationOptions = locations.map(loc => loc.description || loc.address)
 
-  // Set primary location as default when locations are loaded (always override)
+  // Set primary location as default when locations are first loaded (only once per modal open)
   useEffect(() => {
-    if (locations.length > 0 && isOpen) {
-      const primaryLocation = locations.find(loc => loc.isPrimary)
-      if (primaryLocation) {
-        const locationValue = primaryLocation.description || primaryLocation.address
-        form.setGeschaeftsstandort(locationValue)
-      } else {
-        // If no primary, use first location
-        const locationValue = locations[0].description || locations[0].address
-        form.setGeschaeftsstandort(locationValue)
+    if (locations.length > 0 && isOpen && !locationsLoading) {
+      // Only set default if geschaeftsstandort is empty or not set
+      const currentLocation = form.geschaeftsstandort
+      if (!currentLocation || currentLocation.trim() === '') {
+        const primaryLocation = locations.find(loc => loc.isPrimary)
+        if (primaryLocation) {
+          const locationValue = primaryLocation.description || primaryLocation.address
+          form.setGeschaeftsstandort(locationValue)
+        } else {
+          // If no primary, use first location
+          const locationValue = locations[0].description || locations[0].address
+          form.setGeschaeftsstandort(locationValue)
+        }
       }
     }
-  }, [locations, isOpen, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locations, isOpen, locationsLoading])
 
   // Basic validation for required fields
   const validateForm = () => {
@@ -300,6 +309,14 @@ export default function WerkstattzettelModal({
           employeeId: form.employeeId,
           footAnalysisPrice: form.footAnalysisPrice,
           insoleSupplyPrice: form.insoleSupplyPrice,
+          quantity: (() => {
+            // Parse quantity from string to number (e.g., "1 paar" -> 1)
+            if (!form.quantity) return formData?.menge || formData?.quantity || undefined
+            const match = form.quantity.match(/^(\d+)\s*paar/i)
+            return match ? parseInt(match[1], 10) : undefined
+          })(),
+          discount: form.discountValue ? parseFloat(form.discountValue) : undefined,
+          discountType: form.discountType || undefined,
         },
         scanData.id
       )
@@ -308,6 +325,11 @@ export default function WerkstattzettelModal({
       const combinedFormData = {
         ...formData,
         ...werkstattzettelPayload,
+        quantity: (() => {
+          if (!form.quantity) return formData?.menge || formData?.quantity || undefined
+          const match = form.quantity.match(/^(\d+)\s*paar/i)
+          return match ? parseInt(match[1], 10) : undefined
+        })(),
       }
 
       // Do NOT close the Werkstattzettel modal here.
@@ -353,6 +375,9 @@ export default function WerkstattzettelModal({
                 fertigstellungBis: form.fertigstellungBis,
                 fertigstellungBisTime: form.fertigstellungBisTime,
                 bezahlt: form.bezahlt,
+                quantity: form.quantity,
+                discountType: form.discountType,
+                discountValue: form.discountValue,
                 onNameChange: handleNameChange,
                 onWohnortChange: form.setWohnort,
                 onEmailChange: form.setEmail,
@@ -364,6 +389,9 @@ export default function WerkstattzettelModal({
                 onFertigstellungBisChange: form.handleDeliveryDateChange,
                 onFertigstellungBisTimeChange: form.setFertigstellungBisTime,
                 onBezahltChange: form.setBezahlt,
+                onQuantityChange: form.setQuantity,
+                onDiscountTypeChange: form.setDiscountType,
+                onDiscountValueChange: form.setDiscountValue,
                 employeeSearchText: form.employeeSearchText,
                 employeeSuggestions: form.employeeSuggestions,
                 employeeLoading: form.employeeLoading,

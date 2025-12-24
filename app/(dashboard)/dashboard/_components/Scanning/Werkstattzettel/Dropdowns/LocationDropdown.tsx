@@ -33,16 +33,13 @@ export default function LocationDropdown({
           variant="outline"
           role="combobox"
           aria-expanded={isOpen}
-          className="w-full justify-start font-normal h-10"
+          className="w-full justify-between font-normal h-10"
+          onClick={() => onOpenChange(!isOpen)}
         >
-          <Input
-            placeholder="Bremen"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-            className="border-none outline-none focus:ring-0 p-0 h-auto font-normal bg-transparent"
-            onClick={() => onOpenChange(true)}
-          />
-          <ChevronDown className="ml-auto h-4 w-4 shrink-0 opacity-50" />
+          <span className="truncate">
+            {value || 'Standort wählen'}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent

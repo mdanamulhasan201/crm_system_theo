@@ -20,6 +20,9 @@ export interface WerkstattzettelFormData {
   employeeId: string
   footAnalysisPrice: string
   insoleSupplyPrice: string
+  quantity?: number
+  discount?: number
+  discountType?: string
 }
 
 /**
@@ -58,6 +61,9 @@ export function createWerkstattzettelPayload(
     bezahlt: formData.bezahlt || undefined, // Now accepts string format like "Privat - Bezahlt"
     fussanalysePreis: isNaN(parsedFoot) ? 0 : parsedFoot,
     einlagenversorgungPreis: isNaN(parsedInsole) ? 0 : parsedInsole,
+    quantity: formData.quantity || undefined,
+    discount: formData.discount || undefined,
+    discountType: formData.discountType || undefined,
   }
 }
 

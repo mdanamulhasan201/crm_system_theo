@@ -39,6 +39,9 @@ export function useWerkstattzettelForm(
   const [fertigstellungBis, setFertigstellungBis] = useState('')
   const [fertigstellungBisTime, setFertigstellungBisTime] = useState('')
   const [bezahlt, setBezahlt] = useState('')
+  const [quantity, setQuantity] = useState<string>('1 paar')
+  const [discountType, setDiscountType] = useState<string>('')
+  const [discountValue, setDiscountValue] = useState<string>('')
 
   // Business location dropdown state
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false)
@@ -98,6 +101,13 @@ export function useWerkstattzettelForm(
       }
       if (formData.versorgung) {
         setVersorgung(formData.versorgung)
+      }
+      if (formData.menge) {
+        // Handle both number and string format
+        const quantityValue = typeof formData.menge === 'number' 
+          ? `${formData.menge} paar`
+          : formData.menge
+        setQuantity(quantityValue)
       }
     }
   }, [scanData, isOpen, formData])
@@ -172,6 +182,12 @@ export function useWerkstattzettelForm(
     setBezahlt,
     employeeId,
     setEmployeeId,
+    quantity,
+    setQuantity,
+    discountType,
+    setDiscountType,
+    discountValue,
+    setDiscountValue,
 
     // Price state
     footAnalysisPrice,
