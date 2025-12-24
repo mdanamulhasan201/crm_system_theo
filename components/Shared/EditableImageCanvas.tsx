@@ -1,5 +1,5 @@
 'use client'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { FaPen, FaEraser, FaTrash } from 'react-icons/fa'
 import { TfiDownload } from 'react-icons/tfi'
@@ -13,6 +13,8 @@ interface EditableImageCanvasProps {
     drawingMode: 'pen' | 'eraser'
     brushSize: number
     brushColor: string
+    isZoomMode?: boolean
+    onImageDataReady?: (getImageData: () => Promise<Blob | null>) => void
 }
 
 export default function EditableImageCanvas({
@@ -23,7 +25,9 @@ export default function EditableImageCanvas({
     downloadFileName = 'edited_image',
     drawingMode,
     brushSize,
-    brushColor
+    brushColor,
+    isZoomMode = false,
+    onImageDataReady
 }: EditableImageCanvasProps) {
     
     const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -31,6 +35,7 @@ export default function EditableImageCanvas({
     const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
     const isDrawingRef = useRef(false)
     const imageUrlRef = useRef<string | null>(null)
+    const [isImageLoading, setIsImageLoading] = useState(true)
 
     // Initialize canvas when image loads
     const initializeCanvas = () => {
@@ -131,22 +136,20 @@ export default function EditableImageCanvas({
         ctxRef.current = ctx
     }
 
-    // Download edited image
-    const downloadEditedImage = async () => {
+    // Get edited image as blob (for saving)
+    const getEditedImageBlob = useCallback(async (): Promise<Blob | null> => {
         const canvas = canvasRef.current
         const imageUrl = imageUrlRef.current
         
         if (!canvas || !imageUrl) {
-            alert('Image not available for download.')
-            return
+            return null
         }
 
         try {
             const combinedCanvas = document.createElement('canvas')
             const ctx = combinedCanvas.getContext('2d')
             if (!ctx) {
-                alert('Failed to create canvas context.')
-                return
+                return null
             }
 
             const img = new window.Image()
@@ -174,37 +177,57 @@ export default function EditableImageCanvas({
                 img.src = imageUrl
             })
 
-            combinedCanvas.toBlob((blob) => {
-                if (!blob) {
-                    alert('Failed to generate image.')
-                    return
-                }
-
-                const url = URL.createObjectURL(blob)
-                const dataUrl = combinedCanvas.toDataURL('image/png')
-                
-                // Call onDownload callback if provided
-                if (onDownload) {
-                    onDownload(dataUrl)
-                }
-
-                const a = document.createElement('a')
-                a.href = url
-                a.download = `${downloadFileName}.png`
-                document.body.appendChild(a)
-                a.click()
-                document.body.removeChild(a)
-                URL.revokeObjectURL(url)
-            }, 'image/png')
+            return new Promise((resolve) => {
+                combinedCanvas.toBlob((blob) => {
+                    resolve(blob)
+                }, 'image/png')
+            })
         } catch (error) {
-            console.error('Error downloading image:', error)
-            alert('Failed to download image.')
+            console.error('Error getting edited image:', error)
+            return null
         }
+    }, [])
+
+    // Download edited image
+    const downloadEditedImage = async () => {
+        const blob = await getEditedImageBlob()
+        if (!blob) {
+            alert('Image not available for download.')
+            return
+        }
+
+        // Convert blob to data URL for callback
+        const reader = new FileReader()
+        reader.onloadend = () => {
+            const dataUrl = reader.result as string
+            if (onDownload) {
+                onDownload(dataUrl)
+            }
+        }
+        reader.readAsDataURL(blob)
+
+        // Download the blob
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${downloadFileName}.png`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
     }
+
+    // Expose getEditedImageBlob to parent component
+    useEffect(() => {
+        if (onImageDataReady) {
+            onImageDataReady(getEditedImageBlob)
+        }
+    }, [onImageDataReady, getEditedImageBlob])
 
     // Re-initialize when image URL changes
     useEffect(() => {
         if (imageUrl) {
+            setIsImageLoading(true)
             setTimeout(() => initializeCanvas(), 200)
         }
     }, [imageUrl])
@@ -226,79 +249,125 @@ export default function EditableImageCanvas({
     }, [drawingMode, brushSize, brushColor])
 
     return (
-        <div className="text-center w-full lg:w-auto">
-            <div className="flex items-center justify-center gap-2 mb-2">
-                <h3 className="text-base md:text-lg font-semibold text-gray-700">{title}</h3>
-                <button
-                    onClick={clearCanvas}
-                    className="px-2 py-1 text-xs bg-gray-200 hover:bg-gray-300 rounded transition-colors flex items-center gap-1"
-                    title="Clear drawings"
-                >
-                    <FaTrash />
-                    Clear
-                </button>
-                <button
-                    onClick={downloadEditedImage}
-                    className="px-2 py-1 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors flex items-center gap-1"
-                    title="Download edited image"
-                >
-                    <TfiDownload />
-                    Download
-                </button>
-            </div>
-            <div ref={imageContainerRef} className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto relative">
+        <div className={`text-center w-full ${isZoomMode ? '' : 'lg:w-auto'}`}>
+            {/* Title and action buttons - hidden in zoom mode */}
+            {!isZoomMode && (
+                <div className="flex items-center justify-center gap-2 mb-3">
+                    <h3 className="text-base md:text-lg font-semibold text-gray-700">{title}</h3>
+                    <button
+                        onClick={clearCanvas}
+                        className="px-3 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 rounded-lg transition-all flex items-center gap-1.5 shadow-sm hover:shadow"
+                        title="Clear drawings"
+                    >
+                        <FaTrash />
+                        <span className="hidden sm:inline">Clear</span>
+                    </button>
+                    <button
+                        onClick={downloadEditedImage}
+                        className="px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all flex items-center gap-1.5 shadow-sm hover:shadow-md"
+                        title="Download edited image"
+                    >
+                        <TfiDownload />
+                        <span className="hidden sm:inline">Download</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Image container with responsive sizing */}
+            <div 
+                ref={imageContainerRef} 
+                className={`w-full mx-auto relative ${
+                    isZoomMode 
+                        ? 'max-w-full' 
+                        : 'max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl'
+                }`}
+            >
                 {imageUrl ? (
                     <>
-                        <Image
-                            src={imageUrl}
-                            alt={alt}
-                            width={400}
-                            height={600}
-                            className="w-full h-auto rounded-lg"
-                            onLoad={() => {
-                                setTimeout(() => initializeCanvas(), 100)
-                            }}
-                        />
-                        <canvas
-                            ref={canvasRef}
-                            className="absolute top-0 left-0 w-full h-full rounded-lg cursor-crosshair pointer-events-auto"
-                            style={{ touchAction: 'none' }}
-                            onMouseDown={startDrawing}
-                            onMouseMove={draw}
-                            onMouseUp={stopDrawing}
-                            onMouseLeave={stopDrawing}
-                            onTouchStart={(e) => {
-                                e.preventDefault()
-                                const touch = e.touches[0]
-                                const rect = canvasRef.current?.getBoundingClientRect()
-                                if (rect && canvasRef.current) {
-                                    const mouseEvent = new MouseEvent('mousedown', {
-                                        clientX: touch.clientX,
-                                        clientY: touch.clientY
-                                    })
-                                    canvasRef.current.dispatchEvent(mouseEvent)
-                                }
-                            }}
-                            onTouchMove={(e) => {
-                                e.preventDefault()
-                                const touch = e.touches[0]
-                                const rect = canvasRef.current?.getBoundingClientRect()
-                                if (rect && canvasRef.current) {
-                                    const mouseEvent = new MouseEvent('mousemove', {
-                                        clientX: touch.clientX,
-                                        clientY: touch.clientY
-                                    })
-                                    canvasRef.current.dispatchEvent(mouseEvent)
-                                }
-                            }}
-                            onTouchEnd={(e) => {
-                                e.preventDefault()
-                                stopDrawing()
-                            }}
-                        />
+                        <div className="relative w-full">
+                            {/* Shimmer effect while loading */}
+                            {isImageLoading && (
+                                <div className={`absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse z-10 ${isZoomMode ? 'rounded-xl' : 'rounded-lg'}`} />
+                            )}
+                            <Image
+                                src={imageUrl}
+                                alt={alt}
+                                width={isZoomMode ? 800 : 400}
+                                height={isZoomMode ? 1200 : 600}
+                                className={`w-full h-auto transition-opacity duration-300 ${isZoomMode ? 'rounded-xl shadow-inner' : 'rounded-lg'} bg-gray-50 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                                priority={isZoomMode}
+                                onLoad={() => {
+                                    setIsImageLoading(false)
+                                    setTimeout(() => initializeCanvas(), 50)
+                                }}
+                                onError={() => setIsImageLoading(false)}
+                            />
+                            <canvas
+                                ref={canvasRef}
+                                className={`absolute top-0 left-0 w-full h-full ${isZoomMode ? 'rounded-xl' : 'rounded-lg'} cursor-crosshair pointer-events-auto transition-opacity hover:opacity-90`}
+                                style={{ touchAction: 'none' }}
+                                onMouseDown={startDrawing}
+                                onMouseMove={draw}
+                                onMouseUp={stopDrawing}
+                                onMouseLeave={stopDrawing}
+                                onTouchStart={(e) => {
+                                    e.preventDefault()
+                                    const touch = e.touches[0]
+                                    const rect = canvasRef.current?.getBoundingClientRect()
+                                    if (rect && canvasRef.current) {
+                                        const mouseEvent = new MouseEvent('mousedown', {
+                                            clientX: touch.clientX,
+                                            clientY: touch.clientY
+                                        })
+                                        canvasRef.current.dispatchEvent(mouseEvent)
+                                    }
+                                }}
+                                onTouchMove={(e) => {
+                                    e.preventDefault()
+                                    const touch = e.touches[0]
+                                    const rect = canvasRef.current?.getBoundingClientRect()
+                                    if (rect && canvasRef.current) {
+                                        const mouseEvent = new MouseEvent('mousemove', {
+                                            clientX: touch.clientX,
+                                            clientY: touch.clientY
+                                        })
+                                        canvasRef.current.dispatchEvent(mouseEvent)
+                                    }
+                                }}
+                                onTouchEnd={(e) => {
+                                    e.preventDefault()
+                                    stopDrawing()
+                                }}
+                            />
+                        </div>
+                        
+                        {/* Zoom mode title overlay */}
+                        {isZoomMode && (
+                            <div className="mt-3 mb-2">
+                                <h3 className="text-lg md:text-xl font-bold text-gray-800">{title}</h3>
+                                <div className="flex items-center justify-center gap-3 mt-2">
+                                    <button
+                                        onClick={clearCanvas}
+                                        className="px-4 py-2 cursor-pointer text-sm bg-[#4A8A5F] hover:bg-[#4A8A5F]/80 text-white rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                                        title="Clear drawings"
+                                    >
+                                        <FaTrash className="text-white" />
+                                        <span>Clear</span>
+                                    </button>
+                                    <button
+                                        onClick={downloadEditedImage}
+                                        className="px-4 py-2 cursor-pointer text-sm bg-[#4A8A5F] hover:bg-[#4A8A5F]/80 text-white rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
+                                        title="Download edited image"
+                                    >
+                                        <TfiDownload />
+                                        <span>Download</span>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </>
                 ) : (
-                    <div className="w-full h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px] bg-gray-100 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500 text-sm md:text-base">
+                    <div className={`w-full bg-gray-100 border-2 border-dashed border-gray-300 ${isZoomMode ? 'rounded-xl h-[600px] lg:h-[800px]' : 'rounded-lg h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px]'} flex items-center justify-center text-gray-500 text-sm md:text-base`}>
                         No image available
                     </div>
                 )}
@@ -326,70 +395,91 @@ export function DrawingToolbar({
     onExitZoom: () => void
 }) {
     return (
-        <div className="flex flex-wrap justify-center items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg">
-            <button
-                onClick={onExitZoom}
-                className="bg-red-500 cursor-pointer hover:bg-red-600 text-white px-3 py-2 rounded-lg transition-all flex items-center gap-2 text-sm"
-                title="Exit zoom mode"
-            >
-                <span>✕</span>
-                <span className="hidden sm:inline">Exit Zoom</span>
-            </button>
-            
-            <div className="h-6 w-px bg-gray-300"></div>
-            
-            <button
-                onClick={() => setDrawingMode('pen')}
-                className={`px-3 py-2 rounded-lg transition-all flex items-center gap-2 text-sm ${
-                    drawingMode === 'pen' 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-white border border-gray-300 hover:bg-gray-100'
-                }`}
-                title="Pen tool"
-            >
-                <FaPen />
-                <span className="hidden sm:inline">Pen</span>
-            </button>
-            
-            <button
-                onClick={() => setDrawingMode('eraser')}
-                className={`px-3 py-2 rounded-lg transition-all flex items-center gap-2 text-sm ${
-                    drawingMode === 'eraser' 
-                        ? 'bg-blue-500 text-white' 
-                        : 'bg-white border border-gray-300 hover:bg-gray-100'
-                }`}
-                title="Eraser tool"
-            >
-                <FaEraser />
-                <span className="hidden sm:inline">Eraser</span>
-            </button>
-            
-            <div className="h-6 w-px bg-gray-300"></div>
-            
-            <div className="flex items-center gap-2">
-                <label className="text-sm text-gray-600">Size:</label>
-                <input
-                    type="range"
-                    min="1"
-                    max="20"
-                    value={brushSize}
-                    onChange={(e) => setBrushSize(Number(e.target.value))}
-                    className="w-20"
-                />
-                <span className="text-sm text-gray-600 w-6">{brushSize}</span>
-            </div>
-            
-            {drawingMode === 'pen' && (
-                <div className="flex items-center gap-2">
-                    <label className="text-sm text-gray-600">Color:</label>
-                    <input
-                        type="color"
-                        value={brushColor}
-                        onChange={(e) => setBrushColor(e.target.value)}
-                        className="w-10 h-8 rounded border border-gray-300 cursor-pointer"
-                    />
+        <div className="py-4">
+            <div className="flex flex-wrap justify-center items-center gap-3 lg:gap-4">
+                {/* Exit Zoom Button */}
+                <button
+                    onClick={onExitZoom}
+                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg transform hover:scale-105"
+                    title="Exit zoom mode"
+                >
+                    <span className="text-lg">✕</span>
+                    <span className="hidden sm:inline">Exit Zoom</span>
+                </button>
+                
+                {/* Divider */}
+                <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
+                
+                {/* Drawing Tools */}
+                <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1 border border-gray-200">
+                    <button
+                        onClick={() => setDrawingMode('pen')}
+                        className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 text-sm font-medium ${
+                            drawingMode === 'pen' 
+                                ? 'bg-[#4A8A5F]  text-white ' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                        title="Pen tool"
+                    >
+                        <FaPen />
+                        <span className="hidden sm:inline">Pen</span>
+                    </button>
+                    
+                    <button
+                        onClick={() => setDrawingMode('eraser')}
+                        className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 text-sm font-medium ${
+                            drawingMode === 'eraser' 
+                                ? 'bg-[#4A8A5F] text-white ' 
+                                : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
+                        }`}
+                        title="Eraser tool"
+                    >
+                        <FaEraser />
+                        <span className="hidden sm:inline">Eraser</span>
+                    </button>
                 </div>
-            )}
+                
+                {/* Divider */}
+                <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
+                
+                {/* Brush Size Control */}
+                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Size:</label>
+                    <input
+                        type="range"
+                        min="1"
+                        max="20"
+                        value={brushSize}
+                        onChange={(e) => setBrushSize(Number(e.target.value))}
+                        className="w-24 lg:w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                    />
+                    <span className="text-sm font-semibold text-gray-700 w-8 text-center bg-white px-2 py-1 rounded border border-gray-200">{brushSize}</span>
+                </div>
+                
+                {/* Color Picker - Only show for pen mode */}
+                {drawingMode === 'pen' && (
+                    <>
+                        <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
+                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Color:</label>
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="color"
+                                    value={brushColor}
+                                    onChange={(e) => setBrushColor(e.target.value)}
+                                    className="w-10 h-10 rounded-lg border-2 border-gray-300 cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                                    title="Select brush color"
+                                />
+                                <div 
+                                    className="w-8 h-8 rounded border-2 border-gray-300 shadow-sm"
+                                    style={{ backgroundColor: brushColor }}
+                                    title={`Current color: ${brushColor}`}
+                                />
+                            </div>
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
     )
 }

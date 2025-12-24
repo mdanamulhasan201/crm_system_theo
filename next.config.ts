@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'mazda-ambien-recall-pierre.trycloudflare.com',
+        hostname: 'publication-drugs-keys-ted.trycloudflare.com',
       },
       {
         protocol: 'http',

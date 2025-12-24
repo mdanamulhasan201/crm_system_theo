@@ -4,9 +4,11 @@ import Image from 'next/image'
 import { MdZoomOutMap } from 'react-icons/md'
 import { TfiDownload } from 'react-icons/tfi'
 import { RiArrowDownSLine } from 'react-icons/ri'
+import { FaSave } from 'react-icons/fa'
 import { ScanData } from '@/types/scan'
 import { useAuth } from '@/contexts/AuthContext'
 import { generateFeetPdf } from '@/lib/FootPdfGenerate'
+import { updateSingleScannerFile } from '@/apis/customerApis'
 import EditableImageCanvas, { DrawingToolbar } from './EditableImageCanvas'
 
 interface ScanDataDisplayProps {
@@ -39,9 +41,20 @@ export default function ScanDataDisplay({
     const [showDateDropdown, setShowDateDropdown] = useState(false);
     const [isZoomed, setIsZoomed] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [drawingMode, setDrawingMode] = useState<'pen' | 'eraser'>('pen');
     const [brushSize, setBrushSize] = useState(3);
     const [brushColor, setBrushColor] = useState('#000000');
+    
+    // Image loading states for shimmer effect
+    const [leftImageLoading, setLeftImageLoading] = useState(true);
+    const [rightImageLoading, setRightImageLoading] = useState(true);
+    const [zoomLeftImageLoading, setZoomLeftImageLoading] = useState(true);
+    const [zoomRightImageLoading, setZoomRightImageLoading] = useState(true);
+    
+    // Refs to get edited image data from canvas components
+    const rightFootImageDataRef = useRef<(() => Promise<Blob | null>) | null>(null);
+    const leftFootImageDataRef = useRef<(() => Promise<Blob | null>) | null>(null);
 
     // Helper function to check if screenerFile exists
     const hasScreenerFile = useMemo(() => {
@@ -87,13 +100,15 @@ export default function ScanDataDisplay({
     }, [scanData?.screenerFile, propAvailableDates]);
 
     const selectedScanData = useMemo(() => {
-        if (!hasScreenerFile || !scanData.screenerFile) return null;
+        if (!hasScreenerFile || !scanData.screenerFile || scanData.screenerFile.length === 0) return null;
 
-        if (selectedScanDate) {
-            return scanData.screenerFile.find(file => file.updatedAt === selectedScanDate) || null;
+        // If a specific date is selected, try to find it
+        if (selectedScanDate && selectedScanDate.trim() !== '') {
+            const found = scanData.screenerFile.find(file => file.updatedAt === selectedScanDate);
+            if (found) return found;
         }
 
-        // Return latest file by date
+        // Return latest file by date (fallback or when no date selected)
         return scanData.screenerFile.reduce((latest, item) => {
             const latestDate = new Date(latest.updatedAt);
             const currentDate = new Date(item.updatedAt);
@@ -105,15 +120,142 @@ export default function ScanDataDisplay({
         if (hasScreenerFile && selectedScanData) {
             return selectedScanData[fieldName] || null;
         }
-        return hasScreenerFile ? null : (scanData[fieldName] || null);
+        // Fall back to scanData if screenerFile exists but selectedScanData is not yet available
+        if (hasScreenerFile && !selectedScanData) {
+            return scanData[fieldName] || null;
+        }
+        return scanData[fieldName] || null;
     };
+
+    // Helper function to get image with paint priority (for Normal Mode only)
+    // Left side: paint_23 first, then picture_23
+    // Right side: paint_24 first, then picture_24
+    const getImageWithPaintPriority = (side: 'left' | 'right'): string | null => {
+        if (hasScreenerFile && selectedScanData) {
+            if (side === 'left') {
+                // Left side: check paint_23 first, then picture_23
+                return (selectedScanData as any).paint_23 || selectedScanData.picture_23 || null;
+            } else {
+                // Right side: check paint_24 first, then picture_24
+                return (selectedScanData as any).paint_24 || selectedScanData.picture_24 || null;
+            }
+        }
+        // Fallback to scanData
+        if (side === 'left') {
+            return (scanData as any).paint_23 || scanData.picture_23 || null;
+        } else {
+            return (scanData as any).paint_24 || scanData.picture_24 || null;
+        }
+    };
+
+    // Reset loading states when images change - Left Image
+    useEffect(() => {
+        const leftImage = hasScreenerFile && selectedScanData
+            ? ((selectedScanData as any).paint_23 || selectedScanData.picture_23)
+            : ((scanData as any).paint_23 || scanData.picture_23);
+        
+        if (leftImage) {
+            setLeftImageLoading(true);
+            // Fallback timeout: hide shimmer after 3 seconds if image doesn't load
+            const timeout = setTimeout(() => {
+                setLeftImageLoading(false);
+            }, 3000);
+            
+            // Check if image is already loaded/cached
+            const img = new window.Image();
+            let isLoaded = false;
+            img.onload = () => {
+                if (!isLoaded) {
+                    isLoaded = true;
+                    clearTimeout(timeout);
+                    setTimeout(() => setLeftImageLoading(false), 200);
+                }
+            };
+            img.onerror = () => {
+                if (!isLoaded) {
+                    isLoaded = true;
+                    clearTimeout(timeout);
+                    setLeftImageLoading(false);
+                }
+            };
+            img.src = leftImage;
+            
+            // If image is already complete (cached), hide shimmer immediately
+            if (img.complete) {
+                clearTimeout(timeout);
+                setTimeout(() => setLeftImageLoading(false), 100);
+            }
+            
+            return () => {
+                clearTimeout(timeout);
+                isLoaded = true;
+            };
+        } else {
+            setLeftImageLoading(false);
+        }
+    }, [selectedScanData, selectedScanDate, hasScreenerFile, scanData]);
+
+    // Reset loading states when images change - Right Image
+    useEffect(() => {
+        const rightImage = hasScreenerFile && selectedScanData
+            ? ((selectedScanData as any).paint_24 || selectedScanData.picture_24)
+            : ((scanData as any).paint_24 || scanData.picture_24);
+        
+        if (rightImage) {
+            setRightImageLoading(true);
+            // Fallback timeout: hide shimmer after 3 seconds if image doesn't load
+            const timeout = setTimeout(() => {
+                setRightImageLoading(false);
+            }, 3000);
+            
+            // Check if image is already loaded/cached
+            const img = new window.Image();
+            let isLoaded = false;
+            img.onload = () => {
+                if (!isLoaded) {
+                    isLoaded = true;
+                    clearTimeout(timeout);
+                    setTimeout(() => setRightImageLoading(false), 200);
+                }
+            };
+            img.onerror = () => {
+                if (!isLoaded) {
+                    isLoaded = true;
+                    clearTimeout(timeout);
+                    setRightImageLoading(false);
+                }
+            };
+            img.src = rightImage;
+            
+            // If image is already complete (cached), hide shimmer immediately
+            if (img.complete) {
+                clearTimeout(timeout);
+                setTimeout(() => setRightImageLoading(false), 100);
+            }
+            
+            return () => {
+                clearTimeout(timeout);
+                isLoaded = true;
+            };
+        } else {
+            setRightImageLoading(false);
+        }
+    }, [selectedScanData, selectedScanDate, hasScreenerFile, scanData]);
+
+    useEffect(() => {
+        if (isZoomed) {
+            setZoomLeftImageLoading(true);
+            setZoomRightImageLoading(true);
+        }
+    }, [selectedScanData, selectedScanDate, isZoomed, hasScreenerFile, scanData]);
 
     useEffect(() => {
         if (defaultSelectedDate) {
             setSelectedScanDate(defaultSelectedDate);
         } else if (availableScanDates.length > 0) {
+            // Set to latest date if not already set or if current selection is empty/invalid
             const latestDate = availableScanDates[0].date;
-            if (!selectedScanDate || selectedScanDate !== latestDate) {
+            if (!selectedScanDate || selectedScanDate.trim() === '' || !availableScanDates.find(d => d.date === selectedScanDate)) {
                 setSelectedScanDate(latestDate);
             }
         }
@@ -204,6 +346,53 @@ export default function ScanDataDisplay({
         );
     };
 
+    // Save edited images
+    const handleSaveEditedImages = async () => {
+        try {
+            if (isSaving) return;
+            
+            // Check if we have screener file data
+            if (!selectedScanData || !selectedScanData.id) {
+                alert('No scan file selected. Please select a scan date.');
+                return;
+            }
+
+            // Get customer ID from scanData
+            const customerId = scanData.id;
+            const screenerId = selectedScanData.id;
+
+            // Get edited images from both canvases
+            const rightFootBlob = rightFootImageDataRef.current 
+                ? await rightFootImageDataRef.current() 
+                : null;
+            const leftFootBlob = leftFootImageDataRef.current 
+                ? await leftFootImageDataRef.current() 
+                : null;
+
+            if (!rightFootBlob || !leftFootBlob) {
+                alert('Failed to get edited images. Please try again.');
+                return;
+            }
+
+            setIsSaving(true);
+
+            // Create FormData with paint_24 (right foot/picture_23) and paint_23 (left foot/picture_24)
+            const formData = new FormData();
+            formData.append('paint_24', rightFootBlob, 'paint_24.png'); // Right foot image
+            formData.append('paint_23', leftFootBlob, 'paint_23.png'); // Left foot image
+
+            // Call API to update scanner file
+            await updateSingleScannerFile(customerId, screenerId, formData);
+
+            alert('Images saved successfully!');
+        } catch (error: any) {
+            console.error('Error saving images:', error);
+            alert(error?.response?.data?.message || 'Failed to save images. Please try again.');
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
     // download pdfs for both feet
 
     const handleDownloadFeetPdf = async () => {
@@ -262,12 +451,14 @@ export default function ScanDataDisplay({
     };
 
     return (
-        <div className="mb-6" aria-busy={isDownloading}>
-            {isDownloading && (
+        <div className="mb-6" aria-busy={isDownloading || isSaving}>
+            {(isDownloading || isSaving) && (
                 <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center">
                     <div className="bg-white rounded-lg shadow-lg px-6 py-5 flex items-center gap-3">
                         <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                        <span className="text-gray-900 font-medium">Generating PDF...</span>
+                        <span className="text-gray-900 font-medium">
+                            {isSaving ? 'Saving images...' : 'Generating PDF...'}
+                        </span>
                     </div>
                 </div>
             )}
@@ -312,72 +503,135 @@ export default function ScanDataDisplay({
 
             {/* Zoom Mode - Show only images when zoomed - Full Screen */}
             {isZoomed ? (
-                <div className="fixed inset-0 z-[9998] bg-white overflow-y-auto">
-                    {/* Drawing Toolbar */}
-                    <div className="sticky top-0 z-[9999] bg-white border-b border-gray-200 shadow-sm">
-                        <DrawingToolbar
-                            drawingMode={drawingMode}
-                            setDrawingMode={setDrawingMode}
-                            brushSize={brushSize}
-                            setBrushSize={setBrushSize}
-                            brushColor={brushColor}
-                            setBrushColor={setBrushColor}
-                            onExitZoom={toggleZoom}
-                        />
+                <div className="fixed inset-0 z-[9998] bg-gradient-to-br from-gray-50 to-gray-100 overflow-y-auto">
+                    {/* Modern Drawing Toolbar */}
+                    <div className="sticky top-0 z-[9999] bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
+                        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
+                                <DrawingToolbar
+                                    drawingMode={drawingMode}
+                                    setDrawingMode={setDrawingMode}
+                                    brushSize={brushSize}
+                                    setBrushSize={setBrushSize}
+                                    brushColor={brushColor}
+                                    setBrushColor={setBrushColor}
+                                    onExitZoom={toggleZoom}
+                                />
+                                {/* Save Button */}
+                                <button
+                                    onClick={handleSaveEditedImages}
+                                    disabled={isSaving || !selectedScanData}
+                                    className={`px-6 py-2.5 cursor-pointer rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg transform  ${
+                                        isSaving || !selectedScanData
+                                            ? 'bg-gray-400 cursor-not-allowed'
+                                            : 'bg-[#4A8A5F] hover:bg-[#4A8A5F]/80 text-white'
+                                    }`}
+                                    title="Save edited images"
+                                >
+                                    <FaSave />
+                                    <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save Images'}</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Full screen responsive image layout with canvas overlay */}
-                    <div className="flex flex-col lg:flex-row justify-center items-center gap-4 lg:gap-8 p-4 lg:p-8 min-h-[calc(100vh-80px)]">
-                        {/* Right foot image */}
-                        {getLatestData('picture_23') && (
-                            <div className="w-full lg:w-1/2 max-w-4xl">
-                                <EditableImageCanvas
-                                    imageUrl={getLatestData('picture_23')!}
-                                    alt="Right foot scan - Plantaransicht"
-                                    title="Right Foot"
-                                    downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
-                                    drawingMode={drawingMode}
-                                    brushSize={brushSize}
-                                    brushColor={brushColor}
-                                />
-                            </div>
-                        )}
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+                        <div className="flex flex-col xl:flex-row justify-center items-start xl:items-center gap-6 lg:gap-8 xl:gap-12 min-h-[calc(100vh-120px)]">
+                            {/* Left foot image - Check paint_23 first, then picture_23 (same as Normal Mode) */}
+                            {(() => {
+                                // Left side: paint_23 first, then picture_23
+                                const leftImage = hasScreenerFile && selectedScanData
+                                    ? ((selectedScanData as any).paint_23 || selectedScanData.picture_23)
+                                    : ((scanData as any).paint_23 || scanData.picture_23);
+                                return leftImage ? (
+                                    <div className="w-full xl:w-1/2 flex-shrink-0">
+                                        <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50">
+                                            <EditableImageCanvas
+                                                imageUrl={leftImage}
+                                                alt="Left foot scan - Plantaransicht"
+                                                title=""
+                                                downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
+                                                drawingMode={drawingMode}
+                                                brushSize={brushSize}
+                                                brushColor={brushColor}
+                                                isZoomMode={true}
+                                                onImageDataReady={(getImageData) => {
+                                                    leftFootImageDataRef.current = getImageData;
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : null;
+                            })()}
 
-                        {/* Left foot image */}
-                        {getLatestData('picture_24') && (
-                            <div className="w-full lg:w-1/2 max-w-4xl">
-                                <EditableImageCanvas
-                                    imageUrl={getLatestData('picture_24')!}
-                                    alt="Left foot scan - Plantaransicht"
-                                    title="Left Foot"
-                                    downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
-                                    drawingMode={drawingMode}
-                                    brushSize={brushSize}
-                                    brushColor={brushColor}
-                                />
-                            </div>
-                        )}
+                            {/* Right foot image - Check paint_24 first, then picture_24 (same as Normal Mode) */}
+                            {(() => {
+                                // Right side: paint_24 first, then picture_24
+                                const rightImage = hasScreenerFile && selectedScanData
+                                    ? ((selectedScanData as any).paint_24 || selectedScanData.picture_24)
+                                    : ((scanData as any).paint_24 || scanData.picture_24);
+                                return rightImage ? (
+                                    <div className="w-full xl:w-1/2 flex-shrink-0">
+                                        <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50">
+                                            <EditableImageCanvas
+                                                imageUrl={rightImage}
+                                                alt="Right foot scan - Plantaransicht"
+                                                title=""
+                                                downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
+                                                drawingMode={drawingMode}
+                                                brushSize={brushSize}
+                                                brushColor={brushColor}
+                                                isZoomMode={true}
+                                                onImageDataReady={(getImageData) => {
+                                                    rightFootImageDataRef.current = getImageData;
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : null;
+                            })()}
+                        </div>
                     </div>
                 </div>
             ) : (
                 /* Normal Mode - Show images with data fields */
                 <div className="flex flex-col lg:flex-row justify-between items-center">
-                    {/* left image section */}
+                    {/* left image section - Show picture_23 (with paint_23 priority) */}
                     <div className="flex-1 mb-6 lg:mb-0 flex flex-col items-center">
                         <div className="w-60 max-w-md">
-                            {getLatestData('picture_23') ? (
-                                <Image
-                                    src={getLatestData('picture_23')!}
-                                    alt="Left foot scan - Plantaransicht"
-                                    width={300}
-                                    height={500}
-                                    className="w-full h-auto"
-                                />
-                            ) : (
-                                <div className="w-full h-[500px] bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
-                                    No left foot scan image available
-                                </div>
-                            )}
+                            {(() => {
+                                // Left side: paint_23 first, then picture_23
+                                const leftImage = hasScreenerFile && selectedScanData
+                                    ? ((selectedScanData as any).paint_23 || selectedScanData.picture_23)
+                                    : ((scanData as any).paint_23 || scanData.picture_23);
+                                return leftImage ? (
+                                    <div className="relative w-full" style={{ minHeight: '500px' }}>
+                                        {/* Shimmer effect - show first, hide when image loads */}
+                                        <div className={`absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse rounded-lg transition-opacity duration-500 ${leftImageLoading ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`} style={{ minHeight: '500px' }} />
+                                        {/* Image - hidden until loaded */}
+                                        <div className={`relative transition-opacity duration-500 ${leftImageLoading ? 'opacity-0' : 'opacity-100'}`}>
+                                            <Image
+                                                src={leftImage}
+                                                alt="Left foot scan - Plantaransicht"
+                                                width={300}
+                                                height={500}
+                                                className="w-full h-auto"
+                                                onLoadingComplete={() => {
+                                                    setTimeout(() => setLeftImageLoading(false), 200)
+                                                }}
+                                                onError={() => {
+                                                    setLeftImageLoading(false)
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="w-full h-[500px] bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
+                                        No left foot scan image available
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
 
@@ -415,22 +669,41 @@ export default function ScanDataDisplay({
                         </div>
                     </div>
 
-                    {/* right image section */}
+                    {/* right image section - Show picture_24 (with paint_24 priority) */}
                     <div className="flex-1 mb-6 lg:mb-0 flex flex-col items-center">
                         <div className="w-60 max-w-md">
-                            {getLatestData('picture_24') ? (
-                                <Image
-                                    src={getLatestData('picture_24')!}
-                                    alt="Right foot scan - Plantaransicht"
-                                    width={300}
-                                    height={500}
-                                    className="w-full h-auto"
-                                />
-                            ) : (
-                                <div className="w-full h-[500px] bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
-                                    No right foot scan image available
-                                </div>
-                            )}
+                            {(() => {
+                                // Right side: paint_24 first, then picture_24
+                                const rightImage = hasScreenerFile && selectedScanData
+                                    ? ((selectedScanData as any).paint_24 || selectedScanData.picture_24)
+                                    : ((scanData as any).paint_24 || scanData.picture_24);
+                                return rightImage ? (
+                                    <div className="relative w-full" style={{ minHeight: '500px' }}>
+                                        {/* Shimmer effect - show first, hide when image loads */}
+                                        <div className={`absolute inset-0 bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 animate-pulse rounded-lg transition-opacity duration-500 ${rightImageLoading ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}`} style={{ minHeight: '500px' }} />
+                                        {/* Image - hidden until loaded */}
+                                        <div className={`relative transition-opacity duration-500 ${rightImageLoading ? 'opacity-0' : 'opacity-100'}`}>
+                                            <Image
+                                                src={rightImage}
+                                                alt="Right foot scan - Plantaransicht"
+                                                width={300}
+                                                height={500}
+                                                className="w-full h-auto"
+                                                onLoadingComplete={() => {
+                                                    setTimeout(() => setRightImageLoading(false), 200)
+                                                }}
+                                                onError={() => {
+                                                    setRightImageLoading(false)
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="w-full h-[500px] bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
+                                        No right foot scan image available
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
