@@ -99,7 +99,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         abholort: "Abholung Innsbruck oder Wird mit Post versandt",
         fertigstellung: new Date(apiOrder.statusUpdate || apiOrder.createdAt).toLocaleDateString('de-DE'),
         erstelltAm: formatDate(werkstattzettel?.auftragsDatum || apiOrder.createdAt),
-        fertiggestelltAm: formatDate(werkstattzettel?.fertigstellungBis || apiOrder.statusUpdate || apiOrder.updatedAt),
+        fertiggestelltAm: formatDate(apiOrder.fertigstellungBis || werkstattzettel?.fertigstellungBis || apiOrder.statusUpdate || apiOrder.updatedAt),
         productName: apiOrder.product.status || apiOrder.product.name,
         deliveryDate: new Date(apiOrder.updatedAt).toLocaleDateString('de-DE'),
         invoice: apiOrder.invoice,

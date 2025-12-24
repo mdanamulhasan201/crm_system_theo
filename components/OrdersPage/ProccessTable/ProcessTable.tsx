@@ -344,7 +344,7 @@ export default function ProcessTable() {
                 />
             )}
 
-            <Table className="table-fixed w-full">
+            <Table className="w-full min-w-[1600px]">
                 <TableHeader>
                     <OrderTableHeader
                         isAllSelected={isAllSelected}

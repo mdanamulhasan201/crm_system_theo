@@ -181,18 +181,18 @@ export default function OrderTableRow({
             <TableCell className="text-center text-xs sm:text-sm w-[90px] min-w-[90px] max-w-[90px] whitespace-normal break-words overflow-hidden">
                 {order.preis}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[200px] min-w-[200px] max-w-[200px] break-words hidden md:table-cell">
+            <TableCell className="text-center text-xs sm:text-sm w-[200px] min-w-[200px] max-w-[200px] break-words">
                 <div className="flex flex-col items-center gap-1.5 py-1 px-1">
                     {renderPaymentStatus()}
                 </div>
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[120px] min-w-[120px] max-w-[120px] whitespace-normal break-words overflow-hidden hidden lg:table-cell">
+            <TableCell className="text-center text-xs sm:text-sm w-[120px] min-w-[120px] max-w-[120px] whitespace-normal break-words overflow-hidden">
                 {order.erstelltAm}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden hidden lg:table-cell">
+            <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
                 {order.fertiggestelltAm}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden hidden xl:table-cell">
+            <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden">
                 {order.beschreibung}
             </TableCell>
             <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">
