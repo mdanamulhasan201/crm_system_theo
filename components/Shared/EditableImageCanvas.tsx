@@ -400,10 +400,10 @@ export function DrawingToolbar({
                 {/* Exit Zoom Button */}
                 <button
                     onClick={onExitZoom}
-                    className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2.5 rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg transform hover:scale-105"
+                    className="bg-gradient-to-r cursor-pointer from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-2 py-2 rounded-lg transition-all flex items-center gap-2 text-sm shadow transform "
                     title="Exit zoom mode"
                 >
-                    <span className="text-lg">✕</span>
+                    <span className="text-sm">✕</span>
                     <span className="hidden sm:inline">Exit Zoom</span>
                 </button>
                 
@@ -414,7 +414,7 @@ export function DrawingToolbar({
                 <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1 border border-gray-200">
                     <button
                         onClick={() => setDrawingMode('pen')}
-                        className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 text-sm font-medium ${
+                        className={`px-2 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 text-sm ${
                             drawingMode === 'pen' 
                                 ? 'bg-[#4A8A5F]  text-white ' 
                                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
@@ -427,7 +427,7 @@ export function DrawingToolbar({
                     
                     <button
                         onClick={() => setDrawingMode('eraser')}
-                        className={`px-4 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 text-sm font-medium ${
+                        className={`px-2 py-2 cursor-pointer rounded-md transition-all flex items-center gap-2 text-sm ${
                             drawingMode === 'eraser' 
                                 ? 'bg-[#4A8A5F] text-white ' 
                                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
@@ -443,7 +443,7 @@ export function DrawingToolbar({
                 <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
                 
                 {/* Brush Size Control */}
-                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-2 border border-gray-200">
                     <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Size:</label>
                     <input
                         type="range"
@@ -460,7 +460,7 @@ export function DrawingToolbar({
                 {drawingMode === 'pen' && (
                     <>
                         <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
-                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                        <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-2 border border-gray-200">
                             <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Color:</label>
                             <div className="flex items-center gap-2">
                                 <input

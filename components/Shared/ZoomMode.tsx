@@ -237,45 +237,61 @@ export default function ZoomMode({
 
             {/* Modern Drawing Toolbar */}
             <div className="sticky top-0 z-[9999] bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 py-4">
-                        <DrawingToolbar
-                            drawingMode={drawingMode}
-                            setDrawingMode={setDrawingMode}
-                            brushSize={brushSize}
-                            setBrushSize={setBrushSize}
-                            brushColor={brushColor}
-                            setBrushColor={setBrushColor}
-                            onExitZoom={onExit}
-                        />
-                        <div className="flex items-center gap-3">
+                <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 py-2 sm:py-3 lg:py-4">
+                        {/* Drawing Toolbar - Responsive */}
+                        <div className="w-full sm:w-auto flex items-center justify-center sm:justify-start">
+                            <DrawingToolbar
+                                drawingMode={drawingMode}
+                                setDrawingMode={setDrawingMode}
+                                brushSize={brushSize}
+                                setBrushSize={setBrushSize}
+                                brushColor={brushColor}
+                                setBrushColor={setBrushColor}
+                                onExitZoom={onExit}
+                            />
+                        </div>
+                        
+                        {/* Action Buttons - Smart responsive layout */}
+                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
                             {/* Print/Download PDF Button */}
                             <button
                                 onClick={handlePrintEditedImages}
                                 disabled={isDownloading || !selectedScanData}
-                                className={`px-6 py-2.5 cursor-pointer rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg transform ${
+                                className={`px-3 py-2 cursor-pointer rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm hover:shadow transform  ${
                                     isDownloading || !selectedScanData
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                                        ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                                        : 'border border-gray-300 bg-white hover:bg-gray-100 text-gray-700'
                                 }`}
                                 title="Print/Download edited images as PDF"
                             >
-                                <FaPrint />
-                                <span className="hidden sm:inline">{isDownloading ? 'Generating...' : 'Print PDF'}</span>
+                                <FaPrint className="text-sm sm:text-base shrink-0" />
+                                <span className="hidden sm:inline lg:hidden">
+                                    {isDownloading ? 'Generating' : 'Print'}
+                                </span>
+                                <span className="hidden lg:inline">
+                                    {isDownloading ? 'Generating...' : 'Print PDF'}
+                                </span>
                             </button>
+                            
                             {/* Save Button */}
                             <button
                                 onClick={handleSaveEditedImages}
                                 disabled={isSaving || !selectedScanData}
-                                className={`px-6 py-2.5 cursor-pointer rounded-lg transition-all flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg transform ${
+                                className={`px-3 py-2 cursor-pointer rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm hover:shadow-lg transform  ${
                                     isSaving || !selectedScanData
-                                        ? 'bg-gray-400 cursor-not-allowed'
-                                        : 'bg-[#4A8A5F] hover:bg-[#4A8A5F]/80 text-white'
+                                        ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                                        : 'bg-[#4A8A5F] hover:bg-[#4A8A5F]/90 active:bg-[#4A8A5F]/70 text-white'
                                 }`}
                                 title="Save edited images"
                             >
-                                <FaSave />
-                                <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save Images'}</span>
+                                <FaSave className="text-sm sm:text-base shrink-0" />
+                                <span className="hidden sm:inline lg:hidden">
+                                    {isSaving ? 'Saving' : 'Save'}
+                                </span>
+                                <span className="hidden lg:inline">
+                                    {isSaving ? 'Saving...' : 'Save Images'}
+                                </span>
                             </button>
                         </div>
                     </div>
