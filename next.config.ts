@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'activation-country-later-relevant.trycloudflare.com',
+        hostname: 'clip-gore-simpson-sox.trycloudflare.com',
       }
     ],
   },
