@@ -1,85 +1,469 @@
 "use client";
-import React, { useState } from "react";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MapPin, Plus, Edit, Trash2 } from "lucide-react";
+import { createLocation, getAllLocations, updateLocation, deleteLocation } from "@/apis/setting/locationManagementApis";
+import toast from "react-hot-toast";
 
-export default function LagerSettings() {
-    const [location, setLocation] = useState("");
-    const [threshold, setThreshold] = useState("1");
-    const [autoDeduct, setAutoDeduct] = useState("yes");
+interface Location {
+    id: string;
+    address: string;
+    description: string;
+    isPrimary: boolean;
+}
+
+export default function Notifications() {
+    const [locations, setLocations] = useState<Location[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+    const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+
+    // Form state
+    const [formData, setFormData] = useState({
+        address: "",
+        description: "",
+        isPrimary: false,
+    });
+
+    // Fetch locations
+    const fetchLocations = useCallback(async () => {
+        try {
+            setIsLoading(true);
+            setError(null); // Clear previous errors
+            const response = await getAllLocations(1, 100);
+            
+            // Check if response indicates success
+            if (response?.success === false) {
+                const errorMessage = response?.message || response?.error || "Fehler beim Laden der Standorte";
+                console.error("API Error:", response);
+                toast.error(errorMessage);
+                setError(errorMessage);
+                setLocations([]);
+                return;
+            }
+            
+            // Handle different response structures
+            if (response?.data) {
+                // Check if data is an array
+                if (Array.isArray(response.data)) {
+                    setLocations(response.data);
+                    setError(null); // Clear error on success
+                } else if (response.data.data && Array.isArray(response.data.data)) {
+                    // Handle nested data structure
+                    setLocations(response.data.data);
+                    setError(null); // Clear error on success
+                } else {
+                    console.warn("Unexpected response structure:", response);
+                    setLocations([]);
+                }
+            } else if (Array.isArray(response)) {
+                // Handle case where response is directly an array
+                setLocations(response);
+                setError(null); // Clear error on success
+            } else {
+                console.warn("No data found in response:", response);
+                setLocations([]);
+            }
+        } catch (error: any) {
+            console.error("Error fetching locations:", error);
+            
+            // Handle different error types
+            let errorMessage = "Fehler beim Laden der Standorte";
+            
+            if (error?.response) {
+                const status = error.response.status;
+                const data = error.response.data;
+                
+                if (status === 500) {
+                    errorMessage = data?.message || data?.error || "Serverfehler. Bitte versuchen Sie es später erneut.";
+                } else if (status === 404) {
+                    errorMessage = "Endpoint nicht gefunden. Bitte kontaktieren Sie den Support.";
+                } else if (status === 403) {
+                    errorMessage = "Sie haben keine Berechtigung für diese Aktion.";
+                } else if (status === 401) {
+                    errorMessage = "Sie sind nicht autorisiert. Bitte melden Sie sich erneut an.";
+                } else {
+                    errorMessage = data?.message || data?.error || `Fehler (${status}): Beim Laden der Standorte ist ein Fehler aufgetreten.`;
+                }
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
+            setError(errorMessage);
+            setLocations([]);
+        } finally {
+            setIsLoading(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchLocations();
+    }, [fetchLocations]);
+
+    // Handle form input change
+    const handleInputChange = (field: string, value: string | boolean) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
+    };
+
+    // Reset form
+    const resetForm = () => {
+        setFormData({
+            address: "",
+            description: "",
+            isPrimary: false,
+        });
+        setEditingLocation(null);
+    };
+
+    // Open add modal
+    const handleAddClick = () => {
+        resetForm();
+        setIsModalOpen(true);
+    };
+
+    // Open edit modal
+    const handleEditClick = (location: Location) => {
+        setEditingLocation(location);
+        setFormData({
+            address: location.address,
+            description: location.description,
+            isPrimary: location.isPrimary,
+        });
+        setIsModalOpen(true);
+    };
+
+    // Open delete modal
+    const handleDeleteClick = (location: Location) => {
+        setDeletingLocation(location);
+        setIsDeleteModalOpen(true);
+    };
+
+    // Handle save (create or update)
+    const handleSave = async () => {
+        if (!formData.address.trim()) {
+            toast.error("Adresse ist erforderlich");
+            return;
+        }
+
+        try {
+            setIsSaving(true);
+            const payload = {
+                address: formData.address.trim(),
+                description: formData.description.trim(),
+                isPrimary: formData.isPrimary,
+            };
+
+            if (editingLocation) {
+                // Update existing location
+                await updateLocation(editingLocation.id, payload);
+                toast.success("Standort erfolgreich aktualisiert");
+            } else {
+                // Create new location
+                await createLocation(payload);
+                toast.success("Standort erfolgreich hinzugefügt");
+            }
+
+            setIsModalOpen(false);
+            resetForm();
+            await fetchLocations();
+        } catch (error: any) {
+            console.error("Error saving location:", error);
+            let errorMessage = "Fehler beim Speichern";
+            
+            if (error?.response) {
+                const status = error.response.status;
+                const data = error.response.data;
+                
+                if (status === 500) {
+                    errorMessage = data?.message || data?.error || "Serverfehler. Bitte versuchen Sie es später erneut.";
+                } else {
+                    errorMessage = data?.message || data?.error || `Fehler beim Speichern (${status})`;
+                }
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    // Handle delete
+    const handleDelete = async () => {
+        if (!deletingLocation) return;
+
+        try {
+            setIsDeleting(true);
+            await deleteLocation(deletingLocation.id);
+            toast.success("Standort erfolgreich gelöscht");
+            setIsDeleteModalOpen(false);
+            setDeletingLocation(null);
+            await fetchLocations();
+        } catch (error: any) {
+            console.error("Error deleting location:", error);
+            let errorMessage = "Fehler beim Löschen";
+            
+            if (error?.response) {
+                const status = error.response.status;
+                const data = error.response.data;
+                
+                if (status === 500) {
+                    errorMessage = data?.message || data?.error || "Serverfehler. Bitte versuchen Sie es später erneut.";
+                } else {
+                    errorMessage = data?.message || data?.error || `Fehler beim Löschen (${status})`;
+                }
+            } else if (error?.message) {
+                errorMessage = error.message;
+            }
+            
+            toast.error(errorMessage);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     return (
-        <div className="max-w-3xl mx-auto mt-10 font-sans">
-            <h1 className="text-4xl font-bold mb-2">Lagereinstellungen</h1>
-            <p className="mb-8">
-                Verwalten Sie hier Lagerorte, Bestandsgrenzen Ihrer Einlagen und automatische Benachrichtigungen.
-            </p>
-
-            <div className="mb-6">
-                <label className="font-semibold text-lg block mb-2">Lagerorte</label>
-                <Input
-                    placeholder="z.B. Hauptlager, Store Bozen ..."
-                    value={location}
-                    onChange={e => setLocation(e.target.value)}
-                    className="border border-gray-600"
-                />
+        <div className="p-6 bg-white min-h-screen">
+            {/* Header */}
+            <div className="flex justify-between items-start mb-8">
+                <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <MapPin className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-black mb-2">Addresses & Locations</h1>
+                        <p className="text-gray-600 text-sm">
+                            Manage your business locations and delivery addresses.
+                        </p>
+                    </div>
+                </div>
+                <Button
+                    onClick={handleAddClick}
+                    className="bg-gray-100 hover:bg-gray-200 text-black rounded-lg px-4 py-2 flex flex-col items-center gap-1 h-auto"
+                >
+                    <Plus className="w-5 h-5" />
+                    <span className="text-xs font-medium">Add Location</span>
+                </Button>
             </div>
 
-            <div className="mb-8 flex items-center gap-4">
-                <div className="w-6 h-6 bg-green-600 rounded mr-2" />
-                <span className="font-medium">Bestandswarnung aktiv ab</span>
-                <div className="min-w-[180px]">
-                    <Select value={threshold} onValueChange={setThreshold}>
-                        <SelectTrigger>
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {[...Array(10)].map((_, i) => (
-                                <SelectItem key={i + 1} value={(i + 1).toString()}>
-                                    {i + 1} Produkt{(i + 1) > 1 ? "e" : ""} pro Größe
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+            {/* Locations List */}
+            {isLoading ? (
+                <div className="space-y-4">
+                    {[1, 2].map((i) => (
+                        <div
+                            key={i}
+                            className="bg-white border border-gray-200 rounded-lg p-6 animate-pulse"
+                        >
+                            <div className="h-6 bg-gray-200 rounded w-1/4 mb-2" />
+                            <div className="h-4 bg-gray-200 rounded w-1/2" />
+                        </div>
+                    ))}
                 </div>
-            </div>
+            ) : error && locations.length === 0 ? (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-12 text-center">
+                    <MapPin className="w-12 h-12 text-red-400 mx-auto mb-4" />
+                    <p className="text-red-600 font-medium mb-2">Fehler beim Laden der Standorte</p>
+                    <p className="text-red-500 text-sm mb-4">{error}</p>
+                    <Button
+                        onClick={() => {
+                            setError(null);
+                            fetchLocations();
+                        }}
+                        className="bg-red-600 hover:bg-red-700 text-white"
+                    >
+                        Erneut versuchen
+                    </Button>
+                </div>
+            ) : locations.length === 0 ? (
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-12 text-center">
+                    <MapPin className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No locations added yet</p>
+                    <Button
+                        onClick={handleAddClick}
+                        className="mt-4 bg-gray-100 hover:bg-gray-200 text-black"
+                    >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add First Location
+                    </Button>
+                </div>
+            ) : (
+                <div className="space-y-4">
+                    {locations.map((location) => (
+                        <div
+                            key={location.id}
+                            className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                        >
+                            <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <h3 className="text-lg font-bold text-black">
+                                            {location.description || "Location"}
+                                        </h3>
+                                        {location.isPrimary && (
+                                            <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded">
+                                                Primary
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="text-gray-600 text-sm">{location.address}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => handleEditClick(location)}
+                                        className="p-2 hover:bg-gray-100 rounded transition-colors"
+                                        aria-label="Edit location"
+                                    >
+                                        <Edit className="w-5 h-5 text-black" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteClick(location)}
+                                        className="p-2 hover:bg-red-50 rounded transition-colors"
+                                        aria-label="Delete location"
+                                    >
+                                        <Trash2 className="w-5 h-5 text-red-600" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
-            <div className="mb-8">
-                <div className="font-semibold text-base mb-2">
-                    Automatische Verknüpfung mit Verkauf?
-                </div>
-                <div className="flex gap-8">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            checked={autoDeduct === "yes"}
-                            onChange={() => setAutoDeduct("yes")}
-                            className="w-6 h-6 accent-black"
-                        />
-                        Ja, wenn verkauft, automatisch ausbuchen
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            checked={autoDeduct === "no"}
-                            onChange={() => setAutoDeduct("no")}
-                            className="w-6 h-6 accent-black"
-                        />
-                        Nein, manuell bestätigen
-                    </label>
-                </div>
-            </div>
+            {/* Add/Edit Modal */}
+            <Dialog open={isModalOpen} onOpenChange={(open) => {
+                setIsModalOpen(open);
+                if (!open) {
+                    resetForm();
+                }
+            }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {editingLocation ? "Location bearbeiten" : "Neuen Standort hinzufügen"}
+                        </DialogTitle>
+                        <DialogDescription>
+                            {editingLocation
+                                ? "Aktualisieren Sie die Standortinformationen"
+                                : "Fügen Sie einen neuen Geschäftsstandort oder Lieferadresse hinzu"}
+                        </DialogDescription>
+                    </DialogHeader>
 
-            <Button type="button" className="w-full mt-8 cursor-pointer">
-                Speichern
-            </Button>
+                    <div className="space-y-4 py-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="address">Adresse *</Label>
+                            <Input
+                                id="address"
+                                placeholder="z.B. Friedrichstraße 123, 10117 Berlin, Germany"
+                                value={formData.address}
+                                onChange={(e) => handleInputChange("address", e.target.value)}
+                                className="w-full"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="description">Beschreibung</Label>
+                            <Textarea
+                                id="description"
+                                placeholder="z.B. Headquarters, Munich Branch"
+                                value={formData.description}
+                                onChange={(e) => handleInputChange("description", e.target.value)}
+                                className="w-full min-h-[80px]"
+                            />
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                            <Checkbox
+                                id="isPrimary"
+                                checked={formData.isPrimary}
+                                onChange={(e) => handleInputChange("isPrimary", e.target.checked)}
+                            />
+                            <Label
+                                htmlFor="isPrimary"
+                                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                                Als primären Standort festlegen
+                            </Label>
+                        </div>
+                    </div>
+
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setIsModalOpen(false);
+                                resetForm();
+                            }}
+                            disabled={isSaving}
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            onClick={handleSave}
+                            disabled={isSaving || !formData.address.trim()}
+                            className="bg-blue-600 hover:bg-blue-700 text-white"
+                        >
+                            {isSaving
+                                ? editingLocation
+                                    ? "Speichern..."
+                                    : "Hinzufügen..."
+                                : editingLocation
+                                    ? "Aktualisieren"
+                                    : "Hinzufügen"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Modal */}
+            <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">Standort löschen</DialogTitle>
+                        <DialogDescription>
+                            Sind Sie sicher, dass Sie diesen Standort löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {deletingLocation && (
+                        <div className="py-4">
+                            <p className="font-semibold text-black mb-1">
+                                {deletingLocation.description || "Location"}
+                            </p>
+                            <p className="text-sm text-gray-600">{deletingLocation.address}</p>
+                        </div>
+                    )}
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            onClick={() => {
+                                setIsDeleteModalOpen(false);
+                                setDeletingLocation(null);
+                            }}
+                            disabled={isDeleting}
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                        >
+                            {isDeleting ? "Löschen..." : "Ja, löschen"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
