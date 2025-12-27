@@ -17,6 +17,7 @@ export interface ApiOrderData {
     KrankenkasseStatus?: string | null;
     fertigstellungBis?: string | null;
     auftragsDatum?: string | null;
+    geschaeftsstandort?: string | null;
     customer: {
         id: string;
         vorname: string;

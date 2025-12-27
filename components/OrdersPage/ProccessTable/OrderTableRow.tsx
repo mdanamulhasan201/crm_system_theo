@@ -193,6 +193,9 @@ export default function OrderTableRow({
                 {order.fertiggestelltAm}
             </TableCell>
             <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden">
+                {order.geschaeftsstandort || '—'}
+            </TableCell>
+            <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden">
                 {order.beschreibung}
             </TableCell>
             <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">

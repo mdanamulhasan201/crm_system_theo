@@ -28,6 +28,7 @@ export interface OrderData {
     priority: 'Dringend' | 'Normal';
     isPrioritized: boolean;
     KrankenkasseStatus?: string | null;
+    geschaeftsstandort?: string | null;
     employee?: {
         accountName: string;
         employeeName: string;
@@ -106,6 +107,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         priority,
         isPrioritized: priority === 'Dringend',
         KrankenkasseStatus: apiOrder.KrankenkasseStatus || null,
+        geschaeftsstandort: apiOrder.geschaeftsstandort || null,
         employee: apiOrder.employee || null,
     };
 };

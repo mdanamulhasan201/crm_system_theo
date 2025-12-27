@@ -344,7 +344,7 @@ export default function ProcessTable() {
                 />
             )}
 
-            <Table className="w-full min-w-[1600px]">
+            <Table className="w-full min-w-[1750px]">
                 <TableHeader>
                     <OrderTableHeader
                         isAllSelected={isAllSelected}
@@ -355,7 +355,7 @@ export default function ProcessTable() {
                 <TableBody>
                     {loading ? (
                         <TableRow>
-                            <TableCell colSpan={12} className="text-center py-20">
+                            <TableCell colSpan={13} className="text-center py-20">
                                 <div className="flex flex-col items-center justify-center">
                                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
                                     <p className="text-gray-600">Aufträge werden geladen...</p>
@@ -364,7 +364,7 @@ export default function ProcessTable() {
                         </TableRow>
                     ) : memoizedOrders.length === 0 ? (
                         <TableRow>
-                            <TableCell colSpan={12} className="text-center py-20">
+                            <TableCell colSpan={13} className="text-center py-20">
                                 <div className="flex flex-col items-center justify-center">
                                     <p className="text-gray-600 mb-4 text-lg">Keine Aufträge gefunden</p>
                                     <Button onClick={refetch} variant="outline">
