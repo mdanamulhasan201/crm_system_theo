@@ -39,6 +39,7 @@ const formatDate = (dateString: string): string => {
 export default function VersionPage() {
     const [newestVersion, setNewestVersion] = useState<SoftwareVersion | null>(null)
     const [loading, setLoading] = useState(true)
+    const [itemsToShow, setItemsToShow] = useState(3)
 
     useEffect(() => {
         const fetchNewestVersion = async () => {
@@ -86,15 +87,33 @@ export default function VersionPage() {
         )
     }
 
-    // Extract description items by title
-    const getDescriptionByTitle = (title: string): string[] => {
-        const item = newestVersion.description.find(d => d.title === title)
-        return item?.desc || []
+    // Get icon based on title
+    const getIconForTitle = (title: string) => {
+        const titleLower = title.toLowerCase()
+        if (titleLower.includes('funktion') || titleLower.includes('feature')) {
+            return <Sparkles className="w-5 h-5 text-green-500 shrink-0" />
+        } else if (titleLower.includes('verbesserung') || titleLower.includes('improvement')) {
+            return <Wrench className="w-5 h-5 text-blue-500 shrink-0" />
+        } else if (titleLower.includes('bugfix') || titleLower.includes('bug')) {
+            return <Bug className="w-5 h-5 text-green-500 shrink-0" />
+        }
+        // Default icon for other titles
+        return <Sparkles className="w-5 h-5 text-gray-500 shrink-0" />
     }
 
-    const newFeatures = getDescriptionByTitle('Neue Funktionen')
-    const improvements = getDescriptionByTitle('Verbesserungen')
-    const bugfixes = getDescriptionByTitle('Bugfixes')
+    // Filter out empty descriptions
+    const validDescriptions = newestVersion.description.filter(item => 
+        item.desc && item.desc.length > 0 && item.desc.some(d => d.trim() !== '')
+    )
+
+    // Show only first itemsToShow items
+    const displayedDescriptions = validDescriptions.slice(0, itemsToShow)
+    const hasMore = validDescriptions.length > itemsToShow
+
+    // Function to load more items (3 at a time)
+    const loadMoreItems = () => {
+        setItemsToShow(prev => prev + 3)
+    }
 
     return (
         <div className="w-full space-y-6">
@@ -128,84 +147,40 @@ export default function VersionPage() {
                         )}
                     </div>
 
-                    {/* Three Columns */}
+                    {/* Dynamic Columns - Show limited description items */}
                     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8 mb-6">
-                        {/* New Features */}
-                        {newFeatures.length > 0 && (
-                            <div className="space-y-3">
+                        {displayedDescriptions.map((descriptionItem, itemIdx) => (
+                            <div key={itemIdx} className="space-y-3">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <Sparkles className="w-5 h-5 text-green-500 shrink-0" />
+                                    {getIconForTitle(descriptionItem.title)}
                                     <h3 className="font-bold text-gray-800 text-sm md:text-base">
-                                        Neue Funktionen
+                                        {descriptionItem.title}
                                     </h3>
                                 </div>
-                                <ul className="space-y-2">
-                                    {newFeatures.map((feature, idx) => (
-                                        <li
+                                <div className="text-xs md:text-sm text-gray-700 space-y-2 [&_ul]:list-disc [&_ul]:ml-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:space-y-1 [&_p]:mb-2">
+                                    {descriptionItem.desc.map((desc, idx) => (
+                                        <div
                                             key={idx}
-                                            className="text-xs md:text-sm text-gray-700 flex items-start gap-2"
-                                        >
-                                            <span className="text-gray-500 mt-1.5 shrink-0">•</span>
-                                            <span>{feature}</span>
-                                        </li>
+                                            className="[&_ul]:list-disc [&_ul]:ml-5 [&_ul]:space-y-1 [&_ol]:list-decimal [&_ol]:ml-5 [&_ol]:space-y-1 [&_p]:mb-2"
+                                            dangerouslySetInnerHTML={{ __html: desc }}
+                                        />
                                     ))}
-                                </ul>
-                            </div>
-                        )}
-
-                        {/* Improvements */}
-                        {improvements.length > 0 && (
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Wrench className="w-5 h-5 text-blue-500 shrink-0" />
-                                    <h3 className="font-bold text-gray-800 text-sm md:text-base">
-                                        Verbesserungen
-                                    </h3>
                                 </div>
-                                <ul className="space-y-2">
-                                    {improvements.map((improvement, idx) => (
-                                        <li
-                                            key={idx}
-                                            className="text-xs md:text-sm text-gray-700 flex items-start gap-2"
-                                        >
-                                            <span className="text-gray-500 mt-1.5 shrink-0">•</span>
-                                            <span>{improvement}</span>
-                                        </li>
-                                    ))}
-                                </ul>
                             </div>
-                        )}
-
-                        {/* Bugfixes */}
-                        {bugfixes.length > 0 && (
-                            <div className="space-y-3">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Bug className="w-5 h-5 text-green-500 shrink-0" />
-                                    <h3 className="font-bold text-gray-800 text-sm md:text-base">
-                                        Bugfixes
-                                    </h3>
-                                </div>
-                                <ul className="space-y-2">
-                                    {bugfixes.map((bugfix, idx) => (
-                                        <li
-                                            key={idx}
-                                            className="text-xs md:text-sm text-gray-700 flex items-start gap-2"
-                                        >
-                                            <span className="text-gray-500 mt-1.5 shrink-0">•</span>
-                                            <span>{bugfix}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
+                        ))}
                     </div>
 
                     {/* Full Release Notes Link */}
-                    <div className="text-center pt-4 border-t border-gray-300">
-                        <button className="text-sm md:text-base text-gray-700 hover:text-gray-900 transition-colors cursor-pointer">
-                            Vollständige Release Notes anzeigen
-                        </button>
-                    </div>
+                    {hasMore && (
+                        <div className="text-center pt-4 border-t border-gray-300">
+                            <button 
+                                onClick={loadMoreItems}
+                                className="text-sm md:text-base text-gray-700 hover:text-gray-900 transition-colors cursor-pointer"
+                            >
+                                Vollständige Release Notes anzeigen
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

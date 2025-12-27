@@ -168,7 +168,7 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
                                                         Lädt...
                                                     </>
                                                 ) : (
-                                                    'Scan ansehen'
+                                                    'Scan & Versorgung'
                                                 )}
                                             </button>
                                             <button onClick={() => handleKundeninfoView(scan.id.toString())} className='bg-[#62A07C] hover:bg-[#62a07c98] transform duration-300 text-white px-4 py-1 rounded-md cursor-pointer'>Kundeninfo</button>
