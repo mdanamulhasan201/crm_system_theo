@@ -241,7 +241,7 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
             />
 
             <div className='flex flex-col xl:flex-row justify-between items-start mb-6 gap-4'>
-                <div className='w-full xl:w-8/12'>
+                <div className={isZoomed ? 'w-full' : 'w-full xl:w-8/12'}>
                     <div className="flex items-center mb-4 md:mb-0">
                         <div className="font-bold text-xl capitalize">{displayData.vorname} {displayData.nachname}</div>
                     </div>

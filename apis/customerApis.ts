@@ -201,9 +201,11 @@ export interface FilterCustomersParams {
     thisMonth?: boolean;
     completedOrders?: boolean;
     noOrder?: boolean;
+    geschaeftsstandort?: string; // Business location (address from store locations)
+    paymnentType?: string; // Payment type: 'insurance' or 'private'
 }
 
-// filter customers /customers/filter-customers?year=&month=?today=?yesterday=?thisWeek=?lastWeek=?year=?thisMonth=?month=?completedOrders=?noOrder=?
+// filter customers /customers/filter-customers?year=&month=?today=?yesterday=?thisWeek=?lastWeek=?year=?thisMonth=?month=?completedOrders=?noOrder=?geschaeftsstandort=?paymnentType=?
 export const filterCustomers = async (params: FilterCustomersParams = {}) => {
     try {
         const {
@@ -219,7 +221,9 @@ export const filterCustomers = async (params: FilterCustomersParams = {}) => {
             thisYear,
             thisMonth,
             completedOrders,
-            noOrder
+            noOrder,
+            geschaeftsstandort,
+            paymnentType
         } = params;
 
         const query = new URLSearchParams();
@@ -241,6 +245,8 @@ export const filterCustomers = async (params: FilterCustomersParams = {}) => {
         appendString('year', year);
         appendString('month', month);
         appendString('selectedMonth', selectedMonth);
+        appendString('geschaeftsstandort', geschaeftsstandort);
+        appendString('paymnentType', paymnentType);
 
         appendBoolean('today', today);
         appendBoolean('yesterday', yesterday);

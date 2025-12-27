@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { filterCustomers, FilterCustomersParams, deleteCustomer } from '@/apis/customerApis';
+import { getAllLocations } from '@/apis/setting/locationManagementApis';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useRouter } from 'next/navigation';
@@ -40,6 +41,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
     const [deleteModalOpen, setDeleteModalOpen] = React.useState<boolean>(false);
     const [customerToDelete, setCustomerToDelete] = React.useState<{ id: string; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<boolean>(false);
+    const [apiLocations, setApiLocations] = React.useState<string[]>([]);
 
     const load = React.useCallback(async () => {
         try {
@@ -85,6 +87,14 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                 params.completedOrders = true;
             } else if (orderFilter === 'no-order') {
                 params.noOrder = true;
+            }
+
+            if (locationFilter !== 'all') {
+                params.geschaeftsstandort = locationFilter;
+            }
+
+            if (insuranceFilter !== 'all') {
+                params.paymnentType = insuranceFilter;
             }
 
             const res = await filterCustomers(params);
@@ -178,7 +188,33 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
         } finally {
             setIsLoading(false);
         }
-    }, [page, limit, dateRange, orderFilter, yearFilter, monthFilter]);
+    }, [page, limit, dateRange, orderFilter, yearFilter, monthFilter, locationFilter, insuranceFilter]);
+
+    // Fetch locations from API
+    React.useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const response = await getAllLocations(1, 100);
+                if (response?.success && response?.data && Array.isArray(response.data)) {
+                    // Extract only address field from each location
+                    const addresses = response.data
+                        .map((loc: any) => loc.address)
+                        .filter((addr: string) => addr && addr.trim() !== '');
+                    setApiLocations(addresses);
+                } else if (Array.isArray(response?.data)) {
+                    const addresses = response.data
+                        .map((loc: any) => loc.address)
+                        .filter((addr: string) => addr && addr.trim() !== '');
+                    setApiLocations(addresses);
+                }
+            } catch (error) {
+                console.error('Error fetching locations:', error);
+                // Don't show error toast, just use empty array as fallback
+                setApiLocations([]);
+            }
+        };
+        fetchLocations();
+    }, []);
 
     React.useEffect(() => {
         load();
@@ -253,39 +289,41 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
     }, [rows]);
 
 
-    const uniqueInsurances = React.useMemo(() => {
-        const set = new Set<string>();
-        rows.forEach((row) => {
-            const insurance = row.krankenkasse?.trim();
-            if (insurance) {
-                set.add(insurance);
-            }
-        });
-        return Array.from(set).sort((a, b) => a.localeCompare(b));
-    }, [rows]);
+    // Insurance filtering is now done on backend with fixed options: 'insurance' or 'private'
+    // const uniqueInsurances = React.useMemo(() => {
+    //     const set = new Set<string>();
+    //     rows.forEach((row) => {
+    //         const insurance = row.krankenkasse?.trim();
+    //         if (insurance) {
+    //             set.add(insurance);
+    //         }
+    //     });
+    //     return Array.from(set).sort((a, b) => a.localeCompare(b));
+    // }, [rows]);
 
-    const uniqueLocations = React.useMemo(() => {
-        const set = new Set<string>();
-        rows.forEach((row) => {
-            const location = row.wohnort?.trim();
-            if (location) {
-                set.add(location);
-            }
-        });
-        return Array.from(set).sort((a, b) => a.localeCompare(b));
-    }, [rows]);
+    // Use API locations instead of extracting from rows
+    // const uniqueLocations = React.useMemo(() => {
+    //     const set = new Set<string>();
+    //     rows.forEach((row) => {
+    //         const location = row.wohnort?.trim();
+    //         if (location) {
+    //             set.add(location);
+    //         }
+    //     });
+    //     return Array.from(set).sort((a, b) => a.localeCompare(b));
+    // }, [rows]);
 
     const displayRows = React.useMemo(() => {
+        // Location and insurance filtering are now done on the backend
+        // Only filter by year and month on client-side
         return rows.filter((row) => {
             const createdDate = new Date(row.createdAt);
             const rowMonth = Number.isNaN(createdDate.getTime()) ? null : createdDate.getMonth() + 1;
-            const matchesLocation = locationFilter === 'all' || (row.wohnort?.trim() ?? '—') === locationFilter;
-            const matchesInsurance = insuranceFilter === 'all' || (row.krankenkasse?.trim() ?? '—') === insuranceFilter;
             const matchesYear = yearFilter === 'all' || (!Number.isNaN(createdDate.getTime()) && createdDate.getFullYear().toString() === yearFilter);
             const matchesMonth = monthFilter === 'all' || (rowMonth !== null && rowMonth.toString() === monthFilter);
-            return matchesLocation && matchesInsurance && matchesYear && matchesMonth;
+            return matchesYear && matchesMonth;
         });
-    }, [rows, locationFilter, insuranceFilter, yearFilter, monthFilter]);
+    }, [rows, yearFilter, monthFilter]);
 
     const handlePageChange = (nextPage: number) => {
         setPage(nextPage);
@@ -452,11 +490,12 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
 
     const locationOptions = [
         { label: 'Alle Städte', value: 'all' as const },
-        ...uniqueLocations.map((location) => ({ label: location, value: location })),
+        ...apiLocations.map((address) => ({ label: address, value: address })),
     ];
     const insuranceOptions = [
-        { label: 'Alle Krankenkassen', value: 'all' as const },
-        ...uniqueInsurances.map((ins) => ({ label: ins, value: ins })),
+        { label: 'Alle Kostenträger', value: 'all' as const },
+        { label: 'Krankenkasse', value: 'insurance' as const },
+        { label: 'Privat', value: 'private' as const },
     ];
 
     return (
@@ -497,7 +536,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                             </TableHead>
                             <TableHead className="font-semibold text-gray-600">Kunde</TableHead>
                             <TableHead className="font-semibold text-gray-600">Kundennummer</TableHead>
-                            <TableHead className="font-semibold text-gray-600">Krankenkasse</TableHead>
+                            <TableHead className="font-semibold text-gray-600">Kostenträger</TableHead>
                             <TableHead className="font-semibold text-gray-600">Kundentyp</TableHead>
                             <TableHead className="font-semibold text-gray-600">Neuester Scan</TableHead>
                             <TableHead className="font-semibold text-gray-600">Neuester Auftrag</TableHead>

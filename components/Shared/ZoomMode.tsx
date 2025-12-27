@@ -222,10 +222,10 @@ export default function ZoomMode({
     const rightImage = getRightImage()
 
     return (
-        <div className="fixed inset-0 z-[9998] bg-gradient-to-br from-gray-50 to-gray-100 overflow-y-auto">
+        <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 shadow-lg my-4">
             {/* Loading Overlay */}
             {(isDownloading || isSaving) && (
-                <div className="fixed inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                <div className="absolute inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center rounded-lg">
                     <div className="bg-white rounded-lg shadow-lg px-6 py-5 flex items-center gap-3">
                         <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
                         <span className="text-gray-900 font-medium">
@@ -236,7 +236,7 @@ export default function ZoomMode({
             )}
 
             {/* Modern Drawing Toolbar */}
-            <div className="sticky top-0 z-[9999] bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-lg">
+            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm rounded-t-lg">
                 <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 py-2 sm:py-3 lg:py-4">
                         {/* Drawing Toolbar - Responsive */}
@@ -298,9 +298,9 @@ export default function ZoomMode({
                 </div>
             </div>
 
-            {/* Full screen responsive image layout with canvas overlay */}
+            {/* Responsive image layout with canvas overlay */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-                <div className="flex flex-col xl:flex-row justify-center items-stretch xl:items-stretch gap-6 lg:gap-8 xl:gap-12 min-h-[calc(100vh-120px)]">
+                <div className="flex flex-col xl:flex-row justify-center items-stretch xl:items-stretch gap-6 lg:gap-8 xl:gap-12">
                     {/* Left foot image */}
                     {leftImage && (
                         <div className="w-full xl:w-1/2 shrink-0 flex">

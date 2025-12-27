@@ -75,7 +75,7 @@ export function LastScanFilters({
                 options={locationOptions}
             />
             <FilterSelect
-                label="Krankenkasse"
+                label="Kostenträger"
                 value={insuranceFilter}
                 onValueChange={(val) => onInsuranceChange(val as string)}
                 options={insuranceOptions}

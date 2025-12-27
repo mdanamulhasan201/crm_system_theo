@@ -15,7 +15,7 @@ type SearchForm = {
 export default function AuftragssuchePage() {
     const { register, handleSubmit, watch, reset, setValue } = useForm<SearchForm>();
     const { searchParams, setSearchParams, clearSearchParams, orderIdFromSearch } = useOrders();
-    
+
     // Populate form fields from searchParams when they change (same as normal search)
     useEffect(() => {
         if (searchParams.orderNumber || searchParams.customerNumber || searchParams.customerName) {
@@ -60,7 +60,7 @@ export default function AuftragssuchePage() {
 
     const onSubmit = (data: SearchForm) => {
         const { bestellnummer, kundennummer, name } = data;
-        
+
         // Only set search params if at least one field has a value
         if (bestellnummer.trim() || kundennummer.trim() || name.trim()) {
             setSearchParams({
@@ -84,6 +84,12 @@ export default function AuftragssuchePage() {
         <div className="flex-1 flex flex-col items-center justify-center py-6">
             <div className="text-lg font-bold mb-2 text-center">Auftragssuche</div>
             <form className="w-full flex flex-col items-center" onSubmit={handleSubmit(onSubmit)}>
+
+                <Input
+                    className="w-full max-w-xs mb-4"
+                    placeholder="Name"
+                    {...register('name')}
+                />
                 <Input
                     type="text"
                     inputMode="numeric"
@@ -94,7 +100,7 @@ export default function AuftragssuchePage() {
                     onPaste={handleNumberPaste}
                     {...register('bestellnummer')}
                 />
-                <Input
+                {/* <Input
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -103,23 +109,19 @@ export default function AuftragssuchePage() {
                     onKeyDown={handleNumberInput}
                     onPaste={handleNumberPaste}
                     {...register('kundennummer')}
-                />
-                <Input
-                    className="w-full max-w-xs mb-4"
-                    placeholder="Name"
-                    {...register('name')}
-                />
+                /> */}
+
                 <div className="flex gap-2 w-full max-w-xs">
-                    <Button 
-                        type="submit" 
-                        className="flex-1 cursor-pointer" 
+                    <Button
+                        type="submit"
+                        className="flex-1 cursor-pointer"
                         disabled={allFieldsEmpty}
                     >
                         Suchen
                     </Button>
                     {showClearButton && (
-                        <Button 
-                            type="button" 
+                        <Button
+                            type="button"
                             variant="outline"
                             onClick={handleClear}
                             className="flex-1 cursor-pointer"
