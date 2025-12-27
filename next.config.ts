@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'clip-gore-simpson-sox.trycloudflare.com',
+        hostname: 'optics-combine-thermal-coordinator.trycloudflare.com',
       }
     ],
   },
