@@ -72,7 +72,7 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                     versorgung: item.versorgung || 'N/A',
                     materialien: item.material || 'N/A',
                     laenge: item.laenge || 'N/A',
-                    diagnosis_status: item.diagnosis_status || '',
+                    diagnosis_status: Array.isArray(item.diagnosis_status) ? item.diagnosis_status : [],
                 }));
                 setCards(transformedData);
             } else {
@@ -154,12 +154,41 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                     <div className="flex">
                         {cards.map((card, index) => (
                             <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] p-2 flex flex-col items-center">
-                                <div className='border border-gray-900 p-5 flex flex-col gap-1 rounded-xl min-h-[260px] w-full'>
-                                    <h2 className='text-xl xl:text-2xl font-bold mb-2'>{card.name}</h2>
-                                    <div className='flex flex-col gap-3'>
-                                        <p className='font-bold'>Hersteller: <span className='font-normal'>{card.rohlingHersteller}</span></p>
-                                        <p className='font-bold'>Versorgung: <span className='font-normal'>{card.versorgung}</span></p>
+                                <div className='border border-gray-900 p-5 flex flex-col gap-3 rounded-xl h-[320px] w-full'>
+                                    {/* Versorgung at top */}
+                                    <p className='font-bold text-lg'>Versorgung: <span className='font-normal'>{card.versorgung}</span></p>
+                                    
+                                    {/* Materials + Einlage Name */}
+                                    <div className='flex flex-col gap-2'>
+                                        <p className='font-bold'>Materialien: 
+                                            <span className='font-normal ml-2'>
+                                                {Array.isArray(card.materialien) 
+                                                    ? card.materialien.join(', ') 
+                                                    : card.materialien}
+                                            </span>
+                                        </p>
+                                        <p className='font-bold'>Einlage: <span className='font-normal'>{einlageName}</span></p>
                                     </div>
+                                    
+                                    {/* Name */}
+                                    <h2 className='text-xl xl:text-2xl font-bold'>{card.name}</h2>
+                                    
+                                    {/* Spacer to push Diagnose to bottom */}
+                                    <div className='flex-1'></div>
+                                    
+                                    {/* Diagnosis Status - at the bottom */}
+                                    {Array.isArray(card.diagnosis_status) && card.diagnosis_status.length > 0 && (
+                                        <div className='flex flex-col gap-2'>
+                                            <p className='font-bold'>Diagnose:</p>
+                                            <div className='flex flex-wrap gap-2'>
+                                                {card.diagnosis_status.map((status: string, idx: number) => (
+                                                    <span key={idx} className='px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm'>
+                                                        {status}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className='flex flex-col gap-2 mt-3 w-full items-center'>
                                     <button className='bg-black text-white px-6 py-2 rounded-full text-lg w-3/4 cursor-pointer' onClick={() => handleEditClick(card)}>Bearbeiten</button>

@@ -1,5 +1,12 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog';
 
 const MODULES = [
     { key: 'einlagenfinder', label: 'Einlagenfinder' },
@@ -25,6 +32,12 @@ export default function SoftwareScanstationPage() {
     const [showModuleWarning, setShowModuleWarning] = useState(false);
     const [selectedQuestion, setSelectedQuestion] = useState(QUESTIONS[0]);
     const [selectedLanguage, setSelectedLanguage] = useState('Deutsch');
+    const [showUnavailablePopup, setShowUnavailablePopup] = useState(false);
+
+    useEffect(() => {
+        // Show popup when page loads
+        setShowUnavailablePopup(true);
+    }, []);
 
     // Track original values to detect changes
     const [originalModules] = useState(['einlagenfinder']);
@@ -43,7 +56,30 @@ export default function SoftwareScanstationPage() {
     };
 
     return (
-        <div className="opacity-75">
+        <>
+            {/* Unavailable Popup */}
+            <Dialog open={showUnavailablePopup} onOpenChange={setShowUnavailablePopup}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-xl font-semibold text-gray-800">
+                            Information
+                        </DialogTitle>
+                        <DialogDescription className="text-base text-gray-600 mt-2">
+                            Diese Funktion ist im Moment nicht verfügbar.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex justify-end mt-4">
+                        <button
+                            onClick={() => setShowUnavailablePopup(false)}
+                            className="px-6 py-2 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                        >
+                            Verstanden
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            <div className="opacity-75">
             {/* Read-only indicator */}
             {/* <div className="bg-gray-100 border border-gray-300 rounded-lg p-4 mb-6 flex items-center">
                 <svg className="w-5 h-5 text-gray-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
@@ -159,6 +195,7 @@ export default function SoftwareScanstationPage() {
                 </button>
             </div>
         </div>
+        </>
     );
 }
 
