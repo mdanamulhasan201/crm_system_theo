@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'strap-adjust-england-transportation.trycloudflare.com',
+        hostname: 'talking-ventures-theorem-seats.trycloudflare.com',
       }
     ],
   },

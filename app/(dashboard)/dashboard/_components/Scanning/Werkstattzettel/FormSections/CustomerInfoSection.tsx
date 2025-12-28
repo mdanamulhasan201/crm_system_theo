@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -149,6 +149,70 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
 
       onFertigstellungBisChange(finalDeliveryDate)
     }
+  }
+
+  // Generate hours (00-11) for 12-hour format and minutes (00, 10, 20, 30, 40, 50)
+  const hours12 = Array.from({ length: 12 }, (_, i) => String(i).padStart(2, '0'))
+  const minutes = ['00', '10', '20', '30', '40', '50']
+  const ampmOptions = ['AM', 'PM']
+
+  // Convert 24-hour to 12-hour format
+  const parseTimeTo12Hour = (time24: string) => {
+    if (!time24 || time24.trim() === '') return { hour: '', minute: '', ampm: '' }
+    
+    const [hour24, minute] = time24.split(':')
+    const hourNum = parseInt(hour24 || '0', 10)
+    const hour12 = hourNum === 0 ? 0 : hourNum === 12 ? 0 : hourNum > 12 ? hourNum - 12 : hourNum
+    const ampm = hourNum < 12 ? 'AM' : 'PM'
+    
+    return {
+      hour: String(hour12).padStart(2, '0'),
+      minute: minute || '',
+      ampm
+    }
+  }
+
+  // Convert 12-hour to 24-hour format
+  const convert12To24Hour = (hour12: string, minute: string, ampm: string) => {
+    if (!hour12 || !minute || !ampm) return ''
+    
+    let hour24 = parseInt(hour12, 10)
+    if (ampm === 'AM') {
+      hour24 = hour24 === 0 ? 0 : hour24 === 12 ? 0 : hour24
+    } else {
+      hour24 = hour24 === 0 ? 12 : hour24 === 12 ? 12 : hour24 + 12
+    }
+    return `${String(hour24).padStart(2, '0')}:${minute}`
+  }
+
+  // Parse current time value to 12-hour format
+  const { hour: currentHour, minute: currentMinute, ampm: currentAmPm } = parseTimeTo12Hour(fertigstellungBisTime || '')
+
+  const handleHourChange = (hour: string) => {
+    if (!hour || !currentMinute || !currentAmPm) {
+      onFertigstellungBisTimeChange('')
+      return
+    }
+    const newTime24 = convert12To24Hour(hour, currentMinute, currentAmPm)
+    onFertigstellungBisTimeChange(newTime24)
+  }
+
+  const handleMinuteChange = (minute: string) => {
+    if (!currentHour || !minute || !currentAmPm) {
+      onFertigstellungBisTimeChange('')
+      return
+    }
+    const newTime24 = convert12To24Hour(currentHour, minute, currentAmPm)
+    onFertigstellungBisTimeChange(newTime24)
+  }
+
+  const handleAmPmChange = (ampm: string) => {
+    if (!currentHour || !currentMinute || !ampm) {
+      onFertigstellungBisTimeChange('')
+      return
+    }
+    const newTime24 = convert12To24Hour(currentHour, currentMinute, ampm)
+    onFertigstellungBisTimeChange(newTime24)
   }
 
   return (
@@ -318,11 +382,46 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
                   : undefined
               }
             />
-            <Input
-              type="time"
-              value={fertigstellungBisTime}
-              onChange={(e) => onFertigstellungBisTimeChange(e.target.value)}
-            />
+            {/* Custom Time Picker - looks like native but with 10-minute intervals and AM/PM */}
+            <div className="flex items-center justify-center gap-1 flex-1 border border-input bg-background rounded-md px-3 h-10 text-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+              <Select value={currentHour || undefined} onValueChange={handleHourChange}>
+                <SelectTrigger className="h-8 p-0 border-0 shadow-none focus:ring-0 w-auto min-w-[2.5rem] [&>span]:flex [&>span]:items-center [&>span]:justify-center">
+                  <SelectValue placeholder="--" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  {hours12.map((hour) => (
+                    <SelectItem key={hour} value={hour}>
+                      {hour}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-muted-foreground text-base font-medium">:</span>
+              <Select value={currentMinute || undefined} onValueChange={handleMinuteChange}>
+                <SelectTrigger className="h-8 p-0 border-0 shadow-none focus:ring-0 w-auto min-w-[2.5rem] [&>span]:flex [&>span]:items-center [&>span]:justify-center">
+                  <SelectValue placeholder="--" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  {minutes.map((minute) => (
+                    <SelectItem key={minute} value={minute}>
+                      {minute}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select value={currentAmPm || undefined} onValueChange={handleAmPmChange}>
+                <SelectTrigger className="h-8 p-0 border-0 shadow-none focus:ring-0 w-auto min-w-[3rem] ml-1 [&>span]:flex [&>span]:items-center [&>span]:justify-center">
+                  <SelectValue placeholder="--" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
+                  {ampmOptions.map((ampm) => (
+                    <SelectItem key={ampm} value={ampm}>
+                      {ampm}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           {fertigstellungBisError && (
             <p className="text-xs text-red-500 mt-1">{fertigstellungBisError}</p>
