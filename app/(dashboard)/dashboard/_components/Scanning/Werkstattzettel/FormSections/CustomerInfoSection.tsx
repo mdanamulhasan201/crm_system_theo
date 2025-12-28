@@ -4,7 +4,6 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import EmployeeDropdown from '../Dropdowns/EmployeeDropdown'
 import LocationDropdown from '../Dropdowns/LocationDropdown'
-import PaymentStatusSection from './PaymentStatusSection'
 import { calculateDeliveryDate, getMinimumDeliveryDate } from '../../utils/dateUtils'
 import { cn } from '@/lib/utils'
 
@@ -21,10 +20,7 @@ interface CustomerInfoSectionData {
   geschaeftsstandort: string
   fertigstellungBis: string
   fertigstellungBisTime: string
-  bezahlt: string
   quantity: string
-  discountType: string
-  discountValue: string
 
   // Handlers
   onNameChange: (vorname: string, nachname: string) => void
@@ -37,10 +33,7 @@ interface CustomerInfoSectionData {
   onGeschaeftsstandortChange: (value: string) => void
   onFertigstellungBisChange: (value: string) => void
   onFertigstellungBisTimeChange: (value: string) => void
-  onBezahltChange: (value: string) => void
   onQuantityChange: (value: string) => void
-  onDiscountTypeChange: (value: string) => void
-  onDiscountValueChange: (value: string) => void
 
   // Employee dropdown
   employeeSearchText: string
@@ -65,7 +58,6 @@ interface CustomerInfoSectionData {
   datumAuftragError?: string
   geschaeftsstandortError?: string
   fertigstellungBisError?: string
-  paymentError?: string
 }
 
 interface CustomerInfoSectionProps {
@@ -85,10 +77,7 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     geschaeftsstandort,
     fertigstellungBis,
     fertigstellungBisTime,
-    bezahlt,
     quantity,
-    discountType,
-    discountValue,
     onNameChange,
     onWohnortChange,
     onEmailChange,
@@ -99,10 +88,7 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     onGeschaeftsstandortChange,
     onFertigstellungBisChange,
     onFertigstellungBisTimeChange,
-    onBezahltChange,
     onQuantityChange,
-    onDiscountTypeChange,
-    onDiscountValueChange,
     employeeSearchText,
     employeeSuggestions,
     employeeLoading,
@@ -119,7 +105,6 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     datumAuftragError,
     geschaeftsstandortError,
     fertigstellungBisError,
-    paymentError,
   } = data
 
   const [editableField, setEditableField] = useState<string | null>(null)
@@ -277,22 +262,6 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
           />
         </div>
 
-        <div className="space-y-2" onClick={() => makeEditable('versorgung')}>
-          <Label className="text-sm font-medium text-gray-700">Versorgung</Label>
-          <Input
-            placeholder="Rohling 339821769, mit Pelotte"
-            value={versorgung}
-            onChange={(e) => onVersorgungChange(e.target.value)}
-            readOnly={!isEditable('versorgung')}
-            className={cn(
-              !isEditable('versorgung') && 'bg-gray-50 cursor-pointer',
-              versorgungError && 'border-red-500 focus-visible:ring-red-500'
-            )}
-          />
-          {versorgungError && (
-            <p className="text-xs text-red-500 mt-1">{versorgungError}</p>
-          )}
-        </div>
 
       </div>
 
@@ -427,17 +396,28 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
             <p className="text-xs text-red-500 mt-1">{fertigstellungBisError}</p>
           )}
         </div>
-
-        <PaymentStatusSection
-          value={bezahlt}
-          onChange={onBezahltChange}
-          error={paymentError}
-        />
       </div>
 
-      {/* Menge and Rabatt on same line at bottom */}
+      {/* Versorgung and Menge - Full width side by side */}
       <div className="col-span-1 md:col-span-2">
         <div className="flex gap-4 w-full">
+          <div className="space-y-2 flex-1" onClick={() => makeEditable('versorgung')}>
+            <Label className="text-sm font-medium text-gray-700">Versorgung</Label>
+            <Input
+              placeholder="Rohling 339821769, mit Pelotte"
+              value={versorgung}
+              onChange={(e) => onVersorgungChange(e.target.value)}
+              readOnly={!isEditable('versorgung')}
+              className={cn(
+                !isEditable('versorgung') && 'bg-gray-50 cursor-pointer',
+                versorgungError && 'border-red-500 focus-visible:ring-red-500'
+              )}
+            />
+            {versorgungError && (
+              <p className="text-xs text-red-500 mt-1">{versorgungError}</p>
+            )}
+          </div>
+
           <div className="space-y-2 flex-1">
             <Label className="text-sm font-medium text-gray-700">Menge</Label>
             <Select value={quantity} onValueChange={onQuantityChange}>
@@ -452,32 +432,6 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
                 <SelectItem value="5 paar">5 Paare</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          <div className="space-y-2 flex-1">
-            <Label className="text-sm font-medium text-gray-700">Rabatt</Label>
-            <div className="space-y-2 flex gap-2">
-            <Select value={discountType} onValueChange={onDiscountTypeChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Rabatttyp wählen" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="percentage">Prozent (%)</SelectItem>
-              </SelectContent>
-            </Select>
-              {discountType && (
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="z.B. 10"
-                  value={discountValue}
-                  onChange={(e) => onDiscountValueChange(e.target.value)}
-                  className="w-full"
-                />
-              )}
-            </div>
           </div>
         </div>
       </div>

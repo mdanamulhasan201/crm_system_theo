@@ -4,6 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
+import PaymentStatusSection from './PaymentStatusSection'
 
 interface PriceSectionProps {
   footAnalysisPrice: string
@@ -21,6 +22,15 @@ interface PriceSectionProps {
   insoleSupplyPriceError?: string
   customFootPriceError?: string
   customInsolePriceError?: string
+  // Rabatt fields
+  discountType: string
+  onDiscountTypeChange: (value: string) => void
+  discountValue: string
+  onDiscountValueChange: (value: string) => void
+  // Kostenträger fields
+  bezahlt: string
+  onBezahltChange: (value: string) => void
+  paymentError?: string
 }
 
 export default function PriceSection({
@@ -39,6 +49,13 @@ export default function PriceSection({
   insoleSupplyPriceError,
   customFootPriceError,
   customInsolePriceError,
+  discountType,
+  onDiscountTypeChange,
+  discountValue,
+  onDiscountValueChange,
+  bezahlt,
+  onBezahltChange,
+  paymentError,
 }: PriceSectionProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -142,6 +159,42 @@ export default function PriceSection({
           {insoleSupplyPriceError && (
             <p className="text-xs text-red-500 mt-1">{insoleSupplyPriceError}</p>
           )}
+        </div>
+
+        {/* Rabatt Section */}
+        <div className="space-y-3">
+          <Label className="text-base font-semibold">Rabatt</Label>
+          <div className="flex gap-2">
+            <Select value={discountType} onValueChange={onDiscountTypeChange}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Rabatttyp wählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="percentage">Prozent (%)</SelectItem>
+              </SelectContent>
+            </Select>
+            {discountType && (
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                max="100"
+                placeholder="z.B. 10"
+                value={discountValue}
+                onChange={(e) => onDiscountValueChange(e.target.value)}
+                className="w-full"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Kostenträger Section */}
+        <div className="space-y-3">
+          <PaymentStatusSection
+            value={bezahlt}
+            onChange={onBezahltChange}
+            error={paymentError}
+          />
         </div>
       </div>
   )

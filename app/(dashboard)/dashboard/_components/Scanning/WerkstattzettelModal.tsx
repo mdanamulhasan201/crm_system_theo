@@ -374,10 +374,7 @@ export default function WerkstattzettelModal({
                 geschaeftsstandort: form.geschaeftsstandort,
                 fertigstellungBis: form.fertigstellungBis,
                 fertigstellungBisTime: form.fertigstellungBisTime,
-                bezahlt: form.bezahlt,
                 quantity: form.quantity,
-                discountType: form.discountType,
-                discountValue: form.discountValue,
                 onNameChange: handleNameChange,
                 onWohnortChange: form.setWohnort,
                 onEmailChange: form.setEmail,
@@ -388,10 +385,7 @@ export default function WerkstattzettelModal({
                 onGeschaeftsstandortChange: form.setGeschaeftsstandort,
                 onFertigstellungBisChange: form.handleDeliveryDateChange,
                 onFertigstellungBisTimeChange: form.setFertigstellungBisTime,
-                onBezahltChange: form.setBezahlt,
                 onQuantityChange: form.setQuantity,
-                onDiscountTypeChange: form.setDiscountType,
-                onDiscountValueChange: form.setDiscountValue,
                 employeeSearchText: form.employeeSearchText,
                 employeeSuggestions: form.employeeSuggestions,
                 employeeLoading: form.employeeLoading,
@@ -408,7 +402,6 @@ export default function WerkstattzettelModal({
                 datumAuftragError: fieldErrors.datumAuftrag,
                 geschaeftsstandortError: fieldErrors.geschaeftsstandort,
                 fertigstellungBisError: fieldErrors.fertigstellungBis,
-                paymentError: fieldErrors.bezahlt,
               }}
             />
           </div>
@@ -434,6 +427,13 @@ export default function WerkstattzettelModal({
               insoleSupplyPriceError={fieldErrors.insoleSupplyPrice}
               customFootPriceError={fieldErrors.customFootPrice}
               customInsolePriceError={fieldErrors.customInsolePrice}
+              discountType={form.discountType}
+              onDiscountTypeChange={form.setDiscountType}
+              discountValue={form.discountValue}
+              onDiscountValueChange={form.setDiscountValue}
+              bezahlt={form.bezahlt}
+              onBezahltChange={form.setBezahlt}
+              paymentError={fieldErrors.bezahlt}
             />
           </div>
         </div>
