@@ -235,7 +235,7 @@ const WeeklyCalendar = () => {
 
     const handleDateClick = (date: Date) => {
         if (isPastDate(date)) {
-            alert('You cannot add appointments to past dates.');
+            alert('Sie können keine Termine zu vergangenen Daten hinzufügen.');
             return;
         }
 
@@ -609,9 +609,9 @@ const WeeklyCalendar = () => {
                                                     ? 'border-gray-200 text-gray-300 cursor-not-allowed bg-gray-50'
                                                     : 'border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600 hover:bg-gray-50'
                                                     }`}
-                                                title={isPastDate(date) ? 'Cannot add appointments to past dates' : 'Add new appointment'}
+                                                title={isPastDate(date) ? 'Keine Termine zu vergangenen Daten hinzufügen' : 'Neuen Termin hinzufügen'}
                                             >
-                                                {isPastDate(date) ? 'Past Date' : '+ Termin hinzufügen'}
+                                                {isPastDate(date) ? 'Vergangenes Datum' : '+ Termin hinzufügen'}
                                             </button>
                                             {dayEvents.length === 0 && (
                                                 <div className="space-y-2 py-4">

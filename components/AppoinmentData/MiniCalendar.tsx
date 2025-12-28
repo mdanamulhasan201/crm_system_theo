@@ -79,7 +79,7 @@ export default function MiniCalendar({
                         {showYearMonthPicker && (
                             <div className="absolute top-20 left-0 right-0 bg-white border-1 border-[#62A07C] rounded-xl z-50 p-6 ">
                                 <div className="mb-6">
-                                    <label className="block text-sm font-semibold text-[#62A07C] mb-3">Year</label>
+                                    <label className="block text-sm font-semibold text-[#62A07C] mb-3">Jahr</label>
                                     <select
                                         value={miniCalendarDate.getFullYear()}
                                         onChange={(e) => handleYearMonthChange(parseInt(e.target.value), miniCalendarDate.getMonth())}
@@ -91,7 +91,7 @@ export default function MiniCalendar({
                                     </select>
                                 </div>
                                 <div className="mb-6">
-                                    <label className="block text-sm font-semibold text-[#62A07C] mb-3">Month</label>
+                                    <label className="block text-sm font-semibold text-[#62A07C] mb-3">Monat</label>
                                     <select
                                         value={miniCalendarDate.getMonth()}
                                         onChange={(e) => handleYearMonthChange(miniCalendarDate.getFullYear(), parseInt(e.target.value))}
@@ -106,7 +106,7 @@ export default function MiniCalendar({
                                     onClick={() => setShowYearMonthPicker(false)}
                                     className="w-full py-2 bg-[#62A07C] text-white font-semibold rounded-lg cursor-pointer hover:from-[#4f8a65] hover:to-[#62A07C] transform transition-all duration-300 shadow-md hover:shadow-lg"
                                 >
-                                    Done
+                                    Fertig
                                 </button>
                             </div>
                         )}
@@ -138,7 +138,7 @@ export default function MiniCalendar({
                                             } ${hasAppointments && !isToday && !isInSelectedRange ? 'text-green-500 font-semibold' : ''
                                             }`}
                                         onClick={() => handleMiniCalendarDateClick(date)}
-                                        title={`${date.toDateString()} - Click to view next 4 days${hasAppointments ? ` (${getEventsForDate(date).length} appointment${getEventsForDate(date).length > 1 ? 's' : ''})` : ''}`}
+                                        title={`${date.toDateString()} - Klicken Sie, um die nächsten 4 Tage anzuzeigen${hasAppointments ? ` (${getEventsForDate(date).length} Termin${getEventsForDate(date).length > 1 ? 'e' : ''})` : ''}`}
                                     >
                                         {date.getDate()}
                                         {hasAppointments && (

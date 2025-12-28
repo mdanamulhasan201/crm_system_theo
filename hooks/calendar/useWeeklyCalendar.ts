@@ -27,8 +27,10 @@ export const useWeeklyCalendar = () => {
 
     const getWeekStart = (date: Date) => {
         const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day;
+        const day = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        // Adjust to start week on Monday
+        const daysToSubtract = day === 0 ? 6 : day - 1; // If Sunday (0), go back 6 days, otherwise go back (day - 1)
+        const diff = d.getDate() - daysToSubtract;
         const weekStart = new Date(d);
         weekStart.setDate(diff);
         return weekStart;
@@ -84,7 +86,10 @@ export const useWeeklyCalendar = () => {
         const month = miniCalendarDate.getMonth();
         const firstDay = new Date(year, month, 1);
         const startDate = new Date(firstDay);
-        startDate.setDate(startDate.getDate() - firstDay.getDay());
+        // Adjust to start week on Monday (0 = Sunday, so we need to adjust)
+        const dayOfWeek = firstDay.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // If Sunday (0), go back 6 days, otherwise go back (dayOfWeek - 1)
+        startDate.setDate(startDate.getDate() - daysToSubtract);
 
         const days: Date[] = [];
         for (let i = 0; i < 42; i++) {
@@ -113,11 +118,13 @@ export const useWeeklyCalendar = () => {
     const today = useMemo(getTodayDate, []);
 
     const monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December'
+        'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+        'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
     ];
-    const dayNames = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-    const dayNamesLong = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    // dayNames: Display order (Monday first) for calendar grid headers
+    const dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    // dayNamesLong: JavaScript native order (Sunday=0, Monday=1, etc.) for getDay() access
+    const dayNamesLong = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'];
 
     const isSameDay = (date1: Date, date2: Date) => {
         return date1.getFullYear() === date2.getFullYear() &&
