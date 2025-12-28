@@ -87,6 +87,7 @@ export default function ChangesOrderProgress({
     onRefetchCardStatistik,
     onRefetchChart,
     onUpdateOrder,
+    isSearchingOrders,
 }: {
     onClick: () => void;
     onClick2: () => void;
@@ -98,6 +99,7 @@ export default function ChangesOrderProgress({
     onRefetchCardStatistik?: () => void;
     onRefetchChart?: () => void;
     onUpdateOrder?: (orderId: string, updatedData: any) => void;
+    isSearchingOrders?: boolean;
 }) {
     const { order, refetch: refetchOrder, loading } = useGetSingleMassschuheOrder(selectedOrderId);
     const { updateStatus } = useUpdateMassschuheOrderStatus();
@@ -677,15 +679,24 @@ export default function ChangesOrderProgress({
                     </>
                 )}
 
-                {/* Arrow button for standard cards - only show when IN FERTIGUNG */}
-                {!("hasPdfButton" in card) && !("hasSpecialButtons" in card) && !("hasBodenButtons" in card) && !("isWaiting" in card) && !isCompleted && isCurrent && (
-                    <button
-                        type="button"
-                        className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
-                        onClick={toggleProgress(card.id)}
-                    >
-                        <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
-                    </button>
+                {/* Buttons for standard cards - only show when IN FERTIGUNG */}
+                {!("hasPdfButton" in card) && !("hasSpecialButtons" in card) && !("hasBodenButtons" in card) && !("isWaiting" in card) && !isCompleted && (isCurrent || isPending) && (
+                    <div className="mt-4 space-y-3 w-full">
+                        <button
+                            type="button"
+                            className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
+                            onClick={toggleProgress(card.id)}
+                        >
+                            In Fertigung
+                        </button>
+                        <button
+                            type="button"
+                            className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
+                            onClick={toggleProgress(card.id)}
+                        >
+                            Jetzt Leisten, Bettung, Halbprobe in einem bestellen
+                        </button>
+                    </div>
                 )}
 
                 {/* Arrow button for halbprobenerstellung - only show when IN FERTIGUNG */}
@@ -713,11 +724,11 @@ export default function ChangesOrderProgress({
         );
     };
 
-    if (!selectedOrderId) {
-        return null;
-    }
-
-    const showShimmer = loading || !order;
+    // Show loading state only when:
+    // 1. We're searching for orders (isSearchingOrders), OR
+    // 2. We have selectedOrderId but order data is still loading
+    // Once order is loaded, show actual data (same as table click behavior)
+    const showShimmer = isSearchingOrders || (selectedOrderId ? (loading || !order) : false);
 
     return (
         <>

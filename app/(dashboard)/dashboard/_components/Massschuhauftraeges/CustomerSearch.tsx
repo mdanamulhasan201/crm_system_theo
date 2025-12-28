@@ -79,8 +79,9 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
             setSuggestionLoading(true);
             try {
                 const response = await searchCustomers(debouncedName, 1, 10, debouncedName, '', '', '', '');
-                if (response?.data?.length > 0) {
-                    const mappedSuggestions = response.data.map((customer: any) => ({
+                const customers = response?.data?.customers || response?.data || [];
+                if (customers.length > 0) {
+                    const mappedSuggestions = customers.map((customer: any) => ({
                         id: customer.id,
                         name: customer.name || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
                         email: customer.email || '',
@@ -127,8 +128,9 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
         setNotFound(false);
         try {
             const response = await searchCustomers(name || birth || customerNumber, 1, 10, name, '', '', birth, customerNumber);
-            if (response?.data?.length > 0) {
-                const customer = response.data[0];
+            const customers = response?.data?.customers || response?.data || [];
+            if (customers.length > 0) {
+                const customer = customers[0];
                 const fullCustomer = customer.id ? await fetchCustomerById(customer.id) : null;
                 const finalCustomer = fullCustomer || normalizeCustomer(customer);
                 setSelectedCustomer(finalCustomer);

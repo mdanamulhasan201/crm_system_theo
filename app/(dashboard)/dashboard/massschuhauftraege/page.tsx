@@ -25,6 +25,7 @@ export default function MassschuhauftraegePage() {
     const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
     const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [isSearchingOrders, setIsSearchingOrders] = useState(false);
     const refetchProductionViewRef = useRef<(() => void) | null>(null);
     const refetchCardStatistikRef = useRef<(() => void) | null>(null);
     const refetchChartRef = useRef<(() => void) | null>(null);
@@ -130,9 +131,11 @@ export default function MassschuhauftraegePage() {
         const fetchCustomerRunningOrder = async () => {
             if (!selectedCustomerId) {
                 setSelectedOrderId(null);
+                setIsSearchingOrders(false);
                 return;
             }
 
+            setIsSearchingOrders(true);
             try {
                 // Fetch orders and filter by customerId on client side
                 // Fetch multiple pages to find customer orders
@@ -202,6 +205,8 @@ export default function MassschuhauftraegePage() {
             } catch (error) {
                 console.error('Failed to fetch customer orders:', error);
                 setSelectedOrderId(null);
+            } finally {
+                setIsSearchingOrders(false);
             }
         };
 
@@ -316,7 +321,7 @@ export default function MassschuhauftraegePage() {
                 initialCustomerId={selectedCustomerId}
             />
 
-            {selectedCustomer && (
+            {selectedOrderId && (
                 <ChangesOrderProgress
                 onClick2={() => {
                     setShowPopup2(true)
@@ -332,6 +337,7 @@ export default function MassschuhauftraegePage() {
                 onRefetchCardStatistik={handleRefetchCardStatistik}
                 onRefetchChart={handleRefetchChart}
                 onUpdateOrder={handleUpdateOrder}
+                isSearchingOrders={isSearchingOrders}
                 />
             )}
             <ProductionView 
