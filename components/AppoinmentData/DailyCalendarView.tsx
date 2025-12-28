@@ -44,16 +44,22 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     onDateChange,
     onEventClick
 }) => {
-    // Calendar configuration
+    // Calendar configuration - Only show 8 AM to 9 PM (8-21)
     const calendarStartHour = 8;
-    const timeSlots = Array.from({ length: 24 }, (_, i) => `${String((calendarStartHour + i) % 24).padStart(2, '0')}:00`);
-    const containerHeightPx = timeSlots.length * 100;
+    const calendarEndHour = 21; // 9 PM
+    const totalHours = calendarEndHour - calendarStartHour + 1; // 14 hours (8 to 21 inclusive)
+    const timeSlots = Array.from({ length: totalHours }, (_, i) => `${String(calendarStartHour + i).padStart(2, '0')}:00`);
+    const heightPerSlot = 150; // Height in pixels per time slot (14 slots * 150px = 2100px total) - Increased for better visibility and content display
+    const containerHeightPx = timeSlots.length * heightPerSlot;
+    // Show first 4 hours (8-12) initially, then scroll for rest
+    const initialVisibleHours = 4; // 8 to 12 (4 hours)
+    const initialVisibleHeight = initialVisibleHours * heightPerSlot; // 600px (4 * 150)
 
     // Modal state
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [noteContent, setNoteContent] = useState<string>('');
 
-    // Parse time to minutes from 6 AM
+    // Parse time to minutes from 8 AM (calendarStartHour)
     const parseTimeToMinutes = (timeStr: string): number => {
         const time = timeStr.trim().toLowerCase();
         const ampmMatch = time.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
@@ -66,17 +72,26 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             if (period === 'pm' && hour !== 12) hour += 12;
             if (period === 'am' && hour === 12) hour = 0;
 
-            // Wrap across midnight (e.g., 01:00 should appear after 23:00 when starting at 08:00)
+            // Clamp hour to calendar range (8-21)
+            if (hour < calendarStartHour) hour = calendarStartHour;
+            if (hour > calendarEndHour) hour = calendarEndHour;
+
+            // Calculate minutes from start of calendar (8 AM)
             const diff = (hour - calendarStartHour) * 60 + minute;
-            return diff < 0 ? diff + 24 * 60 : diff;
+            return Math.max(0, diff);
         }
 
         const time24Match = time.match(/^(\d{1,2}):(\d{2})$/);
         if (time24Match) {
-            const hour = parseInt(time24Match[1], 10);
+            let hour = parseInt(time24Match[1], 10);
             const minute = parseInt(time24Match[2], 10);
+            
+            // Clamp hour to calendar range (8-21)
+            if (hour < calendarStartHour) hour = calendarStartHour;
+            if (hour > calendarEndHour) hour = calendarEndHour;
+
             const diff = (hour - calendarStartHour) * 60 + minute;
-            return diff < 0 ? diff + 24 * 60 : diff;
+            return Math.max(0, diff);
         }
 
         return 0;
@@ -174,9 +189,19 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 
     // Calculate end time
     const getEndTime = (event: any) => {
-        const endHour = (Math.floor(event.endMinutes / 60) + calendarStartHour) % 24;
-        const endMin = event.endMinutes % 60;
-        return `${String(endHour).padStart(2, '0')}:${String(endMin).padStart(2, '0')}`;
+        // Calculate end time from start time + duration
+        const startMinutes = parseTimeToMinutes(event.time);
+        const durationMinutes = Math.round((event.duration || 0.17) * 60);
+        const totalEndMinutes = startMinutes + durationMinutes;
+        
+        const endHour = Math.floor(totalEndMinutes / 60) + calendarStartHour;
+        const endMin = totalEndMinutes % 60;
+        
+        // Clamp to calendar range (8-21)
+        const clampedHour = Math.min(Math.max(endHour, calendarStartHour), calendarEndHour);
+        const clampedMin = clampedHour === calendarEndHour && endMin > 0 ? 0 : endMin;
+        
+        return `${String(clampedHour).padStart(2, '0')}:${String(clampedMin).padStart(2, '0')}`;
     };
 
     return (
@@ -217,7 +242,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                 <div
                     className="relative bg-white border border-gray-200 rounded-lg overflow-y-auto overflow-x-auto"
                     style={{
-                        height: '700px',
+                        height: `${initialVisibleHeight}px`,
                         width: '100%'
                     }}
                 >
@@ -234,8 +259,8 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                 key={index}
                                 className="absolute text-xs sm:text-sm text-gray-500 font-medium flex items-center justify-center"
                                 style={{
-                                    top: `${(index * 100) / timeSlots.length}%`,
-                                    height: `${100 / timeSlots.length}%`,
+                                    top: `${index * heightPerSlot}px`,
+                                    height: `${heightPerSlot}px`,
                                     width: '100%'
                                 }}
                             >
@@ -251,7 +276,8 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                             height: `${containerHeightPx}px`,
                             left: '0%',
                             width: '99.9%',
-                            minWidth: '1000px'
+                            minWidth: '1000px',
+                            minHeight: `${containerHeightPx}px`
                         }}
                     >
                         {/* Grid Lines - Horizontal */}
@@ -260,7 +286,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                 key={index}
                                 className="absolute border-t border-gray-200"
                                 style={{
-                                    top: `${(index * 100) / timeSlots.length}%`,
+                                    top: `${index * heightPerSlot}px`,
                                     left: '0',
                                     width: '100%',
                                     height: '1px'
@@ -303,133 +329,140 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                 : (typeof event.assignedTo === 'string' ? event.assignedTo : '');
                             const color = getAssignedToColor(assignedToForColor, index);
                             
-                            const topPercent = (event.startMinutes / (timeSlots.length * 60)) * 100;
-                            const heightPercent = (event.durationMinutes / (timeSlots.length * 60)) * 100;
+                            // Calculate exact pixel positions based on minutes
+                            // Since heightPerSlot = 150px and each hour = 60 minutes, 1 minute = 150/60 = 2.5px
+                            const pixelsPerMinute = heightPerSlot / 60; // 150px per 60 minutes = 2.5px per minute
+                            
+                            // Calculate top position: startMinutes * pixelsPerMinute (exact calculation)
+                            const topPx = Math.round(event.startMinutes * pixelsPerMinute * 100) / 100; // Round to 2 decimals for precision
+                            
+                            // Calculate height: durationMinutes * pixelsPerMinute (exact, ensure it doesn't exceed)
+                            // Make sure height is calculated precisely so card ends exactly at end time
+                            const calculatedHeight = event.durationMinutes * pixelsPerMinute;
+                            const heightPx = Math.round(calculatedHeight * 100) / 100; // Round to 2 decimals
+                            
+                            // Ensure the card doesn't extend beyond the container
+                            const maxHeight = containerHeightPx - topPx;
+                            const finalHeight = Math.min(heightPx, maxHeight);
 
                             return (
                                 <div
                                     key={event.id}
-                                    className={`absolute ${color.bg} rounded-lg p-2 sm:p-3 text-gray-800 ${onEventClick ? 'cursor-pointer hover:opacity-90' : ''} transition-opacity shadow-sm border-2`}
+                                    className={`absolute ${color.bg} rounded-md text-gray-800 ${onEventClick ? 'cursor-pointer hover:opacity-90' : ''} transition-opacity shadow-md overflow-visible`}
                                     style={{
-                                        top: `${topPercent}%`,
+                                        top: `${topPx}px`,
                                         left: `${event.left + 6}%`,
                                         width: `${event.width - 2}%`,
-                                        height: `${heightPercent}%`,
-                                        minHeight: '140px',
-                                        marginTop: '2px',
-                                        marginBottom: '2px',
-                                        borderColor: color.border
+                                        height: `${finalHeight}px`,
+                                        minHeight: `${heightPerSlot / 2.5}px`, // Minimum height for better content visibility (60px)
+                                        boxSizing: 'border-box',
+                                        margin: 0,
+                                        padding: '4px'
                                     }}
-                                    onClick={onEventClick ? () => onEventClick(event.id) : undefined}
+                                    onDoubleClick={onEventClick ? () => onEventClick(event.id) : undefined}
+                                    title={onEventClick ? "Doppelklicken Sie, um zu bearbeiten" : undefined}
                                 >
-                                    {/* Time Pills */}
-                                    <div className='flex justify-between items-center'>
-                                        <div className="flex gap-1 mb-1 sm:mb-2">
+                                    {/* Main Content - Full Card Layout */}
+                                    <div className="px-2 py-1 h-full flex flex-col relative" style={{ paddingTop: '0px', paddingBottom: '28px' }}>
+                                        {/* Top Section: Title and Icons */}
+                                        <div className="flex items-start justify-between mb-1 gap-1.5">
+                                            {/* Event Title/Reason - Left Side */}
+                                            {(event.reason || event.subtitle) && (
+                                                <div className="text-xs font-semibold leading-tight flex-1 break-words" style={{ lineHeight: '1.3', wordBreak: 'break-word' }}>
+                                                    {event.reason || event.subtitle}
+                                                </div>
+                                            )}
+                                            
+                                            {/* Employee Icons - Right Side */}
+                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                                {Array.isArray(event.assignedTo) && event.assignedTo.length > 0 ? (
+                                                    event.assignedTo.slice(0, 2).map((emp, empIndex) => (
+                                                        <div
+                                                            key={emp.employeId || empIndex}
+                                                            className="w-4 h-4 bg-white/90 rounded-full flex items-center justify-center border border-white/50 flex-shrink-0"
+                                                            title={emp.assignedTo}
+                                                        >
+                                                            <span className="text-[10px] font-medium" style={{ color: color.border }}>
+                                                                {emp.assignedTo?.charAt(0).toUpperCase() || 'U'}
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                                ) : typeof event.assignedTo === 'string' && event.assignedTo.includes(',') ? (
+                                                    event.assignedTo.split(',').slice(0, 2).map((name, nameIndex) => {
+                                                        const trimmedName = name.trim();
+                                                        return trimmedName ? (
+                                                            <div
+                                                                key={nameIndex}
+                                                                className="w-4 h-4 bg-white/90 rounded-full flex items-center justify-center border border-white/50 flex-shrink-0"
+                                                                title={trimmedName}
+                                                            >
+                                                                <span className="text-[10px] font-medium" style={{ color: color.border }}>
+                                                                    {trimmedName.charAt(0).toUpperCase() || 'U'}
+                                                                </span>
+                                                            </div>
+                                                        ) : null;
+                                                    })
+                                                ) : typeof event.assignedTo === 'string' ? (
+                                                    <div className="w-4 h-4 bg-white/90 rounded-full flex items-center justify-center border border-white/50 flex-shrink-0">
+                                                        <span className="text-[10px] font-medium" style={{ color: color.border }}>
+                                                            {event.assignedTo?.charAt(0).toUpperCase() || 'U'}
+                                                        </span>
+                                                    </div>
+                                                ) : null}
+                                            </div>
+                                        </div>
+
+                                        {/* Customer name */}
+                                        {event.customer_name && (
+                                            <div className="text-xs mb-1 leading-tight" style={{ lineHeight: '1.4' }}>
+                                                <span className="text-gray-700">Kund: </span>
+                                                {event.customerId ? (
+                                                    <Link
+                                                        href={`/dashboard/scanning-data/${event.customerId}`}
+                                                        className="font-semibold text-blue-600 hover:underline"
+                                                        onClick={(e) => e.stopPropagation()}
+                                                    >
+                                                        {event.customer_name}
+                                                    </Link>
+                                                ) : (
+                                                    <span className='font-semibold text-gray-700'>{event.customer_name}</span>
+                                                )}
+                                            </div>
+                                        )}
+
+                                        {/* Note button - After Customer name */}
+                                        {event.details && (
+                                            <div className="mb-1">
+                                                <button
+                                                    className='text-xs font-medium text-gray-700 underline cursor-pointer hover:text-gray-900'
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setNoteContent(event.details || '');
+                                                        setIsNotesOpen(true);
+                                                    }}
+                                                >
+                                                    Notiz öffnen
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* Time Indicators - Bottom Right */}
+                                        <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1 flex-shrink-0">
                                             <div
-                                                className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium text-white border-2"
-                                                style={{ backgroundColor: color.border, borderColor: color.border }}
+                                                className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-white whitespace-nowrap"
+                                                style={{ backgroundColor: color.border }}
                                             >
                                                 {formatTime(event.time)}
                                             </div>
                                             <div
-                                                className="px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-xs font-medium text-white border-2"
-                                                style={{ backgroundColor: color.border, borderColor: color.border }}
+                                                className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-white whitespace-nowrap"
+                                                style={{ backgroundColor: color.border }}
                                             >
                                                 {getEndTime(event)}
                                             </div>
                                         </div>
-
-                                        <h2
-                                            className='text-xs sm:text-sm font-medium text-gray-700 underline cursor-pointer hover:text-gray-900'
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setNoteContent(event.details || '');
-                                                setIsNotesOpen(true);
-                                            }}
-                                        >
-                                            Notiz öffnen
-                                        </h2>
                                     </div>
 
-                                    {/* customer name */}
-                                    <div className="text-xs sm:text-sm mb-1 leading-tight">
-                                        {
-                                            event.customer_name && (
-                                                <>
-                                                    Kund:{' '}
-                                                    {event.customerId ? (
-                                                        <Link
-                                                            href={`/dashboard/scanning-data/${event.customerId}`}
-                                                            className="font-semibold text-blue-600 hover:underline"
-                                                            onClick={(e) => e.stopPropagation()}
-                                                        >
-                                                            {event.customer_name}
-                                                        </Link>
-                                                    ) : (
-                                                        <span className='font-semibold'>{event.customer_name}</span>
-                                                    )}
-                                                </>
-                                            )
-                                        }
-                                    </div>
-
-                                    {/* Event Subtitle */}
-                                    {(event.reason || event.subtitle) && (
-                                        <div className="text-xs opacity-90 mb-1 sm:mb-2 leading-tight">
-                                            {event.reason || event.subtitle}
-                                        </div>
-                                    )}
-
-                                    {/* Assigned To */}
-                                    {/* {event.assignedTo && (
-                                        <div className="text-xs opacity-80 mb-1 sm:mb-2 leading-tight flex items-center gap-1">
-                                            <span className="font-medium">Kunde</span>
-                                            <span>{event.customer_name}</span>
-                                        </div>
-                                    )} */}
-
-                                    {/* employee avatar */}
-                                    <div className="flex items-center gap-1 mt-auto flex-wrap">
-                                        {Array.isArray(event.assignedTo) && event.assignedTo.length > 0 ? (
-                                            // Multiple employees (array format) - show all avatars
-                                            event.assignedTo.map((emp, empIndex) => (
-                                                <div
-                                                    key={emp.employeId || empIndex}
-                                                    className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center"
-                                                    title={emp.assignedTo}
-                                                >
-                                                    <span className="text-xs font-medium text-gray-700">
-                                                        {emp.assignedTo?.charAt(0).toUpperCase() || 'U'}
-                                                    </span>
-                                                </div>
-                                            ))
-                                        ) : typeof event.assignedTo === 'string' && event.assignedTo.includes(',') ? (
-                                            // Multiple employees (comma-separated string format) - show all avatars
-                                            event.assignedTo.split(',').map((name, nameIndex) => {
-                                                const trimmedName = name.trim();
-                                                return trimmedName ? (
-                                                    <div
-                                                        key={nameIndex}
-                                                        className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center"
-                                                        title={trimmedName}
-                                                    >
-                                                        <span className="text-xs font-medium text-gray-700">
-                                                            {trimmedName.charAt(0).toUpperCase() || 'U'}
-                                                        </span>
-                                                    </div>
-                                                ) : null;
-                                            })
-                                        ) : (
-                                            // Single employee (string format) or no employee
-                                            <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-200 rounded-full flex items-center justify-center">
-                                                <span className="text-xs font-medium text-gray-700">
-                                                    {typeof event.assignedTo === 'string'
-                                                        ? event.assignedTo?.charAt(0).toUpperCase() || 'U'
-                                                        : 'U'}
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
                                 </div>
                             );
                         })}

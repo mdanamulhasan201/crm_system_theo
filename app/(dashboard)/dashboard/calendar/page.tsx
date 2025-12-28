@@ -390,6 +390,7 @@ const WeeklyCalendar = () => {
                                     return next;
                                 });
                             }}
+                            onEventClick={handleAppointmentClick}
                         />
                     </div>
 
