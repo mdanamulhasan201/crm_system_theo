@@ -55,7 +55,7 @@ export default function VersionPage() {
                 }
             } catch (error) {
                 console.error('Error fetching newest version:', error)
-                toast.error('Fehler beim Laden der Version')
+                // toast.error('Fehler beim Laden der Version')
             } finally {
                 setLoading(false)
             }

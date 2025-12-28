@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'optics-combine-thermal-coordinator.trycloudflare.com',
+        hostname: 'strap-adjust-england-transportation.trycloudflare.com',
       }
     ],
   },

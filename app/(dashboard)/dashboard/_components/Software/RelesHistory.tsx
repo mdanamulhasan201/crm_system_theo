@@ -69,7 +69,7 @@ export default function RelesHistory() {
                 }
             } catch (error) {
                 console.error('Error fetching release history:', error)
-                toast.error('Fehler beim Laden der Release-Historie')
+                // toast.error('Fehler beim Laden der Release-Historie')
             } finally {
                 setLoading(false)
             }
@@ -116,7 +116,7 @@ export default function RelesHistory() {
             }
         } catch (error) {
             console.error('Error loading more releases:', error)
-            toast.error('Fehler beim Laden weiterer Releases')
+            // toast.error('Fehler beim Laden weiterer Releases')
         } finally {
             setLoadingMore(false)
         }

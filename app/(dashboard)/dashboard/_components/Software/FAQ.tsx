@@ -67,14 +67,7 @@ const faqData = {
     lager: {
         title: 'Lager',
         items: [
-            {
-                question: 'Werden Kunden über den Bestellstatus informiert?',
-                answer: 'Ja. Standardmäßig erhält der Kunde eine Auftragsbestätigung sowie eine Nachricht, sobald die Einlage zur Abholung bereitsteht. Weitere automatische Benachrichtigungen werden folgen und können später in den Einstellungen ein- oder ausgeschaltet werden.'
-            },
-            {
-                question: 'Kann die Lieferadresse des Kunden geändert werden?',
-                answer: 'Solange die Bestellung nicht versendet wurde, kann die Adresse im Dashboard angepasst werden.'
-            },
+           
             {
                 question: 'Wie sehe ich Lagerbewegungen?',
                 answer: 'Jede Bewegung wird automatisch protokolliert. In der Artikelansicht finden Sie eine komplette Historie aller Zu- und Abgänge.'
@@ -86,14 +79,6 @@ const faqData = {
             {
                 question: 'Wie korrigiere ich fehlerhafte Lagerbuchungen?',
                 answer: 'Über „Bestand anpassen" lassen sich Mengen manuell korrigieren. Jede Änderung wird protokolliert, damit die gesamte Bewegungshistorie nachvollziehbar bleibt.'
-            },
-            {
-                question: 'Kann ich als Partner sehen, welcher Mitarbeiter die Einlage fertigt?',
-                answer: 'Ja. In der Auftragstabelle sieht man genau, wer den Kunden gemessen hat, wer die Versorgung erstellt hat, zu welcher Zeit das passiert ist und wann der Auftrag in Arbeit gesetzt wurde.'
-            },
-            {
-                question: 'Kann der Kunde seine Bestellung selbst im System sehen?',
-                answer: 'Ja. In der App sieht der Kunde seine Bestellung inklusive Status, Abholhinweis und allen relevanten Informationen, sodass nicht jeder kleine Rückfrage-Anruf bei euch landet.'
             }
         ]
     },
