@@ -33,6 +33,7 @@ interface DailyCalendarViewProps {
     dayNamesLong: string[];
     onDateChange: (direction: number) => void;
     onEventClick?: (eventId: string) => void;
+    onTimeSlotClick?: (time: string, date: Date) => void;
 }
 
 // Using assignedTo-based color system from appointmentColors.ts
@@ -42,7 +43,8 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     events,
     dayNamesLong,
     onDateChange,
-    onEventClick
+    onEventClick,
+    onTimeSlotClick
 }) => {
     // Calendar configuration - Only show 8 AM to 9 PM (8-21)
     const calendarStartHour = 8;
@@ -124,13 +126,34 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     // Configuration
     const maxColumns = 4;
 
+    // Helper function to check if event has employee assignment
+    const hasEmployeeAssignment = (event: Event): boolean => {
+        if (Array.isArray(event.assignedTo) && event.assignedTo.length > 0) {
+            return true; // Has employee array
+        }
+        if (typeof event.assignedTo === 'string' && event.assignedTo.trim() !== '') {
+            return true; // Has employee string
+        }
+        return false;
+    };
+
     // Calculate event layout
     const eventLayout = useMemo(() => {
         if (events.length === 0) return [];
 
-        const sortedEvents = [...events].sort((a, b) =>
-            parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time)
-        );
+        // Sort events: first by time, then prioritize employee-assigned events
+        const sortedEvents = [...events].sort((a, b) => {
+            const timeDiff = parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time);
+            if (timeDiff !== 0) return timeDiff;
+            
+            // If same time, prioritize employee-assigned events (process them first)
+            const aHasEmployee = hasEmployeeAssignment(a);
+            const bHasEmployee = hasEmployeeAssignment(b);
+            if (aHasEmployee && !bHasEmployee) return -1; // Employee first
+            if (!aHasEmployee && bHasEmployee) return 1;  // Employee first
+            return 0;
+        });
+
         const layout: Array<{
             id: string;
             startMinutes: number;
@@ -147,27 +170,48 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             const durationMinutes = Math.round((event.duration || 0.17) * 60);
             const endMinutes = startMinutes + durationMinutes;
 
-            // Find overlapping events
-            const overlappingEvents = sortedEvents.filter((otherEvent, otherIndex) => {
-                if (otherIndex === index) return false;
-                const otherStartMinutes = parseTimeToMinutes(otherEvent.time);
-                const otherEndMinutes = otherStartMinutes + Math.round((otherEvent.duration || 0.17) * 60);
-                return !(endMinutes <= otherStartMinutes || startMinutes >= otherEndMinutes);
+            // Find overlapping events (already processed ones)
+            const overlappingLayouts = layout.filter(layoutItem => {
+                return !(endMinutes <= layoutItem.startMinutes || startMinutes >= layoutItem.endMinutes);
             });
 
-            // Find available column
+            // Check if this event has employee assignment
+            const isEmployeeAssigned = hasEmployeeAssignment(event);
+
+            // Find available column with priority logic
             let column = 0;
-            for (let col = 0; col < maxColumns; col++) {
-                const hasConflict = overlappingEvents.some(overlappingEvent => {
-                    const overlappingLayout = layout.find(l => l.id === overlappingEvent.id);
-                    return overlappingLayout && overlappingLayout.column === col;
-                });
-
-                if (!hasConflict) {
-                    column = col;
-                    break;
+            
+            // Check if left column (0) is occupied by overlapping events
+            const leftColumnOccupied = overlappingLayouts.some(layoutItem => layoutItem.column === 0);
+            
+            if (isEmployeeAssigned) {
+                // Employee-assigned events: prioritize left column
+                if (!leftColumnOccupied) {
+                    column = 0; // Use left column if available
+                } else {
+                    // Left column occupied, find next available column
+                    for (let col = 1; col < maxColumns; col++) {
+                        const columnOccupied = overlappingLayouts.some(layoutItem => layoutItem.column === col);
+                        if (!columnOccupied) {
+                            column = col;
+                            break;
+                        }
+                    }
                 }
-
+            } else {
+                // Non-employee events: use left column if free, otherwise use right columns
+                if (!leftColumnOccupied) {
+                    column = 0; // Use left column if available
+                } else {
+                    // Left column occupied, find next available column
+                    for (let col = 1; col < maxColumns; col++) {
+                        const columnOccupied = overlappingLayouts.some(layoutItem => layoutItem.column === col);
+                        if (!columnOccupied) {
+                            column = col;
+                            break;
+                        }
+                    }
+                }
             }
 
             layout.push({
@@ -248,7 +292,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                 >
                     {/* Time Labels - Fixed 5% width - Integrated with table */}
                     <div
-                        className="absolute left-0 top-0  z-10"
+                        className="absolute left-0 top-0 z-20 pointer-events-none"
                         style={{
                             height: `${containerHeightPx}px`,
                             width: '5%'
@@ -257,7 +301,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                         {timeSlots.map((time, index) => (
                             <div
                                 key={index}
-                                className="absolute text-xs sm:text-sm text-gray-500 font-medium flex items-center justify-center"
+                                className="absolute text-xs sm:text-sm text-gray-500 font-medium flex items-center justify-center pointer-events-none"
                                 style={{
                                     top: `${index * heightPerSlot}px`,
                                     height: `${heightPerSlot}px`,
@@ -319,6 +363,32 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                             ))}
                         </div>
 
+                        {/* Clickable Time Slots - Full box clickable for creating new appointments */}
+                        {onTimeSlotClick && timeSlots.map((timeSlot, index) => {
+                            const hour = calendarStartHour + index;
+                            const timeString = `${String(hour).padStart(2, '0')}:00`;
+                            
+                            return (
+                                <div
+                                    key={`timeslot-${index}`}
+                                    className="absolute cursor-pointer hover:bg-blue-50/30 transition-colors z-0"
+                                    style={{
+                                        top: `${index * heightPerSlot}px`,
+                                        left: '0%',
+                                        width: '100%',
+                                        height: `${heightPerSlot}px`
+                                    }}
+                                    onDoubleClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onTimeSlotClick) {
+                                            onTimeSlotClick(timeString, selectedDate);
+                                        }
+                                    }}
+                                    title={`Doppelklicken Sie, um einen Termin um ${timeString} zu erstellen`}
+                                />
+                            );
+                        })}
+
                         {/* Event Blocks */}
                         {eventLayout.map((event, index) => {
                             // Get color based on assignedTo using getAssignedToColor
@@ -348,7 +418,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                             return (
                                 <div
                                     key={event.id}
-                                    className={`absolute ${color.bg} rounded-md text-gray-800 ${onEventClick ? 'cursor-pointer hover:opacity-90' : ''} transition-opacity shadow-md overflow-visible`}
+                                    className={`absolute ${color.bg} rounded-md text-gray-800 ${onEventClick ? 'cursor-pointer hover:opacity-90' : ''} transition-opacity shadow-md overflow-visible z-10`}
                                     style={{
                                         top: `${topPx}px`,
                                         left: `${event.left + 6}%`,

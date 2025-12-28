@@ -244,6 +244,21 @@ const WeeklyCalendar = () => {
         setShowAddForm(true);
     };
 
+    const handleTimeSlotClick = (time: string, date: Date) => {
+        if (isPastDate(date)) {
+            alert('Sie können keine Termine zu vergangenen Daten hinzufügen.');
+            return;
+        }
+
+        // Format time to HH:MM format
+        const formattedTime = time.length === 5 ? time : `${time.padStart(2, '0')}:00`;
+        
+        form.reset();
+        form.setValue('selectedEventDate', date);
+        form.setValue('uhrzeit', formattedTime);
+        setShowAddForm(true);
+    };
+
 
     const onSubmit = async (data: { selectedEventDate: Date | undefined; isClientEvent: boolean; kunde: string; uhrzeit: string; termin: string; bemerk?: string; mitarbeiter: string; duration: number; customerId?: string; employeeId?: string }) => {
         const success = await createNewAppointment(data);
@@ -391,6 +406,7 @@ const WeeklyCalendar = () => {
                                 });
                             }}
                             onEventClick={handleAppointmentClick}
+                            onTimeSlotClick={handleTimeSlotClick}
                         />
                     </div>
 
