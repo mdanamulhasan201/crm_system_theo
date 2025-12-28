@@ -387,29 +387,29 @@ const WeeklyCalendar = () => {
                 </div>
             </div>
 
-            <div className="p-2 sm:p-4 md:p-6">
+            <div className="p-4">
+                {/* Calendar View - Same as dashboard */}
+                <div className="mb-6">
+                    <DailyCalendarView
+                        key={currentSelectedDate.toDateString()}
+                        selectedDate={currentSelectedDate}
+                        events={getEventsForDate(currentSelectedDate)}
+                        monthNames={monthNames}
+                        dayNamesLong={dayNamesLong}
+                        onDateChange={(direction) => {
+                            setCurrentSelectedDate(prev => {
+                                const next = new Date(prev);
+                                next.setDate(next.getDate() + direction);
+                                return next;
+                            });
+                        }}
+                        onEventClick={handleAppointmentClick}
+                        onTimeSlotClick={handleTimeSlotClick}
+                    />
+                </div>
+
+                {/* MiniCalendar and Monthly Calendar - Below Daily Calendar View */}
                 <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 mb-6 sm:mb-10 w-full">
-
-                    {/* Daily Calendar View - Responsive layout */}
-                    <div className="w-full lg:w-11/12 2xl:w-8/12">
-                        <DailyCalendarView
-                            key={currentSelectedDate.toDateString()}
-                            selectedDate={currentSelectedDate}
-                            events={getEventsForDate(currentSelectedDate)}
-                            monthNames={monthNames}
-                            dayNamesLong={dayNamesLong}
-                            onDateChange={(direction) => {
-                                setCurrentSelectedDate(prev => {
-                                    const next = new Date(prev);
-                                    next.setDate(next.getDate() + direction);
-                                    return next;
-                                });
-                            }}
-                            onEventClick={handleAppointmentClick}
-                            onTimeSlotClick={handleTimeSlotClick}
-                        />
-                    </div>
-
                     {/* MiniCalendar */}
                     <div className="w-full lg:w-4/12 2xl:w-3/12 mx-auto">
                         <MiniCalendar
@@ -432,19 +432,7 @@ const WeeklyCalendar = () => {
                             selectedRowStartDate={selectedRowStartDate}
                         />
                     </div>
-
-                    {/* Selected Date Display */}
-                    {/* <DayView
-                        selectedDate={selectedRowStartDate ? currentSelectedDate : today}
-                        events={getEventsForDate(selectedRowStartDate ? currentSelectedDate : today)}
-                        monthNames={monthNames}
-                        dayNamesLong={dayNamesLong}
-                        isSelectedDate={!!selectedRowStartDate}
-                    /> */}
                 </div>
-
-
-
 
                 <div className={`${isMobile ? 'block' : 'flex gap-8'}`}>
                     {/* Monthly Calendar */}
