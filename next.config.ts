@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'talking-ventures-theorem-seats.trycloudflare.com',
+        hostname: 'adams-mineral-emerald-here.trycloudflare.com',
       }
     ],
   },
