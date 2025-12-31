@@ -37,7 +37,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'adams-mineral-emerald-here.trycloudflare.com',
+        hostname: 'reducing-bid-widescreen-integer.trycloudflare.com',
       }
     ],
   },
