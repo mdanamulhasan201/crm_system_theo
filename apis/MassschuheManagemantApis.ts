@@ -142,6 +142,17 @@ export const updateMassschuheOrderChangesStatus = async (orderId: string, expres
     }
 }
 
+// update isByPartner_2 flag of massschuhe order
+// PATCH /massschuhe-order/update-order/:id  with body { isByPartner_2: boolean }
+export const updateMassschuheOrderPartner2 = async (orderId: string, isByPartner_2: boolean) => {
+    try {
+        const response = await axiosClient.patch(`/massschuhe-order/update-order/${orderId}`, { isByPartner_2 });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 
 // balance massschuhe order /custom_shafts/total-price-resio
 export const balanceMassschuheOrder = async () => {

@@ -5,6 +5,7 @@ import ConfirmationPopup from "./ConfirmationPopup";
 import Image from "next/image";
 import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder";
 import { useUpdateMassschuheOrderStatus } from "@/hooks/massschuhe/useUpdateMassschuheOrderStatus";
+import { updateMassschuheOrderPartner2 } from "@/apis/MassschuheManagemantApis";
 
 // Constants
 const STATUS_ORDER = ["Leistenerstellung", "Bettungsherstellung", "Halbprobenerstellung", "Schafterstellung", "Bodenerstellung", "Geliefert"];
@@ -606,63 +607,52 @@ export default function ChangesOrderProgress({
                 
                 {/* Halbprobenerstellung: PDF button was removed - now shows "In Fertigung" button instead (see below) */}
 
-                {/* Schafterstellung: Special multi-step button flow */}
-                {"hasSpecialButtons" in card && card.hasSpecialButtons && (
-                    <>
-                        {isButton1 && (
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    setIsButton1(false);
-                                    setIsButton2(true);
-                                    setTabClicked(card.tabIndex);
-                                    if (selectedOrderId) {
-                                        try {
-                                            await updateStatus([selectedOrderId], "Schafterstellung");
-                                            const updatedOrder = await refetchOrder();
-                                            // Update only the specific order in ProductionView (no full reload)
-                                            if (updatedOrder && onUpdateOrder) {
-                                                onUpdateOrder(selectedOrderId, {
-                                                    status: updatedOrder.status,
-                                                    statusHistory: updatedOrder.statusHistory,
-                                                });
-                                            }
-                                            // Refetch CardStatistik to update statistics in real-time
-                                            onRefetchCardStatistik?.();
-                                            // Refetch Chart to update revenue data in real-time
-                                            onRefetchChart?.();
-                                        } catch (error) {
-                                            console.error("Failed to update status:", error);
+                {/* Schafterstellung: Standard buttons (same as Leistenerstellung/Bettungsherstellung) */}
+                {"hasSpecialButtons" in card && card.hasSpecialButtons && !isCompleted && (isCurrent || isPending) && (
+                    <div className="mt-4 space-y-3 w-full">
+                        <button
+                            type="button"
+                            className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
+                            onClick={async () => {
+                                // Update isByPartner_2 to true when "In Fertigung" is clicked
+                                if (selectedOrderId) {
+                                    try {
+                                        await updateMassschuheOrderPartner2(selectedOrderId, true);
+                                        const updatedOrder = await refetchOrder();
+                                        // Update only the specific order in ProductionView (no full reload)
+                                        if (updatedOrder && onUpdateOrder) {
+                                            onUpdateOrder(selectedOrderId, {
+                                                isByPartner_2: true,
+                                                ...updatedOrder,
+                                            });
                                         }
+                                        // Refetch CardStatistik to update statistics in real-time
+                                        onRefetchCardStatistik?.();
+                                        // Refetch Chart to update revenue data in real-time
+                                        onRefetchChart?.();
+                                    } catch (error) {
+                                        console.error("Failed to update isByPartner_2:", error);
                                     }
-                                }}
-                                className="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
-                            >
-                                In Fertigung markieren
-                            </button>
-                        )}
-                        {isButton2 && (
+                                }
+                                // Also toggle progress
+                                toggleProgress(card.id)();
+                            }}
+                        >
+                            In Fertigung
+                        </button>
+                        {/* Hide bottom button if isByPartner_2 is true */}
+                        {!(order as any)?.isByPartner_2 && (
                             <button
                                 type="button"
+                                className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
                                 onClick={() => {
-                                    setIsButton2(false);
-                                    setShowPdf(true);
+                                    onClick();
                                 }}
-                                className="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
                             >
-                                Als abgeschlossen markieren
+                                Jetzt Leisten, Bettung, Halbprobe in einem bestellen
                             </button>
                         )}
-                        {showPdf && (isCurrent || isNext) && (
-                            <button
-                                type="button"
-                                className="mt-3 inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
-                                onClick={toggleProgress(card.id)}
-                            >
-                                <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
-                            </button>
-                        )}
-                    </>
+                    </div>
                 )}
 
                 {/* Bodenerstellung: Special multi-step button flow */}
