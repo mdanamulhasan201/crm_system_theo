@@ -38,7 +38,7 @@ export default function FilterTabs({
             </div>
             {/* Table Filter Tabs */}
             <div className='flex items-center gap-2 overflow-x-auto '>
-                {(['all', 'customer_files', 'custom_shafts', 'screener_file'] as TableFilter[]).map((table) => (
+                {(['all', 'customer_files', 'custom_shafts', 'screener_file', 'barcode', 'insoelInvoice'] as TableFilter[]).map((table) => (
                     <button
                         key={table}
                         onClick={() => onTableFilterChange(table)}

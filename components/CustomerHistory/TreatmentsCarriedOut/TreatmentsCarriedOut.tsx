@@ -4,33 +4,32 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import ReuseableCarousel from '../../ReuseableCarousel/ReuseableCarousel'
 import Image from 'next/image'
-import img1 from "@/public/images/customerHistory/1.png"
-import img2 from "@/public/images/customerHistory/2.png"
-import img3 from "@/public/images/customerHistory/3.png"
-import img4 from "@/public/images/customerHistory/4.png"
-import { getCustomerOrdersByCustomerId } from '@/apis/productsOrder'
+import { getCustomersBySupplyStatusId } from '@/apis/versorgungApis'
 import { useRouter } from 'next/navigation'
 
 type TreatmentsCarriedOutProps = {
     customerId?: string
 }
 
-type CustomerOrder = {
-    id: string
-    orderNumber?: number
-    createdAt?: string
-    store?: { name?: string }
-    storeId?: string
-    invoice?: string | null
-    einlagentyp?: string | null
-    product?: { name?: string | null }
-    werkstattzettel?: { geschaeftsstandort?: string | null }
+type SupplyStatusData = {
+    supplyStatus: {
+        id: string
+        name: string
+        price: number
+        image: string
+        description: string
+    }
+    order: {
+        id: string
+        orderNumber: number
+        createdAt: string
+        filiale: string
+        invoice?: string | null
+    }
 }
 
-const staticImages = [img1, img2, img3, img4]
-
 export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOutProps) {
-    const [orders, setOrders] = useState<CustomerOrder[]>([])
+    const [supplyStatusData, setSupplyStatusData] = useState<SupplyStatusData[]>([])
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -46,45 +45,41 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
     useEffect(() => {
         if (!customerId) return
 
-        const fetchOrders = async () => {
+        const fetchSupplyStatuses = async () => {
             setLoading(true)
             setError(null)
             try {
-                const response = await getCustomerOrdersByCustomerId(customerId, 1, 10)
-                setOrders(response?.data ?? [])
+                const response = await getCustomersBySupplyStatusId(customerId, 1, 10)
+                setSupplyStatusData(response?.data ?? [])
             } catch (err) {
                 setError('Fehler beim Laden der Versorgungen')
-                setOrders([])
+                setSupplyStatusData([])
             } finally {
                 setLoading(false)
             }
         }
 
-        fetchOrders()
+        fetchSupplyStatuses()
     }, [customerId])
 
     const cardData = useMemo(() => {
-        if (!orders.length) return []
+        if (!supplyStatusData.length) return []
 
-        return orders.map((order, index) => {
-            const image = staticImages[index % staticImages.length]
-            const formattedDate = order.createdAt
-                ? new Date(order.createdAt).toLocaleDateString('de-DE')
+        return supplyStatusData.map((item) => {
+            const formattedDate = item.order?.createdAt
+                ? new Date(item.order.createdAt).toLocaleDateString('de-DE')
                 : '-'
-            const storeLabel =
-                order.werkstattzettel?.geschaeftsstandort ||
-                order.store?.name ||
-                '–'
+            const storeLabel = item.order?.filiale || '–'
 
             return {
-                order,
-                title: order.einlagentyp || order.product?.name || 'Versorgung',
+                order: item.order,
+                supplyStatus: item.supplyStatus,
+                title: item.supplyStatus?.name || 'Versorgung',
                 storeLabel,
                 formattedDate,
-                image,
             }
         })
-    }, [orders])
+    }, [supplyStatusData])
 
     const renderCard = (item: (typeof cardData)[number], keyPrefix: string) => (
         <div
@@ -92,13 +87,19 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
             className="w-full h-full p-4 flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white shadow-sm"
         >
             <div className="relative w-full h-48 bg-[#f5f5f5] rounded-xl overflow-hidden">
-                <Image
-                    src={item.image}
-                    alt={item.title}
-                    fill
-                    className="object-contain p-4"
-                    sizes="(max-width: 640px) 100vw, 300px"
-                />
+                {item.supplyStatus?.image ? (
+                    <Image
+                        src={item.supplyStatus.image}
+                        alt={item.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 300px"
+                    />
+                ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                        <span className="text-sm">Kein Bild verfügbar</span>
+                    </div>
+                )}
             </div>
             <div className="space-y-1">
                 <h3 className="text-xl font-semibold text-gray-900 break-words">{item.title}</h3>
@@ -137,7 +138,7 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
             {loading && <div className="text-sm text-gray-500">Versorgungen werden geladen...</div>}
             {error && <div className="text-sm text-red-500">{error}</div>}
 
-            {!loading && !orders.length && !error && (
+            {!loading && !supplyStatusData.length && !error && (
                 <div className="text-sm text-gray-500">Keine Versorgungen gefunden.</div>
             )}
 

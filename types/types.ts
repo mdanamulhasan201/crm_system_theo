@@ -1,6 +1,6 @@
 export type DocumentType = 'all' | 'rezept' | 'kostenvoranschlag' | 'genehmigung' | 'konformität' | 'rechnung' | 'zahlungsbeleg' | 'image' | 'stl' | 'csv' | 'pdf' | 'jpg' | 'webp'
 
-export type TableFilter = 'all' | 'customer_files' | 'custom_shafts' | 'screener_file'
+export type TableFilter = 'all' | 'customer_files' | 'custom_shafts' | 'screener_file' | 'barcode' | 'insoelInvoice'
 
 export interface Document {
     id: string
@@ -31,6 +31,11 @@ export interface ApiResponse {
     success: boolean
     message: string
     data: ApiFile[]
+    exclInfo?: {
+        name: string
+        orderNumber: number
+        fertigstellungBis: string
+    }
     pagination: {
         page: number
         limit: number
@@ -61,5 +66,7 @@ export const tableFilterLabels: Record<TableFilter, string> = {
     all: 'Alle',
     customer_files: 'Kundendateien',
     custom_shafts: 'Individuelle Schäfte',
-    screener_file: 'Scanner-Datei'
+    screener_file: 'Scanner-Datei',
+    barcode: 'Barcode',
+    insoelInvoice: 'Insoel Rechnung'
 }

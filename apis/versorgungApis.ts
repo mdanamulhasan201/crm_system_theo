@@ -62,3 +62,14 @@ export const getSingleStorageById = async (storageId: string) => {
 };
 
 
+
+
+// /customers/supply-status/f51f6946-39a9-4541-8ce1-6ca52e676643?page=1&limit=1
+export const getCustomersBySupplyStatusId = async (customerId: string, page: number, limit: number) => {
+    try {
+        const response = await axiosClient.get(`/customers/supply-status/${customerId}?page=${page}&limit=${limit}`);
+        return response.data;
+    } catch (error: any) {
+        throw new Error(error.response?.data?.message || 'Failed to fetch customers by supply status');
+    }
+}

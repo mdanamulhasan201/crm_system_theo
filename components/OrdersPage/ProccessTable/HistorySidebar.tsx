@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { X, Download, Clock, User, CheckCircle, Info } from 'lucide-react';
+import { X, Download, Clock, User, CheckCircle, Info, CheckCircle2, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useOrderHistory } from '@/hooks/orders/useOrderHistory';
+import { getPaymentStatus } from '@/apis/productsOrder';
+import { normalizePaymentStatus } from '@/lib/paymentStatusUtils';
+import toast from 'react-hot-toast';
 
 interface HistorySidebarProps {
     isOpen: boolean;
@@ -18,8 +21,9 @@ export default function HistorySidebar({
     orderId,
     orderNumber,
 }: HistorySidebarProps) {
-    const { data, loading, error } = useOrderHistory(orderId);
+    const { data, loading, error, refetch } = useOrderHistory(orderId);
     const [shouldRender, setShouldRender] = useState(false);
+    const [updatingPaymentStatusId, setUpdatingPaymentStatusId] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -220,6 +224,143 @@ export default function HistorySidebar({
         }
     };
 
+    // Handle payment status change
+    const handlePaymentStatusChange = async (entryId: string, currentStatus: string) => {
+        if (!orderId) return;
+
+        setUpdatingPaymentStatusId(entryId);
+        try {
+            // Normalize the current status to determine the new status
+            const normalizedStatus = normalizePaymentStatus(currentStatus);
+            
+            let newStatus: string;
+            if (normalizedStatus === 'Privat_Bezahlt') {
+                newStatus = 'Privat_offen';
+            } else if (normalizedStatus === 'Privat_offen') {
+                newStatus = 'Privat_Bezahlt';
+            } else if (normalizedStatus === 'Krankenkasse_Genehmigt') {
+                newStatus = 'Krankenkasse_Ungenehmigt';
+            } else if (normalizedStatus === 'Krankenkasse_Ungenehmigt') {
+                newStatus = 'Krankenkasse_Genehmigt';
+            } else {
+                // Default: if current is "Privat offen" (display format), change to "Privat Bezahlt"
+                if (currentStatus.toLowerCase().includes('privat') && currentStatus.toLowerCase().includes('offen')) {
+                    newStatus = 'Privat_Bezahlt';
+                } else if (currentStatus.toLowerCase().includes('privat') && currentStatus.toLowerCase().includes('bezahlt')) {
+                    newStatus = 'Privat_offen';
+                } else {
+                    toast.error('Unbekannter Zahlungsstatus');
+                    return;
+                }
+            }
+
+            // Call API to update payment status
+            await getPaymentStatus([orderId], newStatus, newStatus);
+            toast.success('Zahlungsstatus erfolgreich aktualisiert');
+            
+            // Refetch history to show updated data
+            await refetch();
+        } catch (error) {
+            console.error('Failed to update payment status:', error);
+            toast.error('Fehler beim Aktualisieren des Zahlungsstatus');
+        } finally {
+            setUpdatingPaymentStatusId(null);
+        }
+    };
+
+    // Get button for payment status change based on current status
+    const getPaymentStatusButton = (entry: any) => {
+        const currentStatus = entry.paymentTo || entry.paymentToDisplay || '';
+        const normalizedStatus = normalizePaymentStatus(currentStatus);
+        const isUpdating = updatingPaymentStatusId === entry.id;
+
+        // If Privat_Bezahlt - show button to change back to Privat_offen
+        if (normalizedStatus === 'Privat_Bezahlt' || 
+            (currentStatus.toLowerCase().includes('privat') && currentStatus.toLowerCase().includes('bezahlt'))) {
+            return (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePaymentStatusChange(entry.id, currentStatus)}
+                    disabled={isUpdating}
+                    className="text-xs py-1.5 px-3 cursor-pointer whitespace-nowrap flex-shrink-0 bg-orange-50 border-orange-300 text-orange-700 hover:bg-orange-100 disabled:opacity-50"
+                >
+                    {isUpdating ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-700 mr-1.5"></div>
+                    ) : (
+                        <XCircle className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                    )}
+                    Privat Offen
+                </Button>
+            );
+        }
+
+        // If Privat_offen - show Privat_Bezahlt button
+        if (normalizedStatus === 'Privat_offen' || 
+            (currentStatus.toLowerCase().includes('privat') && currentStatus.toLowerCase().includes('offen'))) {
+            return (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePaymentStatusChange(entry.id, currentStatus)}
+                    disabled={isUpdating}
+                    className="text-xs py-1.5 px-3 cursor-pointer whitespace-nowrap flex-shrink-0 bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50"
+                >
+                    {isUpdating ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-emerald-700 mr-1.5"></div>
+                    ) : (
+                        <CheckCircle2 className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                    )}
+                    Privat Bezahlt
+                </Button>
+            );
+        }
+
+        // If Krankenkasse_Genehmigt - show button to change back to Krankenkasse_Ungenehmigt
+        if (normalizedStatus === 'Krankenkasse_Genehmigt' || 
+            (currentStatus.toLowerCase().includes('krankenkasse') && currentStatus.toLowerCase().includes('genehmigt'))) {
+            return (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePaymentStatusChange(entry.id, currentStatus)}
+                    disabled={isUpdating}
+                    className="text-xs py-1.5 px-3 cursor-pointer whitespace-nowrap flex-shrink-0 bg-red-50 border-red-300 text-red-700 hover:bg-red-100 disabled:opacity-50"
+                >
+                    {isUpdating ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-red-700 mr-1.5"></div>
+                    ) : (
+                        <XCircle className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                    )}
+                    Krankenkasse Ungenehmigt
+                </Button>
+            );
+        }
+
+        // If Krankenkasse_Ungenehmigt - show Krankenkasse_Genehmigt button
+        if (normalizedStatus === 'Krankenkasse_Ungenehmigt' || 
+            (currentStatus.toLowerCase().includes('krankenkasse') && currentStatus.toLowerCase().includes('ungenehmigt'))) {
+            return (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handlePaymentStatusChange(entry.id, currentStatus)}
+                    disabled={isUpdating}
+                    className="text-xs py-1.5 px-3 cursor-pointer whitespace-nowrap flex-shrink-0 bg-green-50 border-green-300 text-green-700 hover:bg-green-100 disabled:opacity-50"
+                >
+                    {isUpdating ? (
+                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-green-700 mr-1.5"></div>
+                    ) : (
+                        <CheckCircle2 className="h-3 w-3 mr-1.5 flex-shrink-0" />
+                    )}
+                    Krankenkasse Genehmigt
+                </Button>
+            );
+        }
+
+        return null;
+    };
+
     if (!shouldRender) return null;
 
     return (
@@ -367,44 +508,57 @@ export default function HistorySidebar({
                                                 />
                                             )}
                                             <div className="space-y-4">
-                                                {data.paymentStatusHistory.map((entry, index) => (
-                                                    <div
-                                                        key={entry.id || index}
-                                                        className="relative flex gap-4"
-                                                    >
-                                                        <div className="relative flex-shrink-0" style={{ width: '12px' }}>
-                                                            <div 
-                                                                className="absolute left-[3px] w-[3px] bg-white"
-                                                                style={{ 
-                                                                    top: '6px',
-                                                                    height: '12px',
-                                                                    zIndex: 6,
-                                                                }}
-                                                            />
-                                                            <div className="relative z-10 flex items-center justify-center mt-2">
-                                                                <div className="w-2 h-2 rounded-full bg-green-600 shadow-sm"></div>
+                                                {data.paymentStatusHistory.map((entry, index) => {
+                                                    // Only show button for the most recent entry (index 0) which represents current status
+                                                    const isCurrentStatus = index === 0;
+                                                    return (
+                                                        <div
+                                                            key={entry.id || index}
+                                                            className="relative flex gap-4"
+                                                        >
+                                                            <div className="relative flex-shrink-0" style={{ width: '12px' }}>
+                                                                <div 
+                                                                    className="absolute left-[3px] w-[3px] bg-white"
+                                                                    style={{ 
+                                                                        top: '6px',
+                                                                        height: '12px',
+                                                                        zIndex: 6,
+                                                                    }}
+                                                                />
+                                                                <div className="relative z-10 flex items-center justify-center mt-2">
+                                                                    <div className="w-2 h-2 rounded-full bg-green-600 shadow-sm"></div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <div className="flex items-start justify-between gap-3">
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="text-sm font-normal text-gray-500 mb-1">
+                                                                            {formatDate(entry.timestamp || entry.date)}
+                                                                        </p>
+                                                                        <p className="text-sm font-normal text-gray-900 leading-relaxed">
+                                                                            <span className="font-semibold text-gray-900">
+                                                                                {entry.user}
+                                                                            </span>{' '}
+                                                                            Zahlungsstatus geändert:{' '}
+                                                                            <span className="text-gray-600">
+                                                                                {entry.paymentFromDisplay || entry.paymentFrom}
+                                                                            </span>
+                                                                            {' → '}
+                                                                            <span className="font-medium text-green-700">
+                                                                                {entry.paymentToDisplay || entry.paymentTo}
+                                                                            </span>
+                                                                        </p>
+                                                                    </div>
+                                                                    {isCurrentStatus && (
+                                                                        <div className="flex-shrink-0 mt-1">
+                                                                            {getPaymentStatusButton(entry)}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-normal text-gray-500 mb-1">
-                                                                {formatDate(entry.timestamp || entry.date)}
-                                                            </p>
-                                                            <p className="text-sm font-normal text-gray-900 leading-relaxed">
-                                                                <span className="font-semibold text-gray-900">
-                                                                    {entry.user}
-                                                                </span>{' '}
-                                                                Zahlungsstatus geändert:{' '}
-                                                                <span className="text-gray-600">
-                                                                    {entry.paymentFromDisplay || entry.paymentFrom}
-                                                                </span>
-                                                                {' → '}
-                                                                <span className="font-medium text-green-700">
-                                                                    {entry.paymentToDisplay || entry.paymentTo}
-                                                                </span>
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                ))}
+                                                    );
+                                                })}
                                             </div>
                                         </div>
                                     </div>

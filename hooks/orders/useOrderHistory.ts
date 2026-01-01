@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getCustomerOrderHistory } from '@/apis/productsOrder';
 
 export interface StepDuration {
@@ -95,44 +95,44 @@ export const useOrderHistory = (orderId: string | null) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
+    const fetchHistory = useCallback(async () => {
         if (!orderId) {
             setData(null);
             setError(null);
             return;
         }
 
-        const fetchHistory = async () => {
-            setLoading(true);
-            setError(null);
-            try {
-                const response: OrderHistoryApiResponse = await getCustomerOrderHistory(orderId);
-                if (response.success) {
-                    // Map API response to component format
-                    const mappedData: OrderHistoryData = {
-                        orderNumber: response.data.orderNumber,
-                        stepDurations: response.data.stepDurationOverview || [],
-                        changeLog: response.data.changeLog || [],
-                        paymentStatusHistory: response.data.paymentStatusHistory,
-                        barcodeInfo: response.data.barcodeInfo,
-                        scannerInfo: response.data.scannerInfo,
-                        summary: response.data.summary,
-                        totalEntries: response.data.changeLog?.length || 0,
-                    };
-                    setData(mappedData);
-                } else {
-                    setError('Failed to fetch order history');
-                }
-            } catch (err: any) {
-                setError(err.message || 'Failed to fetch order history');
-                setData(null);
-            } finally {
-                setLoading(false);
+        setLoading(true);
+        setError(null);
+        try {
+            const response: OrderHistoryApiResponse = await getCustomerOrderHistory(orderId);
+            if (response.success) {
+                // Map API response to component format
+                const mappedData: OrderHistoryData = {
+                    orderNumber: response.data.orderNumber,
+                    stepDurations: response.data.stepDurationOverview || [],
+                    changeLog: response.data.changeLog || [],
+                    paymentStatusHistory: response.data.paymentStatusHistory,
+                    barcodeInfo: response.data.barcodeInfo,
+                    scannerInfo: response.data.scannerInfo,
+                    summary: response.data.summary,
+                    totalEntries: response.data.changeLog?.length || 0,
+                };
+                setData(mappedData);
+            } else {
+                setError('Failed to fetch order history');
             }
-        };
-
-        fetchHistory();
+        } catch (err: any) {
+            setError(err.message || 'Failed to fetch order history');
+            setData(null);
+        } finally {
+            setLoading(false);
+        }
     }, [orderId]);
 
-    return { data, loading, error };
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory]);
+
+    return { data, loading, error, refetch: fetchHistory };
 };

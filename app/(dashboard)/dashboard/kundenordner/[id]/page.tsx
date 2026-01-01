@@ -13,6 +13,7 @@ import FilterTabs from '../../_components/Kundenordner/FilterTabs'
 import DocumentGrid from '../../_components/Kundenordner/DocumentGrid'
 import PaginationControls from '../../_components/Kundenordner/PaginationControls'
 import DeleteDialog from '../../_components/Kundenordner/DeleteDialog'
+import * as XLSX from 'xlsx'
 
 
 export default function KundenordnerPage() {
@@ -31,6 +32,7 @@ export default function KundenordnerPage() {
     const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null)
     const [deleteLoading, setDeleteLoading] = useState(false)
     const [uploadLoading, setUploadLoading] = useState(false)
+    const [exportLoading, setExportLoading] = useState(false)
     const limit = 20
     const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -164,6 +166,83 @@ export default function KundenordnerPage() {
         setPage(1)
     }
 
+    const handleExportAll = async () => {
+        try {
+            setExportLoading(true)
+            
+            // Fetch all documents by getting all pages
+            let allDocuments: ApiFile[] = []
+            let exclInfo: ApiResponse['exclInfo'] | undefined = undefined
+            let currentPage = 1
+            let hasMore = true
+            const fetchLimit = 100 // Use a larger limit to reduce API calls
+
+            while (hasMore) {
+                const response: ApiResponse = await getKundenordnerData(customerId, currentPage, fetchLimit)
+                
+                if (response.success && response.data) {
+                    allDocuments = [...allDocuments, ...response.data]
+                    
+                    // Get exclInfo from first response
+                    if (currentPage === 1 && response.exclInfo) {
+                        exclInfo = response.exclInfo
+                    }
+                    
+                    // Check if there are more pages
+                    hasMore = response.pagination.hasNext
+                    currentPage++
+                } else {
+                    hasMore = false
+                }
+            }
+
+            // Prepare Excel data
+            const workbook = XLSX.utils.book_new()
+
+            // Add exclInfo sheet if available
+            if (exclInfo) {
+                const exclInfoData = [
+                    { 'Feld': 'Name', 'Wert': exclInfo.name || '' },
+                    { 'Feld': 'Auftragsnummer', 'Wert': exclInfo.orderNumber || '' },
+                    { 'Feld': 'Fertigstellung bis', 'Wert': exclInfo.fertigstellungBis ? formatDate(exclInfo.fertigstellungBis) : '' }
+                ]
+                const exclInfoSheet = XLSX.utils.json_to_sheet(exclInfoData)
+                XLSX.utils.book_append_sheet(workbook, exclInfoSheet, 'Kundeninformationen')
+            }
+
+            // Prepare documents data for Excel
+            const documentsData = allDocuments.map((file: ApiFile) => {
+                const docType = mapFileTypeToDocumentType(file.fileType, file.table, file.fieldName)
+                return {
+                    'ID': file.id,
+                    'Titel': getFileTitle(file.url, file.fieldName, file.table),
+                    'Dateiname': file.url,
+                    'Dateityp': file.fileType,
+                    'Tabelle': file.table,
+                    'Feldname': file.fieldName,
+                    'Dokumenttyp': docType,
+                    'Erstellt am': formatDate(file.createdAt),
+                    'URL': file.fullUrl
+                }
+            })
+
+            // Add documents sheet
+            const documentsSheet = XLSX.utils.json_to_sheet(documentsData)
+            XLSX.utils.book_append_sheet(workbook, documentsSheet, 'Dokumente')
+
+            // Generate filename with date
+            const fileName = `Kundenordner_Export_${new Date().toISOString().split('T')[0]}.xlsx`
+            XLSX.writeFile(workbook, fileName)
+
+            alert(`${allDocuments.length} Dokumente erfolgreich exportiert`)
+        } catch (err) {
+            console.error('Error exporting documents:', err)
+            alert('Export fehlgeschlagen. Bitte erneut versuchen.')
+        } finally {
+            setExportLoading(false)
+        }
+    }
+
     if (loading && documents.length === 0) {
         return <Loading isFullPage={true} message="Loading documents..." />
     }
@@ -204,6 +283,8 @@ export default function KundenordnerPage() {
                     loading={loading}
                     fileInputRef={fileInputRef}
                     onFileChange={handleFileChange}
+                    onExportClick={handleExportAll}
+                    exportLoading={exportLoading}
                 />
 
                 <FilterTabs

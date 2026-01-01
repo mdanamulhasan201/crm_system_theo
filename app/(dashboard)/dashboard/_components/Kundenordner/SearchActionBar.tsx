@@ -13,6 +13,8 @@ interface SearchActionBarProps {
     loading: boolean
     fileInputRef: React.RefObject<HTMLInputElement | null>
     onFileChange: (event: React.ChangeEvent<HTMLInputElement>) => void
+    onExportClick: () => void
+    exportLoading: boolean
 }
 
 export default function SearchActionBar({
@@ -22,7 +24,9 @@ export default function SearchActionBar({
     uploadLoading,
     loading,
     fileInputRef,
-    onFileChange
+    onFileChange,
+    onExportClick,
+    exportLoading
 }: SearchActionBarProps) {
     return (
         <>
@@ -51,9 +55,18 @@ export default function SearchActionBar({
                     )}
                     {uploadLoading ? 'Hochladen...' : 'Hochladen'}
                 </Button>
-                <Button variant='outline' className='flex items-center gap-2'>
-                    <Download className='w-4 h-4' />
-                    Alle exportieren
+                <Button 
+                    variant='outline' 
+                    className='flex items-center gap-2'
+                    onClick={onExportClick}
+                    disabled={exportLoading || loading}
+                >
+                    {exportLoading ? (
+                        <Loader2 className='w-4 h-4 animate-spin' />
+                    ) : (
+                        <Download className='w-4 h-4' />
+                    )}
+                    {exportLoading ? 'Exportieren...' : 'Alle exportieren'}
                 </Button>
             </div>
 
