@@ -156,7 +156,7 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                             <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] p-2 flex flex-col items-center">
                                 <div className='border border-gray-900 p-5 flex flex-col gap-3 rounded-xl h-[320px] w-full'>
                                     {/* Versorgung at top */}
-                                    <p className='font-bold text-lg'>Versorgung: <span className='font-normal'>{card.versorgung}</span></p>
+                                    <p className='font-bold text-lg'>Versorgung: <span className='font-normal text-xl'>{card.versorgung}</span></p>
                                     
                                     {/* Materials + Einlage Name */}
                                     <div className='flex flex-col gap-2'>
@@ -167,11 +167,12 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                                                     : card.materialien}
                                             </span>
                                         </p>
+                                             {/* Name */}
+                                    <h2 className='text-xl xl:text-2xl font-bold'>{card.name}</h2>
                                         <p className='font-bold'>Einlage: <span className='font-normal'>{einlageName}</span></p>
                                     </div>
                                     
-                                    {/* Name */}
-                                    <h2 className='text-xl xl:text-2xl font-bold'>{card.name}</h2>
+                               
                                     
                                     {/* Spacer to push Diagnose to bottom */}
                                     <div className='flex-1'></div>

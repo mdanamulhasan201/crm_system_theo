@@ -35,7 +35,9 @@ export const useCustomerSearch = (): UseCustomerSearchReturn => {
     try {
       const response = await getSearchCustom(searchTerm);
       if (response.success) {
-        setCustomers(response.data);
+        // The response structure is: { success: true, data: { customers: [...], ... } }
+        const customersArray = response.data?.customers || [];
+        setCustomers(customersArray);
       } else {
         setError('Failed to search customers');
         setCustomers([]);

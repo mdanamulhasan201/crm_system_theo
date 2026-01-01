@@ -640,8 +640,8 @@ export default function ChangesOrderProgress({
                         >
                             In Fertigung
                         </button>
-                        {/* Hide bottom button if isByPartner_2 is true */}
-                        {!(order as any)?.isByPartner_2 && (
+                        {/* Hide bottom button if isByPartner_1 is true */}
+                        {!(order as any)?.isByPartner_1 && (
                             <button
                                 type="button"
                                 className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
