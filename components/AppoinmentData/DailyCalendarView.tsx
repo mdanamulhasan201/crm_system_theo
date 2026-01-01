@@ -438,7 +438,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         <div className="flex items-start justify-between mb-1 gap-1.5">
                                             {/* Event Title/Reason - Left Side */}
                                             {(event.reason || event.subtitle) && (
-                                                <div className="text-xs font-semibold leading-tight flex-1 break-words" style={{ lineHeight: '1.3', wordBreak: 'break-word' }}>
+                                                <div className="text-sm font-bold capitalize leading-tight flex-1 break-words" style={{ lineHeight: '1.3', wordBreak: 'break-word' }}>
                                                     {event.reason || event.subtitle}
                                                 </div>
                                             )}
@@ -485,7 +485,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         {/* Customer name */}
                                         {event.customer_name && (
                                             <div className="text-xs mb-1 leading-tight" style={{ lineHeight: '1.4' }}>
-                                                <span className="text-gray-700">Kunde: </span>
+                                                <span className="text-gray-700 font-bold">Kunde: </span>
                                                 {event.customerId ? (
                                                     <Link
                                                         href={`/dashboard/scanning-data/${event.customerId}`}

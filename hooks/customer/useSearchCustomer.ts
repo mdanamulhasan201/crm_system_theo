@@ -109,8 +109,11 @@ export const useSearchCustomer = () => {
 
             const response = await searchCustomers(searchTerm, 1, 10, nameParam, emailParam, phoneParam, '', '');
 
-            if (response && response.data && response.data.length > 0) {
-                const suggestions = response.data.map((customer: any) => {
+            // Handle both response structures: response.data.customers (new) or response.data (old)
+            const customers = response?.data?.customers || response?.data || [];
+            
+            if (customers && customers.length > 0) {
+                const suggestions = customers.map((customer: any) => {
                     const mappedCustomer = {
                         id: customer.id,
                         name: customer.name || customer.nameKunde || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
@@ -199,28 +202,34 @@ export const useSearchCustomer = () => {
             }
 
             // If no result and phone available, try phone search
-            if ((!response || !response.data || response.data.length === 0) && searchPhone) {
+            const responseCustomers1 = response?.data?.customers || response?.data || [];
+            if ((!response || responseCustomers1.length === 0) && searchPhone) {
                 response = await searchCustomers(searchPhone, 1, 10, '', '', searchPhone, '', '');
             }
 
             // If no result and email available, try email search  
-            if ((!response || !response.data || response.data.length === 0) && searchEmail) {
+            const responseCustomers2 = response?.data?.customers || response?.data || [];
+            if ((!response || responseCustomers2.length === 0) && searchEmail) {
                 response = await searchCustomers(searchEmail, 1, 10, '', searchEmail, '', '', '');
             }
 
             // If no result and location available, try location search
-            if ((!response || !response.data || response.data.length === 0) && searchLocation) {
+            const responseCustomers3 = response?.data?.customers || response?.data || [];
+            if ((!response || responseCustomers3.length === 0) && searchLocation) {
                 response = await searchCustomers(searchLocation, 1, 10, '', '', '', '', '');
             }
 
             // If still no result, try general search
-            if (!response || !response.data || response.data.length === 0) {
+            const responseCustomers4 = response?.data?.customers || response?.data || [];
+            if (!response || responseCustomers4.length === 0) {
                 const searchTerm = searchName || searchPhone || searchEmail || searchLocation;
                 response = await searchCustomers(searchTerm, 1, 10, searchName || '', searchEmail || '', searchPhone || '', '', '');
             }
 
-            if (response && response.data && response.data.length > 0) {
-                const customer = response.data[0];
+            // Handle both response structures: response.data.customers (new) or response.data (old)
+            const customers = response?.data?.customers || response?.data || [];
+            if (customers && customers.length > 0) {
+                const customer = customers[0];
                 // Fetch full customer data using getSingleCustomer
                 if (customer.id) {
                     await fetchFullCustomerData(customer.id);
