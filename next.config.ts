@@ -33,7 +33,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'reducing-bid-widescreen-integer.trycloudflare.com',
+        hostname: 'extraction-coming-zoo-vegetarian.trycloudflare.com',
       }
     ],
   },
