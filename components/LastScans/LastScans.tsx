@@ -151,7 +151,20 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
                                         </h2>
                                         <p>Kunden-ID: {scan?.customerNumber}</p>
                                         <p>Erstellt am: {formatDate(scan.createdAt)}</p>
-                                        <p>Ort: {scan?.wohnort}</p>
+                                        <div className='relative group'>
+                                            <p className='truncate cursor-help'>
+                                                Ort: {scan?.wohnort || 'N/A'}
+                                            </p>
+                                            {scan?.wohnort && (
+                                                <div className='absolute bottom-full left-0 mb-2 hidden group-hover:block z-50 max-w-xs p-2 bg-gray-900 text-white text-xs rounded-lg shadow-lg break-words'>
+                                                    <div className='relative'>
+                                                        <span className='font-semibold'>Ort: </span>
+                                                        {scan.wohnort}
+                                                        <div className='absolute top-full left-4 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900'></div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
 
                                         <div className='flex flex-col gap-2 z-50 mt-auto'>
                                             <button
