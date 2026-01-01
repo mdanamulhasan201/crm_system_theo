@@ -163,3 +163,20 @@ export const balanceMassschuheOrder = async () => {
         throw error;
     }
 }
+
+
+// send massschuhe order to admin 1 /massschuhe-order/admin-order/send-to-admin-1/:orderId
+// body pass threed_model_right and threed_model_left and invoice  
+
+export const sendMassschuheOrderToAdmin1 = async (orderId: string, formData: FormData | any) => {
+    try {
+        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-1/${orderId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

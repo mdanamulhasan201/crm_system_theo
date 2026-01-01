@@ -23,7 +23,7 @@ export interface OrderDataForPDF {
 interface PDFPopupProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: () => void
+  onConfirm: (pdfBlob?: Blob) => void
   allGroups: GroupDef[]
   selected: Record<string, string | null>
   optionInputs: Record<string, Record<string, string[]>>
@@ -109,6 +109,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   orderData,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
+  const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
 
   // Default values if orderData is not provided
   const displayOrderNumber = orderData?.orderNumber || "#000000"
@@ -167,8 +168,8 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     </span>
   );
 
-  const handleDownloadPDF = async () => {
-    if (!pdfContentRef.current) return
+  const generatePDFBlob = async (): Promise<Blob | null> => {
+    if (!pdfContentRef.current) return null
 
     const clone = pdfContentRef.current.cloneNode(true) as HTMLElement
 
@@ -183,7 +184,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     if (footer && footer.parentNode) footer.parentNode.removeChild(footer)
 
     const opt = {
-      margin: [40, 40, 80, 40], // [top, left, bottom, right] - equal margins, bottom accounts for footer (40pt) + spacing (40pt)
+      margin: [40, 40, 80, 40],
       filename: "document.pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
@@ -211,7 +212,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     const html2pdf = html2pdfModule.default || html2pdfModule
 
     try {
-      const worker = html2pdf()
+      const pdf = await html2pdf()
         .set(opt as any)
         .from(clone)
         .toPdf()
@@ -232,103 +233,67 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             pdf.text(footerEmail, pageWidth - 40, pageHeight - 15, { align: "right" })
           }
 
-          pdf.save("document.pdf")
+          return pdf.output("blob")
         })
 
-      await worker
+      return pdf
     } catch (err) {
       console.warn('PDF generation error:', err);
+      return null
+    }
+  }
+
+  const handleDownloadPDF = async () => {
+    const blob = await generatePDFBlob()
+    if (blob) {
+      setPdfBlob(blob)
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = "document.pdf"
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
     }
   }
 
   const handlePrint = async () => {
-    if (!pdfContentRef.current) return
+    const blob = await generatePDFBlob()
+    if (blob) {
+      setPdfBlob(blob)
+      const pdfUrl = URL.createObjectURL(blob)
+   
+      const printFrame = document.createElement("iframe")
+      printFrame.style.display = "none"
+      printFrame.src = pdfUrl
+      document.body.appendChild(printFrame)
 
-    const clone = pdfContentRef.current.cloneNode(true) as HTMLElement
-
-    clone.querySelectorAll("textarea").forEach((textarea) => {
-      const div = document.createElement("div")
-      div.textContent = textarea.value || ""
-      div.className = "description-text-area pdf-textarea-replacement"
-      textarea.parentNode?.replaceChild(div, textarea)
-    })
- 
-    const footer = clone.querySelector(".pdf-info-footer")
-    if (footer && footer.parentNode) footer.parentNode.removeChild(footer)
-
-    const opt = {
-      margin: [40, 40, 80, 40], // [top, left, bottom, right] - equal margins, bottom accounts for footer (40pt) + spacing (40pt)
-      filename: "document.pdf",
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        backgroundColor: "#ffffff",
-        scrollY: 0,
-        logging: false,
-        onclone: (clonedDoc: Document) => {
-          clonedDoc.querySelectorAll('*').forEach((el: Element) => {
-            const htmlEl = el as HTMLElement;
-            if (htmlEl.style) {
-              const styleText = htmlEl.getAttribute('style') || '';
-              if (styleText.includes('oklch')) {
-                htmlEl.setAttribute('style', styleText.replace(/oklch\([^)]*\)/g, '#000000'));
-              }
-            }
-          });
-        }
-      },
-      jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"], avoid: [] },
+      const handleAfterPrint = () => {
+        printFrame.contentWindow?.removeEventListener("afterprint", handleAfterPrint)
+        document.body.removeChild(printFrame)
+        URL.revokeObjectURL(pdfUrl)
+      }
+   
+      printFrame.onload = () => { 
+        printFrame.contentWindow?.addEventListener("afterprint", handleAfterPrint)
+        printFrame.contentWindow?.print()
+      }
     }
-    const html2pdfModule = (await import('html2pdf.js')) as any
-    const html2pdf = html2pdfModule.default || html2pdfModule
+  }
 
-    try {
-      const worker = html2pdf()
-        .set(opt as any)
-        .from(clone)
-        .toPdf()
-        .get("pdf")
-        .then((pdf: any) => {
-          const pageCount = pdf.internal.getNumberOfPages()
-          const pageHeight = pdf.internal.pageSize.getHeight()
-          const pageWidth = pdf.internal.pageSize.getWidth()
-
-          for (let i = 1; i <= pageCount; i++) {
-            pdf.setPage(i)
-            pdf.setFillColor(0, 0, 0)
-            pdf.rect(0, pageHeight - 40, pageWidth, 40, "F")
-            pdf.setTextColor(255, 255, 255)
-            pdf.setFontSize(11)
-            pdf.text(footerPhone, 40, pageHeight - 15)
-            pdf.text(footerBusinessName, pageWidth / 2, pageHeight - 15, { align: "center" })
-            pdf.text(footerEmail, pageWidth - 40, pageHeight - 15, { align: "right" })
-          }
-   
-          const pdfBlob = pdf.output("blob")
-          const pdfUrl = URL.createObjectURL(pdfBlob)
-   
-          const printFrame = document.createElement("iframe")
-          printFrame.style.display = "none"
-          printFrame.src = pdfUrl
-          document.body.appendChild(printFrame)
-
-          const handleAfterPrint = () => {
-            printFrame.contentWindow?.removeEventListener("afterprint", handleAfterPrint)
-            document.body.removeChild(printFrame)
-            URL.revokeObjectURL(pdfUrl)
-          }
-   
-          printFrame.onload = () => { 
-            printFrame.contentWindow?.addEventListener("afterprint", handleAfterPrint)
-            printFrame.contentWindow?.print()
-          }
-        })
-
-      await worker
-    } catch (err) {
-      console.warn('Print error:', err);
+  const handleAbschließen = async () => {
+    // Generate PDF if not already generated
+    if (!pdfBlob) {
+      const blob = await generatePDFBlob()
+      if (blob) {
+        setPdfBlob(blob)
+        onConfirm(blob)
+      } else {
+        onConfirm()
+      }
+    } else {
+      onConfirm(pdfBlob)
     }
   }
 
@@ -374,8 +339,8 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
       <div className="bg-white w-[80vw] min-h-[80vh] rounded-2xl shadow-2xl overflow-hidden animate-[fadeIn_0.3s] relative flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200 relative">
-          <h2 className="text-xl font-semibold text-slate-900  m-0">Your PDF is Ready</h2>
-          <button onClick={onClose} className="absolute right-6 top-6 bg-none border-none text-2xl text-slate-500 cursor-pointer transition-colors p-0 w-6 h-6 flex items-center justify-center hover:text-slate-800" title="Close">
+          <h2 className="text-xl font-semibold text-slate-900  m-0">Ihr PDF ist bereit</h2>
+          <button onClick={onClose} className="absolute right-6 top-6 bg-none border-none text-2xl text-slate-500 cursor-pointer transition-colors p-0 w-6 h-6 flex items-center justify-center hover:text-slate-800" title="Schließen">
             <CloseIcon />
           </button>
         </div>
@@ -600,14 +565,14 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             </button>
             <div className="flex gap-3">
               <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium flex items-center gap-2 cursor-pointer transition-colors hover:bg-slate-50" onClick={handleDownloadPDF}>
-                Download
+                Herunterladen
                 <DownloadIcon />
               </button>
               <button className="py-4 px-[74px] rounded-lg border-none bg-[#36a866] text-white text-sm  font-semibold flex items-center gap-2 cursor-pointer transition-colors hover:bg-[#2e8b5e]" onClick={handlePrint}>
-                Print
+                Drucken
                 <PrintIcon />
               </button>
-              <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onConfirm}>
+              <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={handleAbschließen}>
                 Abschließen
               </button>
             </div>

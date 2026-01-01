@@ -1,5 +1,5 @@
 "use client"
-import React, { useMemo, useState } from "react"
+import React, { useMemo, useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { GroupDef } from "./Types"
 import { normalizeUnderscores, parseEuroFromText } from "./HelperFunctions"
@@ -8,6 +8,9 @@ import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
 import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder"
 import { FaArrowLeft } from "react-icons/fa"
+import { Upload } from "lucide-react"
+import { sendMassschuheOrderToAdmin1 } from "@/apis/MassschuheManagemantApis"
+import toast from "react-hot-toast"
 
 type OptionDef = {
     id: string
@@ -307,6 +310,17 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
     })
     const [showModal, setShowModal] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
+    
+    // File upload states for STL files
+    const [linkerLeistenFile, setLinkerLeistenFile] = useState<File | null>(null)
+    const [rechterLeistenFile, setRechterLeistenFile] = useState<File | null>(null)
+    const [linkerLeistenFileName, setLinkerLeistenFileName] = useState<string>("")
+    const [rechterLeistenFileName, setRechterLeistenFileName] = useState<string>("")
+    const linkerLeistenInputRef = useRef<HTMLInputElement>(null)
+    const rechterLeistenInputRef = useRef<HTMLInputElement>(null)
+    
+    // PDF file state
+    const [pdfFile, setPdfFile] = useState<File | null>(null)
 
     // Fetch order data if orderId is provided
     const { order } = useGetSingleMassschuheOrder(orderId ?? null)
@@ -407,7 +421,7 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
             {/* Header Section */}
             <div className="my-8">
                 <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-3xl font-bold text-black">Welcome Back!</h1>
+                    <h1 className="text-3xl font-bold text-black">Willkommen zurück!</h1>
                 </div>
 
                 {/* Product Card */}
@@ -431,6 +445,73 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
                             <p className="text-base text-black mb-4">
                                 Bestellnr: <span className="font-bold">{orderDataForPDF.orderNumber || '#123456789'}</span> &nbsp; Liefertermin: <span className="font-bold">{orderDataForPDF.deliveryDate || '12.04.2024'}</span>
                             </p>
+                            
+                            {/* STL File Upload Buttons */}
+                            <div className="flex flex-col gap-3 mt-4">
+                                {/* Left Side Upload Button */}
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => linkerLeistenInputRef.current?.click()}
+                                        className="w-fit flex items-center gap-3 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg bg-white hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                                    >
+                                        <Upload className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                        <span className="text-base text-gray-700">
+                                            {linkerLeistenFileName || "Upload 3D-Datei Linker Leisten"}
+                                        </span>
+                                    </button>
+                                    <input
+                                        type="file"
+                                        accept=".stl,.obj"
+                                        ref={linkerLeistenInputRef}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) {
+                                                setLinkerLeistenFile(file)
+                                                setLinkerLeistenFileName(file.name)
+                                            }
+                                        }}
+                                        className="hidden"
+                                    />
+                                    {linkerLeistenFileName && (
+                                        <div className="mt-2 text-sm text-green-600 font-medium">
+                                            ✓ {linkerLeistenFileName}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Right Side Upload Button */}
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => rechterLeistenInputRef.current?.click()}
+                                        className="w-fit flex items-center gap-3 px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg bg-white hover:border-gray-400 hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                                    >
+                                        <Upload className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                                        <span className="text-base text-gray-700">
+                                            {rechterLeistenFileName || "Upload 3D-Datei Rechter Leisten"}
+                                        </span>
+                                    </button>
+                                    <input
+                                        type="file"
+                                        accept=".stl,.obj"
+                                        ref={rechterLeistenInputRef}
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0]
+                                            if (file) {
+                                                setRechterLeistenFile(file)
+                                                setRechterLeistenFileName(file.name)
+                                            }
+                                        }}
+                                        className="hidden"
+                                    />
+                                    {rechterLeistenFileName && (
+                                        <div className="mt-2 text-sm text-green-600 font-medium">
+                                            ✓ {rechterLeistenFileName}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -500,7 +581,12 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
                     onClose={() => {
                         setShowModal(false)
                     }}
-                    onConfirm={() => {
+                    onConfirm={(pdfBlob?: Blob) => {
+                        // Convert PDF blob to File if available
+                        if (pdfBlob) {
+                            const pdfFileObj = new File([pdfBlob], 'invoice.pdf', { type: 'application/pdf' })
+                            setPdfFile(pdfFileObj)
+                        }
                         setShowModal(false)
                         setShowModal2(true)
                     }}
@@ -518,7 +604,43 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
                     onClose={() => setShowModal2(false)}
                     productName={shoe.name}
                     value={grandTotal.toFixed(2)}
-                    onConfirm={() => {
+                    onConfirm={async () => {
+                        // Submit STL files and PDF invoice if orderId is available
+                        if (orderId && (linkerLeistenFile || rechterLeistenFile || pdfFile)) {
+                            try {
+                                const formData = new FormData()
+                                
+                                if (linkerLeistenFile) {
+                                    formData.append('threed_model_left', linkerLeistenFile)
+                                }
+                                
+                                if (rechterLeistenFile) {
+                                    formData.append('threed_model_right', rechterLeistenFile)
+                                }
+                                
+                                if (pdfFile) {
+                                    formData.append('invoice', pdfFile)
+                                }
+                                
+                                const response = await sendMassschuheOrderToAdmin1(orderId, formData)
+                                
+                                // Check if response indicates failure
+                                if (response && response.success === false && response.message) {
+                                    toast.error(response.message)
+                                    return
+                                }
+                                
+                                toast.success('Bestellung erfolgreich gesendet')
+                            } catch (error: any) {
+                                console.error('Error sending order:', error)
+                                
+                                // Extract error message from response
+                                const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Senden der Bestellung'
+                                toast.error(errorMessage)
+                                return
+                            }
+                        }
+                        
                         router.push("/dashboard/balance-dashboard")
                         setShowModal2(false)
                     }}
