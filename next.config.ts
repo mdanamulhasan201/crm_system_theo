@@ -20,10 +20,6 @@ const nextConfig: NextConfig = {
         hostname: 'nextel-suburban-procedure-giving.trycloudflare.com',
       },
       {
-        protocol: 'https',
-        hostname: 'publication-drugs-keys-ted.trycloudflare.com',
-      },
-      {
         protocol: 'http',
         hostname: '192.168.7.12',
         port: '3001',

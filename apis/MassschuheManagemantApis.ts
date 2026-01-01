@@ -1,11 +1,53 @@
 import axiosClient from "@/lib/axiosClient";
 
 
-// get all massschuhe order  massschuhe-order?page=1&limit=3&search=
-export const getAllMassschuheOrder = async (page: number, limit: number, status?: string) => {
+// get all massschuhe order  massschuhe-order?page=1&limit=3&search=&
+
+// date of brith
+// ?geburtsdatum=
+// ?customerNumber=
+ 
+// name
+// ?vorname=
+// ?nachname=
+
+export const getAllMassschuheOrder = async (
+    page: number, 
+    limit: number, 
+    status?: string,
+    geburtsdatum?: string,
+    customerNumber?: string | number,
+    vorname?: string,
+    nachname?: string,
+    customerId?: string
+) => {
     try {
+        let url = `/massschuhe-order?page=${page}&limit=${limit}`;
+        
         const statusParam = status && status !== "Versorgungs Start" ? `&status=${status}` : "";
-        const response = await axiosClient.get(`/massschuhe-order?page=${page}&limit=${limit}${statusParam}`);
+        url += statusParam;
+        
+        if (geburtsdatum) {
+            url += `&geburtsdatum=${encodeURIComponent(geburtsdatum)}`;
+        }
+        
+        if (customerNumber) {
+            url += `&customerNumber=${encodeURIComponent(customerNumber)}`;
+        }
+        
+        if (vorname) {
+            url += `&vorname=${encodeURIComponent(vorname)}`;
+        }
+        
+        if (nachname) {
+            url += `&nachname=${encodeURIComponent(nachname)}`;
+        }
+        
+        if (customerId) {
+            url += `&customerId=${encodeURIComponent(customerId)}`;
+        }
+        
+        const response = await axiosClient.get(url);
         return response.data;
     } catch (error) {
         throw error;

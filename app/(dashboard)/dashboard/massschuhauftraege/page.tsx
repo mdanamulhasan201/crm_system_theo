@@ -137,40 +137,91 @@ export default function MassschuhauftraegePage() {
 
             setIsSearchingOrders(true);
             try {
-                // Fetch orders and filter by customerId on client side
-                // Fetch multiple pages to find customer orders
+                // Get customer data for search parameters
+                const customerNumber = selectedCustomer?.customerNumber;
+                const geburtsdatum = selectedCustomer?.geburtsdatum;
+                const vorname = selectedCustomer?.vorname;
+                const nachname = selectedCustomer?.nachname;
+                
+                // Fetch orders using API with customer search parameters
                 let allCustomerOrders: MassschuheOrderData[] = [];
                 let page = 1;
                 let hasMore = true;
                 let foundRunningOrder: MassschuheOrderData | null = null;
                 const limit = 50; // Fetch more per page to reduce API calls
 
-                // Fetch pages until we find a running order or exhaust all pages
-                while (hasMore && page <= 5 && !foundRunningOrder) {
-                    const response = await getAllMassschuheOrder(page, limit);
-                    
-                    if (response.success && response.data) {
-                        // Filter orders by customerId
-                        const customerOrders = response.data.filter(
-                            (order: MassschuheOrderData) => order.customerId === selectedCustomerId
+                // Try to fetch with search parameters first
+                let foundOrders = false;
+                if (customerNumber || geburtsdatum || vorname || nachname) {
+                    try {
+                        const response = await getAllMassschuheOrder(
+                            page, 
+                            limit, 
+                            undefined, // status
+                            geburtsdatum, // geburtsdatum
+                            customerNumber, // customerNumber
+                            vorname, // vorname
+                            nachname, // nachname
+                            selectedCustomerId // customerId
                         );
                         
-                        allCustomerOrders = [...allCustomerOrders, ...customerOrders];
+                        if (response.success && response.data) {
+                            // Filter by customerId on client side - check both customerId and customer.id
+                            const customerOrders = response.data.filter(
+                                (order: any) => {
+                                    const orderCustomerId = order.customerId || (order.customer?.id);
+                                    return orderCustomerId === selectedCustomerId;
+                                }
+                            );
+                            
+                            if (customerOrders.length > 0) {
+                                allCustomerOrders = [...customerOrders];
+                                foundOrders = true;
+                                // Check if we found a running order
+                                foundRunningOrder = customerOrders.find((order: MassschuheOrderData) => isOrderRunning(order)) || null;
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching orders with search params:', error);
+                    }
+                }
+
+                // If no orders found with search params, fetch all orders and filter by customerId
+                if (!foundOrders) {
+                    page = 1;
+                    hasMore = true;
+                    
+                    while (hasMore && page <= 5 && !foundRunningOrder) {
+                        const response = await getAllMassschuheOrder(page, limit);
                         
-                        // Check if we found a running order in this batch
-                        foundRunningOrder = customerOrders.find((order: MassschuheOrderData) => isOrderRunning(order)) || null;
-                        
-                        // Check if there are more pages
-                        hasMore = response.pagination?.hasNextPage || false;
-                        page++;
-                    } else {
-                        hasMore = false;
+                        if (response.success && response.data) {
+                            // Filter orders by customerId - check both customerId and customer.id
+                            const customerOrders = response.data.filter(
+                                (order: any) => {
+                                    const orderCustomerId = order.customerId || (order.customer?.id);
+                                    return orderCustomerId === selectedCustomerId;
+                                }
+                            );
+                            
+                            allCustomerOrders = [...allCustomerOrders, ...customerOrders];
+                            
+                            // Check if we found a running order in this batch
+                            foundRunningOrder = customerOrders.find((order: MassschuheOrderData) => isOrderRunning(order)) || null;
+                            
+                            // Check if there are more pages
+                            hasMore = response.pagination?.hasNextPage || false;
+                            page++;
+                        } else {
+                            hasMore = false;
+                        }
                     }
                 }
 
                 // If we found a running order, use it
                 if (foundRunningOrder) {
-                    setSelectedOrderId(foundRunningOrder.id);
+                    const orderId = foundRunningOrder.id;
+                    // Use the same pattern as table click - call setSelectedOrderId which will trigger URL update
+                    setSelectedOrderId(orderId);
                     // Set the tab based on order status
                     const statusToTab: Record<string, number> = {
                         "Leistenerstellung": 1,
@@ -187,7 +238,9 @@ export default function MassschuhauftraegePage() {
                     const mostRecentOrder = allCustomerOrders.sort((a, b) => 
                         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
                     )[0];
-                    setSelectedOrderId(mostRecentOrder.id);
+                    const orderId = mostRecentOrder.id;
+                    // Use the same pattern as table click - call setSelectedOrderId which will trigger URL update
+                    setSelectedOrderId(orderId);
                     const statusToTab: Record<string, number> = {
                         "Leistenerstellung": 1,
                         "Bettungsherstellung": 2,
@@ -211,7 +264,7 @@ export default function MassschuhauftraegePage() {
         };
 
         fetchCustomerRunningOrder();
-    }, [selectedCustomerId]);
+    }, [selectedCustomerId, selectedCustomer]);
 
     // Read orderId from URL when page loads and fetch order to get customer info
     useEffect(() => {
@@ -248,7 +301,9 @@ export default function MassschuhauftraegePage() {
 
     // Update URL when order is selected
     useEffect(() => {
-        if (!isInitialized) return;
+        // Don't wait for isInitialized - update URL immediately when order is selected
+        // This ensures customer search works the same way as table click
+        if (!selectedOrderId) return;
         
         const params = new URLSearchParams();
         
@@ -259,15 +314,13 @@ export default function MassschuhauftraegePage() {
             }
         });
         
-        // Add orderId to URL if we have one
-        if (selectedOrderId) {
-            params.set('orderId', selectedOrderId);
-        }
+        // Add orderId to URL
+        params.set('orderId', selectedOrderId);
         
         // Update URL without page reload
         const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
         router.replace(newUrl, { scroll: false });
-    }, [selectedOrderId, isInitialized, router, pathname, searchParamsFromUrl]);
+    }, [selectedOrderId, router, pathname, searchParamsFromUrl]);
 
     // Handle customer ID selection
     const handleCustomerIdSelect = useCallback((customerId: string | null) => {
@@ -321,7 +374,7 @@ export default function MassschuhauftraegePage() {
                 initialCustomerId={selectedCustomerId}
             />
 
-            {selectedOrderId && (
+            {(selectedCustomerId || selectedOrderId || searchParamsFromUrl.get('orderId')) && (
                 <ChangesOrderProgress
                 onClick2={() => {
                     setShowPopup2(true)
@@ -331,7 +384,7 @@ export default function MassschuhauftraegePage() {
                 }}
                 setTabClicked={setTabClicked} 
                 tabClicked={tabClicked}
-                selectedOrderId={selectedOrderId}
+                selectedOrderId={selectedOrderId || searchParamsFromUrl.get('orderId')}
                 onTabChange={setTabClicked}
                 onRefetchProductionView={handleRefetchProductionView}
                 onRefetchCardStatistik={handleRefetchCardStatistik}

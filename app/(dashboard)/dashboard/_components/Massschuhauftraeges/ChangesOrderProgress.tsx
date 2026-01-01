@@ -531,20 +531,7 @@ export default function ChangesOrderProgress({
                     </div>
                 )}
 
-                {/* PDF button for halbprobenerstellung */}
-                {"hasPdfButton" in card && card.hasPdfButton && (
-                    <button
-                        type="button"
-                        onClick={() => {
-                            onClick();
-                            setTabClicked(card.tabIndex);
-                            onTabChange?.(card.tabIndex);
-                        }}
-                        className="mt-4 cursor-pointer inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
-                    >
-                        Pdf anzeigen
-                    </button>
-                )}
+                {/* PDF button for halbprobenerstellung - REMOVED as per requirement */}
 
                 {/* Special buttons for schafterstellung */}
                 {"hasSpecialButtons" in card && card.hasSpecialButtons && (
@@ -689,24 +676,29 @@ export default function ChangesOrderProgress({
                         >
                             In Fertigung
                         </button>
-                        <button
-                            type="button"
-                            className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
-                            onClick={toggleProgress(card.id)}
-                        >
-                            Jetzt Leisten, Bettung, Halbprobe in einem bestellen
-                        </button>
+                        {/* Hide bottom button if isByPartner_1 is true */}
+                        {!(order as any)?.isByPartner_1 && (
+                            <button
+                                type="button"
+                                className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
+                                onClick={() => {
+                                    onClick();
+                                }}
+                            >
+                                Jetzt Leisten, Bettung, Halbprobe in einem bestellen
+                            </button>
+                        )}
                     </div>
                 )}
 
-                {/* Arrow button for halbprobenerstellung - only show when IN FERTIGUNG */}
-                {"hasPdfButton" in card && card.hasPdfButton && !isCompleted && isCurrent && (
+                {/* In Fertigung button for halbprobenerstellung - only show when IN FERTIGUNG */}
+                {"hasPdfButton" in card && card.hasPdfButton && !isCompleted && (isCurrent || isPending) && (
                     <button
                         type="button"
-                        className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
+                        className="mt-4 w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
                         onClick={toggleProgress(card.id)}
                     >
-                        <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
+                        In Fertigung
                     </button>
                 )}
 
@@ -724,11 +716,12 @@ export default function ChangesOrderProgress({
         );
     };
 
-    // Show loading state only when:
+    // Show loading state when:
     // 1. We're searching for orders (isSearchingOrders), OR
-    // 2. We have selectedOrderId but order data is still loading
+    // 2. We don't have selectedOrderId yet (customer selected but order not found/loaded), OR
+    // 3. We have selectedOrderId but order data is still loading
     // Once order is loaded, show actual data (same as table click behavior)
-    const showShimmer = isSearchingOrders || (selectedOrderId ? (loading || !order) : false);
+    const showShimmer = isSearchingOrders || !selectedOrderId || loading || !order;
 
     return (
         <>

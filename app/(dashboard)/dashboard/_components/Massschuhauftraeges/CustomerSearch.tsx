@@ -523,7 +523,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                 </div>
 
                                 <div className="flex flex-col xl:flex-row justify-between items-center gap-4">
-                                    <div>
+                                    {/* <div>
                                         <p className="text-sm text-slate-500">
                                             Wenn eine Korrektur nötig ist: In welchem Bereich?
                                         </p>
@@ -537,7 +537,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                         >
                                             Ärztliche Diagnose öffnen
                                         </button>
-                                    </div>
+                                    </div> */}
 
                                     <div className="flex sm:flex-col md:flex-row gap-4">
                                         <button
