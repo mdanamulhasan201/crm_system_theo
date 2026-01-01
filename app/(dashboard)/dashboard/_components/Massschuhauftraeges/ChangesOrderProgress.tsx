@@ -101,24 +101,32 @@ export default function ChangesOrderProgress({
     onUpdateOrder?: (orderId: string, updatedData: any) => void;
     isSearchingOrders?: boolean;
 }) {
+    // ==================== Hooks & Data Fetching ====================
     const { order, refetch: refetchOrder, loading } = useGetSingleMassschuheOrder(selectedOrderId);
     const { updateStatus } = useUpdateMassschuheOrderStatus();
 
-
-    // Button states for schafterstellung
+    // ==================== State Management ====================
+    // Button states for schafterstellung card
     const [isButton1, setIsButton1] = useState(true);
     const [isButton2, setIsButton2] = useState(false);
     const [showPdf, setShowPdf] = useState(false);
 
-    // Button states for bodenerstellung
+    // Button states for bodenerstellung card
     const [isBodenButton1, setIsBodenButton1] = useState(false);
     const [isBodenButton2, setIsBodenButton2] = useState(false);
     const [showBodenPdf, setShowBodenPdf] = useState(false);
 
+    // Confirmation popup state
     const [showConfirmPopup, setShowConfirmPopup] = useState(false);
     const [pendingProgressAction, setPendingProgressAction] = useState<(() => void) | null>(null);
 
-    // Get status history for a card
+    // ==================== Status History & Completion Checks ====================
+    
+    /**
+     * Get status history for a specific card
+     * @param cardId - The card ID to get history for
+     * @returns Status history object or null
+     */
     const getStatusHistory = useMemo(() => {
         return (cardId: string) => {
             if (!order?.statusHistory) return null;
@@ -132,7 +140,11 @@ export default function ChangesOrderProgress({
         };
     }, [order?.statusHistory]);
 
-    // Check if a status is completed
+    /**
+     * Check if a status is completed
+     * @param cardId - The card ID to check
+     * @returns True if status is completed, false otherwise
+     */
     const isStatusCompleted = useMemo(() => {
         return (cardId: string) => {
             const history = getStatusHistory(cardId);
@@ -140,7 +152,11 @@ export default function ChangesOrderProgress({
         };
     }, [getStatusHistory]);
 
-    // Get current active status (IN FERTIGUNG)
+    /**
+     * Get current active status (IN FERTIGUNG)
+     * Finds the status that is started but not finished
+     * @returns Current active status name or null
+     */
     const getCurrentActiveStatus = useMemo(() => {
         if (!order?.statusHistory || order.statusHistory.length === 0) {
             return "Leistenerstellung";
@@ -175,7 +191,11 @@ export default function ChangesOrderProgress({
         return null;
     }, [order?.statusHistory]);
 
-    // Get next pending status (IN BEARBEITUNG)
+    /**
+     * Get next pending status (IN BEARBEITUNG)
+     * Finds the next status that can be started
+     * @returns Next pending status name or null
+     */
     const getNextPendingStatus = useMemo(() => {
         const currentStatus = getCurrentActiveStatus;
 
@@ -210,13 +230,19 @@ export default function ChangesOrderProgress({
         return null;
     }, [getCurrentActiveStatus, order?.statusHistory]);
 
-    // Status checkers
+    /**
+     * Status checker functions
+     * These functions determine the state of each card in the progress flow
+     */
+    
+    // Check if this card is the current active status (IN FERTIGUNG)
     const isCurrentStatus = (cardId: string) => {
         const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
         return statusToCardIdMap[currentStatus] === cardId;
     };
 
+    // Check if this card is before the current status (already completed)
     const isBeforeCurrentStatus = (cardId: string) => {
         const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
@@ -229,6 +255,7 @@ export default function ChangesOrderProgress({
         return cardIndex < currentIndex;
     };
 
+    // Check if this card is the next status (IN BEARBEITUNG)
     const isNextStatus = (cardId: string) => {
         const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
@@ -255,6 +282,7 @@ export default function ChangesOrderProgress({
         return false;
     };
 
+    // Check if this card is pending to start (no current status, waiting to begin)
     const isPendingToStart = (cardId: string) => {
         const currentStatus = getCurrentActiveStatus;
         if (currentStatus) return false;
@@ -265,7 +293,10 @@ export default function ChangesOrderProgress({
         return statusToCardIdMap[nextPendingStatus] === cardId;
     };
 
-    // Update button states based on order data
+    /**
+     * Update button states based on order status history
+     * Manages button visibility for schafterstellung and bodenerstellung cards
+     */
     useEffect(() => {
         if (!order?.statusHistory) {
             setIsButton1(true);
@@ -300,6 +331,7 @@ export default function ChangesOrderProgress({
         }
     }, [order?.statusHistory]);
 
+    // Enable bodenerstellung button after schafterstellung is completed
     useEffect(() => {
         if (showPdf) {
             const timer = setTimeout(() => {
@@ -309,14 +341,24 @@ export default function ChangesOrderProgress({
         }
     }, [showPdf]);
 
+    /**
+     * Handle progress toggle with confirmation popup
+     * @param action - Callback function to execute after status update
+     * @param newStatus - New status to update to (optional)
+     */
     const handleProgressToggle = (action: () => void, newStatus?: string) => {
         setPendingProgressAction(() => async () => {
             if (newStatus && selectedOrderId) {
                 try {
+                    // Update order status
                     await updateStatus([selectedOrderId], newStatus);
+                    
                     // Small delay to ensure backend has processed the update
                     await new Promise(resolve => setTimeout(resolve, 300));
+                    
+                    // Refetch updated order data
                     const updatedOrder = await refetchOrder();
+                    
                     // Update only the specific order in ProductionView (no full reload)
                     if (updatedOrder && onUpdateOrder) {
                         onUpdateOrder(selectedOrderId, {
@@ -324,10 +366,11 @@ export default function ChangesOrderProgress({
                             statusHistory: updatedOrder.statusHistory,
                         });
                     }
-                    // Refetch CardStatistik to update statistics in real-time
+                    
+                    // Refetch statistics and charts to update in real-time
                     onRefetchCardStatistik?.();
-                    // Refetch Chart to update revenue data in real-time
                     onRefetchChart?.();
+                    
                     action();
                 } catch (error) {
                     console.error("Failed to update status:", error);
@@ -339,6 +382,12 @@ export default function ChangesOrderProgress({
         setShowConfirmPopup(true);
     };
 
+    // ==================== Confirmation Popup Handlers ====================
+    
+    /**
+     * Handle confirmation of progress toggle
+     * Executes the pending action and closes popup
+     */
     const handleConfirmToggle = async () => {
         if (pendingProgressAction) {
             await pendingProgressAction();
@@ -347,11 +396,20 @@ export default function ChangesOrderProgress({
         setPendingProgressAction(null);
     };
 
+    /**
+     * Handle cancellation of progress toggle
+     * Closes popup without executing action
+     */
     const handleCancelToggle = () => {
         setShowConfirmPopup(false);
         setPendingProgressAction(null);
     };
 
+    /**
+     * Toggle progress for a card - shows confirmation popup before updating status
+     * @param cardId - The card ID to toggle progress for
+     * @returns Function to call on button click
+     */
     const toggleProgress = (cardId: string) => {
         const statusName = Object.keys(statusToCardIdMap).find(
             key => statusToCardIdMap[key] === cardId
@@ -362,7 +420,13 @@ export default function ChangesOrderProgress({
         return () => { };
     };
 
+    /**
+     * Render a single progress card
+     * @param card - Card configuration data
+     * @returns JSX element for the card
+     */
     const renderCard = (card: (typeof cardsData)[number]) => {
+        // Determine card state
         const isCompleted = isStatusCompleted(card.id);
         const statusHistory = getStatusHistory(card.id);
         const isCurrent = isCurrentStatus(card.id);
@@ -412,9 +476,16 @@ export default function ChangesOrderProgress({
 
         return (
             <div key={card.id} className="flex flex-col items-center justify-start px-2 py-4 text-center">
+                {/* Card Image */}
                 <Image src={card.image} alt={card.title} width={200} height={800} className="mb-4 h-16 w-auto object-contain sm:h-20" />
+                
+                {/* Status Circle Indicator */}
                 <div className="mb-4 flex h-10 w-10 shrink-0 items-center justify-center">{renderStatusCircle()}</div>
+                
+                {/* Card Title */}
                 <div className="mb-2 text-base font-semibold text-slate-900 md:text-lg">{card.title}</div>
+                
+                {/* Status Text (ABGESCHLOSSEN, IN FERTIGUNG, IN BEARBEITUNG, WARTEND) */}
                 <div className="flex min-h-[24px] w-full items-center justify-center text-xs font-semibold uppercase tracking-wide text-slate-500 md:text-sm">
                     <span className="whitespace-nowrap">{renderStatusText()}</span>
                 </div>
@@ -531,9 +602,11 @@ export default function ChangesOrderProgress({
                     </div>
                 )}
 
-                {/* PDF button for halbprobenerstellung - REMOVED as per requirement */}
+                {/* ==================== Card-Specific Buttons ==================== */}
+                
+                {/* Halbprobenerstellung: PDF button was removed - now shows "In Fertigung" button instead (see below) */}
 
-                {/* Special buttons for schafterstellung */}
+                {/* Schafterstellung: Special multi-step button flow */}
                 {"hasSpecialButtons" in card && card.hasSpecialButtons && (
                     <>
                         {isButton1 && (
@@ -592,7 +665,7 @@ export default function ChangesOrderProgress({
                     </>
                 )}
 
-                {/* Special buttons for bodenerstellung */}
+                {/* Bodenerstellung: Special multi-step button flow */}
                 {"hasBodenButtons" in card && card.hasBodenButtons && (
                     <>
                         {isBodenButton1 && (
@@ -666,7 +739,7 @@ export default function ChangesOrderProgress({
                     </>
                 )}
 
-                {/* Buttons for standard cards - only show when IN FERTIGUNG */}
+                {/* Standard cards (Leistenerstellung, Bettungsherstellung): Standard buttons */}
                 {!("hasPdfButton" in card) && !("hasSpecialButtons" in card) && !("hasBodenButtons" in card) && !("isWaiting" in card) && !isCompleted && (isCurrent || isPending) && (
                     <div className="mt-4 space-y-3 w-full">
                         <button
@@ -691,7 +764,7 @@ export default function ChangesOrderProgress({
                     </div>
                 )}
 
-                {/* In Fertigung button for halbprobenerstellung - only show when IN FERTIGUNG */}
+                {/* Halbprobenerstellung: In Fertigung button (replaces removed PDF button) */}
                 {"hasPdfButton" in card && card.hasPdfButton && !isCompleted && (isCurrent || isPending) && (
                     <button
                         type="button"
@@ -702,7 +775,7 @@ export default function ChangesOrderProgress({
                     </button>
                 )}
 
-                {/* Arrow button for geliefert - only show when IN FERTIGUNG */}
+                {/* Geliefert: Arrow button for navigation */}
                 {"isWaiting" in card && card.isWaiting && !isCompleted && (isCurrent || isNext) && (
                     <button
                         type="button"
@@ -716,11 +789,15 @@ export default function ChangesOrderProgress({
         );
     };
 
-    // Show loading state when:
-    // 1. We're searching for orders (isSearchingOrders), OR
-    // 2. We don't have selectedOrderId yet (customer selected but order not found/loaded), OR
-    // 3. We have selectedOrderId but order data is still loading
-    // Once order is loaded, show actual data (same as table click behavior)
+    // ==================== Loading State Logic ====================
+    /**
+     * Determine if shimmer/loading state should be shown
+     * Shows loading when:
+     * 1. Searching for orders (isSearchingOrders), OR
+     * 2. No selectedOrderId yet (customer selected but order not found/loaded), OR
+     * 3. Order data is still loading
+     * Once order is loaded, shows actual data (same as table click behavior)
+     */
     const showShimmer = isSearchingOrders || !selectedOrderId || loading || !order;
 
     return (

@@ -4,11 +4,13 @@ import Image from 'next/image';
 import { useState, useEffect, useRef } from 'react';
 import { searchCustomers, getSingleCustomer } from '@/apis/customerApis';
 import useDebounce from '@/hooks/useDebounce';
+import router from 'next/router';
+import { useRouter } from 'next/navigation';
 
 interface CustomerData {
     id: string;
     customerNumber: number;
-    name?: string; 
+    name?: string;
     vorname?: string;
     nachname?: string;
     email: string;
@@ -16,7 +18,7 @@ interface CustomerData {
     wohnort?: string;
     location?: string;
     telefon?: string;
-    phone?: string; 
+    phone?: string;
     ausfuhrliche_diagnose?: string;
     createdAt?: string;
     profileImage?: string;
@@ -57,6 +59,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
     const [modalContent, setModalContent] = useState('');
     const [expressLoading, setExpressLoading] = useState(false);
     const [initialLoading, setInitialLoading] = useState(false);
+    const router = useRouter();
 
     const debouncedName = useDebounce(name, 300);
     const nameInputRef = useRef<HTMLInputElement>(null);
@@ -274,6 +277,20 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
         onCustomerIdSelect?.(null);
     };
 
+
+
+    //handle scanning data button
+    const handleScanningDataButton = async (id: string) => {
+        // /dashboard/scanning-data/f51f6946-39a9-4541-8ce1-6ca52e676643
+        router.push(`/dashboard/scanning-data/${id}`);
+    };
+
+
+    //handle customer data button /dashboard/customer-history/955684c4-4a2f-47e0-a8b0-ea36f1954174
+    const handleCustomerDataButton = async (id: string) => {
+        router.push(`/dashboard/customer-history/${id}`);
+    };
+
     return (
         <section className="space-y-6 mt-10 h-full">
             <h1 className="text-center text-3xl font-semibold text-slate-900">
@@ -476,11 +493,15 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                     </span>
                                 </p>
 
+
+
+
+                                {/* /dashboard/scanning-data/f51f6946-39a9-4541-8ce1-6ca52e676643 this is the scanning data id */}
                                 <div className="mt-6 space-y-3">
-                                    <button className="w-full rounded-xl bg-[#61A175] py-3 text-sm font-semibold text-white transition hover:bg-[#61A175]/80 cursor-pointer">
+                                    <button onClick={() => handleScanningDataButton(selectedCustomer.id)} className="w-full rounded-xl bg-[#61A175] py-3 text-sm font-semibold text-white transition hover:bg-[#61A175]/80 cursor-pointer">
                                         Scan ansehen
                                     </button>
-                                    <button className="w-full rounded-xl border border-[#61A175] py-3 text-sm font-semibold text-[#61A175] transition hover:bg-[#61A175]/10 cursor-pointer">
+                                    <button onClick={() => handleCustomerDataButton(selectedCustomer.id)} className="w-full rounded-xl border border-[#61A175] py-3 text-sm font-semibold text-[#61A175] transition hover:bg-[#61A175]/10 cursor-pointer">
                                         Kundendaten ansehen
                                     </button>
                                 </div>
@@ -553,8 +574,8 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                                 }
                                             }}
                                             className={`rounded-xl px-10 py-3 text-sm font-semibold uppercase transition cursor-pointer ${selectedOrder?.express
-                                                    ? 'border border-[#61A175] text-[#61A175] hover:bg-[#61A175]/10 bg-white'
-                                                    : 'bg-[#61A175] text-white hover:bg-[#61A175]/80'
+                                                ? 'border border-[#61A175] text-[#61A175] hover:bg-[#61A175]/10 bg-white'
+                                                : 'bg-[#61A175] text-white hover:bg-[#61A175]/80'
                                                 } ${expressLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             Standard
@@ -572,8 +593,8 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                                 }
                                             }}
                                             className={`rounded-xl px-10 py-3 text-sm font-semibold uppercase transition cursor-pointer ${selectedOrder?.express
-                                                    ? 'bg-red-500 text-white hover:bg-red-600'
-                                                    : 'border border-red-500 text-red-500 hover:bg-red-50'
+                                                ? 'bg-red-500 text-white hover:bg-red-600'
+                                                : 'border border-red-500 text-red-500 hover:bg-red-50'
                                                 } ${expressLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
                                         >
                                             Expressauftrag
