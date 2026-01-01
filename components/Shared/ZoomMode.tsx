@@ -59,7 +59,7 @@ export default function ZoomMode({
             if (isSaving) return
 
             if (!selectedScanData || !selectedScanData.id) {
-                toast.error('No scan file selected. Please select a scan date.')
+                toast.error('Keine Scandatei ausgewählt. Bitte wählen Sie ein Scandatum aus.')
                 return
             }
 
@@ -75,7 +75,7 @@ export default function ZoomMode({
                 : null
 
             if (!rightFootBlob || !leftFootBlob) {
-                toast.error('Failed to get edited images. Please try again.')
+                toast.error('Bearbeitete Bilder konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.')
                 return
             }
 
@@ -89,7 +89,7 @@ export default function ZoomMode({
             // Call API to update scanner file
             await updateSingleScannerFile(customerId, screenerId, formData)
 
-            toast.success('Images saved successfully!')
+            toast.success('Bilder erfolgreich gespeichert!')
 
             // Refresh images
             onImageRefresh()
@@ -100,7 +100,7 @@ export default function ZoomMode({
             }
         } catch (error: any) {
             console.error('Error saving images:', error)
-            toast.error(error?.response?.data?.message || 'Failed to save images. Please try again.')
+            toast.error(error?.response?.data?.message || 'Bilder konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.')
         } finally {
             setIsSaving(false)
         }
@@ -121,7 +121,7 @@ export default function ZoomMode({
                 : null
 
             if (!rightFootBlob || !leftFootBlob) {
-                toast.error('Failed to get edited images. Please try again.')
+                toast.error('Bearbeitete Bilder konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.')
                 return
             }
 
@@ -193,7 +193,7 @@ export default function ZoomMode({
                                 URL.revokeObjectURL(pdfUrl)
                             }, 1000)
                         }, 500)
-                        toast.success('Opening print dialog...')
+                        toast.success('Druckdialog wird geöffnet...')
                     } catch (error) {
                         console.error('Print error:', error)
                         // Fallback: download if print fails
@@ -205,13 +205,13 @@ export default function ZoomMode({
                         document.body.removeChild(a)
                         document.body.removeChild(iframe)
                         URL.revokeObjectURL(pdfUrl)
-                        toast.error('Print failed. PDF downloaded instead.')
+                        toast.error('Drucken fehlgeschlagen. PDF stattdessen heruntergeladen.')
                     }
                 }
             }
         } catch (err) {
             console.error('Failed to generate PDF:', err)
-            toast.error('PDF generation failed.')
+            toast.error('PDF-Generierung fehlgeschlagen.')
         } finally {
             await new Promise((resolve) => setTimeout(resolve, 500))
             setIsDownloading(false)
@@ -229,7 +229,7 @@ export default function ZoomMode({
                     <div className="bg-white rounded-lg shadow-lg px-6 py-5 flex items-center gap-3">
                         <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
                         <span className="text-gray-900 font-medium">
-                            {isSaving ? 'Saving images...' : 'Generating PDF...'}
+                            {isSaving ? 'Bilder werden gespeichert...' : 'PDF wird generiert...'}
                         </span>
                     </div>
                 </div>
@@ -263,14 +263,14 @@ export default function ZoomMode({
                                         ? 'bg-gray-400 cursor-not-allowed opacity-60'
                                         : 'border border-gray-300 bg-white hover:bg-gray-100 text-gray-700'
                                 }`}
-                                title="Print/Download edited images as PDF"
+                                title="Drucken/Download bearbeitete Bilder als PDF"
                             >
                                 <FaPrint className="text-sm sm:text-base shrink-0" />
                                 <span className="hidden sm:inline lg:hidden">
-                                    {isDownloading ? 'Generating' : 'Print'}
+                                        {isDownloading ? 'Generieren' : 'Drucken'}
                                 </span>
                                 <span className="hidden lg:inline">
-                                    {isDownloading ? 'Generating...' : 'Print PDF'}
+                                    {isDownloading ? 'Generieren...' : 'Drucken als PDF'}
                                 </span>
                             </button>
                             
@@ -283,14 +283,14 @@ export default function ZoomMode({
                                         ? 'bg-gray-400 cursor-not-allowed opacity-60'
                                         : 'bg-[#4A8A5F] hover:bg-[#4A8A5F]/90 active:bg-[#4A8A5F]/70 text-white'
                                 }`}
-                                title="Save edited images"
+                                title="Speichere bearbeitete Bilder"
                             >
                                 <FaSave className="text-sm sm:text-base shrink-0" />
                                 <span className="hidden sm:inline lg:hidden">
-                                    {isSaving ? 'Saving' : 'Save'}
+                                    {isSaving ? 'Speichern' : 'Speichere Bilder'}
                                 </span>
                                 <span className="hidden lg:inline">
-                                    {isSaving ? 'Saving...' : 'Save Images'}
+                                    {isSaving ? 'Speichern...' : 'Speichere Bilder'}
                                 </span>
                             </button>
                         </div>

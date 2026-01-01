@@ -160,7 +160,9 @@ export default function ScanningData() {
                         }}
                         className='bg-[#62A07C] capitalize cursor-pointer text-white px-4 py-2 rounded hover:bg-[#62a07c98] transition text-sm'
                     >
-                        manage customer
+
+                        {/* german name */}
+                        Kunden verwalten
                     </button>
                 </div>
             </div>

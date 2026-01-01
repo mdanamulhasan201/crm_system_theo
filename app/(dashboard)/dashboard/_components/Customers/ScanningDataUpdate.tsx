@@ -66,6 +66,22 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
 
 
 
+    // German translation for file labels
+    const getGermanFileLabel = (fieldName: string): string => {
+        const germanLabels: Record<string, string> = {
+            picture_10: 'Bild 10',
+            picture_11: 'Bild 11',
+            picture_16: 'Bild 16',
+            picture_17: 'Bild 17',
+            picture_23: 'Bild 23',
+            picture_24: 'Bild 24',
+            threed_model_left: '3D-Modell Links (.stl)',
+            threed_model_right: '3D-Modell Rechts (.stl)',
+            csvFile: 'CSV-Datei'
+        }
+        return germanLabels[fieldName] || getFileLabel(fieldName)
+    }
+
     const renderFileIcon = (fieldName: string) => {
         const iconType = getFileIcon(fieldName)
         switch (iconType) {
@@ -157,7 +173,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
     )
 
     const formatDate = (iso?: string) => {
-        if (!iso) return 'Unknown date'
+        if (!iso) return 'Unbekanntes Datum'
         const d = new Date(iso)
         return d.toLocaleString()
     }
@@ -218,7 +234,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                 {selectedScreenerData && (
                     <div className="mb-4">
                         <p className="text-xs text-gray-600">
-                            Last Updated: {new Date(selectedScreenerData.updatedAt).toLocaleString('en-GB', {
+                            Zuletzt aktualisiert: {new Date(selectedScreenerData.updatedAt).toLocaleString('en-GB', {
                                 day: '2-digit',
                                 month: 'short',
                                 year: 'numeric',
@@ -253,7 +269,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
 
                                     return (
                                         <div key={fieldName} className="space-y-2">
-                                            <Label className="text-sm font-medium">{getFileLabel(fieldName)}</Label>
+                                            <Label className="text-sm font-medium">{getGermanFileLabel(fieldName)}</Label>
 
                                             {/* Show existing file or upload area */}
                                             {!preview ? (
@@ -273,7 +289,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                             {renderFileIcon(fieldName)}
                                                             <div>
                                                                 <p className="text-xs font-medium text-gray-700">
-                                                                    Existing {getFileLabel(fieldName)}
+                                                                    Vorhanden {getGermanFileLabel(fieldName)}
                                                                 </p>
                                                                 <p className="text-xs text-gray-500">
                                                                     Klicken Sie, um zu ersetzen
@@ -293,7 +309,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                         <label htmlFor={`file-${fieldName}`} className="cursor-pointer">
                                                             <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
                                                             <p className="text-xs text-gray-600">
-                                                                Upload {getFileLabel(fieldName)}
+                                                                {getGermanFileLabel(fieldName)} hochladen
                                                             </p>
                                                         </label>
                                                     </div>
@@ -336,7 +352,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
 
                                     return (
                                         <div key={fieldName} className="space-y-2">
-                                            <Label className="text-sm font-medium">{getFileLabel(fieldName)}</Label>
+                                            <Label className="text-sm font-medium">{getGermanFileLabel(fieldName)}</Label>
 
                                             {/* Show existing file or upload area */}
                                             {!preview ? (
@@ -357,7 +373,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                                 {renderFileIcon(fieldName)}
                                                                 <div>
                                                                     <p className="text-xs font-medium text-gray-700">
-                                                                        Existing {getFileLabel(fieldName)}
+                                                                        Vorhanden {getGermanFileLabel(fieldName)}
                                                                     </p>
                                                                     <p className="text-xs text-gray-500">
                                                                         Klicken Sie, um zu ersetzen
@@ -369,7 +385,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                                     width={100}
                                                                     height={100}
                                                                     src={existingFile}
-                                                                    alt="Existing"
+                                                                    alt="Vorhanden"
                                                                     className="w-full h-20 object-cover rounded border"
                                                                 />
                                                             </div>
@@ -387,7 +403,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                         <label htmlFor={`file-${fieldName}`} className="cursor-pointer">
                                                             <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
                                                             <p className="text-xs text-gray-600">
-                                                                Upload {getFileLabel(fieldName)}
+                                                                {getGermanFileLabel(fieldName)} hochladen
                                                             </p>
                                                         </label>
                                                     </div>
@@ -420,7 +436,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                                 width={100}
                                                                 height={100}
                                                                 src={preview.preview}
-                                                                alt="Preview"
+                                                                alt="Vorschau"
                                                                 className="w-full h-20 object-cover rounded border"
                                                             />
                                                         </div>
@@ -435,7 +451,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
 
                         {/* CSV File */}
                         <div className="space-y-2">
-                            <Label className="text-sm font-medium">CSV File</Label>
+                            <Label className="text-sm font-medium">CSV-Datei</Label>
                             <div className="w-full md:w-1/2">
                                 {(() => {
                                     const csvPreview = filePreviews.find(p => p.fieldName === 'csvFile')
@@ -458,10 +474,10 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                     <FileText className="w-4 h-4" />
                                                     <div>
                                                         <p className="text-xs font-medium text-gray-700">
-                                                            Existing CSV File
+                                                            Vorhandene CSV-Datei
                                                         </p>
                                                         <p className="text-xs text-gray-500">
-                                                            Click to replace
+                                                            Klicken Sie, um zu ersetzen
                                                         </p>
                                                     </div>
                                                 </div>
@@ -478,7 +494,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                 <label htmlFor="file-csvFile" className="cursor-pointer">
                                                     <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
                                                     <p className="text-xs text-gray-600">
-                                                        Upload CSV File
+                                                        CSV-Datei hochladen
                                                     </p>
                                                 </label>
                                             </div>

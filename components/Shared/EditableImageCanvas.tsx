@@ -192,7 +192,7 @@ export default function EditableImageCanvas({
     const downloadEditedImage = async () => {
         const blob = await getEditedImageBlob()
         if (!blob) {
-            alert('Image not available for download.')
+            alert('Bild nicht zum Download verfügbar.')
             return
         }
 
@@ -257,18 +257,18 @@ export default function EditableImageCanvas({
                     <button
                         onClick={clearCanvas}
                         className="px-3 py-1.5 text-xs bg-gray-200 hover:bg-gray-300 rounded-lg transition-all flex items-center gap-1.5 shadow-sm hover:shadow"
-                        title="Clear drawings"
+                        title="Zeichnungen löschen"
                     >
                         <FaTrash />
-                        <span className="hidden sm:inline">Clear</span>
+                        <span className="hidden sm:inline">Löschen</span>
                     </button>
                     <button
                         onClick={downloadEditedImage}
                         className="px-3 py-1.5 text-xs bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all flex items-center gap-1.5 shadow-sm hover:shadow-md"
-                        title="Download edited image"
+                        title="Bearbeitetes Bild herunterladen"
                     >
                         <TfiDownload />
-                        <span className="hidden sm:inline">Download</span>
+                        <span className="hidden sm:inline">Herunterladen</span>
                     </button>
                 </div>
             )}
@@ -349,18 +349,18 @@ export default function EditableImageCanvas({
                                     <button
                                         onClick={clearCanvas}
                                         className="px-4 py-2 cursor-pointer text-sm bg-[#4A8A5F] hover:bg-[#4A8A5F]/80 text-white rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
-                                        title="Clear drawings"
+                                        title="Zeichnungen löschen"
                                     >
                                         <FaTrash className="text-white" />
-                                        <span>Clear</span>
+                                        <span>Löschen</span>
                                     </button>
                                     <button
                                         onClick={downloadEditedImage}
                                         className="px-4 py-2 cursor-pointer text-sm bg-[#4A8A5F] hover:bg-[#4A8A5F]/80 text-white rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
-                                        title="Download edited image"
+                                        title="Bearbeitetes Bild herunterladen"
                                     >
                                         <TfiDownload />
-                                        <span>Download</span>
+                                        <span>Herunterladen</span>
                                     </button>
                                 </div>
                             </div>
@@ -368,7 +368,7 @@ export default function EditableImageCanvas({
                     </>
                 ) : (
                     <div className={`w-full bg-gray-100 border-2 border-dashed border-gray-300 ${isZoomMode ? 'rounded-xl h-[600px] lg:h-[800px]' : 'rounded-lg h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px]'} flex items-center justify-center text-gray-500 text-sm md:text-base`}>
-                        No image available
+                        Kein Bild verfügbar
                     </div>
                 )}
             </div>
@@ -401,10 +401,10 @@ export function DrawingToolbar({
                 <button
                     onClick={onExitZoom}
                     className="bg-gradient-to-r cursor-pointer from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-2 py-2 rounded-lg transition-all flex items-center gap-2 text-sm shadow transform "
-                    title="Exit zoom mode"
+                    title="Zoom-Modus beenden"
                 >
                     <span className="text-sm">✕</span>
-                    <span className="hidden sm:inline">Exit Zoom</span>
+                    <span className="hidden sm:inline">Zoom beenden</span>
                 </button>
                 
                 {/* Divider */}
@@ -419,10 +419,10 @@ export function DrawingToolbar({
                                 ? 'bg-[#4A8A5F]  text-white ' 
                                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                         }`}
-                        title="Pen tool"
+                        title="Stiftwerkzeug"
                     >
                         <FaPen />
-                        <span className="hidden sm:inline">Pen</span>
+                        <span className="hidden sm:inline">Stift</span>
                     </button>
                     
                     <button
@@ -432,10 +432,10 @@ export function DrawingToolbar({
                                 ? 'bg-[#4A8A5F] text-white ' 
                                 : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200'
                         }`}
-                        title="Eraser tool"
+                        title="Radiergummi-Werkzeug"
                     >
                         <FaEraser />
-                        <span className="hidden sm:inline">Eraser</span>
+                        <span className="hidden sm:inline">Radiergummi</span>
                     </button>
                 </div>
                 
@@ -444,7 +444,7 @@ export function DrawingToolbar({
                 
                 {/* Brush Size Control */}
                 <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-2 border border-gray-200">
-                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Size:</label>
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Größe:</label>
                     <input
                         type="range"
                         min="1"
@@ -461,19 +461,19 @@ export function DrawingToolbar({
                     <>
                         <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
                         <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-2 border border-gray-200">
-                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Color:</label>
+                            <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Farbe:</label>
                             <div className="flex items-center gap-2">
                                 <input
                                     type="color"
                                     value={brushColor}
                                     onChange={(e) => setBrushColor(e.target.value)}
                                     className="w-10 h-10 rounded-lg border-2 border-gray-300 cursor-pointer shadow-sm hover:shadow-md transition-shadow"
-                                    title="Select brush color"
+                                    title="Pinselfarbe auswählen"
                                 />
                                 <div 
                                     className="w-8 h-8 rounded border-2 border-gray-300 shadow-sm"
                                     style={{ backgroundColor: brushColor }}
-                                    title={`Current color: ${brushColor}`}
+                                    title={`Aktuelle Farbe: ${brushColor}`}
                                 />
                             </div>
                         </div>

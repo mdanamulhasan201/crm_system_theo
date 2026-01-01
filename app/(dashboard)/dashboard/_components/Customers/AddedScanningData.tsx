@@ -42,6 +42,22 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
         }
     }
 
+    // German translation for file labels
+    const getGermanFileLabel = (fieldName: string): string => {
+        const germanLabels: Record<string, string> = {
+            picture_10: 'Bild 10',
+            picture_11: 'Bild 11',
+            picture_16: 'Bild 16',
+            picture_17: 'Bild 17',
+            picture_23: 'Bild 23',
+            picture_24: 'Bild 24',
+            threed_model_left: '3D-Modell Links (.stl)',
+            threed_model_right: '3D-Modell Rechts (.stl)',
+            csvFile: 'CSV-Datei'
+        }
+        return germanLabels[fieldName] || getFileLabel(fieldName)
+    }
+
     const renderFileIcon = (fieldName: string) => {
         const iconType = getFileIcon(fieldName)
         switch (iconType) {
@@ -71,7 +87,7 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
 
                             return (
                                 <div key={fieldName} className="space-y-2">
-                                    <Label className="text-sm font-medium">{getFileLabel(fieldName)}</Label>
+                                    <Label className="text-sm font-medium">{getGermanFileLabel(fieldName)}</Label>
 
                                     {!preview ? (
                                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
@@ -84,7 +100,7 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
                                             />
                                             <label htmlFor={`file-${fieldName}`} className="cursor-pointer">
                                                 <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                                <p className="text-xs text-gray-600">Upload {getFileLabel(fieldName)}</p>
+                                                <p className="text-xs text-gray-600">{getGermanFileLabel(fieldName)} hochladen</p>
                                             </label>
                                         </div>
                                     ) : (
@@ -117,14 +133,14 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
                 </div>
 
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">Picture Files</Label>
+                    <Label className="text-sm font-medium">Bilddateien</Label>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {fileFields.filter(field => field !== 'csvFile').map((fieldName) => {
                             const preview = filePreviews.find(p => p.fieldName === fieldName)
 
                             return (
                                 <div key={fieldName} className="space-y-2">
-                                    <Label className="text-sm font-medium">{getFileLabel(fieldName)}</Label>
+                                    <Label className="text-sm font-medium">{getGermanFileLabel(fieldName)}</Label>
 
                                     {!preview ? (
                                         <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
@@ -137,7 +153,7 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
                                             />
                                             <label htmlFor={`file-${fieldName}`} className="cursor-pointer">
                                                 <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                                <p className="text-xs text-gray-600">Upload {getFileLabel(fieldName)}</p>
+                                                <p className="text-xs text-gray-600">{getGermanFileLabel(fieldName)} hochladen</p>
                                             </label>
                                         </div>
                                     ) : (
@@ -168,7 +184,7 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
                                                         width={100}
                                                         height={100}
                                                         src={preview.preview}
-                                                        alt="Preview"
+                                                        alt="Vorschau"
                                                         className="w-full h-20 object-cover rounded border"
                                                     />
                                                 </div>
@@ -182,7 +198,7 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
                 </div>
 
                 <div className="space-y-2">
-                    <Label className="text-sm font-medium">CSV File</Label>
+                    <Label className="text-sm font-medium">CSV-Datei</Label>
                     <div className="w-full md:w-1/2">
                         {(() => {
                             const csvPreview = filePreviews.find(p => p.fieldName === 'csvFile')
@@ -198,7 +214,7 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
                                     />
                                     <label htmlFor="file-csvFile" className="cursor-pointer">
                                         <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                        <p className="text-xs text-gray-600">Upload CSV File</p>
+                                        <p className="text-xs text-gray-600">CSV-Datei hochladen</p>
                                     </label>
                                 </div>
                             ) : (
@@ -251,10 +267,10 @@ export default function AddedScanningData({ customerId, isOpen, onClose, onSubmi
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                             </svg>
-                            Uploading...
+                            Wird hochgeladen...
                         </>
                     ) : (
-                        'Upload Scanning Files'
+                        'Scan-Dateien hochladen'
                     )}
                 </Button>
             </div>

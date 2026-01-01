@@ -416,7 +416,9 @@ export default function ScanDataDisplay({
                             ))
                         ) : (
                             <div className="px-4 py-2 text-gray-500 text-sm">
-                                No scan dates available
+                              
+                          
+                                Keine Scan-Daten verfügbar
                             </div>
                         )}
                     </div>
@@ -472,7 +474,8 @@ export default function ScanDataDisplay({
                                     </div>
                                 ) : (
                                     <div className="w-full h-[500px] bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
-                                        No left foot scan image available
+                                       
+                                        Keine Scan-Daten verfügbar
                                     </div>
                                 );
                             })()}
@@ -545,7 +548,8 @@ export default function ScanDataDisplay({
                                     </div>
                                 ) : (
                                     <div className="w-full h-[500px] bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
-                                        No right foot scan image available
+                              
+                                        Keine Scan-Daten verfügbar
                                     </div>
                                 );
                             })()}

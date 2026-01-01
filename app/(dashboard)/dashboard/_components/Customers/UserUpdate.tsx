@@ -100,7 +100,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
 
             // Only update if there are actual changes
             if (Object.keys(changedFields).length === 0) {
-                toast('No changes detected', {
+                toast('Keine Änderungen erkannt', {
                     icon: 'ℹ️',
                     style: {
                         background: '#3B82F6',
@@ -115,7 +115,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
 
             if (success) {
                 // Show success toast
-                toast.success('Customer information updated successfully!')
+                toast.success('Kundeninformationen erfolgreich aktualisiert!')
 
                 // Refresh customer data to show updated information
                 const response = await getSingleCustomer(customerId)
@@ -133,10 +133,10 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                 }
             } else {
                 // Show error toast
-                toast.error('Failed to update customer information')
+                toast.error('Kundeninformationen konnten nicht aktualisiert werden')
             }
         } catch (e) {
-            toast.error('An error occurred while updating customer information')
+            toast.error('Beim Aktualisieren der Kundeninformationen ist ein Fehler aufgetreten')
         }
     }
 
