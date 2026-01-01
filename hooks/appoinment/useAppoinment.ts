@@ -199,12 +199,18 @@ export const useAppoinment = () => {
     // Delete appointment
     const deleteAppointmentById = useCallback(async (appointmentId: string) => {
         try {
+            // Optimistically remove from local state immediately
+            setEvents(prevEvents => prevEvents.filter(event => event.id !== appointmentId));
+            
             const response = await deleteAppointment(appointmentId);
+            // Refresh from server to ensure consistency
             await fetchAppointments();
             setRefreshKey(prev => prev + 1);
             toast.success(response.message || 'Appointment deleted successfully');
             return true;
         } catch (error: unknown) {
+            // If deletion fails, refresh to restore the correct state
+            await fetchAppointments();
             const errorMessage = error instanceof Error ? error.message : 'Failed to delete appointment';
             toast.error(errorMessage);
             return false;

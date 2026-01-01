@@ -46,22 +46,22 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     onEventClick,
     onTimeSlotClick
 }) => {
-    // Calendar configuration - Only show 8 AM to 9 PM (8-21)
-    const calendarStartHour = 8;
+    // Calendar configuration - Only show 5 AM to 9 PM (5-21)
+    const calendarStartHour = 5;
     const calendarEndHour = 21; // 9 PM
-    const totalHours = calendarEndHour - calendarStartHour + 1; // 14 hours (8 to 21 inclusive)
+    const totalHours = calendarEndHour - calendarStartHour + 1; // 17 hours (5 to 21 inclusive)
     const timeSlots = Array.from({ length: totalHours }, (_, i) => `${String(calendarStartHour + i).padStart(2, '0')}:00`);
-    const heightPerSlot = 150; // Height in pixels per time slot (14 slots * 150px = 2100px total) - Increased for better visibility and content display
+    const heightPerSlot = 150; // Height in pixels per time slot (17 slots * 150px = 2550px total) - Increased for better visibility and content display
     const containerHeightPx = timeSlots.length * heightPerSlot;
-    // Show first 4 hours (8-12) initially, then scroll for rest
-    const initialVisibleHours = 4; // 8 to 12 (4 hours)
+    // Show first 4 hours (5-9) initially, then scroll for rest
+    const initialVisibleHours = 4; // 5 to 9 (4 hours)
     const initialVisibleHeight = initialVisibleHours * heightPerSlot; // 600px (4 * 150)
 
     // Modal state
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [noteContent, setNoteContent] = useState<string>('');
 
-    // Parse time to minutes from 8 AM (calendarStartHour)
+    // Parse time to minutes from 5 AM (calendarStartHour)
     const parseTimeToMinutes = (timeStr: string): number => {
         const time = timeStr.trim().toLowerCase();
         const ampmMatch = time.match(/^(\d{1,2}):(\d{2})\s*(am|pm)$/);
@@ -74,11 +74,11 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             if (period === 'pm' && hour !== 12) hour += 12;
             if (period === 'am' && hour === 12) hour = 0;
 
-            // Clamp hour to calendar range (8-21)
+            // Clamp hour to calendar range (5-21)
             if (hour < calendarStartHour) hour = calendarStartHour;
             if (hour > calendarEndHour) hour = calendarEndHour;
 
-            // Calculate minutes from start of calendar (8 AM)
+            // Calculate minutes from start of calendar (5 AM)
             const diff = (hour - calendarStartHour) * 60 + minute;
             return Math.max(0, diff);
         }
@@ -88,7 +88,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             let hour = parseInt(time24Match[1], 10);
             const minute = parseInt(time24Match[2], 10);
             
-            // Clamp hour to calendar range (8-21)
+            // Clamp hour to calendar range (5-21)
             if (hour < calendarStartHour) hour = calendarStartHour;
             if (hour > calendarEndHour) hour = calendarEndHour;
 
@@ -241,7 +241,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
         const endHour = Math.floor(totalEndMinutes / 60) + calendarStartHour;
         const endMin = totalEndMinutes % 60;
         
-        // Clamp to calendar range (8-21)
+        // Clamp to calendar range (5-21)
         const clampedHour = Math.min(Math.max(endHour, calendarStartHour), calendarEndHour);
         const clampedMin = clampedHour === calendarEndHour && endMin > 0 ? 0 : endMin;
         
@@ -485,7 +485,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         {/* Customer name */}
                                         {event.customer_name && (
                                             <div className="text-xs mb-1 leading-tight" style={{ lineHeight: '1.4' }}>
-                                                <span className="text-gray-700">Kund: </span>
+                                                <span className="text-gray-700">Kunde: </span>
                                                 {event.customerId ? (
                                                     <Link
                                                         href={`/dashboard/scanning-data/${event.customerId}`}

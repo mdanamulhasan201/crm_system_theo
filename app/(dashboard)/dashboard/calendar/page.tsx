@@ -388,30 +388,30 @@ const WeeklyCalendar = () => {
             </div>
 
             <div className="p-4">
-                {/* Calendar View - Same as dashboard */}
-                <div className="mb-6">
-                    <DailyCalendarView
-                        key={currentSelectedDate.toDateString()}
-                        selectedDate={currentSelectedDate}
-                        events={getEventsForDate(currentSelectedDate)}
-                        monthNames={monthNames}
-                        dayNamesLong={dayNamesLong}
-                        onDateChange={(direction) => {
-                            setCurrentSelectedDate(prev => {
-                                const next = new Date(prev);
-                                next.setDate(next.getDate() + direction);
-                                return next;
-                            });
-                        }}
-                        onEventClick={handleAppointmentClick}
-                        onTimeSlotClick={handleTimeSlotClick}
-                    />
-                </div>
+                {/* Calendar View - DailyCalendarView and MiniCalendar side by side */}
+                <div className="flex flex-col lg:flex-row gap-4 sm:gap-6 mb-6 sm:mb-10 w-full">
+                    {/* DailyCalendarView - Left side, takes most space */}
+                    <div className="flex-1 w-full lg:w-auto min-w-0">
+                        <DailyCalendarView
+                            key={currentSelectedDate.toDateString()}
+                            selectedDate={currentSelectedDate}
+                            events={getEventsForDate(currentSelectedDate)}
+                            monthNames={monthNames}
+                            dayNamesLong={dayNamesLong}
+                            onDateChange={(direction) => {
+                                setCurrentSelectedDate(prev => {
+                                    const next = new Date(prev);
+                                    next.setDate(next.getDate() + direction);
+                                    return next;
+                                });
+                            }}
+                            onEventClick={handleAppointmentClick}
+                            onTimeSlotClick={handleTimeSlotClick}
+                        />
+                    </div>
 
-                {/* MiniCalendar and Monthly Calendar - Below Daily Calendar View */}
-                <div className="flex flex-col xl:flex-row gap-4 sm:gap-6 mb-6 sm:mb-10 w-full">
-                    {/* MiniCalendar */}
-                    <div className="w-full lg:w-4/12 2xl:w-3/12 mx-auto">
+                    {/* MiniCalendar - Right side, smaller */}
+                    <div className="w-full lg:w-80 xl:w-96 2xl:w-[400px] flex-shrink-0">
                         <MiniCalendar
                             isMobile={isMobile}
                             miniCalendarDate={miniCalendarDate}
@@ -468,7 +468,7 @@ const WeeklyCalendar = () => {
                                                 <div className="w-4 h-4 bg-[#62A07C] rounded-full"></div>
                                             )}
                                             {isPastDate(date) && (
-                                                <div className="text-xs text-gray-400 italic">Past</div>
+                                                <div className="text-xs text-gray-400 italic">Vergangen</div>
                                             )}
                                         </div>
 
@@ -671,18 +671,29 @@ const WeeklyCalendar = () => {
                     onSubmit={onUpdateSubmit}
                     title="Termin bearbeiten"
                     buttonText="Aktualisieren"
+                    showDeleteButton={true}
+                    onDelete={() => {
+                        if (selectedAppointment?.id) {
+                            setDeleteConfirmation({
+                                show: true,
+                                appointmentId: selectedAppointment.id
+                            });
+                        }
+                    }}
                 />
             )}
 
             {/* Delete Confirmation Modal */}
             {deleteConfirmation.show && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
                     <div className="bg-white rounded-lg w-full max-w-sm p-6">
                         <h3 className="text-lg font-semibold mb-4">Bestätigen Sie das Löschen</h3>
                         <p className="text-gray-600 mb-6">Sind Sie sicher, dass Sie diesen Termin löschen möchten?</p>
                         <div className="flex justify-end gap-4">
                             <button
-                                onClick={() => setDeleteConfirmation({ show: false, appointmentId: null })}
+                                onClick={() => {
+                                    setDeleteConfirmation({ show: false, appointmentId: null });
+                                }}
                                 className="px-4 py-2 cursor-pointer text-gray-600 hover:bg-gray-100 rounded-lg"
                             >
                                 Abbrechen
@@ -693,6 +704,9 @@ const WeeklyCalendar = () => {
                                     try {
                                         setIsDeleting(true);
                                         await deleteAppointments(deleteConfirmation.appointmentId);
+                                        // Close both modals after successful deletion
+                                        setIsEditModalOpen(false);
+                                        setDeleteConfirmation({ show: false, appointmentId: null });
                                     } finally {
                                         setIsDeleting(false);
                                     }

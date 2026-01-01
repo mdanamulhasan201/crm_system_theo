@@ -56,6 +56,8 @@ interface AppointmentModalProps {
     onSubmit: (data: SubmittedAppointmentData) => Promise<any> | void;
     title: string;
     buttonText: string;
+    onDelete?: () => void;
+    showDeleteButton?: boolean;
 }
 
 export default function AppointmentModal({
@@ -64,7 +66,9 @@ export default function AppointmentModal({
     form,
     onSubmit,
     title,
-    buttonText
+    buttonText,
+    onDelete,
+    showDeleteButton = false
 }: AppointmentModalProps) {
     const [submitting, setSubmitting] = React.useState(false);
     const isClientEvent = form.watch('isClientEvent');
@@ -103,15 +107,36 @@ export default function AppointmentModal({
     ];
 
     const reminderOptions = [
-        { value: null, label: 'No reminder' },
-        { value: 5, label: '5 minutes before' },
-        { value: 10, label: '10 minutes before' },
-        { value: 30, label: '30 minutes before' },
-        { value: 60, label: '60 minutes before' },
-        { value: 180, label: '3 hours before' },
-        { value: 720, label: '12 hours before' },
-        { value: 1440, label: '24 hours before' },
+        { value: null, label: 'Keine Erinnerung' },
+        { value: 5, label: '5 Minuten vorher' },
+        { value: 10, label: '10 Minuten vorher' },
+        { value: 30, label: '30 Minuten vorher' },
+        { value: 60, label: '60 Minuten vorher' },
+        { value: 180, label: '3 Stunden vorher' },
+        { value: 720, label: '12 Stunden vorher' },
+        { value: 1440, label: '24 Stunden vorher' },
     ];
+
+    // Generate time slots in 5-minute intervals from 5:00 to 21:00
+    const timeSlots = React.useMemo(() => {
+        const slots = [];
+        const startHour = 5;
+        const endHour = 21;
+        
+        for (let hour = startHour; hour <= endHour; hour++) {
+            for (let minute = 0; minute < 60; minute += 5) {
+                // Skip times after 21:00
+                if (hour === endHour && minute > 0) break;
+                
+                const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+                slots.push({
+                    value: timeString,
+                    label: timeString
+                });
+            }
+        }
+        return slots;
+    }, []);
 
     React.useEffect(() => {
         const currentTermin = form.getValues('termin');
@@ -362,16 +387,27 @@ export default function AppointmentModal({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Uhrzeit <span className="text-red-500">*</span></FormLabel>
-                                        <FormControl>
-                                            <div className="relative">
-                                                <Input
-                                                    type="time"
-                                                    className="time-input pr-10 cursor-pointer"
-                                                    {...field}
-                                                />
-                                                <CalendarIcon className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                                            </div>
-                                        </FormControl>
+                                        <Select 
+                                            onValueChange={field.onChange} 
+                                            value={field.value}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger className="cursor-pointer">
+                                                    <SelectValue placeholder="Uhrzeit wählen" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent className="max-h-[300px] overflow-y-auto">
+                                                {timeSlots.map((slot) => (
+                                                    <SelectItem 
+                                                        key={slot.value} 
+                                                        value={slot.value} 
+                                                        className="cursor-pointer"
+                                                    >
+                                                        {slot.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </FormItem>
                                 )}
                             />
@@ -565,14 +601,14 @@ export default function AppointmentModal({
                             name="reminder"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Reminder (optional)</FormLabel>
+                                    <FormLabel>Erinnerung (optional)</FormLabel>
                                     <Select 
                                         onValueChange={(value) => field.onChange(value === 'null' ? null : parseInt(value))} 
                                         value={field.value === null || field.value === undefined ? 'null' : field.value.toString()}
                                     >
                                         <FormControl>
                                             <SelectTrigger className="cursor-pointer">
-                                                <SelectValue placeholder="Reminder wählen" />
+                                                <SelectValue placeholder="Erinnerung wählen" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
@@ -591,7 +627,19 @@ export default function AppointmentModal({
                             )}
                         />
 
-                        <div className="flex justify-center">
+                        <div className="flex justify-center gap-3">
+                            {showDeleteButton && onDelete && (
+                                <Button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        onDelete();
+                                    }}
+                                    className="bg-red-600 cursor-pointer hover:bg-red-700 text-white rounded-3xl"
+                                >
+                                    Löschen
+                                </Button>
+                            )}
                             <Button
                                 type="submit"
                                 disabled={submitting}
