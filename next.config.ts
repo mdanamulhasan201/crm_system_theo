@@ -15,10 +15,7 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: 'quotations-pierce-patrol-sur.trycloudflare.com',
       },
-      {
-        protocol: 'https',
-        hostname: 'nextel-suburban-procedure-giving.trycloudflare.com',
-      },
+     
       {
         protocol: 'http',
         hostname: '192.168.7.12',

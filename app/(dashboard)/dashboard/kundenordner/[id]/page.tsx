@@ -196,7 +196,7 @@ export default function KundenordnerPage() {
                 }
             }
 
-            // Prepare Excel data
+
             const workbook = XLSX.utils.book_new()
 
             // Add exclInfo sheet if available
