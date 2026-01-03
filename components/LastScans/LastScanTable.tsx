@@ -41,7 +41,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
     const [deleteModalOpen, setDeleteModalOpen] = React.useState<boolean>(false);
     const [customerToDelete, setCustomerToDelete] = React.useState<{ id: string; name: string } | null>(null);
     const [isDeleting, setIsDeleting] = React.useState<boolean>(false);
-    const [apiLocations, setApiLocations] = React.useState<string[]>([]);
+    const [apiLocations, setApiLocations] = React.useState<Array<{ description: string; address: string }>>([]);
 
     const load = React.useCallback(async () => {
         try {
@@ -87,6 +87,10 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                 params.completedOrders = true;
             } else if (orderFilter === 'no-order') {
                 params.noOrder = true;
+            } else if (orderFilter === 'oneAllOrders') {
+                params.oneAllOrders = true;
+            } else if (orderFilter === 'oneOrdersInProduction') {
+                params.oneOrdersInProduction = true;
             }
 
             if (locationFilter !== 'all') {
@@ -109,11 +113,9 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
 
             const data = Array.isArray(res?.data) ? res.data : [];
 
-            // Process data - use latestScreener from API if available, otherwise extract from screenerFile array
             const processedData = data.map((item: any) => {
                 let latestScreener: LatestScreener | null = null;
 
-                // Use latestScreener from API if it exists
                 if (item.latestScreener && item.latestScreener.createdAt) {
                     latestScreener = {
                         id: item.latestScreener.id,
@@ -122,7 +124,6 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                         picture_23: item.latestScreener.picture_23,
                     };
                 } else if (Array.isArray(item.screenerFile) && item.screenerFile.length > 0) {
-                    // Fallback: Find the latest screener file by comparing dates
                     const latest = item.screenerFile.reduce((latest: any, current: any) => {
                         const latestDate = new Date(latest.updatedAt || latest.createdAt || 0);
                         const currentDate = new Date(current.updatedAt || current.createdAt || 0);
@@ -162,10 +163,6 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                 setTotalItems(processedData.length);
             }
         } catch (error: any) {
-            // console.error('Failed to load customers', error);
-
-            // Extract error message from axios error response
-            // When axios gets 400, the response data is in error.response.data
             if (error?.response?.data) {
                 const errorData = error.response.data;
                 // Check if it has the structure { success: false, message: "..." }
@@ -190,26 +187,53 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
         }
     }, [page, limit, dateRange, orderFilter, yearFilter, monthFilter, locationFilter, insuranceFilter]);
 
-    // Fetch locations from API
     React.useEffect(() => {
         const fetchLocations = async () => {
             try {
-                const response = await getAllLocations(1, 100);
-                if (response?.success && response?.data && Array.isArray(response.data)) {
-                    // Extract only address field from each location
-                    const addresses = response.data
-                        .map((loc: any) => loc.address)
-                        .filter((addr: string) => addr && addr.trim() !== '');
-                    setApiLocations(addresses);
-                } else if (Array.isArray(response?.data)) {
-                    const addresses = response.data
-                        .map((loc: any) => loc.address)
-                        .filter((addr: string) => addr && addr.trim() !== '');
-                    setApiLocations(addresses);
+                let allLocations: any[] = [];
+                let currentPage = 1;
+                const limit = 100;
+                let hasMore = true;
+
+                while (hasMore) {
+                    const response = await getAllLocations(currentPage, limit);
+                    
+                    if (response?.success && response?.data && Array.isArray(response.data)) {
+                        allLocations = [...allLocations, ...response.data];
+                        const pagination = response?.pagination;
+                        if (pagination && pagination.totalPages && currentPage < pagination.totalPages) {
+                            currentPage++;
+                        } else {
+                            hasMore = false;
+                        }
+                    } else if (Array.isArray(response?.data)) {
+                        allLocations = [...allLocations, ...response.data];
+                        if (response.data.length < limit) {
+                            hasMore = false;
+                        } else {
+                            currentPage++;
+                        }
+                    } else {
+                        hasMore = false;
+                    }
                 }
+
+                const locations = allLocations
+                    .filter((loc: any) => loc.description && loc.description.trim() !== '' && loc.address && loc.address.trim() !== '')
+                    .map((loc: any) => ({
+                        description: loc.description.trim(),
+                        address: loc.address.trim()
+                    }))
+                    .filter((loc: { description: string; address: string }, index: number, self: Array<{ description: string; address: string }>) => 
+                        self.findIndex(l => l.address === loc.address) === index
+                    )
+                    .sort((a: { description: string; address: string }, b: { description: string; address: string }) => 
+                        a.description.localeCompare(b.description)
+                    );
+
+                setApiLocations(locations);
             } catch (error) {
                 console.error('Error fetching locations:', error);
-                // Don't show error toast, just use empty array as fallback
                 setApiLocations([]);
             }
         };
@@ -247,10 +271,8 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                 toast.success('Kunde erfolgreich gelöscht');
                 setDeleteModalOpen(false);
                 setCustomerToDelete(null);
-                // Reload the data
                 load();
 
-                // Notify parent so other views (e.g. LastScans carousel) can update
                 if (onCustomerDeleted) {
                     onCustomerDeleted();
                 }
@@ -288,34 +310,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
         return Array.from(set).sort((a, b) => Number(b) - Number(a));
     }, [rows]);
 
-
-    // Insurance filtering is now done on backend with fixed options: 'insurance' or 'private'
-    // const uniqueInsurances = React.useMemo(() => {
-    //     const set = new Set<string>();
-    //     rows.forEach((row) => {
-    //         const insurance = row.krankenkasse?.trim();
-    //         if (insurance) {
-    //             set.add(insurance);
-    //         }
-    //     });
-    //     return Array.from(set).sort((a, b) => a.localeCompare(b));
-    // }, [rows]);
-
-    // Use API locations instead of extracting from rows
-    // const uniqueLocations = React.useMemo(() => {
-    //     const set = new Set<string>();
-    //     rows.forEach((row) => {
-    //         const location = row.wohnort?.trim();
-    //         if (location) {
-    //             set.add(location);
-    //         }
-    //     });
-    //     return Array.from(set).sort((a, b) => a.localeCompare(b));
-    // }, [rows]);
-
     const displayRows = React.useMemo(() => {
-        // Location and insurance filtering are now done on the backend
-        // Only filter by year and month on client-side
         return rows.filter((row) => {
             const createdDate = new Date(row.createdAt);
             const rowMonth = Number.isNaN(createdDate.getTime()) ? null : createdDate.getMonth() + 1;
@@ -375,7 +370,6 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
 
     const handleExport = () => {
         try {
-            // Get selected rows or all rows if none selected
             const rowsToExport = selectedRows.size > 0
                 ? displayRows.filter(row => selectedRows.has(row.id))
                 : displayRows;
@@ -385,12 +379,9 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                 return;
             }
 
-            // Prepare data for Excel
             const excelData = rowsToExport.map((row) => {
                 const latestScreenerDate = row.latestScreener?.createdAt ?? null;
                 const customerFullName = `${row.vorname ?? ''} ${row.nachname ?? ''}`.trim();
-                
-                // Determine Krankenkasse: if no orders, show billingType; otherwise show krankenkasse
                 const hasOrders = row.latestOrder || row.latestMassschuheOrder;
                 let krankenkasseValue = '—';
                 if (!hasOrders && row.billingType?.trim()) {
@@ -400,8 +391,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                 } else if (row.krankenkasse?.trim()) {
                     krankenkasseValue = row.krankenkasse.trim();
                 }
-                
-                // Determine Kundentyp: show order types (Einlagen/Massschuhe) when orders exist
+
                 const customerTypes: string[] = [];
                 if (row.latestMassschuheOrder) customerTypes.push('Massschuhe');
                 if (row.latestOrder) customerTypes.push('Einlagen');
@@ -439,12 +429,9 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                 };
             });
 
-            // Create workbook and worksheet
             const worksheet = XLSX.utils.json_to_sheet(excelData);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Kunden');
-
-            // Generate Excel file and download
             const fileName = `Kunden_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
             XLSX.writeFile(workbook, fileName);
 
@@ -469,6 +456,8 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
         { label: 'Alle Aufträge', value: 'all' },
         { label: 'Abgeschlossen', value: 'completed' },
         { label: 'Kein Auftrag', value: 'no-order' },
+        { label: 'Alle Aufträge (Ein)', value: 'oneAllOrders' },
+        { label: 'Aufträge in Fertigung', value: 'oneOrdersInProduction' },
     ];
 
     const yearOptions = [{ label: 'Alle Jahre', value: 'all' as const }, ...uniqueYears.map((year) => ({ label: year, value: year }))];
@@ -490,7 +479,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
 
     const locationOptions = [
         { label: 'Alle Städte', value: 'all' as const },
-        ...apiLocations.map((address) => ({ label: address, value: address })),
+        ...apiLocations.map((loc) => ({ label: `${loc.address} - ${loc.description}`, value: loc.description })),
     ];
     const insuranceOptions = [
         { label: 'Alle Kostenträger', value: 'all' as const },

@@ -201,6 +201,8 @@ export interface FilterCustomersParams {
     thisMonth?: boolean;
     completedOrders?: boolean;
     noOrder?: boolean;
+    oneAllOrders?: boolean;
+    oneOrdersInProduction?: boolean;
     geschaeftsstandort?: string; // Business location (address from store locations)
     paymnentType?: string; // Payment type: 'insurance' or 'private'
 }
@@ -222,6 +224,8 @@ export const filterCustomers = async (params: FilterCustomersParams = {}) => {
             thisMonth,
             completedOrders,
             noOrder,
+            oneAllOrders,
+            oneOrdersInProduction,
             geschaeftsstandort,
             paymnentType
         } = params;
@@ -256,6 +260,8 @@ export const filterCustomers = async (params: FilterCustomersParams = {}) => {
         appendBoolean('thisMonth', thisMonth);
         appendBoolean('completedOrders', completedOrders);
         appendBoolean('noOrder', noOrder);
+        appendBoolean('oneAllOrders', oneAllOrders);
+        appendBoolean('oneOrdersInProduction', oneOrdersInProduction);
 
         const queryString = query.toString();
         const url = `/customers/filter-customers${queryString ? `?${queryString}` : ''}`;

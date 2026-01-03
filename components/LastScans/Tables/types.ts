@@ -37,5 +37,5 @@ export interface LastScanRow {
 }
 
 export type DateRangeFilter = 'all' | 'today' | 'yesterday' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'thisYear';
-export type OrderStatusFilter = 'all' | 'completed' | 'no-order';
+export type OrderStatusFilter = 'all' | 'completed' | 'no-order' | 'oneAllOrders' | 'oneOrdersInProduction';
 
