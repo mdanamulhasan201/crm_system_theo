@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { getSingleCustomer } from '@/apis/customerApis'
 import { useUpdateCustomerInfo } from '@/hooks/customer/useUpdateCustomerInfo'
-import { FiEdit } from 'react-icons/fi'
 import ScanningDataUpdate from './ScanningDataUpdate'
 import { toast } from 'react-hot-toast'
 
@@ -163,27 +162,6 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
             <div className='mt-10'>
                 <div className='flex justify-between items-center'>
                     <h3 className="text-lg font-semibold mb-3">Kundeninformation</h3>
-                    {/* edit icon */}
-                    {!isEditing ? (
-                        <button type="button" onClick={() => setIsEditing(true)} className='bg-gray-100 hover:bg-gray-200 cursor-pointer p-2 rounded-md'>
-                            <FiEdit />
-                        </button>
-                    ) : (
-                        <div className='flex items-center gap-2'>
-                            <Button type="button" variant="outline" className='cursor-pointer' onClick={handleCancel} disabled={isUpdating}>
-                                Abbrechen
-                            </Button>
-                            <Button
-                                type="button"
-                                className='bg-[#62A07C] hover:bg-[#62a07c98] cursor-pointer'
-                                onClick={() => form.handleSubmit(handleSubmit)()}
-                                disabled={isUpdating}
-                            >
-                                {isUpdating ? 'Aktualisieren...' : 'Kundendaten aktualisieren'}
-                            </Button>
-                        </div>
-                    )}
-
                 </div>
 
 
@@ -203,7 +181,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                 <FormItem>
                                     <FormLabel className="text-sm font-medium">Vorname</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Vorname" disabled={!isEditing} className="border border-gray-300 rounded-md" {...field} />
+                                        <Input placeholder="Vorname" disabled={true} className="border border-gray-300 rounded-md" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -217,7 +195,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                 <FormItem>
                                     <FormLabel className="text-sm font-medium">Nachname</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Nachname" disabled={!isEditing} className="border border-gray-300 rounded-md" {...field} />
+                                        <Input placeholder="Nachname" disabled={true} className="border border-gray-300 rounded-md" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -231,7 +209,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                 <FormItem>
                                     <FormLabel className="text-sm font-medium">E-Mail-Adresse</FormLabel>
                                     <FormControl>
-                                        <Input type="email" placeholder="email@example.com" disabled={!isEditing} className="border border-gray-300 rounded-md" {...field} />
+                                        <Input type="email" placeholder="email@example.com" disabled={true} className="border border-gray-300 rounded-md" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -245,7 +223,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                 <FormItem>
                                     <FormLabel className="text-sm font-medium">Telefonnummer</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="+49 123 456789" disabled={!isEditing} className="border border-gray-300 rounded-md" {...field} />
+                                        <Input placeholder="+49 123 456789" disabled={true} className="border border-gray-300 rounded-md" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -259,7 +237,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                 <FormItem className="md:col-span-2">
                                     <FormLabel className="text-sm font-medium">Wohnort</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Stadt, PLZ" disabled={!isEditing} className="border border-gray-300 rounded-md" {...field} />
+                                        <Input placeholder="Stadt, PLZ" disabled={true} className="border border-gray-300 rounded-md" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

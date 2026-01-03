@@ -4,13 +4,13 @@ import React from 'react';
 import { ArrowUp } from 'lucide-react';
 
 interface MaßschuheCardProps {
-    value: number;
+ 
     percentage: number;
     change: number;
     isPositive: boolean;
 }
 
-export default function MaßschuheCard({ value, percentage, change, isPositive }: MaßschuheCardProps) {
+export default function MaßschuheCard({  percentage, change, isPositive }: MaßschuheCardProps) {
     return (
         <div className="rounded-2xl border border-slate-100 bg-white p-4 sm:p-6 shadow-sm flex flex-col h-full">
             <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-4 sm:mb-6">
@@ -19,7 +19,7 @@ export default function MaßschuheCard({ value, percentage, change, isPositive }
             <div className="flex-1 flex flex-col justify-between">
                 <div>
                     <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 sm:mb-3">
-                        {value}
+                    ---
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
                         = {percentage} % aller Maßschuh-Aufträge

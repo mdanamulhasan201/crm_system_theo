@@ -31,7 +31,7 @@ export default function Reklamationen() {
                 {/* Top Left - Maßschuhe */}
                 <div className="sm:col-span-1">
                     <MaßschuheCard 
-                        value={8}
+                     
                         percentage={6}
                         change={2}
                         isPositive={true}
@@ -41,7 +41,8 @@ export default function Reklamationen() {
                 {/* Top Right - Einlagen */}
                 <div className="sm:col-span-1">
                     <EinlagenCard 
-                        value={4}
+               
+               
                         percentage={3}
                         change={-1}
                         isPositive={false}
