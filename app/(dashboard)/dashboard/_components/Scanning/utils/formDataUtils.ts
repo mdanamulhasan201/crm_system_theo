@@ -47,6 +47,12 @@ export function createWerkstattzettelPayload(
       )
     : undefined
 
+  // Ensure discount is a valid number
+  const parsedDiscount = formData.discount !== undefined && formData.discount !== null 
+    ? (typeof formData.discount === 'number' ? formData.discount : Number(formData.discount))
+    : undefined
+  const validDiscount = parsedDiscount !== undefined && !isNaN(parsedDiscount) ? parsedDiscount : undefined
+
   return {
     kundenName: `${formData.vorname} ${formData.nachname}`.trim(),
     auftragsDatum: auftragsIso,
@@ -62,7 +68,7 @@ export function createWerkstattzettelPayload(
     fussanalysePreis: isNaN(parsedFoot) ? 0 : parsedFoot,
     einlagenversorgungPreis: isNaN(parsedInsole) ? 0 : parsedInsole,
     quantity: formData.quantity || undefined,
-    discount: formData.discount || undefined,
+    discount: validDiscount,
     discountType: formData.discountType || undefined,
   }
 }

@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { ScanData } from '@/types/scan'
 import toast from 'react-hot-toast'
+import { MapPin, FileText, StickyNote } from 'lucide-react'
 import { useWerkstattzettelForm } from '../../../../../hooks/einlagen/useWerkstattzettelForm'
 import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSection'
 import PriceSection from './Werkstattzettel/FormSections/PriceSection'
@@ -50,8 +51,7 @@ export default function WerkstattzettelModal({
   // Local validation error state
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
-  // Track if default location has been set (to prevent overriding user changes)
-  const [hasSetDefaultLocation, setHasSetDefaultLocation] = useState(false)
+ 
 
   // Settings data state
   const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([])
@@ -325,7 +325,11 @@ export default function WerkstattzettelModal({
             const match = form.quantity.match(/^(\d+)\s*paar/i)
             return match ? parseInt(match[1], 10) : undefined
           })(),
-          discount: form.discountValue ? parseFloat(form.discountValue) : undefined,
+          discount: (() => {
+            if (!form.discountValue || form.discountValue.trim() === '') return undefined
+            const parsed = parseFloat(form.discountValue)
+            return isNaN(parsed) ? undefined : parsed
+          })(),
           discountType: form.discountType || undefined,
         },
         scanData.id
@@ -340,6 +344,12 @@ export default function WerkstattzettelModal({
           const match = form.quantity.match(/^(\d+)\s*paar/i)
           return match ? parseInt(match[1], 10) : undefined
         })(),
+        discount: (() => {
+          if (!form.discountValue || form.discountValue.trim() === '') return undefined
+          const parsed = parseFloat(form.discountValue)
+          return isNaN(parsed) ? undefined : parsed
+        })(),
+        discountType: form.discountType || undefined,
       }
 
       // Do NOT close the Werkstattzettel modal here.
@@ -445,6 +455,44 @@ export default function WerkstattzettelModal({
               onBezahltChange={form.setBezahlt}
               paymentError={fieldErrors.bezahlt}
             />
+          </div>
+
+          {/* KONTROLLE & AKTIONEN Section */}
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
+              KONTROLLE & AKTIONEN
+            </h3>
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#1E76FF]">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-500">Abholung</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {form.geschaeftsstandort || '-'}
+                  </span>
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
+                >
+                  <FileText className="w-4 h-4 text-gray-700" />
+                  <span>PDF anzeigen</span>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
+                >
+                  <StickyNote className="w-4 h-4 text-gray-700" />
+                  <span>Notiz hinzufügen</span>
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 

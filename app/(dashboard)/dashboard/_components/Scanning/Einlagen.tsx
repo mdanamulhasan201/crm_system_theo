@@ -438,7 +438,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     versorgungId: resolvedId,
                     einlagentyp: formDataForOrder.einlagentyp || '',
                     überzug: formDataForOrder.überzug || '',
-                    menge: formDataForOrder.menge || 1,
+                    quantity: formDataForOrder.quantity || formDataForOrder.menge || 1,
                     versorgung_note: formDataForOrder.versorgung_note || '',
                     schuhmodell_wählen: formDataForOrder.schuhmodell_wählen || '',
                     kostenvoranschlag: formDataForOrder.kostenvoranschlag || false,
@@ -460,6 +460,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     einlagenversorgung: einlagenversorgungPreis,
                     werkstattEmployeeId: formDataForOrder.employeeId || formDataForOrder.werkstattEmployeeId || '',
                     screenerId: formDataForOrder.screenerId || null,
+                    discount: formDataForOrder.discount !== undefined && formDataForOrder.discount !== null 
+                        ? (typeof formDataForOrder.discount === 'number' ? formDataForOrder.discount : Number(formDataForOrder.discount))
+                        : undefined,
+                    discountType: formDataForOrder.discountType || undefined,
                 };
 
                 const result = await createOrderAndGeneratePdf(
