@@ -1,6 +1,6 @@
 "use client"
 import React, { useMemo, useState, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { GroupDef } from "./Types"
 import { normalizeUnderscores, parseEuroFromText } from "./HelperFunctions"
 import { GROUPS, shoe } from "./ShoeData"
@@ -296,11 +296,15 @@ interface ShoeDetailsProps {
     orderId?: string | null
 }
 
-export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
+export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) {
     const [selected, setSelected] = useState<SelectedState>({})
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [showModal2, setShowModal2] = useState(false)
     const router = useRouter()
+    const searchParams = useSearchParams()
+    
+    // Get orderId from prop or URL search params
+    const orderId = orderIdProp || searchParams?.get('orderId') || null
     const [textAreas, setTextAreas] = useState<TextAreasState>({
         korrektur_bereich: "",
         fussproblem_bettung: "",
@@ -310,6 +314,7 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
     })
     const [showModal, setShowModal] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
     
     // File upload states for STL files
     const [linkerLeistenFile, setLinkerLeistenFile] = useState<File | null>(null)
@@ -372,25 +377,48 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
         setSelected((prev) => ({ ...prev, [groupId]: optId }))
     }
 
+    // Calculate total price from ALL selected options that have prices
     const extraPriceTotal = useMemo(() => {
         let sum = 0
         for (const group of GROUPS) {
+            // Skip section headers and textareas as they don't have price options
+            if (group.fieldType === "section" || group.fieldType === "textarea" || group.fieldType === "text") {
+                continue
+            }
+            
             const selectedOptId = selected[group.id]
             if (!selectedOptId) continue
+            
             const opt = group.options.find((o) => o.id === selectedOptId)
             if (!opt) continue
-            sum += parseEuroFromText(opt.label)
+            
+            // Parse price from option label (e.g., "+3,99€" or "(+3,99€)" or "(9,99€)")
+            // The parseEuroFromText function handles formats like: (+3,99€), (+1,99€), (9,99€), +4,99€, etc.
+            const price = parseEuroFromText(opt.label)
+            if (price > 0) {
+                sum += price
+            }
         }
         return sum
     }, [selected])
 
-    // Use order total price if available, otherwise calculate from shoe price + extras
+    // Calculate total price: use order's price if available, otherwise calculate from selected options
     const grandTotal = useMemo(() => {
-        if (order && orderDataForPDF.totalPrice && orderDataForPDF.totalPrice > 0) {
-            return orderDataForPDF.totalPrice
+        // If order exists and has a totalPrice, use that
+        if (order) {
+            const fußanalysePrice = order.fußanalyse ?? 0
+            const einlagenversorgungPrice = order.einlagenversorgung ?? 0
+            const orderTotalPrice = fußanalysePrice + einlagenversorgungPrice
+            
+            if (orderTotalPrice > 0) {
+                // Use order's price as base, then add selected options prices for real-time updates
+                return orderTotalPrice + extraPriceTotal
+            }
         }
+        
+        // Otherwise calculate from base shoe price + selected options
         return shoe.price + extraPriceTotal
-    }, [order, orderDataForPDF.totalPrice, extraPriceTotal])
+    }, [order, extraPriceTotal])
 
     const requiredCheckboxGroups = useMemo(
         () => GROUPS.filter(g => !g.fieldType || g.fieldType === "checkbox").filter(g => g.fieldType !== "section" && g.fieldType !== "textarea"),
@@ -604,45 +632,188 @@ export default function ShoeDetails({ orderId }: ShoeDetailsProps) {
                     onClose={() => setShowModal2(false)}
                     productName={shoe.name}
                     value={grandTotal.toFixed(2)}
+                    isLoading={isSubmitting}
                     onConfirm={async () => {
-                        // Submit STL files and PDF invoice if orderId is available
-                        if (orderId && (linkerLeistenFile || rechterLeistenFile || pdfFile)) {
-                            try {
-                                const formData = new FormData()
+                        // Check if orderId is available
+                        if (!orderId) {
+                            toast.error('Bestellungs-ID fehlt. Bitte versuchen Sie es erneut.')
+                            setShowModal2(false)
+                            return
+                        }
+
+                        setIsSubmitting(true)
+                        try {
+                            const formData = new FormData()
+                            
+                            // File uploads - Backend expects: image3d_1, image3d_2
+                            if (linkerLeistenFile) {
+                                formData.append('image3d_1', linkerLeistenFile)
+                            }
+                            
+                            if (rechterLeistenFile) {
+                                formData.append('image3d_2', rechterLeistenFile)
+                            }
+                            
+                            if (pdfFile) {
+                                formData.append('invoice', pdfFile)
+                            }
+                            
+                            // Helper function to get selected option label
+                            const getSelectedOptionLabel = (groupId: string): string => {
+                                const selectedOptId = selected[groupId]
+                                if (!selectedOptId) return ""
+                                const group = GROUPS.find(g => g.id === groupId)
+                                const option = group?.options.find(o => o.id === selectedOptId)
+                                return option?.label || ""
+                            }
+                            
+                            // Helper function to get selected option with inputs
+                            const getSelectedOptionWithInputs = (groupId: string): string => {
+                                const selectedOptId = selected[groupId]
+                                if (!selectedOptId) return ""
+                                const group = GROUPS.find(g => g.id === groupId)
+                                const option = group?.options.find(o => o.id === selectedOptId)
+                                if (!option) return ""
                                 
-                                if (linkerLeistenFile) {
-                                    formData.append('threed_model_left', linkerLeistenFile)
+                                const inputs = optionInputs[groupId]?.[selectedOptId] || []
+                                const inputsString = inputs.filter(i => i.trim()).join(", ")
+                                
+                                if (inputsString) {
+                                    // Replace placeholder underscores with actual input values
+                                    let label = option.label
+                                    const placeholderCount = (label.match(/_{3,}/g) || []).length
+                                    if (placeholderCount > 0) {
+                                        // Replace first placeholder with inputs
+                                        label = label.replace(/_{3,}/, inputsString)
+                                    } else {
+                                        // Append inputs if no placeholder
+                                        label = `${label} | ${inputsString}`
+                                    }
+                                    return label
                                 }
-                                
-                                if (rechterLeistenFile) {
-                                    formData.append('threed_model_right', rechterLeistenFile)
-                                }
-                                
-                                if (pdfFile) {
-                                    formData.append('invoice', pdfFile)
-                                }
-                                
-                                const response = await sendMassschuheOrderToAdmin1(orderId, formData)
-                                
-                                // Check if response indicates failure
-                                if (response && response.success === false && response.message) {
-                                    toast.error(response.message)
-                                    return
-                                }
-                                
-                                toast.success('Bestellung erfolgreich gesendet')
-                            } catch (error: any) {
-                                console.error('Error sending order:', error)
-                                
-                                // Extract error message from response
-                                const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Senden der Bestellung'
-                                toast.error(errorMessage)
+                                return option.label
+                            }
+                            
+                            // Add all required fields to FormData (send all fields, even if empty)
+                            
+                            // Bettung_korrigierend
+                            const bettungValue = getSelectedOptionLabel("bettung")
+                            formData.append('Bettung_korrigierend', bettungValue || "")
+                            
+                            // Bettungsdicke
+                            const bettungsdickeValue = getSelectedOptionLabel("bettungsdicke")
+                            formData.append('Bettungsdicke', bettungsdickeValue || "")
+                            
+                            // Haertegrad_Shore
+                            const shoreValue = getSelectedOptionLabel("shore")
+                            formData.append('Haertegrad_Shore', shoreValue || "")
+                            
+                            // Fersenschale
+                            const fersenschaleValue = getSelectedOptionLabel("fersenschale")
+                            formData.append('Fersenschale', fersenschaleValue || "")
+                            
+                            // Laengsgewölbestütze
+                            const laengsgewoelbeValue = getSelectedOptionLabel("laengsgewoelbe")
+                            formData.append('Laengsgewölbestütze', laengsgewoelbeValue || "")
+                            
+                            // Palotte_oder_Querpalotte
+                            const pelotteValue = getSelectedOptionLabel("pelotte")
+                            formData.append('Palotte_oder_Querpalotte', pelotteValue || "")
+                            
+                            // Korrektur_der_Fußstellung
+                            const fussstellungValue = getSelectedOptionLabel("fussstellung")
+                            formData.append('Korrektur_der_Fußstellung', fussstellungValue || "")
+                            
+                            // Zehenelemente_Details
+                            const zehenelementeValue = getSelectedOptionWithInputs("zehenelemente")
+                            formData.append('Zehenelemente_Details', zehenelementeValue || "")
+                            
+                            // eine_korrektur_nötig_ist
+                            const korrekturBereichValue = textAreas["korrektur_bereich"] || ""
+                            formData.append('eine_korrektur_nötig_ist', korrekturBereichValue)
+                            
+                            // Spezielles_Fußproblem
+                            const fussproblemBettungValue = textAreas["fussproblem_bettung"] || ""
+                            formData.append('Spezielles_Fußproblem', fussproblemBettungValue)
+                            
+                            // Zusatzkorrektur_Absatzerhöhung
+                            const zusatzkorrekturenValue = getSelectedOptionWithInputs("zusatzkorrekturen")
+                            formData.append('Zusatzkorrektur_Absatzerhöhung', zusatzkorrekturenValue || "")
+                            
+                            // Vertiefungen_Aussparungen
+                            const vertiefungenValue = getSelectedOptionLabel("vertiefungen")
+                            formData.append('Vertiefungen_Aussparungen', vertiefungenValue || "")
+                            
+                            // Oberfläche_finish
+                            const finishValue = getSelectedOptionLabel("finish")
+                            formData.append('Oberfläche_finish', finishValue || "")
+                            
+                            // Überzug_Stärke
+                            const ueberzugValue = getSelectedOptionWithInputs("ueberzug")
+                            formData.append('Überzug_Stärke', ueberzugValue || "")
+                            
+                            // Anmerkungen_zur_Bettung
+                            const bettungWuenscheValue = textAreas["bettung_wuensche"] || ""
+                            formData.append('Anmerkungen_zur_Bettung', bettungWuenscheValue)
+                            
+                            // Leisten_mit_ohne_Platzhalter
+                            const leistenPlatzhalterValue = getSelectedOptionLabel("leisten_platzhalter")
+                            formData.append('Leisten_mit_ohne_Platzhalter', leistenPlatzhalterValue || "")
+                            
+                            // Schuhleisten_Typ
+                            const schuhleistenTypValue = getSelectedOptionLabel("schuhleisten_typ")
+                            formData.append('Schuhleisten_Typ', schuhleistenTypValue || "")
+                            
+                            // Material_des_Leisten
+                            const leistenMaterialValue = getSelectedOptionLabel("leisten_material")
+                            formData.append('Material_des_Leisten', leistenMaterialValue || "")
+                            
+                            // Leisten_gleiche_Länge
+                            const gleicheLaengeValue = getSelectedOptionLabel("gleiche_laenge")
+                            formData.append('Leisten_gleiche_Länge', gleicheLaengeValue || "")
+                            
+                            // Absatzhöhe
+                            const absatzhoeheValue = getSelectedOptionLabel("absatzhoehe")
+                            formData.append('Absatzhöhe', absatzhoeheValue || "")
+                            
+                            // Abrollhilfe
+                            const abrollhilfeValue = getSelectedOptionLabel("abrollhilfe")
+                            formData.append('Abrollhilfe', abrollhilfeValue || "")
+                            
+                            // Spezielle_Fußprobleme_Leisten
+                            const fussproblemLeistenValue = textAreas["fussproblem_leisten"] || ""
+                            formData.append('Spezielle_Fußprobleme_Leisten', fussproblemLeistenValue)
+                            
+                            // Anmerkungen_zum_Leisten
+                            const leistenWuenscheValue = textAreas["leisten_wuensche"] || ""
+                            formData.append('Anmerkungen_zum_Leisten', leistenWuenscheValue)
+                            
+                            // totalPrice (always send)
+                            formData.append('totalPrice', grandTotal.toFixed(2))
+                            
+                            console.log('Calling API with orderId:', orderId)
+                            console.log('FormData entries:', Array.from(formData.entries()))
+                            
+                            const response = await sendMassschuheOrderToAdmin1(orderId, formData)
+                            
+                            // Check if response indicates failure
+                            if (response && response.success === false && response.message) {
+                                toast.error(response.message)
                                 return
                             }
+                            
+                            toast.success('Bestellung erfolgreich gesendet')
+                            router.push("/dashboard/balance-dashboard")
+                            setShowModal2(false)
+                        } catch (error: any) {
+                            console.error('Error sending order:', error)
+                            
+                            // Extract error message from response
+                            const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Senden der Bestellung'
+                            toast.error(errorMessage)
+                        } finally {
+                            setIsSubmitting(false)
                         }
-                        
-                        router.push("/dashboard/balance-dashboard")
-                        setShowModal2(false)
                     }}
                 />
             )}

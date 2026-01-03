@@ -50,8 +50,8 @@ export default function SettingsProfileLayout({
             if (path.endsWith("/benachrichtigungen")) return Bell;
             if (path.endsWith("/notifications")) return Store;
             if (path.endsWith("/preisverwaltung")) return Scan;
-            if (path.endsWith("/software-scanstation")) return Monitor;
-            if (path.endsWith("/design")) return Palette;
+            // if (path.endsWith("/software-scanstation")) return Monitor;
+            // if (path.endsWith("/design")) return Palette;
             if (path.endsWith("/changes-password")) return Lock;
             if (path.endsWith("/sprache")) return BiGlobe;
             if (path.endsWith("/fragen")) return HelpCircle;
@@ -61,7 +61,12 @@ export default function SettingsProfileLayout({
         };
 
         const items = allNested
-            .filter((item) => item.action && isPathAllowed(item.path))
+            .filter((item) => 
+                item.action && 
+                isPathAllowed(item.path) &&
+                !item.path.endsWith("/software-scanstation") &&
+                !item.path.endsWith("/design")
+            )
             .map((item) => ({
                 id: mapIdFromPath(item.path),
                 icon: iconForPath(item.path),
@@ -114,18 +119,18 @@ export default function SettingsProfileLayout({
                     label: "Preisverwaltung",
                     href: "/dashboard/settings-profile/preisverwaltung"
                 },
-                {
-                    id: "software-scanstation",
-                    icon: Monitor,
-                    label: "Software Scanstation",
-                    href: "/dashboard/settings-profile/software-scanstation"
-                },
-                {
-                    id: "design",
-                    icon: Palette,
-                    label: "Design & Logo",
-                    href: "/dashboard/settings-profile/design"
-                },
+                // {
+                //     id: "software-scanstation",
+                //     icon: Monitor,
+                //     label: "Software Scanstation",
+                //     href: "/dashboard/settings-profile/software-scanstation"
+                // },
+                // {
+                //     id: "design",
+                //     icon: Palette,
+                //     label: "Design & Logo",
+                //     href: "/dashboard/settings-profile/design"
+                // },
                 {
                     id: "changes-password",
                     icon: Lock,
