@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'prostate-hormone-proudly-yale.trycloudflare.com',
+        hostname: 'blackberry-allocated-joan-glad.trycloudflare.com',
       }
     ],
   },
