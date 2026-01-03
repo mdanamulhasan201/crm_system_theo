@@ -108,7 +108,19 @@ export default function WerkstattzettelModal({
                 return null;
               })
               .filter((item: PriceItem | null): item is PriceItem => item !== null);
-            setLaserPrintPrices(formattedPrices);
+            
+            // Ensure "Standard" is always first
+            const standardItem = formattedPrices.find((item) => item.name.toLowerCase() === 'standard');
+            const otherItems = formattedPrices.filter((item) => item.name.toLowerCase() !== 'standard');
+            const sortedOthers = otherItems.sort((a, b) => a.price - b.price);
+            const sortedPrices = standardItem ? [standardItem, ...sortedOthers] : sortedOthers;
+            
+            setLaserPrintPrices(sortedPrices);
+            
+            // Auto-select "Standard" if no price is currently selected
+            if (standardItem && !form.footAnalysisPrice) {
+              form.setFootAnalysisPrice(String(standardItem.price));
+            }
           }
         } catch (error) {
           console.error('Failed to fetch settings:', error)

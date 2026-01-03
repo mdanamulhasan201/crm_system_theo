@@ -14,6 +14,18 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
     const [newPrice, setNewPrice] = useState("");
     const [newPriceName, setNewPriceName] = useState("");
 
+    // Helper function to ensure "Standard" is always first
+    const sortPricesWithStandardFirst = (prices: PriceItem[]): PriceItem[] => {
+        const standardItem = prices.find((item) => item.name.toLowerCase() === "standard");
+        const otherItems = prices.filter((item) => item.name.toLowerCase() !== "standard");
+        
+        // Sort other items by price
+        const sortedOthers = otherItems.sort((a, b) => a.price - b.price);
+        
+        // Put Standard first, then others
+        return standardItem ? [standardItem, ...sortedOthers] : sortedOthers;
+    };
+
     const addPriceFromInput = useCallback(() => {
         if (!newPrice.trim() || !newPriceName.trim()) return;
 
@@ -25,17 +37,20 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
                 toast.error("Ein Preis mit diesem Namen existiert bereits.");
                 return;
             }
-            const updatedList = [...priceList, { name, price }].sort((a, b) => a.price - b.price);
-            onPriceListChange(updatedList);
+            const updatedList = [...priceList, { name, price }];
+            const sortedList = sortPricesWithStandardFirst(updatedList);
+            onPriceListChange(sortedList);
             setNewPrice("");
             setNewPriceName("");
         }
     }, [newPrice, newPriceName, priceList, onPriceListChange]);
 
     const removePrice = (priceToRemove: PriceItem) => {
-        onPriceListChange(
-            priceList.filter((item) => item.name !== priceToRemove.name || item.price !== priceToRemove.price)
+        const filteredList = priceList.filter(
+            (item) => item.name !== priceToRemove.name || item.price !== priceToRemove.price
         );
+        const sortedList = sortPricesWithStandardFirst(filteredList);
+        onPriceListChange(sortedList);
     };
 
     const clearAllPrices = () => {
@@ -53,7 +68,7 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
             <div className="flex gap-3 items-center mb-4 flex-wrap">
                 <Input
                     type="text"
-                    placeholder="Name eingeben (z.B. High)"
+                    placeholder="Name eingeben..."
                     value={newPriceName}
                     onChange={(e) => setNewPriceName(e.target.value)}
                     onKeyDown={(e) => {
@@ -67,7 +82,7 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
                 <Input
                     type="number"
                     step="0.01"
-                    placeholder="Preis eingeben (z.B. 122.00)"
+                    placeholder="Preis eingeben..."
                     value={newPrice}
                     onChange={(e) => setNewPrice(e.target.value)}
                     onKeyDown={(e) => {

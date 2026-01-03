@@ -75,7 +75,14 @@ export default function PreisverwaltungPage() {
                             return null;
                         })
                         .filter((item): item is PriceItem => item !== null);
-                    setPriceList(formattedPrices);
+                    
+                    // Ensure "Standard" is always first
+                    const standardItem = formattedPrices.find((item) => item.name.toLowerCase() === "standard");
+                    const otherItems = formattedPrices.filter((item) => item.name.toLowerCase() !== "standard");
+                    const sortedOthers = otherItems.sort((a, b) => a.price - b.price);
+                    const sortedPrices = standardItem ? [standardItem, ...sortedOthers] : sortedOthers;
+                    
+                    setPriceList(sortedPrices);
                 }
             }
         } catch (error) {

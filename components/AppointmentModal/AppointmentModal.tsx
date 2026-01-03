@@ -8,6 +8,7 @@ import { Textarea } from "../ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { de } from "date-fns/locale";
 import { UseFormReturn } from "react-hook-form";
 import { Calendar } from "../ui/calendar";
 import { useSearchCustomer } from "@/hooks/customer/useSearchCustomer";
@@ -429,7 +430,7 @@ export default function AppointmentModal({
                                                         )}
                                                     >
                                                         {field.value ? (
-                                                            format(new Date(field.value), "dd.MM.yyyy")
+                                                            format(new Date(field.value), "dd.MM.yyyy", { locale: de })
                                                         ) : (
                                                             <span>Datum auswählen</span>
                                                         )}
@@ -445,6 +446,8 @@ export default function AppointmentModal({
                                                     disabled={(date) =>
                                                         date < new Date(new Date().setHours(0, 0, 0, 0))
                                                     }
+                                                    locale={de}
+                                                    weekStartsOn={1}
                                                     initialFocus
                                                 />
                                             </PopoverContent>
