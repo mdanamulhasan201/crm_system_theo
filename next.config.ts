@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'extraction-coming-zoo-vegetarian.trycloudflare.com',
+        hostname: 'prostate-hormone-proudly-yale.trycloudflare.com',
       }
     ],
   },

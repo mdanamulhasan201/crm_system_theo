@@ -130,9 +130,16 @@ const parseBooleanValue = (value: unknown) => {
     return false;
 };
 
-const mapEinlageType = (value?: string | null, options: string[] = []) => {
+const mapEinlageType = (value?: string | null, options: string[] | Array<{name: string, price?: number}> = []) => {
     if (!value) return undefined;
-    return options.find((option: string) => option === value) as EinlageType | undefined;
+    // Handle both string array and object array formats
+    if (options.length > 0 && typeof options[0] === 'object') {
+        const objOptions = options as Array<{name: string, price?: number}>;
+        const found = objOptions.find((option) => option.name === value);
+        return found ? (found.name as EinlageType) : undefined;
+    }
+    const stringOptions = options as string[];
+    return stringOptions.find((option: string) => option === value) as EinlageType | undefined;
 };
 
 export default function Einlagen({ customer, prefillOrderData, screenerId, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {

@@ -191,17 +191,7 @@ export default function CustomerHistory() {
 
     return (
         <div className="p-4 space-y-6">
-            {/* backbutton */}
-            <div>
-                <Button
-                    onClick={() => router.back()}
-                    variant="outline"
-                    className="flex items-center gap-2 cursor-pointer"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </Button>
-            </div>
+         
 
             <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-bold">{scanData.vorname} {scanData.nachname}</h1>

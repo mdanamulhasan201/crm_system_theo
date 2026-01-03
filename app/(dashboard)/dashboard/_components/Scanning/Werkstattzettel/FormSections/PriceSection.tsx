@@ -6,6 +6,8 @@ import { cn } from '@/lib/utils'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 import PaymentStatusSection from './PaymentStatusSection'
 
+type EinlagenversorgungPriceItem = { name: string; price: number } | number
+
 interface PriceSectionProps {
   footAnalysisPrice: string
   onFootAnalysisPriceChange: (value: string) => void
@@ -16,21 +18,38 @@ interface PriceSectionProps {
   customInsolePrice: string
   onCustomInsolePriceChange: (value: string) => void
   laserPrintPrices: PriceItem[]
-  einlagenversorgungPrices: number[]
+  einlagenversorgungPrices: EinlagenversorgungPriceItem[]
   pricesLoading: boolean
   footAnalysisPriceError?: string
   insoleSupplyPriceError?: string
   customFootPriceError?: string
   customInsolePriceError?: string
-  // Rabatt fields
   discountType: string
   onDiscountTypeChange: (value: string) => void
   discountValue: string
   onDiscountValueChange: (value: string) => void
-  // Kostenträger fields
   bezahlt: string
   onBezahltChange: (value: string) => void
   paymentError?: string
+}
+
+// Helper function to format price in German format
+const formatPrice = (price: number): string => {
+  return price.toFixed(2).replace('.', ',') + '€'
+}
+
+// Helper function to extract price and name from Einlagenversorgung price item
+const getPriceInfo = (item: EinlagenversorgungPriceItem): { price: number; name: string } => {
+  if (typeof item === 'number') {
+    return { price: item, name: '' }
+  }
+  return { price: item.price, name: item.name }
+}
+
+// Helper function to format Einlagenversorgung display text
+const formatEinlagenversorgungText = (item: EinlagenversorgungPriceItem): string => {
+  const { price, name } = getPriceInfo(item)
+  return name ? `${name} - ${formatPrice(price)}` : formatPrice(price)
 }
 
 export default function PriceSection({
@@ -80,7 +99,7 @@ export default function PriceSection({
                     key={`foot-${item.name}-${item.price}-${index}`}
                     value={String(item.price)}
                   >
-                    {item.name} - {item.price.toFixed(2).replace(".", ",")}€
+                    {item.name} - {formatPrice(item.price)}
                   </SelectItem>
                 ))
               ) : (
@@ -125,15 +144,18 @@ export default function PriceSection({
             </SelectTrigger>
             <SelectContent>
               {einlagenversorgungPrices.length > 0 ? (
-                einlagenversorgungPrices.map((price, index) => (
-                  <SelectItem
-                    className="cursor-pointer"
-                    key={`insole-${index}`}
-                    value={String(price)}
-                  >
-                    {price}€
-                  </SelectItem>
-                ))
+                einlagenversorgungPrices.map((item, index) => {
+                  const { price } = getPriceInfo(item)
+                  return (
+                    <SelectItem
+                      className="cursor-pointer"
+                      key={`insole-${index}`}
+                      value={String(price)}
+                    >
+                      {formatEinlagenversorgungText(item)}
+                    </SelectItem>
+                  )
+                })
               ) : (
                 <SelectItem value="no-price" disabled>
                   Kein Preis verfügbar

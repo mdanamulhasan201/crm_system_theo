@@ -1,10 +1,15 @@
 import React from 'react';
 
+interface EinlageOption {
+    name: string;
+    price?: number;
+}
+
 interface SimpleDropdownProps {
     label: string;
     value: string;
     placeholder: string;
-    options: readonly string[];
+    options: readonly string[] | readonly EinlageOption[];
     isOpen: boolean;
     onToggle: () => void;
     onSelect: (value: string) => void;
@@ -34,7 +39,21 @@ export default function SimpleDropdown({
                     onClick={onToggle}
                 >
                     <span className={`text-sm sm:text-base truncate pr-2 ${value ? '' : 'text-gray-400'}`}>
-                        {value || placeholder}
+                        {(() => {
+                            // Find the selected option to display with price
+                            const selectedOption = options.find((opt) => {
+                                const optName = typeof opt === 'string' ? opt : opt.name;
+                                return optName === value;
+                            });
+                            
+                            if (!value) return placeholder;
+                            
+                            if (selectedOption && typeof selectedOption === 'object' && selectedOption.price !== undefined) {
+                                return `${value} - ${selectedOption.price.toFixed(2).replace('.', ',')}€`;
+                            }
+                            
+                            return value;
+                        })()}
                     </span>
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -54,17 +73,26 @@ export default function SimpleDropdown({
                 )}
                 {isOpen && (
                     <div className="absolute z-20 mt-1 w-full bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-auto">
-                        {options.map((option) => (
-                            <div
-                                key={option}
-                                className="p-3 sm:p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base border-b border-gray-100 last:border-b-0"
-                                onClick={() => {
-                                    onSelect(option);
-                                }}
-                            >
-                                {option}
-                            </div>
-                        ))}
+                        {options.map((option) => {
+                            // Handle both string and object formats
+                            const optionName = typeof option === 'string' ? option : option.name;
+                            const optionPrice = typeof option === 'object' ? option.price : undefined;
+                            const displayText = optionPrice !== undefined 
+                                ? `${optionName} - ${optionPrice.toFixed(2).replace('.', ',')}€`
+                                : optionName;
+                            
+                            return (
+                                <div
+                                    key={optionName}
+                                    className="p-3 sm:p-2 hover:bg-gray-100 cursor-pointer text-sm sm:text-base border-b border-gray-100 last:border-b-0"
+                                    onClick={() => {
+                                        onSelect(optionName);
+                                    }}
+                                >
+                                    {displayText}
+                                </div>
+                            );
+                        })}
                     </div>
                 )}
             </div>

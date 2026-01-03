@@ -136,10 +136,14 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     }
   }
 
-  // Generate hours (00-11) for 12-hour format and minutes (00, 10, 20, 30, 40, 50)
-  const hours12 = Array.from({ length: 12 }, (_, i) => String(i).padStart(2, '0'))
+  // Generate hours (01-12) for 12-hour format and minutes (00, 10, 20, 30, 40, 50)
+  const hours12 = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0'))
   const minutes = ['00', '10', '20', '30', '40', '50']
-  const ampmOptions = ['AM', 'PM']
+  // German labels for AM/PM
+  const ampmOptions = [
+    { value: 'AM', label: 'Vormittag' },
+    { value: 'PM', label: 'Nachmittag' }
+  ]
 
   // Convert 24-hour to 12-hour format
   const parseTimeTo12Hour = (time24: string) => {
@@ -147,7 +151,16 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     
     const [hour24, minute] = time24.split(':')
     const hourNum = parseInt(hour24 || '0', 10)
-    const hour12 = hourNum === 0 ? 0 : hourNum === 12 ? 0 : hourNum > 12 ? hourNum - 12 : hourNum
+    let hour12: number
+    if (hourNum === 0) {
+      hour12 = 12 // 00:xx becomes 12:xx AM
+    } else if (hourNum === 12) {
+      hour12 = 12 // 12:xx becomes 12:xx PM
+    } else if (hourNum > 12) {
+      hour12 = hourNum - 12 // 13-23 becomes 1-11 PM
+    } else {
+      hour12 = hourNum // 1-11 stays 1-11 AM
+    }
     const ampm = hourNum < 12 ? 'AM' : 'PM'
     
     return {
@@ -163,9 +176,11 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
     
     let hour24 = parseInt(hour12, 10)
     if (ampm === 'AM') {
-      hour24 = hour24 === 0 ? 0 : hour24 === 12 ? 0 : hour24
+      // AM: 12 becomes 0, 1-11 stay as is
+      hour24 = hour24 === 12 ? 0 : hour24
     } else {
-      hour24 = hour24 === 0 ? 12 : hour24 === 12 ? 12 : hour24 + 12
+      // PM: 12 stays 12, 1-11 become 13-23
+      hour24 = hour24 === 12 ? 12 : hour24 + 12
     }
     return `${String(hour24).padStart(2, '0')}:${minute}`
   }
@@ -351,7 +366,7 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
                   : undefined
               }
             />
-            {/* Custom Time Picker - looks like native but with 10-minute intervals and AM/PM */}
+            {/* Custom Time Picker - 12-hour format with German labels (Vormittag/Nachmittag) */}
             <div className="flex items-center justify-center gap-1 flex-1 border border-input bg-background rounded-md px-3 h-10 text-sm focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
               <Select value={currentHour || undefined} onValueChange={handleHourChange}>
                 <SelectTrigger className="h-8 p-0 border-0 shadow-none focus:ring-0 w-auto min-w-[2.5rem] [&>span]:flex [&>span]:items-center [&>span]:justify-center">
@@ -379,13 +394,13 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
                 </SelectContent>
               </Select>
               <Select value={currentAmPm || undefined} onValueChange={handleAmPmChange}>
-                <SelectTrigger className="h-8 p-0 border-0 shadow-none focus:ring-0 w-auto min-w-[3rem] ml-1 [&>span]:flex [&>span]:items-center [&>span]:justify-center">
+                <SelectTrigger className="h-8 p-0 border-0 shadow-none focus:ring-0 w-auto min-w-[4rem] ml-1 [&>span]:flex [&>span]:items-center [&>span]:justify-center">
                   <SelectValue placeholder="--" />
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
                   {ampmOptions.map((ampm) => (
-                    <SelectItem key={ampm} value={ampm}>
-                      {ampm}
+                    <SelectItem key={ampm.value} value={ampm.value}>
+                      {ampm.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

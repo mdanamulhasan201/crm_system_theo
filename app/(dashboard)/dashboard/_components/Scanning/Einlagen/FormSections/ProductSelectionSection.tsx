@@ -2,11 +2,16 @@ import React from 'react';
 import SimpleDropdown from '../Dropdowns/SimpleDropdown';
 import type { EinlageType } from '@/hooks/customer/useScanningFormData';
 
+interface EinlageOption {
+    name: string;
+    price?: number;
+}
+
 interface ProductSelectionSectionProps {
     // Einlage
     einlagentyp: string;
     selectedEinlage: EinlageType | string;
-    einlageOptions: EinlageType[];
+    einlageOptions: EinlageType[] | EinlageOption[];
     showEinlageDropdown: boolean;
     onEinlageToggle: () => void;
     onEinlageSelect: (value: EinlageType) => void;
@@ -55,7 +60,7 @@ export default function ProductSelectionSection({
                     label="Einlagentyp"
                     value={einlagentyp || (selectedEinlage as string)}
                     placeholder="Einlage auswählen"
-                    options={einlageOptions as string[]}
+                    options={einlageOptions}
                     isOpen={showEinlageDropdown}
                     onToggle={onEinlageToggle}
                     onSelect={(value) => onEinlageSelect(value as EinlageType)}

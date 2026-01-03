@@ -59,20 +59,18 @@ export default function WerkstattzettelModal({
   const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([])
   const [locationsLoading, setLocationsLoading] = useState(false)
 
-  // Extract Einlagenversorgung price from selected versorgung
+  // Extract Einlagenversorgung price and name from selected versorgung
   const einlagenversorgungPrice = React.useMemo(() => {
     const selectedData = formData?.selectedVersorgungData
-    if (!selectedData) {
-      return []
-    }
-    
-    // Check for price in supplyStatus
+    if (!selectedData) return []
+
     const price = selectedData?.supplyStatus?.price
+    const name = selectedData?.supplyStatus?.name || selectedData?.name || ''
+
     if (price !== undefined && price !== null && !isNaN(Number(price))) {
-      const priceNumber = Number(price)
-      return [priceNumber]
+      return [{ name, price: Number(price) }]
     }
-    
+
     return []
   }, [formData?.selectedVersorgungData])
 
