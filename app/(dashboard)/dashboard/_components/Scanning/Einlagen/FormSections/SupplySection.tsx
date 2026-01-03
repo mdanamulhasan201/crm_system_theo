@@ -9,6 +9,7 @@ interface VersorgungItem {
     artikelHersteller: string;
     versorgung: string;
     material: string | string[];
+    diagnosis_status?: string[];
 }
 
 interface SupplySectionProps {
@@ -173,27 +174,41 @@ export default function SupplySection({
                             if (selectedItem) {
                                 return (
                                     <div className="space-y-2">
-                                        <div className="font-semibold text-gray-900">{selectedItem.name}</div>
-                                        <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                                            <div>
-                                                <span className="font-medium">Rohling:</span>{' '}
-                                                {selectedItem.rohlingHersteller}
+                                        {/* Versorgung at top */}
+                                        <p className='font-bold text-lg'>
+                                            Versorgung: <span className='font-normal text-xl'>{selectedItem.versorgung}</span>
+                                        </p>
+                                        
+                                        {/* Materials + Name */}
+                                        <div className='flex flex-col gap-2'>
+                                            <p className='font-bold'>
+                                                Materialien: 
+                                                <span className='font-normal ml-2'>
+                                                    {Array.isArray(selectedItem.material) 
+                                                        ? selectedItem.material.join(', ') 
+                                                        : selectedItem.material}
+                                                </span>
+                                            </p>
+                                            {/* Name */}
+                                            <h2 className='text-xl xl:text-2xl font-bold'>{selectedItem.name}</h2>
+                                            <p className='font-bold'>
+                                                Einlage: <span className='font-normal'>{selectedEinlage}</span>
+                                            </p>
+                                        </div>
+                                        
+                                        {/* Diagnosis Status - at the bottom (if exists in data) */}
+                                        {selectedItem.diagnosis_status && Array.isArray(selectedItem.diagnosis_status) && selectedItem.diagnosis_status.length > 0 && (
+                                            <div className='flex flex-col gap-2'>
+                                                <p className='font-bold'>Diagnose:</p>
+                                                <div className='flex flex-wrap gap-2'>
+                                                    {selectedItem.diagnosis_status.map((status: string, idx: number) => (
+                                                        <span key={idx} className='px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm'>
+                                                            {status}
+                                                        </span>
+                                                    ))}
+                                                </div>
                                             </div>
-                                            <div>
-                                                <span className="font-medium">Artikel:</span>{' '}
-                                                {selectedItem.artikelHersteller}
-                                            </div>
-                                        </div>
-                                        <div className="text-sm text-gray-700">
-                                            <span className="font-medium">Versorgung:</span>{' '}
-                                            {selectedItem.versorgung}
-                                        </div>
-                                        <div className="text-xs text-gray-500">
-                                            <span className="font-medium">Material:</span>{' '}
-                                            {Array.isArray(selectedItem.material) 
-                                                ? selectedItem.material.join(', ') 
-                                                : selectedItem.material}
-                                        </div>
+                                        )}
                                     </div>
                                 );
                             }

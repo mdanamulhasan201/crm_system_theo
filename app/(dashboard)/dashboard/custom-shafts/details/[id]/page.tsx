@@ -1,7 +1,8 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useSingleCustomShaft } from '@/hooks/customShafts/useSingleCustomShaft';
+import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
 import toast from 'react-hot-toast';
 import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
 import { createCustomShaft } from '@/apis/customShaftsApis';
@@ -53,17 +54,56 @@ export default function DetailsPage() {
   const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<boolean | undefined>(undefined);
   const [osenEinsetzen, setOsenEinsetzen] = useState<boolean | undefined>(undefined);
 
-  // Get shaft data
+  // Get params and search params
   const params = useParams();
+  const searchParams = useSearchParams();
   const shaftId = params.id as string;
-  const { data: apiData, loading, error } = useSingleCustomShaft(shaftId);
+  const orderId = searchParams.get('orderId');
+  
+  // Fetch order data if orderId is present
+  const { order: massschuheOrder, loading: orderLoading } = useGetSingleMassschuheOrder(orderId);
+  
+  // Fetch shaft data
+  const { data: apiData, loading: shaftLoading, error: shaftError } = useSingleCustomShaft(shaftId);
   const shaft = apiData?.data;
+  
+  const loading = orderLoading || shaftLoading;
+  const error = shaftError;
 
   useEffect(() => {
     if (shaft) {
       // Image loaded successfully
     }
   }, [shaftId, shaft]);
+
+  // Pre-fill customer when orderId is present
+  useEffect(() => {
+    if (massschuheOrder) {
+      // API returns customer object even though type doesn't include it
+      const orderWithCustomer = massschuheOrder as any;
+      if (orderWithCustomer.customer) {
+        const customer = orderWithCustomer.customer;
+        setSelectedCustomer({
+          id: customer.id,
+          name: `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
+          email: customer.email || '',
+          phone: null,
+          location: '',
+          createdAt: '',
+        });
+      } else if (massschuheOrder.customerId && massschuheOrder.kunde && massschuheOrder.email) {
+        // Fallback: use order data if customer object not available
+        setSelectedCustomer({
+          id: massschuheOrder.customerId,
+          name: massschuheOrder.kunde,
+          email: massschuheOrder.email,
+          phone: massschuheOrder.telefon || null,
+          location: massschuheOrder.location || '',
+          createdAt: '',
+        });
+      }
+    }
+  }, [massschuheOrder]);
 
   // Order handling
   const basePrice = shaft?.price || 0;
@@ -157,7 +197,15 @@ export default function DetailsPage() {
       }
       formData.append('mabschaftKollektionId', shaftId);
       formData.append('totalPrice', orderPrice.toString());
-      const response = await createCustomShaft(formData);
+      
+      // Use orderId if present, otherwise show error (orderId is required for this flow)
+      if (!orderId) {
+        toast.error("Order ID is required");
+        setIsCreatingOrder(false);
+        return;
+      }
+
+      const response = await createCustomShaft(orderId, formData);
       clearFormData();
       setShowSuccessMessage(true);
       setShowConfirmationModal(false);
@@ -231,6 +279,7 @@ export default function DetailsPage() {
           onSelectCustomer={setSelectedCustomer}
           otherCustomerNumber={otherCustomerNumber}
           setOtherCustomerNumber={setOtherCustomerNumber}
+          hideCustomerSearch={!!orderId}
         />
 
         {/* Product Image and Info */}

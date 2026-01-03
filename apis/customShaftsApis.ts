@@ -32,10 +32,10 @@ export const getSearchCustom = async (search: string) => {
     }
 }
 
-// create custom shaft
-export const createCustomShaft = async (formData: FormData) => {
+// create custom shaft /massschuhe-order/admin-order/send-to-admin-2-order/:orderId
+export const createCustomShaft = async (orderId: string, formData: FormData) => {
     try {
-        const url = `/custom_shafts/create`;
+        const url = `/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}`;
         const response = await axiosClient.post(url, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',

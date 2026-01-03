@@ -3,6 +3,7 @@ import { faCheck, faSpinner, faArrowLeft } from "@fortawesome/free-solid-svg-ico
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ConfirmationPopup from "./ConfirmationPopup";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder";
 import { useUpdateMassschuheOrderStatus } from "@/hooks/massschuhe/useUpdateMassschuheOrderStatus";
 import { updateMassschuheOrderPartner2 } from "@/apis/MassschuheManagemantApis";
@@ -103,6 +104,7 @@ export default function ChangesOrderProgress({
     isSearchingOrders?: boolean;
 }) {
     // ==================== Hooks & Data Fetching ====================
+    const router = useRouter();
     const { order, refetch: refetchOrder, loading } = useGetSingleMassschuheOrder(selectedOrderId);
     const { updateStatus } = useUpdateMassschuheOrderStatus();
 
@@ -149,9 +151,77 @@ export default function ChangesOrderProgress({
     const isStatusCompleted = useMemo(() => {
         return (cardId: string) => {
             const history = getStatusHistory(cardId);
-            return history ? isFinished(history) : false;
+            // Check if status has finished value in history
+            if (history && isFinished(history)) {
+                return true;
+            }
+            
+            // Also check based on order's main status field
+            // If order status is "Schafterstellung", all previous statuses should be completed
+            if (order?.status) {
+                const orderStatusCardId = statusToCardIdMap[order.status];
+                if (orderStatusCardId) {
+                    const cardIndex = CARD_ORDER.indexOf(cardId);
+                    const orderStatusIndex = CARD_ORDER.indexOf(orderStatusCardId);
+                    // If this card is before the order status, consider it completed
+                    if (cardIndex < orderStatusIndex) {
+                        return true;
+                    }
+                }
+            }
+            
+            // Also check if this status is before the current active status from statusHistory
+            // This ensures that when Schafterstellung is active, previous statuses show as completed
+            if (!order?.statusHistory || order.statusHistory.length === 0) {
+                return false;
+            }
+
+            // Find current active status (started but not finished)
+            let currentStatus: string | null = null;
+            for (const statusName of STATUS_ORDER) {
+                const hist = order.statusHistory.find(h => h.status === statusName);
+                if (hist && hasStarted(hist) && !isFinished(hist)) {
+                    currentStatus = statusName;
+                    break;
+                }
+            }
+
+            // If no active status found, find the next status after completed ones
+            if (!currentStatus) {
+                for (let i = 0; i < STATUS_ORDER.length; i++) {
+                    const statusName = STATUS_ORDER[i];
+                    const hist = order.statusHistory.find(h => h.status === statusName);
+                    if (!isFinished(hist)) {
+                        if (i === 0) {
+                            currentStatus = statusName;
+                            break;
+                        }
+                        const prevStatus = STATUS_ORDER[i - 1];
+                        const prevHist = order.statusHistory.find(h => h.status === prevStatus);
+                        if (prevHist && isFinished(prevHist)) {
+                            currentStatus = statusName;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // If we have a current status, check if this card is before it
+            if (currentStatus) {
+                const currentCardId = statusToCardIdMap[currentStatus];
+                if (currentCardId) {
+                    const cardIndex = CARD_ORDER.indexOf(cardId);
+                    const currentIndex = CARD_ORDER.indexOf(currentCardId);
+                    // If this card is before the current status, consider it completed
+                    if (cardIndex < currentIndex) {
+                        return true;
+                    }
+                }
+            }
+            
+            return false;
         };
-    }, [getStatusHistory]);
+    }, [getStatusHistory, order?.statusHistory, order?.status]);
 
     /**
      * Get current active status (IN FERTIGUNG)
@@ -238,6 +308,15 @@ export default function ChangesOrderProgress({
     
     // Check if this card is the current active status (IN FERTIGUNG)
     const isCurrentStatus = (cardId: string) => {
+        // First check if order status matches this card
+        if (order?.status) {
+            const orderStatusCardId = statusToCardIdMap[order.status];
+            if (orderStatusCardId === cardId && !isStatusCompleted(cardId)) {
+                return true;
+            }
+        }
+        
+        // Then check current active status from statusHistory
         const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
         return statusToCardIdMap[currentStatus] === cardId;
@@ -258,6 +337,27 @@ export default function ChangesOrderProgress({
 
     // Check if this card is the next status (IN BEARBEITUNG)
     const isNextStatus = (cardId: string) => {
+        // First check if order status is before this card (e.g., order status is Schafterstellung, this is Bodenerstellung)
+        if (order?.status) {
+            const orderStatusCardId = statusToCardIdMap[order.status];
+            if (orderStatusCardId) {
+                const orderStatusIndex = CARD_ORDER.indexOf(orderStatusCardId);
+                const cardIndex = CARD_ORDER.indexOf(cardId);
+                // If this card is right after the order status, it's the next status
+                if (cardIndex === orderStatusIndex + 1) {
+                    const nextStatusName = Object.keys(statusToCardIdMap).find(
+                        key => statusToCardIdMap[key] === cardId
+                    );
+                    if (!nextStatusName) return false;
+                    const nextHistory = order?.statusHistory?.find(h => h.status === nextStatusName);
+                    // If no history or not started/finished, it's the next status
+                    if (!nextHistory || (!hasStarted(nextHistory) && !isFinished(nextHistory))) {
+                        return true;
+                    }
+                }
+            }
+        }
+
         const currentStatus = getCurrentActiveStatus;
         if (!currentStatus) return false;
 
@@ -433,6 +533,19 @@ export default function ChangesOrderProgress({
         const isCurrent = isCurrentStatus(card.id);
         const isNext = isNextStatus(card.id);
         const isPending = isPendingToStart(card.id);
+        
+        // Check if Schafterstellung is completed (for Bodenerstellung button logic)
+        const schafterHistory = order?.statusHistory?.find(h => h.status === "Schafterstellung");
+        const isSchafterCompleted = schafterHistory && (hasValue(schafterHistory.finishedAt) || hasValue(schafterHistory.finished));
+        const isSchafterStarted = schafterHistory && (hasValue(schafterHistory.startedAt) || hasValue(schafterHistory.started));
+        
+        // Check if Bodenerstellung has started (for button visibility logic)
+        const bodenHistory = order?.statusHistory?.find(h => h.status === "Bodenerstellung");
+        const isBodenStarted = bodenHistory && (hasValue(bodenHistory.startedAt) || hasValue(bodenHistory.started));
+        
+        // Check if Halbprobenerstellung is completed (for Schafterstellung button logic)
+        const halbprobeHistory = order?.statusHistory?.find(h => h.status === "Halbprobenerstellung");
+        const isHalbprobeCompleted = halbprobeHistory && (hasValue(halbprobeHistory.finishedAt) || hasValue(halbprobeHistory.finished));
 
         // Status circle
         const renderStatusCircle = () => {
@@ -607,13 +720,26 @@ export default function ChangesOrderProgress({
                 
                 {/* Halbprobenerstellung: PDF button was removed - now shows "In Fertigung" button instead (see below) */}
 
-                {/* Schafterstellung: Standard buttons (same as Leistenerstellung/Bettungsherstellung) */}
-                {"hasSpecialButtons" in card && card.hasSpecialButtons && !isCompleted && (isCurrent || isPending) && (
+                {/* Schafterstellung: Standard buttons - show when:
+                    1. isByPartner_1 is true, Halbprobenerstellung is completed, and order status is Halbprobenerstellung or Schafterstellung
+                    2. OR when statusHistory is empty and status is directly set to Schafterstellung (admin approved)
+                    3. OR when Schafterstellung has started (startedAt exists) but not finished */}
+                {"hasSpecialButtons" in card && card.hasSpecialButtons && !isCompleted && (
+                    ((order as any)?.isByPartner_1 && isHalbprobeCompleted && (order?.status === "Halbprobenerstellung" || (isCurrent && order?.status === "Schafterstellung"))) ||
+                    ((!order?.statusHistory || order.statusHistory.length === 0) && order?.status === "Schafterstellung") ||
+                    (order?.status === "Schafterstellung" && isSchafterStarted && !isSchafterCompleted)
+                ) && (
                     <div className="mt-4 space-y-3 w-full">
                         <button
                             type="button"
-                            className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
+                            disabled={(order as any)?.isPanding === true}
+                            className={`w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 ${
+                                (order as any)?.isPanding === true 
+                                    ? "opacity-50 cursor-not-allowed" 
+                                    : "cursor-pointer"
+                            }`}
                             onClick={async () => {
+                                if ((order as any)?.isPanding === true) return;
                                 // Update isByPartner_2 to true when "In Fertigung" is clicked
                                 if (selectedOrderId) {
                                     try {
@@ -640,16 +766,33 @@ export default function ChangesOrderProgress({
                         >
                             In Fertigung
                         </button>
-                        {/* Hide bottom button if isByPartner_1 is true */}
-                        {!(order as any)?.isByPartner_1 && (
+                        {/* Show "Jetzt Schaft bestellen" button when:
+                            1. isByPartner_1 is false (normal flow), OR
+                            2. statusHistory is empty and status is Schafterstellung (admin approved), OR
+                            3. Schafterstellung hasn't started yet (no startedAt in history)
+                            Hide once Schafterstellung has started */}
+                        {(!(order as any)?.isByPartner_1 || 
+                          ((!order?.statusHistory || order.statusHistory.length === 0) && order?.status === "Schafterstellung") ||
+                          (order?.status === "Schafterstellung" && !isSchafterStarted)) && (
                             <button
                                 type="button"
-                                className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
+                                disabled={(order as any)?.isPanding === true}
+                                className={`w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 ${
+                                    (order as any)?.isPanding === true 
+                                        ? "opacity-50 cursor-not-allowed" 
+                                        : "cursor-pointer"
+                                }`}
                                 onClick={() => {
-                                    onClick();
+                                    if ((order as any)?.isPanding === true) return;
+                                    // Redirect to custom-shafts page with order ID as query parameter
+                                    if (selectedOrderId) {
+                                        router.push(`/dashboard/custom-shafts?orderId=${selectedOrderId}`);
+                                    } else {
+                                        onClick();
+                                    }
                                 }}
                             >
-                                Jetzt Leisten, Bettung, Halbprobe in einem bestellen
+                                Jetzt Schaft bestellen
                             </button>
                         )}
                     </div>
@@ -658,21 +801,65 @@ export default function ChangesOrderProgress({
                 {/* Bodenerstellung: Special multi-step button flow */}
                 {"hasBodenButtons" in card && card.hasBodenButtons && (
                     <>
-                        {isBodenButton1 && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setIsBodenButton1(false);
-                                    setIsBodenButton2(true);
-                                    setTabClicked(card.tabIndex);
-                                    onTabChange?.(card.tabIndex);
-                                }}
-                                className="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
-                            >
-                                Bodenkonfiguration starten
-                            </button>
+                        {/* Show buttons when:
+                            1. isByPartner_1 is true, Schafterstellung is completed, and Bodenerstellung is current/next
+                            2. OR when statusHistory is empty and status is directly set to Bodenerstellung (admin approved)
+                            3. OR when Bodenerstellung has started (startedAt exists) but not finished
+                            4. OR when order status is "Schafterstellung", Schafterstellung is completed, and Bodenerstellung is next (IN BEARBEITUNG) */}
+                        {!isCompleted && (
+                            ((order as any)?.isByPartner_1 && isSchafterCompleted && (isCurrent || (order?.status === "Bodenerstellung" && statusHistory && hasStarted(statusHistory) && !isFinished(statusHistory)))) ||
+                            ((!order?.statusHistory || order.statusHistory.length === 0) && order?.status === "Bodenerstellung") ||
+                            (order?.status === "Bodenerstellung" && statusHistory && hasStarted(statusHistory) && !isFinished(statusHistory)) ||
+                            (order?.status === "Schafterstellung" && isSchafterCompleted && isNext)
+                        ) && (
+                            <div className="mt-4 space-y-3 w-full">
+                                <button
+                                    type="button"
+                                    disabled={(order as any)?.isPanding === true}
+                                    className={`w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 ${
+                                        (order as any)?.isPanding === true 
+                                            ? "opacity-50 cursor-not-allowed" 
+                                            : "cursor-pointer"
+                                    }`}
+                                    onClick={() => {
+                                        if ((order as any)?.isPanding === true) return;
+                                        toggleProgress(card.id)();
+                                    }}
+                                >
+                                    In Fertigung
+                                </button>
+                                {/* Show "Jetzt Schaft bestellen" button when:
+                                    1. statusHistory is empty and status is Bodenerstellung (admin approved), OR
+                                    2. Bodenerstellung hasn't started yet (no startedAt in history), OR
+                                    3. Order status is "Schafterstellung", Schafterstellung is completed, and Bodenerstellung is next (IN BEARBEITUNG) */}
+                                {(((!order?.statusHistory || order.statusHistory.length === 0) && order?.status === "Bodenerstellung") ||
+                                  (order?.status === "Bodenerstellung" && !isBodenStarted) ||
+                                  (order?.status === "Schafterstellung" && isSchafterCompleted && isNext)) && (
+                                    <button
+                                        type="button"
+                                        disabled={(order as any)?.isPanding === true}
+                                        className={`w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 ${
+                                            (order as any)?.isPanding === true 
+                                                ? "opacity-50 cursor-not-allowed" 
+                                                : "cursor-pointer"
+                                        }`}
+                                        onClick={() => {
+                                            if ((order as any)?.isPanding === true) return;
+                                            // Redirect to custom-shafts page with order ID as query parameter
+                                            if (selectedOrderId) {
+                                                router.push(`/dashboard/custom-shafts?orderId=${selectedOrderId}`);
+                                            } else {
+                                                onClick();
+                                            }
+                                        }}
+                                    >
+                                        Jetzt Schaft bestellen
+                                    </button>
+                                )}
+                            </div>
                         )}
-                        {isBodenButton2 && (
+                        {/* Only show "Bodenerstellung abschließen" button if not in WARTEND state */}
+                        {isBodenButton2 && (isCompleted || isCurrent || isPending || isNext) && (
                             <button
                                 type="button"
                                 onClick={async () => {
@@ -703,29 +890,6 @@ export default function ChangesOrderProgress({
                                 Bodenerstellung abschließen
                             </button>
                         )}
-                        {showBodenPdf && (
-                            <>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        onClick2();
-                                        setTabClicked(card.tabIndex);
-                                    }}
-                                    className="mt-4 inline-flex items-center justify-center rounded-full border border-emerald-500 px-6 py-2 text-xs font-semibold text-emerald-500 transition hover:bg-emerald-50"
-                                >
-                                    Details anzeigen
-                                </button>
-                                {showBodenPdf && (isCurrent || isNext) && (
-                                    <button
-                                        type="button"
-                                        className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
-                                        onClick={toggleProgress(card.id)}
-                                    >
-                                        <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
-                                    </button>
-                                )}
-                            </>
-                        )}
                     </>
                 )}
 
@@ -734,8 +898,16 @@ export default function ChangesOrderProgress({
                     <div className="mt-4 space-y-3 w-full">
                         <button
                             type="button"
-                            className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
-                            onClick={toggleProgress(card.id)}
+                            disabled={(order as any)?.isPanding === true}
+                            className={`w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 ${
+                                (order as any)?.isPanding === true 
+                                    ? "opacity-50 cursor-not-allowed" 
+                                    : "cursor-pointer"
+                            }`}
+                            onClick={() => {
+                                if ((order as any)?.isPanding === true) return;
+                                toggleProgress(card.id)();
+                            }}
                         >
                             In Fertigung
                         </button>
@@ -743,8 +915,14 @@ export default function ChangesOrderProgress({
                         {!(order as any)?.isByPartner_1 && (
                             <button
                                 type="button"
-                                className="w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
+                                disabled={(order as any)?.isPanding === true}
+                                className={`w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 ${
+                                    (order as any)?.isPanding === true 
+                                        ? "opacity-50 cursor-not-allowed" 
+                                        : "cursor-pointer"
+                                }`}
                                 onClick={() => {
+                                    if ((order as any)?.isPanding === true) return;
                                     onClick();
                                 }}
                             >
@@ -754,25 +932,41 @@ export default function ChangesOrderProgress({
                     </div>
                 )}
 
-                {/* Halbprobenerstellung: In Fertigung button (replaces removed PDF button) */}
-                {"hasPdfButton" in card && card.hasPdfButton && !isCompleted && (isCurrent || isPending) && (
+                {/* Halbprobenerstellung: In Fertigung button - show when current or next status (after Bettungsherstellung is completed) */}
+                {"hasPdfButton" in card && card.hasPdfButton && !isCompleted && (isCurrent || isNext) && (!statusHistory || !isFinished(statusHistory)) && (
                     <button
                         type="button"
-                        className="mt-4 w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 cursor-pointer"
-                        onClick={toggleProgress(card.id)}
+                        disabled={(order as any)?.isPanding === true}
+                        className={`mt-4 w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 ${
+                            (order as any)?.isPanding === true 
+                                ? "opacity-50 cursor-not-allowed" 
+                                : "cursor-pointer"
+                        }`}
+                        onClick={() => {
+                            if ((order as any)?.isPanding === true) return;
+                            toggleProgress(card.id)();
+                        }}
                     >
                         In Fertigung
                     </button>
                 )}
 
-                {/* Geliefert: Arrow button for navigation */}
-                {"isWaiting" in card && card.isWaiting && !isCompleted && (isCurrent || isNext) && (
+                {/* Geliefert: In Fertigung button when IN FERTIGUNG status */}
+                {"isWaiting" in card && card.isWaiting && !isCompleted && isCurrent && (
                     <button
                         type="button"
-                        className="mt-3 cursor-pointer inline-flex items-center text-sm font-medium text-emerald-500 hover:text-emerald-600"
-                        onClick={toggleProgress(card.id)}
+                        disabled={(order as any)?.isPanding === true}
+                        className={`mt-4 w-full rounded-xl border border-emerald-500 px-6 py-3 text-sm font-semibold text-emerald-500 transition hover:bg-emerald-50 ${
+                            (order as any)?.isPanding === true 
+                                ? "opacity-50 cursor-not-allowed" 
+                                : "cursor-pointer"
+                        }`}
+                        onClick={() => {
+                            if ((order as any)?.isPanding === true) return;
+                            toggleProgress(card.id)();
+                        }}
                     >
-                        <FontAwesomeIcon icon={faArrowLeft} className="mr-2 h-3 w-3" />
+                        In Fertigung
                     </button>
                 )}
             </div>

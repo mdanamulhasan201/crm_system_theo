@@ -28,6 +28,7 @@ interface FileUploadSectionProps {
   onSelectCustomer: (customer: Customer | null) => void;
   otherCustomerNumber: string;
   setOtherCustomerNumber: (name: string) => void;
+  hideCustomerSearch?: boolean;
 }
 
 export default function FileUploadSection({
@@ -43,6 +44,7 @@ export default function FileUploadSection({
   onSelectCustomer,
   otherCustomerNumber,
   setOtherCustomerNumber,
+  hideCustomerSearch = false,
 }: FileUploadSectionProps) {
   const linkerLeistenInputRef = useRef<HTMLInputElement>(null);
   const rechterLeistenInputRef = useRef<HTMLInputElement>(null);
@@ -81,26 +83,40 @@ export default function FileUploadSection({
 
   return (
     <div className="flex flex-col gap-4 w-fit mb-8">
-      {!otherCustomerNumber && (
-        <Button 
-          variant="outline" 
-          className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
-          onClick={() => setShowCustomerModal(true)}
-        >
-          <User className="w-5 h-5" />
-          {selectedCustomer ? selectedCustomer.name : "Kunde auswählen"}
-        </Button>
-      )}
+      {!hideCustomerSearch && (
+        <>
+          {!otherCustomerNumber && (
+            <Button 
+              variant="outline" 
+              className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
+              onClick={() => setShowCustomerModal(true)}
+            >
+              <User className="w-5 h-5" />
+              {selectedCustomer ? selectedCustomer.name : "Kunde auswählen"}
+            </Button>
+          )}
 
-      {!selectedCustomer && (
-        <Button 
-          variant="outline" 
-          className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
-          onClick={() => setShowOtherCustomerModal(true)}
-        >
-          <UserPlus className="w-5 h-5" />
-          {otherCustomerNumber ? otherCustomerNumber : "Anderer Kunde"}
-        </Button>
+          {!selectedCustomer && (
+            <Button 
+              variant="outline" 
+              className="justify-start w-full h-12 text-base font-normal border border-black gap-3"
+              onClick={() => setShowOtherCustomerModal(true)}
+            >
+              <UserPlus className="w-5 h-5" />
+              {otherCustomerNumber ? otherCustomerNumber : "Anderer Kunde"}
+            </Button>
+          )}
+        </>
+      )}
+      
+      {hideCustomerSearch && selectedCustomer && (
+        <div className="p-3 bg-gray-50 border border-gray-200 rounded-md">
+          <div className="text-sm font-medium text-gray-700">Kunde:</div>
+          <div className="text-base text-gray-900">{selectedCustomer.name}</div>
+          {selectedCustomer.email && (
+            <div className="text-sm text-gray-600">{selectedCustomer.email}</div>
+          )}
+        </div>
       )}
       
       {/* Left Side Upload */}

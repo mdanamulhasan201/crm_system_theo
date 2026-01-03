@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChevronDown, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import ImageWithShimmer from '@/components/CustomShafts/ImageWithShimmer';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCustomShafts } from '@/hooks/customShafts/useCustomShafts';
 import useDebounce from '@/hooks/useDebounce';
 import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
@@ -32,6 +32,8 @@ export default function CustomShafts() {
     const [isFetchingNewPage, setIsFetchingNewPage] = useState(false);
     const itemsPerPage = 8;
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const orderId = searchParams.get('orderId');
 
     // Debounce search query to reduce API calls
     const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -144,7 +146,11 @@ export default function CustomShafts() {
 
     // handle click on the button
     const handleClick = (id: string) => {
-        router.push(`/dashboard/custom-shafts/details/${id}`);
+        // Pass orderId as query parameter if it exists
+        const url = orderId 
+            ? `/dashboard/custom-shafts/details/${id}?orderId=${orderId}`
+            : `/dashboard/custom-shafts/details/${id}`;
+        router.push(url);
     }
 
     return (
