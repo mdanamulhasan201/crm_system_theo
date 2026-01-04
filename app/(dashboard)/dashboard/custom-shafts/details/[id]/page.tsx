@@ -337,6 +337,7 @@ export default function DetailsPage() {
           otherCustomerNumber={otherCustomerNumber}
           shaftName={shaft?.name}
           isCreatingOrder={isCreatingOrder}
+          orderId={orderId}
         />
       </div>
     </>

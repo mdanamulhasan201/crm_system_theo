@@ -278,16 +278,7 @@ export const GROUPS2: GroupDef2[] = [
 
     ],
   },
-  {
-    id: "fersenkoppe",
-    question: "Fersenkoppe",
-    fieldType: "checkbox",
-    options: [
-      { id: "normal", label: "Normal" },
-      { id: "verstaerkt", label: "Verstärkt" },
-      { id: "nein", label: "Nein Ja (+19,99€)" },
-    ],
-  },
+ 
   {
     id: "farbauswahl",
     question: "Farbauswahl Bodenkonstruktion",
@@ -315,18 +306,7 @@ export const GROUPS2: GroupDef2[] = [
     fieldType: "text", // Changed to text field type
     options: [{ id: "mm", label: "mm" }],
   },
-  {
-    id: "absatzform",
-    question: "Absatz Form (Tacco)",
-    fieldType: "checkbox",
-    options: [
-      { id: "kellebsortz", label: "Keilabsatz" },
-      { id: "singeleil", label: "Stegkeil" },
-      { id: "akzezzabel", label: "Absatzkeil" },
-      { id: "fluegelsaexert_innen", label: "Flügelabsatz innen" },
-      { id: "fluegelsaexert_aussen", label: "Flügelabsatz außen" },
-    ],
-  },
+
   {
     id: "abrollhilfe",
     question: "Abrollhilfe (Rolle)",
@@ -336,6 +316,16 @@ export const GROUPS2: GroupDef2[] = [
       { id: "mittelfussrolle", label: "Mittelfußrolle" },
       { id: "abzezzolle", label: "Absatzrolle" },
       { id: "beilemdie", label: "Ballenrolle" },
+    ],
+  },
+  {
+    id: "absatzform",
+    question: "Absatz Form (Achtung bitte auch Sohle beachten ob möglich)",
+    fieldType: "checkbox",
+    options: [
+      { id: "Keilabsatz", label: "Keilabsatz" },
+      { id: "Stegkeil", label: "Stegkeil" },
+      { id: "Absatzkeil", label: "Absatzkeil" },
     ],
   },
   {

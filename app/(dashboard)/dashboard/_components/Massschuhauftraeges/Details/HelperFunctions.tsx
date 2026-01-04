@@ -200,3 +200,44 @@ export function parseEuroFromText(txt: string): number {
 export function normalizeUnderscores(txt: string): string {
   return txt.replace(/_{3,}/g, "___")
 }
+
+export function prepareOrderDataForPDF(order: any): any {
+    if (!order) return {}
+    
+    // Format delivery date
+    let formattedDeliveryDate = '-'
+    if (order.delivery_date) {
+        try {
+            const date = new Date(order.delivery_date)
+            formattedDeliveryDate = date.toLocaleDateString('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            })
+        } catch {
+            formattedDeliveryDate = order.delivery_date
+        }
+    }
+    
+    // Calculate total price from order
+    const fußanalysePrice = order.fußanalyse ?? 0
+    const einlagenversorgungPrice = order.einlagenversorgung ?? 0
+    const totalPrice = fußanalysePrice + einlagenversorgungPrice
+    
+    // Get footer data from order.user or order.partner
+    const partnerData = order.partner || order.user
+    
+    return {
+        orderNumber: order.orderNumber ? `#${order.orderNumber}` : `#${order.id?.slice(0, 8) || '000000'}`,
+        customerName: order.kunde || 'Kunde',
+        productName: 'Bodenerstellung',
+        deliveryDate: formattedDeliveryDate,
+        status: order.status,
+        filiale: order.filiale,
+        totalPrice: totalPrice > 0 ? totalPrice : undefined,
+        footerPhone: partnerData?.phone || undefined,
+        footerEmail: partnerData?.email || undefined,
+        footerBusinessName: partnerData?.busnessName || undefined,
+        footerImage: partnerData?.image || null
+    }
+}

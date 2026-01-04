@@ -1,0 +1,86 @@
+[
+  {
+    "id": "1",
+    "name": "Vibram Punktprofil",
+    "image": "/images/SohlenImages/01.png",
+    "description": "Feines Punktprofil, rutschfest, langlebig, ideal für City-Schuhe und klassische Reparaturen."
+  },
+  {
+    "id": "2",
+    "name": "SVIG Outdoor-Profil",
+    "image": "/images/SohlenImages/02.png",
+    "description": "Robuste Vollsohle mit tiefen, breiten Stollen und feinem Herringbone-Grip auf den Auflageflächen, Ideal für Arbeits-, Outdoor- und Alltagsschuhe, die viel Stabilität und Rutschfestigkeit brauchen."
+  },
+  {
+    "id": "3",
+    "name": "Vibram Trail-Profil",
+    "image": "/images/SohlenImages/03.png",
+    "description": "Aggressives, dreieckiges Stollenprofil für maximalen Grip auf Schotter, Fels und weichem Untergrund. Ideal für Trailrunning-, Wander- und Outdoor-Schuhe mit hoher Trittsicherheit."
+  },
+  {
+    "id": "4",
+    "name": "Grobes Netzprofil",
+    "image": "/images/SohlenImages/04.png",
+    "description": "Rutschfeste Vorderfußplatte mit robustem, grobem Netzmuster. Ideal für Arbeitsschuhe oder Reparaturen, bei denen extra Halt auf glatten Böden gebraucht wird."
+  },
+  {
+    "id": "5",
+    "name": "Feines Wabenprofil",
+    "image": "/images/SohlenImages/04.png",
+    "description": "Weiche, flexible Platte mit feinem, dämpfendem Wabenprofil. Perfekt für Komfortschuhe, Einlagenbau oder Modelle mit mehr Abrollkomfort."
+  },
+  {
+    "id": "6",
+    "name": "Hexagon-/Punktprofil",
+    "image": "/images/SohlenImages/04.png",
+    "description": "Stabile Vorderfußplatte mit Punkt- und Hexagonstruktur für gleichmäßigen Grip. Geeignet für Alltagsschuhe, Sneakers oder Reparaturen mit mittlerer Rutschfestigkeit.."
+  },
+  {
+    "id": "7",
+    "name": "Vibram EVA-Keilsohle weiß",
+    "image": "/images/SohlenImages/07.png",
+    "description": "Leichte, gedämpfte Keilsohle aus EVA mit rutschfester, fein genoppter Unterseite. Ideal für Sneakers, Komfortschuhe und Alltagsschuhe, bei denen weicher Auftritt und geringes Gewicht wichtig sind."
+  },
+  {
+    "id": "8",
+    "name": "Vibram M-Lite Rillenprofil",
+    "image": "/images/SohlenImages/08.png",
+    "description": "Sehr leichte, flexible Sohle mit durchgehenden feinen Quer- und Längsrillen für guten Grip auf Asphalt. Ideal für City-Schuhe, Mokassins und leichte Freizeitschuhe mit weichem Abrollverhalten."
+  },
+  {
+    "id": "9",
+    "name": "Vibram Carrarmato hellbraun",
+    "image": "/images/SohlenImages/09.png",
+    "description": "Schwere, extrem robuste Vollsohle mit tiefen Kreuz- und Blockstollen für maximale Bodenhaftung. Ideal für Bergschuhe, Jagdstiefel und alle Modelle, die höchste Stabilität und Langlebigkeit benötigen."
+  },
+  {
+    "id": "10",
+    "name": "Vibram Halbsohlen-Set schwarz",
+    "image": "/images/SohlenImages/10.png",
+    "description": "Stabile Vorder- und Absatzsohle mit klassischen Kreuz- und Blockstollen für starken Grip und hohe Haltbarkeit."
+  },
+  {
+    "id": "11",
+    "name": "Vibram Carrarmato schwarz",
+    "image": "/images/SohlenImages/11.png",
+    "description": "Klassisches Carrarmato-Profil in schwarz für robuste Outdoor-Schuhe."
+  },
+  {
+    "id": "12",
+    "name": "Vibram Bergprofil schwarz",
+    "image": "/images/SohlenImages/12.png",
+    "description": "Stabile Vorder- und Absatzsohle mit klassischen Kreuz- und Blockstollen für starken Grip und hohe Haltbarkeit."
+  },
+  {
+    "id": "13",
+    "name": "SVIG Fein-Herringbone",
+    "image": "/images/SohlenImages/13.png",
+    "description": "Elegante Vollsohle mit feinem Zickzack-/Herringbone-Profil für sicheren Grip auf glatten Böden. Ideal für klassische City-Schuhe, elegante Stiefel und Reparaturen mit dünner, rutschfester Laufsohle."
+  },
+  {
+    "id": "14",
+    "name": "SVIG Grob-Herringbone",
+    "image": "/images/SohlenImages/13.png",
+    "description": "Grobes Herringbone-Profil für robuste Schuhe mit starker Traktion."
+  }
+]
