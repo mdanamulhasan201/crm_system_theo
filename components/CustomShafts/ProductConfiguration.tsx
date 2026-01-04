@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Image from 'next/image';
 import colorPlate from '@/public/images/color.png';
+import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColorSectionModal';
 
 interface ProductConfigurationProps {
   nahtfarbeOption: string;
@@ -36,6 +37,13 @@ interface ProductConfigurationProps {
   setPolsterungText: (text: string) => void;
   verstarkungenText: string;
   setVerstarkungenText: (text: string) => void;
+  numberOfLeatherColors: string;
+  setNumberOfLeatherColors: (value: string) => void;
+  leatherColorAssignments: LeatherColorAssignment[];
+  setLeatherColorAssignments: (assignments: LeatherColorAssignment[]) => void;
+  leatherColors: string[];
+  setLeatherColors: (colors: string[]) => void;
+  shoeImage: string | null; // The shoe image to use in the modal
   onOrderComplete: () => void;
 }
 
@@ -64,11 +72,19 @@ export default function ProductConfiguration({
   setPolsterungText,
   verstarkungenText,
   setVerstarkungenText,
+  numberOfLeatherColors,
+  setNumberOfLeatherColors,
+  leatherColorAssignments,
+  setLeatherColorAssignments,
+  leatherColors,
+  setLeatherColors,
+  shoeImage,
   onOrderComplete,
 }: ProductConfigurationProps) {
   // Local fallbacks if parent does not control these fields
   const [localSchnursenkel, setLocalSchnursenkel] = useState<boolean | undefined>(undefined);
   const [localOsenEinsetzen, setLocalOsenEinsetzen] = useState<boolean | undefined>(undefined);
+  const [showLeatherColorModal, setShowLeatherColorModal] = useState(false);
 
   const effektSchnursenkel = typeof passendenSchnursenkel === 'boolean' ? passendenSchnursenkel : localSchnursenkel;
   const updateSchnursenkel = (value: boolean | undefined) => {
@@ -87,6 +103,28 @@ export default function ProductConfiguration({
     } else {
       setLocalOsenEinsetzen(value);
     }
+  };
+
+  // Handle number of leather colors change
+  const handleNumberOfColorsChange = (value: string) => {
+    setNumberOfLeatherColors(value);
+    
+    // If 1 color is selected, clear assignments and reset to single color mode
+    if (value === '1') {
+      setLeatherColorAssignments([]);
+      setLeatherColors([]);
+      setShowLeatherColorModal(false);
+    } else if (value === '2' || value === '3') {
+      // Open modal when 2 or 3 colors are selected
+      setShowLeatherColorModal(true);
+    }
+  };
+
+  // Handle modal save
+  const handleModalSave = (assignments: LeatherColorAssignment[], colors: string[]) => {
+    setLeatherColorAssignments(assignments);
+    setLeatherColors(colors);
+    setShowLeatherColorModal(false);
   };
 
   return (
@@ -116,17 +154,62 @@ export default function ProductConfiguration({
           </Select>
         </div>
 
-        {/* Lederfarbe */}
+        {/* Number of Leather Colors */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Lederfarbe:</Label>
-          <Input
-            type="text"
-            placeholder="Lederfarbe wählen..."
-            className="w-full md:w-1/2"
-            value={lederfarbe}
-            onChange={(e) => setLederfarbe(e.target.value)}
-          />
+          <Label className="font-medium text-base md:w-1/3">Anzahl der Ledertypen:</Label>
+          <Select value={numberOfLeatherColors} onValueChange={handleNumberOfColorsChange}>
+            <SelectTrigger className="w-full md:w-1/2">
+              <SelectValue placeholder="Anzahl wählen..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem className='cursor-pointer' value="1">1</SelectItem>
+              <SelectItem className='cursor-pointer' value="2">2</SelectItem>
+              <SelectItem className='cursor-pointer' value="3">3</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Lederfarbe - Show only when 1 color is selected */}
+        {numberOfLeatherColors === '1' && (
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <Label className="font-medium text-base md:w-1/3">Lederfarbe:</Label>
+            <Input
+              type="text"
+              placeholder="Lederfarbe wählen..."
+              className="w-full md:w-1/2"
+              value={lederfarbe}
+              onChange={(e) => setLederfarbe(e.target.value)}
+            />
+          </div>
+        )}
+
+        {/* Show summary when multiple colors are configured */}
+        {(numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && leatherColorAssignments.length > 0 && (
+          <div className="flex flex-col md:flex-row md:items-center gap-4 p-4 bg-gray-50 rounded-lg border">
+            <Label className="font-medium text-base md:w-1/3">Ledertypen-Zuordnung:</Label>
+            <div className="flex-1 space-y-2">
+              <div className="text-sm font-medium text-gray-700 mb-2">
+                {leatherColors.map((color, index) => (
+                  <span key={index} className="inline-block mr-4">
+                    Leder {index + 1}: <span className="font-normal">{color || 'Nicht definiert'}</span>
+                  </span>
+                ))}
+              </div>
+              <div className="text-xs text-gray-600">
+                {leatherColorAssignments.length} Bereich(e) zugeordnet
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowLeatherColorModal(true)}
+                className="mt-2"
+              >
+                Zuordnung bearbeiten
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Innenfutter */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -320,6 +403,19 @@ export default function ProductConfiguration({
             Abschließen
           </Button>
         </div>
+
+        {/* Leather Color Section Modal */}
+        {(numberOfLeatherColors === '2' || numberOfLeatherColors === '3') && (
+          <LeatherColorSectionModal
+            isOpen={showLeatherColorModal}
+            onClose={() => setShowLeatherColorModal(false)}
+            onSave={handleModalSave}
+            numberOfColors={parseInt(numberOfLeatherColors)}
+            shoeImage={shoeImage}
+            initialAssignments={leatherColorAssignments}
+            initialLeatherColors={leatherColors}
+          />
+        )}
       </div>
     </TooltipProvider>
   );

@@ -180,3 +180,33 @@ export const sendMassschuheOrderToAdmin1 = async (orderId: string, formData: For
         throw error;
     }
 }
+
+
+// /massschuhe-order/admin-order/send-to-admin-2-order/c76be3b8-f7e9-4428-a3cd-3d4b1e1b425c
+export const sendMassschuheOrderToAdmin2 = async (orderId: string, formData: FormData | any) => {
+    try {
+        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// /1/massschuhe-order/admin-order/send-to-admin-3-order/orderId
+export const sendMassschuheOrderToAdmin3 = async (orderId: string, formData: FormData | any) => {
+    try {
+        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-3-order/${orderId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

@@ -6,6 +6,7 @@ import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMass
 import toast from 'react-hot-toast';
 import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
 import { createCustomShaft } from '@/apis/customShaftsApis';
+import { sendMassschuheOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
 
 // Import separated components
 import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
@@ -15,6 +16,7 @@ import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
 import SuccessMessage from '@/components/CustomShafts/SuccessMessage';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
 
 interface Customer {
   id: string;
@@ -53,6 +55,11 @@ export default function DetailsPage() {
   // Add-ons
   const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<boolean | undefined>(undefined);
   const [osenEinsetzen, setOsenEinsetzen] = useState<boolean | undefined>(undefined);
+  
+  // Leather color configuration
+  const [numberOfLeatherColors, setNumberOfLeatherColors] = useState<string>('1');
+  const [leatherColorAssignments, setLeatherColorAssignments] = useState<LeatherColorAssignment[]>([]);
+  const [leatherColors, setLeatherColors] = useState<string[]>([]);
 
   // Get params and search params
   const params = useParams();
@@ -129,6 +136,48 @@ export default function DetailsPage() {
 
   const orderPrice = calculateTotalPrice();
 
+  // Function to prepare form data for sendMassschuheOrderToAdmin2 API
+  const prepareFormDataForAdmin2 = (): FormData => {
+    const formData = new FormData();
+
+    // Add files
+    if (rechterLeistenFile) {
+      formData.append('image3d_1', rechterLeistenFile);
+    }
+    if (linkerLeistenFile) {
+      formData.append('image3d_2', linkerLeistenFile);
+    }
+
+    // Add mabschaftKollektionId
+    formData.append('mabschaftKollektionId', shaftId);
+
+    // Add lederfarbe only if 1 color is selected
+    if (numberOfLeatherColors === '1') {
+      formData.append('lederfarbe', lederfarbe);
+    }
+
+    // Add other fields
+    formData.append('innenfutter', innenfutter);
+    formData.append('schafthohe', schafthohe);
+    formData.append('polsterung', polsterung.join(','));
+    formData.append('vestarkungen', verstarkungen.join(','));
+    formData.append('polsterung_text', polsterungText);
+    formData.append('vestarkungen_text', verstarkungenText);
+    formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
+    formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
+    formData.append('lederType', lederType);
+
+    // Add prices only if options are selected
+    if (passendenSchnursenkel === true) {
+      formData.append('passenden_schnursenkel_price', '4.49');
+    }
+    if (osenEinsetzen === true) {
+      formData.append('osen_einsetzen_price', '8.99');
+    }
+
+    return formData;
+  };
+
   // Function to clear all form data
   const clearFormData = () => {
     setUploadedImage(null);
@@ -148,6 +197,9 @@ export default function DetailsPage() {
     setVerstarkungen([]);
     setPolsterungText('');
     setVerstarkungenText('');
+    setNumberOfLeatherColors('1');
+    setLeatherColorAssignments([]);
+    setLeatherColors([]);
   };
 
   const handleOrderConfirmation = async () => {
@@ -175,7 +227,20 @@ export default function DetailsPage() {
       }
 
       formData.append('lederType', lederType);
-      formData.append('lederfarbe', lederfarbe);
+      
+      // Handle leather color based on number of colors
+      if (numberOfLeatherColors === '1') {
+        formData.append('lederfarbe', lederfarbe);
+      } else if (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') {
+        // Add multiple leather colors
+        formData.append('numberOfLeatherColors', numberOfLeatherColors);
+        leatherColors.forEach((color, index) => {
+          formData.append(`leatherColor_${index + 1}`, color);
+        });
+        // Add section assignments as JSON
+        formData.append('leatherColorAssignments', JSON.stringify(leatherColorAssignments));
+      }
+      
       formData.append('innenfutter', innenfutter);
       formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
       formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
@@ -315,6 +380,13 @@ export default function DetailsPage() {
           setPolsterungText={setPolsterungText}
           verstarkungenText={verstarkungenText}
           setVerstarkungenText={setVerstarkungenText}
+          numberOfLeatherColors={numberOfLeatherColors}
+          setNumberOfLeatherColors={setNumberOfLeatherColors}
+          leatherColorAssignments={leatherColorAssignments}
+          setLeatherColorAssignments={setLeatherColorAssignments}
+          leatherColors={leatherColors}
+          setLeatherColors={setLeatherColors}
+          shoeImage={uploadedImage || shaft?.image || null}
           onOrderComplete={() => setShowConfirmationModal(true)}
         />
 
@@ -330,6 +402,28 @@ export default function DetailsPage() {
           isOpen={showConfirmationModal}
           onClose={() => setShowConfirmationModal(false)}
           onConfirm={handleOrderConfirmation}
+          onSendToAdmin2={async () => {
+            if (!orderId) {
+              toast.error("Order ID is required");
+              return;
+            }
+            setIsCreatingOrder(true);
+            try {
+              const formData = prepareFormDataForAdmin2();
+              const response = await sendMassschuheOrderToAdmin2(orderId, formData);
+              clearFormData();
+              setShowSuccessMessage(true);
+              setShowConfirmationModal(false);
+              toast.success(response.message || "Bestellung erfolgreich gesendet!", { id: "sending-order" });
+              setTimeout(() => {
+                router.push('/dashboard/custom-shafts');
+              }, 200);
+            } catch (error) {
+              toast.error("Fehler beim Senden der Bestellung.", { id: "sending-order" });
+            } finally {
+              setIsCreatingOrder(false);
+            }
+          }}
           orderPrice={orderPrice}
           passendenSchnursenkel={passendenSchnursenkel}
           osenEinsetzen={osenEinsetzen}

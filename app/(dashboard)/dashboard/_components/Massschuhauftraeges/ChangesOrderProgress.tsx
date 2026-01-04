@@ -769,11 +769,12 @@ export default function ChangesOrderProgress({
                         {/* Show "Jetzt Schaft bestellen" button when:
                             1. isByPartner_1 is false (normal flow), OR
                             2. statusHistory is empty and status is Schafterstellung (admin approved), OR
-                            3. Schafterstellung hasn't started yet (no startedAt in history)
-                            Hide once Schafterstellung has started */}
+                            3. Schafterstellung hasn't started yet (no startedAt in history), OR
+                            4. Schafterstellung is IN FERTIGUNG (isCurrent) */}
                         {(!(order as any)?.isByPartner_1 || 
                           ((!order?.statusHistory || order.statusHistory.length === 0) && order?.status === "Schafterstellung") ||
-                          (order?.status === "Schafterstellung" && !isSchafterStarted)) && (
+                          (order?.status === "Schafterstellung" && !isSchafterStarted) ||
+                          (card.id === "schafterstellung" && isCurrent)) && (
                             <button
                                 type="button"
                                 disabled={(order as any)?.isPanding === true}
@@ -831,10 +832,12 @@ export default function ChangesOrderProgress({
                                 {/* Show "Jetzt Schaft bestellen" button when:
                                     1. statusHistory is empty and status is Bodenerstellung (admin approved), OR
                                     2. Bodenerstellung hasn't started yet (no startedAt in history), OR
-                                    3. Order status is "Schafterstellung", Schafterstellung is completed, and Bodenerstellung is next (IN BEARBEITUNG) */}
+                                    3. Order status is "Schafterstellung", Schafterstellung is completed, and Bodenerstellung is next (IN BEARBEITUNG), OR
+                                    4. Bodenerstellung is IN FERTIGUNG (isCurrent) */}
                                 {(((!order?.statusHistory || order.statusHistory.length === 0) && order?.status === "Bodenerstellung") ||
                                   (order?.status === "Bodenerstellung" && !isBodenStarted) ||
-                                  (order?.status === "Schafterstellung" && isSchafterCompleted && isNext)) && (
+                                  (order?.status === "Schafterstellung" && isSchafterCompleted && isNext) ||
+                                  (card.id === "bodenerstellung" && isCurrent)) && (
                                     <button
                                         type="button"
                                         disabled={(order as any)?.isPanding === true}
@@ -845,11 +848,14 @@ export default function ChangesOrderProgress({
                                         }`}
                                         onClick={() => {
                                             if ((order as any)?.isPanding === true) return;
-                                            // Redirect to custom-shafts page with order ID as query parameter
-                                            if (selectedOrderId) {
+                                            // If Bodenerstellung is IN FERTIGUNG (isCurrent), redirect to Bodenkonstruktion
+                                            if (selectedOrderId && isCurrent) {
+                                                router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${selectedOrderId}`);
+                                            } else if (selectedOrderId) {
+                                                // If Bodenerstellung is IN BEARBEITUNG (isNext), redirect to custom-shafts
                                                 router.push(`/dashboard/custom-shafts?orderId=${selectedOrderId}`);
                                             } else {
-                                                onClick();
+                                                onClick2();
                                             }
                                         }}
                                     >

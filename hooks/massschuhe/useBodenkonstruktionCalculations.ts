@@ -28,10 +28,10 @@ export function useBodenkonstruktionCalculations(
     }, [selected])
 
     const grandTotal = useMemo(() => {
-        if (orderTotalPrice && orderTotalPrice > 0) {
-            return orderTotalPrice
-        }
-        return shoe2.price + extraPriceTotal
+        // Base price: use orderTotalPrice if available, otherwise use shoe2.price
+        const basePrice = (orderTotalPrice && orderTotalPrice > 0) ? orderTotalPrice : shoe2.price
+        // Add extra prices from selected options
+        return basePrice + extraPriceTotal
     }, [orderTotalPrice, extraPriceTotal])
 
     return { extraPriceTotal, grandTotal }

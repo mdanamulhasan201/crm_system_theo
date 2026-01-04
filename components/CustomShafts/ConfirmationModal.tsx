@@ -14,6 +14,7 @@ interface ConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
+  onSendToAdmin2: () => void | Promise<void>;
   orderPrice: number;
   passendenSchnursenkel?: boolean | undefined;
   osenEinsetzen?: boolean | undefined;
@@ -28,6 +29,7 @@ export default function ConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
+  onSendToAdmin2,
   orderPrice,
   passendenSchnursenkel,
   osenEinsetzen,
@@ -40,18 +42,12 @@ export default function ConfirmationModal({
   const router = useRouter();
 
   const handleBodenKonfigurieren = () => {
-    if (orderId) {
-      router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`);
-    } else {
-      // If no orderId, still navigate but without the query param
-      router.push('/dashboard/massschuhauftraege-deatils/2');
-    }
+    // Do nothing as per user request
     onClose();
   };
 
-  const handleWeiterOhneBoden = () => {
-    router.push('/dashboard/balance-dashboard');
-    onClose();
+  const handleWeiterOhneBoden = async () => {
+    await onSendToAdmin2();
   };
 
   if (!isOpen) return null;

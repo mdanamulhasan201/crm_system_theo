@@ -6,6 +6,8 @@ import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
 import { FaArrowLeft } from "react-icons/fa"
 import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder"
+import { sendMassschuheOrderToAdmin3 } from "@/apis/MassschuheManagemantApis"
+import toast from "react-hot-toast"
 
 // Types
 import type { OptionInputsState, TextAreasState } from "./Bodenkonstruktion/types"
@@ -45,6 +47,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const [showModal, setShowModal] = useState(false)
     const [showModal2, setShowModal2] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+    const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
     
     // Sole selection states
     const [selectedSole, setSelectedSole] = useState<SoleType | null>(null)
@@ -110,6 +114,104 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         setTextAreas((prev) => ({ ...prev, [key]: value }))
     }
 
+    // Prepare form data for API
+    const prepareFormDataForAdmin3 = (pdfBlob: Blob | null): FormData => {
+        const formData = new FormData()
+
+        // Add PDF invoice if available
+        if (pdfBlob) {
+            formData.append('invoice', pdfBlob, 'invoice.pdf')
+        }
+
+        // Map form fields to API fields
+        // Konstruktionsart
+        if (selected.Konstruktionsart) {
+            formData.append('Konstruktionsart', selected.Konstruktionsart)
+        }
+
+        // Fersenkappe (hinterkappe)
+        if (selected.hinterkappe) {
+            formData.append('Fersenkappe', selected.hinterkappe)
+            // Add sub-option if leder is selected
+            if (selected.hinterkappe === 'leder' && selected.hinterkappe_sub) {
+                formData.append('Fersenkappe_sub', selected.hinterkappe_sub)
+            }
+        }
+
+        // Farbauswahl_Bodenkonstruktion
+        if (selected.farbauswahl) {
+            formData.append('Farbauswahl_Bodenkonstruktion', selected.farbauswahl)
+        }
+
+        // Sohlenmaterial
+        if (selected.schlemmaterial) {
+            formData.append('Sohlenmaterial', selected.schlemmaterial)
+        }
+
+        // Brandsohle
+        if (selected.brandsohle) {
+            formData.append('Brandsohle', selected.brandsohle)
+        }
+
+        // Absatz_Höhe
+        if (selected.absatzhoehe) {
+            formData.append('Absatz_Höhe', selected.absatzhoehe)
+        }
+
+        // Absatz_Form
+        if (selected.absatzform) {
+            formData.append('Absatz_Form', selected.absatzform)
+        }
+
+        // Abrollhilfe_Rolle
+        if (selected.abrollhilfe) {
+            formData.append('Abrollhilfe_Rolle', selected.abrollhilfe)
+        }
+
+        // Laufsohle_Profil_Art
+        if (selected.laufkohle) {
+            formData.append('Laufsohle_Profil_Art', selected.laufkohle)
+        }
+
+        // Sohlenstärke
+        if (selected.schlenstaerke) {
+            formData.append('Sohlenstärke', selected.schlenstaerke)
+        }
+
+        // Besondere_Hinweise
+        if (textAreas.besondere_hinweise) {
+            formData.append('Besondere_Hinweise', textAreas.besondere_hinweise)
+        }
+
+        // totalPrice (grandTotal includes base price + all additional options)
+        formData.append('totalPrice', grandTotal.toFixed(2))
+
+        return formData
+    }
+
+    // Handle form submission to API
+    const handleFormSubmit = async (pdfBlob: Blob | null) => {
+        if (!orderId) {
+            toast.error("Order ID is required")
+            return
+        }
+
+        setIsSubmitting(true)
+        try {
+            const formData = prepareFormDataForAdmin3(pdfBlob)
+            const response = await sendMassschuheOrderToAdmin3(orderId, formData)
+            toast.success(response.message || "Bestellung erfolgreich gesendet!", { id: "sending-order" })
+            // Close completion popup and navigate after successful API call
+            setShowModal2(false)
+            router.push("/dashboard/balance-dashboard")
+        } catch (error) {
+            console.error('Failed to send order to admin:', error)
+            toast.error("Fehler beim Senden der Bestellung.", { id: "sending-order" })
+        } finally {
+            setIsSubmitting(false)
+        }
+    }
+
     return (
         <div className="relative bg-white">
             {/* Back Button */}
@@ -150,7 +252,9 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 <PDFPopup
                     isOpen={showModal}
                     onClose={() => setShowModal(false)}
-                    onConfirm={() => {
+                    onConfirm={async (pdfBlob) => {
+                        // Store PDF blob and show completion popup (API call will happen on "Verbindlich bestellen")
+                        setPdfBlob(pdfBlob || null)
                         setShowModal(false)
                         setShowModal2(true)
                     }}
@@ -168,9 +272,16 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     onClose={() => setShowModal2(false)}
                     productName={shoe2.name}
                     value={grandTotal.toFixed(2)}
-                    onConfirm={() => {
-                        router.push("/dashboard/balance-dashboard")
-                        setShowModal2(false)
+                    isLoading={isSubmitting}
+                    onConfirm={async () => {
+                        // Call API when "Verbindlich bestellen" is clicked
+                        if (orderId) {
+                            await handleFormSubmit(pdfBlob)
+                        } else {
+                            // If no orderId, just navigate
+                            router.push("/dashboard/balance-dashboard")
+                            setShowModal2(false)
+                        }
                     }}
                 />
             )}
