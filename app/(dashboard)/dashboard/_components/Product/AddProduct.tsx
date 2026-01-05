@@ -324,11 +324,11 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Produktname</label>
-                                <Input value={newProduct.Produktname} onChange={e => handleNewProductChange('Produktname', e.target.value)} required disabled={!!(isLoading && editProductId)} />
+                                <Input value={newProduct.Produktname} onChange={e => handleNewProductChange('Produktname', e.target.value)} required disabled={!!editProductId || !!(isLoading && editProductId)} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Hersteller</label>
-                                <Input value={newProduct.Hersteller} onChange={e => handleNewProductChange('Hersteller', e.target.value)} required disabled={!!(isLoading && editProductId)} />
+                                <Input value={newProduct.Hersteller} onChange={e => handleNewProductChange('Hersteller', e.target.value)} required disabled={!!editProductId || !!(isLoading && editProductId)} />
                             </div>
                         </div>
 
@@ -336,7 +336,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Artikelnummer</label>
-                                <Input value={newProduct.Produktkürzel} onChange={e => handleNewProductChange('Produktkürzel', e.target.value)} required disabled={!!(isLoading && editProductId)} />
+                                <Input value={newProduct.Produktkürzel} onChange={e => handleNewProductChange('Produktkürzel', e.target.value)} required disabled={!!editProductId || !!(isLoading && editProductId)} />
                             </div>
                         </div>
 
@@ -344,50 +344,52 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Einkaufspreis (€)</label>
-                                <Input type="number" step="0.01" min={0} value={newProduct.purchase_price} onChange={e => handleNewProductChange('purchase_price', parseFloat(e.target.value) || 0)} required disabled={!!(isLoading && editProductId)} />
+                                <Input type="number" step="0.01" min={0} value={newProduct.purchase_price} onChange={e => handleNewProductChange('purchase_price', parseFloat(e.target.value) || 0)} required disabled={!!editProductId || !!(isLoading && editProductId)} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Verkaufspreis (€)</label>
-                                <Input type="number" step="0.01" min={0} value={newProduct.selling_price} onChange={e => handleNewProductChange('selling_price', parseFloat(e.target.value) || 0)} required disabled={!!(isLoading && editProductId)} />
+                                <Input type="number" step="0.01" min={0} value={newProduct.selling_price} onChange={e => handleNewProductChange('selling_price', parseFloat(e.target.value) || 0)} required disabled={!!editProductId || !!(isLoading && editProductId)} />
                             </div>
                         </div>
 
-                        {/* Row 4: Alle Größen um X erhöhen */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium mb-1">
-                                    Alle Größen um X erhöhen
-                                    {cumulativeIncreaseValue > 0 && (
-                                        <span className="ml-2 text-sm text-gray-500">(Gesamt: {cumulativeIncreaseValue})</span>
-                                    )}
-                                </label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        type="number"
-                                        min={0}
-                                        value={increaseAllSizesInput}
-                                        onChange={e => setIncreaseAllSizesInput(e.target.value)}
-                                        onKeyDown={e => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                handleIncreaseAllSizes();
-                                            }
-                                        }}
-                                        placeholder="Anzahl eingeben..."
-                                        className="flex-1"
-                                        disabled={!!(isLoading && editProductId)}
-                                    />
-                                    <Button
-                                        type="button"
-                                        onClick={handleIncreaseAllSizes}
-                                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
-                                        disabled={!!(isLoading && editProductId)}
-                                    >
-                                        Hinzufügen
-                                    </Button>
+                        {/* Row 4: Alle Größen um X erhöhen - Commented out for edit mode */}
+                        {/* {!editProductId && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">
+                                        Alle Größen um X erhöhen
+                                        {cumulativeIncreaseValue > 0 && (
+                                            <span className="ml-2 text-sm text-gray-500">(Gesamt: {cumulativeIncreaseValue})</span>
+                                        )}
+                                    </label>
+                                    <div className="flex gap-2">
+                                        <Input
+                                            type="number"
+                                            min={0}
+                                            value={increaseAllSizesInput}
+                                            onChange={e => setIncreaseAllSizesInput(e.target.value)}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    handleIncreaseAllSizes();
+                                                }
+                                            }}
+                                            placeholder="Anzahl eingeben..."
+                                            className="flex-1"
+                                            disabled={!!(isLoading && editProductId)}
+                                        />
+                                        <Button
+                                            type="button"
+                                            onClick={handleIncreaseAllSizes}
+                                            className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
+                                            disabled={!!(isLoading && editProductId)}
+                                        >
+                                            Hinzufügen
+                                        </Button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )} */}
                         <div>
                             <label className="block text-sm font-medium mb-3">Größen & Mengen</label>
                             <div className="border rounded-lg overflow-hidden">
@@ -413,7 +415,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.quantity || 0}
                                                         onChange={e => handleNewProductSizeChange(size, e.target.value)}
                                                         className="w-full"
-                                                        disabled={!!(isLoading && editProductId)}
+                                                        disabled={!!editProductId || !!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -425,7 +427,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         onChange={e => handleNewProductLengthChange(size, e.target.value)}
                                                         placeholder="z.B. 150"
                                                         className="w-full"
-                                                        disabled={!!(isLoading && editProductId)}
+                                                        disabled={!!editProductId || !!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -485,7 +487,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                 className="bg-[#61A178] cursor-pointer hover:bg-[#61A178]/80 text-white"
                                 disabled={isLoading}
                             >
-                                {isLoading ? 'Erstellen...' : 'Hinzufügen'}
+                                {isLoading ? (editProductId ? 'Aktualisieren...' : 'Erstellen...') : (editProductId ? 'Aktualisieren' : 'Hinzufügen')}
                             </Button>
                         </div>
                     </form>

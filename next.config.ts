@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'blackberry-allocated-joan-glad.trycloudflare.com',
+        hostname: 'calgary-parade-raw-eye.trycloudflare.com',
       }
     ],
   },

@@ -8,6 +8,7 @@ interface SizeData {
     mindestmenge?: number;
     autoOrderLimit?: number;
     orderQuantity?: number;
+    warningStatus?: string;
 }
 
 interface ProductFormData {
@@ -49,7 +50,9 @@ interface ApiProduct {
     userId: string;
     createdAt: string;
     updatedAt: string;
+    image?: string;
 }
+
 
 interface PaginationInfo {
     totalItems: number;
@@ -144,18 +147,36 @@ export const useStockManagementSlice = () => {
         }
     };
 
-    const getAllProducts = async () => {
+    const getAllProducts = async (page: number = 1, limit: number = 10, search: string = '') => {
         setIsLoadingProducts(true);
         setError(null);
 
         try {
-            const response: ApiResponse = await getAllStorages();
-            // console.log('Fetched products:', response);
+            const response = await getAllStorages(page, limit, search);
+            // console.log('Fetched storages:', response);
 
             if (response.success && response.data) {
-                setProducts(response.data);
+                // The API response already has the correct format, use it directly
+                const products: ApiProduct[] = response.data.map((item: any) => ({
+                    id: item.id,
+                    produktname: item.produktname,
+                    hersteller: item.hersteller,
+                    artikelnummer: item.artikelnummer,
+                    lagerort: item.lagerort || "Alle Lagerorte",
+                    mindestbestand: item.mindestbestand || 0,
+                    groessenMengen: item.groessenMengen || {},
+                    purchase_price: item.purchase_price || 0,
+                    selling_price: item.selling_price || 0,
+                    Status: item.Status || "In Stock",
+                    userId: item.userId || "",
+                    createdAt: item.createdAt,
+                    updatedAt: item.updatedAt,
+                    image: item.image || undefined
+                }));
+                
+                setProducts(products);
                 setPagination(response.pagination);
-                return response.data;
+                return products;
             } else {
                 throw new Error(response.message || 'Failed to fetch products');
             }
@@ -202,8 +223,8 @@ export const useStockManagementSlice = () => {
         }
     };
 
-    const refreshProducts = async () => {
-        return await getAllProducts();
+    const refreshProducts = async (page: number = 1, limit: number = 10, search: string = '') => {
+        return await getAllProducts(page, limit, search);
     };
 
     return {

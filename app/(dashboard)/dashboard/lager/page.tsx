@@ -8,7 +8,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
-import { Button } from "@/components/ui/button"
+
 import {
     Pagination,
     PaginationContent,
@@ -21,13 +21,15 @@ import { IoSearch } from 'react-icons/io5'
 import { Input } from '@/components/ui/input'
 import LagerChart from '@/components/LagerChart/LagerChart'
 import ProductManagementTable from '../_components/Product/ProductManagementTable'
-import AddProduct from '../_components/Product/AddProduct'
 import DeleteConfirmModal from '../_components/Product/DeleteConfirmModal'
+import { Button } from "@/components/ui/button"
+import { useRouter } from 'next/navigation'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import InventoryHistory, { InventoryHistoryRef } from '../_components/Product/InventoryHistory'
 import { deleteStorage } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
+import useDebounce from '@/hooks/useDebounce'
 
 interface SizeData {
     length: number;
@@ -45,6 +47,7 @@ interface Product {
     minStockLevel: number
     sizeQuantities: { [key: string]: number | SizeData }
     Status: string
+    image?: string
     inventoryHistory: Array<{
         id: string
         date: string
@@ -65,14 +68,6 @@ const getQuantity = (sizeData: number | SizeData | undefined): number => {
     return sizeData.quantity || 0;
 }
 
-interface NewProduct {
-    Produktname: string
-    Produktkürzel: string
-    Hersteller: string
-    purchase_price: number
-    selling_price: number
-    sizeQuantities: { [key: string]: SizeData }
-}
 
 // Define the size columns
 const sizeColumns = [
@@ -80,13 +75,18 @@ const sizeColumns = [
 ];
 
 export default function Lager() {
+    const router = useRouter()
     // Stock management hook
     const { products, pagination, getAllProducts, refreshProducts, isLoadingProducts, error, updateExistingProduct } = useStockManagementSlice();
 
     // Pagination state
-    const [itemsPerPage, setItemsPerPage] = useState(5)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
-    const [showPagination, setShowPagination] = useState(false)
+    const [showPagination, setShowPagination] = useState(true)
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('')
+    const debouncedSearch = useDebounce(searchQuery, 500)
 
     // Product data state - convert API products to local format
     const [productsData, setProductsData] = useState<Product[]>([])
@@ -111,15 +111,16 @@ export default function Lager() {
             minStockLevel: apiProduct.mindestbestand,
             sizeQuantities: apiProduct.groessenMengen,
             Status: apiProduct.Status,
+            image: apiProduct.image,
             inventoryHistory: [] // API doesn't provide history yet
         };
     };
 
-    // Fetch products on component mount
+    // Fetch products on component mount and when pagination/search changes
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const apiProducts = await getAllProducts();
+                const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch);
                 const convertedProducts = apiProducts.map(convertApiProductToLocal);
                 setProductsData(convertedProducts);
             } catch (err) {
@@ -128,21 +129,19 @@ export default function Lager() {
         };
 
         fetchProducts();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, itemsPerPage, debouncedSearch]);
 
 
 
-    // Pagination calculations
-    const totalPages = Math.ceil(productsData.length / 10)
-    const startIndex = showPagination ? (currentPage - 1) * 10 : 0
-    const visibleProducts = showPagination
-        ? productsData.slice(startIndex, startIndex + 10)
-        : productsData.slice(0, itemsPerPage)
+    // Pagination calculations - use API pagination
+    const totalPages = pagination?.totalPages || 1
+    const visibleProducts = productsData // Already filtered by API
 
-    // Pagination handlers
-    const handleShowMore = () => {
-        setItemsPerPage(10)
-        setShowPagination(true)
+    // Search handler
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchQuery(e.target.value)
+        setCurrentPage(1) // Reset to first page on search
     }
 
     // Stock level helpers
@@ -212,18 +211,6 @@ export default function Lager() {
         }
     };
 
-    // Add product handler - refresh data from API
-    const handleAddProduct = (newProduct: NewProduct) => {
-        // Refresh products from API to get the latest data including the newly created product
-        refreshProducts()
-            .then(apiProducts => {
-                const convertedProducts = apiProducts.map(convertApiProductToLocal);
-                setProductsData(convertedProducts);
-            })
-            .catch(err => {
-                console.error('Failed to refresh products after adding:', err);
-            });
-    };
 
     // Update product handler: update only the edited product locally
     const handleUpdateProduct = (updatedProduct: Product) => {
@@ -277,6 +264,8 @@ export default function Lager() {
                         <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg" />
                         <Input
                             placeholder="Search"
+                            value={searchQuery}
+                            onChange={handleSearchChange}
                             className="pl-10 pr-4 py-2 w-full rounded-full bg-white text-gray-700 placeholder:text-gray-500 border border-gray-300 focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400"
                         />
                     </div>
@@ -293,11 +282,14 @@ export default function Lager() {
                         </p>
                     )}
                 </div>
-                {/* Add Product Component */}
-                <AddProduct
-                    onAddProduct={handleAddProduct}
-                    sizeColumns={sizeColumns}
-                />
+                {/* Buy Now Button */}
+                <Button
+                    onClick={() => router.push('/dashboard/buy-storage')}
+                    disabled={isLoadingProducts}
+                    className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
+                >
+                    Lagerplätze kaufen
+                </Button>
             </div>
 
 
@@ -315,7 +307,6 @@ export default function Lager() {
                     onShowHistory={showHistory}
                     hasLowStock={hasLowStock}
                     getLowStockSizes={getLowStockSizes}
-                    onLagerortChange={handleLagerortChange}
                     onUpdateProduct={handleUpdateProduct}
                     onDeleteProduct={handleDeleteProduct}
                     isLoading={isLoadingProducts}
@@ -323,26 +314,13 @@ export default function Lager() {
             )}
 
             {/* Pagination */}
-            <div className="mt-6">
-                {!showPagination && itemsPerPage < productsData.length && (
-                    <div className="flex justify-center">
-                        <Button
-                            onClick={handleShowMore}
-                            variant="outline"
-                            size="lg"
-                            className="px-8 py-3 cursor-pointer"
-                        >
-                            Mehr anzeigen
-                        </Button>
-                    </div>
-                )}
-
-                {showPagination && (
+            {pagination && pagination.totalItems > 0 && (
+                <div className="mt-6">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <span className="text-sm text-gray-600">Zeige:</span>
                             <Select
-                                value="10"
+                                value={itemsPerPage.toString()}
                                 onValueChange={(value) => {
                                     const numValue = parseInt(value);
                                     setItemsPerPage(numValue);
@@ -358,7 +336,9 @@ export default function Lager() {
                                     <SelectItem value="50">50</SelectItem>
                                 </SelectContent>
                             </Select>
-                            <span className="text-sm text-gray-600">von {pagination?.totalItems || productsData.length} Produkten</span>
+                            <span className="text-sm text-gray-600">
+                                von {pagination.totalItems} Produkten
+                            </span>
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -366,27 +346,81 @@ export default function Lager() {
                                 <PaginationContent>
                                     <PaginationItem>
                                         <PaginationPrevious
-                                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                                            className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                            onClick={() => {
+                                                if (currentPage > 1) {
+                                                    setCurrentPage(currentPage - 1);
+                                                }
+                                            }}
+                                            className={currentPage === 1 || !pagination.hasPrevPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
                                         />
                                     </PaginationItem>
 
-                                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                                        <PaginationItem key={page}>
-                                            <PaginationLink
-                                                onClick={() => setCurrentPage(page)}
-                                                isActive={currentPage === page}
-                                                className="cursor-pointer"
-                                            >
-                                                {page}
-                                            </PaginationLink>
-                                        </PaginationItem>
-                                    ))}
+                                    {/* Show page numbers - limit to 5 pages at a time */}
+                                    {(() => {
+                                        const pages: (number | string)[] = [];
+                                        const maxVisiblePages = 5;
+                                        
+                                        if (totalPages <= maxVisiblePages) {
+                                            // Show all pages if total is less than max
+                                            for (let i = 1; i <= totalPages; i++) {
+                                                pages.push(i);
+                                            }
+                                        } else {
+                                            // Show first page
+                                            pages.push(1);
+                                            
+                                            if (currentPage > 3) {
+                                                pages.push('...');
+                                            }
+                                            
+                                            // Show pages around current page
+                                            const start = Math.max(2, currentPage - 1);
+                                            const end = Math.min(totalPages - 1, currentPage + 1);
+                                            
+                                            for (let i = start; i <= end; i++) {
+                                                if (i !== 1 && i !== totalPages) {
+                                                    pages.push(i);
+                                                }
+                                            }
+                                            
+                                            if (currentPage < totalPages - 2) {
+                                                pages.push('...');
+                                            }
+                                            
+                                            // Show last page
+                                            pages.push(totalPages);
+                                        }
+                                        
+                                        return pages.map((page, index) => {
+                                            if (page === '...') {
+                                                return (
+                                                    <PaginationItem key={`ellipsis-${index}`}>
+                                                        <span className="px-2">...</span>
+                                                    </PaginationItem>
+                                                );
+                                            }
+                                            return (
+                                                <PaginationItem key={page}>
+                                                    <PaginationLink
+                                                        onClick={() => setCurrentPage(page as number)}
+                                                        isActive={currentPage === page}
+                                                        className="cursor-pointer"
+                                                    >
+                                                        {page}
+                                                    </PaginationLink>
+                                                </PaginationItem>
+                                            );
+                                        });
+                                    })()}
 
                                     <PaginationItem>
                                         <PaginationNext
-                                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                                            className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                                            onClick={() => {
+                                                if (currentPage < totalPages) {
+                                                    setCurrentPage(currentPage + 1);
+                                                }
+                                            }}
+                                            className={currentPage === totalPages || !pagination.hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"}
                                         />
                                     </PaginationItem>
                                 </PaginationContent>
@@ -397,8 +431,8 @@ export default function Lager() {
                             Seite {currentPage} von {totalPages}
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
+            )}
 
             {/* Inventory History Component */}
             <InventoryHistory

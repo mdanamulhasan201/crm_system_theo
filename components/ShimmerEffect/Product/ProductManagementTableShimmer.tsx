@@ -21,83 +21,80 @@ const ProductManagementTableShimmer: React.FC<ProductManagementTableShimmerProps
     sizeColumns, 
     rows = 5 
 }) => {
-    // Calculate minimum width based on columns
-    const minWidth = 7 * 150 + sizeColumns.length * 60; // 7 fixed columns + size columns
-    
     return (
-        <div className="mt-5 overflow-x-auto">
-            <div style={{ minWidth: `${minWidth}px` }}>
-                <Table className='border-2 border-gray-500 rounded-lg w-full'>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                <div className={`${baseShimmer} h-4 w-20`} />
+        <div className="mt-5">
+            <Table className='w-full'>
+                <TableHeader>
+                    <TableRow className="border-b">
+                        <TableHead className="p-3 text-left">
+                            <div className={`${baseShimmer} h-4 w-20`} />
+                        </TableHead>
+                        <TableHead className="p-3 text-left">
+                            <div className={`${baseShimmer} h-4 w-24`} />
+                        </TableHead>
+                        <TableHead className="p-3 text-left">
+                            <div className={`${baseShimmer} h-4 w-32`} />
+                        </TableHead>
+                        <TableHead className="p-3 text-left">
+                            <div className={`${baseShimmer} h-4 w-28`} />
+                        </TableHead>
+                        <TableHead className="p-3 text-left">
+                            <div className={`${baseShimmer} h-4 w-24`} />
+                        </TableHead>
+                        <TableHead className="p-3 text-left">
+                            <div className={`${baseShimmer} h-4 w-20`} />
+                        </TableHead>
+                        <TableHead className="p-3 text-left">
+                            <div className={`${baseShimmer} h-4 w-20`} />
+                        </TableHead>
+                        {sizeColumns.map(size => (
+                            <TableHead key={size} className="p-3 text-center">
+                                <div className={`${baseShimmer} h-4 w-8 mx-auto`} />
                             </TableHead>
-                            <TableHead className="border-2 border-gray-500 p-2 whitespace-nowrap">
+                        ))}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {Array.from({ length: rows }).map((_, rowIndex) => (
+                        <TableRow key={rowIndex} className="border-b">
+                            <TableCell className="p-3">
+                                <div className="flex items-center justify-center">
+                                    <div className={`${baseShimmer} h-10 w-10 rounded`} />
+                                </div>
+                            </TableCell>
+                            <TableCell className="p-3">
                                 <div className={`${baseShimmer} h-4 w-24`} />
-                            </TableHead>
-                            <TableHead className="border-2 border-gray-500 p-2 whitespace-nowrap">
+                            </TableCell>
+                            <TableCell className="p-3">
                                 <div className={`${baseShimmer} h-4 w-32`} />
-                            </TableHead>
-                            <TableHead className="border-2 border-gray-500 p-2 whitespace-nowrap">
+                            </TableCell>
+                            <TableCell className="p-3">
                                 <div className={`${baseShimmer} h-4 w-28`} />
-                            </TableHead>
-                            <TableHead className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                <div className={`${baseShimmer} h-4 w-24`} />
-                            </TableHead>
-                            <TableHead className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                <div className={`${baseShimmer} h-4 w-20`} />
-                            </TableHead>
-                            <TableHead className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                <div className={`${baseShimmer} h-4 w-20`} />
-                            </TableHead>
+                            </TableCell>
+                            <TableCell className="p-3">
+                                <div className="flex items-center gap-2">
+                                    <div className={`${baseShimmer} h-4 w-4 rounded-full`} />
+                                    <div className={`${baseShimmer} h-4 w-24`} />
+                                </div>
+                            </TableCell>
+                            <TableCell className="p-3">
+                                <div className={`${baseShimmer} h-8 w-8 rounded`} />
+                            </TableCell>
+                            <TableCell className="p-3">
+                                <div className="flex items-center gap-2">
+                                    <div className={`${baseShimmer} h-8 w-8 rounded`} />
+                                    <div className={`${baseShimmer} h-8 w-8 rounded`} />
+                                </div>
+                            </TableCell>
                             {sizeColumns.map(size => (
-                                <TableHead key={size} className="border-2 border-gray-500 p-2 text-center whitespace-nowrap">
+                                <TableCell key={size} className="p-3 text-center">
                                     <div className={`${baseShimmer} h-4 w-8 mx-auto`} />
-                                </TableHead>
+                                </TableCell>
                             ))}
                         </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {Array.from({ length: rows }).map((_, rowIndex) => (
-                            <TableRow key={rowIndex}>
-                                <TableCell className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                    <div className={`${baseShimmer} h-10 w-40`} />
-                                </TableCell>
-                                <TableCell className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                    <div className={`${baseShimmer} h-4 w-24`} />
-                                </TableCell>
-                                <TableCell className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                    <div className={`${baseShimmer} h-4 w-32`} />
-                                </TableCell>
-                                <TableCell className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                    <div className={`${baseShimmer} h-4 w-28`} />
-                                </TableCell>
-                                <TableCell className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`${baseShimmer} h-4 w-4 rounded-full`} />
-                                        <div className={`${baseShimmer} h-4 w-24`} />
-                                    </div>
-                                </TableCell>
-                                <TableCell className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                    <div className={`${baseShimmer} h-8 w-8 rounded`} />
-                                </TableCell>
-                                <TableCell className="border-2 border-gray-500 p-2 whitespace-nowrap">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`${baseShimmer} h-8 w-8 rounded`} />
-                                        <div className={`${baseShimmer} h-8 w-8 rounded`} />
-                                    </div>
-                                </TableCell>
-                                {sizeColumns.map(size => (
-                                    <TableCell key={size} className="border-2 border-gray-500 p-2 text-center whitespace-nowrap">
-                                        <div className={`${baseShimmer} h-4 w-8 mx-auto`} />
-                                    </TableCell>
-                                ))}
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
-            </div>
+                    ))}
+                </TableBody>
+            </Table>
         </div>
     );
 };

@@ -10,10 +10,10 @@ export const createProduct = async (productData: any) => {
     }
 };
 
-// get all storages
-export const getAllStorages = async () => {
+// get all storages /store/my/get?page=1&limit=10&search
+export const getAllStorages = async (page: number, limit: number, search: string) => {
     try {
-        const response = await axiosClient.get('/store/my/get');
+        const response = await axiosClient.get(`/store/my/get?page=${page}&limit=${limit}&search=${search}`);
         return response.data;
     } catch (error) {
         throw error;
