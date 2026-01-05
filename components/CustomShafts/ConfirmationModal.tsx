@@ -15,6 +15,7 @@ interface ConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   onSendToAdmin2: () => void | Promise<void>;
+  onBodenKonfigurieren?: () => void | Promise<void>;
   orderPrice: number;
   passendenSchnursenkel?: boolean | undefined;
   osenEinsetzen?: boolean | undefined;
@@ -30,6 +31,7 @@ export default function ConfirmationModal({
   onClose,
   onConfirm,
   onSendToAdmin2,
+  onBodenKonfigurieren,
   orderPrice,
   passendenSchnursenkel,
   osenEinsetzen,
@@ -41,9 +43,12 @@ export default function ConfirmationModal({
 }: ConfirmationModalProps) {
   const router = useRouter();
 
-  const handleBodenKonfigurieren = () => {
-    // Do nothing as per user request
-    onClose();
+  const handleBodenKonfigurieren = async () => {
+    if (onBodenKonfigurieren) {
+      await onBodenKonfigurieren();
+    } else {
+      onClose();
+    }
   };
 
   const handleWeiterOhneBoden = async () => {

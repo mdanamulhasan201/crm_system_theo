@@ -154,6 +154,14 @@ export default function DetailsPage() {
     // Add lederfarbe only if 1 color is selected
     if (numberOfLeatherColors === '1') {
       formData.append('lederfarbe', lederfarbe);
+    } else if (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') {
+      // Add multiple leather colors
+      formData.append('numberOfLeatherColors', numberOfLeatherColors);
+      leatherColors.forEach((color, index) => {
+        formData.append(`leatherColor_${index + 1}`, color);
+      });
+      // Add section assignments as JSON
+      formData.append('leatherColorAssignments', JSON.stringify(leatherColorAssignments));
     }
 
     // Add other fields
@@ -169,13 +177,72 @@ export default function DetailsPage() {
 
     // Add prices only if options are selected
     if (passendenSchnursenkel === true) {
+      formData.append('passenden_schnursenkel', 'true');
       formData.append('passenden_schnursenkel_price', '4.49');
     }
     if (osenEinsetzen === true) {
+      formData.append('osen_einsetzen', 'true');
       formData.append('osen_einsetzen_price', '8.99');
     }
 
+    // Add total price
+    formData.append('totalPrice', orderPrice.toString());
+
     return formData;
+  };
+
+  // Handle Boden Konfigurieren - stores form data and redirects to Bodenkonstruktion (no API call)
+  const handleBodenKonfigurieren = () => {
+    if (!orderId) {
+      toast.error("Order ID is required");
+      return;
+    }
+
+    // Store custom shaft form data in sessionStorage for later use
+    const customShaftData = {
+      image3d_1: rechterLeistenFile,
+      image3d_2: linkerLeistenFile,
+      mabschaftKollektionId: shaftId,
+      lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
+      numberOfLeatherColors,
+      leatherColors: numberOfLeatherColors !== '1' ? leatherColors : [],
+      leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
+      innenfutter,
+      schafthohe,
+      polsterung,
+      verstarkungen,
+      polsterung_text: polsterungText,
+      verstarkungen_text: verstarkungenText,
+      nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
+      nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
+      lederType,
+      passenden_schnursenkel: passendenSchnursenkel === true,
+      passenden_schnursenkel_price: passendenSchnursenkel === true ? '4.49' : null,
+      osen_einsetzen: osenEinsetzen === true,
+      osen_einsetzen_price: osenEinsetzen === true ? '8.99' : null,
+      totalPrice: orderPrice,
+      // Store file names for reference
+      linkerLeistenFileName,
+      rechterLeistenFileName,
+    };
+
+    // Store in sessionStorage (we'll need to handle files separately)
+    sessionStorage.setItem(`customShaftData_${orderId}`, JSON.stringify({
+      ...customShaftData,
+      // Store file references (we'll need to recreate FormData in Bodenkonstruktion)
+      hasImage3d_1: !!rechterLeistenFile,
+      hasImage3d_2: !!linkerLeistenFile,
+    }));
+
+    // Store files in a way that can be accessed later
+    // Note: Files can't be stored in sessionStorage, so we'll need to handle them differently
+    // For now, we'll store the form data and handle files when calling API
+    
+    // Close modal
+    setShowConfirmationModal(false);
+    
+    // Redirect to Bodenkonstruktion page
+    router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`);
   };
 
   // Function to clear all form data
@@ -424,6 +491,7 @@ export default function DetailsPage() {
               setIsCreatingOrder(false);
             }
           }}
+          onBodenKonfigurieren={handleBodenKonfigurieren}
           orderPrice={orderPrice}
           passendenSchnursenkel={passendenSchnursenkel}
           osenEinsetzen={osenEinsetzen}

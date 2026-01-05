@@ -17,6 +17,7 @@ interface ChecklistSectionProps {
     grandTotal: number
     onWeiterClick: () => void
     onCancel: () => void
+    isSubmitting?: boolean
 }
 
 export default function ChecklistSection({
@@ -32,6 +33,7 @@ export default function ChecklistSection({
     grandTotal,
     onWeiterClick,
     onCancel,
+    isSubmitting = false,
 }: ChecklistSectionProps) {
     return (
         <div className="bg-white rounded-lg p-4 w-full">
@@ -91,10 +93,11 @@ export default function ChecklistSection({
                     Abbrechen
                 </button>
                 <button
-                    className="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold"
+                    className={`px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 font-semibold ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                     onClick={onWeiterClick}
+                    disabled={isSubmitting}
                 >
-                    Weiter €{grandTotal.toFixed(2)}
+                    {isSubmitting ? 'Wird gesendet...' : `Weiter €${grandTotal.toFixed(2)}`}
                 </button>
             </div>
         </div>

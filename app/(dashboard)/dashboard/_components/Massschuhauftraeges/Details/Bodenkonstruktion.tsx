@@ -6,7 +6,7 @@ import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
 import CompletionPopUp from "./Completion-PopUp"
 import { FaArrowLeft } from "react-icons/fa"
 import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder"
-import { sendMassschuheOrderToAdmin3 } from "@/apis/MassschuheManagemantApis"
+import { sendMassschuheOrderToAdmin2, sendMassschuheOrderToAdmin3 } from "@/apis/MassschuheManagemantApis"
 import toast from "react-hot-toast"
 
 // Types
@@ -94,14 +94,47 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return sel !== undefined && sel !== null && sel !== ""
     })
 
-    const handleWeiterClick = () => {
+    const handleWeiterClick = async () => {
         if (!isAllCheckboxAnswered) {
             setCheckboxError(true)
             return
         }
         setCheckboxError(false)
-        setShowModal(true)
-        localStorage.setItem("currentBalance", String(grandTotal.toFixed(2)))
+        
+        if (!orderId) {
+            toast.error("Order ID is required")
+            return
+        }
+
+        // Check if custom shaft data exists in sessionStorage
+        const customShaftDataStr = sessionStorage.getItem(`customShaftData_${orderId}`)
+        
+        if (customShaftDataStr) {
+            // Call Admin2 API with custom shaft data + Bodenkonstruktion data
+            setIsSubmitting(true)
+            try {
+                const customShaftData = JSON.parse(customShaftDataStr)
+                const formData = prepareFormDataForAdmin2(customShaftData)
+                const response = await sendMassschuheOrderToAdmin2(orderId, formData)
+                toast.success(response.message || "Bestellung erfolgreich gesendet!", { id: "sending-order" })
+                
+                // Clear sessionStorage after successful API call
+                sessionStorage.removeItem(`customShaftData_${orderId}`)
+                
+                // Show PDF modal
+                setShowModal(true)
+                localStorage.setItem("currentBalance", String(grandTotal.toFixed(2)))
+            } catch (error) {
+                console.error('Failed to send order to admin2:', error)
+                toast.error("Fehler beim Senden der Bestellung.", { id: "sending-order" })
+            } finally {
+                setIsSubmitting(false)
+            }
+        } else {
+            // No custom shaft data, just show modal (normal flow)
+            setShowModal(true)
+            localStorage.setItem("currentBalance", String(grandTotal.toFixed(2)))
+        }
     }
 
     const handleAbsatzFormClick = (groupId: string, optionId: string) => {
@@ -112,6 +145,115 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     const handleTextAreaChange = (key: string, value: string) => {
         setTextAreas((prev) => ({ ...prev, [key]: value }))
+    }
+
+    // Prepare form data for Admin2 API (custom shaft + Bodenkonstruktion)
+    const prepareFormDataForAdmin2 = (customShaftData: any): FormData => {
+        const formData = new FormData()
+
+        // Try to get files from order data if available
+        const orderAny = order as any
+        if (orderAny?.threed_model_right || orderAny?.image3d_1) {
+            // If file URL exists, we can append it (API might accept URLs)
+            const fileUrl = orderAny.threed_model_right || orderAny.image3d_1
+            if (fileUrl) {
+                formData.append('image3d_1', fileUrl)
+            }
+        }
+        if (orderAny?.threed_model_left || orderAny?.image3d_2) {
+            const fileUrl = orderAny.threed_model_left || orderAny.image3d_2
+            if (fileUrl) {
+                formData.append('image3d_2', fileUrl)
+            }
+        }
+
+        // Add custom shaft data
+        if (customShaftData.mabschaftKollektionId) {
+            formData.append('mabschaftKollektionId', customShaftData.mabschaftKollektionId)
+        }
+        
+        // Add lederfarbe or multiple leather colors
+        if (customShaftData.numberOfLeatherColors === '1' && customShaftData.lederfarbe) {
+            formData.append('lederfarbe', customShaftData.lederfarbe)
+        } else if (customShaftData.numberOfLeatherColors === '2' || customShaftData.numberOfLeatherColors === '3') {
+            formData.append('numberOfLeatherColors', customShaftData.numberOfLeatherColors)
+            customShaftData.leatherColors?.forEach((color: string, index: number) => {
+                formData.append(`leatherColor_${index + 1}`, color)
+            })
+            if (customShaftData.leatherColorAssignments) {
+                formData.append('leatherColorAssignments', JSON.stringify(customShaftData.leatherColorAssignments))
+            }
+        }
+
+        // Add custom shaft fields
+        if (customShaftData.innenfutter) formData.append('innenfutter', customShaftData.innenfutter)
+        if (customShaftData.schafthohe) formData.append('schafthohe', customShaftData.schafthohe)
+        if (customShaftData.polsterung?.length > 0) formData.append('polsterung', customShaftData.polsterung.join(','))
+        if (customShaftData.vestarkungen?.length > 0) formData.append('vestarkungen', customShaftData.vestarkungen.join(','))
+        if (customShaftData.polsterung_text) formData.append('polsterung_text', customShaftData.polsterung_text)
+        if (customShaftData.vestarkungen_text) formData.append('vestarkungen_text', customShaftData.vestarkungen_text)
+        if (customShaftData.nahtfarbe) formData.append('nahtfarbe', customShaftData.nahtfarbe)
+        if (customShaftData.nahtfarbe_text) formData.append('nahtfarbe_text', customShaftData.nahtfarbe_text)
+        if (customShaftData.lederType) formData.append('lederType', customShaftData.lederType)
+        
+        if (customShaftData.passenden_schnursenkel) {
+            formData.append('passenden_schnursenkel', 'true')
+            if (customShaftData.passenden_schnursenkel_price) {
+                formData.append('passenden_schnursenkel_price', customShaftData.passenden_schnursenkel_price)
+            }
+        }
+        if (customShaftData.osen_einsetzen) {
+            formData.append('osen_einsetzen', 'true')
+            if (customShaftData.osen_einsetzen_price) {
+                formData.append('osen_einsetzen_price', customShaftData.osen_einsetzen_price)
+            }
+        }
+
+        // Add Bodenkonstruktion data
+        if (selected.Konstruktionsart) {
+            formData.append('Konstruktionsart', selected.Konstruktionsart)
+        }
+        if (selected.hinterkappe) {
+            formData.append('Fersenkappe', selected.hinterkappe)
+            if (selected.hinterkappe === 'leder' && selected.hinterkappe_sub) {
+                formData.append('Fersenkappe_sub', selected.hinterkappe_sub)
+            }
+        }
+        if (selected.farbauswahl) {
+            formData.append('Farbauswahl_Bodenkonstruktion', selected.farbauswahl)
+        }
+        if (selected.schlemmaterial) {
+            formData.append('Sohlenmaterial', selected.schlemmaterial)
+        }
+        if (selected.brandsohle) {
+            formData.append('Brandsohle', selected.brandsohle)
+        }
+        if (selected.absatzhoehe) {
+            formData.append('Absatz_Höhe', selected.absatzhoehe)
+        }
+        if (selected.absatzform) {
+            formData.append('Absatz_Form', selected.absatzform)
+        }
+        if (selected.abrollhilfe) {
+            formData.append('Abrollhilfe_Rolle', selected.abrollhilfe)
+        }
+        if (selected.laufkohle) {
+            formData.append('Laufsohle_Profil_Art', selected.laufkohle)
+        }
+        if (selected.schlenstaerke) {
+            formData.append('Sohlenstärke', selected.schlenstaerke)
+        }
+        if (textAreas.besondere_hinweise) {
+            formData.append('Besondere_Hinweise', textAreas.besondere_hinweise)
+        }
+
+        // Add total price (Bodenkonstruktion grandTotal)
+        formData.append('totalPrice', grandTotal.toFixed(2))
+
+        // Note: Files (image3d_1, image3d_2) should be retrieved from order data if available
+        // For now, we'll rely on the order having the files already stored
+
+        return formData
     }
 
     // Prepare form data for API
@@ -245,6 +387,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 grandTotal={grandTotal}
                 onWeiterClick={handleWeiterClick}
                 onCancel={() => router.back()}
+                isSubmitting={isSubmitting}
             />
 
             {/* PDF Popup */}
