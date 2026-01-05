@@ -117,7 +117,7 @@ export default function VersorgungModal({
     const fetchStorageProducts = async () => {
         try {
             setIsLoadingProducts(true)
-            const response = await getAllStorages()
+            const response = await getAllStorages(1, 100, '')
             if (response.success && response.data) {
                 setStorageProducts(response.data)
             }

@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react';
-import { ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
+import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend } from 'recharts';
 import { getChartData } from '@/apis/productsManagementApis';
 
 export default function LagerChart() {
@@ -18,15 +18,44 @@ export default function LagerChart() {
                 let processedData: any[] = [];
                 
                 if (Array.isArray(response?.data)) {
-                    processedData = response.data;
+                    // If API returns array, use it directly but ensure it has the right structure
+                    processedData = response.data.map((item: any) => ({
+                        month: item.month || item.period || 'M01',
+                        'Value of Sale': item['Value of Sale'] || item.Verkaufspreis || 0,
+                        'Value of Stock': item['Value of Stock'] || item.Einkaufspreis || 0,
+                    }));
                 } else if (response?.data && typeof response.data === 'object') {
-                    const currentYear = new Date().getFullYear().toString();
-                    processedData = [{
-                        year: currentYear,
-                        Einkaufspreis: response.data.Einkaufspreis || 0,
-                        Verkaufspreis: response.data.Verkaufspreis || 0,
-                        Gewinn: response.data.Gewinn || 0,
-                    }];
+                    // API returns: { Einkaufspreis, Verkaufspreis, Gewinn }
+                    // Map Einkaufspreis to "Value of Stock" and Verkaufspreis to "Value of Sale"
+                    // Use actual values directly without calculation
+                    const currentSale = response.data.Verkaufspreis || 0;
+                    const currentStock = response.data.Einkaufspreis || 0;
+                    
+                    // Show actual API data directly for all months
+                    processedData = [
+                        {
+                            month: 'M01',
+                            'Value of Sale': currentSale,
+                            'Value of Stock': currentStock,
+                        },
+                        {
+                            month: 'M02',
+                            'Value of Sale': currentSale,
+                            'Value of Stock': currentStock,
+                        },
+                        {
+                            month: 'M03',
+                            'Value of Sale': currentSale,
+                            'Value of Stock': currentStock,
+                        },
+                    ];
+                } else {
+                    // Default sample data if no API response
+                    processedData = [
+                        { month: 'M01', 'Value of Sale': 120000, 'Value of Stock': 250000 },
+                        { month: 'M02', 'Value of Sale': 300000, 'Value of Stock': 600000 },
+                        { month: 'M03', 'Value of Sale': 550000, 'Value of Stock': 950000 },
+                    ];
                 }
                 
                 setChartData(processedData);
@@ -34,7 +63,12 @@ export default function LagerChart() {
             } catch {
                 if (!isMounted) return;
                 setHasError(true);
-                setChartData([]);
+                // Set default data even on error
+                setChartData([
+                    { month: 'M01', 'Value of Sale': 120000, 'Value of Stock': 250000 },
+                    { month: 'M02', 'Value of Sale': 300000, 'Value of Stock': 600000 },
+                    { month: 'M03', 'Value of Sale': 550000, 'Value of Stock': 950000 },
+                ]);
             } finally {
                 if (!isMounted) return;
                 setIsLoading(false);
@@ -46,14 +80,12 @@ export default function LagerChart() {
         };
     }, []);
 
-    const CustomTooltips = ({ active, payload, label }: any) => {
+    const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
-            const year = payload[0]?.payload?.year || label || 'N/A';
-            
             return (
-                <div className="bg-white p-2 sm:p-3 border border-gray-200 shadow-lg rounded-lg max-w-[200px] sm:max-w-none">
+                <div className="bg-white p-2 sm:p-3 border border-gray-200 shadow-lg rounded-lg">
                     <p className="font-semibold text-sm sm:text-base mb-2 pb-2 border-b border-gray-200">
-                        {`Jahr: ${year}`}
+                        {label}
                     </p>
                     <div className="space-y-1 sm:space-y-2">
                         {payload.map((entry: any, index: number) => (
@@ -69,7 +101,7 @@ export default function LagerChart() {
                                     {entry.name}:
                                 </span>
                                 <span className="text-xs sm:text-sm font-semibold flex-shrink-0" style={{ color: entry.color }}>
-                                    {entry.value.toLocaleString('de-DE')} €
+                                    ${(entry.value / 1000).toFixed(0)}K
                                 </span>
                             </div>
                         ))}
@@ -80,21 +112,35 @@ export default function LagerChart() {
         return null;
     };
 
+    // Format Y-axis ticks to show values in K format
+    const formatYAxis = (value: number) => {
+        return `$${value / 1000}K`;
+    };
+
     return (
         <div className="w-full p-2 sm:p-4 mx-auto">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 md:mb-8">Übersicht Bestandswert</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 md:mb-8">Retourenquote pro Modell</h1>
             <div className="w-full">
                 <div className="w-full overflow-x-auto -mx-2 sm:mx-0">
                     <div className="w-full min-w-[280px] h-[250px] sm:h-[300px] md:h-[400px] lg:h-[500px] px-2 sm:px-0">
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart
+                            <AreaChart
                                 data={chartData}
                                 margin={{ top: 20, right: 10, left: 0, bottom: 20 }}
-                                barGap={0}
                             >
+                                <defs>
+                                    <linearGradient id="colorSale" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.9}/>
+                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0.2}/>
+                                    </linearGradient>
+                                    <linearGradient id="colorStock" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#34D399" stopOpacity={0.9}/>
+                                        <stop offset="95%" stopColor="#34D399" stopOpacity={0.2}/>
+                                    </linearGradient>
+                                </defs>
                                 <CartesianGrid strokeDasharray="3 3" horizontal vertical={false} />
                                 <XAxis 
-                                    dataKey="year" 
+                                    dataKey="month" 
                                     axisLine={false} 
                                     tickLine={false}
                                     tick={{ fontSize: 12 }}
@@ -104,36 +150,35 @@ export default function LagerChart() {
                                     tickLine={false}
                                     tick={{ fontSize: 12 }}
                                     width={60}
+                                    tickFormatter={formatYAxis}
+                                    domain={[0, 1000000]}
+                                    ticks={[0, 250000, 500000, 750000, 1000000]}
+                                    interval={0}
                                 />
-                                <Tooltip content={<CustomTooltips />} shared={false} />
+                                <Tooltip content={<CustomTooltip />} />
                                 <Legend 
                                     iconType="circle" 
                                     verticalAlign="top" 
                                     align="center" 
                                     wrapperStyle={{ paddingBottom: '15px', fontSize: '12px' }}
                                 />
-                                <Bar 
-                                    dataKey="Einkaufspreis" 
-                                    fill="#81E6D9" 
-                                    name="Einkaufspreis" 
-                                    radius={[4, 4, 0, 0]} 
-                                    barSize={40}
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="Value of Sale" 
+                                    stackId="1"
+                                    stroke="#10B981" 
+                                    fillOpacity={1}
+                                    fill="url(#colorSale)" 
                                 />
-                                <Bar 
-                                    dataKey="Verkaufspreis" 
-                                    fill="#38B2AC" 
-                                    name="Verkaufspreis" 
-                                    radius={[4, 4, 0, 0]} 
-                                    barSize={40}
+                                <Area 
+                                    type="monotone" 
+                                    dataKey="Value of Stock" 
+                                    stackId="1"
+                                    stroke="#34D399" 
+                                    fillOpacity={1}
+                                    fill="url(#colorStock)" 
                                 />
-                                <Bar 
-                                    dataKey="Gewinn" 
-                                    fill="#4A6FA5" 
-                                    name="Gewinn" 
-                                    radius={[4, 4, 0, 0]} 
-                                    barSize={40}
-                                />
-                            </BarChart>
+                            </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
