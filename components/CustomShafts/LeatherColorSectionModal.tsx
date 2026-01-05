@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 
@@ -54,6 +54,26 @@ const getColorHex = (colorName: string): string => {
   return defaults[0] || '#CCCCCC';
 };
 
+// Map leather type values to display names
+const LEATHER_TYPE_DISPLAY: Record<string, string> = {
+  'kalbleder-vitello': 'Kalbleder Vitello',
+  'nappa': 'Nappa (weiches Glattleder)',
+  'nubukleder': 'Nubukleder',
+  'softvelourleder': 'Softvelourleder',
+  'hirschleder-gemustert': 'Hirschleder Gemustert',
+  'performance-textil': 'Performance Textil',
+  'fashion-mesh-gepolstert': 'Fashion Mesh Gepolstert',
+  'soft-touch-material-gepraegt': 'Soft Touch Material - Geprägt',
+  'textil-python-effekt': 'Textil Python-Effekt',
+  'glitter': 'Glitter',
+  'luxury-glitter-fabric': 'Luxury Glitter Fabric',
+  'metallic-finish': 'Metallic Finish',
+};
+
+const getLeatherTypeDisplayName = (value: string): string => {
+  return LEATHER_TYPE_DISPLAY[value] || value;
+};
+
 export default function LeatherColorSectionModal({
   isOpen,
   onClose,
@@ -97,10 +117,10 @@ export default function LeatherColorSectionModal({
     const x = ((e.clientX - rect.left) / rect.width) * 100;
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
-    // Check if color is defined for selected leather number
+    // Check if leather type is defined for selected leather number
     const colorIndex = selectedLeatherNumber - 1;
     if (!leatherColors[colorIndex] || !leatherColors[colorIndex].trim()) {
-      toast.error(`Bitte geben Sie zuerst eine Farbe für Leder ${selectedLeatherNumber} ein.`);
+      toast.error(`Bitte wählen Sie zuerst einen Ledertyp für Leder ${selectedLeatherNumber} aus.`);
       return;
     }
 
@@ -126,9 +146,9 @@ export default function LeatherColorSectionModal({
   };
 
   const handleSave = () => {
-    // Validate that all leather colors are filled
+    // Validate that all leather types are selected
     if (leatherColors.some((color) => !color.trim())) {
-      toast.error('Bitte geben Sie für alle Ledertypen eine Farbe ein.');
+      toast.error('Bitte wählen Sie für alle Ledertypen einen Typ aus.');
       return;
     }
 
@@ -176,7 +196,7 @@ export default function LeatherColorSectionModal({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
-          {/* Leather Color Inputs */}
+          {/* Leather Type Dropdowns */}
           <div className="space-y-4">
             <Label className="text-base font-semibold">Ledertypen definieren:</Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -185,36 +205,42 @@ export default function LeatherColorSectionModal({
                   <Label htmlFor={`leather-${index + 1}`} className="text-sm font-medium">
                     Leder {index + 1}:
                   </Label>
-                  <Input
-                    id={`leather-${index + 1}`}
-                    type="text"
-                    placeholder={`Lederfarbe ${index + 1} eingeben...`}
+                  <Select
                     value={leatherColors[index] || ''}
-                    onChange={(e) => handleLeatherColorChange(index, e.target.value)}
-                    className="w-full"
-                  />
-                  {leatherColors[index] && (
-                    <div className="flex items-center gap-2 mt-1">
-                      <div
-                        className="w-6 h-6 rounded border border-gray-300"
-                        style={{ backgroundColor: getColorHex(leatherColors[index]) }}
-                      />
-                      <span className="text-xs text-gray-600">{leatherColors[index]}</span>
-                    </div>
-                  )}
+                    onValueChange={(value) => handleLeatherColorChange(index, value)}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder={`Ledertyp ${index + 1} wählen...`} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem className='cursor-pointer' value="kalbleder-vitello">Kalbleder Vitello</SelectItem>
+                      <SelectItem className='cursor-pointer' value="nappa">Nappa (weiches Glattleder)</SelectItem>
+                      <SelectItem className='cursor-pointer' value="nubukleder">Nubukleder</SelectItem>
+                      <SelectItem className='cursor-pointer' value="softvelourleder">Softvelourleder</SelectItem>
+                      <SelectItem className='cursor-pointer' value="hirschleder-gemustert">Hirschleder Gemustert</SelectItem>
+                      <SelectItem className='cursor-pointer' value="performance-textil">Performance Textil</SelectItem>
+                      <SelectItem className='cursor-pointer' value="fashion-mesh-gepolstert">Fashion Mesh Gepolstert</SelectItem>
+                      <SelectItem className='cursor-pointer' value="soft-touch-material-gepraegt">Soft Touch Material - Geprägt</SelectItem>
+                      <SelectItem className='cursor-pointer' value="textil-python-effekt">Textil Python-Effekt</SelectItem>
+                      <SelectItem className='cursor-pointer' value="glitter">Glitter</SelectItem>
+                      <SelectItem className='cursor-pointer' value="luxury-glitter-fabric">Luxury Glitter Fabric</SelectItem>
+                      <SelectItem className='cursor-pointer' value="metallic-finish">Metallic Finish</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Color Selection Buttons */}
+          {/* Leather Type Selection Buttons */}
           <div className="space-y-2">
             <Label className="text-base font-semibold">Aktiver Ledertyp zum Zuweisen:</Label>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
               {Array.from({ length: numberOfColors }, (_, index) => {
                 const leatherNum = index + 1;
                 const isSelected = selectedLeatherNumber === leatherNum;
-                const colorName = leatherColors[index];
+                const leatherTypeValue = leatherColors[index];
+                const displayName = leatherTypeValue ? getLeatherTypeDisplayName(leatherTypeValue) : '';
                 return (
                   <Button
                     key={index}
@@ -224,15 +250,10 @@ export default function LeatherColorSectionModal({
                     className={`flex items-center gap-2 ${
                       isSelected ? 'bg-black text-white' : ''
                     }`}
-                    disabled={!colorName || !colorName.trim()}
+                    disabled={!leatherTypeValue || !leatherTypeValue.trim()}
                   >
-                    {colorName && (
-                      <div
-                        className="w-4 h-4 rounded border border-gray-300"
-                        style={{ backgroundColor: getColorHex(colorName) }}
-                      />
-                    )}
                     Leder {leatherNum}
+                    {displayName && ` - ${displayName}`}
                     {isSelected && ' ✓'}
                   </Button>
                 );
@@ -273,18 +294,15 @@ export default function LeatherColorSectionModal({
                     e.stopPropagation();
                     handleRemoveAssignment(index);
                   }}
-                  title={`Leder ${assignment.leatherNumber} - ${assignment.color} (Klicken zum Entfernen)`}
+                  title={`Leder ${assignment.leatherNumber} - ${getLeatherTypeDisplayName(assignment.color)} (Klicken zum Entfernen)`}
                 >
                   <div
-                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-xs"
-                    style={{
-                      backgroundColor: getColorForLeather(assignment.leatherNumber),
-                    }}
+                    className="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-xs bg-emerald-500"
                   >
                     {assignment.leatherNumber}
                   </div>
                   <div className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                    {assignment.color}
+                    {getLeatherTypeDisplayName(assignment.color)}
                   </div>
                 </div>
               ))}
@@ -293,7 +311,7 @@ export default function LeatherColorSectionModal({
             {/* Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Anleitung:</strong> Wählen Sie einen Ledertyp aus, geben Sie die Farbe ein, 
+                <strong>Anleitung:</strong> Wählen Sie für jeden Ledertyp einen Typ aus dem Dropdown aus, 
                 dann klicken Sie auf das Schuhbild, um Bereiche zuzuordnen. 
                 Klicken Sie auf einen Marker, um ihn zu entfernen.
               </p>
@@ -310,13 +328,10 @@ export default function LeatherColorSectionModal({
                       className="flex items-center gap-2 p-2 rounded border bg-gray-50"
                     >
                       <div
-                        className="w-4 h-4 rounded border"
-                        style={{
-                          backgroundColor: getColorForLeather(assignment.leatherNumber),
-                        }}
+                        className="w-4 h-4 rounded border bg-emerald-500"
                       />
                       <span>
-                        Leder {assignment.leatherNumber}
+                        Leder {assignment.leatherNumber} - {getLeatherTypeDisplayName(assignment.color)}
                       </span>
                     </div>
                   ))}
