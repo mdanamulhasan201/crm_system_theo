@@ -285,6 +285,14 @@ export default function ChangesOrderProgress({
                     }
                 }
             }
+            // If all statuses up to Bodenerstellung are completed, Geliefert is next
+            const bodenHistory = order.statusHistory.find(h => h.status === "Bodenerstellung");
+            if (bodenHistory && isFinished(bodenHistory)) {
+                const geliefertHistory = order.statusHistory.find(h => h.status === "Geliefert");
+                if (!geliefertHistory || (!hasStarted(geliefertHistory) && !isFinished(geliefertHistory))) {
+                    return "Geliefert";
+                }
+            }
             return null;
         }
 
@@ -308,10 +316,15 @@ export default function ChangesOrderProgress({
     
     // Check if this card is the current active status (IN FERTIGUNG)
     const isCurrentStatus = (cardId: string) => {
+        // If this status is completed, it cannot be current
+        if (isStatusCompleted(cardId)) {
+            return false;
+        }
+        
         // First check if order status matches this card
         if (order?.status) {
             const orderStatusCardId = statusToCardIdMap[order.status];
-            if (orderStatusCardId === cardId && !isStatusCompleted(cardId)) {
+            if (orderStatusCardId === cardId) {
                 return true;
             }
         }
@@ -359,7 +372,18 @@ export default function ChangesOrderProgress({
         }
 
         const currentStatus = getCurrentActiveStatus;
-        if (!currentStatus) return false;
+        
+        // If no current active status, check if Bodenerstellung is completed and Geliefert is next
+        if (!currentStatus) {
+            const bodenHistory = order?.statusHistory?.find(h => h.status === "Bodenerstellung");
+            if (bodenHistory && isFinished(bodenHistory) && cardId === "geliefert") {
+                const geliefertHistory = order?.statusHistory?.find(h => h.status === "Geliefert");
+                if (!geliefertHistory || (!hasStarted(geliefertHistory) && !isFinished(geliefertHistory))) {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         const currentCardId = statusToCardIdMap[currentStatus];
         if (!currentCardId) return false;
@@ -957,8 +981,8 @@ export default function ChangesOrderProgress({
                     </button>
                 )}
 
-                {/* Geliefert: In Fertigung button when IN FERTIGUNG status */}
-                {"isWaiting" in card && card.isWaiting && !isCompleted && isCurrent && (
+                {/* Geliefert: In Fertigung button when IN FERTIGUNG or IN BEARBEITUNG status */}
+                {"isWaiting" in card && card.isWaiting && !isCompleted && (isCurrent || isNext) && (
                     <button
                         type="button"
                         disabled={(order as any)?.isPanding === true}
