@@ -115,7 +115,7 @@ export default function BuyStoragePage() {
         <div className="w-full px-5">
             {/* Header */}
             <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between mb-10">
-                <h1 className='text-2xl font-semibold'>Speicher kaufen</h1>
+                <h1 className='text-2xl font-semibold'>Einlagen zum Lager hinzufügen</h1>
 
                 <div className="relative w-64">
                     <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg" />
@@ -134,10 +134,10 @@ export default function BuyStoragePage() {
             {/* Section Title */}
             <div className='flex items-center justify-between mb-4'>
                 <div>
-                    <h2 className="text-2xl font-semibold">Verfügbare Speicher</h2>
+                    <h2 className="text-2xl font-semibold">Einlagen</h2>
                     {pagination && (
                         <p className="text-sm text-gray-600 mt-1">
-                            {pagination.totalItems} Speicher gefunden
+                            {pagination.totalItems} Einlage gefunden
                         </p>
                     )}
                 </div>
@@ -222,7 +222,7 @@ export default function BuyStoragePage() {
                                             disabled={buyingId === product.id}
                                             className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
                                         >
-                                            {buyingId === product.id ? 'Speicher kaufen...' : 'Speicher kaufen'}
+                                            {buyingId === product.id ? 'Einlagen bestellen...' : 'Einlagen bestellen'}
                                         </Button>
                                     </TableCell>
                                 </TableRow>

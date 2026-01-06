@@ -14,6 +14,12 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog"
 import { IoWarning } from 'react-icons/io5'
 import { IoTime } from 'react-icons/io5'
 import { IoCreate } from 'react-icons/io5'
@@ -84,6 +90,7 @@ export default function ProductManagementTable({
     const { getProductById } = useStockManagementSlice();
     const [editId, setEditId] = useState<string | undefined>(undefined)
     const [openEdit, setOpenEdit] = useState(false)
+    const [selectedProductForImage, setSelectedProductForImage] = useState<Product | null>(null)
 
     // Helper to get stock for a size
     function getStockForSize(product: Product, size: string) {
@@ -142,8 +149,11 @@ export default function ProductManagementTable({
                             visibleProducts.map((product) => (
                                 <TableRow key={product.id} className="border-b bg-white">
                                     <TableCell className="p-3">
-                                        {/* Product Image Only */}
-                                        <div className="flex items-center justify-center">
+                                        {/* Product Image Only - Clickable */}
+                                        <div 
+                                            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                                            onClick={() => setSelectedProductForImage(product)}
+                                        >
                                             {product.image ? (
                                                 <Image
                                                     width={80}
@@ -287,6 +297,98 @@ export default function ProductManagementTable({
                     }}
                 />
             )}
+
+            {/* Image View Modal with Eigenschaften */}
+            <Dialog open={!!selectedProductForImage} onOpenChange={(open) => !open && setSelectedProductForImage(null)}>
+                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{selectedProductForImage?.Produktname}</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-6">
+                        {/* Large Image */}
+                        <div className="flex justify-center items-center bg-gray-50 rounded-lg p-6">
+                            {selectedProductForImage?.image ? (
+                                <Image
+                                    width={500}
+                                    height={500}
+                                    src={selectedProductForImage.image}
+                                    alt={selectedProductForImage.Produktname}
+                                    className="max-w-full max-h-96 rounded-lg object-contain shadow-lg"
+                                />
+                            ) : (
+                                <div className="w-96 h-96 flex items-center justify-center rounded-lg border-2 border-gray-200 bg-white">
+                                    <svg className="w-24 h-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Eigenschaften Section */}
+                        <div className="border-t pt-6">
+                            <h3 className="text-xl font-semibold mb-4 text-gray-900">Eigenschaften</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-gray-500">Artikelbezeichnung</p>
+                                    <p className="text-base text-gray-900">{selectedProductForImage?.Produktname || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-gray-500">Artikelnummer</p>
+                                    <p className="text-base text-gray-900">{selectedProductForImage?.Produktkürzel || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-gray-500">Hersteller</p>
+                                    <p className="text-base text-gray-900">{selectedProductForImage?.Hersteller || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-gray-500">Lagerort</p>
+                                    <p className="text-base text-gray-900">{selectedProductForImage?.Lagerort || '-'}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-gray-500">Mindestbestand</p>
+                                    <p className="text-base text-gray-900">{selectedProductForImage?.minStockLevel || 0}</p>
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-sm font-medium text-gray-500">Status</p>
+                                    <p className="text-base text-gray-900">{selectedProductForImage?.Status || '-'}</p>
+                                </div>
+                            </div>
+
+                            {/* Size Quantities Summary */}
+                            {selectedProductForImage && Object.keys(selectedProductForImage.sizeQuantities).length > 0 && (
+                                <div className="mt-6 space-y-1">
+                                    <p className="text-sm font-medium text-gray-500 mb-3">Größenbestand</p>
+                                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-2">
+                                        {Object.entries(selectedProductForImage.sizeQuantities).map(([size, sizeData]) => {
+                                            const quantity = getQuantity(sizeData);
+                                            const warningStatus = typeof sizeData === 'object' && sizeData !== null ? sizeData.warningStatus : undefined;
+                                            return (
+                                                <div 
+                                                    key={size} 
+                                                    className={`p-2 rounded border text-center ${
+                                                        warningStatus?.includes('Niedriger Bestand')
+                                                            ? 'bg-red-50 border-red-200'
+                                                            : 'bg-gray-50 border-gray-200'
+                                                    }`}
+                                                >
+                                                    <p className="text-xs font-medium text-gray-500">{size}</p>
+                                                    <p className={`text-sm font-semibold ${
+                                                        warningStatus?.includes('Niedriger Bestand')
+                                                            ? 'text-red-600'
+                                                            : 'text-gray-900'
+                                                    }`}>
+                                                        {quantity}
+                                                    </p>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     )
 }

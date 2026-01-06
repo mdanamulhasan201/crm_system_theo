@@ -30,7 +30,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'rpg-happened-houston-national.trycloudflare.com',
+        hostname: 'tramadol-documented-label-rebates.trycloudflare.com',
       }
     ],
   },

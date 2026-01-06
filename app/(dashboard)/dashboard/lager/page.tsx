@@ -100,6 +100,9 @@ export default function Lager() {
     const [productToDelete, setProductToDelete] = useState<Product | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
 
+    // Product type toggle state
+    const [selectedProductType, setSelectedProductType] = useState<'Einlagenrohlinge' | 'Fräsblock'>('Einlagenrohlinge')
+
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): Product => {
         return {
@@ -275,7 +278,29 @@ export default function Lager() {
             {/* Section Title */}
             <div className='flex items-center justify-between mb-4'>
                 <div>
-                    <h2 className="text-2xl font-semibold">Einlagenrohlinge</h2>
+                    {/* Toggle Buttons */}
+                    <div className="flex items-center gap-2 mb-2">
+                        <button
+                            onClick={() => setSelectedProductType('Einlagenrohlinge')}
+                            className={`px-6 py-2 rounded-full font-medium transition-colors ${
+                                selectedProductType === 'Einlagenrohlinge'
+                                    ? 'bg-[#61A178] text-white'
+                                    : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
+                            }`}
+                        >
+                            Einlagenrohlinge
+                        </button>
+                        <button
+                            onClick={() => setSelectedProductType('Fräsblock')}
+                            className={`px-6 py-2 rounded-full font-medium transition-colors ${
+                                selectedProductType === 'Fräsblock'
+                                    ? 'bg-[#61A178] text-white'
+                                    : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
+                            }`}
+                        >
+                            Fräsblock
+                        </button>
+                    </div>
                     {pagination && (
                         <p className="text-sm text-gray-600 mt-1">
                             {pagination.totalItems} Produkte gefunden
