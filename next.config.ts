@@ -30,7 +30,17 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'tramadol-documented-label-rebates.trycloudflare.com',
+        hostname: 'feetf1rst.s3.eu-central-1.amazonaws.com',
+      },
+
+      {
+        protocol: 'http',
+        hostname: 'feetf1rst.s3.eu-central-1.amazonaws.com',
+      },
+
+      {
+        protocol: 'https',
+        hostname: 'dvds-connected-decision-php.trycloudflare.com',
       }
     ],
   },
