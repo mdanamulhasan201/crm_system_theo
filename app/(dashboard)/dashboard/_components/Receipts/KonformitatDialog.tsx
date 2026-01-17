@@ -29,19 +29,19 @@ export default function KonformitatDialog({ open, onOpenChange, customerData }: 
 
                         <div className="space-y-2">
                             <p className="font-bold">Hersteller / Leistungserbringer:</p>
-                            <p>Firma: {'{'}{'{'} Firma {'}'}{'}'}}</p>
-                            <p>Adresse: {'{'}{'{'} Adresse {'}'}{'}'}}</p>
+                            <p>Firma: {'{{ Firma }}'}</p>
+                            <p>Adresse: {'{{ Adresse }}'}</p>
                         </div>
 
                         <div className="space-y-2">
                             <p className="font-bold">Patient:</p>
-                            <p>Name: {'{'}{'{'} {customerData?.vorname || 'Patient'} {customerData?.nachname || ''} {'}'}{'}'}}</p>
-                            <p>Geburtsdatum: {'{'}{'{'} {customerData?.geburtsdatum ? new Date(customerData.geburtsdatum).toLocaleDateString('de-DE') : 'Geburtsdatum'} {'}'}{'}'}}</p>
+                            <p>Name: {customerData?.vorname || 'Patient'} {customerData?.nachname || ''}</p>
+                            <p>Geburtsdatum: {customerData?.geburtsdatum ? new Date(customerData.geburtsdatum).toLocaleDateString('de-DE') : 'Geburtsdatum'}</p>
                         </div>
 
                         <div className="space-y-2">
                             <p className="font-bold">Produkt:</p>
-                            <p>Bezeichnung: {'{'}{'{'} Produktname {'}'}{'}'}}</p>
+                            <p>Bezeichnung: {'{{ Produktname }}'}</p>
                             <div className="flex items-center gap-2 flex-wrap">
                                 <span>Art:</span>
                                 <label className="flex items-center gap-1">
@@ -62,8 +62,8 @@ export default function KonformitatDialog({ open, onOpenChange, customerData }: 
                                 </label>
                                 <span className="border-b border-gray-400 w-16">_____</span>
                             </div>
-                            <p>Auftragsnr: {'{'}{'{'} Auftrag {'}'}{'}'}}</p>
-                            <p>Herstellungsdatum: {'{'}{'{'} Datum {'}'}{'}'}}</p>
+                            <p>Auftragsnr: {'{{ Auftrag }}'}</p>
+                            <p>Herstellungsdatum: {'{{ Datum }}'}</p>
                         </div>
 
                         <div className="space-y-2 pt-2">
@@ -109,9 +109,9 @@ export default function KonformitatDialog({ open, onOpenChange, customerData }: 
                         </div>
 
                         <div className="space-y-2">
-                            <p>Patient: {'{'}{'{'} {customerData?.vorname || 'Patient'} {customerData?.nachname || ''} {'}'}{'}'}}</p>
-                            <p>Produkt: {'{'}{'{'} Produkt {'}'}{'}'}}</p>
-                            <p>Verordnung vom: {'{'}{'{'} Datum {'}'}{'}'}}</p>
+                            <p>Patient: {customerData?.vorname || 'Patient'} {customerData?.nachname || ''}</p>
+                            <p>Produkt: {'{{ Produkt }}'}</p>
+                            <p>Verordnung vom: {'{{ Datum }}'}</p>
                         </div>
 
                         <div className="space-y-3 text-xs leading-relaxed">
@@ -125,11 +125,11 @@ export default function KonformitatDialog({ open, onOpenChange, customerData }: 
                             <p>
                                 Der/die Patient:in wünscht ausdrücklich
                                 folgende abweichende Versorgung:<br />
-                                {'{'}{'{'} Beschreibung Mehrleistung {'}'}{'}'}}
+                                [Beschreibung Mehrleistung]
                             </p>
 
                             <p>
-                                Mehrkosten: € {'{'}{'{'} Betrag {'}'}{'}'}}
+                                Mehrkosten: € [Betrag]
                             </p>
 
                             <p>

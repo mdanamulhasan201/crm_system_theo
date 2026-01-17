@@ -115,11 +115,8 @@ export default function ProductManagementTable({
                 <Table className='w-full bg-white rounded-lg overflow-hidden'>
                     <TableHeader>
                         <TableRow className="border-b bg-white">
-<<<<<<< HEAD
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Bild</TableHead>
-=======
                             <TableHead className="p-3 text-left font-medium text-gray-900">Lagerort</TableHead>
->>>>>>> 70f38c7 (updates)
+
                             <TableHead className="p-3 text-left font-medium text-gray-900">Hersteller</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-900">Artikelbezeichnung</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-900">Artikelnummer</TableHead>
@@ -152,17 +149,11 @@ export default function ProductManagementTable({
                         ) : (
                             visibleProducts.map((product) => (
                                 <TableRow key={product.id} className="border-b bg-white">
-<<<<<<< HEAD
-                                    <TableCell className="p-3 w-20 min-w-[80px]">
-                                        {/* Product Image Only - Clickable */}
-                                        <div 
-                                            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity w-20 h-20 min-w-[80px] min-h-[80px]"
-=======
                                     <TableCell className="p-3">
                                         {/* Product Image Only - Clickable */}
                                         <div 
                                             className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
->>>>>>> 70f38c7 (updates)
+
                                             onClick={() => setSelectedProductForImage(product)}
                                         >
                                             {product.image ? (
@@ -171,17 +162,11 @@ export default function ProductManagementTable({
                                                     height={80}
                                                     src={product.image}
                                                     alt={product.Produktname}
-<<<<<<< HEAD
-                                                    className="w-20 h-20 min-w-[80px] min-h-[80px] rounded border object-contain border-gray-200 shadow-sm"
-                                                />
-                                            ) : (
-                                                <div className="w-20 h-20 min-w-[80px] min-h-[80px] flex items-center justify-center rounded border border-gray-200 bg-white shadow-sm">
-=======
                                                     className="w-20 h-20 rounded border object-contain border-gray-200 shadow-sm"
                                                 />
                                             ) : (
                                                 <div className="w-20 h-20 flex items-center justify-center rounded border border-gray-200 bg-white shadow-sm">
->>>>>>> 70f38c7 (updates)
+
                                                     <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                                     </svg>
@@ -193,13 +178,8 @@ export default function ProductManagementTable({
                                         {product.Hersteller}
                                     </TableCell>
                                     <TableCell className="p-3 text-gray-900">
-<<<<<<< HEAD
-                                        {product.Produktname && product.Produktname.length > 15 
-                                            ? `${product.Produktname.substring(0, 15)}...` 
-                                            : product.Produktname}
-=======
                                         {product.Produktname}
->>>>>>> 70f38c7 (updates)
+
                                     </TableCell>
                                     <TableCell className="p-3 text-gray-900">
                                         {product.Produktkürzel}

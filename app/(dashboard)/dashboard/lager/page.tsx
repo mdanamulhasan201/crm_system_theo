@@ -1,8 +1,6 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react'
-<<<<<<< HEAD
-=======
 import {
     Select,
     SelectContent,
@@ -19,16 +17,13 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination"
->>>>>>> 70f38c7 (updates)
+
 import { IoSearch } from 'react-icons/io5'
 import { Input } from '@/components/ui/input'
 import LagerChart from '@/components/LagerChart/LagerChart'
 import ProductManagementTable from '../_components/Product/ProductManagementTable'
 import DeleteConfirmModal from '../_components/Product/DeleteConfirmModal'
-<<<<<<< HEAD
-import ProductPagination from '../_components/Product/ProductPagination'
-=======
->>>>>>> 70f38c7 (updates)
+
 import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
@@ -37,10 +32,7 @@ import { deleteStorage } from '@/apis/productsManagementApis'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 import useDebounce from '@/hooks/useDebounce'
-<<<<<<< HEAD
-import AddProductModal from '../_components/Product/AddProductModal'
-=======
->>>>>>> 70f38c7 (updates)
+
 
 interface SizeData {
     length: number;
@@ -114,12 +106,7 @@ export default function Lager() {
     // Product type toggle state
     const [selectedProductType, setSelectedProductType] = useState<'Einlagenrohlinge' | 'Fräsblock'>('Einlagenrohlinge')
 
-<<<<<<< HEAD
-    // Add Product Modal state
-    const [isAddProductModalOpen, setIsAddProductModalOpen] = useState(false)
 
-=======
->>>>>>> 70f38c7 (updates)
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): Product => {
         return {
@@ -154,14 +141,10 @@ export default function Lager() {
 
 
 
-<<<<<<< HEAD
-    // Visible products - already filtered by API
-    const visibleProducts = productsData
-=======
     // Pagination calculations - use API pagination
     const totalPages = pagination?.totalPages || 1
     const visibleProducts = productsData // Already filtered by API
->>>>>>> 70f38c7 (updates)
+
 
     // Search handler
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,45 +281,30 @@ export default function Lager() {
             </div>
 
             {/* Section Title */}
-<<<<<<< HEAD
-            <div className='flex flex-col lg:flex-row items-center justify-between mb-4'>
-=======
             <div className='flex items-center justify-between mb-4'>
->>>>>>> 70f38c7 (updates)
+
                 <div>
                     {/* Toggle Buttons */}
                     <div className="flex items-center gap-2 mb-2">
                         <button
                             onClick={() => setSelectedProductType('Einlagenrohlinge')}
-<<<<<<< HEAD
-                            className={`px-6 py-2 rounded-full font-medium transition-colors ${selectedProductType === 'Einlagenrohlinge'
-                                ? 'bg-[#61A178] text-white'
-                                : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
-                                }`}
-=======
                             className={`px-6 py-2 rounded-full font-medium transition-colors ${
                                 selectedProductType === 'Einlagenrohlinge'
                                     ? 'bg-[#61A178] text-white'
                                     : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
                             }`}
->>>>>>> 70f38c7 (updates)
+
                         >
                             Einlagenrohlinge
                         </button>
                         <button
                             onClick={() => setSelectedProductType('Fräsblock')}
-<<<<<<< HEAD
-                            className={`px-6 py-2 rounded-full font-medium transition-colors ${selectedProductType === 'Fräsblock'
-                                ? 'bg-[#61A178] text-white'
-                                : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
-                                }`}
-=======
                             className={`px-6 py-2 rounded-full font-medium transition-colors ${
                                 selectedProductType === 'Fräsblock'
                                     ? 'bg-[#61A178] text-white'
                                     : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
                             }`}
->>>>>>> 70f38c7 (updates)
+
                         >
                             Fräsblock
                         </button>
@@ -347,24 +315,6 @@ export default function Lager() {
                         </p>
                     )}
                 </div>
-<<<<<<< HEAD
-                <div className='flex flex-col sm:flex-row items-center gap-4'>
-                    {/* Add product Button */}
-                    <Button
-                        onClick={() => setIsAddProductModalOpen(true)}
-                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
-                    >
-                       Produkt hinzufügen
-                    </Button>
-                    <Button
-                        onClick={() => router.push('/dashboard/buy-storage')}
-                        disabled={isLoadingProducts}
-                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
-                    >
-                        Lagerplätze kaufen
-                    </Button>
-                </div>
-=======
                 {/* Buy Now Button */}
                 <Button
                     onClick={() => router.push('/dashboard/buy-storage')}
@@ -373,7 +323,7 @@ export default function Lager() {
                 >
                     Lagerplätze kaufen
                 </Button>
->>>>>>> 70f38c7 (updates)
+
             </div>
 
 
@@ -398,15 +348,6 @@ export default function Lager() {
             )}
 
             {/* Pagination */}
-<<<<<<< HEAD
-            <ProductPagination
-                pagination={pagination}
-                currentPage={currentPage}
-                itemsPerPage={itemsPerPage}
-                onPageChange={setCurrentPage}
-                onItemsPerPageChange={setItemsPerPage}
-            />
-=======
             {pagination && pagination.totalItems > 0 && (
                 <div className="mt-6">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -526,7 +467,7 @@ export default function Lager() {
                     </div>
                 </div>
             )}
->>>>>>> 70f38c7 (updates)
+
 
             {/* Inventory History Component */}
             <InventoryHistory
@@ -555,20 +496,7 @@ export default function Lager() {
                     <PerformerData />
                 </div>
             </div>
-<<<<<<< HEAD
 
-            {/* Add Product Modal */}
-            <AddProductModal
-                isOpen={isAddProductModalOpen}
-                onClose={() => setIsAddProductModalOpen(false)}
-                onSuccess={() => {
-                    setIsAddProductModalOpen(false)
-                    // Refresh products list
-                    refreshProducts(currentPage, itemsPerPage, debouncedSearch)
-                }}
-            />
-=======
->>>>>>> 70f38c7 (updates)
         </div>
     )
 }

@@ -15,11 +15,6 @@ import Reviews from '@/components/CustomerHistory/Reviews/Reviews';
 import userload from '@/public/images/scanning/userload.png'
 import scanImg from '@/public/images/history/scan.png'
 import AdvancedFeaturesModal from '@/app/(dashboard)/dashboard/_components/Customers/AdvancedFeaturesModal'
-<<<<<<< HEAD
-import { Edit, X, Loader2, Trash, AlertTriangle, ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-=======
 import KostenvoranschlagDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KostenvoranschlagDialog'
 import RechnungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/RechnungDialog'
 import DatenschutzDialog from '@/app/(dashboard)/dashboard/_components/Receipts/DatenschutzDialog'
@@ -29,7 +24,7 @@ import { Edit, X, Loader2, Trash, AlertTriangle, ArrowLeft, FileText } from 'luc
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
->>>>>>> 70f38c7 (updates)
+
 // import { Input } from '@/components/ui/input'
 // import { Label } from '@/components/ui/label'
 import toast from 'react-hot-toast'
@@ -54,8 +49,6 @@ export default function CustomerHistory() {
     });
     const [isPopUpOpen, setIsPopUpOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-<<<<<<< HEAD
-=======
     const [selectedDocumentType, setSelectedDocumentType] = useState<string | null>(null);
     const [isDocumentPopoverOpen, setIsDocumentPopoverOpen] = useState(false);
     const [isKostenvoranschlagOpen, setIsKostenvoranschlagOpen] = useState(false);
@@ -63,7 +56,7 @@ export default function CustomerHistory() {
     const [isDatenschutzOpen, setIsDatenschutzOpen] = useState(false);
     const [isGebrauchsanweisungOpen, setIsGebrauchsanweisungOpen] = useState(false);
     const [isKonformitatOpen, setIsKonformitatOpen] = useState(false);
->>>>>>> 70f38c7 (updates)
+
 
     // Show shimmer while the real data is loading
     if (loading) return <CustomerHistoryShimmer />;
@@ -186,8 +179,6 @@ export default function CustomerHistory() {
         router.push(`/dashboard/kundenordner/${params.id}`);
     }
 
-<<<<<<< HEAD
-=======
     const handleDocumentClick = (documentType: string) => {
         setSelectedDocumentType(documentType);
         setIsDocumentPopoverOpen(false);
@@ -213,7 +204,7 @@ export default function CustomerHistory() {
         }
     }
 
->>>>>>> 70f38c7 (updates)
+
     const handleDeleteClick = () => {
         setIsDeleteDialogOpen(true);
     }
@@ -541,8 +532,6 @@ export default function CustomerHistory() {
                     <span className="mt-2 text-center text-sm font-normal">Kundenordner</span>
                 </div>
 
-<<<<<<< HEAD
-=======
                 {/* Zettel anschaffen Dropdown */}
                 <div className="flex flex-col items-center">
                     <Popover open={isDocumentPopoverOpen} onOpenChange={setIsDocumentPopoverOpen}>
@@ -593,7 +582,7 @@ export default function CustomerHistory() {
                     <span className="mt-2 text-center text-sm font-normal">Zettel anschaffen</span>
                 </div>
 
->>>>>>> 70f38c7 (updates)
+
                 {/* <div className="flex flex-col items-center">
 
                     <button
@@ -709,8 +698,6 @@ export default function CustomerHistory() {
                 </DialogContent>
             </Dialog>
 
-<<<<<<< HEAD
-=======
             {/* Receipt Dialogs */}
             <KostenvoranschlagDialog
                 open={isKostenvoranschlagOpen}
@@ -742,7 +729,7 @@ export default function CustomerHistory() {
                 customerData={scanData}
             />
 
->>>>>>> 70f38c7 (updates)
+
         </div>
     )
 }

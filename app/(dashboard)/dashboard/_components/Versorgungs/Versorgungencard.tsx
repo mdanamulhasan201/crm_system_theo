@@ -168,22 +168,16 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                                             </span>
                                         </p>
                                              {/* Name */}
-<<<<<<< HEAD
-                                    {/* <h2 className='text-xl xl:text-2xl font-bold'>{card.name}</h2> */}
-=======
                                     <h2 className='text-xl xl:text-2xl font-bold'>{card.name}</h2>
->>>>>>> 70f38c7 (updates)
+
                                         <p className='font-bold'>Einlage: <span className='font-normal'>{einlageName}</span></p>
                                     </div>
                                     
                                
                                     
                                     {/* Spacer to push Diagnose to bottom */}
-<<<<<<< HEAD
-                                    {/* <div className='flex-1'></div> */}
-=======
                                     <div className='flex-1'></div>
->>>>>>> 70f38c7 (updates)
+
                                     
                                     {/* Diagnosis Status - at the bottom */}
                                     {Array.isArray(card.diagnosis_status) && card.diagnosis_status.length > 0 && (
