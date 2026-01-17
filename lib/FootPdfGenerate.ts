@@ -17,6 +17,7 @@ async function fetchImageAsDataUrl(url: string): Promise<string> {
         return url;
     }
     
+<<<<<<< HEAD
     try {
         const response = await fetch(url, { mode: 'cors' });
         if (!response.ok) {
@@ -38,6 +39,15 @@ async function fetchImageAsDataUrl(url: string): Promise<string> {
     } catch (error: any) {
         throw new Error(`Error fetching image from ${url}: ${error.message || error}`);
     }
+=======
+    const response = await fetch(url, { mode: 'cors' });
+    const blob = await response.blob();
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+    });
+>>>>>>> 70f38c7 (updates)
 }
 
 async function generateCombinedFeetPdf(params: {
@@ -188,6 +198,7 @@ async function generateCombinedFeetPdf(params: {
     };
 
     // Page 1: Right Foot
+<<<<<<< HEAD
     await addFootImage(rightImageUrl, 'R');
     await addHeaderOverlay('Right Foot');
     addFooterOverlay('R');
@@ -197,6 +208,17 @@ async function generateCombinedFeetPdf(params: {
     await addFootImage(leftImageUrl, 'L');
     await addHeaderOverlay('Left Foot');
     addFooterOverlay('L');
+=======
+    await addFootImage(rightImageUrl, 'L');
+    await addHeaderOverlay('Left Foot');
+    addFooterOverlay('L');
+
+    // Page 2: Left Foot
+    pdf.addPage();
+    await addFootImage(leftImageUrl, 'R');
+    await addHeaderOverlay('Right Foot');
+    addFooterOverlay('R');
+>>>>>>> 70f38c7 (updates)
 
     return pdf.output('blob');
 }

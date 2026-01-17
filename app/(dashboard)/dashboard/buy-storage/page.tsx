@@ -180,7 +180,11 @@ export default function BuyStoragePage() {
             {/* Section Title */}
             <div className='flex items-center justify-between mb-4'>
                 <div>
+<<<<<<< HEAD
                     <h2 className="text-2xl font-semibold">Verfügbare EInlagen</h2>
+=======
+                    <h2 className="text-2xl font-semibold">Einlagen</h2>
+>>>>>>> 70f38c7 (updates)
                     {pagination && (
                         <p className="text-sm text-gray-600 mt-1">
                             {pagination.totalItems} Einlage gefunden

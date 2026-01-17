@@ -110,6 +110,7 @@ export default function ScanDataDisplay({
 
     const getLatestData = (fieldName: keyof Pick<ScanData, 'picture_10' | 'picture_23' | 'picture_11' | 'picture_24' | 'threed_model_left' | 'threed_model_right' | 'picture_17' | 'picture_16'>) => {
         if (hasScreenerFile && selectedScanData) {
+<<<<<<< HEAD
             // For picture_23 and picture_24, check paint_ version first
             if (fieldName === 'picture_23') {
                 return (selectedScanData as any).paint_23 || selectedScanData.picture_23 || null;
@@ -117,10 +118,13 @@ export default function ScanDataDisplay({
             if (fieldName === 'picture_24') {
                 return (selectedScanData as any).paint_24 || selectedScanData.picture_24 || null;
             }
+=======
+>>>>>>> 70f38c7 (updates)
             return selectedScanData[fieldName] || null;
         }
         // Fall back to scanData if screenerFile exists but selectedScanData is not yet available
         if (hasScreenerFile && !selectedScanData) {
+<<<<<<< HEAD
             if (fieldName === 'picture_23') {
                 return (scanData as any).paint_23 || scanData.picture_23 || null;
             }
@@ -136,6 +140,10 @@ export default function ScanDataDisplay({
         if (fieldName === 'picture_24') {
             return (scanData as any).paint_24 || scanData.picture_24 || null;
         }
+=======
+            return scanData[fieldName] || null;
+        }
+>>>>>>> 70f38c7 (updates)
         return scanData[fieldName] || null;
     };
 
@@ -343,6 +351,7 @@ export default function ScanDataDisplay({
         try {
             if (isDownloading) return;
             setIsDownloading(true);
+<<<<<<< HEAD
             
             // Get images with paint_ priority (consistent with display)
             // Left foot: paint_23 || picture_23
@@ -358,6 +367,13 @@ export default function ScanDataDisplay({
             if (!leftUrl || !rightUrl) {
                 alert('Left or right foot image not available.');
                 setIsDownloading(false);
+=======
+            // Fix the mapping: picture_23 is right foot, picture_24 is left foot
+            const rightUrl = getLatestData('picture_23');
+            const leftUrl = getLatestData('picture_24');
+            if (!leftUrl || !rightUrl) {
+                alert('Left or right foot image not available.');
+>>>>>>> 70f38c7 (updates)
                 return;
             }
 
@@ -393,6 +409,7 @@ export default function ScanDataDisplay({
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(combinedUrlBlob);
+<<<<<<< HEAD
             } else {
                 alert('PDF generation failed: No PDF was generated.');
             }
@@ -400,6 +417,12 @@ export default function ScanDataDisplay({
             console.error('Failed to generate PDF:', err);
             const errorMessage = err?.message || 'PDF generation failed. Please try again.';
             alert(errorMessage);
+=======
+            }
+        } catch (err) {
+            console.error('Failed to generate PDF:', err);
+            alert('PDF generation failed.');
+>>>>>>> 70f38c7 (updates)
         } finally {
             // Ensure loading is visible briefly
             await new Promise((resolve) => setTimeout(resolve, 500));

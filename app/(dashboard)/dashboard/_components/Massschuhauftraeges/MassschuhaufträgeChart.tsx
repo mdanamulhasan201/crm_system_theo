@@ -158,6 +158,7 @@ export default function MassschuhaufträgeChart({ onRefetchReady }: { onRefetchR
     // Calculate Y-axis domain with padding
     const getYAxisDomain = () => {
         if (transformedData.length === 0) return [0, 100];
+<<<<<<< HEAD
         
         const values = transformedData.map((d) => d.value).filter(v => typeof v === 'number' && !isNaN(v));
         if (values.length === 0) return [0, 100];
@@ -165,17 +166,34 @@ export default function MassschuhaufträgeChart({ onRefetchReady }: { onRefetchR
         const minValue = Math.min(...values);
         const maxValue = Math.max(...values);
         
+=======
+
+        const values = transformedData.map((d) => d.value).filter(v => typeof v === 'number' && !isNaN(v));
+        if (values.length === 0) return [0, 100];
+
+        const minValue = Math.min(...values);
+        const maxValue = Math.max(...values);
+
+>>>>>>> 70f38c7 (updates)
         // If all values are zero, show a default range
         if (maxValue === 0) {
             return [0, 100];
         }
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 70f38c7 (updates)
         // If all values are the same (non-zero), add padding
         if (minValue === maxValue && maxValue > 0) {
             const padding = Math.max(maxValue * 0.15, 20);
             return [0, maxValue + padding];
         }
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 70f38c7 (updates)
         // Normal case: add padding to top, always start from 0
         const padding = Math.max(maxValue * 0.1, 20);
         return [0, maxValue + padding];
