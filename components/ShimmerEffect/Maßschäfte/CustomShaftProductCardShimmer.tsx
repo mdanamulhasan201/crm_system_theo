@@ -20,7 +20,7 @@ const CustomShaftProductCardShimmer: React.FC<CustomShaftProductCardShimmerProps
           <div className="w-64 mx-auto h-full object-contain p-4 flex items-center justify-center">
             <div className={`${baseShimmer} w-full h-64`} />
           </div>
-          
+
           {/* Content shimmer - matches actual content structure */}
           <div className="flex-1 flex flex-col justify-between p-4">
             <div>

@@ -15,9 +15,16 @@ import Reviews from '@/components/CustomerHistory/Reviews/Reviews';
 import userload from '@/public/images/scanning/userload.png'
 import scanImg from '@/public/images/history/scan.png'
 import AdvancedFeaturesModal from '@/app/(dashboard)/dashboard/_components/Customers/AdvancedFeaturesModal'
-import { Edit, X, Loader2, Trash, AlertTriangle, ArrowLeft } from 'lucide-react'
+import KostenvoranschlagDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KostenvoranschlagDialog'
+import RechnungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/RechnungDialog'
+import DatenschutzDialog from '@/app/(dashboard)/dashboard/_components/Receipts/DatenschutzDialog'
+import GebrauchsanweisungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/GebrauchsanweisungDialog'
+import KonformitatDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KonformitatDialog'
+import { Edit, X, Loader2, Trash, AlertTriangle, ArrowLeft, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+
 // import { Input } from '@/components/ui/input'
 // import { Label } from '@/components/ui/label'
 import toast from 'react-hot-toast'
@@ -42,6 +49,14 @@ export default function CustomerHistory() {
     });
     const [isPopUpOpen, setIsPopUpOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+    const [selectedDocumentType, setSelectedDocumentType] = useState<string | null>(null);
+    const [isDocumentPopoverOpen, setIsDocumentPopoverOpen] = useState(false);
+    const [isKostenvoranschlagOpen, setIsKostenvoranschlagOpen] = useState(false);
+    const [isRechnungOpen, setIsRechnungOpen] = useState(false);
+    const [isDatenschutzOpen, setIsDatenschutzOpen] = useState(false);
+    const [isGebrauchsanweisungOpen, setIsGebrauchsanweisungOpen] = useState(false);
+    const [isKonformitatOpen, setIsKonformitatOpen] = useState(false);
+
 
     // Show shimmer while the real data is loading
     if (loading) return <CustomerHistoryShimmer />;
@@ -163,6 +178,32 @@ export default function CustomerHistory() {
     const handleKundenordner = () => {
         router.push(`/dashboard/kundenordner/${params.id}`);
     }
+
+    const handleDocumentClick = (documentType: string) => {
+        setSelectedDocumentType(documentType);
+        setIsDocumentPopoverOpen(false);
+
+        switch(documentType) {
+            case 'Kostenvoranschlag (Codex)':
+                setIsKostenvoranschlagOpen(true);
+                break;
+            case 'Rechnung (Firma)':
+                setIsRechnungOpen(true);
+                break;
+            case 'Datenschutzerklärung':
+                setIsDatenschutzOpen(true);
+                break;
+            case 'Gebrauchsanweisung':
+                setIsGebrauchsanweisungOpen(true);
+                break;
+            case 'Konformitätserklärung':
+                setIsKonformitatOpen(true);
+                break;
+            default:
+                toast.error('Dokument nicht gefunden');
+        }
+    }
+
 
     const handleDeleteClick = () => {
         setIsDeleteDialogOpen(true);
@@ -491,6 +532,57 @@ export default function CustomerHistory() {
                     <span className="mt-2 text-center text-sm font-normal">Kundenordner</span>
                 </div>
 
+                {/* Zettel anschaffen Dropdown */}
+                <div className="flex flex-col items-center">
+                    <Popover open={isDocumentPopoverOpen} onOpenChange={setIsDocumentPopoverOpen}>
+                        <PopoverTrigger asChild>
+                            <button
+                                className="p-2 flex items-center justify-center rounded-2xl bg-[#FF7B3D] hover:bg-[#FF6A28] transition cursor-pointer shadow-md"
+                            >
+                                <div className="w-[60px] h-[60px] flex items-center justify-center">
+                                    <FileText className="w-9 h-9 text-white" strokeWidth={2} />
+                                </div>
+                            </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-0 bg-white shadow-lg" align="start">
+                            <div className="flex flex-col">
+                                <button
+                                    onClick={() => handleDocumentClick('Kostenvoranschlag (Codex)')}
+                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                    Kostenvoranschlag (Codex)
+                                </button>
+                                <button
+                                    onClick={() => handleDocumentClick('Rechnung (Firma)')}
+                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                    Rechnung (Firma)
+                                </button>
+                                <button
+                                    onClick={() => handleDocumentClick('Datenschutzerklärung')}
+                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                    Datenschutzerklärung
+                                </button>
+                                <button
+                                    onClick={() => handleDocumentClick('Gebrauchsanweisung')}
+                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                    Gebrauchsanweisung
+                                </button>
+                                <button
+                                    onClick={() => handleDocumentClick('Konformitätserklärung')}
+                                    className="px-4 py-3 text-left text-gray-600 hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                    Konformitätserklärung
+                                </button>
+                            </div>
+                        </PopoverContent>
+                    </Popover>
+                    <span className="mt-2 text-center text-sm font-normal">Zettel anschaffen</span>
+                </div>
+
+
                 {/* <div className="flex flex-col items-center">
 
                     <button
@@ -605,6 +697,38 @@ export default function CustomerHistory() {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Receipt Dialogs */}
+            <KostenvoranschlagDialog
+                open={isKostenvoranschlagOpen}
+                onOpenChange={setIsKostenvoranschlagOpen}
+                customerData={scanData}
+            />
+
+            <RechnungDialog
+                open={isRechnungOpen}
+                onOpenChange={setIsRechnungOpen}
+                customerData={scanData}
+            />
+
+            <DatenschutzDialog
+                open={isDatenschutzOpen}
+                onOpenChange={setIsDatenschutzOpen}
+                customerData={scanData}
+            />
+
+            <GebrauchsanweisungDialog
+                open={isGebrauchsanweisungOpen}
+                onOpenChange={setIsGebrauchsanweisungOpen}
+                customerData={scanData}
+            />
+
+            <KonformitatDialog
+                open={isKonformitatOpen}
+                onOpenChange={setIsKonformitatOpen}
+                customerData={scanData}
+            />
+
 
         </div>
     )

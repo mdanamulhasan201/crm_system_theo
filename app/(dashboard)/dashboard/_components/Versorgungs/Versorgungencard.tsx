@@ -168,14 +168,16 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                                             </span>
                                         </p>
                                              {/* Name */}
-                                    {/* <h2 className='text-xl xl:text-2xl font-bold'>{card.name}</h2> */}
+                                    <h2 className='text-xl xl:text-2xl font-bold'>{card.name}</h2>
+
                                         <p className='font-bold'>Einlage: <span className='font-normal'>{einlageName}</span></p>
                                     </div>
                                     
                                
                                     
                                     {/* Spacer to push Diagnose to bottom */}
-                                    {/* <div className='flex-1'></div> */}
+                                    <div className='flex-1'></div>
+
                                     
                                     {/* Diagnosis Status - at the bottom */}
                                     {Array.isArray(card.diagnosis_status) && card.diagnosis_status.length > 0 && (

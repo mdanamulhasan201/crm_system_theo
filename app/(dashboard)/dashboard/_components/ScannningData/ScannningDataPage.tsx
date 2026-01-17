@@ -44,7 +44,8 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
         archIndex2: scanData.archIndex2 ?? '',
     });
 
-
+    // Sync editableData when scanData prop or currentScanData changes
+    // But only if there's no screenerFile (screenerFile থাকলে main data থেকে sync হবে না)
     useEffect(() => {
         const dataToSync = currentScanData || scanData;
         const hasScreenerFile = dataToSync?.screenerFile && Array.isArray(dataToSync.screenerFile) && dataToSync.screenerFile.length > 0;
