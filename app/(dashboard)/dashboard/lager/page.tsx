@@ -299,7 +299,7 @@ export default function Lager() {
                         onClick={() => setIsAddProductModalOpen(true)}
                         className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
                     >
-                        Add Product
+                       Produkt hinzufügen
                     </Button>
                     <Button
                         onClick={() => router.push('/dashboard/buy-storage')}
