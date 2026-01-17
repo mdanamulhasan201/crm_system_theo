@@ -34,7 +34,6 @@ export default function ZoomMode({
     const [brushSize, setBrushSize] = useState(3)
     const [brushColor, setBrushColor] = useState('#000000')
 
-    // Refs to get edited image data from canvas components
     const rightFootImageDataRef = useRef<(() => Promise<Blob | null>) | null>(null)
     const leftFootImageDataRef = useRef<(() => Promise<Blob | null>) | null>(null)
 
