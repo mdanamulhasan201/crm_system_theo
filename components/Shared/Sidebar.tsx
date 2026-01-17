@@ -55,13 +55,13 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                 label: 'Dashboard',
                 href: '/dashboard'
             },
-            {
-                id: '1',
-                standalone: true,
-                icon: HiOutlineChatBubbleOvalLeft,
-                label: 'Teamchat',
-                href: '/dashboard/teamchat'
-            },
+            // {
+            //     id: '1',
+            //     standalone: true,
+            //     icon: HiOutlineChatBubbleOvalLeft,
+            //     label: 'Teamchat',
+            //     href: '/dashboard/teamchat'
+            // },
             {
                 id: '1a',
                 standalone: true,
@@ -102,7 +102,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                 label: 'Aufträge & Produkte',
                 items: [
                     { icon: HiOutlineCube, label: 'Produktverwaltung', href: '/dashboard/lager' },
-                    { icon: GrCubes, label: 'Sammelbestellungen', href: '/dashboard/group-orders' }
+                    // { icon: GrCubes, label: 'Sammelbestellungen', href: '/dashboard/group-orders' }
                 ]
             },
             {

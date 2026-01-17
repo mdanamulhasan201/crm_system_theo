@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HiMenuAlt2, HiSearch, HiArrowLeft } from 'react-icons/hi';
 import NotificationPage from './Notification';
 import { useRouter } from 'next/navigation';
+import { HiOutlineChatBubbleLeftRight, HiOutlineChatBubbleOvalLeft } from 'react-icons/hi2';
 
 interface NavbarProps {
     onMenuClick: () => void;
@@ -55,7 +56,11 @@ export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
                 </div>
 
                 <div className="flex items-center space-x-2 md:space-x-4">
+
+                    {/* chat icon */}
+                    <HiOutlineChatBubbleOvalLeft onClick={() => router.push('/dashboard/teamchat')} className="text-2xl text-gray-600 hover:text-gray-800 cursor-pointer" />
                     <NotificationPage />
+                        
                     {/* search icon */}
                     <div className="relative" ref={searchRef}>
                         <HiSearch

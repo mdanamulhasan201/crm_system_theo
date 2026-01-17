@@ -344,11 +344,11 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Einkaufspreis (€)</label>
-                                <Input type="number" step="0.01" min={0} value={newProduct.purchase_price} onChange={e => handleNewProductChange('purchase_price', parseFloat(e.target.value) || 0)} required disabled={!!editProductId || !!(isLoading && editProductId)} />
+                                <Input type="number" step="0.01" min={0} value={newProduct.purchase_price} onChange={e => handleNewProductChange('purchase_price', parseFloat(e.target.value) || 0)} required disabled={!!(isLoading && editProductId)} />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Verkaufspreis (€)</label>
-                                <Input type="number" step="0.01" min={0} value={newProduct.selling_price} onChange={e => handleNewProductChange('selling_price', parseFloat(e.target.value) || 0)} required disabled={!!editProductId || !!(isLoading && editProductId)} />
+                                <Input type="number" step="0.01" min={0} value={newProduct.selling_price} onChange={e => handleNewProductChange('selling_price', parseFloat(e.target.value) || 0)} required disabled={!!(isLoading && editProductId)} />
                             </div>
                         </div>
 
@@ -415,7 +415,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.quantity || 0}
                                                         onChange={e => handleNewProductSizeChange(size, e.target.value)}
                                                         className="w-full"
-                                                        disabled={!!editProductId || !!(isLoading && editProductId)}
+                                                        disabled={!!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                                 <TableCell>

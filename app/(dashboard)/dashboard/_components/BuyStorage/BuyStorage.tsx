@@ -48,6 +48,7 @@ const sizeColumns = [
 export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBuySuccess }: BuyStorageModalProps) {
     const [quantities, setQuantities] = useState<{ [key: string]: number }>({})
     const [buyingId, setBuyingId] = useState<string | null>(null)
+    const [showConfirmation, setShowConfirmation] = useState(false)
 
     // Initialize quantities when product changes
     useEffect(() => {
@@ -65,6 +66,7 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
         if (!isOpen) {
             setQuantities({})
             setBuyingId(null)
+            setShowConfirmation(false)
         }
     }, [isOpen])
 
@@ -84,8 +86,8 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
         return selectedProduct.price * totalQuantity
     }
 
-    // Handle buy
-    const handleBuy = async () => {
+    // Handle buy - show confirmation first
+    const handleBuy = () => {
         if (!selectedProduct) return
         
         const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
@@ -94,7 +96,16 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
             return
         }
 
+        // Show confirmation modal
+        setShowConfirmation(true)
+    }
+
+    // Confirm and submit the order
+    const confirmBuy = async () => {
+        if (!selectedProduct) return
+
         setBuyingId(selectedProduct.id)
+        setShowConfirmation(false)
         try {
             const response = await buyStore({ admin_store_id: selectedProduct.id })
             if (response.success) {
@@ -117,17 +128,28 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
     const handleClose = () => {
         onClose()
         setQuantities({})
+        setShowConfirmation(false)
     }
 
+    // Get selected quantities (only sizes with quantity > 0)
+    const getSelectedQuantities = () => {
+        return Object.entries(quantities)
+            .filter(([_, qty]) => qty > 0)
+            .map(([size, qty]) => ({ size, quantity: qty }))
+    }
+
+    const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
+
     return (
-        <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>Einlagen bestellen</DialogTitle>
-                    <DialogDescription>
-                        Geben Sie die gewünschten Mengen für jede Größe ein
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={isOpen} onOpenChange={handleClose}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Einlagen bestellen</DialogTitle>
+                        <DialogDescription>
+                            Geben Sie die gewünschten Mengen für jede Größe ein
+                        </DialogDescription>
+                    </DialogHeader>
 
                 {selectedProduct && (
                     <div className="space-y-6 py-4">
@@ -215,5 +237,102 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        {/* Confirmation Dialog */}
+        <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Bestellung bestätigen</DialogTitle>
+                    <DialogDescription>
+                        Bitte überprüfen Sie Ihre Bestellung noch einmal.
+                    </DialogDescription>
+                </DialogHeader>
+
+                {selectedProduct && (
+                    <div className="space-y-6 py-4">
+                        {/* Product Info */}
+                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                            {selectedProduct.image ? (
+                                <Image
+                                    width={80}
+                                    height={80}
+                                    src={selectedProduct.image}
+                                    alt={selectedProduct.productName}
+                                    className="w-20 h-20 rounded border object-contain border-gray-200 shadow-sm"
+                                />
+                            ) : (
+                                <div className="w-20 h-20 flex items-center justify-center rounded border border-gray-200 bg-white shadow-sm">
+                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                    </svg>
+                                </div>
+                            )}
+                            <div className="flex-1">
+                                <h3 className="font-semibold text-lg text-gray-900">{selectedProduct.productName}</h3>
+                                <p className="text-sm text-gray-600">Artikelnummer: {selectedProduct.artikelnummer}</p>
+                            </div>
+                        </div>
+
+                        {/* Selected Quantities */}
+                        <div className="space-y-3">
+                            <h4 className="font-medium text-gray-900">Ausgewählte Mengen:</h4>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                                {getSelectedQuantities().map(({ size, quantity }) => (
+                                    <div key={size} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                        <span className="text-sm font-medium text-gray-700">Größe {size}</span>
+                                        <span className="text-sm font-semibold text-gray-900">{quantity} Stück</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Summary */}
+                        <div className="border-t pt-4">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                                <div>
+                                    <p className="text-sm text-gray-600">Gesamtmenge:</p>
+                                    <p className="text-lg font-semibold text-gray-900">
+                                        {totalQuantity} Stück
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-sm text-gray-600">Gesamtpreis:</p>
+                                    <p className="text-2xl font-bold text-[#61A178]">
+                                        €{calculateTotalPrice().toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Confirmation Question */}
+                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <p className="text-sm font-medium text-gray-900 mb-1">
+                                Sind Sie sicher, dass Sie mit dieser Bestellung fortfahren möchten?
+                            </p>
+                            <p className="text-xs text-gray-600">
+                                Nach der Bestätigung wird die Bestellung verbindlich übermittelt.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                <DialogFooter>
+                    <Button
+                        variant="outline"
+                        onClick={() => setShowConfirmation(false)}
+                    >
+                        Abbrechen
+                    </Button>
+                    <Button
+                        onClick={confirmBuy}
+                        disabled={buyingId === selectedProduct?.id}
+                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
+                    >
+                        {buyingId === selectedProduct?.id ? 'Bestellen...' : 'Bestellung bestätigen'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        </>
     )
 }
