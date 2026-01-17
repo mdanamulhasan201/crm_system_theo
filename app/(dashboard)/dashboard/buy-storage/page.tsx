@@ -18,21 +18,15 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from "@/components/ui/pagination"
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog"
 import { IoSearch } from 'react-icons/io5'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { getAllStores, buyStore } from '@/apis/storeManagement'
+import { getAllStores } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 import useDebounce from '@/hooks/useDebounce'
+import BuyStorageModal from '../_components/BuyStorage/BuyStorage'
+import AddStorageModal from '../_components/BuyStorage/AddStorage'
 
 interface AdminStoreProduct {
     id: string
@@ -64,10 +58,10 @@ export default function BuyStoragePage() {
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [searchQuery, setSearchQuery] = useState('')
-    const [buyingId, setBuyingId] = useState<string | null>(null)
     const [selectedProduct, setSelectedProduct] = useState<AdminStoreProduct | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [quantities, setQuantities] = useState<{ [key: string]: number }>({})
+    const [selectedProductForAdd, setSelectedProductForAdd] = useState<AdminStoreProduct | null>(null)
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const debouncedSearch = useDebounce(searchQuery, 500)
 
     // Fetch admin stores
@@ -95,62 +89,42 @@ export default function BuyStoragePage() {
     // Handle open modal
     const handleOpenModal = (product: AdminStoreProduct) => {
         setSelectedProduct(product)
-        // Initialize quantities with zeros for all sizes
-        const initialQuantities: { [key: string]: number } = {}
-        sizeColumns.forEach(size => {
-            initialQuantities[size] = 0
-        })
-        setQuantities(initialQuantities)
         setIsModalOpen(true)
     }
 
-    // Handle quantity change
-    const handleQuantityChange = (size: string, value: string) => {
-        const numValue = parseInt(value) || 0
-        setQuantities(prev => ({
-            ...prev,
-            [size]: numValue >= 0 ? numValue : 0
-        }))
+    // Handle add storage
+    const handleAddStorage = (product: AdminStoreProduct) => {
+        setSelectedProductForAdd(product)
+        setIsAddModalOpen(true)
     }
 
-    // Calculate total price
-    const calculateTotalPrice = (): number => {
-        if (!selectedProduct) return 0
-        const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
-        return selectedProduct.price * totalQuantity
+    // Handle add storage modal close
+    const handleCloseAddModal = () => {
+        setIsAddModalOpen(false)
+        setSelectedProductForAdd(null)
     }
 
-    // Handle buy
-    const handleBuy = async () => {
-        if (!selectedProduct) return
-        
-        const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
-        if (totalQuantity === 0) {
-            toast.error('Bitte wählen Sie mindestens eine Menge aus')
-            return
+    // Refresh products list after successful add
+    const handleAddSuccess = async () => {
+        const refreshResponse = await getAllStores(currentPage, itemsPerPage, debouncedSearch)
+        if (refreshResponse.success && refreshResponse.data) {
+            setProducts(refreshResponse.data)
+            setPagination(refreshResponse.pagination)
         }
+    }
 
-        setBuyingId(selectedProduct.id)
-        try {
-            const response = await buyStore({ admin_store_id: selectedProduct.id })
-            if (response.success) {
-                toast.success(response.message || 'Store purchased successfully!')
-                setIsModalOpen(false)
-                setSelectedProduct(null)
-                setQuantities({})
-                // Refresh the list
-                const refreshResponse = await getAllStores(currentPage, itemsPerPage, debouncedSearch)
-                if (refreshResponse.success && refreshResponse.data) {
-                    setProducts(refreshResponse.data)
-                    setPagination(refreshResponse.pagination)
-                }
-            } else {
-                toast.error(response.message || 'Failed to purchase store')
-            }
-        } catch (err: any) {
-            toast.error(err?.response?.data?.message || 'Failed to purchase store')
-        } finally {
-            setBuyingId(null)
+    // Handle modal close
+    const handleCloseModal = () => {
+        setIsModalOpen(false)
+        setSelectedProduct(null)
+    }
+
+    // Refresh products list after successful purchase
+    const handleBuySuccess = async () => {
+        const refreshResponse = await getAllStores(currentPage, itemsPerPage, debouncedSearch)
+        if (refreshResponse.success && refreshResponse.data) {
+            setProducts(refreshResponse.data)
+            setPagination(refreshResponse.pagination)
         }
     }
 
@@ -277,13 +251,18 @@ export default function BuyStoragePage() {
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="p-4">
+                                        <TableCell className="p-4 flex items-center gap-2">
                                             <Button
                                                 onClick={() => handleOpenModal(product)}
-                                                disabled={buyingId === product.id}
-                                                className="bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer shadow-sm hover:shadow transition-all"
+                                                className="bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer text-xs shadow-sm hover:shadow transition-all"
                                             >
                                                 Einlagen bestellen
+                                            </Button>
+                                            <Button
+                                                onClick={() => handleAddStorage(product)}
+                                                className="bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer text-xs shadow-sm hover:shadow transition-all"
+                                            >
+                                                Lager hinzufügen
                                             </Button>
                                         </TableCell>
                                     </TableRow>
@@ -411,105 +390,20 @@ export default function BuyStoragePage() {
             )}
 
             {/* Buy Modal */}
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>Einlagen bestellen</DialogTitle>
-                        <DialogDescription>
-                            Geben Sie die gewünschten Mengen für jede Größe ein
-                        </DialogDescription>
-                    </DialogHeader>
+            <BuyStorageModal
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                selectedProduct={selectedProduct}
+                onBuySuccess={handleBuySuccess}
+            />
 
-                    {selectedProduct && (
-                        <div className="space-y-6 py-4">
-                            {/* Product Info */}
-                            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                                {selectedProduct.image ? (
-                                    <Image
-                                        width={80}
-                                        height={80}
-                                        src={selectedProduct.image}
-                                        alt={selectedProduct.productName}
-                                        className="w-20 h-20 rounded border object-contain border-gray-200 shadow-sm"
-                                    />
-                                ) : (
-                                    <div className="w-20 h-20 flex items-center justify-center rounded border border-gray-200 bg-white shadow-sm">
-                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                        </svg>
-                                    </div>
-                                )}
-                                <div className="flex-1">
-                                    <h3 className="font-semibold text-lg text-gray-900">{selectedProduct.productName}</h3>
-                                    <p className="text-sm text-gray-600">{selectedProduct.brand}</p>
-                                    <p className="text-sm text-gray-600">Artikelnummer: {selectedProduct.artikelnummer}</p>
-                                    <p className="text-lg font-semibold text-gray-900 mt-1">Preis: €{selectedProduct.price}</p>
-                                </div>
-                            </div>
-
-                            {/* Quantity Inputs */}
-                            <div className="space-y-4">
-                                <h4 className="font-medium text-gray-900">Mengen pro Größe:</h4>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                                    {sizeColumns.map(size => (
-                                        <div key={size} className="space-y-2">
-                                            <label className="text-sm font-medium text-gray-700">
-                                                Größe {size}
-                                            </label>
-                                            <Input
-                                                type="number"
-                                                min="0"
-                                                value={quantities[size] || 0}
-                                                onChange={(e) => handleQuantityChange(size, e.target.value)}
-                                                className="w-full"
-                                                placeholder="0"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Total Price */}
-                            <div className="border-t pt-4">
-                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                    <div>
-                                        <p className="text-sm text-gray-600">Gesamtmenge:</p>
-                                        <p className="text-lg font-semibold text-gray-900">
-                                            {Object.values(quantities).reduce((sum, qty) => sum + qty, 0)} Stück
-                                        </p>
-                                    </div>
-                                    <div className="text-right">
-                                        <p className="text-sm text-gray-600">Gesamtpreis:</p>
-                                        <p className="text-2xl font-bold text-[#61A178]">
-                                            €{calculateTotalPrice().toFixed(2)}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <DialogFooter>
-                        <Button
-                            variant="outline"
-                            onClick={() => {
-                                setIsModalOpen(false)
-                                setSelectedProduct(null)
-                                setQuantities({})
-                            }}
-                        >
-                            Abbrechen
-                        </Button>
-                        <Button
-                            onClick={handleBuy}
-                            disabled={buyingId === selectedProduct?.id || calculateTotalPrice() === 0}
-                            className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
-                        >
-                            {buyingId === selectedProduct?.id ? 'Bestellen...' : 'Bestellen'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {/* Add Storage Modal */}
+            <AddStorageModal
+                isOpen={isAddModalOpen}
+                onClose={handleCloseAddModal}
+                selectedProduct={selectedProductForAdd}
+                onAddSuccess={handleAddSuccess}
+            />
         </div>
     )
 }

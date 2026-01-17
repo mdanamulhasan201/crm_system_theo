@@ -35,3 +35,14 @@ export const getAllStores = async (page: number, limit: number, search: string) 
     }
 }
 
+// Lager hinzufügen store/add-storage
+
+export const addStorage = async (body: { admin_store_id: string }) => {
+    try {
+        const response = await axiosClient.post(`/store/add-storage`, body);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
