@@ -40,7 +40,7 @@ const nextConfig: NextConfig = {
 
       {
         protocol: 'https',
-        hostname: 'dvds-connected-decision-php.trycloudflare.com',
+        hostname: 'backend.feetf1rst.tech',
       }
     ],
   },
