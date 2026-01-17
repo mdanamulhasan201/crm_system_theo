@@ -236,7 +236,7 @@ export default function ZoomMode({
             )}
 
             {/* Modern Drawing Toolbar */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm rounded-t-lg">
+            <div className="sticky z-10 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm rounded-t-lg">
                 <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 py-2 sm:py-3 lg:py-4">
                         {/* Drawing Toolbar - Responsive */}
@@ -300,51 +300,72 @@ export default function ZoomMode({
 
             {/* Responsive image layout with canvas overlay */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-                <div className="flex flex-col xl:flex-row justify-center items-stretch xl:items-stretch gap-6 lg:gap-8 xl:gap-12">
-                    {/* Left foot image */}
-                    {leftImage && (
-                        <div className="w-full xl:w-1/2 shrink-0 flex">
-                            <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50 flex flex-col w-full h-full">
-                                <EditableImageCanvas
-                                    key={`zoom-left-${leftImage}-${selectedScanData?.updatedAt || scanData.updatedAt}-${imageRefreshKey}`}
-                                    imageUrl={leftImage}
-                                    alt="Left foot scan - Plantaransicht"
-                                    title=""
-                                    downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
-                                    drawingMode={drawingMode}
-                                    brushSize={brushSize}
-                                    brushColor={brushColor}
-                                    isZoomMode={true}
-                                    onImageDataReady={(getImageData) => {
-                                        leftFootImageDataRef.current = getImageData
-                                    }}
-                                />
-                            </div>
+                {!leftImage && !rightImage ? (
+                    <div className="flex items-center justify-center h-96">
+                        <div className="text-center">
+                            <p className="text-gray-600 text-lg mb-2">Keine Bilder verfügbar</p>
+                            <p className="text-gray-500 text-sm">Bitte wählen Sie ein Scandatum mit verfügbaren Bildern aus.</p>
                         </div>
-                    )}
+                    </div>
+                ) : (
+                    <div className="flex flex-col xl:flex-row justify-center items-stretch xl:items-stretch gap-6 lg:gap-8 xl:gap-12">
+                        {/* Left foot image */}
+                        {leftImage ? (
+                            <div className="w-full xl:w-1/2 shrink-0 flex">
+                                <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50 flex flex-col w-full h-full">
+                                    <EditableImageCanvas
+                                        key={`zoom-left-${leftImage}-${selectedScanData?.updatedAt || scanData.updatedAt}-${imageRefreshKey}`}
+                                        imageUrl={leftImage}
+                                        alt="Left foot scan - Plantaransicht"
+                                        title=""
+                                        downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
+                                        drawingMode={drawingMode}
+                                        brushSize={brushSize}
+                                        brushColor={brushColor}
+                                        isZoomMode={true}
+                                        onImageDataReady={(getImageData) => {
+                                            leftFootImageDataRef.current = getImageData
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="w-full xl:w-1/2 shrink-0 flex">
+                                <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50 flex flex-col w-full h-full items-center justify-center">
+                                    <p className="text-gray-500 text-sm">Kein linkes Fußbild verfügbar</p>
+                                </div>
+                            </div>
+                        )}
 
-                    {/* Right foot image */}
-                    {rightImage && (
-                        <div className="w-full xl:w-1/2 shrink-0 flex">
-                            <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50 flex flex-col w-full h-full">
-                                <EditableImageCanvas
-                                    key={`zoom-right-${rightImage}-${selectedScanData?.updatedAt || scanData.updatedAt}-${imageRefreshKey}`}
-                                    imageUrl={rightImage}
-                                    alt="Right foot scan - Plantaransicht"
-                                    title=""
-                                    downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
-                                    drawingMode={drawingMode}
-                                    brushSize={brushSize}
-                                    brushColor={brushColor}
-                                    isZoomMode={true}
-                                    onImageDataReady={(getImageData) => {
-                                        rightFootImageDataRef.current = getImageData
-                                    }}
-                                />
+                        {/* Right foot image */}
+                        {rightImage ? (
+                            <div className="w-full xl:w-1/2 shrink-0 flex">
+                                <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50 flex flex-col w-full h-full">
+                                    <EditableImageCanvas
+                                        key={`zoom-right-${rightImage}-${selectedScanData?.updatedAt || scanData.updatedAt}-${imageRefreshKey}`}
+                                        imageUrl={rightImage}
+                                        alt="Right foot scan - Plantaransicht"
+                                        title=""
+                                        downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
+                                        drawingMode={drawingMode}
+                                        brushSize={brushSize}
+                                        brushColor={brushColor}
+                                        isZoomMode={true}
+                                        onImageDataReady={(getImageData) => {
+                                            rightFootImageDataRef.current = getImageData
+                                        }}
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    )}
-                </div>
+                        ) : (
+                            <div className="w-full xl:w-1/2 shrink-0 flex">
+                                <div className="bg-white rounded-xl shadow-xl p-4 lg:p-6 border border-gray-200/50 flex flex-col w-full h-full items-center justify-center">
+                                    <p className="text-gray-500 text-sm">Kein rechtes Fußbild verfügbar</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     )

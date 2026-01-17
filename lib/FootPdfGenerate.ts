@@ -17,13 +17,27 @@ async function fetchImageAsDataUrl(url: string): Promise<string> {
         return url;
     }
     
-    const response = await fetch(url, { mode: 'cors' });
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-    });
+    try {
+        const response = await fetch(url, { mode: 'cors' });
+        if (!response.ok) {
+            throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                if (reader.result) {
+                    resolve(reader.result as string);
+                } else {
+                    reject(new Error('Failed to convert image to data URL'));
+                }
+            };
+            reader.onerror = () => reject(new Error('Failed to read image blob'));
+            reader.readAsDataURL(blob);
+        });
+    } catch (error: any) {
+        throw new Error(`Error fetching image from ${url}: ${error.message || error}`);
+    }
 }
 
 async function generateCombinedFeetPdf(params: {
@@ -174,15 +188,15 @@ async function generateCombinedFeetPdf(params: {
     };
 
     // Page 1: Right Foot
-    await addFootImage(rightImageUrl, 'L');
-    await addHeaderOverlay('Left Foot');
-    addFooterOverlay('L');
+    await addFootImage(rightImageUrl, 'R');
+    await addHeaderOverlay('Right Foot');
+    addFooterOverlay('R');
 
     // Page 2: Left Foot
     pdf.addPage();
-    await addFootImage(leftImageUrl, 'R');
-    await addHeaderOverlay('Right Foot');
-    addFooterOverlay('R');
+    await addFootImage(leftImageUrl, 'L');
+    await addHeaderOverlay('Left Foot');
+    addFooterOverlay('L');
 
     return pdf.output('blob');
 }
