@@ -32,8 +32,8 @@ export default function Reklamationen() {
                 <div className="sm:col-span-1">
                     <MaßschuheCard 
                      
-                        percentage={6}
-                        change={2}
+                        percentage={0}
+                        change={0}
                         isPositive={true}
                     />
                 </div>

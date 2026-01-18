@@ -66,6 +66,12 @@ const getQuantity = (sizeData: number | SizeData | undefined): number => {
     return sizeData.quantity || 0;
 }
 
+// Helper function to truncate text to 3 characters with ".."
+const truncateText = (text: string, maxLength: number = 15): string => {
+    if (!text || text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '..';
+}
+
 interface ProductManagementTableProps {
     visibleProducts: Product[]
     sizeColumns: string[]
@@ -178,8 +184,20 @@ export default function ProductManagementTable({
                                         {product.Hersteller}
                                     </TableCell>
                                     <TableCell className="p-3 text-gray-900">
-                                        {product.Produktname}
-
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <span className="cursor-help">
+                                                        {truncateText(product.Produktname)}
+                                                    </span>
+                                                </TooltipTrigger>
+                                                {product.Produktname.length > 15 && (
+                                                    <TooltipContent>
+                                                        <p>{product.Produktname}</p>
+                                                    </TooltipContent>
+                                                )}
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </TableCell>
                                     <TableCell className="p-3 text-gray-900">
                                         {product.Produktkürzel}

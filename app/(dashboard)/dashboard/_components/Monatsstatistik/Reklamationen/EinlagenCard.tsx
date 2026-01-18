@@ -22,7 +22,7 @@ export default function EinlagenCard({ percentage, change, isPositive }: Einlage
                     ---
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
-                        = {percentage}% aller Einlagen-Aufträge
+                        = ---% aller Einlagen-Aufträge
                     </p>
                 </div>
                 <div className={`flex items-center gap-2 ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -32,7 +32,7 @@ export default function EinlagenCard({ percentage, change, isPositive }: Einlage
                         <ArrowDown className="w-4 h-4 sm:w-5 sm:h-5" />
                     )}
                     <span className="text-xs sm:text-sm font-semibold">
-                        {isPositive ? '+' : ''}{change} zum Vormonat
+                        {isPositive ? '' : ''}--- zum Vormonat
                     </span>
                 </div>
             </div>

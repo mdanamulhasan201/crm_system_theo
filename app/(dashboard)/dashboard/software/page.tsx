@@ -257,16 +257,14 @@ export default function Software() {
             </div> */}
 
             {/* Carousel Section */}
-            <div className="mt-14">
-                {/* <div className="text-center mb-6">
-                    <h2 className="text-2xl font-bold uppercase mb-5">JETZT NEU IM SHOE FINDER FEETFIRST</h2>
-                </div> */}
+            {/* <div className="mt-14">
+              
                 {loading ? (
                     <div className="text-center">Loading...</div>
                 ) : (
                     <MainCarousel categories={categories} />
                 )}
-            </div>
+            </div> */}
 
             {/* contact form */}
             <ContactPage />

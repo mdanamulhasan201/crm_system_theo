@@ -22,7 +22,7 @@ export default function MaßschuheCard({  percentage, change, isPositive }: Maß
                     ---
                     </p>
                     <p className="text-xs sm:text-sm text-gray-600 mb-4 sm:mb-6">
-                        = {percentage} % aller Maßschuh-Aufträge
+                        = --- % aller Maßschuh-Aufträge
                     </p>
                 </div>
                 <div className={`flex items-center gap-2 ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
@@ -32,7 +32,7 @@ export default function MaßschuheCard({  percentage, change, isPositive }: Maß
                         <ArrowUp className="w-4 h-4 sm:w-5 sm:h-5 rotate-180" />
                     )}
                     <span className="text-xs sm:text-sm font-semibold">
-                        {isPositive ? '+' : ''}{change} zum Vormonat
+                        {isPositive ? '' : ''}--- zum Vormonat
                     </span>
                 </div>
             </div>

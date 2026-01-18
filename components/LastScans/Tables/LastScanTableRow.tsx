@@ -53,10 +53,8 @@ export function LastScanTableRow({
             <TableCell>
                 <div className="flex flex-col gap-1">
                     {(() => {
-                        const hasOrders = row.latestOrder || row.latestMassschuheOrder;
-                        
-                        // If no orders, show billingType
-                        if (!hasOrders && row.billingType?.trim()) {
+                        // Priority: billingType > krankenkasse > kostenträger
+                        if (row.billingType?.trim()) {
                             const billingTypeLabel = row.billingType === 'krankenkasse' ? 'Krankenkasse' : 
                                                    row.billingType === 'privat' ? 'Privat' : 
                                                    row.billingType;
@@ -67,7 +65,6 @@ export function LastScanTableRow({
                             );
                         }
                         
-                        // If orders exist, show krankenkasse and kostenträger as before
                         if (krankenkasse !== '—') {
                             return (
                                 <span className="text-xs font-medium text-gray-700">

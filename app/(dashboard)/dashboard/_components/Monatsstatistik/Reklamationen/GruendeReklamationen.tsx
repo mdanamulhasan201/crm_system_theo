@@ -26,7 +26,8 @@ export default function GruendeReklamationen() {
                                     {item.name}
                                 </span>
                                 <span className="text-xs sm:text-sm font-bold text-gray-900 flex-shrink-0">
-                                    {item.value}
+                                    {/* {item.value} */}
+                                    ---
                                 </span>
                             </div>
                             <div className="w-full bg-gray-100 rounded-full h-2 sm:h-3 overflow-hidden">

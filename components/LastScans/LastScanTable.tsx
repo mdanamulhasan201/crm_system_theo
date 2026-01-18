@@ -392,6 +392,16 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                     krankenkasseValue = row.krankenkasse.trim();
                 }
 
+                // Kostenträger: Priority billingType > kostenträger
+                let kostenträgerValue = '—';
+                if (row.billingType?.trim()) {
+                    kostenträgerValue = row.billingType === 'krankenkasse' ? 'Krankenkasse' : 
+                                      row.billingType === 'privat' ? 'Privat' : 
+                                      row.billingType;
+                } else if (row.kostenträger?.trim()) {
+                    kostenträgerValue = row.kostenträger.trim();
+                }
+
                 const customerTypes: string[] = [];
                 if (row.latestMassschuheOrder) customerTypes.push('Massschuhe');
                 if (row.latestOrder) customerTypes.push('Einlagen');
@@ -417,7 +427,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                     'Kunde': customerFullName || '—',
                     'Kundennummer': row.customerNumber ?? '—',
                     'Krankenkasse': krankenkasseValue,
-                    'Kostenträger': row.kostenträger?.trim() || '—',
+                    'Kostenträger': kostenträgerValue,
                     'Kundentyp': kundentyp,
                     'Neuester Scan': latestScreenerDate ? formatDate(latestScreenerDate) : 'Kein Scan',
                     'Neuester Auftrag': newestOrderLabel,
@@ -452,12 +462,16 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
         { label: 'Dieses Jahr', value: 'thisYear' },
     ];
 
+
+
     const orderOptions: { label: string; value: OrderStatusFilter }[] = [
         { label: 'Alle Aufträge', value: 'all' },
-        { label: 'Abgeschlossen', value: 'completed' },
         { label: 'Kein Auftrag', value: 'no-order' },
-        { label: 'Alle Aufträge (Ein)', value: 'oneAllOrders' },
         { label: 'Aufträge in Fertigung', value: 'oneOrdersInProduction' },
+        { label: 'Abgeschlossen', value: 'completed' },
+        
+        // { label: 'Alle Aufträge (Ein)', value: 'oneAllOrders' },
+       
     ];
 
     const yearOptions = [{ label: 'Alle Jahre', value: 'all' as const }, ...uniqueYears.map((year) => ({ label: year, value: year }))];
@@ -478,7 +492,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
     ];
 
     const locationOptions = [
-        { label: 'Alle Städte', value: 'all' as const },
+        { label: 'Alle Standorte', value: 'all' as const },
         ...apiLocations.map((loc) => ({ label: `${loc.address} - ${loc.description}`, value: loc.description })),
     ];
     const insuranceOptions = [

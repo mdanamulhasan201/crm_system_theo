@@ -170,73 +170,34 @@ export default function KundenordnerPage() {
         try {
             setExportLoading(true)
             
-            // Fetch all documents by getting all pages
-            let allDocuments: ApiFile[] = []
-            let exclInfo: ApiResponse['exclInfo'] | undefined = undefined
-            let currentPage = 1
-            let hasMore = true
-            const fetchLimit = 100 // Use a larger limit to reduce API calls
-
-            while (hasMore) {
-                const response: ApiResponse = await getKundenordnerData(customerId, currentPage, fetchLimit)
-                
-                if (response.success && response.data) {
-                    allDocuments = [...allDocuments, ...response.data]
-                    
-                    // Get exclInfo from first response
-                    if (currentPage === 1 && response.exclInfo) {
-                        exclInfo = response.exclInfo
-                    }
-                    
-                    // Check if there are more pages
-                    hasMore = response.pagination.hasNext
-                    currentPage++
-                } else {
-                    hasMore = false
-                }
+            // Fetch exclInfo from API
+            const response: ApiResponse = await getKundenordnerData(customerId, 1, limit)
+            
+            if (!response.success || !response.exclInfo) {
+                alert('Keine Kundendaten zum Exportieren verfügbar.')
+                return
             }
 
+            const exclInfo = response.exclInfo
 
             const workbook = XLSX.utils.book_new()
 
-            // Add exclInfo sheet if available
-            if (exclInfo) {
-                const exclInfoData = [
-                    { 'Feld': 'Name', 'Wert': exclInfo.name || '' },
-                    { 'Feld': 'Auftragsnummer', 'Wert': exclInfo.orderNumber || '' },
-                    { 'Feld': 'Fertigstellung bis', 'Wert': exclInfo.fertigstellungBis ? formatDate(exclInfo.fertigstellungBis) : '' }
-                ]
-                const exclInfoSheet = XLSX.utils.json_to_sheet(exclInfoData)
-                XLSX.utils.book_append_sheet(workbook, exclInfoSheet, 'Kundeninformationen')
-            }
-
-            // Prepare documents data for Excel
-            const documentsData = allDocuments.map((file: ApiFile) => {
-                const docType = mapFileTypeToDocumentType(file.fileType, file.table, file.fieldName)
-                return {
-                    'ID': file.id,
-                    'Titel': getFileTitle(file.url, file.fieldName, file.table),
-                    'Dateiname': file.url,
-                    'Dateityp': file.fileType,
-                    'Tabelle': file.table,
-                    'Feldname': file.fieldName,
-                    'Dokumenttyp': docType,
-                    'Erstellt am': formatDate(file.createdAt),
-                    'URL': file.fullUrl
-                }
-            })
-
-            // Add documents sheet
-            const documentsSheet = XLSX.utils.json_to_sheet(documentsData)
-            XLSX.utils.book_append_sheet(workbook, documentsSheet, 'Dokumente')
+            // Add exclInfo sheet
+            const exclInfoData = [
+                { 'Feld': 'Name', 'Wert': exclInfo.name || '' },
+                { 'Feld': 'Auftragsnummer', 'Wert': exclInfo.orderNumber || '' },
+                { 'Feld': 'Fertigstellung bis', 'Wert': exclInfo.fertigstellungBis ? formatDate(exclInfo.fertigstellungBis) : '' }
+            ]
+            const exclInfoSheet = XLSX.utils.json_to_sheet(exclInfoData)
+            XLSX.utils.book_append_sheet(workbook, exclInfoSheet, 'Kundeninformationen')
 
             // Generate filename with date
             const fileName = `Kundenordner_Export_${new Date().toISOString().split('T')[0]}.xlsx`
             XLSX.writeFile(workbook, fileName)
 
-            alert(`${allDocuments.length} Dokumente erfolgreich exportiert`)
+            alert('Kundendaten erfolgreich exportiert')
         } catch (err) {
-            console.error('Error exporting documents:', err)
+            console.error('Error exporting data:', err)
             alert('Export fehlgeschlagen. Bitte erneut versuchen.')
         } finally {
             setExportLoading(false)
@@ -303,13 +264,15 @@ export default function KundenordnerPage() {
                     </div>
                 )}
 
-                <DocumentGrid
-                    documents={filteredDocuments}
-                    onView={handleView}
-                    onDownload={handleDownload}
-                    onDelete={handleDelete}
-                    searchQuery={searchQuery}
-                />
+                {!loading && (
+                    <DocumentGrid
+                        documents={filteredDocuments}
+                        onView={handleView}
+                        onDownload={handleDownload}
+                        onDelete={handleDelete}
+                        searchQuery={searchQuery}
+                    />
+                )}
 
                 <PaginationControls
                     pagination={pagination}
