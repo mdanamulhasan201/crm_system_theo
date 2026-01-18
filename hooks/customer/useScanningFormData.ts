@@ -159,7 +159,8 @@ export const useScanningFormData = (
             
             // Filter by diagnosis_status if provided
             let filtered = allData;
-            if (diagnosisStatus !== undefined && diagnosisStatus !== null) {
+            if (diagnosisStatus !== undefined && diagnosisStatus !== null && diagnosisStatus !== '') {
+                // Case 2: Both Einlagentyp + Diagnose selected
                 // Show only items with matching diagnosis_status
                 // Handle both array (new format) and string (old format) for backward compatibility
                 filtered = filtered.filter((item: any) => {
@@ -174,14 +175,10 @@ export const useScanningFormData = (
                     return false;
                 });
             } else {
-                // Show only items with null/undefined/empty array diagnosis_status when no diagnosis is selected
-                filtered = filtered.filter((item: any) => {
-                    const itemDiagnosis = item.diagnosis_status;
-                    if (Array.isArray(itemDiagnosis)) {
-                        return itemDiagnosis.length === 0;
-                    }
-                    return itemDiagnosis === null || itemDiagnosis === undefined;
-                });
+                // Case 1: Only Einlagentyp selected (no diagnosis)
+                // Show ALL items of that Einlagentyp (both with and without diagnosis)
+                // No filtering by diagnosis_status - show everything
+                filtered = allData;
             }
             
             setVersorgungData(filtered);
@@ -258,22 +255,25 @@ export const useScanningFormData = (
             const statusMatches = versorgung.supplyStatus?.name === supplyStatusName || 
                                   versorgung.name === supplyStatusName ||
                                   versorgung.status === supplyStatusName;
-            if (diagnosisStatus) {
+            
+            if (!statusMatches) return false;
+            
+            if (diagnosisStatus && diagnosisStatus.trim() !== '') {
+                // Case 2: Both Einlagentyp + Diagnose selected
+                // Match only items with matching diagnosis_status
                 // Handle both array (new format) and string (old format)
                 const itemDiagnosis = versorgung.diagnosis_status;
                 if (Array.isArray(itemDiagnosis)) {
-                    return statusMatches && itemDiagnosis.includes(diagnosisStatus);
+                    return itemDiagnosis.includes(diagnosisStatus);
                 } else if (typeof itemDiagnosis === 'string') {
-                    return statusMatches && itemDiagnosis === diagnosisStatus;
+                    return itemDiagnosis === diagnosisStatus;
                 }
                 return false;
             }
-            // When no diagnosis selected, show items with empty/null diagnosis
-            const itemDiagnosis = versorgung.diagnosis_status;
-            if (Array.isArray(itemDiagnosis)) {
-                return statusMatches && itemDiagnosis.length === 0;
-            }
-            return statusMatches && (itemDiagnosis === null || itemDiagnosis === undefined);
+            
+            // Case 1: Only Einlagentyp selected (no diagnosis)
+            // Match items regardless of diagnosis_status (with or without diagnosis)
+            return true;
         });
     }, [customer?.versorgungen]);
 
