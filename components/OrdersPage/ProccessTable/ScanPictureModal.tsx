@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { usePicture2324 } from '@/hooks/orders/usePicture2324';
+import { Maximize2 } from 'lucide-react';
+import FullscreenImageModal from './FullscreenImageModal';
 import Image from 'next/image';
 
 interface ScanPictureModalProps {
@@ -23,6 +25,7 @@ export default function ScanPictureModal({
 }: ScanPictureModalProps) {
     const { data, loading, error } = usePicture2324(orderId);
     const [selectedFoot, setSelectedFoot] = useState<'left' | 'right' | null>(null);
+    const [showFullscreen, setShowFullscreen] = useState(false);
 
     const materials = data?.material
         ? data.material
@@ -97,17 +100,17 @@ export default function ScanPictureModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-6xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden p-0 gap-0">
+            <DialogContent className="sm:max-w-6xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden p-0 gap-0 shadow-2xl">
                 {/* Header */}
-                <div className="px-6 py-5 border-b border-gray-200 bg-white flex items-center justify-between">
-                    <DialogTitle className="text-lg font-medium text-gray-900">
-                    Versorgung{orderNumber ? ` – ${orderNumber}` : ''}
+                <div className="px-6 py-4 border-b border-gray-200 bg-[#61A175] flex items-center justify-between">
+                    <DialogTitle className="text-lg font-semibold text-white">
+                        Versorgung{orderNumber ? ` – ${orderNumber}` : ''}
                         {customerName ? ` – ${customerName}` : ''}
                     </DialogTitle>
                 </div>
 
                 {/* Content */}
-                <div className="px-4 py-4 overflow-y-auto overflow-x-hidden max-h-[calc(95vh-180px)] bg-white">
+                <div className="px-6 py-6 overflow-y-auto overflow-x-hidden max-h-[calc(95vh-180px)] bg-gray-50">
                     {loading ? (
                         <div className="flex items-center justify-center py-20">
                             <div className="flex flex-col items-center">
@@ -131,60 +134,77 @@ export default function ScanPictureModal({
                     ) : hasAnyImage ? (
                         <div className="flex flex-col lg:flex-row gap-6 items-start overflow-x-hidden">
                             {/* Left: Images */}
-                            <div className="w-full lg:w-[65%] shrink-0 min-w-0">
+                            <div className="w-full lg:w-[60%] shrink-0 min-w-0">
                                 {/* Display Selected Image */}
                                 {currentImage ? (
-                                    <div className="relative w-full min-h-[400px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center overflow-hidden">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={currentImage}
-                                            alt={selectedFoot === 'left' ? 'Linker Fuß' : 'Rechter Fuß'}
-                                            className="w-full h-auto max-w-full object-contain rounded-lg"
-                                            style={{ maxHeight: 'calc(95vh - 350px)', maxWidth: '100%' }}
-                                            onError={(e) => {
-                                                console.error('Image failed to load:', currentImage);
-                                                const target = e.currentTarget;
-                                                target.style.display = 'none';
-                                                const parent = target.parentElement;
-                                                if (parent && !parent.querySelector('.error-message')) {
-                                                    const errorMsg = document.createElement('p');
-                                                    errorMsg.className = 'text-gray-500 error-message';
-                                                    errorMsg.textContent = 'Bild konnte nicht geladen werden';
-                                                    parent.appendChild(errorMsg);
-                                                }
-                                            }}
-                                        />
+                                    <div className="relative w-full bg-white rounded-xl border-2 border-gray-200 shadow-lg flex items-center justify-center overflow-auto group">
+                                        <div className="relative w-full flex items-center justify-center p-4">
+                                            <Image
+                                                src={currentImage}
+                                                alt={selectedFoot === 'left' ? 'Linker Fuß' : 'Rechter Fuß'}
+                                                width={0}
+                                                height={0}
+                                                sizes="100vw"
+                                                className="w-full max-w-[30vh] h-auto rounded-xl transition-transform duration-300"
+                                             
+                                                onError={(e) => {
+                                                    console.error('Image failed to load:', currentImage);
+                                                    const target = e.currentTarget;
+                                                    target.style.display = 'none';
+                                                    const parent = target.parentElement;
+                                                    if (parent && !parent.querySelector('.error-message')) {
+                                                        const errorMsg = document.createElement('p');
+                                                        errorMsg.className = 'text-gray-500 error-message';
+                                                        errorMsg.textContent = 'Bild konnte nicht geladen werden';
+                                                        parent.appendChild(errorMsg);
+                                                    }
+                                                }}
+                                                unoptimized
+                                            />
+                                        </div>
+                                        {/* 1:1 Bild öffnen Button */}
+                                        <div className="absolute top-4 right-4 z-10">
+                                            <Button
+                                                onClick={() => setShowFullscreen(true)}
+                                                variant="default"
+                                                size="sm"
+                                                className="cursor-pointer bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-2xl flex items-center gap-2 font-semibold"
+                                            >
+                                                <Maximize2 className="w-4 h-4" />
+                                                1:1 Bild öffnen
+                                            </Button>
+                                        </div>
                                     </div>
                                 ) : selectedFoot ? (
-                                    <div className="relative w-full min-h-[400px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                                        <p className="text-gray-500">Kein Bild verfügbar für {selectedFoot === 'left' ? 'linken' : 'rechten'} Fuß</p>
+                                    <div className="relative w-full bg-white rounded-xl border-2 border-gray-200 shadow-lg flex items-center justify-center p-8">
+                                        <p className="text-gray-500 text-center">Kein Bild verfügbar für {selectedFoot === 'left' ? 'linken' : 'rechten'} Fuß</p>
                                     </div>
                                 ) : (
-                                    <div className="relative w-full min-h-[400px] bg-gray-50 rounded-lg border border-gray-200 flex items-center justify-center">
-                                        <p className="text-gray-500">Bitte wählen Sie einen Fuß aus</p>
+                                    <div className="relative w-full bg-white rounded-xl border-2 border-gray-200 shadow-lg flex items-center justify-center p-8">
+                                        <p className="text-gray-500 text-center">Bitte wählen Sie einen Fuß aus</p>
                                     </div>
                                 )}
                             </div>
 
                             {/* Right: Meta information */}
-                            <div className="w-full lg:w-[35%] shrink-0 min-w-0 space-y-5 bg-gray-50 rounded-lg p-5 border border-gray-200">
+                            <div className="w-full lg:w-[40%] shrink-0 min-w-0 space-y-4 bg-white rounded-xl p-6 border-2 border-gray-200 shadow-lg">
                                 {data.fertigstellungBis && (
-                                    <div>
+                                    <div className="pb-4 border-b border-gray-100">
                                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                             Fertigstellung bis
                                         </h3>
-                                        <p className="text-sm font-medium text-gray-900">
+                                        <p className="text-sm font-semibold text-gray-900">
                                             {formatDate(data.fertigstellungBis)}
                                         </p>
                                     </div>
                                 )}
-                                <div>
+                                <div className="pb-4 border-b border-gray-100">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                         Kunde
                                     </h3>
-                                    <p className="text-sm text-gray-900">{data.customerName || '—'}</p>
+                                    <p className="text-sm font-medium text-gray-900">{data.customerName || '—'}</p>
                                 </div>
-                                <div>
+                                <div className="pb-4 border-b border-gray-100">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                         Diagnose
                                     </h3>
@@ -193,50 +213,69 @@ export default function ScanPictureModal({
                                             {data.diagnosisStatus.map((diagnosis, idx) => (
                                                 <span
                                                     key={idx}
-                                                    className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium border border-blue-200"
+                                                    className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 shadow-sm"
                                                 >
                                                     {diagnosis}
                                                 </span>
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-sm text-gray-500">—</p>
+                                        <p className="text-sm text-gray-500 italic">—</p>
                                     )}
                                 </div>
-                                <div>
+                                <div className="pb-4 border-b border-gray-100">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                         Versorgung
                                     </h3>
-                                    <p className="text-sm text-gray-900">
+                                    <p className="text-sm font-medium text-gray-900">
                                         {data.versorgungName || '—'}
                                     </p>
                                 </div>
-                                <div>
+                                <div className="pb-4 border-b border-gray-100">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                         Materialien
                                     </h3>
                                     {materials.length > 0 ? (
-                                        <ul className="space-y-1.5">
+                                        <ul className="space-y-2">
                                             {materials.map((m, idx) => (
                                                 <li key={idx} className="text-sm text-gray-900 flex items-center">
-                                                    <span className="w-1.5 h-1.5 bg-[#61A175] rounded-full mr-2"></span>
-                                                    {m}
+                                                    <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
+                                                    <span className="font-medium">{m}</span>
                                                 </li>
                                             ))}
                                         </ul>
                                     ) : (
-                                        <p className="text-sm text-gray-500">Keine Materialien angegeben</p>
+                                        <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
                                     )}
                                 </div>
 
                                 {/* Insole Stock Section */}
                                 {data.insoleStock && (
-                                    <ul className="space-y-1.5">
-                                        <li className="text-sm text-gray-900 flex items-center">
-                                            <span className="w-1.5 h-1.5 bg-[#61A175] rounded-full mr-2"></span>
-                                            {data.insoleStock.produktname} - {data.insoleStock.size} mm
-                                        </li>
-                                    </ul>
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Einlagenlager
+                                        </h3>
+                                        <div className="flex items-center">
+                                            <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
+                                            <span className="text-sm font-medium text-gray-900">
+                                                {data.insoleStock.produktname} - {data.insoleStock.size}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Versorgung Note Section */}
+                                {data.versorgung_note && (
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Notiz
+                                        </h3>
+                                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                            <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                                                {data.versorgung_note}
+                                            </p>
+                                        </div>
+                                    </div>
                                 )}
 
                                 {/* Foot Selection Buttons */}
@@ -244,31 +283,31 @@ export default function ScanPictureModal({
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                                         Fuß Auswahl
                                     </h3>
-                                    <div className="flex flex-col gap-2">
+                                    <div className="flex flex-col gap-2.5">
                                         <Button
                                             onClick={() => setSelectedFoot('left')}
                                             variant={selectedFoot === 'left' ? 'default' : 'outline'}
-                                            className={`cursor-pointer w-full ${
+                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${
                                                 selectedFoot === 'left'
-                                                    ? 'bg-[#61A175] hover:bg-[#61A175]/90 text-white'
-                                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                    ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
+                                                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
                                             } ${!data?.picture_23 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             disabled={!data?.picture_23}
                                         >
-                                            <span className="mr-2">👣</span>
+                                            <span className="mr-2 text-lg">👣</span>
                                             Linker Fuß
                                         </Button>
                                         <Button
                                             onClick={() => setSelectedFoot('right')}
                                             variant={selectedFoot === 'right' ? 'default' : 'outline'}
-                                            className={`cursor-pointer w-full ${
+                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${
                                                 selectedFoot === 'right'
-                                                    ? 'bg-[#61A175] hover:bg-[#61A175]/90 text-white'
-                                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                    ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
+                                                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
                                             } ${!data?.picture_24 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             disabled={!data?.picture_24}
                                         >
-                                            <span className="mr-2">👣</span>
+                                            <span className="mr-2 text-lg">👣</span>
                                             Rechter Fuß
                                         </Button>
                                     </div>
@@ -277,24 +316,24 @@ export default function ScanPictureModal({
                         </div>
                     ) : (
                         // No images at all: only meta information, full width
-                        <div className="w-full space-y-5 bg-gray-50 rounded-lg p-6 border border-gray-200">
+                        <div className="w-full space-y-4 bg-white rounded-xl p-6 border-2 border-gray-200 shadow-lg">
                             {data.fertigstellungBis && (
-                                <div>
+                                <div className="pb-4 border-b border-gray-100">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                         Fertigstellung bis
                                     </h3>
-                                    <p className="text-sm font-medium text-gray-900">
+                                    <p className="text-sm font-semibold text-gray-900">
                                         {formatDate(data.fertigstellungBis)}
                                     </p>
                                 </div>
                             )}
-                            <div>
+                            <div className="pb-4 border-b border-gray-100">
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Kunde
                                 </h3>
-                                <p className="text-sm text-gray-900">{data.customerName || '—'}</p>
+                                <p className="text-sm font-medium text-gray-900">{data.customerName || '—'}</p>
                             </div>
-                            <div>
+                            <div className="pb-4 border-b border-gray-100">
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Diagnose
                                 </h3>
@@ -303,50 +342,69 @@ export default function ScanPictureModal({
                                         {data.diagnosisStatus.map((diagnosis, idx) => (
                                             <span
                                                 key={idx}
-                                                className="px-2.5 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-medium border border-blue-200"
+                                                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 shadow-sm"
                                             >
                                                 {diagnosis}
                                             </span>
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-sm text-gray-500">—</p>
+                                    <p className="text-sm text-gray-500 italic">—</p>
                                 )}
                             </div>
-                            <div>
+                            <div className="pb-4 border-b border-gray-100">
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Versorgung
                                 </h3>
-                                <p className="text-sm text-gray-900">
+                                <p className="text-sm font-medium text-gray-900">
                                     {data.versorgungName || '—'}
                                 </p>
                             </div>
-                            <div>
+                            <div className="pb-4 border-b border-gray-100">
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Materialien
                                 </h3>
                                 {materials.length > 0 ? (
-                                    <ul className="space-y-1.5">
+                                    <ul className="space-y-2">
                                         {materials.map((m, idx) => (
                                             <li key={idx} className="text-sm text-gray-900 flex items-center">
-                                                <span className="w-1.5 h-1.5 bg-[#61A175] rounded-full mr-2"></span>
-                                                {m}
+                                                <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
+                                                <span className="font-medium">{m}</span>
                                             </li>
                                         ))}
                                     </ul>
                                 ) : (
-                                    <p className="text-sm text-gray-500">Keine Materialien angegeben</p>
+                                    <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
                                 )}
                             </div>
 
                             {/* Insole Stock Section */}
                             {data.insoleStock && (
-                                <ul className="space-y-1.5">
-                                    <li className="text-sm text-gray-900 flex items-center">
-                                        <span className="w-1.5 h-1.5 bg-[#61A175] rounded-full mr-2"></span>
-                                        {data.insoleStock.produktname} - {data.insoleStock.size} mm
-                                    </li>
-                                </ul>
+                                <div className="pb-4 border-b border-gray-100">
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                        Einlagenlager
+                                    </h3>
+                                    <div className="flex items-center">
+                                        <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
+                                        <span className="text-sm font-medium text-gray-900">
+                                            {data.insoleStock.produktname} - {data.insoleStock.size} mm
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Versorgung Note Section */}
+                            {data.versorgung_note && (
+                                <div className="pb-4 border-b border-gray-100">
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                        Notiz
+                                    </h3>
+                                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                        <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                                            {data.versorgung_note}
+                                        </p>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     )}
@@ -357,12 +415,22 @@ export default function ScanPictureModal({
                     <Button
                         onClick={onClose}
                         variant="default"
-                        className="cursor-pointer bg-[#61A175] hover:bg-[#61A175]/80 text-white px-8"
+                        className="cursor-pointer bg-[#61A175] hover:bg-[#4d8a5f] text-white px-8 py-2 font-semibold shadow-md transition-all duration-200"
                     >
                         Schließen
                     </Button>
                 </div>
             </DialogContent>
+
+            {/* Fullscreen 1:1 Image Modal */}
+            {currentImage && (
+                <FullscreenImageModal
+                    isOpen={showFullscreen}
+                    onClose={() => setShowFullscreen(false)}
+                    imageUrl={currentImage}
+                    imageAlt={selectedFoot === 'left' ? 'Linker Fuß - 1:1' : 'Rechter Fuß - 1:1'}
+                />
+            )}
         </Dialog>
     );
 }

@@ -19,6 +19,7 @@ export interface Picture2324Data {
     fertigstellungBis?: string;
     insoleStock?: InsoleStock;
     versorgung?: string;
+    versorgung_note?: string;
 }
 
 export interface Picture2324Response {
