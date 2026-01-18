@@ -157,35 +157,28 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                                 <div className='border border-gray-900 p-5 flex flex-col gap-3 rounded-xl h-[320px] w-full'>
                                     {/* Versorgung at top */}
                                     <p className='font-bold text-lg'>Versorgung: <span className='font-normal text-xl'>{card.versorgung}</span></p>
-                                    
+
                                     {/* Materials + Einlage Name */}
                                     <div className='flex flex-col gap-2'>
-                                        <p className='font-bold'>Materialien: 
+                                        <p className='font-bold'>Materialien:
                                             <span className='font-normal ml-2'>
-                                                {Array.isArray(card.materialien) 
-                                                    ? card.materialien.join(', ') 
+                                                {Array.isArray(card.materialien)
+                                                    ? card.materialien.join(', ')
                                                     : card.materialien}
                                             </span>
                                         </p>
-                                             {/* Name */}
-                                    <h2 className='text-xl xl:text-2xl font-bold'>{card.name}</h2>
-
-                                        <p className='font-bold'>Einlage: <span className='font-normal'>{einlageName}</span></p>
+                                        {/* Name */}
+                                        {/* <h2 className='text-xl xl:text-2xl font-bold'></h2> */}
+                                        <p className='font-bold'>Einlage: <span className='font-normal'>{card.name}</span></p>
                                     </div>
-                                    
-                               
-                                    
-                                    {/* Spacer to push Diagnose to bottom */}
-                                    <div className='flex-1'></div>
 
-                                    
                                     {/* Diagnosis Status - at the bottom */}
                                     {Array.isArray(card.diagnosis_status) && card.diagnosis_status.length > 0 && (
                                         <div className='flex flex-col gap-2'>
                                             <p className='font-bold'>Diagnose:</p>
                                             <div className='flex flex-wrap gap-2'>
                                                 {card.diagnosis_status.map((status: string, idx: number) => (
-                                                    <span key={idx} className='px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm'>
+                                                    <span key={idx} className='px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-sm '>
                                                         {status}
                                                     </span>
                                                 ))}
