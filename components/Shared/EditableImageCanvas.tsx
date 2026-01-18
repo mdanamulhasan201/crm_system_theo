@@ -37,6 +37,7 @@ export default function EditableImageCanvas({
     const imageUrlRef = useRef<string | null>(null)
     const [isImageLoading, setIsImageLoading] = useState(true)
     const [useFallbackImage, setUseFallbackImage] = useState(false)
+    const [imageLoadError, setImageLoadError] = useState<string | null>(null)
 
     // Initialize canvas when image loads
     const initializeCanvas = useCallback(() => {
@@ -338,6 +339,7 @@ export default function EditableImageCanvas({
         if (imageUrl) {
             setIsImageLoading(true)
             setUseFallbackImage(false) // Reset fallback when URL changes
+            setImageLoadError(null) // Reset error
             setTimeout(() => initializeCanvas(), 200)
         }
     }, [imageUrl, initializeCanvas])
@@ -408,33 +410,37 @@ export default function EditableImageCanvas({
                                     className={`w-full h-auto transition-opacity duration-300 ${isZoomMode ? 'rounded-xl shadow-inner' : 'rounded-lg'} bg-gray-50 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
                                     priority={isZoomMode}
                                     unoptimized={true}
-                                    crossOrigin="anonymous"
                                     onLoad={() => {
                                         setIsImageLoading(false)
+                                        setImageLoadError(null)
                                         setTimeout(() => initializeCanvas(), 50)
                                     }}
                                     onError={(e) => {
-                                        console.warn('Next.js Image failed, falling back to regular img tag:', e)
+                                        console.warn('Next.js Image failed, falling back to regular img tag. URL:', imageUrl)
                                         setIsImageLoading(false)
                                         setUseFallbackImage(true)
                                     }}
                                 />
                             ) : (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img
-                                    src={imageUrl}
-                                    alt={alt}
-                                    className={`w-full h-auto transition-opacity duration-300 ${isZoomMode ? 'rounded-xl shadow-inner' : 'rounded-lg'} bg-gray-50 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
-                                    crossOrigin="anonymous"
-                                    onLoad={() => {
-                                        setIsImageLoading(false)
-                                        setTimeout(() => initializeCanvas(), 50)
-                                    }}
-                                    onError={(e) => {
-                                        console.error('Fallback image also failed to load:', e)
-                                        setIsImageLoading(false)
-                                    }}
-                                />
+                                <>
+                                    {/* Try without crossOrigin first */}
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img
+                                        src={imageUrl}
+                                        alt={alt}
+                                        className={`w-full h-auto transition-opacity duration-300 ${isZoomMode ? 'rounded-xl shadow-inner' : 'rounded-lg'} bg-gray-50 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
+                                        onLoad={() => {
+                                            setIsImageLoading(false)
+                                            setImageLoadError(null)
+                                            setTimeout(() => initializeCanvas(), 50)
+                                        }}
+                                        onError={(e) => {
+                                            console.error('Fallback image failed without CORS. URL:', imageUrl)
+                                            setImageLoadError('Image konnte nicht geladen werden')
+                                            setIsImageLoading(false)
+                                        }}
+                                    />
+                                </>
                             )}
                             <canvas
                                 ref={canvasRef}
@@ -501,8 +507,15 @@ export default function EditableImageCanvas({
                         )}
                     </>
                 ) : (
-                    <div className={`w-full bg-gray-100 border-2 border-dashed border-gray-300 ${isZoomMode ? 'rounded-xl h-[600px] lg:h-[800px]' : 'rounded-lg h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px]'} flex items-center justify-center text-gray-500 text-sm md:text-base`}>
-                        Kein Bild verfügbar
+                    <div className={`w-full bg-gray-100 border-2 border-dashed border-gray-300 ${isZoomMode ? 'rounded-xl h-[600px] lg:h-[800px]' : 'rounded-lg h-64 sm:h-80 md:h-96 lg:h-[500px] xl:h-[600px]'} flex flex-col items-center justify-center text-gray-500 text-sm md:text-base p-4`}>
+                        {imageLoadError ? (
+                            <>
+                                <p className="text-red-600 font-semibold mb-2">{imageLoadError}</p>
+                                <p className="text-xs text-gray-400 break-all text-center">{imageUrl}</p>
+                            </>
+                        ) : (
+                            'Kein Bild verfügbar'
+                        )}
                     </div>
                 )}
             </div>
