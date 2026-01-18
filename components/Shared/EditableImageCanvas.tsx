@@ -38,7 +38,7 @@ export default function EditableImageCanvas({
     const [isImageLoading, setIsImageLoading] = useState(true)
 
     // Initialize canvas when image loads
-    const initializeCanvas = () => {
+    const initializeCanvas = useCallback(() => {
         const canvas = canvasRef.current
         const container = imageContainerRef.current
         
@@ -65,7 +65,7 @@ export default function EditableImageCanvas({
             ctxRef.current = ctx
         }
         img.src = imageUrl
-    }
+    }, [imageUrl])
 
     // Get coordinates relative to canvas
     const getCanvasCoordinates = (e: React.MouseEvent<HTMLCanvasElement>, canvas: HTMLCanvasElement) => {
@@ -136,52 +136,160 @@ export default function EditableImageCanvas({
         ctxRef.current = ctx
     }
 
-    // Get edited image as blob (for saving)
+    // Get edited image as blob (for saving) - Fixed CORS issues for production
     const getEditedImageBlob = useCallback(async (): Promise<Blob | null> => {
         const canvas = canvasRef.current
+        const container = imageContainerRef.current
         const imageUrl = imageUrlRef.current
         
-        if (!canvas || !imageUrl) {
+        if (!canvas || !imageUrl || !container) {
+            console.error('Missing canvas, imageUrl, or container')
             return null
         }
 
         try {
-            const combinedCanvas = document.createElement('canvas')
-            const ctx = combinedCanvas.getContext('2d')
-            if (!ctx) {
-                return null
+            // Try to use the displayed image element first (already loaded, no CORS issues)
+            const displayedImg = container.querySelector('img') as HTMLImageElement
+            if (displayedImg && displayedImg.complete && displayedImg.naturalWidth > 0) {
+                const combinedCanvas = document.createElement('canvas')
+                const ctx = combinedCanvas.getContext('2d')
+                if (!ctx) {
+                    return null
+                }
+
+                // Use the actual image dimensions
+                combinedCanvas.width = displayedImg.naturalWidth
+                combinedCanvas.height = displayedImg.naturalHeight
+                
+                // Draw the original image
+                ctx.drawImage(displayedImg, 0, 0)
+                
+                // Draw the canvas overlay (drawings) scaled to match
+                if (canvas.width > 0 && canvas.height > 0) {
+                    const scaleX = displayedImg.naturalWidth / displayedImg.offsetWidth
+                    const scaleY = displayedImg.naturalHeight / displayedImg.offsetHeight
+                    ctx.save()
+                    ctx.scale(scaleX, scaleY)
+                    ctx.drawImage(canvas, 0, 0)
+                    ctx.restore()
+                }
+
+                return new Promise((resolve) => {
+                    combinedCanvas.toBlob((blob) => {
+                        resolve(blob)
+                    }, 'image/png', 0.95)
+                })
             }
 
-            const img = new window.Image()
-            img.crossOrigin = 'anonymous'
-            
-            await new Promise((resolve, reject) => {
-                img.onload = () => {
-                    combinedCanvas.width = img.width
-                    combinedCanvas.height = img.height
-                    
-                    ctx.drawImage(img, 0, 0)
-                    
-                    if (canvas.width > 0 && canvas.height > 0) {
-                        const scaleX = img.width / canvas.width
-                        const scaleY = img.height / canvas.height
-                        ctx.save()
-                        ctx.scale(scaleX, scaleY)
-                        ctx.drawImage(canvas, 0, 0)
-                        ctx.restore()
-                    }
-                    
-                    resolve(null)
+            // Fallback: Try fetching image as blob to avoid CORS issues
+            try {
+                const response = await fetch(imageUrl, {
+                    mode: 'cors',
+                    credentials: 'omit'
+                })
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch image: ${response.status}`)
                 }
-                img.onerror = reject
-                img.src = imageUrl
-            })
 
-            return new Promise((resolve) => {
-                combinedCanvas.toBlob((blob) => {
-                    resolve(blob)
-                }, 'image/png')
-            })
+                const imageBlob = await response.blob()
+                const imageObjectUrl = URL.createObjectURL(imageBlob)
+
+                const combinedCanvas = document.createElement('canvas')
+                const ctx = combinedCanvas.getContext('2d')
+                if (!ctx) {
+                    URL.revokeObjectURL(imageObjectUrl)
+                    return null
+                }
+
+                const img = new window.Image()
+                
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Image load timeout'))
+                    }, 10000)
+
+                    img.onload = () => {
+                        clearTimeout(timeout)
+                        combinedCanvas.width = img.width
+                        combinedCanvas.height = img.height
+                        
+                        ctx.drawImage(img, 0, 0)
+                        
+                        if (canvas.width > 0 && canvas.height > 0) {
+                            const scaleX = img.width / canvas.width
+                            const scaleY = img.height / canvas.height
+                            ctx.save()
+                            ctx.scale(scaleX, scaleY)
+                            ctx.drawImage(canvas, 0, 0)
+                            ctx.restore()
+                        }
+                        
+                        URL.revokeObjectURL(imageObjectUrl)
+                        resolve(null)
+                    }
+                    img.onerror = (err) => {
+                        clearTimeout(timeout)
+                        URL.revokeObjectURL(imageObjectUrl)
+                        reject(err)
+                    }
+                    img.src = imageObjectUrl
+                })
+
+                return new Promise((resolve) => {
+                    combinedCanvas.toBlob((blob) => {
+                        resolve(blob)
+                    }, 'image/png', 0.95)
+                })
+            } catch (fetchError) {
+                console.warn('Fetch method failed, trying direct image load:', fetchError)
+                
+                // Last resort: Try direct image load with CORS
+                const combinedCanvas = document.createElement('canvas')
+                const ctx = combinedCanvas.getContext('2d')
+                if (!ctx) {
+                    return null
+                }
+
+                const img = new window.Image()
+                img.crossOrigin = 'anonymous'
+                
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(() => {
+                        reject(new Error('Image load timeout'))
+                    }, 10000)
+
+                    img.onload = () => {
+                        clearTimeout(timeout)
+                        combinedCanvas.width = img.width
+                        combinedCanvas.height = img.height
+                        
+                        ctx.drawImage(img, 0, 0)
+                        
+                        if (canvas.width > 0 && canvas.height > 0) {
+                            const scaleX = img.width / canvas.width
+                            const scaleY = img.height / canvas.height
+                            ctx.save()
+                            ctx.scale(scaleX, scaleY)
+                            ctx.drawImage(canvas, 0, 0)
+                            ctx.restore()
+                        }
+                        
+                        resolve(null)
+                    }
+                    img.onerror = (err) => {
+                        clearTimeout(timeout)
+                        reject(err)
+                    }
+                    img.src = imageUrl
+                })
+
+                return new Promise((resolve) => {
+                    combinedCanvas.toBlob((blob) => {
+                        resolve(blob)
+                    }, 'image/png', 0.95)
+                })
+            }
         } catch (error) {
             console.error('Error getting edited image:', error)
             return null
@@ -230,7 +338,7 @@ export default function EditableImageCanvas({
             setIsImageLoading(true)
             setTimeout(() => initializeCanvas(), 200)
         }
-    }, [imageUrl])
+    }, [imageUrl, initializeCanvas])
 
     // Update drawing settings when props change
     useEffect(() => {
@@ -296,11 +404,16 @@ export default function EditableImageCanvas({
                                 height={isZoomMode ? 1200 : 600}
                                 className={`w-full h-auto transition-opacity duration-300 ${isZoomMode ? 'rounded-xl shadow-inner' : 'rounded-lg'} bg-gray-50 ${isImageLoading ? 'opacity-0' : 'opacity-100'}`}
                                 priority={isZoomMode}
+                                unoptimized={true}
+                                crossOrigin="anonymous"
                                 onLoad={() => {
                                     setIsImageLoading(false)
                                     setTimeout(() => initializeCanvas(), 50)
                                 }}
-                                onError={() => setIsImageLoading(false)}
+                                onError={(e) => {
+                                    console.error('Image load error:', e)
+                                    setIsImageLoading(false)
+                                }}
                             />
                             <canvas
                                 ref={canvasRef}
