@@ -123,23 +123,66 @@ export default function ZoomMode({
 
             if (!rightFootBlob || !leftFootBlob) {
                 toast.error('Bearbeitete Bilder konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.')
+                setIsDownloading(false)
+                return
+            }
+            
+            // Check if blobs are valid (not empty)
+            if (rightFootBlob.size === 0 || leftFootBlob.size === 0) {
+                toast.error('Die Bilder sind leer. Bitte versuchen Sie es erneut.')
+                setIsDownloading(false)
                 return
             }
 
             // Convert blobs to data URLs for PDF generation
-            const rightImageDataUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => resolve(reader.result as string)
-                reader.onerror = reject
-                reader.readAsDataURL(rightFootBlob)
-            })
+            let rightImageDataUrl: string
+            let leftImageDataUrl: string
+            
+            try {
+                rightImageDataUrl = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader()
+                    const timeout = setTimeout(() => {
+                        reject(new Error('FileReader timeout for right image'))
+                    }, 10000)
+                    reader.onload = () => {
+                        clearTimeout(timeout)
+                        resolve(reader.result as string)
+                    }
+                    reader.onerror = () => {
+                        clearTimeout(timeout)
+                        reject(new Error('FileReader error for right image'))
+                    }
+                    reader.readAsDataURL(rightFootBlob)
+                })
+            } catch (error) {
+                console.error('Error converting right image to data URL:', error)
+                toast.error('Fehler beim Verarbeiten des rechten Bildes.')
+                setIsDownloading(false)
+                return
+            }
 
-            const leftImageDataUrl = await new Promise<string>((resolve, reject) => {
-                const reader = new FileReader()
-                reader.onload = () => resolve(reader.result as string)
-                reader.onerror = reject
-                reader.readAsDataURL(leftFootBlob)
-            })
+            try {
+                leftImageDataUrl = await new Promise<string>((resolve, reject) => {
+                    const reader = new FileReader()
+                    const timeout = setTimeout(() => {
+                        reject(new Error('FileReader timeout for left image'))
+                    }, 10000)
+                    reader.onload = () => {
+                        clearTimeout(timeout)
+                        resolve(reader.result as string)
+                    }
+                    reader.onerror = () => {
+                        clearTimeout(timeout)
+                        reject(new Error('FileReader error for left image'))
+                    }
+                    reader.readAsDataURL(leftFootBlob)
+                })
+            } catch (error) {
+                console.error('Error converting left image to data URL:', error)
+                toast.error('Fehler beim Verarbeiten des linken Bildes.')
+                setIsDownloading(false)
+                return
+            }
 
             // Generate combined PDF with both edited feet images
             const baseName = (scanData as any)?.customerNumber || scanData.id

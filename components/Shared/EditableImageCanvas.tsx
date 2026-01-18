@@ -321,8 +321,8 @@ export default function EditableImageCanvas({
                 }
             }
 
-            // If fetch failed, try to get image data from displayed image
-            if (!imageBlob && displayedImg && displayedImg.complete) {
+            // If fetch failed, try to get image data from displayed image directly
+            if (!imageBlob && displayedImg && displayedImg.complete && displayedImg.naturalWidth > 0) {
                 try {
                     // Try to get image data via canvas (only works if same-origin or CORS enabled)
                     const tempCanvas = document.createElement('canvas')
@@ -333,56 +333,78 @@ export default function EditableImageCanvas({
                         tempCtx.drawImage(displayedImg, 0, 0)
                         
                         // Try to export - if this fails, canvas is tainted
-                        await new Promise((resolve, reject) => {
-                            tempCanvas.toBlob((blob) => {
-                                if (blob) {
-                                    imageBlob = blob
-                                    imageWidth = displayedImg.naturalWidth
-                                    imageHeight = displayedImg.naturalHeight
+                        const blob = await new Promise<Blob | null>((resolve) => {
+                            try {
+                                tempCanvas.toBlob((blob) => {
                                     resolve(blob)
-                                } else {
-                                    reject(new Error('Canvas toBlob failed'))
-                                }
-                            }, 'image/png')
+                                }, 'image/png')
+                            } catch (error) {
+                                resolve(null)
+                            }
                         })
+                        
+                        if (blob) {
+                            imageBlob = blob
+                            imageWidth = displayedImg.naturalWidth
+                            imageHeight = displayedImg.naturalHeight
+                        }
                     }
                 } catch (canvasError) {
-                    console.warn('Canvas method failed (likely CORS issue):', canvasError)
+                    // Silently fail - we'll use white background
+                    console.warn('Canvas method failed (likely CORS issue), will use white background')
                 }
             }
 
-            // If we still don't have image data, create a workaround
+            // If we still don't have image data, use displayed image dimensions for white background
             if (!imageBlob) {
-                // Last resort: Use displayed image dimensions and create blank canvas
-                // This will only include the drawings, not the original image
-                console.warn('Cannot access image data due to CORS. Creating canvas with drawings only.')
-                imageWidth = displayedImg?.naturalWidth || displayedWidth || canvas.width
-                imageHeight = displayedImg?.naturalHeight || displayedHeight || canvas.height
+                // Use displayed image dimensions - we'll create canvas with white background + drawings
+                console.warn('Cannot access image data due to CORS. Creating canvas with drawings on white background.')
+                // Try to get natural dimensions first (actual image size)
+                if (displayedImg && displayedImg.naturalWidth > 0 && displayedImg.naturalHeight > 0) {
+                    imageWidth = displayedImg.naturalWidth
+                    imageHeight = displayedImg.naturalHeight
+                } else if (displayedWidth > 0 && displayedHeight > 0) {
+                    // Use displayed dimensions
+                    imageWidth = displayedWidth
+                    imageHeight = displayedHeight
+                } else {
+                    // Final fallback
+                    imageWidth = canvas.width || 800
+                    imageHeight = canvas.height || 1200
+                }
             } else {
                 // Get image dimensions from blob
-                const img = new window.Image()
-                const imageObjectUrl = URL.createObjectURL(imageBlob)
-                
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        URL.revokeObjectURL(imageObjectUrl)
-                        reject(new Error('Image load timeout'))
-                    }, 10000)
+                try {
+                    const img = new window.Image()
+                    const imageObjectUrl = URL.createObjectURL(imageBlob)
+                    
+                    await new Promise((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            URL.revokeObjectURL(imageObjectUrl)
+                            reject(new Error('Image load timeout'))
+                        }, 10000)
 
-                    img.onload = () => {
-                        clearTimeout(timeout)
-                        imageWidth = img.width
-                        imageHeight = img.height
-                        URL.revokeObjectURL(imageObjectUrl)
-                        resolve(null)
-                    }
-                    img.onerror = () => {
-                        clearTimeout(timeout)
-                        URL.revokeObjectURL(imageObjectUrl)
-                        reject(new Error('Image load error'))
-                    }
-                    img.src = imageObjectUrl
-                })
+                        img.onload = () => {
+                            clearTimeout(timeout)
+                            imageWidth = img.width
+                            imageHeight = img.height
+                            URL.revokeObjectURL(imageObjectUrl)
+                            resolve(null)
+                        }
+                        img.onerror = () => {
+                            clearTimeout(timeout)
+                            URL.revokeObjectURL(imageObjectUrl)
+                            reject(new Error('Image load error'))
+                        }
+                        img.src = imageObjectUrl
+                    })
+                } catch (dimensionError) {
+                    console.warn('Could not get image dimensions from blob, using displayed dimensions:', dimensionError)
+                    // Use displayed image dimensions as fallback
+                    imageWidth = displayedImg?.naturalWidth || displayedWidth || canvas.width || 800
+                    imageHeight = displayedImg?.naturalHeight || displayedHeight || canvas.height || 1200
+                    // Don't clear imageBlob - we'll try to use it anyway, and fallback to white if it fails
+                }
             }
 
             // Create combined canvas
@@ -392,35 +414,53 @@ export default function EditableImageCanvas({
                 return null
             }
 
-            combinedCanvas.width = imageWidth || canvas.width
-            combinedCanvas.height = imageHeight || canvas.height
+            // Ensure we have valid dimensions
+            const finalWidth = imageWidth > 0 ? imageWidth : (displayedWidth > 0 ? displayedWidth : canvas.width || 800)
+            const finalHeight = imageHeight > 0 ? imageHeight : (displayedHeight > 0 ? displayedHeight : canvas.height || 1200)
+            
+            combinedCanvas.width = finalWidth
+            combinedCanvas.height = finalHeight
 
             // Draw original image if we have it
+            let imageDrawn = false
             if (imageBlob) {
-                const img = new window.Image()
-                const imageObjectUrl = URL.createObjectURL(imageBlob)
-                
-                await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(() => {
-                        URL.revokeObjectURL(imageObjectUrl)
-                        reject(new Error('Image load timeout'))
-                    }, 10000)
+                try {
+                    const img = new window.Image()
+                    const imageObjectUrl = URL.createObjectURL(imageBlob)
+                    
+                    await new Promise((resolve) => {
+                        const timeout = setTimeout(() => {
+                            URL.revokeObjectURL(imageObjectUrl)
+                            console.warn('Image load timeout, using white background')
+                            resolve(null)
+                        }, 8000) // Reduced timeout for faster fallback
 
-                    img.onload = () => {
-                        clearTimeout(timeout)
-                        ctx.drawImage(img, 0, 0)
-                        URL.revokeObjectURL(imageObjectUrl)
-                        resolve(null)
-                    }
-                    img.onerror = () => {
-                        clearTimeout(timeout)
-                        URL.revokeObjectURL(imageObjectUrl)
-                        reject(new Error('Image load error'))
-                    }
-                    img.src = imageObjectUrl
-                })
-            } else {
-                // Fill with white background if we can't load the image
+                        img.onload = () => {
+                            clearTimeout(timeout)
+                            try {
+                                ctx.drawImage(img, 0, 0, finalWidth, finalHeight)
+                                imageDrawn = true
+                            } catch (drawError) {
+                                console.warn('Could not draw image to canvas:', drawError)
+                            }
+                            URL.revokeObjectURL(imageObjectUrl)
+                            resolve(null)
+                        }
+                        img.onerror = () => {
+                            clearTimeout(timeout)
+                            URL.revokeObjectURL(imageObjectUrl)
+                            console.warn('Image load error, using white background')
+                            resolve(null)
+                        }
+                        img.src = imageObjectUrl
+                    })
+                } catch (imageLoadError) {
+                    console.warn('Could not load image blob, using white background:', imageLoadError)
+                }
+            }
+            
+            // Fill with white background if image wasn't drawn
+            if (!imageDrawn) {
                 ctx.fillStyle = '#FFFFFF'
                 ctx.fillRect(0, 0, combinedCanvas.width, combinedCanvas.height)
             }
@@ -435,23 +475,94 @@ export default function EditableImageCanvas({
                 ctx.restore()
             }
 
-            // Export as blob
-            return new Promise((resolve, reject) => {
+            // Export as blob - ensure we always return a valid blob
+            return new Promise((resolve) => {
                 try {
                     combinedCanvas.toBlob((blob) => {
                         if (blob) {
                             resolve(blob)
                         } else {
-                            reject(new Error('Failed to create blob'))
+                            // If toBlob fails, try creating a minimal canvas with just drawings
+                            console.warn('toBlob returned null, creating fallback canvas')
+                            try {
+                                const fallbackCanvas = document.createElement('canvas')
+                                const fallbackCtx = fallbackCanvas.getContext('2d')
+                                if (fallbackCtx && canvas.width > 0 && canvas.height > 0) {
+                                    fallbackCanvas.width = canvas.width
+                                    fallbackCanvas.height = canvas.height
+                                    fallbackCtx.fillStyle = '#FFFFFF'
+                                    fallbackCtx.fillRect(0, 0, fallbackCanvas.width, fallbackCanvas.height)
+                                    fallbackCtx.drawImage(canvas, 0, 0)
+                                    
+                                    fallbackCanvas.toBlob((fallbackBlob) => {
+                                        resolve(fallbackBlob || new Blob())
+                                    }, 'image/png', 0.95)
+                                } else {
+                                    resolve(new Blob())
+                                }
+                            } catch (fallbackError) {
+                                console.error('Fallback canvas creation failed:', fallbackError)
+                                resolve(new Blob())
+                            }
                         }
                     }, 'image/png', 0.95)
                 } catch (error) {
-                    reject(error)
+                    console.error('Error in toBlob:', error)
+                    // Last resort: return empty blob (better than null)
+                    resolve(new Blob())
                 }
             })
         } catch (error) {
-            console.error('Error getting edited image:', error)
-            return null
+            console.error('Error getting edited image, creating fallback with drawings only:', error)
+            // Last resort: Create a canvas with just the drawings on white background
+            try {
+                const canvas = canvasRef.current
+                const container = imageContainerRef.current
+                
+                if (!canvas || !container) {
+                    return null
+                }
+                
+                const displayedImg = container.querySelector('img') as HTMLImageElement
+                const fallbackWidth = displayedImg?.naturalWidth || displayedImg?.offsetWidth || canvas.width || 800
+                const fallbackHeight = displayedImg?.naturalHeight || displayedImg?.offsetHeight || canvas.height || 1200
+                
+                const fallbackCanvas = document.createElement('canvas')
+                const fallbackCtx = fallbackCanvas.getContext('2d')
+                if (!fallbackCtx) {
+                    return null
+                }
+                
+                fallbackCanvas.width = fallbackWidth
+                fallbackCanvas.height = fallbackHeight
+                
+                // White background
+                fallbackCtx.fillStyle = '#FFFFFF'
+                fallbackCtx.fillRect(0, 0, fallbackCanvas.width, fallbackCanvas.height)
+                
+                // Draw the drawings canvas if it has content
+                if (canvas.width > 0 && canvas.height > 0) {
+                    const displayedWidth = displayedImg?.offsetWidth || canvas.width
+                    const displayedHeight = displayedImg?.offsetHeight || canvas.height
+                    if (displayedWidth > 0 && displayedHeight > 0) {
+                        const scaleX = fallbackCanvas.width / displayedWidth
+                        const scaleY = fallbackCanvas.height / displayedHeight
+                        fallbackCtx.save()
+                        fallbackCtx.scale(scaleX, scaleY)
+                        fallbackCtx.drawImage(canvas, 0, 0)
+                        fallbackCtx.restore()
+                    }
+                }
+                
+                return new Promise((resolve) => {
+                    fallbackCanvas.toBlob((blob) => {
+                        resolve(blob)
+                    }, 'image/png', 0.95)
+                })
+            } catch (fallbackError) {
+                console.error('Fallback canvas creation also failed:', fallbackError)
+                return null
+            }
         }
     }, [])
 
