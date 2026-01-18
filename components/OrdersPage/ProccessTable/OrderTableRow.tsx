@@ -140,10 +140,10 @@ export default function OrderTableRow({
                     order.kundenname
                 )}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
-                <div className="flex flex-row items-center justify-center gap-2">
+            <TableCell className="text-center text-xs sm:text-sm w-[240px] min-w-[240px] max-w-[240px] whitespace-normal break-words">
+                <div className="flex flex-row items-center justify-center gap-2 flex-wrap">
                     <span 
-                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium ${getStatusBadgeColor(order.displayStatus)} ${
+                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium whitespace-normal break-words ${getStatusBadgeColor(order.displayStatus)} ${
                             order.displayStatus?.replace(/_/g, ' ') === 'Abholbereit/Versandt' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
                         }`}
                         onClick={(e) => {
@@ -200,7 +200,7 @@ export default function OrderTableRow({
             <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
                 <div className="flex flex-row items-center justify-center gap-2">
                     <span>{order.fertiggestelltAm}</span>
-                    {order.employee?.employeeName && (
+                    {order.geschaeftsstandort && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -209,26 +209,19 @@ export default function OrderTableRow({
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <div className="w-8 h-8 rounded-full bg-[#61A175] text-white flex items-center justify-center text-xs font-semibold hover:bg-[#61A175]/80 transition-colors">
-                                            {getEmployeeInitials(order.employee.employeeName)}
+                                            {order.geschaeftsstandort.substring(0, 2).toUpperCase()}
                                         </div>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg">
                                     <div className="flex flex-col gap-1">
-                                        <div className="font-semibold text-sm">{order.employee.employeeName}</div>
-                                        <div className="text-xs text-gray-300">{order.employee.email}</div>
-                                        {order.employee.accountName && (
-                                            <div className="text-xs text-gray-400 mt-1">Account: {order.employee.accountName}</div>
-                                        )}
+                                        <div className="font-semibold text-sm">Abholort: {order.geschaeftsstandort}</div>
                                     </div>
                                 </TooltipContent>
                             </Tooltip>
                         </TooltipProvider>
                     )}
                 </div>
-            </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden">
-                {order.geschaeftsstandort || '—'}
             </TableCell>
             <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden">
                 {order.beschreibung}

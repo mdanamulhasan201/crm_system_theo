@@ -132,12 +132,12 @@ export default function ScanPictureModal({
                             <p className="text-gray-600">Keine Daten verfügbar</p>
                         </div>
                     ) : hasAnyImage ? (
-                        <div className="flex flex-col lg:flex-row gap-6 items-start overflow-x-hidden">
+                        <div className="flex flex-col lg:flex-row gap-6 items-start">
                             {/* Left: Images */}
-                            <div className="w-full lg:w-[60%] shrink-0 min-w-0">
+                            <div className="w-full lg:w-[60%] shrink-0">
                                 {/* Display Selected Image */}
                                 {currentImage ? (
-                                    <div className="relative w-full bg-white rounded-xl border-2 border-gray-200 shadow-lg flex items-center justify-center overflow-auto group">
+                                    <div className="relative w-full bg-white rounded-xl border-2 border-gray-200 flex items-center justify-center overflow-auto group">
                                         <div className="relative w-full flex items-center justify-center p-4">
                                             <Image
                                                 src={currentImage}
@@ -187,7 +187,8 @@ export default function ScanPictureModal({
                             </div>
 
                             {/* Right: Meta information */}
-                            <div className="w-full lg:w-[40%] shrink-0 min-w-0 space-y-4 bg-white rounded-xl p-6 border-2 border-gray-200 shadow-lg">
+                            <div className="w-full lg:w-[40%] shrink-0 bg-white rounded-xl p-6 border-2 border-gray-200 ">
+                                <div className="space-y-4">
                                 {data.fertigstellungBis && (
                                     <div className="pb-4 border-b border-gray-100">
                                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -278,6 +279,18 @@ export default function ScanPictureModal({
                                     </div>
                                 )}
 
+                                {/* Uberzug Section */}
+                                {data.uberzug && (
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Überzug
+                                        </h3>
+                                        <p className="text-sm font-medium text-gray-900">
+                                            {data.uberzug}
+                                        </p>
+                                    </div>
+                                )}
+
                                 {/* Foot Selection Buttons */}
                                 <div className="pt-2">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
@@ -311,6 +324,7 @@ export default function ScanPictureModal({
                                             Rechter Fuß
                                         </Button>
                                     </div>
+                                </div>
                                 </div>
                             </div>
                         </div>
@@ -404,6 +418,18 @@ export default function ScanPictureModal({
                                             {data.versorgung_note}
                                         </p>
                                     </div>
+                                </div>
+                            )}
+
+                            {/* Uberzug Section */}
+                            {data.uberzug && (
+                                <div className="pb-4 border-b border-gray-100">
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                        Überzug
+                                    </h3>
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {data.uberzug}
+                                    </p>
                                 </div>
                             )}
                         </div>

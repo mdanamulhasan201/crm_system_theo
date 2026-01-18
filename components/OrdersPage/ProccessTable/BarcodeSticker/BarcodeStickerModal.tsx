@@ -43,6 +43,53 @@ export default function BarcodeStickerModal({
         }
     }, [orderId]);
 
+    // Download PDF only (no API call) - for manual download button
+    const downloadPdf = useCallback(async () => {
+        if (!barcodeData) {
+            toast.error('Bitte warten Sie, bis die Daten geladen sind');
+            return;
+        }
+
+        try {
+            setGenerating(true);
+            
+            // Generate PDF directly using canvas approach (no html2canvas dependency)
+            const pdfBlob = await generateBarcodeStickerPdfCanvas(barcodeData);
+            
+            if (!pdfBlob || pdfBlob.size === 0) {
+                toast.error('PDF konnte nicht generiert werden');
+                return;
+            }
+    
+            // Create download link with better error handling
+            const url = URL.createObjectURL(pdfBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `barcode_sticker_${orderNumber || orderId}_${new Date().toISOString().split('T')[0]}.pdf`;
+            link.style.display = 'none';
+            
+            // Append to body
+            document.body.appendChild(link);
+            
+            // Trigger download
+            link.click();
+            
+            // Wait a bit before cleanup to ensure download starts
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            toast.success('Barcode-Sticker PDF erfolgreich heruntergeladen!');
+        } catch (error) {
+            console.error('Failed to generate PDF:', error);
+            toast.error('Fehler beim Generieren des PDFs: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
+        } finally {
+            setGenerating(false);
+        }
+    }, [barcodeData, orderId, orderNumber]);
+
+    // Generate PDF and send to customer (for auto-generate when status is clicked)
     const generatePdf = useCallback(async () => {
         if (!barcodeData) {
             toast.error('Bitte warten Sie, bis die Daten geladen sind');
@@ -54,24 +101,34 @@ export default function BarcodeStickerModal({
             
             // Generate PDF directly using canvas approach (no html2canvas dependency)
             const pdfBlob = await generateBarcodeStickerPdfCanvas(barcodeData);
+            
+            if (!pdfBlob || pdfBlob.size === 0) {
+                toast.error('PDF konnte nicht generiert werden');
+                return;
+            }
     
-            // Create download link
+            // Create download link with better error handling
             const url = URL.createObjectURL(pdfBlob);
             const link = document.createElement('a');
             link.href = url;
             link.download = `barcode_sticker_${orderNumber || orderId}_${new Date().toISOString().split('T')[0]}.pdf`;
+            link.style.display = 'none';
+            
+            // Append to body
+            document.body.appendChild(link);
             
             // Trigger download
-            document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
             
-            // Clean up
-            URL.revokeObjectURL(url);
+            // Wait a bit before cleanup to ensure download starts
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
             
             toast.success('Barcode-Sticker PDF erfolgreich generiert!');
 
-            // Automatically send PDF to customer with file (non-blocking)
+            // Send PDF to customer via API (only when autoGenerate is true)
             const fileName = `barcode_sticker_${orderNumber || orderId}_${new Date().toISOString().split('T')[0]}.pdf`;
             sendPdfToCustomer(orderId, pdfBlob, fileName)
                 .then((sendResponse) => {
@@ -87,7 +144,7 @@ export default function BarcodeStickerModal({
                 });
         } catch (error) {
             console.error('Failed to generate PDF:', error);
-            toast.error('Fehler beim Generieren des PDFs');
+            toast.error('Fehler beim Generieren des PDFs: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
         } finally {
             setGenerating(false);
         }
@@ -151,7 +208,7 @@ export default function BarcodeStickerModal({
                                     Abbrechen
                                 </Button>
                                 <Button
-                                    onClick={generatePdf}
+                                    onClick={downloadPdf}
                                     disabled={generating}
                                     className="bg-[#62A17C] hover:bg-[#62A17C]/90 cursor-pointer"
                                 >

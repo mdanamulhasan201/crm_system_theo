@@ -19,9 +19,11 @@ export default function OrderActions({
     onPriorityClick,
     onBarcodeStickerClick,
 }: OrderActionsProps) {
-    // Check if order status is "Abholbereit/Versandt"
+    // Check if order status is "Abholbereit/Versandt" or "Ausgeführt" - show barcode for both
     const normalizedStatus = order.displayStatus?.replace(/_/g, ' ') || '';
     const isAbholbereit = normalizedStatus === 'Abholbereit/Versandt';
+    const isAusgefuehrt = normalizedStatus === 'Ausgeführt';
+    const showBarcodeButton = (isAbholbereit || isAusgefuehrt) && onBarcodeStickerClick;
 
     return (
         <div className="flex gap-1 sm:gap-2 justify-center">
@@ -66,12 +68,12 @@ export default function OrderActions({
             >
                 <ClipboardEdit className={`h-3 w-3 ${order.invoice ? 'text-blue-600' : 'text-gray-400'}`} />
             </Button>
-            {isAbholbereit && onBarcodeStickerClick && (
+            {showBarcodeButton && (
                 <Button
                     variant="ghost"
                     size="sm"
                     className="h-6 cursor-pointer w-6 sm:h-8 sm:w-8 p-0 hover:bg-green-100"
-                    title="Barcode-Sticker generieren"
+                    title={isAbholbereit ? "Barcode-Sticker generieren" : "Barcode-Sticker anzeigen"}
                     onClick={(e) => {
                         e.stopPropagation();
                         onBarcodeStickerClick(order.id, order.bestellnummer);
