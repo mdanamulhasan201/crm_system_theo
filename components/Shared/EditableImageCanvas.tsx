@@ -508,7 +508,7 @@ export default function EditableImageCanvas({
                     }, 'image/png', 0.95)
                 } catch (error) {
                     console.error('Error in toBlob:', error)
-                    // Last resort: return empty blob (better than null)
+               
                     resolve(new Blob())
                 }
             })
