@@ -8,21 +8,8 @@ interface ChartDataPoint {
     value: number;
 }
 
-// Sample fallback data
-const defaultData: ChartDataPoint[] = [
-    { date: '23/03', value: 0.2 },
-    { date: '24/03', value: 1.8 },
-    { date: '25/03', value: 3.6 },
-    { date: '26/03', value: 5.4 },
-    { date: '27/03', value: 5.8 },
-    { date: '28/03', value: 7.2 },
-    { date: '29/03', value: 6.8 },
-    { date: '30/03', value: 7.0 },
-    { date: '31/03', value: 5.4 },
-];
-
 export default function BalanceVerlaufChart() {
-    const [chartData, setChartData] = useState<ChartDataPoint[]>(defaultData);
+    const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
     const [loading, setLoading] = useState(false);
     const interval = Math.max(0, Math.floor(chartData.length / 8));
 
@@ -39,11 +26,13 @@ export default function BalanceVerlaufChart() {
                     }));
                     setChartData(mapped);
                 } else {
-                    setChartData(defaultData);
+                    // No data from API – show empty chart (axes only, no line)
+                    setChartData([]);
                 }
             } catch (error) {
                 console.error('Failed to fetch balance chart:', error);
-                setChartData(defaultData);
+                // On error – also show empty chart
+                setChartData([]);
             } finally {
                 setLoading(false);
             }

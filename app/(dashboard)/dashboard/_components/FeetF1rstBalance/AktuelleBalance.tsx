@@ -12,11 +12,18 @@ export default function AktuelleBalance() {
                 setLoading(true)
                 const response = await balanceMassschuheOrder()
                 // New API returns { data: { totalPrice } }
-                const value = (response as any)?.data?.totalPrice ?? (response as any)?.totalPrice ?? 0
-                setBalance(typeof value === 'number' ? value : Number(value) || 0)
+                const value = (response as any)?.data?.totalPrice ?? (response as any)?.totalPrice
+                const parsed =
+                    value === null || value === undefined || value === ''
+                        ? null
+                        : typeof value === 'number'
+                            ? value
+                            : Number(value)
+
+                setBalance(typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null)
             } catch (error) {
                 console.error('Failed to fetch balance:', error)
-                setBalance(0)
+                setBalance(null)
             } finally {
                 setLoading(false)
             }
@@ -40,7 +47,9 @@ export default function AktuelleBalance() {
                 <div className="md:text-xl lg:text-2xl xl:text-4xl font-bold text-red-500 mb-6">
                     {loading
                         ? 'Lädt...'
-                        : `-${formatCurrency(Math.abs(balance ?? 0))}€`}
+                        : balance === null
+                            ? '---'
+                            : `-${formatCurrency(Math.abs(balance))}€`}
                 </div>
 
                 <div className="space-y-1 text-sm text-gray-500 italic">

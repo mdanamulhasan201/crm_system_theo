@@ -157,7 +157,7 @@ export const updateMassschuheOrderPartner2 = async (orderId: string, isByPartner
 // balance massschuhe order /custom_shafts/total-price-resio
 export const balanceMassschuheOrder = async () => {
     try {
-        const response = await axiosClient.get(`/custom_shafts/total-price-resio`);
+        const response = await axiosClient.get(`/v2/admin-order-transitions/total-price`);
         return response.data;
     } catch (error) {
         throw error;
