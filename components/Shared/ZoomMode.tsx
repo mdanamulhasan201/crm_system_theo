@@ -5,7 +5,7 @@ import { ScanData } from '@/types/scan'
 import { useAuth } from '@/contexts/AuthContext'
 import { generateFeetPdf } from '@/lib/FootPdfGenerate'
 import { updateSingleScannerFile } from '@/apis/customerApis'
-import EditableImageCanvas, { DrawingToolbar } from './EditableImageCanvas'
+import { EditableImageCanvas, DrawingToolbar } from './Drawing'
 import toast from 'react-hot-toast'
 
 interface ZoomModeProps {
@@ -107,6 +107,32 @@ export default function ZoomMode({
         }
     }
 
+    // Helper function to convert blob to data URL
+    const blobToDataUrl = (blob: Blob): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            const timeout = setTimeout(() => {
+                reader.abort()
+                reject(new Error('FileReader timeout'))
+            }, 15000)
+            
+            reader.onload = () => {
+                clearTimeout(timeout)
+                const result = reader.result as string
+                if (result && result.startsWith('data:')) {
+                    resolve(result)
+                } else {
+                    reject(new Error('Invalid data URL'))
+                }
+            }
+            reader.onerror = () => {
+                clearTimeout(timeout)
+                reject(new Error('FileReader error'))
+            }
+            reader.readAsDataURL(blob)
+        })
+    }
+
     // Print/Download PDF with edited images
     const handlePrintEditedImages = async () => {
         try {
@@ -122,7 +148,7 @@ export default function ZoomMode({
                 : null
 
             if (!rightFootBlob || !leftFootBlob) {
-                toast.error('Bearbeitete Bilder konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.')
+                toast.error('Bearbeitete Bilder konnten nicht abgerufen werden. Möglicherweise liegt ein CORS-Problem vor. Bitte stellen Sie sicher, dass die Bilder CORS-Header haben.')
                 setIsDownloading(false)
                 return
             }
@@ -139,21 +165,7 @@ export default function ZoomMode({
             let leftImageDataUrl: string
             
             try {
-                rightImageDataUrl = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader()
-                    const timeout = setTimeout(() => {
-                        reject(new Error('FileReader timeout for right image'))
-                    }, 10000)
-                    reader.onload = () => {
-                        clearTimeout(timeout)
-                        resolve(reader.result as string)
-                    }
-                    reader.onerror = () => {
-                        clearTimeout(timeout)
-                        reject(new Error('FileReader error for right image'))
-                    }
-                    reader.readAsDataURL(rightFootBlob)
-                })
+                rightImageDataUrl = await blobToDataUrl(rightFootBlob)
             } catch (error) {
                 console.error('Error converting right image to data URL:', error)
                 toast.error('Fehler beim Verarbeiten des rechten Bildes.')
@@ -162,21 +174,7 @@ export default function ZoomMode({
             }
 
             try {
-                leftImageDataUrl = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader()
-                    const timeout = setTimeout(() => {
-                        reject(new Error('FileReader timeout for left image'))
-                    }, 10000)
-                    reader.onload = () => {
-                        clearTimeout(timeout)
-                        resolve(reader.result as string)
-                    }
-                    reader.onerror = () => {
-                        clearTimeout(timeout)
-                        reject(new Error('FileReader error for left image'))
-                    }
-                    reader.readAsDataURL(leftFootBlob)
-                })
+                leftImageDataUrl = await blobToDataUrl(leftFootBlob)
             } catch (error) {
                 console.error('Error converting left image to data URL:', error)
                 toast.error('Fehler beim Verarbeiten des linken Bildes.')
@@ -267,17 +265,6 @@ export default function ZoomMode({
 
     return (
         <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 shadow-lg my-4">
-            {/* Loading Overlay */}
-            {(isDownloading || isSaving) && (
-                <div className="absolute inset-0 z-[9999] bg-black/40 backdrop-blur-sm flex items-center justify-center rounded-lg">
-                    <div className="bg-white rounded-lg shadow-lg px-6 py-5 flex items-center gap-3">
-                        <div className="h-6 w-6 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
-                        <span className="text-gray-900 font-medium">
-                            {isSaving ? 'Bilder werden gespeichert...' : 'PDF wird generiert...'}
-                        </span>
-                    </div>
-                </div>
-            )}
 
             {/* Modern Drawing Toolbar */}
             <div className="sticky  z-10 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm rounded-t-lg">
@@ -310,13 +297,19 @@ export default function ZoomMode({
                                 }`}
                                 title="Drucken/Download bearbeitete Bilder als PDF"
                             >
-                                <FaPrint className="text-sm sm:text-base shrink-0" />
-                                <span className="hidden sm:inline lg:hidden">
-                                        {isDownloading ? 'Generieren' : 'Drucken'}
-                                </span>
-                                <span className="hidden lg:inline">
-                                    {isDownloading ? 'Generieren...' : 'Drucken als PDF'}
-                                </span>
+                                {isDownloading ? (
+                                    <>
+                                        <div className="h-4 w-4 border-2 border-gray-600 border-t-transparent rounded-full animate-spin shrink-0" />
+                                        <span className="hidden sm:inline lg:hidden">Generieren</span>
+                                        <span className="hidden lg:inline">Generieren...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaPrint className="text-sm sm:text-base shrink-0" />
+                                        <span className="hidden sm:inline lg:hidden">Drucken</span>
+                                        <span className="hidden lg:inline">Drucken als PDF</span>
+                                    </>
+                                )}
                             </button>
                             
                             {/* Save Button */}
@@ -330,13 +323,19 @@ export default function ZoomMode({
                                 }`}
                                 title="Speichere bearbeitete Bilder"
                             >
-                                <FaSave className="text-sm sm:text-base shrink-0" />
-                                <span className="hidden sm:inline lg:hidden">
-                                    {isSaving ? 'Speichern' : 'Speichere Bilder'}
-                                </span>
-                                <span className="hidden lg:inline">
-                                    {isSaving ? 'Speichern...' : 'Speichere Bilder'}
-                                </span>
+                                {isSaving ? (
+                                    <>
+                                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                                        <span className="hidden sm:inline lg:hidden">Speichern</span>
+                                        <span className="hidden lg:inline">Speichern...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaSave className="text-sm sm:text-base shrink-0" />
+                                        <span className="hidden sm:inline lg:hidden">Speichere Bilder</span>
+                                        <span className="hidden lg:inline">Speichere Bilder</span>
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
