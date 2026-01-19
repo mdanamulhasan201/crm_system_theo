@@ -18,14 +18,14 @@ export default function ProductImageInfo({ shaft, uploadedImage }: ProductImageI
   return (
     <div className="flex flex-col md:flex-row gap-10 items-center justify-center">
       {/* Image */}
-      <div className="w-full md:w-1/2 flex justify-center my-10">
+      <div className="w-full md:w-1/2 flex justify-center mb-8">
         <div className="w-full h-full">
           <Image
             src={uploadedImage || shaft.image}
             alt={shaft.name}
             width={1000}
             height={1000}
-            className="w-[550px] h-full object-cover"
+            className="w-[400px] h-full object-cover"
             priority
           />
         </div>

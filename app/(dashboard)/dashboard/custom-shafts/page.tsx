@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
-import { ChevronDown, Search } from 'lucide-react';
+import { ChevronDown, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import ImageWithShimmer from '@/components/CustomShafts/ImageWithShimmer';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -10,6 +10,7 @@ import { useCustomShafts } from '@/hooks/customShafts/useCustomShafts';
 import useDebounce from '@/hooks/useDebounce';
 import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
 import CustomShaftProductCardShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftProductCardShimmer';
+import SchaftErstellungModal from '@/components/CustomShafts/SchaftErstellungModal';
 
 const categories = [
     { label: 'Alle Kategorien', value: 'alle' },
@@ -30,6 +31,9 @@ export default function CustomShafts() {
     const [displayedCount, setDisplayedCount] = useState(8);
     const [allFetchedItems, setAllFetchedItems] = useState<CustomShaft[]>([]);
     const [isFetchingNewPage, setIsFetchingNewPage] = useState(false);
+    const [selectedShaftId, setSelectedShaftId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loadingButtonId, setLoadingButtonId] = useState<string | null>(null);
     const itemsPerPage = 8;
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -144,13 +148,36 @@ export default function CustomShafts() {
         }
     };
 
-    // handle click on the button
+    // handle click on the button - open modal instead of direct navigation
     const handleClick = (id: string) => {
-        // Pass orderId as query parameter if it exists
-        const url = orderId 
-            ? `/dashboard/custom-shafts/details/${id}?orderId=${orderId}`
-            : `/dashboard/custom-shafts/details/${id}`;
-        router.push(url);
+        setLoadingButtonId(id);
+        setSelectedShaftId(id);
+        // Small delay to show loading state
+        setTimeout(() => {
+            setIsModalOpen(true);
+            setLoadingButtonId(null);
+        }, 200);
+    }
+
+    // Handle 3D Upload selection - navigate to details page
+    const handle3DUpload = () => {
+        if (selectedShaftId) {
+            const url = orderId 
+                ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}`
+                : `/dashboard/custom-shafts/details/${selectedShaftId}`;
+            router.push(url);
+        }
+    }
+
+    // Handle Abholung (Pickup) selection
+    const handleAbholung = () => {
+        if (selectedShaftId) {
+            // Navigate to details page for pickup option
+            const url = orderId 
+                ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}&type=abholung`
+                : `/dashboard/custom-shafts/details/${selectedShaftId}?type=abholung`;
+            router.push(url);
+        }
     }
 
     return (
@@ -261,7 +288,21 @@ export default function CustomShafts() {
                                         <div className="text-xs text-gray-500 mb-2 text-left">#{item.ide}</div>
                                         <div className="font-bold text-lg mb-2 text-left">ab {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
                                     </div>
-                                    <Button variant="outline" className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-none border border-black bg-white text-black hover:bg-gray-100 text-sm font-medium" onClick={() => handleClick(item.id)}>Jetzt konfigurieren</Button>
+                                    <Button 
+                                        variant="outline" 
+                                        className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-none border border-black bg-white text-black hover:bg-gray-100 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
+                                        onClick={() => handleClick(item.id)}
+                                        disabled={loadingButtonId === item.id}
+                                    >
+                                        {loadingButtonId === item.id ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Lade...
+                                            </span>
+                                        ) : (
+                                            'Jetzt konfigurieren'
+                                        )}
+                                    </Button>
                                 </div>
                             </div>
                         ))}
@@ -299,6 +340,17 @@ export default function CustomShafts() {
                     </div>
                 </div>
             )}
+
+            {/* Schaft Erstellung Modal */}
+            <SchaftErstellungModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setLoadingButtonId(null);
+                }}
+                onSelect3DUpload={handle3DUpload}
+                onSelectAbholung={handleAbholung}
+            />
         </div>
     );
 }
