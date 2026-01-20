@@ -53,6 +53,10 @@ export default function DetailsPage() {
   // Add-ons
   const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<boolean | undefined>(undefined);
   const [osenEinsetzen, setOsenEinsetzen] = useState<boolean | undefined>(undefined);
+  const [zipperExtra, setZipperExtra] = useState<boolean | undefined>(undefined);
+
+  // Closure type
+  const [closureType, setClosureType] = useState<string>('');
 
   // Leather color configuration
   const [numberOfLeatherColors, setNumberOfLeatherColors] = useState<string>('1');
@@ -134,6 +138,7 @@ export default function DetailsPage() {
 
   const SCHNURSENKEL_PRICE = 4.49;
   const OSEN_EINSETZEN_PRICE = 8.99;
+  const ZIPPER_EXTRA_PRICE = 9.99;
   const ABHOLUNG_PRICE = 13.00;
 
   const calculateTotalPrice = () => {
@@ -145,6 +150,10 @@ export default function DetailsPage() {
 
     if (osenEinsetzen) {
       total += OSEN_EINSETZEN_PRICE;
+    }
+
+    if (zipperExtra) {
+      total += ZIPPER_EXTRA_PRICE;
     }
 
     // Add 13€ for abholung when business address is set
@@ -203,6 +212,7 @@ export default function DetailsPage() {
     formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
     formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
     formData.append('lederType', lederType);
+    formData.append('closureType', closureType);
 
     // Add prices only if options are selected
     if (passendenSchnursenkel === true) {
@@ -212,6 +222,10 @@ export default function DetailsPage() {
     if (osenEinsetzen === true) {
       formData.append('osen_einsetzen', 'true');
       formData.append('osen_einsetzen_price', '8.99');
+    }
+    if (zipperExtra === true) {
+      formData.append('zipper_extra', 'true');
+      formData.append('zipper_extra_price', '9.99');
     }
 
     // Add business address if abholung is selected
@@ -253,10 +267,13 @@ export default function DetailsPage() {
       nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
       nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
       lederType,
+      closureType,
       passenden_schnursenkel: passendenSchnursenkel === true,
       passenden_schnursenkel_price: passendenSchnursenkel === true ? '4.49' : null,
       osen_einsetzen: osenEinsetzen === true,
       osen_einsetzen_price: osenEinsetzen === true ? '8.99' : null,
+      zipper_extra: zipperExtra === true,
+      zipper_extra_price: zipperExtra === true ? '9.99' : null,
       totalPrice: orderPrice,
       // Store file names for reference
       linkerLeistenFileName,
@@ -304,6 +321,10 @@ export default function DetailsPage() {
     setNumberOfLeatherColors('1');
     setLeatherColorAssignments([]);
     setLeatherColors([]);
+    setClosureType('');
+    setPassendenSchnursenkel(undefined);
+    setOsenEinsetzen(undefined);
+    setZipperExtra(undefined);
   };
 
   const handleOrderConfirmation = async () => {
@@ -337,6 +358,7 @@ export default function DetailsPage() {
       }
 
       formData.append('lederType', lederType);
+      formData.append('closureType', closureType);
 
       // Handle leather color based on number of colors
       if (numberOfLeatherColors === '1') {
@@ -369,6 +391,11 @@ export default function DetailsPage() {
         formData.append('osen_einsetzen', 'true');
 
         formData.append('osen_einsetzen_price', '8.99');
+      }
+      if (zipperExtra === true) {
+        formData.append('zipper_extra', 'true');
+
+        formData.append('zipper_extra_price', '9.99');
       }
       formData.append('mabschaftKollektionId', shaftId);
       formData.append('totalPrice', orderPrice.toString());
@@ -481,6 +508,10 @@ export default function DetailsPage() {
             setPassendenSchnursenkel={setPassendenSchnursenkel}
             osenEinsetzen={osenEinsetzen}
             setOsenEinsetzen={setOsenEinsetzen}
+            zipperExtra={zipperExtra}
+            setZipperExtra={setZipperExtra}
+            closureType={closureType}
+            setClosureType={setClosureType}
             lederType={lederType}
             setLederType={setLederType}
             lederfarbe={lederfarbe}
@@ -547,6 +578,7 @@ export default function DetailsPage() {
           orderPrice={orderPrice}
           passendenSchnursenkel={passendenSchnursenkel}
           osenEinsetzen={osenEinsetzen}
+          zipperExtra={zipperExtra}
           selectedCustomer={selectedCustomer}
           otherCustomerNumber={otherCustomerNumber}
           shaftName={shaft?.name}

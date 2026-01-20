@@ -21,6 +21,10 @@ interface ProductConfigurationProps {
   setPassendenSchnursenkel?: (value: boolean) => void;
   osenEinsetzen?: boolean;
   setOsenEinsetzen?: (value: boolean) => void;
+  zipperExtra?: boolean;
+  setZipperExtra?: (value: boolean) => void;
+  closureType: string;
+  setClosureType: (type: string) => void;
   lederType: string;
   setLederType: (type: string) => void;
   lederfarbe: string;
@@ -57,6 +61,10 @@ export default function ProductConfiguration({
   setPassendenSchnursenkel,
   osenEinsetzen,
   setOsenEinsetzen,
+  zipperExtra,
+  setZipperExtra,
+  closureType,
+  setClosureType,
   lederType,
   setLederType,
   lederfarbe,
@@ -86,6 +94,7 @@ export default function ProductConfiguration({
   // Local fallbacks if parent does not control these fields
   const [localSchnursenkel, setLocalSchnursenkel] = useState<boolean | undefined>(undefined);
   const [localOsenEinsetzen, setLocalOsenEinsetzen] = useState<boolean | undefined>(undefined);
+  const [localZipperExtra, setLocalZipperExtra] = useState<boolean | undefined>(undefined);
   const [showLeatherColorModal, setShowLeatherColorModal] = useState(false);
 
   const effektSchnursenkel = typeof passendenSchnursenkel === 'boolean' ? passendenSchnursenkel : localSchnursenkel;
@@ -104,6 +113,15 @@ export default function ProductConfiguration({
       setOsenEinsetzen(value ?? false);
     } else {
       setLocalOsenEinsetzen(value);
+    }
+  };
+
+  const effektZipperExtra = typeof zipperExtra === 'boolean' ? zipperExtra : localZipperExtra;
+  const updateZipperExtra = (value: boolean | undefined) => {
+    if (setZipperExtra) {
+      setZipperExtra(value ?? false);
+    } else {
+      setLocalZipperExtra(value);
     }
   };
 
@@ -140,7 +158,7 @@ export default function ProductConfiguration({
               type="text"
               value={category}
               readOnly
-              className="w-full md:w-1/2 bg-gray-50 cursor-not-allowed"
+              className="w-full md:w-1/2 bg-gray-50 cursor-not-allowed border-gray-300"
             />
           </div>
         )}
@@ -149,7 +167,7 @@ export default function ProductConfiguration({
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Ledertyp:</Label>
           <Select value={lederType} onValueChange={setLederType}>
-            <SelectTrigger className="w-full md:w-1/2">
+            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
               <SelectValue placeholder="Ledertyp wählen..." />
             </SelectTrigger>
             <SelectContent>
@@ -173,7 +191,7 @@ export default function ProductConfiguration({
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Anzahl der Ledertypen:</Label>
           <Select value={numberOfLeatherColors} onValueChange={handleNumberOfColorsChange}>
-            <SelectTrigger className="w-full md:w-1/2">
+            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
               <SelectValue placeholder="Anzahl wählen..." />
             </SelectTrigger>
             <SelectContent>
@@ -191,7 +209,7 @@ export default function ProductConfiguration({
             <Input
               type="text"
               placeholder="Lederfarbe wählen..."
-              className="w-full md:w-1/2"
+              className="w-full md:w-1/2 border-gray-300"
               value={lederfarbe}
               onChange={(e) => setLederfarbe(e.target.value)}
             />
@@ -230,7 +248,7 @@ export default function ProductConfiguration({
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Innenfutter:</Label>
           <Select value={innenfutter} onValueChange={setInnenfutter}>
-            <SelectTrigger className="w-full md:w-1/2">
+            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
               <SelectValue placeholder="Innenfutter wählen..." />
             </SelectTrigger>
             <SelectContent>
@@ -248,31 +266,23 @@ export default function ProductConfiguration({
 
         {/* Nahtfarbe */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <div className="flex flex-col md:w-1/3">
-            <Label className="font-medium text-base">Nahtfarbe:</Label>
-            <Dialog>
-              <DialogContent className="max-w-3xl flex flex-col items-center">
-                <DialogTitle>Nahtfarben Katalog</DialogTitle>
-                <Image src={colorPlate} alt="Nahtfarben Katalog" className="w-full h-auto rounded shadow" />
-              </DialogContent>
-            </Dialog>
-          </div>
-          <div className="flex-1 flex flex-col gap-2">
+          <Label className="font-medium text-base md:w-1/3">Nahtfarbe:</Label>
+          <div className="w-full md:w-1/2 flex flex-col gap-2">
             <Select value={nahtfarbeOption} onValueChange={setNahtfarbeOption}>
-              <SelectTrigger className="w-full md:w-1/2">
+              <SelectTrigger className="w-full border-gray-300">
                 <SelectValue placeholder="Passend zur Lederfarbe" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="default">Passend zur Lederfarbe</SelectItem>
-                <SelectItem value="personal">Passendste Nahtfarbe nach Personal</SelectItem>
-                <SelectItem value="custom">Eigene Farbe angeben</SelectItem>
+                <SelectItem className='cursor-pointer' value="default">Passend zur Lederfarbe</SelectItem>
+                <SelectItem className='cursor-pointer' value="personal">Passendste Nahtfarbe nach Personal</SelectItem>
+                <SelectItem className='cursor-pointer' value="custom">Eigene Farbe angeben</SelectItem>
               </SelectContent>
             </Select>
             {nahtfarbeOption === 'custom' && (
               <Input
                 type="text"
                 placeholder="Eigene Nahtfarbe angeben..."
-                className="w-full md:w-1/2 mt-1"
+                className="w-full border-gray-300"
                 value={customNahtfarbe}
                 onChange={e => setCustomNahtfarbe(e.target.value)}
               />
@@ -283,11 +293,11 @@ export default function ProductConfiguration({
         {/* Schafthöhe */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Schafthöhe:</Label>
-          <div className="flex items-center gap-2 w-fit ">
+          <div className="flex items-center gap-2 w-full md:w-1/2">
             <Input
               type="number"
-              placeholder="z.B. 5 cm"
-              className="flex-1"
+              placeholder="z.B. 5"
+              className="flex-1 border-gray-300"
               value={schafthohe}
               onChange={e => setSchafthohe(e.target.value)}
             />
@@ -324,7 +334,7 @@ export default function ProductConfiguration({
           <Label className="font-medium text-base md:w-1/3"> </Label>
           <Textarea
             placeholder="Spezielle Anmerkung (z.B. Polsterdicke in mm, asymmetrisch, extraweich..)"
-            className="w-full md:w-2/3"
+            className="w-full md:w-1/2 border-gray-300"
             value={polsterungText}
             onChange={(e) => setPolsterungText(e.target.value)}
           />
@@ -357,58 +367,102 @@ export default function ProductConfiguration({
           <Label className="font-medium text-base md:w-1/3"> </Label>
           <Textarea
             placeholder="Besondere Anmerkung zu den Verstärkungen (z.B. Material, Stärke, Position)"
-            className="w-full md:w-2/3"
+            className="w-full md:w-1/2 border-gray-300"
             value={verstarkungenText}
             onChange={(e) => setVerstarkungenText(e.target.value)}
           />
         </div>
 
-
-        {/* Zusätze: Schnürsenkel */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4 mt-5">
-          <Label className="font-medium text-base md:w-1/3">
-            Möchten Sie passende Schnürsenkel zum Schuh? (+4,49€)
-          </Label>
-          <div className="flex items-center gap-8">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektSchnursenkel === false}
-                onChange={() => updateSchnursenkel(effektSchnursenkel === false ? undefined : false)}
-              />
-              <span>Nein, ohne</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektSchnursenkel === true}
-                onChange={() => updateSchnursenkel(effektSchnursenkel === true ? undefined : true)}
-              />
-              <span>Ja mit passenden Schnürsenkel (+4,49€)</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Zusätze: Ösen einsetzen */}
+        {/* Verschlussart */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">
-            Möchten Sie den Schaft bereits mit eingesetzten Ösen? (+8,99€)
-          </Label>
-          <div className="flex items-center gap-8">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektOsen === false}
-                onChange={() => updateOsen(effektOsen === false ? undefined : false)}
-              />
-              <span>Nein, ohne Ösen</span>
-            </label>
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektOsen === true}
-                onChange={() => updateOsen(effektOsen === true ? undefined : true)}
-              />
-              <span>Ja, Ösen einsetzen (+8,99€)</span>
-            </label>
-          </div>
+          <Label className="font-medium text-base md:w-1/3">Verschlussart:</Label>
+          <Select value={closureType} onValueChange={setClosureType}>
+            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
+              <SelectValue placeholder="Verschlussart wählen..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem className='cursor-pointer' value="Velcro">Klettverschluss (Velcro)</SelectItem>
+              <SelectItem className='cursor-pointer' value="Eyelets">Ösen</SelectItem>
+              <SelectItem className='cursor-pointer' value="Zipper">Reißverschluss (Zipper)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+
+        {/* Zusätze: Schnürsenkel - Only show for Eyelets and Zipper */}
+        {(closureType === 'Eyelets' || closureType === 'Zipper') && (
+          <div className="flex flex-col md:flex-row md:items-center gap-4 mt-5">
+            <Label className="font-medium text-base md:w-1/3">
+              Möchten Sie passende Schnürsenkel zum Schuh? (+4,49€)
+            </Label>
+            <div className="flex items-center gap-8">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={effektSchnursenkel === false}
+                  onChange={() => updateSchnursenkel(effektSchnursenkel === false ? undefined : false)}
+                />
+                <span>Nein, ohne</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={effektSchnursenkel === true}
+                  onChange={() => updateSchnursenkel(effektSchnursenkel === true ? undefined : true)}
+                />
+                <span>Ja mit passenden Schnürsenkel (+4,49€)</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Zusätze: Ösen einsetzen - Only show for Eyelets and Zipper */}
+        {(closureType === 'Eyelets' || closureType === 'Zipper') && (
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <Label className="font-medium text-base md:w-1/3">
+              Möchten Sie den Schaft bereits mit eingesetzten Ösen? (+8,99€)
+            </Label>
+            <div className="flex items-center gap-8">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={effektOsen === false}
+                  onChange={() => updateOsen(effektOsen === false ? undefined : false)}
+                />
+                <span>Nein, ohne Ösen</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={effektOsen === true}
+                  onChange={() => updateOsen(effektOsen === true ? undefined : true)}
+                />
+                <span>Ja, Ösen einsetzen (+8,99€)</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Zusätze: Zusätzlicher Reißverschluss - Only show for Zipper */}
+        {closureType === 'Zipper' && (
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <Label className="font-medium text-base md:w-1/3">
+              Möchten Sie einen zusätzlichen Reißverschluss? (+9,99€)
+            </Label>
+            <div className="flex items-center gap-8">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={effektZipperExtra === false}
+                  onChange={() => updateZipperExtra(effektZipperExtra === false ? undefined : false)}
+                />
+                <span>Nein, ohne zusätzlichen Reißverschluss</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={effektZipperExtra === true}
+                  onChange={() => updateZipperExtra(effektZipperExtra === true ? undefined : true)}
+                />
+                <span>Ja, zusätzlichen Reißverschluss (+9,99€)</span>
+              </label>
+            </div>
+          </div>
+        )}
         {/* Submit Button */}
         <div className="flex justify-center mt-4">
           <Button
