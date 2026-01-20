@@ -6,14 +6,14 @@ import axiosClient from "@/lib/axiosClient";
 // date of brith
 // ?geburtsdatum=
 // ?customerNumber=
- 
+
 // name
 // ?vorname=
 // ?nachname=
 
 export const getAllMassschuheOrder = async (
-    page: number, 
-    limit: number, 
+    page: number,
+    limit: number,
     status?: string,
     geburtsdatum?: string,
     customerNumber?: string | number,
@@ -23,30 +23,30 @@ export const getAllMassschuheOrder = async (
 ) => {
     try {
         let url = `/massschuhe-order?page=${page}&limit=${limit}`;
-        
+
         const statusParam = status && status !== "Versorgungs Start" ? `&status=${status}` : "";
         url += statusParam;
-        
+
         if (geburtsdatum) {
             url += `&geburtsdatum=${encodeURIComponent(geburtsdatum)}`;
         }
-        
+
         if (customerNumber) {
             url += `&customerNumber=${encodeURIComponent(customerNumber)}`;
         }
-        
+
         if (vorname) {
             url += `&vorname=${encodeURIComponent(vorname)}`;
         }
-        
+
         if (nachname) {
             url += `&nachname=${encodeURIComponent(nachname)}`;
         }
-        
+
         if (customerId) {
             url += `&customerId=${encodeURIComponent(customerId)}`;
         }
-        
+
         const response = await axiosClient.get(url);
         return response.data;
     } catch (error) {
@@ -205,6 +205,30 @@ export const sendMassschuheOrderToAdmin3 = async (orderId: string, formData: For
                 'Content-Type': 'multipart/form-data',
             },
         });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// create business address /massschuhe-order/admin-order/courier-contact/create
+export const createBusinessAddress = async (businessAddressData: any) => {
+    try {
+        const response = await axiosClient.post(`/massschuhe-order/admin-order/courier-contact/create`, businessAddressData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// get business address list for a customer
+// GET /massschuhe-order/admin-order/courier-contact/customer-list-order-contact/:customerId
+export const getBusinessAddress = async (customerId: string) => {
+    try {
+        const response = await axiosClient.get(
+            `/massschuhe-order/admin-order/courier-contact/customer-list-order-contact/${customerId}`
+        );
         return response.data;
     } catch (error) {
         throw error;

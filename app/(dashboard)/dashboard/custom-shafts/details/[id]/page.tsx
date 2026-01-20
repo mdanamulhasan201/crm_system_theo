@@ -67,6 +67,9 @@ export default function DetailsPage() {
   interface BusinessAddressData {
     companyName: string;
     address: string;
+    price: number;
+    phone: string;
+    email: string;
   }
   const [businessAddress, setBusinessAddress] = useState<BusinessAddressData | null>(null);
 
@@ -139,7 +142,10 @@ export default function DetailsPage() {
   const SCHNURSENKEL_PRICE = 4.49;
   const OSEN_EINSETZEN_PRICE = 8.99;
   const ZIPPER_EXTRA_PRICE = 9.99;
-  const ABHOLUNG_PRICE = 13.00;
+  const ABHOLUNG_PRICE_DEFAULT = 13.0;
+
+  // Helper to determine if images should be updated
+  const shouldUpdateImage = !!(rechterLeistenFile || linkerLeistenFile);
 
   const calculateTotalPrice = () => {
     let total = basePrice;
@@ -156,9 +162,11 @@ export default function DetailsPage() {
       total += ZIPPER_EXTRA_PRICE;
     }
 
-    // Add 13€ for abholung when business address is set
+    // Add abholung price when business address is set
     if (isAbholung && businessAddress) {
-      total += ABHOLUNG_PRICE;
+      total += Number.isFinite(businessAddress.price)
+        ? businessAddress.price
+        : ABHOLUNG_PRICE_DEFAULT;
     }
 
     return total;
@@ -184,9 +192,37 @@ export default function DetailsPage() {
     // Add business address if abholung is selected
     if (isAbholung && businessAddress) {
       formData.append('abholung', 'true');
-      formData.append('abholung_price', ABHOLUNG_PRICE.toString());
+      formData.append(
+        'abholung_price',
+        String(
+          Number.isFinite(businessAddress.price)
+            ? businessAddress.price
+            : ABHOLUNG_PRICE_DEFAULT
+        )
+      );
       formData.append('business_companyName', businessAddress.companyName);
       formData.append('business_address', businessAddress.address);
+      if (businessAddress.phone) {
+        formData.append('business_phone', businessAddress.phone);
+      }
+      if (businessAddress.email) {
+        formData.append('business_email', businessAddress.email);
+      }
+      if (businessAddress.phone) {
+        formData.append('business_phone', businessAddress.phone);
+      }
+      if (businessAddress.email) {
+        formData.append('business_email', businessAddress.email);
+      }
+    }
+
+    // Update image flag
+    formData.append('update_image', shouldUpdateImage ? 'true' : 'false');
+
+    // Verschlussart mapping
+    if (closureType) {
+      formData.append('closureType', closureType);
+      formData.append('verschlussart', closureType);
     }
 
     // Add lederfarbe only if 1 color is selected
@@ -212,7 +248,30 @@ export default function DetailsPage() {
     formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
     formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
     formData.append('lederType', lederType);
-    formData.append('closureType', closureType);
+    // keep for backward compatibility (also added above when set)
+    if (!formData.has('closureType') && closureType) {
+      formData.append('closureType', closureType);
+    }
+
+    // Zusatzfragen als eigene Felder
+    if (passendenSchnursenkel !== undefined) {
+      formData.append(
+        'moechten_sie_passende_schnuersenkel_zum_schuh',
+        passendenSchnursenkel ? 'true' : 'false'
+      );
+    }
+    if (osenEinsetzen !== undefined) {
+      formData.append(
+        'moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen',
+        osenEinsetzen ? 'true' : 'false'
+      );
+    }
+    if (zipperExtra !== undefined) {
+      formData.append(
+        'moechten_sie_einen_zusaetzlichen_reissverschluss',
+        zipperExtra ? 'true' : 'false'
+      );
+    }
 
     // Add prices only if options are selected
     if (passendenSchnursenkel === true) {
@@ -231,7 +290,14 @@ export default function DetailsPage() {
     // Add business address if abholung is selected
     if (isAbholung && businessAddress) {
       formData.append('abholung', 'true');
-      formData.append('abholung_price', ABHOLUNG_PRICE.toString());
+      formData.append(
+        'abholung_price',
+        String(
+          Number.isFinite(businessAddress.price)
+            ? businessAddress.price
+            : ABHOLUNG_PRICE_DEFAULT
+        )
+      );
       formData.append('business_companyName', businessAddress.companyName);
       formData.append('business_address', businessAddress.address);
     }
@@ -283,14 +349,11 @@ export default function DetailsPage() {
     // Store in sessionStorage (we'll need to handle files separately)
     sessionStorage.setItem(`customShaftData_${orderId}`, JSON.stringify({
       ...customShaftData,
-      // Store file references (we'll need to recreate FormData in Bodenkonstruktion)
       hasImage3d_1: !!rechterLeistenFile,
       hasImage3d_2: !!linkerLeistenFile,
     }));
 
-    // Store files in a way that can be accessed later
-    // Note: Files can't be stored in sessionStorage, so we'll need to handle them differently
-    // For now, we'll store the form data and handle files when calling API
+    
 
     // Close modal
     setShowConfirmationModal(false);
@@ -357,8 +420,16 @@ export default function DetailsPage() {
         formData.append('image3d_2', linkerLeistenFile);
       }
 
+      // Update image flag
+      formData.append('update_image', shouldUpdateImage ? 'true' : 'false');
+
       formData.append('lederType', lederType);
-      formData.append('closureType', closureType);
+
+      // Verschlussart mapping
+      if (closureType) {
+        formData.append('closureType', closureType);
+        formData.append('verschlussart', closureType);
+      }
 
       // Handle leather color based on number of colors
       if (numberOfLeatherColors === '1') {
@@ -396,6 +467,26 @@ export default function DetailsPage() {
         formData.append('zipper_extra', 'true');
 
         formData.append('zipper_extra_price', '9.99');
+      }
+
+      // Zusatzfragen als eigene Felder
+      if (passendenSchnursenkel !== undefined) {
+        formData.append(
+          'moechten_sie_passende_schnuersenkel_zum_schuh',
+          passendenSchnursenkel ? 'true' : 'false'
+        );
+      }
+      if (osenEinsetzen !== undefined) {
+        formData.append(
+          'moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen',
+          osenEinsetzen ? 'true' : 'false'
+        );
+      }
+      if (zipperExtra !== undefined) {
+        formData.append(
+          'moechten_sie_einen_zusaetzlichen_reissverschluss',
+          zipperExtra ? 'true' : 'false'
+        );
       }
       formData.append('mabschaftKollektionId', shaftId);
       formData.append('totalPrice', orderPrice.toString());
@@ -479,9 +570,16 @@ export default function DetailsPage() {
             if (!data.companyName && !data.address) {
               setBusinessAddress(null);
             } else {
-              setBusinessAddress(data);
+              setBusinessAddress({
+                companyName: data.companyName,
+                address: data.address,
+                price: Number.isFinite(data.price) ? data.price : ABHOLUNG_PRICE_DEFAULT,
+                phone: data.phone || '',
+                email: data.email || '',
+              });
             }
           }}
+          orderId={orderId}
         />
 
         <div className="flex flex-col border-2 border-gray-200 rounded-lg p-4 shadow-md">

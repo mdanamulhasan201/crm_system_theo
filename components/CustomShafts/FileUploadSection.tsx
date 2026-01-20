@@ -20,6 +20,9 @@ interface Customer {
 interface BusinessAddressData {
   companyName: string;
   address: string;
+  price: number;
+  phone: string;
+  email: string;
 }
 
 interface FileUploadSectionProps {
@@ -39,6 +42,7 @@ interface FileUploadSectionProps {
   hideFileUploads?: boolean;
   businessAddress?: BusinessAddressData | null;
   onBusinessAddressSave?: (data: BusinessAddressData) => void;
+  orderId?: string | null;
 }
 
 export default function FileUploadSection({
@@ -58,6 +62,7 @@ export default function FileUploadSection({
   hideFileUploads = false,
   businessAddress,
   onBusinessAddressSave,
+  orderId,
 }: FileUploadSectionProps) {
   const linkerLeistenInputRef = useRef<HTMLInputElement>(null);
   const rechterLeistenInputRef = useRef<HTMLInputElement>(null);
@@ -222,6 +227,9 @@ export default function FileUploadSection({
                     onBusinessAddressSave({
                       companyName: '',
                       address: '',
+                      price: 13,
+                      phone: '',
+                      email: '',
                     });
                   }
                 } else {
@@ -291,6 +299,8 @@ export default function FileUploadSection({
             setShowBusinessAddressModal(false);
           }}
           savedAddress={businessAddress}
+          customerId={selectedCustomer?.id}
+          orderId={orderId}
         />
       )}
     </div>
