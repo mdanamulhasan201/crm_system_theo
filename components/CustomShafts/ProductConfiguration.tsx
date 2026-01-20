@@ -45,6 +45,7 @@ interface ProductConfigurationProps {
   setLeatherColors: (colors: string[]) => void;
   shoeImage: string | null; // The shoe image to use in the modal
   onOrderComplete: () => void;
+  category?: string; // Category from the shaft data
 }
 
 export default function ProductConfiguration({
@@ -80,6 +81,7 @@ export default function ProductConfiguration({
   setLeatherColors,
   shoeImage,
   onOrderComplete,
+  category,
 }: ProductConfigurationProps) {
   // Local fallbacks if parent does not control these fields
   const [localSchnursenkel, setLocalSchnursenkel] = useState<boolean | undefined>(undefined);
@@ -130,6 +132,19 @@ export default function ProductConfiguration({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6">
+        {/* Kategorie */}
+        {category && (
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <Label className="font-medium text-base md:w-1/3">Kategorie:</Label>
+            <Input
+              type="text"
+              value={category}
+              readOnly
+              className="w-full md:w-1/2 bg-gray-50 cursor-not-allowed"
+            />
+          </div>
+        )}
+
         {/* Ledertyp */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Ledertyp:</Label>

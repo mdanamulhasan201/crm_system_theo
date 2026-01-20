@@ -1,5 +1,6 @@
 import React from "react"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
+import Image from "next/image"
 
 interface SoleSelectionModalProps {
     isOpen: boolean
@@ -68,7 +69,9 @@ export default function SoleSelectionModal({
                                     </button>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <img
+                                    <Image
+                                        width={128}
+                                        height={128}
                                         src={sole.image}
                                         alt={sole.name}
                                         className="w-32 h-32 object-contain mb-3"

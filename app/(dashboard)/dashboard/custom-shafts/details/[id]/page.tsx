@@ -505,6 +505,7 @@ export default function DetailsPage() {
             setLeatherColors={setLeatherColors}
             shoeImage={uploadedImage || shaft?.image || null}
             onOrderComplete={() => setShowConfirmationModal(true)}
+            category={shaft?.catagoary}
           />
         </div>
 

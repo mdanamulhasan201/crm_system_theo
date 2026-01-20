@@ -338,8 +338,7 @@ export const GROUPS2: GroupDef2[] = [
       { id: "select3", label: "Halbe Sohle – Standard" },
       { id: "select4", label: "Halbe Sohle – Mit mehr Profil" },
       { id: "select5", label: "Spezialsystem (z. B. Vibram): " },
-      
-
+      { id: "laufsohle_lose_beilegen", label: "Laufsohle lose beilegen (-10€)" },
     ],
   },
   {

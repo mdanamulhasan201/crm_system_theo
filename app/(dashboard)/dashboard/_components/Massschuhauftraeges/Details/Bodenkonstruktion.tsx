@@ -356,13 +356,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     return (
         <div className="relative bg-white">
-            {/* Back Button */}
-            <button 
-                className="px-6 cursor-pointer py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50" 
-                onClick={() => router.back()}
-            >
-                <FaArrowLeft />
-            </button>
+          
 
             {/* Product Header */}
             <ProductHeader orderData={orderDataForPDF} />

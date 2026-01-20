@@ -36,12 +36,6 @@
     "description": "Stabile Vorderfußplatte mit Punkt- und Hexagonstruktur für gleichmäßigen Grip. Geeignet für Alltagsschuhe, Sneakers oder Reparaturen mit mittlerer Rutschfestigkeit.."
   },
   {
-    "id": "7",
-    "name": "Vibram EVA-Keilsohle weiß",
-    "image": "/images/SohlenImages/07.png",
-    "description": "Leichte, gedämpfte Keilsohle aus EVA mit rutschfester, fein genoppter Unterseite. Ideal für Sneakers, Komfortschuhe und Alltagsschuhe, bei denen weicher Auftritt und geringes Gewicht wichtig sind."
-  },
-  {
     "id": "8",
     "name": "Vibram M-Lite Rillenprofil",
     "image": "/images/SohlenImages/08.png",
@@ -76,11 +70,5 @@
     "name": "SVIG Fein-Herringbone",
     "image": "/images/SohlenImages/13.png",
     "description": "Elegante Vollsohle mit feinem Zickzack-/Herringbone-Profil für sicheren Grip auf glatten Böden. Ideal für klassische City-Schuhe, elegante Stiefel und Reparaturen mit dünner, rutschfester Laufsohle."
-  },
-  {
-    "id": "14",
-    "name": "SVIG Grob-Herringbone",
-    "image": "/images/SohlenImages/13.png",
-    "description": "Grobes Herringbone-Profil für robuste Schuhe mit starker Traktion."
   }
 ]

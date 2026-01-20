@@ -162,7 +162,7 @@ export default function CustomShafts() {
     // Handle 3D Upload selection - navigate to details page
     const handle3DUpload = () => {
         if (selectedShaftId) {
-            const url = orderId 
+            const url = orderId
                 ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}`
                 : `/dashboard/custom-shafts/details/${selectedShaftId}`;
             router.push(url);
@@ -173,7 +173,7 @@ export default function CustomShafts() {
     const handleAbholung = () => {
         if (selectedShaftId) {
             // Navigate to details page for pickup option
-            const url = orderId 
+            const url = orderId
                 ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}&type=abholung`
                 : `/dashboard/custom-shafts/details/${selectedShaftId}?type=abholung`;
             router.push(url);
@@ -187,7 +187,7 @@ export default function CustomShafts() {
                 <h1 className="text-xl md:text-2xl font-bold mb-1">Maßschaft - individuell für deinen Kunden.</h1>
                 <div className="text-xs md:text-sm text-gray-700 leading-snug mb-1">
                     Basierend auf dem 3D-Modell des Kundenfußes stellen wir passgenaue Maßschäfte her. So sparst du dir unnötigen Versand, erhältst eine deutlich schnellere Lieferzeit und profitierst von besten Preisen.<br />
-
+                    <span className="font-bold cursor-pointer underline">Eigenen Schuh konfigurieren oder Modell hochladen</span>
                 </div>
             </div>
 
@@ -225,11 +225,10 @@ export default function CustomShafts() {
                                 {availableCategories.map((cat) => (
                                     <div
                                         key={cat.value}
-                                        className={`px-4 py-2 cursor-pointer text-sm transition-colors ${
-                                            category === cat.value 
-                                                ? 'bg-black text-white font-semibold hover:bg-gray-800' 
+                                        className={`px-4 py-2 cursor-pointer text-sm transition-colors ${category === cat.value
+                                                ? 'bg-black text-white font-semibold hover:bg-gray-800'
                                                 : 'text-black hover:bg-gray-100'
-                                        }`}
+                                            }`}
                                         onClick={() => {
                                             setCategory(cat.value);
                                             setCategoryOpen(false);
@@ -288,9 +287,9 @@ export default function CustomShafts() {
                                         <div className="text-xs text-gray-500 mb-2 text-left">#{item.ide}</div>
                                         <div className="font-bold text-lg mb-2 text-left">ab {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
                                     </div>
-                                    <Button 
-                                        variant="outline" 
-                                        className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-none border border-black bg-white text-black hover:bg-gray-100 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed" 
+                                    <Button
+                                        variant="outline"
+                                        className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-none border border-black bg-white text-black hover:bg-gray-100 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                         onClick={() => handleClick(item.id)}
                                         disabled={loadingButtonId === item.id}
                                     >
