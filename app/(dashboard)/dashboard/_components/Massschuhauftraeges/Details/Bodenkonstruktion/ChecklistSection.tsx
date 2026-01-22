@@ -43,20 +43,30 @@ export default function ChecklistSection({
         <div className="bg-white rounded-lg p-4 w-full">
             <h2 className="text-2xl font-bold text-gray-800 mb-8">Checkliste</h2>
 
-            {GROUPS2.map((g) => (
+            {GROUPS2.map((g) => {
+                // Normalize selected value for SelectField (convert array to string or null)
+                const normalizeSelected = (value: string | string[] | null | undefined): string | null => {
+                    if (!value) return null
+                    if (Array.isArray(value)) {
+                        return value.length > 0 ? value[0] : null
+                    }
+                    return value
+                }
+
+                return (
                 <React.Fragment key={g.id}>
                     {g.fieldType === "select" ? (
                         <SelectField
                             def={g}
-                            selected={selected[g.id] ?? null}
+                            selected={normalizeSelected(selected[g.id])}
                             onSelect={(optId) => onSetGroup(g.id, optId)}
-                            subSelected={g.id === "hinterkappe" ? selected.hinterkappe_sub ?? null : undefined}
+                            subSelected={g.id === "hinterkappe" ? normalizeSelected(selected.hinterkappe_sub) : undefined}
                             onSubSelect={g.id === "hinterkappe" ? onSetHinterkappeSub : undefined}
                         />
                     ) : g.fieldType === "text" ? (
                         <TextField 
                             def={g} 
-                            selected={selected[g.id] ?? null} 
+                            selected={normalizeSelected(selected[g.id])} 
                             onSelect={(value) => onSetGroup(g.id, value)} 
                         />
                     ) : g.fieldType === "heelWidthAdjustment" ? (
@@ -77,7 +87,8 @@ export default function ChecklistSection({
                     )}
                     <hr className="border-gray-200 my-4" />
                 </React.Fragment>
-            ))}
+                )
+            })}
 
             <div className="mb-4">
                 <label className="block text-base font-bold text-gray-800 mb-2">Besondere Hinweise</label>

@@ -76,24 +76,31 @@ export default function SoleSelectionModal({
                                         alt={sole.name}
                                         className="w-32 h-32 object-contain mb-3"
                                     />
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            checked={selectedSole?.id === sole.id}
-                                            onChange={(e) => {
-                                                e.stopPropagation()
-                                                onSelectSole(sole)
-                                                onClose()
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="w-4 h-4 text-green-500 cursor-pointer"
-                                        />
-                                        <label 
-                                            className="text-sm font-medium text-gray-700 cursor-pointer"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            {sole.name}
-                                        </label>
+                                    <div className="flex flex-col items-center gap-1 w-full">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={selectedSole?.id === sole.id}
+                                                onChange={(e) => {
+                                                    e.stopPropagation()
+                                                    onSelectSole(sole)
+                                                    onClose()
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="w-4 h-4 text-green-500 cursor-pointer"
+                                            />
+                                            <label 
+                                                className="text-sm font-medium text-gray-700 cursor-pointer"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {sole.name}
+                                            </label>
+                                        </div>
+                                        {sole.des && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {sole.des}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>
