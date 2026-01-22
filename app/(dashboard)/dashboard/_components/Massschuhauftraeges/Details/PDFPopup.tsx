@@ -535,6 +535,29 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 </div>
               )}
 
+              {/* Heel Width Adjustment Section */}
+              {heelWidthAdjustment && (heelWidthAdjustment.medial || heelWidthAdjustment.lateral) && (
+                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Absatzbreite anpassen (mm):</div>
+                  {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Medial (innen):</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} {heelWidthAdjustment.medial.mm} mm
+                      </span>
+                    </div>
+                  )}
+                  {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Lateral (außen):</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} {heelWidthAdjustment.lateral.mm} mm
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {showDetails ? (
                 <>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste Halbprobe</div>

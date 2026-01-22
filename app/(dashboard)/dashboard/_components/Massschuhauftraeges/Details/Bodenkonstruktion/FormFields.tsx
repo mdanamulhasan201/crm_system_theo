@@ -127,7 +127,10 @@ export function HeelWidthAdjustmentField({
                 <span className="text-sm font-medium text-gray-700 w-32">Medial (innen):</span>
                 <button
                     type="button"
-                    onClick={() => updateMedial({ op: medial.op === "widen" ? null : "widen", mm: medial.mm || 1 })}
+                    onClick={() => {
+                        if (medial.mm === 0) return
+                        updateMedial({ op: medial.op === "widen" ? null : "widen" })
+                    }}
                     className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
                         medial.op === "widen"
                             ? 'bg-green-500 text-white border-green-500'
@@ -139,7 +142,10 @@ export function HeelWidthAdjustmentField({
                 </button>
                 <button
                     type="button"
-                    onClick={() => updateMedial({ op: medial.op === "narrow" ? null : "narrow", mm: medial.mm || 1 })}
+                    onClick={() => {
+                        if (medial.mm === 0) return
+                        updateMedial({ op: medial.op === "narrow" ? null : "narrow" })
+                    }}
                     className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
                         medial.op === "narrow"
                             ? 'bg-green-500 text-white border-green-500'
@@ -153,6 +159,7 @@ export function HeelWidthAdjustmentField({
                     value={medial.mm}
                     onChange={(e) => {
                         const mm = parseInt(e.target.value)
+                        // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
                         updateMedial({ mm, op: mm === 0 ? null : (medial.op || "widen") })
                     }}
                     className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
@@ -170,7 +177,10 @@ export function HeelWidthAdjustmentField({
                 <span className="text-sm font-medium text-gray-700 w-32">Lateral (außen):</span>
                 <button
                     type="button"
-                    onClick={() => updateLateral({ op: lateral.op === "widen" ? null : "widen", mm: lateral.mm || 1 })}
+                    onClick={() => {
+                        if (lateral.mm === 0) return
+                        updateLateral({ op: lateral.op === "widen" ? null : "widen" })
+                    }}
                     className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
                         lateral.op === "widen"
                             ? 'bg-green-500 text-white border-green-500'
@@ -182,7 +192,10 @@ export function HeelWidthAdjustmentField({
                 </button>
                 <button
                     type="button"
-                    onClick={() => updateLateral({ op: lateral.op === "narrow" ? null : "narrow", mm: lateral.mm || 1 })}
+                    onClick={() => {
+                        if (lateral.mm === 0) return
+                        updateLateral({ op: lateral.op === "narrow" ? null : "narrow" })
+                    }}
                     className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
                         lateral.op === "narrow"
                             ? 'bg-green-500 text-white border-green-500'
@@ -196,6 +209,7 @@ export function HeelWidthAdjustmentField({
                     value={lateral.mm}
                     onChange={(e) => {
                         const mm = parseInt(e.target.value)
+                        // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
                         updateLateral({ mm, op: mm === 0 ? null : (lateral.op || "widen") })
                     }}
                     className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
