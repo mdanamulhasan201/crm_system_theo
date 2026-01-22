@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,8 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import Image from 'next/image';
 import colorPlate from '@/public/images/color.png';
 import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColorSectionModal';
+import ZipperPlacementModal from './ZipperPlacementModal';
 
 interface ProductConfigurationProps {
+  // Custom category and price
+  customCategory: string;
+  setCustomCategory: (value: string) => void;
+  customCategoryPrice: number | null;
+  setCustomCategoryPrice: (price: number | null) => void;
   nahtfarbeOption: string;
   setNahtfarbeOption: (option: string) => void;
   customNahtfarbe: string;
@@ -50,9 +56,14 @@ interface ProductConfigurationProps {
   shoeImage: string | null; // The shoe image to use in the modal
   onOrderComplete: () => void;
   category?: string; // Category from the shaft data
+  allowCategoryEdit?: boolean; // If true, show dropdown; if false, show read-only field
 }
 
 export default function ProductConfiguration({
+  customCategory,
+  setCustomCategory,
+  customCategoryPrice,
+  setCustomCategoryPrice,
   nahtfarbeOption,
   setNahtfarbeOption,
   customNahtfarbe,
@@ -90,12 +101,44 @@ export default function ProductConfiguration({
   shoeImage,
   onOrderComplete,
   category,
+  allowCategoryEdit,
 }: ProductConfigurationProps) {
+  // Default value for allowCategoryEdit
+  const isCategoryEditable = allowCategoryEdit ?? false;
   // Local fallbacks if parent does not control these fields
   const [localSchnursenkel, setLocalSchnursenkel] = useState<boolean | undefined>(undefined);
   const [localOsenEinsetzen, setLocalOsenEinsetzen] = useState<boolean | undefined>(undefined);
   const [localZipperExtra, setLocalZipperExtra] = useState<boolean | undefined>(undefined);
   const [showLeatherColorModal, setShowLeatherColorModal] = useState(false);
+  const [showZipperPlacementModal, setShowZipperPlacementModal] = useState(false);
+  const [zipperPlacementImage, setZipperPlacementImage] = useState<string | null>(null);
+  const isSavingZipperRef = useRef(false);
+
+  // Ensure closureType is 'Zipper' when zipperPlacementImage exists
+  useEffect(() => {
+    if (zipperPlacementImage && closureType !== 'Zipper') {
+      setClosureType('Zipper');
+    }
+  }, [zipperPlacementImage, closureType, setClosureType]);
+
+  const CATEGORY_OPTIONS = [
+    { value: 'Halbschuhe', label: 'Halbschuhe', price: 209.99 },
+    { value: 'Stiefel', label: 'Stiefel', price: 314.99 },
+    { value: 'Knöchelhoch', label: 'Knöchelhoch', price: 219.99 },
+    { value: 'Sandalen', label: 'Sandalen', price: 189.99 },
+    { value: 'Bergschuhe', label: 'Bergschuhe', price: 234.99 },
+    { value: 'Businessschuhe', label: 'Businessschuhe', price: 224.99 },
+  ];
+
+  const handleCategoryChange = (value: string) => {
+    setCustomCategory(value);
+    const found = CATEGORY_OPTIONS.find((opt) => opt.value === value);
+    if (found) {
+      setCustomCategoryPrice(found.price);
+    } else {
+      setCustomCategoryPrice(null);
+    }
+  };
 
   const effektSchnursenkel = typeof passendenSchnursenkel === 'boolean' ? passendenSchnursenkel : localSchnursenkel;
   const updateSchnursenkel = (value: boolean | undefined) => {
@@ -125,6 +168,8 @@ export default function ProductConfiguration({
     }
   };
 
+  // Category is read-only from backend, no handler needed
+
   // Handle number of leather colors change
   const handleNumberOfColorsChange = (value: string) => {
     setNumberOfLeatherColors(value);
@@ -150,18 +195,31 @@ export default function ProductConfiguration({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6">
-        {/* Kategorie */}
-        {category && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Label className="font-medium text-base md:w-1/3">Kategorie:</Label>
+        {/* Kategorie - Conditional: Dropdown if isCategoryEditable, Read-only if not */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Label className="font-medium text-base md:w-1/3">Kategorie:</Label>
+          {isCategoryEditable ? (
+            <Select value={customCategory} onValueChange={handleCategoryChange}>
+              <SelectTrigger className="w-full md:w-1/2 border-gray-300">
+                <SelectValue placeholder="Kategorie wählen..." />
+              </SelectTrigger>
+              <SelectContent>
+                {CATEGORY_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} className="cursor-pointer" value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ) : (
             <Input
               type="text"
-              value={category}
               readOnly
+              value={category || ''}
               className="w-full md:w-1/2 bg-gray-50 cursor-not-allowed border-gray-300"
             />
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Ledertyp */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -374,18 +432,74 @@ export default function ProductConfiguration({
         </div>
 
         {/* Verschlussart */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Verschlussart:</Label>
-          <Select value={closureType} onValueChange={setClosureType}>
-            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-              <SelectValue placeholder="Verschlussart wählen..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem className='cursor-pointer' value="Velcro">Klettverschluss (Velcro)</SelectItem>
-              <SelectItem className='cursor-pointer' value="Eyelets">Ösen</SelectItem>
-              <SelectItem className='cursor-pointer' value="Zipper">Reißverschluss (Zipper)</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <Label className="font-medium text-base md:w-1/3">Verschlussart:</Label>
+            <Select 
+              value={closureType} 
+              onValueChange={(value) => {
+                if (value === 'Zipper') {
+                  // If there's already a saved drawing, allow selection
+                  if (zipperPlacementImage) {
+                    setClosureType('Zipper');
+                  } else {
+                    // Show zipper placement modal when Zipper is selected
+                    // Don't set closureType yet - wait for user to save the drawing
+                    setShowZipperPlacementModal(true);
+                  }
+                } else {
+                  setClosureType(value);
+                  // Clear zipper placement when switching to other closure types
+                  setZipperPlacementImage(null);
+                }
+              }}
+            >
+              <SelectTrigger className="w-full md:w-1/2 border-gray-300">
+                <SelectValue placeholder="Verschlussart wählen..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem className='cursor-pointer' value="Eyelets">Eyelets</SelectItem>
+                <SelectItem className='cursor-pointer' value="Zipper">Zipper</SelectItem>
+                <SelectItem className='cursor-pointer' value="Velcro">Velcro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Zipper Placement Indicator */}
+          {closureType === 'Zipper' && (
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <Label className="font-medium text-base md:w-1/3"></Label>
+              <div className="w-full md:w-1/2">
+                {zipperPlacementImage ? (
+                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <span className="text-sm text-green-700">✓ Zipper placement marked</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowZipperPlacementModal(true)}
+                      className="ml-auto h-8 text-xs"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <span className="text-sm text-yellow-700">⚠ Please mark zipper placement</span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowZipperPlacementModal(true)}
+                      className="ml-auto h-8 text-xs"
+                    >
+                      Mark Now
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
 
@@ -485,6 +599,38 @@ export default function ProductConfiguration({
             initialLeatherColors={leatherColors}
           />
         )}
+
+        {/* Zipper Placement Modal */}
+        <ZipperPlacementModal
+          isOpen={showZipperPlacementModal}
+          onClose={() => {
+            // Only reset closureType if modal is closed without saving AND no image exists
+            // Don't reset if we just saved (check ref for immediate value)
+            if (!isSavingZipperRef.current) {
+              if (!zipperPlacementImage) {
+                setClosureType('');
+              }
+            }
+            isSavingZipperRef.current = false;
+            setShowZipperPlacementModal(false);
+          }}
+          onSave={(imageDataUrl) => {
+            // Mark that we're saving to prevent onClose from resetting closureType
+            isSavingZipperRef.current = true;
+            // Save the zipper placement image
+            setZipperPlacementImage(imageDataUrl);
+            // Always set closureType to Zipper when image is saved (even when editing)
+            // This ensures the dropdown shows Zipper as selected
+            setClosureType('Zipper');
+            setShowZipperPlacementModal(false);
+            // Reset flag after a brief delay
+            setTimeout(() => {
+              isSavingZipperRef.current = false;
+            }, 100);
+          }}
+          imageUrl={shoeImage}
+          savedDrawing={zipperPlacementImage}
+        />
       </div>
     </TooltipProvider>
   );

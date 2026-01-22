@@ -7,7 +7,12 @@ type GroupDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text"
+    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment"
+}
+
+export type HeelWidthAdjustmentData = {
+    medial?: { op: "widen" | "narrow" | null; mm: number }
+    lateral?: { op: "widen" | "narrow" | null; mm: number }
 }
 
 // SelectField Component
@@ -58,6 +63,153 @@ export function SelectField({
                     </select>
                 </div>
             )}
+        </div>
+    )
+}
+
+// HeelWidthAdjustmentField Component
+export function HeelWidthAdjustmentField({
+    def,
+    value,
+    onChange,
+}: {
+    def: GroupDef
+    value: HeelWidthAdjustmentData | null
+    onChange: (value: HeelWidthAdjustmentData | null) => void
+}) {
+    const medial = value?.medial || { op: null, mm: 0 }
+    const lateral = value?.lateral || { op: null, mm: 0 }
+
+    const updateMedial = (updates: Partial<typeof medial>) => {
+        const newMedial = { ...medial, ...updates }
+        // If mm is 0, set op to null
+        if (newMedial.mm === 0) {
+            newMedial.op = null
+        }
+        const newValue: HeelWidthAdjustmentData = {
+            ...value,
+            medial: newMedial.mm > 0 ? newMedial : undefined,
+            lateral: value?.lateral,
+        }
+        // Remove if both are empty
+        if (!newValue.medial && !newValue.lateral) {
+            onChange(null)
+        } else {
+            onChange(newValue)
+        }
+    }
+
+    const updateLateral = (updates: Partial<typeof lateral>) => {
+        const newLateral = { ...lateral, ...updates }
+        // If mm is 0, set op to null
+        if (newLateral.mm === 0) {
+            newLateral.op = null
+        }
+        const newValue: HeelWidthAdjustmentData = {
+            ...value,
+            medial: value?.medial,
+            lateral: newLateral.mm > 0 ? newLateral : undefined,
+        }
+        // Remove if both are empty
+        if (!newValue.medial && !newValue.lateral) {
+            onChange(null)
+        } else {
+            onChange(newValue)
+        }
+    }
+
+    return (
+        <div className="mb-6">
+            <label className="block text-base font-bold text-gray-800 mb-2">{def.question}</label>
+            
+            {/* Medial (innen) */}
+            <div className="flex items-center gap-3 mb-3">
+                <span className="text-sm font-medium text-gray-700 w-32">Medial (innen):</span>
+                <button
+                    type="button"
+                    onClick={() => updateMedial({ op: medial.op === "widen" ? null : "widen", mm: medial.mm || 1 })}
+                    className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                        medial.op === "widen"
+                            ? 'bg-green-500 text-white border-green-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    } ${medial.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    disabled={medial.mm === 0}
+                >
+                    +
+                </button>
+                <button
+                    type="button"
+                    onClick={() => updateMedial({ op: medial.op === "narrow" ? null : "narrow", mm: medial.mm || 1 })}
+                    className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                        medial.op === "narrow"
+                            ? 'bg-green-500 text-white border-green-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    } ${medial.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    disabled={medial.mm === 0}
+                >
+                    −
+                </button>
+                <select
+                    value={medial.mm}
+                    onChange={(e) => {
+                        const mm = parseInt(e.target.value)
+                        updateMedial({ mm, op: mm === 0 ? null : (medial.op || "widen") })
+                    }}
+                    className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                        <option key={val} value={val}>
+                            {val} mm
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Lateral (außen) */}
+            <div className="flex items-center gap-3 mb-2">
+                <span className="text-sm font-medium text-gray-700 w-32">Lateral (außen):</span>
+                <button
+                    type="button"
+                    onClick={() => updateLateral({ op: lateral.op === "widen" ? null : "widen", mm: lateral.mm || 1 })}
+                    className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                        lateral.op === "widen"
+                            ? 'bg-green-500 text-white border-green-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    } ${lateral.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    disabled={lateral.mm === 0}
+                >
+                    +
+                </button>
+                <button
+                    type="button"
+                    onClick={() => updateLateral({ op: lateral.op === "narrow" ? null : "narrow", mm: lateral.mm || 1 })}
+                    className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                        lateral.op === "narrow"
+                            ? 'bg-green-500 text-white border-green-500'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                    } ${lateral.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    disabled={lateral.mm === 0}
+                >
+                    −
+                </button>
+                <select
+                    value={lateral.mm}
+                    onChange={(e) => {
+                        const mm = parseInt(e.target.value)
+                        updateLateral({ mm, op: mm === 0 ? null : (lateral.op || "widen") })
+                    }}
+                    className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                        <option key={val} value={val}>
+                            {val} mm
+                        </option>
+                    ))}
+                </select>
+            </div>
+
+            {/* Helper text */}
+            <p className="text-xs text-gray-500 mt-1 ml-36">+ = aufbauen, − = einschleifen</p>
         </div>
     )
 }
@@ -173,18 +325,36 @@ export function OptionGroup({
     setOptionInputs,
     onOptionClick,
 }: {
-    def: GroupDef
-    selected: string | null
+    def: GroupDef & { multiSelect?: boolean }
+    selected: string | string[] | null
     onSelect: (optionId: string | null) => void
     optionInputs: OptionInputsState
     setOptionInputs: React.Dispatch<React.SetStateAction<OptionInputsState>>
     onOptionClick?: (groupId: string, optionId: string) => void
 }) {
+    const isMultiSelect = def.multiSelect === true
+    const selectedArray = isMultiSelect 
+        ? (Array.isArray(selected) ? selected : (typeof selected === 'string' ? [selected] : []))
+        : null
+    const selectedValue = isMultiSelect ? null : (selected as string | null)
+
     const handleSelect = (optId: string) => {
         if (onOptionClick && def.id === "absatzform") {
             onOptionClick(def.id, optId)
         } else {
-            onSelect(optId)
+            // For multi-select, always pass the optionId (even when unselecting)
+            // The setGroup handler will check if it's already in the array and toggle it
+            if (isMultiSelect) {
+                // Always pass the optionId - setGroup will handle the toggle logic
+                onSelect(optId)
+            } else {
+                // Single select: Toggle: if already selected, unselect it; otherwise select it
+                if (selectedValue === optId) {
+                    onSelect(null)
+                } else {
+                    onSelect(optId)
+                }
+            }
         }
     }
 
@@ -225,7 +395,10 @@ export function OptionGroup({
             <div className="text-base font-bold text-gray-800 mr-6 min-w-[200px]">{def.question}</div>
             <div className="flex flex-wrap items-center gap-4">
                 {def.options.map((opt) => {
-                    const isChecked = selected === opt.id
+                    const isChecked = isMultiSelect 
+                        ? (selectedArray?.includes(opt.id) || false)
+                        : (selectedValue === opt.id)
+                    const isDisabled = opt.disabled === true
                     const placeholderCount = getOptionInlineCount(opt.label)
                     const inputsForOpt = optionInputs[def.id]?.[opt.id] ?? Array.from({ length: placeholderCount }, () => "")
                     const inputId = `opt-${def.id}-${opt.id}`
@@ -235,8 +408,10 @@ export function OptionGroup({
                             key={opt.id}
                             className="flex items-center gap-2"
                             onDoubleClick={(e) => {
-                                e.stopPropagation()
-                                onSelect(null)
+                                if (!isDisabled) {
+                                    e.stopPropagation()
+                                    onSelect(null)
+                                }
                             }}
                         >
                             <div className="relative flex items-center">
@@ -245,16 +420,21 @@ export function OptionGroup({
                                     type="checkbox"
                                     className="sr-only"
                                     checked={isChecked}
-                                    onChange={() => handleSelect(opt.id)}
+                                    disabled={isDisabled}
+                                    onChange={() => !isDisabled && handleSelect(opt.id)}
                                     aria-label={opt.label}
+                                    aria-disabled={isDisabled}
                                 />
                                 <div 
-                                    className={`h-5 w-5 border-2 rounded cursor-pointer transition-all flex items-center justify-center ${
-                                        isChecked 
-                                            ? 'bg-green-500 border-green-500' 
-                                            : 'bg-white border-gray-300 hover:border-green-400'
+                                    className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                        isDisabled
+                                            ? 'bg-gray-100 border-gray-300 cursor-not-allowed opacity-60'
+                                            : isChecked 
+                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
                                     }`}
                                     onClick={() => {
+                                        if (isDisabled) return
                                         if (def.id === "absatzform" && onOptionClick) {
                                             onOptionClick(def.id, opt.id)
                                         } else {
@@ -271,10 +451,15 @@ export function OptionGroup({
                             </div>
                             {placeholderCount > 0 ? (
                                 <div
-                                    className="text-base text-gray-700 cursor-pointer"
-                                    onClick={() => handleSelect(opt.id)}
+                                    className={`text-base ${
+                                        isDisabled 
+                                            ? 'text-gray-400 cursor-not-allowed opacity-60' 
+                                            : 'text-gray-700 cursor-pointer'
+                                    }`}
+                                    onClick={() => !isDisabled && handleSelect(opt.id)}
                                     role="button"
                                     aria-label={opt.label}
+                                    aria-disabled={isDisabled}
                                 >
                                     <InlineLabelWithInputs
                                         groupId={def.id}
@@ -294,8 +479,13 @@ export function OptionGroup({
                             ) : (
                                 <label 
                                     htmlFor={inputId} 
-                                    className="text-base text-gray-700 cursor-pointer"
+                                    className={`text-base ${
+                                        isDisabled 
+                                            ? 'text-gray-400 cursor-not-allowed opacity-60' 
+                                            : 'text-gray-700 cursor-pointer'
+                                    }`}
                                     onClick={() => {
+                                        if (isDisabled) return
                                         if (def.id === "absatzform" && onOptionClick) {
                                             onOptionClick(def.id, opt.id)
                                         } else {

@@ -2,11 +2,12 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { History, UploadCloud, Search, X } from 'lucide-react';
+import { History, UploadCloud, Search, X, Copy } from 'lucide-react';
 import CustomerSearchModal from './CustomerSearchModal';
 import OtherCustomerModal from './OtherCustomerModal';
 import BusinessAddressModal from './BusinessAddressModal';
 import FilePreviewWithShimmer from './FilePreviewWithShimmer';
+import toast from 'react-hot-toast';
 
 interface Customer {
   id: string;
@@ -69,6 +70,20 @@ export default function FileUploadSection({
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showOtherCustomerModal, setShowOtherCustomerModal] = useState(false);
   const [showBusinessAddressModal, setShowBusinessAddressModal] = useState(false);
+  const [showShippingAddress, setShowShippingAddress] = useState(false);
+
+  const shippingAddress = {
+    company: 'FeetF1rst S.R.L.S.',
+    street: 'Via Pipen, 5',
+    city: '39031 Brunico (BZ)',
+    country: 'Italien'
+  };
+
+  const handleCopyAddress = () => {
+    const fullAddress = `${shippingAddress.company}\n${shippingAddress.street}\n${shippingAddress.city}\n${shippingAddress.country}`;
+    navigator.clipboard.writeText(fullAddress);
+    toast.success('Adresse in die Zwischenablage kopiert');
+  };
 
   const handleLinkerLeistenFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -212,38 +227,81 @@ export default function FileUploadSection({
             </div>
           )}
 
-          {/* Leisten abholen Section - Show when hideFileUploads is true */}
+          {/* Leisten abholen & Versenden Section - Show when hideFileUploads is true */}
           {hideFileUploads && (
-            <Button
-              variant="outline"
-              type="button"
-              className={`justify-center cursor-pointer mt-7 w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white ${businessAddress ? 'items-center' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (businessAddress && (businessAddress.companyName || businessAddress.address)) {
-                  // If address is set, clear it when clicked (set to null)
-                  if (onBusinessAddressSave) {
-                    onBusinessAddressSave({
-                      companyName: '',
-                      address: '',
-                      price: 13,
-                      phone: '',
-                      email: '',
-                    });
-                  }
-                } else {
-                  // If no address, open modal
-                  setShowBusinessAddressModal(true);
-                }
-              }}
-            >
-              {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
-                <X className="w-5 h-5 text-gray-700" />
-              ) : (
-                'Leisten abholen'
+            <div className="flex flex-col gap-3 mt-7">
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  type="button"
+                  className={`flex-1 justify-center cursor-pointer h-10 text-sm font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-2 bg-white ${businessAddress ? 'items-center' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (businessAddress && (businessAddress.companyName || businessAddress.address)) {
+                      // If address is set, clear it when clicked (set to null)
+                      if (onBusinessAddressSave) {
+                        onBusinessAddressSave({
+                          companyName: '',
+                          address: '',
+                          price: 13,
+                          phone: '',
+                          email: '',
+                        });
+                      }
+                    } else {
+                      // If no address, open modal
+                      setShowBusinessAddressModal(true);
+                    }
+                  }}
+                >
+                  {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
+                    <X className="w-4 h-4 text-gray-700" />
+                  ) : (
+                    'Leisten abholen lassen'
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="flex-1 justify-center cursor-pointer h-10 text-sm font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-2 bg-white"
+                  onClick={() => setShowShippingAddress(!showShippingAddress)}
+                >
+                  Leisten selber versenden
+                </Button>
+              </div>
+
+              {/* Shipping Address Display */}
+              {showShippingAddress && (
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900 mb-1">
+                        {shippingAddress.company}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {shippingAddress.street}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {shippingAddress.city}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {shippingAddress.country}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyAddress}
+                      className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-100"
+                      title="Adresse kopieren"
+                    >
+                      <Copy className="w-4 h-4 text-gray-600" />
+                    </Button>
+                  </div>
+                </div>
               )}
-            </Button>
+            </div>
           )}
         </div>
 

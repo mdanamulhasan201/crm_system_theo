@@ -1,6 +1,6 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, type HeelWidthAdjustmentData } from "./FormFields"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 
@@ -13,6 +13,8 @@ interface ChecklistSectionProps {
     onSetHinterkappeSub: (optId: string | null) => void
     onAbsatzFormClick: (groupId: string, optionId: string) => void
     onTextAreaChange: (key: string, value: string) => void
+    onHeelWidthChange?: (value: HeelWidthAdjustmentData | null) => void
+    heelWidthAdjustment?: HeelWidthAdjustmentData | null
     checkboxError: boolean
     grandTotal: number
     onWeiterClick: () => void
@@ -29,6 +31,8 @@ export default function ChecklistSection({
     onSetHinterkappeSub,
     onAbsatzFormClick,
     onTextAreaChange,
+    onHeelWidthChange,
+    heelWidthAdjustment,
     checkboxError,
     grandTotal,
     onWeiterClick,
@@ -54,6 +58,12 @@ export default function ChecklistSection({
                             def={g} 
                             selected={selected[g.id] ?? null} 
                             onSelect={(value) => onSetGroup(g.id, value)} 
+                        />
+                    ) : g.fieldType === "heelWidthAdjustment" ? (
+                        <HeelWidthAdjustmentField
+                            def={g}
+                            value={heelWidthAdjustment || null}
+                            onChange={onHeelWidthChange || (() => {})}
                         />
                     ) : (
                         <OptionGroup

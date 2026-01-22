@@ -20,8 +20,8 @@ const FORM_TITLES: Record<string, string> = {
 
 const FORM_IMAGES: Record<string, any> = {
     Keilabsatz: keilabsatz,
-    Stegkeil: stegkeil,
-    Absatzkeil: Absatzkeil,
+    Stegkeil: Absatzkeil,
+    Absatzkeil: stegkeil,
 }
 
 export default function AbsatzFormModal({ isOpen, onClose, selectedForm }: AbsatzFormModalProps) {

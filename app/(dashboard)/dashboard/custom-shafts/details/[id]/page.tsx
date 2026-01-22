@@ -17,6 +17,15 @@ import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
 import SuccessMessage from '@/components/CustomShafts/SuccessMessage';
 import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
 
+const CATEGORY_PRICE_MAP: Record<string, number> = {
+  Halbschuhe: 209.99,
+  Stiefel: 314.99,
+  Knöchelhoch: 219.99,
+  Sandalen: 189.99,
+  Bergschuhe: 234.99,
+  Businessschuhe: 224.99,
+};
+
 interface Customer {
   id: string;
   name: string;
@@ -31,7 +40,6 @@ export default function DetailsPage() {
   const router = useRouter();
 
   // State management
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
   const [customNahtfarbe, setCustomNahtfarbe] = useState('');
   const [lederType, setLederType] = useState('');
@@ -63,6 +71,10 @@ export default function DetailsPage() {
   const [numberOfLeatherColors, setNumberOfLeatherColors] = useState<string>('1');
   const [leatherColorAssignments, setLeatherColorAssignments] = useState<LeatherColorAssignment[]>([]);
   const [leatherColors, setLeatherColors] = useState<string[]>([]);
+
+  // Custom category & price
+  const [customCategory, setCustomCategory] = useState<string>('');
+  const [customCategoryPrice, setCustomCategoryPrice] = useState<number | null>(null);
 
   // Business address for abholung
   interface BusinessAddressData {
@@ -97,6 +109,30 @@ export default function DetailsPage() {
       // Image loaded successfully
     }
   }, [shaftId, shaft]);
+
+  // Preselect category from API (shaft.catagoary) but allow user to change it
+  useEffect(() => {
+    if (!shaft) return;
+    if (customCategory) return; // don't override user selection
+
+    const initialCategory = shaft?.catagoary || '';
+    if (initialCategory) {
+      setCustomCategory(initialCategory);
+      const mappedPrice = CATEGORY_PRICE_MAP[initialCategory];
+      setCustomCategoryPrice(Number.isFinite(mappedPrice) ? mappedPrice : null);
+    }
+  }, [shaft, customCategory]);
+
+  // Preselect closure type from API (shaft.verschlussart) but allow user to change it
+  useEffect(() => {
+    if (!shaft) return;
+    if (closureType) return; // don't override user selection
+
+    const initialClosureType = shaft?.verschlussart || '';
+    if (initialClosureType) {
+      setClosureType(initialClosureType);
+    }
+  }, [shaft, closureType]);
 
   // Reset business address when switching modes (no localStorage storage)
   useEffect(() => {
@@ -136,7 +172,8 @@ export default function DetailsPage() {
   }, [massschuheOrder]);
 
   // Order handling
-  const basePrice = shaft?.price || 0;
+  // Use custom category price when selected, otherwise fall back to shaft base price
+  const basePrice = (customCategoryPrice ?? shaft?.price) || 0;
 
 
 
@@ -189,6 +226,14 @@ export default function DetailsPage() {
 
     // Add mabschaftKollektionId
     formData.append('mabschaftKollektionId', shaftId);
+
+    // Custom category & price
+    if (customCategory) {
+      formData.append('custom_catagoary', customCategory);
+    }
+    if (customCategoryPrice !== null) {
+      formData.append('custom_catagoary_price', customCategoryPrice.toString());
+    }
 
     // Add business address if abholung is selected
     if (isAbholung && businessAddress) {
@@ -277,15 +322,15 @@ export default function DetailsPage() {
     // Add prices only if options are selected
     if (passendenSchnursenkel === true) {
       formData.append('passenden_schnursenkel', 'true');
-      formData.append('passenden_schnursenkel_price', '4.49');
+      formData.append('moechten_sie_passende_schnuersenkel_zum_schuh_price', '4.49');
     }
     if (osenEinsetzen === true) {
       formData.append('osen_einsetzen', 'true');
-      formData.append('osen_einsetzen_price', '8.99');
+      formData.append('moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price', '8.99');
     }
     if (zipperExtra === true) {
       formData.append('zipper_extra', 'true');
-      formData.append('zipper_extra_price', '9.99');
+      formData.append('moechten_sie_einen_zusaetzlichen_reissverschluss_price', '9.99');
     }
 
     // Add business address if abholung is selected
@@ -302,7 +347,7 @@ export default function DetailsPage() {
       formData.append('business_companyName', businessAddress.companyName);
       formData.append('business_address', businessAddress.address);
     }
-    
+
     // Add total price
     formData.append('totalPrice', orderPrice.toString());
 
@@ -332,11 +377,11 @@ export default function DetailsPage() {
         lederType,
         closureType,
         passenden_schnursenkel: passendenSchnursenkel === true,
-        passenden_schnursenkel_price: passendenSchnursenkel === true ? '4.49' : null,
+        moechten_sie_passende_schnuersenkel_zum_schuh_price: passendenSchnursenkel === true ? '4.49' : null,
         osen_einsetzen: osenEinsetzen === true,
-        osen_einsetzen_price: osenEinsetzen === true ? '8.99' : null,
+        moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: osenEinsetzen === true ? '8.99' : null,
         zipper_extra: zipperExtra === true,
-        zipper_extra_price: zipperExtra === true ? '9.99' : null,
+        moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
         totalPrice: orderPrice,
         // Store file names for reference
         linkerLeistenFileName,
@@ -381,6 +426,14 @@ export default function DetailsPage() {
       formData.append('mabschaftKollektionId', shaftId);
       formData.append('lederType', lederType);
 
+      // Custom category & price
+      if (customCategory) {
+        formData.append('custom_catagoary', customCategory);
+      }
+      if (customCategoryPrice !== null) {
+        formData.append('custom_catagoary_price', customCategoryPrice.toString());
+      }
+
       if (closureType) {
         formData.append('closureType', closureType);
         formData.append('verschlussart', closureType);
@@ -410,15 +463,15 @@ export default function DetailsPage() {
       // Add-on prices and flags
       if (passendenSchnursenkel === true) {
         formData.append('passenden_schnursenkel', 'true');
-        formData.append('Passenden_schnursenkel_price', '4.49');
+        formData.append('moechten_sie_passende_schnuersenkel_zum_schuh_price', '4.49');
       }
       if (osenEinsetzen === true) {
         formData.append('osen_einsetzen', 'true');
-        formData.append('osen_einsetzen_price', '8.99');
+        formData.append('moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price', '8.99');
       }
       if (zipperExtra === true) {
         formData.append('zipper_extra', 'true');
-        formData.append('zipper_extra_price', '9.99');
+        formData.append('moechten_sie_einen_zusaetzlichen_reissverschluss_price', '9.99');
       }
 
       // Zusatzfragen als eigene Felder
@@ -481,7 +534,6 @@ export default function DetailsPage() {
 
   // Function to clear all form data
   const clearFormData = () => {
-    setUploadedImage(null);
     setNahtfarbeOption('default');
     setCustomNahtfarbe('');
     setLederType('');
@@ -505,6 +557,8 @@ export default function DetailsPage() {
     setPassendenSchnursenkel(undefined);
     setOsenEinsetzen(undefined);
     setZipperExtra(undefined);
+    setCustomCategory('');
+    setCustomCategoryPrice(null);
   };
 
   const handleOrderConfirmation = async () => {
@@ -606,6 +660,14 @@ export default function DetailsPage() {
         );
       }
       formData.append('mabschaftKollektionId', shaftId);
+
+      // Custom category & price
+      if (customCategory) {
+        formData.append('custom_catagoary', customCategory);
+      }
+      if (customCategoryPrice !== null) {
+        formData.append('custom_catagoary_price', customCategoryPrice.toString());
+      }
       formData.append('totalPrice', orderPrice.toString());
 
       // Use orderId if present, otherwise show error (orderId is required for this flow)
@@ -665,6 +727,7 @@ export default function DetailsPage() {
     <>
       <div className="px-2 md:px-6 py-8 w-full">
 
+
         {/* File Upload Section - Hide file uploads when type is 'abholung' */}
         <FileUploadSection
           linkerLeistenFileName={linkerLeistenFileName}
@@ -709,12 +772,16 @@ export default function DetailsPage() {
           {/* Product Image and Info */}
           <ProductImageInfo
             shaft={shaft}
-            uploadedImage={uploadedImage}
-            setUploadedImage={setUploadedImage}
           />
-
+          <div>
+            <h2 className='font-bold text-lg mb-4'>CAD-Modellierung</h2>
+          </div>
           {/* Product Configuration */}
           <ProductConfiguration
+            customCategory={customCategory}
+            setCustomCategory={setCustomCategory}
+            customCategoryPrice={customCategoryPrice}
+            setCustomCategoryPrice={setCustomCategoryPrice}
             nahtfarbeOption={nahtfarbeOption}
             setNahtfarbeOption={setNahtfarbeOption}
             customNahtfarbe={customNahtfarbe}
@@ -749,9 +816,10 @@ export default function DetailsPage() {
             setLeatherColorAssignments={setLeatherColorAssignments}
             leatherColors={leatherColors}
             setLeatherColors={setLeatherColors}
-            shoeImage={uploadedImage || shaft?.image || null}
+            shoeImage={shaft?.image || null}
             onOrderComplete={() => setShowConfirmationModal(true)}
             category={shaft?.catagoary}
+            allowCategoryEdit={false}
           />
         </div>
 

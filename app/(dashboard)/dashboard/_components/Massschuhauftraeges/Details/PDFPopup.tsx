@@ -25,7 +25,7 @@ interface PDFPopupProps {
   onClose: () => void
   onConfirm: (pdfBlob?: Blob) => void
   allGroups: GroupDef[]
-  selected: Record<string, string | null>
+  selected: Record<string, string | string[] | null>
   optionInputs: Record<string, Record<string, string[]>>
   textAreas?: {
     korrektur_bereich?: string
@@ -37,6 +37,8 @@ interface PDFPopupProps {
   }
   showDetails?: boolean
   orderData?: OrderDataForPDF
+  selectedSole?: { id: string; name: string; image: string } | null
+  heelWidthAdjustment?: { medial?: { op: "widen" | "narrow" | null; mm: number }; lateral?: { op: "widen" | "narrow" | null; mm: number } } | null
 }
 
 type OptionDef = { id: string; label: string }
@@ -107,6 +109,8 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   showDetails,
   onConfirm,
   orderData,
+  selectedSole,
+  heelWidthAdjustment,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
@@ -368,6 +372,46 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
               {/* Body - same horizontal padding as header */}
               <div className="pt-3 pb-6 px-10 flex-1">
+                  {/* Selected Sole Section */}
+                  {selectedSole && (
+                    <div className="mb-6 pb-4 border-b border-gray-300">
+                      <div className="text-sm font-semibold text-slate-800 mb-2">Ausgewählte Sohle:</div>
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src={selectedSole.image} 
+                          alt={selectedSole.name} 
+                          className="w-24 h-24 object-contain border border-gray-200 rounded" 
+                        />
+                        <div>
+                          <p className="text-base font-bold text-slate-800">{selectedSole.name}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Heel Width Adjustment Section */}
+                  {heelWidthAdjustment && (heelWidthAdjustment.medial || heelWidthAdjustment.lateral) && (
+                    <div className="mb-6 pb-4 border-b border-gray-300">
+                      <div className="text-sm font-semibold text-slate-800 mb-3">Absatzbreite anpassen (mm):</div>
+                      {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Medial (innen):</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} {heelWidthAdjustment.medial.mm} mm
+                          </span>
+                        </div>
+                      )}
+                      {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Lateral (außen):</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} {heelWidthAdjustment.lateral.mm} mm
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {showDetails ? (
                     <>
                     <div className="text-lg font-bold text-slate-800 mb-2">Checkliste Halbprobe</div>
@@ -474,6 +518,23 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
             {/* Body - same horizontal padding as header */}
             <div style={{ padding: '8px 40px 40px 40px', flex: 1, background: '#ffffff' }}>
+              {/* Selected Sole Section */}
+              {selectedSole && (
+                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Ausgewählte Sohle:</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <img 
+                      src={selectedSole.image} 
+                      alt={selectedSole.name} 
+                      style={{ width: '96px', height: '96px', objectFit: 'contain', border: '1px solid #e5e7eb', borderRadius: '4px' }}
+                    />
+                    <div>
+                      <p style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', margin: 0 }}>{selectedSole.name}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {showDetails ? (
                 <>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste Halbprobe</div>

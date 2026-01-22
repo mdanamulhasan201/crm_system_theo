@@ -196,8 +196,8 @@ export function parseEuroFromText(txt: string): number {
     return 0
   }
 
-  // Pattern to match negative prices: "-10€" or "(-10€)"
-  const negativePricePattern = /(?:-|\(-)(\d{1,3}(?:[.,]\d{2})?)\s*€/
+  // Pattern to match negative prices: "-10€", "(-10€)", "–10€", or "(–10€)" (handles both hyphen and en dash)
+  const negativePricePattern = /(?:[-–]|\([-–])(\d{1,3}(?:[.,]\d{2})?)\s*€/
   const negativeMatch = txt.match(negativePricePattern)
   
   if (negativeMatch) {

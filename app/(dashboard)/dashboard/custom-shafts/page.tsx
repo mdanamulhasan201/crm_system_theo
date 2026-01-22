@@ -33,6 +33,7 @@ export default function CustomShafts() {
     const [isFetchingNewPage, setIsFetchingNewPage] = useState(false);
     const [selectedShaftId, setSelectedShaftId] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCustomOrderModalOpen, setIsCustomOrderModalOpen] = useState(false);
     const [loadingButtonId, setLoadingButtonId] = useState<string | null>(null);
     const itemsPerPage = 8;
     const router = useRouter();
@@ -180,6 +181,22 @@ export default function CustomShafts() {
         }
     }
 
+    // Handle custom order 3D Upload - navigate to product-order page
+    const handleCustomOrder3DUpload = () => {
+        const url = orderId
+            ? `/dashboard/custom-shafts/product-order/new?orderId=${orderId}`
+            : `/dashboard/custom-shafts/product-order/new`;
+        router.push(url);
+    }
+
+    // Handle custom order Abholung - navigate to product-order page
+    const handleCustomOrderAbholung = () => {
+        const url = orderId
+            ? `/dashboard/custom-shafts/product-order/new?orderId=${orderId}&type=abholung`
+            : `/dashboard/custom-shafts/product-order/new?type=abholung`;
+        router.push(url);
+    }
+
     return (
         <div className="  py-6">
             {/* Header & Description */}
@@ -187,7 +204,12 @@ export default function CustomShafts() {
                 <h1 className="text-xl md:text-2xl font-bold mb-1">Maßschaft - individuell für deinen Kunden.</h1>
                 <div className="text-xs md:text-sm text-gray-700 leading-snug mb-1">
                     Basierend auf dem 3D-Modell des Kundenfußes stellen wir passgenaue Maßschäfte her. So sparst du dir unnötigen Versand, erhältst eine deutlich schnellere Lieferzeit und profitierst von besten Preisen.<br />
-                    <span className="font-bold cursor-pointer underline">Eigenen Schuh konfigurieren oder Modell hochladen</span>
+                    <span 
+                        className="font-bold cursor-pointer underline hover:text-green-600 transition-colors"
+                        onClick={() => setIsCustomOrderModalOpen(true)}
+                    >
+                        Eigenen Schuh konfigurieren oder Modell hochladen
+                    </span>
                 </div>
             </div>
 
@@ -349,6 +371,16 @@ export default function CustomShafts() {
                 }}
                 onSelect3DUpload={handle3DUpload}
                 onSelectAbholung={handleAbholung}
+            />
+
+            {/* Custom Order Modal - for "Eigenen Schuh konfigurieren" */}
+            <SchaftErstellungModal
+                isOpen={isCustomOrderModalOpen}
+                onClose={() => {
+                    setIsCustomOrderModalOpen(false);
+                }}
+                onSelect3DUpload={handleCustomOrder3DUpload}
+                onSelectAbholung={handleCustomOrderAbholung}
             />
         </div>
     );

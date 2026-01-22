@@ -13,6 +13,7 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "./Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
+import type { HeelWidthAdjustmentData } from "./Bodenkonstruktion/FormFields"
 
 // Components
 import ProductHeader from "./Bodenkonstruktion/ProductHeader"
@@ -42,6 +43,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const [textAreas, setTextAreas] = useState<TextAreasState>({
         besondere_hinweise: "",
     })
+    const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
     
     // Modal states
     const [showModal, setShowModal] = useState(false)
@@ -74,9 +76,32 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     // Handlers
     const setGroup = (groupId: string, optId: string | null) => {
-        setSelected((prev) => ({ ...prev, [groupId]: optId }))
-        if (groupId === "hinterkappe" && optId !== "leder") {
-            setSelected((prev) => ({ ...prev, hinterkappe_sub: null }))
+        const group = GROUPS2.find(g => g.id === groupId)
+        
+        // Handle multi-select fields
+        if (group?.multiSelect) {
+            setSelected((prev) => {
+                const currentValue = prev[groupId]
+                const currentArray = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : [])
+                
+                if (optId === null) {
+                    return { ...prev, [groupId]: null }
+                }
+                
+                // Toggle: if already selected, remove it; otherwise add it
+                if (currentArray.includes(optId)) {
+                    const newArray = currentArray.filter(id => id !== optId)
+                    return { ...prev, [groupId]: newArray.length > 0 ? newArray : null }
+                } else {
+                    return { ...prev, [groupId]: [...currentArray, optId] }
+                }
+            })
+        } else {
+            // Single select
+            setSelected((prev) => ({ ...prev, [groupId]: optId }))
+            if (groupId === "hinterkappe" && optId !== "leder") {
+                setSelected((prev) => ({ ...prev, hinterkappe_sub: null }))
+            }
         }
     }
 
@@ -91,6 +116,10 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     const isAllCheckboxAnswered = requiredCheckboxGroups.every(g => {
         const sel = selected[g.id]
+        if (g.multiSelect) {
+            // For multi-select, check if array exists and has at least one item
+            return Array.isArray(sel) ? sel.length > 0 : false
+        }
         return sel !== undefined && sel !== null && sel !== ""
     })
 
@@ -145,6 +174,15 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     const handleTextAreaChange = (key: string, value: string) => {
         setTextAreas((prev) => ({ ...prev, [key]: value }))
+    }
+
+    // Helper function to convert selected value to string
+    const getSelectedValue = (value: string | string[] | null | undefined): string | null => {
+        if (!value) return null
+        if (Array.isArray(value)) {
+            return value.length > 0 ? value.join(',') : null
+        }
+        return value
     }
 
     // Prepare form data for Admin2 API (custom shaft + Bodenkonstruktion)
@@ -210,38 +248,58 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         }
 
         // Add Bodenkonstruktion data
-        if (selected.Konstruktionsart) {
-            formData.append('Konstruktionsart', selected.Konstruktionsart)
+        const konstruktionsart = getSelectedValue(selected.Konstruktionsart)
+        if (konstruktionsart) {
+            formData.append('Konstruktionsart', konstruktionsart)
         }
-        if (selected.hinterkappe) {
-            formData.append('Fersenkappe', selected.hinterkappe)
-            if (selected.hinterkappe === 'leder' && selected.hinterkappe_sub) {
-                formData.append('Fersenkappe_sub', selected.hinterkappe_sub)
+        const hinterkappe = getSelectedValue(selected.hinterkappe)
+        if (hinterkappe) {
+            formData.append('Fersenkappe', hinterkappe)
+            if (hinterkappe === 'leder' && selected.hinterkappe_sub) {
+                const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
+                if (hinterkappeSub) {
+                    formData.append('Fersenkappe_sub', hinterkappeSub)
+                }
             }
         }
-        if (selected.farbauswahl) {
-            formData.append('Farbauswahl_Bodenkonstruktion', selected.farbauswahl)
+        const farbauswahl = getSelectedValue(selected.farbauswahl)
+        if (farbauswahl) {
+            formData.append('Farbauswahl_Bodenkonstruktion', farbauswahl)
         }
-        if (selected.schlemmaterial) {
-            formData.append('Sohlenmaterial', selected.schlemmaterial)
+        const schlemmaterial = getSelectedValue(selected.schlemmaterial)
+        if (schlemmaterial) {
+            formData.append('Sohlenmaterial', schlemmaterial)
         }
-        if (selected.brandsohle) {
-            formData.append('Brandsohle', selected.brandsohle)
+        const brandsohle = getSelectedValue(selected.brandsohle)
+        if (brandsohle) {
+            formData.append('Brandsohle', brandsohle)
         }
-        if (selected.absatzhoehe) {
-            formData.append('Absatz_Höhe', selected.absatzhoehe)
+        const absatzhoehe = getSelectedValue(selected.absatzhoehe)
+        if (absatzhoehe) {
+            formData.append('Absatz_Höhe', absatzhoehe)
         }
-        if (selected.absatzform) {
-            formData.append('Absatz_Form', selected.absatzform)
+        const absatzform = getSelectedValue(selected.absatzform)
+        if (absatzform) {
+            formData.append('Absatz_Form', absatzform)
         }
-        if (selected.abrollhilfe) {
-            formData.append('Abrollhilfe_Rolle', selected.abrollhilfe)
+        const abrollhilfe = getSelectedValue(selected.abrollhilfe)
+        if (abrollhilfe) {
+            formData.append('Abrollhilfe_Rolle', abrollhilfe)
         }
-        if (selected.laufkohle) {
-            formData.append('Laufsohle_Profil_Art', selected.laufkohle)
+        const laufkohle = getSelectedValue(selected.laufkohle)
+        if (laufkohle) {
+            formData.append('Laufsohle_Profil_Art', laufkohle)
         }
-        if (selected.schlenstaerke) {
-            formData.append('Sohlenstärke', selected.schlenstaerke)
+        const schlenstaerke = getSelectedValue(selected.schlenstaerke)
+        if (schlenstaerke) {
+            formData.append('Sohlenstärke', schlenstaerke)
+        }
+        const laufsohle_lose_beilegen = getSelectedValue(selected.laufsohle_lose_beilegen)
+        if (laufsohle_lose_beilegen) {
+            formData.append('Laufsohle_lose_beilegen', laufsohle_lose_beilegen)
+        }
+        if (heelWidthAdjustment) {
+            formData.append('heel_width_adjustment', JSON.stringify(heelWidthAdjustment))
         }
         if (textAreas.besondere_hinweise) {
             formData.append('Besondere_Hinweise', textAreas.besondere_hinweise)
@@ -267,57 +325,81 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
         // Map form fields to API fields
         // Konstruktionsart
-        if (selected.Konstruktionsart) {
-            formData.append('Konstruktionsart', selected.Konstruktionsart)
+        const konstruktionsart = getSelectedValue(selected.Konstruktionsart)
+        if (konstruktionsart) {
+            formData.append('Konstruktionsart', konstruktionsart)
         }
 
         // Fersenkappe (hinterkappe)
-        if (selected.hinterkappe) {
-            formData.append('Fersenkappe', selected.hinterkappe)
+        const hinterkappe = getSelectedValue(selected.hinterkappe)
+        if (hinterkappe) {
+            formData.append('Fersenkappe', hinterkappe)
             // Add sub-option if leder is selected
-            if (selected.hinterkappe === 'leder' && selected.hinterkappe_sub) {
-                formData.append('Fersenkappe_sub', selected.hinterkappe_sub)
+            if (hinterkappe === 'leder' && selected.hinterkappe_sub) {
+                const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
+                if (hinterkappeSub) {
+                    formData.append('Fersenkappe_sub', hinterkappeSub)
+                }
             }
         }
 
         // Farbauswahl_Bodenkonstruktion
-        if (selected.farbauswahl) {
-            formData.append('Farbauswahl_Bodenkonstruktion', selected.farbauswahl)
+        const farbauswahl = getSelectedValue(selected.farbauswahl)
+        if (farbauswahl) {
+            formData.append('Farbauswahl_Bodenkonstruktion', farbauswahl)
         }
 
         // Sohlenmaterial
-        if (selected.schlemmaterial) {
-            formData.append('Sohlenmaterial', selected.schlemmaterial)
+        const schlemmaterial = getSelectedValue(selected.schlemmaterial)
+        if (schlemmaterial) {
+            formData.append('Sohlenmaterial', schlemmaterial)
         }
 
         // Brandsohle
-        if (selected.brandsohle) {
-            formData.append('Brandsohle', selected.brandsohle)
+        const brandsohle = getSelectedValue(selected.brandsohle)
+        if (brandsohle) {
+            formData.append('Brandsohle', brandsohle)
         }
 
         // Absatz_Höhe
-        if (selected.absatzhoehe) {
-            formData.append('Absatz_Höhe', selected.absatzhoehe)
+        const absatzhoehe = getSelectedValue(selected.absatzhoehe)
+        if (absatzhoehe) {
+            formData.append('Absatz_Höhe', absatzhoehe)
         }
 
         // Absatz_Form
-        if (selected.absatzform) {
-            formData.append('Absatz_Form', selected.absatzform)
+        const absatzform = getSelectedValue(selected.absatzform)
+        if (absatzform) {
+            formData.append('Absatz_Form', absatzform)
         }
 
         // Abrollhilfe_Rolle
-        if (selected.abrollhilfe) {
-            formData.append('Abrollhilfe_Rolle', selected.abrollhilfe)
+        const abrollhilfe = getSelectedValue(selected.abrollhilfe)
+        if (abrollhilfe) {
+            formData.append('Abrollhilfe_Rolle', abrollhilfe)
         }
 
         // Laufsohle_Profil_Art
-        if (selected.laufkohle) {
-            formData.append('Laufsohle_Profil_Art', selected.laufkohle)
+        const laufkohle = getSelectedValue(selected.laufkohle)
+        if (laufkohle) {
+            formData.append('Laufsohle_Profil_Art', laufkohle)
         }
 
         // Sohlenstärke
-        if (selected.schlenstaerke) {
-            formData.append('Sohlenstärke', selected.schlenstaerke)
+        const schlenstaerke = getSelectedValue(selected.schlenstaerke)
+        if (schlenstaerke) {
+            formData.append('Sohlenstärke', schlenstaerke)
+        }
+
+        // Laufsohle_lose_beilegen
+        const laufsohle_lose_beilegen = getSelectedValue(selected.laufsohle_lose_beilegen)
+        if (laufsohle_lose_beilegen) {
+            formData.append('Laufsohle_lose_beilegen', laufsohle_lose_beilegen)
+        }
+
+        // Heel Width Adjustment
+        if (heelWidthAdjustment) {
+            formData.append('heel_width_adjustment', JSON.stringify(heelWidthAdjustment))
         }
 
         // Besondere_Hinweise
@@ -377,6 +459,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 onSetHinterkappeSub={setHinterkappeSub}
                 onAbsatzFormClick={handleAbsatzFormClick}
                 onTextAreaChange={handleTextAreaChange}
+                onHeelWidthChange={setHeelWidthAdjustment}
+                heelWidthAdjustment={heelWidthAdjustment}
                 checkboxError={checkboxError}
                 grandTotal={grandTotal}
                 onWeiterClick={handleWeiterClick}
@@ -400,6 +484,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     optionInputs={optionInputs}
                     textAreas={textAreas}
                     orderData={orderDataForPDF}
+                    selectedSole={selectedSole}
+                    heelWidthAdjustment={heelWidthAdjustment}
                 />
             )}
 

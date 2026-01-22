@@ -34,9 +34,9 @@ export default function ProductHeader({ orderData }: ProductHeaderProps) {
                             Bestellnr: <span className="font-bold">{orderData.orderNumber || '#121212'}</span> &nbsp; 
                             Voraussichtlicher Liefertermin: <span>{orderData.deliveryDate || '10.02.2025'}</span>
                         </p>
-                        <p className="text-sm text-black underline cursor-pointer">
+                        {/* <p className="text-sm text-black underline cursor-pointer">
                             Bild hier hochladen, wenn die Bodenkonstruktion nach Vorlage erfolgen soll.
-                        </p>
+                        </p> */}
                     </div>
                 </div>
             </div>
