@@ -67,6 +67,9 @@ export default function DetailsPage() {
   // Closure type
   const [closureType, setClosureType] = useState<string>('');
 
+  // CAD Modeling selection
+  const [cadModeling, setCadModeling] = useState<'1x' | '2x'>('1x');
+
   // Leather color configuration
   // Default: no selection, UX will only show fields after user chooses a value
   const [numberOfLeatherColors, setNumberOfLeatherColors] = useState<string>('');
@@ -181,6 +184,7 @@ export default function DetailsPage() {
   const SCHNURSENKEL_PRICE = 4.49;
   const OSEN_EINSETZEN_PRICE = 8.99;
   const ZIPPER_EXTRA_PRICE = 9.99;
+  const CAD_MODELING_2X_PRICE = 6.99;
   const ABHOLUNG_PRICE_DEFAULT = 13.0;
 
   // Helper to determine if images should be updated
@@ -188,6 +192,11 @@ export default function DetailsPage() {
 
   const calculateTotalPrice = () => {
     let total = basePrice;
+
+    // Add CAD modeling surcharge if 2x is selected
+    if (cadModeling === '2x') {
+      total += CAD_MODELING_2X_PRICE;
+    }
 
     if (passendenSchnursenkel) {
       total += SCHNURSENKEL_PRICE;
@@ -265,6 +274,12 @@ export default function DetailsPage() {
 
     // Update image flag
     formData.append('update_image', shouldUpdateImage ? 'true' : 'false');
+
+    // CAD Modeling
+    formData.append('cadModeling', cadModeling);
+    if (cadModeling === '2x') {
+      formData.append('cadModeling_2x_price', CAD_MODELING_2X_PRICE.toString());
+    }
 
     // Verschlussart mapping
     if (closureType) {
@@ -363,6 +378,8 @@ export default function DetailsPage() {
         image3d_1: rechterLeistenFile,
         image3d_2: linkerLeistenFile,
         mabschaftKollektionId: shaftId,
+        cadModeling,
+        cadModeling_2x_price: cadModeling === '2x' ? CAD_MODELING_2X_PRICE : null,
         lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
         numberOfLeatherColors,
         leatherColors: numberOfLeatherColors !== '1' ? leatherColors : [],
@@ -426,6 +443,12 @@ export default function DetailsPage() {
       // Base configuration
       formData.append('mabschaftKollektionId', shaftId);
       formData.append('lederType', lederType);
+
+      // CAD Modeling
+      formData.append('cadModeling', cadModeling);
+      if (cadModeling === '2x') {
+        formData.append('cadModeling_2x_price', CAD_MODELING_2X_PRICE.toString());
+      }
 
       // Custom category & price
       if (customCategory) {
@@ -558,6 +581,7 @@ export default function DetailsPage() {
     setPassendenSchnursenkel(undefined);
     setOsenEinsetzen(undefined);
     setZipperExtra(undefined);
+    setCadModeling('1x');
     setCustomCategory('');
     setCustomCategoryPrice(null);
   };
@@ -596,6 +620,12 @@ export default function DetailsPage() {
       formData.append('update_image', shouldUpdateImage ? 'true' : 'false');
 
       formData.append('lederType', lederType);
+
+      // CAD Modeling
+      formData.append('cadModeling', cadModeling);
+      if (cadModeling === '2x') {
+        formData.append('cadModeling_2x_price', CAD_MODELING_2X_PRICE.toString());
+      }
 
       // Verschlussart mapping
       if (closureType) {
@@ -774,11 +804,10 @@ export default function DetailsPage() {
           <ProductImageInfo
             shaft={shaft}
           />
-          <div>
-            <h2 className='font-bold text-lg mb-4'>CAD-Modellierung</h2>
-          </div>
           {/* Product Configuration */}
           <ProductConfiguration
+            cadModeling={cadModeling}
+            setCadModeling={setCadModeling}
             customCategory={customCategory}
             setCustomCategory={setCustomCategory}
             customCategoryPrice={customCategoryPrice}

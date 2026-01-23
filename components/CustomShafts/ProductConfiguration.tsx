@@ -13,6 +13,9 @@ import ZipperPlacementModal from './ZipperPlacementModal';
 import toast from 'react-hot-toast';
 
 interface ProductConfigurationProps {
+  // CAD Modeling selection
+  cadModeling?: '1x' | '2x';
+  setCadModeling?: (value: '1x' | '2x') => void;
   // Custom category and price
   customCategory: string;
   setCustomCategory: (value: string) => void;
@@ -59,6 +62,8 @@ interface ProductConfigurationProps {
 }
 
 export default function ProductConfiguration({
+  cadModeling = '1x',
+  setCadModeling,
   customCategory,
   setCustomCategory,
   customCategoryPrice,
@@ -105,6 +110,7 @@ export default function ProductConfiguration({
   // Default value for allowCategoryEdit
   const isCategoryEditable = allowCategoryEdit ?? false;
   // Local fallbacks if parent does not control these fields
+  const [localCadModeling, setLocalCadModeling] = useState<'1x' | '2x'>('1x');
   const [localSchnursenkel, setLocalSchnursenkel] = useState<boolean | undefined>(undefined);
   const [localOsenEinsetzen, setLocalOsenEinsetzen] = useState<boolean | undefined>(undefined);
   const [localZipperExtra, setLocalZipperExtra] = useState<boolean | undefined>(undefined);
@@ -112,6 +118,16 @@ export default function ProductConfiguration({
   const [showZipperPlacementModal, setShowZipperPlacementModal] = useState(false);
   const [zipperPlacementImage, setZipperPlacementImage] = useState<string | null>(null);
   const isSavingZipperRef = useRef(false);
+
+  // Use parent state if provided, otherwise use local state
+  const effectiveCadModeling = cadModeling || localCadModeling;
+  const updateCadModeling = (value: '1x' | '2x') => {
+    if (setCadModeling) {
+      setCadModeling(value);
+    } else {
+      setLocalCadModeling(value);
+    }
+  };
 
   // Ensure closureType is 'Zipper' when zipperPlacementImage exists
   useEffect(() => {
@@ -196,6 +212,47 @@ export default function ProductConfiguration({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-6">
+        {/* CAD-Modellierung Section */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-2">
+            <Label className="font-medium text-base">CAD-Modellierung</Label>
+            <div className="relative group">
+              <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center cursor-help hover:bg-gray-300 transition-colors">
+                <svg className="w-3 h-3 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="absolute left-0 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                Bei deutlich unterschiedlichen Füßen bzw. Leisten empfehlen wir zwei separate CAD-Modellierungen. So kann jede Seite individuell angepasst werden und die Passform wird präziser.
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-3 ml-0 md:ml-[calc(33.333%-0.5rem)]">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="cadModeling"
+                value="1x"
+                checked={effectiveCadModeling === '1x'}
+                onChange={() => updateCadModeling('1x')}
+                className="w-4 h-4 text-green-500 focus:ring-green-500"
+              />
+              <span className="text-base text-gray-700">1× CAD-Modellierung (Standard)</span>
+            </label>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="radio"
+                name="cadModeling"
+                value="2x"
+                checked={effectiveCadModeling === '2x'}
+                onChange={() => updateCadModeling('2x')}
+                className="w-4 h-4 text-green-500 focus:ring-green-500"
+              />
+              <span className="text-base text-gray-700">2× CAD-Modellierung (separat) <span className="text-green-600 font-semibold">+6,99 €</span></span>
+            </label>
+          </div>
+        </div>
+
         {/* Kategorie - Conditional: Dropdown if isCategoryEditable, Read-only if not */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Kategorie:</Label>

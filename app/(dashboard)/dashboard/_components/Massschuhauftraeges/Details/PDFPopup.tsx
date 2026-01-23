@@ -41,6 +41,7 @@ interface PDFPopupProps {
   orderData?: OrderDataForPDF
   selectedSole?: { id: string; name: string; image: string; des?: string; description?: string } | null
   heelWidthAdjustment?: { left?: { op: "widen" | "narrow" | null; mm: number }; right?: { op: "widen" | "narrow" | null; mm: number }; medial?: { op: "widen" | "narrow" | null; mm: number }; lateral?: { op: "widen" | "narrow" | null; mm: number } } | null
+  soleElevation?: { enabled: boolean; side: "links" | "rechts" | "beidseitig" | null; height_mm: number } | null
 }
 
 type OptionDef = { id: string; label: string }
@@ -48,7 +49,7 @@ type GroupDef = {
   id: string
   question: string
   options: OptionDef[]
-  fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment"
+  fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo"
   multiSelect?: boolean
   subOptions?: {
     [key: string]: Array<{ id: string; label: string; price: number }>
@@ -122,6 +123,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   orderData,
   selectedSole,
   heelWidthAdjustment,
+  soleElevation,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
@@ -245,9 +247,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             pdf.rect(0, pageHeight - 40, pageWidth, 40, "F")
             pdf.setTextColor(255, 255, 255)
             pdf.setFontSize(11)
-            pdf.text(footerPhone, 40, pageHeight - 15)
-            pdf.text(footerBusinessName, pageWidth / 2, pageHeight - 15, { align: "center" })
-            pdf.text(footerEmail, pageWidth - 40, pageHeight - 15, { align: "right" })
+            pdf.text("+39 366 508 7742", 40, pageHeight - 15)
+            pdf.text("FeetF1rst VGmbH", pageWidth / 2, pageHeight - 15, { align: "center" })
+            pdf.text("info@feetf1rst.com", pageWidth - 40, pageHeight - 15, { align: "right" })
           }
 
           return pdf.output("blob")
@@ -493,6 +495,27 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     </div>
                   )}
 
+                  {/* Sole Elevation Section */}
+                  {soleElevation && soleElevation.enabled && soleElevation.height_mm > 0 && (
+                    <div className="mb-6 pb-4 border-b border-gray-300">
+                      <div className="text-sm font-semibold text-slate-800 mb-3">Sohlenerhöhung:</div>
+                      <div className="mb-2">
+                        <span className="text-xs text-slate-700 font-medium">Seite:</span>
+                        <span className="ml-2 text-xs text-slate-600">
+                          {soleElevation.side === "links" ? "Links" : 
+                           soleElevation.side === "rechts" ? "Rechts" : 
+                           soleElevation.side === "beidseitig" ? "Beidseitig" : "-"}
+                        </span>
+                      </div>
+                      <div className="mb-2">
+                        <span className="text-xs text-slate-700 font-medium">Höhe:</span>
+                        <span className="ml-2 text-xs text-slate-600">
+                          {soleElevation.height_mm} mm
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
                   {showDetails ? (
                     <>
                     <div className="text-lg font-bold text-slate-800 mb-2">Checkliste Halbprobe</div>
@@ -550,6 +573,30 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     // Handle heelWidthAdjustment field type (handled separately above)
                     if (g.fieldType === "heelWidthAdjustment") {
                       return null // Already handled above
+                    }
+                    
+                    // Handle soleElevation field type (handled separately above)
+                    if (g.fieldType === "soleElevation") {
+                      return null // Already handled above
+                    }
+                    
+                    // Handle yesNo field type (e.g., verbindungsleder)
+                    if (g.fieldType === "yesNo") {
+                      const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
+                      const selectedOption = g.options.find(opt => opt.id === selectedValue)
+                      
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {selectedOption ? (
+                              <ModalCheckbox isSelected={true} label={selectedOption.label} />
+                            ) : (
+                              <span className="text-xs text-slate-400">Nicht ausgewählt</span>
+                            )}
+                          </div>
+                        </div>
+                      )
                     }
                     
                     // Handle checkbox and other field types (default)
@@ -618,10 +665,15 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
               </div>
 
               {/* Footer */}
-              <div className="mt-auto bg-black py-4 px-10 flex justify-between items-center">
+              {/* <div className="mt-auto bg-black py-4 px-10 flex justify-between items-center">
                 <span className="text-white text-xs">{footerPhone}</span>
                 <span className="text-white text-xs">{footerBusinessName}</span>
                 <span className="text-white text-xs">{footerEmail}</span>
+              </div> */}
+              <div className="mt-auto bg-black py-4 px-10 flex justify-between items-center">
+                <span className="text-white text-xs">+39 366 508 7742</span>
+                <span className="text-white text-xs">FeetF1rst VGmbH</span>
+                <span className="text-white text-xs">info@feetf1rst.com</span>
               </div>
             </div>
           </div>
@@ -712,6 +764,27 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 </div>
               )}
 
+              {/* Sole Elevation Section */}
+              {soleElevation && soleElevation.enabled && soleElevation.height_mm > 0 && (
+                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Sohlenerhöhung:</div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Seite:</span>
+                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                      {soleElevation.side === "links" ? "Links" : 
+                       soleElevation.side === "rechts" ? "Rechts" : 
+                       soleElevation.side === "beidseitig" ? "Beidseitig" : "-"}
+                    </span>
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Höhe:</span>
+                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                      {soleElevation.height_mm} mm
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {showDetails ? (
                 <>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste Halbprobe</div>
@@ -769,6 +842,30 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 // Handle heelWidthAdjustment field type (handled separately above)
                 if (g.fieldType === "heelWidthAdjustment") {
                   return null // Already handled above
+                }
+                
+                // Handle soleElevation field type (handled separately above)
+                if (g.fieldType === "soleElevation") {
+                  return null // Already handled above
+                }
+                
+                // Handle yesNo field type (e.g., verbindungsleder)
+                if (g.fieldType === "yesNo") {
+                  const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
+                  const selectedOption = g.options.find(opt => opt.id === selectedValue)
+                  
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {selectedOption ? (
+                          <PDFCheckbox isSelected={true} label={selectedOption.label} />
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>Nicht ausgewählt</span>
+                        )}
+                      </div>
+                    </div>
+                  )
                 }
                             
                 // Handle checkbox and other field types (default)
@@ -838,9 +935,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
             {/* Footer placeholder (removed during PDF gen, added via jsPDF) */}
             <div className="pdf-info-footer" style={{ marginTop: 'auto', backgroundColor: '#000000', padding: '16px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ color: '#ffffff', fontSize: '12px' }}>{footerPhone}</span>
-              <span style={{ color: '#ffffff', fontSize: '12px' }}>{footerBusinessName}</span>
-              <span style={{ color: '#ffffff', fontSize: '12px' }}>{footerEmail}</span>
+              <span style={{ color: '#ffffff', fontSize: '12px' }}>+39 366 508 7742</span>
+              <span style={{ color: '#ffffff', fontSize: '12px' }}>FeetF1rst VGmbH</span>
+              <span style={{ color: '#ffffff', fontSize: '12px' }}>info@feetf1rst.com</span>
             </div>
           </div>
         </div>
