@@ -16,7 +16,7 @@ export type OptionDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment"
+    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo"
     multiSelect?: boolean
     subOptions?: {
       [key: string]: Array<{ id: string; label: string; price: number }>

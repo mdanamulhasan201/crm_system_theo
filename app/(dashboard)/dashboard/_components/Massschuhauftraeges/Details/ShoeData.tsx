@@ -259,6 +259,15 @@ export const GROUPS2: GroupDef2[] = [
     },
   },
   {
+    id: "verbindungsleder",
+    question: "Verbindungsleder",
+    fieldType: "yesNo",
+    options: [
+      { id: "ja", label: "Ja" },
+      { id: "nein", label: "Nein" },
+    ],
+  },
+  {
     id: "Konstruktionsart",
     question: "Konstruktionsart",
     fieldType: "checkbox",
@@ -277,6 +286,15 @@ export const GROUPS2: GroupDef2[] = [
       { id: "leder", label: "Leder (+7,99€)" },
       { id: "diabetes", label: "Diabetes/Versteift (+9,99€)" },
 
+    ],
+  },
+  {
+    id: "sohlenerhoehung",
+    question: "Sohlenerhöhung",
+    fieldType: "soleElevation",
+    options: [
+      { id: "ja", label: "Ja" },
+      { id: "nein", label: "Nein" },
     ],
   },
  

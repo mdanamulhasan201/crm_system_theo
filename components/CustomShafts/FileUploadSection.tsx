@@ -2,6 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { History, UploadCloud, Search, X, Copy } from 'lucide-react';
 import CustomerSearchModal from './CustomerSearchModal';
 import OtherCustomerModal from './OtherCustomerModal';
@@ -70,6 +71,7 @@ export default function FileUploadSection({
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showOtherCustomerModal, setShowOtherCustomerModal] = useState(false);
   const [showBusinessAddressModal, setShowBusinessAddressModal] = useState(false);
+  const [showAbholungUnavailableModal, setShowAbholungUnavailableModal] = useState(false);
   const [showShippingAddress, setShowShippingAddress] = useState(false);
 
   // Disable one customer input when the other is filled
@@ -305,8 +307,8 @@ export default function FileUploadSection({
                         });
                       }
                     } else {
-                      // If no address, open modal
-                      setShowBusinessAddressModal(true);
+                      // Show unavailable message popup
+                      setShowAbholungUnavailableModal(true);
                     }
                   }}
                 >
@@ -416,6 +418,32 @@ export default function FileUploadSection({
           orderId={orderId}
         />
       )}
+
+      {/* Abholung Unavailable Modal */}
+      <Dialog open={showAbholungUnavailableModal} onOpenChange={setShowAbholungUnavailableModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-800">
+              Abholung derzeit nicht verfügbar
+            </DialogTitle>
+            <DialogDescription className="text-gray-600 pt-4">
+              Die Abholung der Leisten ist aktuell noch nicht möglich.
+              <br /><br />
+              Bitte senden Sie die Leisten derzeit selbstständig an uns.
+              <br /><br />
+              Sobald die Abholfunktion verfügbar ist, informieren wir Sie.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              onClick={() => setShowAbholungUnavailableModal(false)}
+              className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white"
+            >
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

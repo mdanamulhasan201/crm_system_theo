@@ -60,14 +60,22 @@ export default function ProductImageUploadInfo({
             className="relative block focus:outline-none cursor-pointer w-full"
           >
             {uploadedImage ? (
-              <Image
-                src={uploadedImage}
-                alt="Product image"
-                width={1000}
-                height={1000}
-                className="w-[400px] h-auto object-cover rounded-md border border-gray-200"
-                priority
-              />
+              <div className="relative">
+                <Image
+                  src={uploadedImage}
+                  alt="Product image"
+                  width={1000}
+                  height={1000}
+                  className="w-[400px] h-auto object-cover rounded-md border border-gray-200"
+                  priority
+                />
+                {/* Custom Made #1000 overlay - centered on image */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span className="text-xs font-semibold text-white uppercase tracking-wide bg-black/60 px-3 py-1.5 rounded-md backdrop-blur-sm">
+                    Custom Made #1000
+                  </span>
+                </div>
+              </div>
             ) : (
               <div className="w-[400px] h-[300px] border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
                 <Upload className="w-12 h-12 text-gray-400 mb-2" />
@@ -75,7 +83,7 @@ export default function ProductImageUploadInfo({
                 <span className="text-xs text-gray-400 mt-1">Klicken Sie hier, um ein Bild auszuwählen</span>
               </div>
             )}
-            <div className="absolute inset-0 rounded-md bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+            <div className="absolute inset-0 rounded-md bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center pointer-events-none">
               <span className="px-3 py-1.5 text-sm font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity bg-black/60 rounded-md">
                 {uploadedImage ? 'Bild ändern' : 'Bild hochladen'}
               </span>
@@ -117,13 +125,6 @@ export default function ProductImageUploadInfo({
 
       {/* Product info section */}
       <div className="w-full md:w-1/2 flex flex-col gap-4">
-        {/* Custom Made title */}
-        <div>
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Custom Made #1000
-          </span>
-        </div>
-
         <div className="flex flex-col gap-2">
           <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
             Beschreibung:

@@ -13,7 +13,7 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "./Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData } from "./Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, SoleElevationData } from "./Bodenkonstruktion/FormFields"
 
 // Components
 import ProductHeader from "./Bodenkonstruktion/ProductHeader"
@@ -44,6 +44,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         besondere_hinweise: "",
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
+    const [soleElevation, setSoleElevation] = useState<SoleElevationData | null>(null)
     
     // Modal states
     const [showModal, setShowModal] = useState(false)
@@ -57,6 +58,18 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const [showSoleModal, setShowSoleModal] = useState(false)
     const [showSoleDetailModal, setShowSoleDetailModal] = useState(false)
     const [selectedSoleForDetail, setSelectedSoleForDetail] = useState<SoleType | null>(null)
+    
+    // Sole id "4" specific options
+    const [sole4Thickness, setSole4Thickness] = useState<string | null>(null) // "4mm" or "6mm"
+    const [sole4Color, setSole4Color] = useState<string | null>(null) // "Schwarz", "Dunkelbraun", or "Weiss"
+    
+    // Sole id "5" specific options
+    const [sole5Thickness, setSole5Thickness] = useState<string | null>(null) // "4mm" or "6mm"
+    const [sole5Color, setSole5Color] = useState<string | null>(null) // "Schwarz", "Dunkelbraun", or "Weiss"
+    
+    // Sole id "6" specific options
+    const [sole6Thickness, setSole6Thickness] = useState<string | null>(null) // "4mm" or "6mm"
+    const [sole6Color, setSole6Color] = useState<string | null>(null) // "Schwarz", "Dunkelbraun", or "Weiss"
     
     // Absatz Form popup states
     const [showAbsatzFormModal, setShowAbsatzFormModal] = useState(false)
@@ -73,6 +86,68 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     // Calculations
     const { grandTotal } = useBodenkonstruktionCalculations(selected, orderDataForPDF.totalPrice)
+
+    // Reset sole id "4", "5", and "6" options when sole changes
+    React.useEffect(() => {
+        if (selectedSole?.id !== "4") {
+            setSole4Thickness(null)
+            setSole4Color(null)
+        }
+        if (selectedSole?.id !== "5") {
+            setSole5Thickness(null)
+            setSole5Color(null)
+        }
+        if (selectedSole?.id !== "6") {
+            setSole6Thickness(null)
+            setSole6Color(null)
+        }
+    }, [selectedSole?.id])
+
+    // Auto-deselect options based on selected sole:
+    // - When sole id "1" is selected: deselect Keilabsatz and Stegkeil (absatzform)
+    // - When sole id "2" or "3" is selected: deselect Absatzkeil (absatzform)
+    // - When sole id "8" is selected: deselect Stegkeil and Absatzkeil (absatzform)
+    // - When sole id "9", "10", "11", or "12" is selected: deselect Keilabsatz and Stegkeil (absatzform), deselect Absatzrolle (abrollhilfe)
+    React.useEffect(() => {
+        // Handle absatzform field
+        if (selected.absatzform) {
+            const absatzformValue = selected.absatzform
+            let shouldDeselect = false
+            
+            if (selectedSole?.id === "1" && (absatzformValue === "Keilabsatz" || absatzformValue === "Stegkeil")) {
+                shouldDeselect = true
+            } else if ((selectedSole?.id === "2" || selectedSole?.id === "3") && absatzformValue === "Absatzkeil") {
+                shouldDeselect = true
+            } else if (selectedSole?.id === "8" && (absatzformValue === "Stegkeil" || absatzformValue === "Absatzkeil")) {
+                shouldDeselect = true
+            } else if ((selectedSole?.id === "9" || selectedSole?.id === "10" || selectedSole?.id === "11" || selectedSole?.id === "12") && (absatzformValue === "Keilabsatz" || absatzformValue === "Stegkeil")) {
+                shouldDeselect = true
+            }
+            
+            if (shouldDeselect) {
+                setSelected((prev) => ({
+                    ...prev,
+                    absatzform: null
+                }))
+            }
+        }
+        
+        // Handle abrollhilfe field (multi-select)
+        if (selected.abrollhilfe && (selectedSole?.id === "9" || selectedSole?.id === "10" || selectedSole?.id === "11" || selectedSole?.id === "12")) {
+            const abrollhilfeValue = selected.abrollhilfe
+            const isArray = Array.isArray(abrollhilfeValue)
+            const currentArray = isArray ? abrollhilfeValue : [abrollhilfeValue]
+            
+            // Remove "abzezzolle" (Absatzrolle) if it's selected
+            if (currentArray.includes("abzezzolle")) {
+                const filteredArray = currentArray.filter((id: string) => id !== "abzezzolle")
+                setSelected((prev) => ({
+                    ...prev,
+                    abrollhilfe: filteredArray.length > 0 ? filteredArray : null
+                }))
+            }
+        }
+    }, [selectedSole?.id, selected.absatzform, selected.abrollhilfe])
 
     // Handlers
     const setGroup = (groupId: string, optId: string | null) => {
@@ -129,6 +204,30 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             return
         }
         setCheckboxError(false)
+        
+        // Validate sole id "4" required fields
+        if (selectedSole?.id === "4") {
+            if (!sole4Thickness || !sole4Color) {
+                toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
+                return
+            }
+        }
+        
+        // Validate sole id "5" required fields
+        if (selectedSole?.id === "5") {
+            if (!sole5Thickness || !sole5Color) {
+                toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
+                return
+            }
+        }
+        
+        // Validate sole id "6" required fields
+        if (selectedSole?.id === "6") {
+            if (!sole6Thickness || !sole6Color) {
+                toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
+                return
+            }
+        }
         
         if (!orderId) {
             toast.error("Order ID is required")
@@ -262,6 +361,10 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 }
             }
         }
+        const verbindungsleder = getSelectedValue(selected.verbindungsleder)
+        if (verbindungsleder) {
+            formData.append('Verbindungsleder', verbindungsleder)
+        }
         const farbauswahl = getSelectedValue(selected.farbauswahl)
         if (farbauswahl) {
             formData.append('Farbauswahl_Bodenkonstruktion', farbauswahl)
@@ -311,6 +414,36 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         // Add total price (Bodenkonstruktion grandTotal)
         formData.append('totalPrice', grandTotal.toFixed(2))
 
+        // Add sole id "4" specific fields if selected
+        if (selectedSole?.id === "4") {
+            if (sole4Thickness) {
+                formData.append('sole4_thickness', sole4Thickness)
+            }
+            if (sole4Color) {
+                formData.append('sole4_color', sole4Color)
+            }
+        }
+        
+        // Add sole id "5" specific fields if selected
+        if (selectedSole?.id === "5") {
+            if (sole5Thickness) {
+                formData.append('sole5_thickness', sole5Thickness)
+            }
+            if (sole5Color) {
+                formData.append('sole5_color', sole5Color)
+            }
+        }
+        
+        // Add sole id "6" specific fields if selected
+        if (selectedSole?.id === "6") {
+            if (sole6Thickness) {
+                formData.append('sole6_thickness', sole6Thickness)
+            }
+            if (sole6Color) {
+                formData.append('sole6_color', sole6Color)
+            }
+        }
+
         // Note: Files (image3d_1, image3d_2) should be retrieved from order data if available
         // For now, we'll rely on the order having the files already stored
 
@@ -344,6 +477,12 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     formData.append('Fersenkappe_sub', hinterkappeSub)
                 }
             }
+        }
+
+        // Verbindungsleder
+        const verbindungsleder = getSelectedValue(selected.verbindungsleder)
+        if (verbindungsleder) {
+            formData.append('Verbindungsleder', verbindungsleder)
         }
 
         // Farbauswahl_Bodenkonstruktion
@@ -405,6 +544,11 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             formData.append('heel_width_adjustment', JSON.stringify(heelWidthAdjustment))
         }
 
+        // Sole Elevation
+        if (soleElevation && soleElevation.enabled) {
+            formData.append('sole_elevation', JSON.stringify(soleElevation))
+        }
+
         // Besondere_Hinweise
         if (textAreas.besondere_hinweise) {
             formData.append('Besondere_Hinweise', textAreas.besondere_hinweise)
@@ -415,6 +559,36 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
         // totalPrice (grandTotal includes base price + all additional options)
         formData.append('totalPrice', grandTotal.toFixed(2))
+
+        // Add sole id "4" specific fields if selected
+        if (selectedSole?.id === "4") {
+            if (sole4Thickness) {
+                formData.append('sole4_thickness', sole4Thickness)
+            }
+            if (sole4Color) {
+                formData.append('sole4_color', sole4Color)
+            }
+        }
+        
+        // Add sole id "5" specific fields if selected
+        if (selectedSole?.id === "5") {
+            if (sole5Thickness) {
+                formData.append('sole5_thickness', sole5Thickness)
+            }
+            if (sole5Color) {
+                formData.append('sole5_color', sole5Color)
+            }
+        }
+        
+        // Add sole id "6" specific fields if selected
+        if (selectedSole?.id === "6") {
+            if (sole6Thickness) {
+                formData.append('sole6_thickness', sole6Thickness)
+            }
+            if (sole6Color) {
+                formData.append('sole6_color', sole6Color)
+            }
+        }
 
         return formData
     }
@@ -453,6 +627,18 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             <SoleSelectionSection
                 selectedSole={selectedSole}
                 onOpenModal={() => setShowSoleModal(true)}
+                sole4Thickness={sole4Thickness}
+                sole4Color={sole4Color}
+                onSole4ThicknessChange={setSole4Thickness}
+                onSole4ColorChange={setSole4Color}
+                sole5Thickness={sole5Thickness}
+                sole5Color={sole5Color}
+                onSole5ThicknessChange={setSole5Thickness}
+                onSole5ColorChange={setSole5Color}
+                sole6Thickness={sole6Thickness}
+                sole6Color={sole6Color}
+                onSole6ThicknessChange={setSole6Thickness}
+                onSole6ColorChange={setSole6Color}
             />
 
             {/* Checklist Section */}
@@ -467,11 +653,14 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 onTextAreaChange={handleTextAreaChange}
                 onHeelWidthChange={setHeelWidthAdjustment}
                 heelWidthAdjustment={heelWidthAdjustment}
+                onSoleElevationChange={setSoleElevation}
+                soleElevation={soleElevation}
                 checkboxError={checkboxError}
                 grandTotal={grandTotal}
                 onWeiterClick={handleWeiterClick}
                 onCancel={() => router.back()}
                 isSubmitting={isSubmitting}
+                selectedSole={selectedSole}
             />
 
             {/* PDF Popup */}
@@ -492,6 +681,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     orderData={orderDataForPDF}
                     selectedSole={selectedSole}
                     heelWidthAdjustment={heelWidthAdjustment}
+                    soleElevation={soleElevation}
                 />
             )}
 

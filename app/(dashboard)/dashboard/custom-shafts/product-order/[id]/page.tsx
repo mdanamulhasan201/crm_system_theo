@@ -52,6 +52,9 @@ export default function OrderPage() {
   // Closure type
   const [closureType, setClosureType] = useState<string>('');
 
+  // CAD Modeling selection
+  const [cadModeling, setCadModeling] = useState<'1x' | '2x'>('1x');
+
   // Leather color configuration
   // Default: no selection, UX will only show fields after user chooses a value
   const [numberOfLeatherColors, setNumberOfLeatherColors] = useState<string>('');
@@ -125,10 +128,16 @@ export default function OrderPage() {
   const SCHNURSENKEL_PRICE = 4.49;
   const OSEN_EINSETZEN_PRICE = 8.99;
   const ZIPPER_EXTRA_PRICE = 9.99;
+  const CAD_MODELING_2X_PRICE = 6.99;
   const ABHOLUNG_PRICE_DEFAULT = 13.0;
 
   const calculateTotalPrice = () => {
     let total = basePrice;
+
+    // Add CAD modeling surcharge if 2x is selected
+    if (cadModeling === '2x') {
+      total += CAD_MODELING_2X_PRICE;
+    }
 
     if (passendenSchnursenkel) {
       total += SCHNURSENKEL_PRICE;
@@ -272,12 +281,10 @@ export default function OrderPage() {
             basePrice={basePrice}
           />
 
-            <div>
-            <h2 className='font-bold text-lg mb-4'>CAD-Modellierung</h2>
-          </div>
-
           {/* Product Configuration */}
           <ProductConfiguration
+            cadModeling={cadModeling}
+            setCadModeling={setCadModeling}
             customCategory={customCategory}
             setCustomCategory={setCustomCategory}
             customCategoryPrice={customCategoryPrice}

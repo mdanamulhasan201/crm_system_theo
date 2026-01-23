@@ -1,8 +1,9 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, type HeelWidthAdjustmentData } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, type HeelWidthAdjustmentData, type SoleElevationData } from "./FormFields"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
+import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 
 interface ChecklistSectionProps {
     selected: SelectedState
@@ -15,11 +16,14 @@ interface ChecklistSectionProps {
     onTextAreaChange: (key: string, value: string) => void
     onHeelWidthChange?: (value: HeelWidthAdjustmentData | null) => void
     heelWidthAdjustment?: HeelWidthAdjustmentData | null
+    onSoleElevationChange?: (value: SoleElevationData | null) => void
+    soleElevation?: SoleElevationData | null
     checkboxError: boolean
     grandTotal: number
     onWeiterClick: () => void
     onCancel: () => void
     isSubmitting?: boolean
+    selectedSole?: SoleType | null
 }
 
 export default function ChecklistSection({
@@ -33,11 +37,14 @@ export default function ChecklistSection({
     onTextAreaChange,
     onHeelWidthChange,
     heelWidthAdjustment,
+    onSoleElevationChange,
+    soleElevation,
     checkboxError,
     grandTotal,
     onWeiterClick,
     onCancel,
     isSubmitting = false,
+    selectedSole,
 }: ChecklistSectionProps) {
     return (
         <div className="bg-white rounded-lg p-4 w-full">
@@ -84,6 +91,23 @@ export default function ChecklistSection({
                                 value={heelWidthAdjustment || null}
                                 onChange={onHeelWidthChange || (() => {})}
                             />
+                        ) : g.fieldType === "soleElevation" ? (
+                            <SoleElevationField
+                                def={g}
+                                value={soleElevation || null}
+                                onChange={onSoleElevationChange || (() => {})}
+                            />
+                        ) : g.fieldType === "yesNo" ? (
+                            <YesNoField
+                                def={g}
+                                selected={normalizedSelected}
+                                onSelect={(optId) => onSetGroup(g.id, optId)}
+                                tooltipText={
+                                    g.id === "verbindungsleder"
+                                        ? "Lederstück zur Verbindung von Vorder- und Hinterkappe für zusätzliche Stabilität im Schaftbereich."
+                                        : undefined
+                                }
+                            />
                         ) : (
                             <>
                                 <OptionGroup
@@ -93,6 +117,7 @@ export default function ChecklistSection({
                                     optionInputs={optionInputs}
                                     setOptionInputs={setOptionInputs}
                                     onOptionClick={onAbsatzFormClick}
+                                    selectedSole={selectedSole}
                                 />
 
                                 {/* Bevorzugte Farbe input für Sohlenmaterial */}
