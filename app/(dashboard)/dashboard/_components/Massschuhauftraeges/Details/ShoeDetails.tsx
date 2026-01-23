@@ -618,7 +618,7 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
                         setShowModal(false)
                         setShowModal2(true)
                     }}
-                    allGroups={GROUPS.filter((g) => g.fieldType !== "section" && g.fieldType !== "textarea")}
+                    allGroups={GROUPS.filter((g) => g.fieldType !== "section" && g.fieldType !== "textarea") as any}
                     selected={selected}
                     optionInputs={optionInputs}
                     textAreas={textAreas}
