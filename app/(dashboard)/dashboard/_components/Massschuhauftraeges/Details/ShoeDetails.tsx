@@ -1,7 +1,7 @@
 "use client"
 import React, { useMemo, useState, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { GroupDef } from "./Types"
+import { GroupDef, GroupDef2 } from "./Types"
 import { normalizeUnderscores, parseEuroFromText } from "./HelperFunctions"
 import { GROUPS, shoe } from "./ShoeData"
 import PDFPopup, { OrderDataForPDF } from "./PDFPopup"
@@ -618,7 +618,7 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
                         setShowModal(false)
                         setShowModal2(true)
                     }}
-                    allGroups={GROUPS.filter((g) => g.fieldType !== "section" && g.fieldType !== "textarea")}
+                    allGroups={GROUPS.filter((g) => g.fieldType !== "section" && g.fieldType !== "textarea") as GroupDef2[]}
                     selected={selected}
                     optionInputs={optionInputs}
                     textAreas={textAreas}
