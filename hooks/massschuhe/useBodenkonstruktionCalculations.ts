@@ -3,7 +3,7 @@ import { GROUPS2 } from "@/app/(dashboard)/dashboard/_components/Massschuhauftra
 import { parseEuroFromText } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/HelperFunctions"
 
 export type SelectedState = {
-    [groupId: string]: string | null
+    [groupId: string]: string | string[] | null
 }
 
 /**
@@ -22,14 +22,29 @@ export function useBodenkonstruktionCalculations(
         let totalExtraPrice = 0
 
         for (const group of GROUPS2) {
-            const selectedOptionId = selected[group.id]
+            const selectedValue = selected[group.id]
             
             // Skip if no option is selected for this group
-            if (!selectedOptionId) {
+            if (!selectedValue) {
                 continue
             }
 
-            // Find the selected option in the group
+            // Handle multi-select fields (arrays)
+            if (group.multiSelect && Array.isArray(selectedValue)) {
+                selectedValue.forEach((optionId) => {
+                    const selectedOption = group.options.find(
+                        (option) => option.id === optionId
+                    )
+                    if (selectedOption) {
+                        const optionPrice = parseEuroFromText(selectedOption.label)
+                        totalExtraPrice += optionPrice
+                    }
+                })
+                continue
+            }
+
+            // Handle single-select fields
+            const selectedOptionId = selectedValue as string
             const selectedOption = group.options.find(
                 (option) => option.id === selectedOptionId
             )

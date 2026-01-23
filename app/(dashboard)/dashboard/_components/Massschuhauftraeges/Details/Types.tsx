@@ -1,6 +1,7 @@
 export type OptionDef = {
     id: string
     label: string
+    disabled?: boolean
   }
   
   export type GroupDef = {
@@ -15,14 +16,15 @@ export type OptionDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text"
+    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment"
+    multiSelect?: boolean
     subOptions?: {
       [key: string]: Array<{ id: string; label: string; price: number }>
     }
   }
   
   export type SelectedState = {
-    [groupId: string]: string | null
+    [groupId: string]: string | string[] | null
   }
   
   export type OptionInputsState = {

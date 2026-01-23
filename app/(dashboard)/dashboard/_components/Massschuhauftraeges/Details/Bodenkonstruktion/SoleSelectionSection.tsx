@@ -35,6 +35,9 @@ export default function SoleSelectionSection({ selectedSole, onOpenModal }: Sole
                     <div>
                         <p className="text-sm text-gray-600 mb-1">Ausgewählte Sohle:</p>
                         <p className="text-lg font-bold text-gray-800">{selectedSole.name}</p>
+                        {selectedSole.des && (
+                            <p className="text-sm text-gray-500 mt-1">{selectedSole.des}</p>
+                        )}
                     </div>
                 </div>
             ) : (

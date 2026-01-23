@@ -2,11 +2,12 @@
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { History, UploadCloud, Search, X } from 'lucide-react';
+import { History, UploadCloud, Search, X, Copy } from 'lucide-react';
 import CustomerSearchModal from './CustomerSearchModal';
 import OtherCustomerModal from './OtherCustomerModal';
 import BusinessAddressModal from './BusinessAddressModal';
 import FilePreviewWithShimmer from './FilePreviewWithShimmer';
+import toast from 'react-hot-toast';
 
 interface Customer {
   id: string;
@@ -69,6 +70,24 @@ export default function FileUploadSection({
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showOtherCustomerModal, setShowOtherCustomerModal] = useState(false);
   const [showBusinessAddressModal, setShowBusinessAddressModal] = useState(false);
+  const [showShippingAddress, setShowShippingAddress] = useState(false);
+
+  // Disable one customer input when the other is filled
+  const isCustomerSelectDisabled = !!otherCustomerNumber;
+  const isExternalCustomerDisabled = !!selectedCustomer;
+
+  const shippingAddress = {
+    company: 'FeetF1rst S.R.L.S.',
+    street: 'Via Pipen, 5',
+    city: '39031 Brunico (BZ)',
+    country: 'Italien'
+  };
+
+  const handleCopyAddress = () => {
+    const fullAddress = `${shippingAddress.company}\n${shippingAddress.street}\n${shippingAddress.city}\n${shippingAddress.country}`;
+    navigator.clipboard.writeText(fullAddress);
+    toast.success('Adresse in die Zwischenablage kopiert');
+  };
 
   const handleLinkerLeistenFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -130,10 +149,34 @@ export default function FileUploadSection({
                   placeholder="Suche..."
                   value={selectedCustomer ? selectedCustomer.name : ''}
                   readOnly
-                  onClick={() => setShowCustomerModal(true)}
-                  className="pl-10 cursor-pointer bg-white border-gray-300 rounded-md h-12 text-base"
+                  disabled={isCustomerSelectDisabled}
+                  onClick={() => {
+                    if (!isCustomerSelectDisabled) {
+                      setShowCustomerModal(true);
+                    }
+                  }}
+                  className={`pl-10 pr-10 border-gray-300 rounded-md h-12 text-base ${
+                    isCustomerSelectDisabled
+                      ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                      : 'bg-white cursor-pointer'
+                  }`}
                 />
+                {/* Clear button for selected customer */}
+                {selectedCustomer && !isCustomerSelectDisabled && (
+                  <button
+                    type="button"
+                    onClick={() => onSelectCustomer(null)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
+              {isCustomerSelectDisabled && (
+                <span className="text-xs text-gray-500">
+                  Deaktiviert, da ein externer Kunde eingetragen ist.
+                </span>
+              )}
             </div>
           )}
 
@@ -151,20 +194,47 @@ export default function FileUploadSection({
           {!hideCustomerSearch && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Kunden Extern</label>
-              <Input
-                type="text"
-                placeholder="Textfeld..."
-                value={otherCustomerNumber}
-                onChange={(e) => {
-                  setOtherCustomerNumber(e.target.value);
-                  if (e.target.value) {
-                    onSelectCustomer(null);
-                  }
-                }}
-                onClick={() => setShowOtherCustomerModal(true)}
-                className="bg-white border-gray-300 rounded-md h-12 text-base cursor-pointer"
-                readOnly
-              />
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Textfeld..."
+                  value={otherCustomerNumber}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setOtherCustomerNumber(value);
+                    if (value) {
+                      onSelectCustomer(null);
+                    }
+                  }}
+                  onClick={() => {
+                    if (!isExternalCustomerDisabled) {
+                      setShowOtherCustomerModal(true);
+                    }
+                  }}
+                  disabled={isExternalCustomerDisabled}
+                  className={`pr-10 border-gray-300 rounded-md h-12 text-base ${
+                    isExternalCustomerDisabled
+                      ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                      : 'bg-white cursor-pointer'
+                  }`}
+                  readOnly={false}
+                />
+                {/* Clear button for external customer text */}
+                {otherCustomerNumber && !isExternalCustomerDisabled && (
+                  <button
+                    type="button"
+                    onClick={() => setOtherCustomerNumber('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {isExternalCustomerDisabled && (
+                <span className="text-xs text-gray-500">
+                  Deaktiviert, da ein Kunde ausgewählt ist.
+                </span>
+              )}
             </div>
           )}
 
@@ -212,38 +282,81 @@ export default function FileUploadSection({
             </div>
           )}
 
-          {/* Leisten abholen Section - Show when hideFileUploads is true */}
+          {/* Leisten abholen & Versenden Section - Show when hideFileUploads is true */}
           {hideFileUploads && (
-            <Button
-              variant="outline"
-              type="button"
-              className={`justify-center cursor-pointer mt-7 w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white ${businessAddress ? 'items-center' : ''}`}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                if (businessAddress && (businessAddress.companyName || businessAddress.address)) {
-                  // If address is set, clear it when clicked (set to null)
-                  if (onBusinessAddressSave) {
-                    onBusinessAddressSave({
-                      companyName: '',
-                      address: '',
-                      price: 13,
-                      phone: '',
-                      email: '',
-                    });
-                  }
-                } else {
-                  // If no address, open modal
-                  setShowBusinessAddressModal(true);
-                }
-              }}
-            >
-              {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
-                <X className="w-5 h-5 text-gray-700" />
-              ) : (
-                'Leisten abholen'
+            <div className="flex flex-col gap-3 mt-7">
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  type="button"
+                  className={`flex-1 justify-center cursor-pointer h-10 text-sm font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-2 bg-white ${businessAddress ? 'items-center' : ''}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (businessAddress && (businessAddress.companyName || businessAddress.address)) {
+                      // If address is set, clear it when clicked (set to null)
+                      if (onBusinessAddressSave) {
+                        onBusinessAddressSave({
+                          companyName: '',
+                          address: '',
+                          price: 13,
+                          phone: '',
+                          email: '',
+                        });
+                      }
+                    } else {
+                      // If no address, open modal
+                      setShowBusinessAddressModal(true);
+                    }
+                  }}
+                >
+                  {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
+                    <X className="w-4 h-4 text-gray-700" />
+                  ) : (
+                    'Leisten abholen lassen'
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  type="button"
+                  className="flex-1 justify-center cursor-pointer h-10 text-sm font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-2 bg-white"
+                  onClick={() => setShowShippingAddress(!showShippingAddress)}
+                >
+                  Leisten selber versenden
+                </Button>
+              </div>
+
+              {/* Shipping Address Display */}
+              {showShippingAddress && (
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900 mb-1">
+                        {shippingAddress.company}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {shippingAddress.street}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {shippingAddress.city}
+                      </p>
+                      <p className="text-sm text-gray-700">
+                        {shippingAddress.country}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyAddress}
+                      className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-100"
+                      title="Adresse kopieren"
+                    >
+                      <Copy className="w-4 h-4 text-gray-600" />
+                    </Button>
+                  </div>
+                </div>
               )}
-            </Button>
+            </div>
           )}
         </div>
 

@@ -93,7 +93,7 @@ export default function SchaftErstellungModal({
 
           {/* Subtitle */}
           <p className="text-center text-sm md:text-base text-gray-600 mb-6">
-            Wählen Sie aus wie Sie ihren Leisten versenden werden
+            Wählen Sie aus wie Sie ihren Leisten versenden werden.
           </p>
 
           {/* Action Buttons */}
@@ -129,7 +129,7 @@ export default function SchaftErstellungModal({
                   Lade...
                 </span>
               ) : (
-                <span className="relative z-10 tracking-wide">ABHOLUNG</span>
+                <span className="relative z-10 tracking-wide">PHYSISCH</span>
               )}
             </Button>
           </div>

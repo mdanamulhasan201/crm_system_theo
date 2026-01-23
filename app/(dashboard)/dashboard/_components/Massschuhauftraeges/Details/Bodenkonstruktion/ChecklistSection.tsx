@@ -1,6 +1,6 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, type HeelWidthAdjustmentData } from "./FormFields"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 
@@ -13,6 +13,8 @@ interface ChecklistSectionProps {
     onSetHinterkappeSub: (optId: string | null) => void
     onAbsatzFormClick: (groupId: string, optionId: string) => void
     onTextAreaChange: (key: string, value: string) => void
+    onHeelWidthChange?: (value: HeelWidthAdjustmentData | null) => void
+    heelWidthAdjustment?: HeelWidthAdjustmentData | null
     checkboxError: boolean
     grandTotal: number
     onWeiterClick: () => void
@@ -29,6 +31,8 @@ export default function ChecklistSection({
     onSetHinterkappeSub,
     onAbsatzFormClick,
     onTextAreaChange,
+    onHeelWidthChange,
+    heelWidthAdjustment,
     checkboxError,
     grandTotal,
     onWeiterClick,
@@ -39,35 +43,84 @@ export default function ChecklistSection({
         <div className="bg-white rounded-lg p-4 w-full">
             <h2 className="text-2xl font-bold text-gray-800 mb-8">Checkliste</h2>
 
-            {GROUPS2.map((g) => (
-                <React.Fragment key={g.id}>
-                    {g.fieldType === "select" ? (
-                        <SelectField
-                            def={g}
-                            selected={selected[g.id] ?? null}
-                            onSelect={(optId) => onSetGroup(g.id, optId)}
-                            subSelected={g.id === "hinterkappe" ? selected.hinterkappe_sub ?? null : undefined}
-                            onSubSelect={g.id === "hinterkappe" ? onSetHinterkappeSub : undefined}
-                        />
-                    ) : g.fieldType === "text" ? (
-                        <TextField 
-                            def={g} 
-                            selected={selected[g.id] ?? null} 
-                            onSelect={(value) => onSetGroup(g.id, value)} 
-                        />
-                    ) : (
-                        <OptionGroup
-                            def={g}
-                            selected={selected[g.id] ?? null}
-                            onSelect={(optId) => onSetGroup(g.id, optId)}
-                            optionInputs={optionInputs}
-                            setOptionInputs={setOptionInputs}
-                            onOptionClick={onAbsatzFormClick}
-                        />
-                    )}
-                    <hr className="border-gray-200 my-4" />
-                </React.Fragment>
-            ))}
+            {GROUPS2.map((g) => {
+                // Normalize selected value for SelectField (convert array to string or null)
+                const normalizeSelected = (value: string | string[] | null | undefined): string | null => {
+                    if (!value) return null
+                    if (Array.isArray(value)) {
+                        return value.length > 0 ? value[0] : null
+                    }
+                    return value
+                }
+
+                const normalizedSelected = normalizeSelected(selected[g.id])
+
+                const showSohlenmaterialColorInput =
+                    g.id === "schlemmaterial" && !!normalizedSelected
+
+                return (
+                    <React.Fragment key={g.id}>
+                        {g.fieldType === "select" ? (
+                            <SelectField
+                                def={g}
+                                selected={normalizedSelected}
+                                onSelect={(optId) => onSetGroup(g.id, optId)}
+                                subSelected={
+                                    g.id === "hinterkappe"
+                                        ? normalizeSelected(selected.hinterkappe_sub)
+                                        : undefined
+                                }
+                                onSubSelect={g.id === "hinterkappe" ? onSetHinterkappeSub : undefined}
+                            />
+                        ) : g.fieldType === "text" ? (
+                            <TextField
+                                def={g}
+                                selected={normalizedSelected}
+                                onSelect={(value) => onSetGroup(g.id, value)}
+                            />
+                        ) : g.fieldType === "heelWidthAdjustment" ? (
+                            <HeelWidthAdjustmentField
+                                def={g}
+                                value={heelWidthAdjustment || null}
+                                onChange={onHeelWidthChange || (() => {})}
+                            />
+                        ) : (
+                            <>
+                                <OptionGroup
+                                    def={g}
+                                    selected={selected[g.id] ?? null}
+                                    onSelect={(optId) => onSetGroup(g.id, optId)}
+                                    optionInputs={optionInputs}
+                                    setOptionInputs={setOptionInputs}
+                                    onOptionClick={onAbsatzFormClick}
+                                />
+
+                                {/* Bevorzugte Farbe input für Sohlenmaterial */}
+                                {showSohlenmaterialColorInput && (
+                                    <div className="mt-2 ml-10">
+                                        <label className="block text-sm font-semibold text-gray-800 mb-1">
+                                            Bevorzugte Farbe
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                            placeholder="Bevorzugte Farbe (z. B. Schwarz, Dunkelblau …)"
+                                            value={textAreas.schlemmaterial_preferred_colour || ""}
+                                            onChange={(e) =>
+                                                onTextAreaChange(
+                                                    "schlemmaterial_preferred_colour",
+                                                    e.target.value
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        <hr className="border-gray-200 my-4" />
+                    </React.Fragment>
+                )
+            })}
 
             <div className="mb-4">
                 <label className="block text-base font-bold text-gray-800 mb-2">Besondere Hinweise</label>

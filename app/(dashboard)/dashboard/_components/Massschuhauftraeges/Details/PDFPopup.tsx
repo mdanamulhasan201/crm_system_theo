@@ -25,7 +25,7 @@ interface PDFPopupProps {
   onClose: () => void
   onConfirm: (pdfBlob?: Blob) => void
   allGroups: GroupDef[]
-  selected: Record<string, string | null>
+  selected: Record<string, string | string[] | null>
   optionInputs: Record<string, Record<string, string[]>>
   textAreas?: {
     korrektur_bereich?: string
@@ -33,14 +33,27 @@ interface PDFPopupProps {
     bettung_wuensche?: string
     fussproblem_leisten?: string
     leisten_wuensche?: string
+    besondere_hinweise?: string
+    schlemmaterial_preferred_colour?: string
     [key: string]: string | undefined
   }
   showDetails?: boolean
   orderData?: OrderDataForPDF
+  selectedSole?: { id: string; name: string; image: string; des?: string; description?: string } | null
+  heelWidthAdjustment?: { left?: { op: "widen" | "narrow" | null; mm: number }; right?: { op: "widen" | "narrow" | null; mm: number }; medial?: { op: "widen" | "narrow" | null; mm: number }; lateral?: { op: "widen" | "narrow" | null; mm: number } } | null
 }
 
 type OptionDef = { id: string; label: string }
-type GroupDef = { id: string; question: string; options: OptionDef[] }
+type GroupDef = { 
+  id: string
+  question: string
+  options: OptionDef[]
+  fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment"
+  multiSelect?: boolean
+  subOptions?: {
+    [key: string]: Array<{ id: string; label: string; price: number }>
+  }
+}
 
 // InlineLabelWithInputs for Modal (uses Tailwind classes)
 function InlineLabelWithInputsModal({
@@ -107,6 +120,8 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   showDetails,
   onConfirm,
   orderData,
+  selectedSole,
+  heelWidthAdjustment,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
@@ -193,6 +208,8 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
         backgroundColor: "#ffffff",
         scrollY: 0,
         logging: false,
+        windowWidth: 794,
+        windowHeight: clone.scrollHeight,
         onclone: (clonedDoc: Document) => {
           clonedDoc.querySelectorAll('*').forEach((el: Element) => {
             const htmlEl = el as HTMLElement;
@@ -206,7 +223,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
         }
       },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"], avoid: [] },
+      pagebreak: { mode: ["css", "legacy"], avoid: ['.pdf-page-break-avoid'] },
     }
     const html2pdfModule = (await import('html2pdf.js')) as any
     const html2pdf = html2pdfModule.default || html2pdfModule
@@ -300,8 +317,16 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   // Render options with label content
   const renderModalOptions = (g: GroupDef) => {
     const selectedOptionId = selected[g.id]
+    
+    // Handle multi-select fields (arrays)
+    const isMultiSelect = g.multiSelect === true
+    const selectedArray = Array.isArray(selectedOptionId) ? selectedOptionId : (selectedOptionId ? [selectedOptionId] : [])
+    
     return g.options.map((opt: OptionDef) => {
-      const isSelected = selectedOptionId === opt.id
+      const isSelected = isMultiSelect 
+        ? selectedArray.includes(opt.id)
+        : selectedOptionId === opt.id
+      
       const placeholderCount = (opt.label || "").replace(/_{3,}/g, "___").split("___").length - 1
       const inputsForThisOpt = optionInputs[g.id]?.[opt.id] ?? Array.from({ length: placeholderCount }, () => "")
       
@@ -317,8 +342,16 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
   const renderPDFOptions = (g: GroupDef) => {
     const selectedOptionId = selected[g.id]
+    
+    // Handle multi-select fields (arrays)
+    const isMultiSelect = g.multiSelect === true
+    const selectedArray = Array.isArray(selectedOptionId) ? selectedOptionId : (selectedOptionId ? [selectedOptionId] : [])
+    
     return g.options.map((opt: OptionDef) => {
-      const isSelected = selectedOptionId === opt.id
+      const isSelected = isMultiSelect 
+        ? selectedArray.includes(opt.id)
+        : selectedOptionId === opt.id
+      
       const placeholderCount = (opt.label || "").replace(/_{3,}/g, "___").split("___").length - 1
       const inputsForThisOpt = optionInputs[g.id]?.[opt.id] ?? Array.from({ length: placeholderCount }, () => "")
       
@@ -330,6 +363,35 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
       
       return <PDFCheckbox key={opt.id} isSelected={isSelected} label={labelContent} />
     })
+  }
+  
+  // Helper function to render sub-options (e.g., hinterkappe_sub)
+  const renderSubOption = (groupId: string, subOptionId: string | null, subOptions: Array<{ id: string; label: string; price: number }>) => {
+    if (!subOptionId || !subOptions) return null
+    
+    const subOption = subOptions.find(opt => opt.id === subOptionId)
+    if (!subOption) return null
+    
+    return (
+      <div style={{ marginTop: '8px', marginLeft: '20px', fontSize: '12px', color: '#475569' }}>
+        <span style={{ fontWeight: 500 }}>Auswahl: </span>
+        <span>{subOption.label}</span>
+      </div>
+    )
+  }
+  
+  const renderSubOptionModal = (groupId: string, subOptionId: string | null, subOptions: Array<{ id: string; label: string; price: number }>) => {
+    if (!subOptionId || !subOptions) return null
+    
+    const subOption = subOptions.find(opt => opt.id === subOptionId)
+    if (!subOption) return null
+    
+    return (
+      <div className="mt-2 ml-5 text-xs text-slate-600">
+        <span className="font-medium">Auswahl: </span>
+        <span>{subOption.label}</span>
+      </div>
+    )
   }
 
   if (!isOpen) return null;
@@ -368,6 +430,69 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
               {/* Body - same horizontal padding as header */}
               <div className="pt-3 pb-6 px-10 flex-1">
+                  {/* Selected Sole Section */}
+                  {selectedSole && (
+                    <div className="mb-6 pb-4 border-b border-gray-300">
+                      <div className="text-sm font-semibold text-slate-800 mb-2">Ausgewählte Sohle:</div>
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src={selectedSole.image} 
+                          alt={selectedSole.name} 
+                          className="w-24 h-24 object-contain border border-gray-200 rounded" 
+                        />
+                        <div>
+                          <p className="text-base font-bold text-slate-800">{selectedSole.name}</p>
+                          {selectedSole.des && (
+                            <p className="text-sm text-slate-600 mt-1">{selectedSole.des}</p>
+                          )}
+                          {selectedSole.description && (
+                            <p className="text-xs text-slate-500 mt-2 leading-relaxed">{selectedSole.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Heel Width Adjustment Section */}
+                  {heelWidthAdjustment && (heelWidthAdjustment.left || heelWidthAdjustment.right || heelWidthAdjustment.medial || heelWidthAdjustment.lateral) && (
+                    <div className="mb-6 pb-4 border-b border-gray-300">
+                      <div className="text-sm font-semibold text-slate-800 mb-3">Absatzbreite anpassen (mm):</div>
+                      {heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Linker Schuh:</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {heelWidthAdjustment.left.op === "widen" ? "+" : "−"} {heelWidthAdjustment.left.mm} mm
+                          </span>
+                        </div>
+                      )}
+                      {heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Rechter Schuh:</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {heelWidthAdjustment.right.op === "widen" ? "+" : "−"} {heelWidthAdjustment.right.mm} mm
+                          </span>
+                        </div>
+                      )}
+                      {/* Backward compatibility with medial/lateral */}
+                      {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Medial (innen):</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} {heelWidthAdjustment.medial.mm} mm
+                          </span>
+                        </div>
+                      )}
+                      {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Lateral (außen):</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} {heelWidthAdjustment.lateral.mm} mm
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {showDetails ? (
                     <>
                     <div className="text-lg font-bold text-slate-800 mb-2">Checkliste Halbprobe</div>
@@ -383,30 +508,68 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   {allGroups.map((g: GroupDef) => {
                     const selectedOptionId = selected[g.id]
                     
-                    if (g.options.length === 1 && g.options[0].label === "mm" && g.id === "absatzhoehe") {
+                    // Handle text field type (generic handling for all text fields)
+                    // Only show if there's a value or if it's a required field
+                    if (g.fieldType === "text") {
+                      const displayValue = selectedOptionId || "___"
+                      const unit = g.options.length === 1 ? g.options[0].label : ""
+                      
                       return (
-                      <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
-                        <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
-                        <div className="flex-1">
-                          <span className="inline-block min-w-[40px] px-2 py-0.5 border-b border-green-500 text-green-500 font-semibold text-center mx-1">{selectedOptionId || "___"}</span>
-                              <span>mm</span>
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1">
+                            <span className="inline-block min-w-[40px] px-2 py-0.5 border-b border-green-500 text-green-500 font-semibold text-center mx-1">{displayValue}</span>
+                            {unit && <span className="ml-1">{unit}</span>}
                           </div>
                         </div>
                       )
                     }
                     
+                    // Handle select field type (e.g., hinterkappe)
+                    if (g.fieldType === "select") {
+                      const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
+                      const selectedOption = g.options.find(opt => opt.id === selectedValue)
+                      
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {selectedOption ? (
+                              <>
+                                <ModalCheckbox isSelected={true} label={selectedOption.label} />
+                                {g.id === "hinterkappe" && selectedValue === "leder" && g.subOptions?.leder && renderSubOptionModal(g.id, (selected['hinterkappe_sub'] as string | null) || null, g.subOptions.leder)}
+                              </>
+                            ) : (
+                              <span className="text-xs text-slate-400">Nicht ausgewählt</span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    // Handle heelWidthAdjustment field type (handled separately above)
+                    if (g.fieldType === "heelWidthAdjustment") {
+                      return null // Already handled above
+                    }
+                    
+                    // Handle checkbox and other field types (default)
+                    // Always show the field, renderModalOptions will show all options with selected ones checked
                     return (
-                    <div key={g.id} className="flex items-start py-4 border-b border-gray-300 last:border-b-0">
+                    <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
                       <div className="flex-1 leading-loose">
-                        {renderModalOptions(g)}
+                        {g.options && g.options.length > 0 ? (
+                          renderModalOptions(g)
+                        ) : (
+                          <span className="text-xs text-slate-400 italic">Keine Optionen verfügbar</span>
+                        )}
                       </div>
                     </div>
                   )
                 })}
 
                 {/* Text areas */}
-                {textAreas && (textAreas.korrektur_bereich || textAreas.fussproblem_bettung || textAreas.bettung_wuensche || textAreas.fussproblem_leisten || textAreas.leisten_wuensche) && (
+                {textAreas && (textAreas.korrektur_bereich || textAreas.fussproblem_bettung || textAreas.bettung_wuensche || textAreas.fussproblem_leisten || textAreas.leisten_wuensche || textAreas.besondere_hinweise || textAreas.schlemmaterial_preferred_colour) && (
                   <div className="mt-4 pt-4">
                     {textAreas?.korrektur_bereich && (
                       <div className="mb-4">
@@ -433,9 +596,21 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       </div>
                     )}
                     {textAreas?.leisten_wuensche && (
-                      <div>
+                      <div className="mb-4">
                         <div className="text-sm font-semibold text-slate-800 mb-2">Hast du sonstige Anmerkungen oder Wünsche zum Leisten.</div>
                         <div className="text-xs text-slate-600 p-3 bg-slate-50 border border-gray-300 rounded-lg min-h-[60px] leading-relaxed">{textAreas.leisten_wuensche}</div>
+                      </div>
+                    )}
+                    {textAreas?.besondere_hinweise && (
+                      <div>
+                        <div className="text-sm font-semibold text-slate-800 mb-2">Besondere Hinweise</div>
+                        <div className="text-xs text-slate-600 p-3 bg-slate-50 border border-gray-300 rounded-lg min-h-[60px] leading-relaxed">{textAreas.besondere_hinweise}</div>
+                      </div>
+                    )}
+                    {textAreas?.schlemmaterial_preferred_colour && (
+                      <div className="mt-4">
+                        <div className="text-sm font-semibold text-slate-800 mb-2">Bevorzugte Farbe (Sohlenmaterial)</div>
+                        <div className="text-xs text-slate-600 p-3 bg-slate-50 border border-gray-300 rounded-lg min-h-[40px] leading-relaxed">{textAreas.schlemmaterial_preferred_colour}</div>
                       </div>
                     )}
                   </div>
@@ -454,7 +629,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
         {/* ============ HIDDEN PDF CONTENT (for PDF generation - uses inline styles) ============ */}
         <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
-          <div ref={pdfContentRef} style={{ width: '794px', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', fontFamily: 'Poppins, Arial, sans-serif' }}>
+          <div ref={pdfContentRef} style={{ width: '794px', display: 'flex', flexDirection: 'column', backgroundColor: '#ffffff', fontFamily: 'Poppins, Arial, sans-serif', minHeight: 'auto', overflow: 'visible' }}>
             {/* Header - outer has padding, inner content has border */}
             <div style={{ padding: '10px 40px 8px 40px', background: '#ffffff' }}>
               <div style={{ display: 'flex', gap: '24px', alignItems: 'center', paddingBottom: '12px', borderBottom: '2px solid #d1d5db' }}>
@@ -473,7 +648,70 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             </div>
 
             {/* Body - same horizontal padding as header */}
-            <div style={{ padding: '8px 40px 40px 40px', flex: 1, background: '#ffffff' }}>
+            <div style={{ padding: '8px 40px 40px 40px', flex: 1, background: '#ffffff', pageBreakInside: 'auto', overflow: 'visible' }}>
+              {/* Selected Sole Section */}
+              {selectedSole && (
+                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Ausgewählte Sohle:</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <img 
+                      src={selectedSole.image} 
+                      alt={selectedSole.name} 
+                      style={{ width: '96px', height: '96px', objectFit: 'contain', border: '1px solid #e5e7eb', borderRadius: '4px' }}
+                    />
+                    <div>
+                      <p style={{ fontSize: '16px', fontWeight: 700, color: '#1e293b', margin: 0 }}>{selectedSole.name}</p>
+                      {selectedSole.des && (
+                        <p style={{ fontSize: '12px', color: '#475569', marginTop: '6px', marginBottom: 0 }}>{selectedSole.des}</p>
+                      )}
+                      {selectedSole.description && (
+                        <p style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: 0, lineHeight: 1.4 }}>{selectedSole.description}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Heel Width Adjustment Section */}
+              {heelWidthAdjustment && (heelWidthAdjustment.left || heelWidthAdjustment.right || heelWidthAdjustment.medial || heelWidthAdjustment.lateral) && (
+                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Absatzbreite anpassen (mm):</div>
+                  {heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Linker Schuh:</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {heelWidthAdjustment.left.op === "widen" ? "+" : "−"} {heelWidthAdjustment.left.mm} mm
+                      </span>
+                    </div>
+                  )}
+                  {heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Rechter Schuh:</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {heelWidthAdjustment.right.op === "widen" ? "+" : "−"} {heelWidthAdjustment.right.mm} mm
+                      </span>
+                    </div>
+                  )}
+                  {/* Backward compatibility with medial/lateral */}
+                  {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Medial (innen):</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} {heelWidthAdjustment.medial.mm} mm
+                      </span>
+                    </div>
+                  )}
+                  {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Lateral (außen):</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} {heelWidthAdjustment.lateral.mm} mm
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {showDetails ? (
                 <>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste Halbprobe</div>
@@ -489,59 +727,109 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
               {allGroups.map((g: GroupDef) => {
                 const selectedOptionId = selected[g.id]
                 
-                if (g.options.length === 1 && g.options[0].label === "mm" && g.id === "absatzhoehe") {
+                // Handle text field type (generic handling for all text fields)
+                // Only show if there's a value or if it's a required field
+                if (g.fieldType === "text") {
+                  const displayValue = selectedOptionId || "___"
+                  const unit = g.options.length === 1 ? g.options[0].label : ""
+                  
                   return (
-                    <div key={g.id} style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db' }}>
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
                       <div style={{ flex: 1, lineHeight: 1.8 }}>
-                        <span style={{ display: 'inline-block', minWidth: '40px', padding: '2px 8px', borderBottom: '1px solid #22c55e', color: '#22c55e', fontWeight: 600, textAlign: 'center', margin: '0 4px' }}>{selectedOptionId || "___"}</span>
-                        <span>mm</span>
+                        <span style={{ display: 'inline-block', minWidth: '40px', padding: '2px 8px', borderBottom: '1px solid #22c55e', color: '#22c55e', fontWeight: 600, textAlign: 'center', margin: '0 4px' }}>{displayValue}</span>
+                        {unit && <span style={{ marginLeft: '4px' }}>{unit}</span>}
                       </div>
                     </div>
                   )
                 }
+                
+                // Handle select field type (e.g., hinterkappe)
+                if (g.fieldType === "select") {
+                  const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
+                  const selectedOption = g.options.find(opt => opt.id === selectedValue)
+                  
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {selectedOption ? (
+                          <>
+                            <PDFCheckbox isSelected={true} label={selectedOption.label} />
+                            {g.id === "hinterkappe" && selectedValue === "leder" && g.subOptions?.leder && renderSubOption(g.id, (selected['hinterkappe_sub'] as string | null) || null, g.subOptions.leder)}
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>Nicht ausgewählt</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Handle heelWidthAdjustment field type (handled separately above)
+                if (g.fieldType === "heelWidthAdjustment") {
+                  return null // Already handled above
+                }
                             
-                            return (
-                  <div key={g.id} style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db' }}>
+                // Handle checkbox and other field types (default)
+                // Always show the field, renderPDFOptions will show all options with selected ones checked
+                return (
+                  <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
                     <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      {renderPDFOptions(g)}
-                        </div>
-                      </div>
-                    )
-                  })}
+                      {g.options && g.options.length > 0 ? (
+                        renderPDFOptions(g)
+                      ) : (
+                        <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>Keine Optionen verfügbar</span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
 
               {/* Text areas */}
-                  {textAreas && (textAreas.korrektur_bereich || textAreas.fussproblem_bettung || textAreas.bettung_wuensche || textAreas.fussproblem_leisten || textAreas.leisten_wuensche) && (
-                <div style={{ marginTop: '16px', paddingTop: '16px' }}>
+                  {textAreas && (textAreas.korrektur_bereich || textAreas.fussproblem_bettung || textAreas.bettung_wuensche || textAreas.fussproblem_leisten || textAreas.leisten_wuensche || textAreas.besondere_hinweise || textAreas.schlemmaterial_preferred_colour) && (
+                <div style={{ marginTop: '16px', paddingTop: '16px', pageBreakInside: 'auto' }}>
                       {textAreas?.korrektur_bereich && (
-                        <div style={{ marginBottom: '16px' }}>
+                        <div className="pdf-page-break-avoid" style={{ marginBottom: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Wenn eine Korrektur nötig ist: In welchem Bereich?</div>
                       <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '60px', lineHeight: 1.5 }}>{textAreas.korrektur_bereich}</div>
                         </div>
                       )}
                       {textAreas?.fussproblem_bettung && (
-                        <div style={{ marginBottom: '16px' }}>
+                        <div className="pdf-page-break-avoid" style={{ marginBottom: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Gibt es ein spezielles Fußproblem, das wir bei der Fertigung unbedingt berücksichtigen müssen?</div>
                       <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '60px', lineHeight: 1.5 }}>{textAreas.fussproblem_bettung}</div>
                         </div>
                       )}
                       {textAreas?.bettung_wuensche && (
-                        <div style={{ marginBottom: '16px' }}>
+                        <div className="pdf-page-break-avoid" style={{ marginBottom: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Hast du sonstige Anmerkungen oder Wünsche zu der Bettung.</div>
                       <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '60px', lineHeight: 1.5 }}>{textAreas.bettung_wuensche}</div>
                         </div>
                       )}
                       {textAreas?.fussproblem_leisten && (
-                        <div style={{ marginBottom: '16px' }}>
+                        <div className="pdf-page-break-avoid" style={{ marginBottom: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Gibt es spezielle Fußprobleme, die wir bei der Fertigung unbedingt berücksichtigen müssen?</div>
                       <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '60px', lineHeight: 1.5 }}>{textAreas.fussproblem_leisten}</div>
                         </div>
                       )}
                       {textAreas?.leisten_wuensche && (
-                        <div>
+                        <div className="pdf-page-break-avoid" style={{ marginBottom: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Hast du sonstige Anmerkungen oder Wünsche zum Leisten.</div>
                       <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '60px', lineHeight: 1.5 }}>{textAreas.leisten_wuensche}</div>
+                        </div>
+                      )}
+                      {textAreas?.besondere_hinweise && (
+                        <div className="pdf-page-break-avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Besondere Hinweise</div>
+                      <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '60px', lineHeight: 1.5 }}>{textAreas.besondere_hinweise}</div>
+                        </div>
+                      )}
+                      {textAreas?.schlemmaterial_preferred_colour && (
+                        <div className="pdf-page-break-avoid" style={{ marginTop: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Bevorzugte Farbe (Sohlenmaterial)</div>
+                      <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '40px', lineHeight: 1.5 }}>{textAreas.schlemmaterial_preferred_colour}</div>
                         </div>
                       )}
                     </div>

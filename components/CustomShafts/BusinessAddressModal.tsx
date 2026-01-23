@@ -266,6 +266,8 @@ export default function BusinessAddressModal({
       <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Leisten abholen</DialogTitle>
+          <p className='text-sm text-gray-500'>Unser Logistikpartner holt die Leisten so schnell wie möglich bei Ihnen ab.
+            Bitte stellen Sie sicher, dass die Leisten verpackt und abholbereit sind.</p>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -348,63 +350,62 @@ export default function BusinessAddressModal({
                     </button>
                   </div>
                 </PopoverTrigger>
-            <PopoverContent
-              className="p-0"
-              align="start"
-              sideOffset={8}
-              style={{ width: triggerWidth ? `${triggerWidth}px` : undefined, minWidth: '260px' }}
-            >
-              <div className="p-2 border-b border-gray-100">
-                <Input
-                  type="text"
-                  placeholder="Standort suchen..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-10"
-                  autoFocus
-                />
-              </div>
-              <div className="max-h-56 overflow-y-auto divide-y">
-                {locationsLoading && (
-                  <div className="px-3 py-2 text-sm text-gray-500">Lade Standorte...</div>
-                )}
-                {!locationsLoading && filteredLocations.length === 0 && (
-                  <div className="px-3 py-2 text-sm text-gray-500">Keine Standorte gefunden</div>
-                )}
-                {!locationsLoading &&
-                  filteredLocations.map((loc) => {
-                    const title = loc.description || loc.companyName || 'Ohne Beschreibung';
-                    const addr = loc.address || '';
-                    const isSelected =
-                      formData.companyName === (loc.description || loc.companyName || loc.address || '') &&
-                      formData.address === (loc.address || loc.description || '');
-                    return (
-                      <button
-                        key={`${loc.id || title}-${addr}`}
-                        type="button"
-                        className={`w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors ${
-                          isSelected ? 'bg-green-50' : ''
-                        }`}
-                        onClick={() => handleSelectLocation(loc)}
-                      >
-                        <div className="flex flex-col">
-                          <span className="text-sm font-semibold text-gray-800">{title}</span>
-                          {addr && <span className="text-xs text-gray-600">{addr}</span>}
-                        </div>
-                      </button>
-                    );
-                  })}
-              </div>
-              <div className="flex justify-end gap-2 p-2 border-t border-gray-100">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-9"
-                  onClick={() => setIsAddressDropdownOpen(false)}
+                <PopoverContent
+                  className="p-0"
+                  align="start"
+                  sideOffset={8}
+                  style={{ width: triggerWidth ? `${triggerWidth}px` : undefined, minWidth: '260px' }}
                 >
-                  Schließen
-                </Button>
-              </div>
+                  <div className="p-2 border-b border-gray-100">
+                    <Input
+                      type="text"
+                      placeholder="Standort suchen..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="h-10"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="max-h-56 overflow-y-auto divide-y">
+                    {locationsLoading && (
+                      <div className="px-3 py-2 text-sm text-gray-500">Lade Standorte...</div>
+                    )}
+                    {!locationsLoading && filteredLocations.length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-500">Keine Standorte gefunden</div>
+                    )}
+                    {!locationsLoading &&
+                      filteredLocations.map((loc) => {
+                        const title = loc.description || loc.companyName || 'Ohne Beschreibung';
+                        const addr = loc.address || '';
+                        const isSelected =
+                          formData.companyName === (loc.description || loc.companyName || loc.address || '') &&
+                          formData.address === (loc.address || loc.description || '');
+                        return (
+                          <button
+                            key={`${loc.id || title}-${addr}`}
+                            type="button"
+                            className={`w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-green-50' : ''
+                              }`}
+                            onClick={() => handleSelectLocation(loc)}
+                          >
+                            <div className="flex flex-col">
+                              <span className="text-sm font-semibold text-gray-800">{title}</span>
+                              {addr && <span className="text-xs text-gray-600">{addr}</span>}
+                            </div>
+                          </button>
+                        );
+                      })}
+                  </div>
+                  <div className="flex justify-end gap-2 p-2 border-t border-gray-100">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9"
+                      onClick={() => setIsAddressDropdownOpen(false)}
+                    >
+                      Schließen
+                    </Button>
+                  </div>
                 </PopoverContent>
               </Popover>
             </div>
@@ -429,7 +430,7 @@ export default function BusinessAddressModal({
                 className="mt-1 h-12"
               />
               <div className="text-xs text-gray-500 mt-1">
-                 13,00 €
+                13,00 €
               </div>
             </div>
           </div>

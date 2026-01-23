@@ -1,6 +1,7 @@
 export type OptionDef = {
     id: string
     label: string
+    disabled?: boolean
 }
 
 export type OptionInputsState = {
