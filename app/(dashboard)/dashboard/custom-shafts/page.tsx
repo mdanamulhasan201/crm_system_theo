@@ -201,14 +201,14 @@ export default function CustomShafts() {
         <div className="  py-6">
             {/* Header & Description */}
             <div className="mb-6">
-                <h1 className="text-xl md:text-2xl font-bold mb-1">Maßschaft - individuell für deinen Kunden.</h1>
+                <h1 className="text-xl md:text-2xl font-bold mb-1"> Individuelle Maßschäfte</h1>
                 <div className="text-xs md:text-sm text-gray-700 leading-snug mb-1">
-                    Basierend auf dem 3D-Modell des Kundenfußes stellen wir passgenaue Maßschäfte her. So sparst du dir unnötigen Versand, erhältst eine deutlich schnellere Lieferzeit und profitierst von besten Preisen.<br />
+                3D-basiert oder physisch umgesetzt. Schnell gefertigt. Klar kalkulierbar.<br />
                     <span 
                         className="font-bold cursor-pointer underline hover:text-green-600 transition-colors"
                         onClick={() => setIsCustomOrderModalOpen(true)}
                     >
-                        Eigenen Schuh konfigurieren oder Modell hochladen
+                        Jetzt neu: Eigenes Modell konfigurieren
                     </span>
                 </div>
             </div>

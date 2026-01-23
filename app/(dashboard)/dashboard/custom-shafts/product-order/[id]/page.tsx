@@ -53,7 +53,8 @@ export default function OrderPage() {
   const [closureType, setClosureType] = useState<string>('');
 
   // Leather color configuration
-  const [numberOfLeatherColors, setNumberOfLeatherColors] = useState<string>('1');
+  // Default: no selection, UX will only show fields after user chooses a value
+  const [numberOfLeatherColors, setNumberOfLeatherColors] = useState<string>('');
   const [leatherColorAssignments, setLeatherColorAssignments] = useState<LeatherColorAssignment[]>([]);
   const [leatherColors, setLeatherColors] = useState<string[]>([]);
 

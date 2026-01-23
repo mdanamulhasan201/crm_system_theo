@@ -6,12 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import Image from 'next/image';
-import colorPlate from '@/public/images/color.png';
+
 import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColorSectionModal';
 import ZipperPlacementModal from './ZipperPlacementModal';
+import toast from 'react-hot-toast';
 
 interface ProductConfigurationProps {
   // Custom category and price
@@ -173,14 +172,16 @@ export default function ProductConfiguration({
   // Handle number of leather colors change
   const handleNumberOfColorsChange = (value: string) => {
     setNumberOfLeatherColors(value);
-    
-    // If 1 color is selected, clear assignments and reset to single color mode
+
+    // If 1 color is selected, clear assignments and reset to single-color mode (no popup)
     if (value === '1') {
       setLeatherColorAssignments([]);
       setLeatherColors([]);
       setShowLeatherColorModal(false);
-    } else if (value === '2' || value === '3') {
-      // Open modal when 2 or 3 colors are selected
+    }
+
+    // When 2 or 3 are selected, use only the popup flow
+    if (value === '2' || value === '3') {
       setShowLeatherColorModal(true);
     }
   };
@@ -221,36 +222,12 @@ export default function ProductConfiguration({
           )}
         </div>
 
-        {/* Ledertyp */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Ledertyp:</Label>
-          <Select value={lederType} onValueChange={setLederType}>
-            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-              <SelectValue placeholder="Ledertyp wählen..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem className='cursor-pointer' value="kalbleder-vitello">Kalbleder Vitello</SelectItem>
-              <SelectItem className='cursor-pointer' value="nappa">Nappa (weiches Glattleder)</SelectItem>
-              <SelectItem className='cursor-pointer' value="nubukleder">Nubukleder</SelectItem>
-              <SelectItem className='cursor-pointer' value="softvelourleder">Softvelourleder</SelectItem>
-              <SelectItem className='cursor-pointer' value="hirschleder-gemustert">Hirschleder Gemustert</SelectItem>
-              <SelectItem className='cursor-pointer' value="performance-textil">Performance Textil</SelectItem>
-              <SelectItem className='cursor-pointer' value="fashion-mesh-gepolstert">Fashion Mesh Gepolstert</SelectItem>
-              <SelectItem className='cursor-pointer' value="soft-touch-material-gepraegt">Soft Touch Material - Geprägt</SelectItem>
-              <SelectItem className='cursor-pointer' value="textil-python-effekt">Textil Python-Effekt</SelectItem>
-              <SelectItem className='cursor-pointer' value="glitter">Glitter</SelectItem>
-              <SelectItem className='cursor-pointer' value="luxury-glitter-fabric">Luxury Glitter Fabric</SelectItem>
-              <SelectItem className='cursor-pointer' value="metallic-finish">Metallic Finish</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
         {/* Number of Leather Colors */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Anzahl der Ledertypen:</Label>
           <Select value={numberOfLeatherColors} onValueChange={handleNumberOfColorsChange}>
             <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-              <SelectValue placeholder="Anzahl wählen..." />
+              <SelectValue placeholder="Auswählen " />
             </SelectTrigger>
             <SelectContent>
               <SelectItem className='cursor-pointer' value="1">1</SelectItem>
@@ -259,6 +236,32 @@ export default function ProductConfiguration({
             </SelectContent>
           </Select>
         </div>
+
+        {/* Ledertyp - only show when exactly 1 leather type is selected, directly under Anzahl */}
+        {numberOfLeatherColors === '1' && (
+          <div className="flex flex-col md:flex-row md:items-center gap-4">
+            <Label className="font-medium text-base md:w-1/3">Ledertyp:</Label>
+            <Select value={lederType} onValueChange={setLederType}>
+              <SelectTrigger className="w-full md:w-1/2 border-gray-300">
+                <SelectValue placeholder="Ledertyp wählen..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem className='cursor-pointer' value="kalbleder-vitello">Kalbleder Vitello</SelectItem>
+                <SelectItem className='cursor-pointer' value="nappa">Nappa (weiches Glattleder)</SelectItem>
+                <SelectItem className='cursor-pointer' value="nubukleder">Nubukleder</SelectItem>
+                <SelectItem className='cursor-pointer' value="softvelourleder">Softvelourleder</SelectItem>
+                <SelectItem className='cursor-pointer' value="hirschleder-gemustert">Hirschleder Gemustert</SelectItem>
+                <SelectItem className='cursor-pointer' value="performance-textil">Performance Textil</SelectItem>
+                <SelectItem className='cursor-pointer' value="fashion-mesh-gepolstert">Fashion Mesh Gepolstert</SelectItem>
+                <SelectItem className='cursor-pointer' value="soft-touch-material-gepraegt">Soft Touch Material - Geprägt</SelectItem>
+                <SelectItem className='cursor-pointer' value="textil-python-effekt">Textil Python-Effekt</SelectItem>
+                <SelectItem className='cursor-pointer' value="glitter">Glitter</SelectItem>
+                <SelectItem className='cursor-pointer' value="luxury-glitter-fabric">Luxury Glitter Fabric</SelectItem>
+                <SelectItem className='cursor-pointer' value="metallic-finish">Metallic Finish</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Lederfarbe - Show only when 1 color is selected */}
         {numberOfLeatherColors === '1' && (
@@ -445,6 +448,11 @@ export default function ProductConfiguration({
                   } else {
                     // Show zipper placement modal when Zipper is selected
                     // Don't set closureType yet - wait for user to save the drawing
+                    if (!shoeImage) {
+                      // Need an image to draw the zipper on
+                      toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
+                      return;
+                    }
                     setShowZipperPlacementModal(true);
                   }
                 } else {

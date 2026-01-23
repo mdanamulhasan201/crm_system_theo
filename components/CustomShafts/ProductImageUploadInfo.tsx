@@ -117,6 +117,13 @@ export default function ProductImageUploadInfo({
 
       {/* Product info section */}
       <div className="w-full md:w-1/2 flex flex-col gap-4">
+        {/* Custom Made title */}
+        <div>
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Custom Made #1000
+          </span>
+        </div>
+
         <div className="flex flex-col gap-2">
           <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
             Beschreibung:

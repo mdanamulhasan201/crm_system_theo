@@ -53,40 +53,72 @@ export default function ChecklistSection({
                     return value
                 }
 
+                const normalizedSelected = normalizeSelected(selected[g.id])
+
+                const showSohlenmaterialColorInput =
+                    g.id === "schlemmaterial" && !!normalizedSelected
+
                 return (
-                <React.Fragment key={g.id}>
-                    {g.fieldType === "select" ? (
-                        <SelectField
-                            def={g}
-                            selected={normalizeSelected(selected[g.id])}
-                            onSelect={(optId) => onSetGroup(g.id, optId)}
-                            subSelected={g.id === "hinterkappe" ? normalizeSelected(selected.hinterkappe_sub) : undefined}
-                            onSubSelect={g.id === "hinterkappe" ? onSetHinterkappeSub : undefined}
-                        />
-                    ) : g.fieldType === "text" ? (
-                        <TextField 
-                            def={g} 
-                            selected={normalizeSelected(selected[g.id])} 
-                            onSelect={(value) => onSetGroup(g.id, value)} 
-                        />
-                    ) : g.fieldType === "heelWidthAdjustment" ? (
-                        <HeelWidthAdjustmentField
-                            def={g}
-                            value={heelWidthAdjustment || null}
-                            onChange={onHeelWidthChange || (() => {})}
-                        />
-                    ) : (
-                        <OptionGroup
-                            def={g}
-                            selected={selected[g.id] ?? null}
-                            onSelect={(optId) => onSetGroup(g.id, optId)}
-                            optionInputs={optionInputs}
-                            setOptionInputs={setOptionInputs}
-                            onOptionClick={onAbsatzFormClick}
-                        />
-                    )}
-                    <hr className="border-gray-200 my-4" />
-                </React.Fragment>
+                    <React.Fragment key={g.id}>
+                        {g.fieldType === "select" ? (
+                            <SelectField
+                                def={g}
+                                selected={normalizedSelected}
+                                onSelect={(optId) => onSetGroup(g.id, optId)}
+                                subSelected={
+                                    g.id === "hinterkappe"
+                                        ? normalizeSelected(selected.hinterkappe_sub)
+                                        : undefined
+                                }
+                                onSubSelect={g.id === "hinterkappe" ? onSetHinterkappeSub : undefined}
+                            />
+                        ) : g.fieldType === "text" ? (
+                            <TextField
+                                def={g}
+                                selected={normalizedSelected}
+                                onSelect={(value) => onSetGroup(g.id, value)}
+                            />
+                        ) : g.fieldType === "heelWidthAdjustment" ? (
+                            <HeelWidthAdjustmentField
+                                def={g}
+                                value={heelWidthAdjustment || null}
+                                onChange={onHeelWidthChange || (() => {})}
+                            />
+                        ) : (
+                            <>
+                                <OptionGroup
+                                    def={g}
+                                    selected={selected[g.id] ?? null}
+                                    onSelect={(optId) => onSetGroup(g.id, optId)}
+                                    optionInputs={optionInputs}
+                                    setOptionInputs={setOptionInputs}
+                                    onOptionClick={onAbsatzFormClick}
+                                />
+
+                                {/* Bevorzugte Farbe input für Sohlenmaterial */}
+                                {showSohlenmaterialColorInput && (
+                                    <div className="mt-2 ml-10">
+                                        <label className="block text-sm font-semibold text-gray-800 mb-1">
+                                            Bevorzugte Farbe
+                                        </label>
+                                        <input
+                                            type="text"
+                                            className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                            placeholder="Bevorzugte Farbe (z. B. Schwarz, Dunkelblau …)"
+                                            value={textAreas.schlemmaterial_preferred_colour || ""}
+                                            onChange={(e) =>
+                                                onTextAreaChange(
+                                                    "schlemmaterial_preferred_colour",
+                                                    e.target.value
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                        <hr className="border-gray-200 my-4" />
+                    </React.Fragment>
                 )
             })}
 

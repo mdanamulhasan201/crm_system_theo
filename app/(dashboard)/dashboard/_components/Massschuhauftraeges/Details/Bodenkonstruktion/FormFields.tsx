@@ -11,6 +11,9 @@ type GroupDef = {
 }
 
 export type HeelWidthAdjustmentData = {
+    left?: { op: "widen" | "narrow" | null; mm: number }
+    right?: { op: "widen" | "narrow" | null; mm: number }
+    // Keep medial/lateral for backward compatibility if needed
     medial?: { op: "widen" | "narrow" | null; mm: number }
     lateral?: { op: "widen" | "narrow" | null; mm: number }
 }
@@ -77,41 +80,41 @@ export function HeelWidthAdjustmentField({
     value: HeelWidthAdjustmentData | null
     onChange: (value: HeelWidthAdjustmentData | null) => void
 }) {
-    const medial = value?.medial || { op: null, mm: 0 }
-    const lateral = value?.lateral || { op: null, mm: 0 }
+    const left = value?.left || { op: null, mm: 0 }
+    const right = value?.right || { op: null, mm: 0 }
 
-    const updateMedial = (updates: Partial<typeof medial>) => {
-        const newMedial = { ...medial, ...updates }
+    const updateLeft = (updates: Partial<typeof left>) => {
+        const newLeft = { ...left, ...updates }
         // If mm is 0, set op to null
-        if (newMedial.mm === 0) {
-            newMedial.op = null
+        if (newLeft.mm === 0) {
+            newLeft.op = null
         }
         const newValue: HeelWidthAdjustmentData = {
             ...value,
-            medial: newMedial.mm > 0 ? newMedial : undefined,
-            lateral: value?.lateral,
+            left: newLeft.mm > 0 ? newLeft : undefined,
+            right: value?.right,
         }
         // Remove if both are empty
-        if (!newValue.medial && !newValue.lateral) {
+        if (!newValue.left && !newValue.right) {
             onChange(null)
         } else {
             onChange(newValue)
         }
     }
 
-    const updateLateral = (updates: Partial<typeof lateral>) => {
-        const newLateral = { ...lateral, ...updates }
+    const updateRight = (updates: Partial<typeof right>) => {
+        const newRight = { ...right, ...updates }
         // If mm is 0, set op to null
-        if (newLateral.mm === 0) {
-            newLateral.op = null
+        if (newRight.mm === 0) {
+            newRight.op = null
         }
         const newValue: HeelWidthAdjustmentData = {
             ...value,
-            medial: value?.medial,
-            lateral: newLateral.mm > 0 ? newLateral : undefined,
+            left: value?.left,
+            right: newRight.mm > 0 ? newRight : undefined,
         }
         // Remove if both are empty
-        if (!newValue.medial && !newValue.lateral) {
+        if (!newValue.left && !newValue.right) {
             onChange(null)
         } else {
             onChange(newValue)
@@ -120,110 +123,114 @@ export function HeelWidthAdjustmentField({
 
     return (
         <div className="mb-6">
-            <label className="block text-base font-bold text-gray-800 mb-2">{def.question}</label>
+            <label className="block text-base font-bold text-gray-800 mb-4">{def.question}</label>
             
-            {/* Medial (innen) */}
-            <div className="flex items-center gap-3 mb-3">
-                <span className="text-sm font-medium text-gray-700 w-32">Medial (innen):</span>
-                <button
-                    type="button"
-                    onClick={() => {
-                        if (medial.mm === 0) return
-                        updateMedial({ op: medial.op === "widen" ? null : "widen" })
-                    }}
-                    className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                        medial.op === "widen"
-                            ? 'bg-green-500 text-white border-green-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    } ${medial.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    disabled={medial.mm === 0}
-                >
-                    +
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        if (medial.mm === 0) return
-                        updateMedial({ op: medial.op === "narrow" ? null : "narrow" })
-                    }}
-                    className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                        medial.op === "narrow"
-                            ? 'bg-green-500 text-white border-green-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    } ${medial.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    disabled={medial.mm === 0}
-                >
-                    −
-                </button>
-                <select
-                    value={medial.mm}
-                    onChange={(e) => {
-                        const mm = parseInt(e.target.value)
-                        // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
-                        updateMedial({ mm, op: mm === 0 ? null : (medial.op || "widen") })
-                    }}
-                    className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
-                        <option key={val} value={val}>
-                            {val} mm
-                        </option>
-                    ))}
-                </select>
+            {/* Linker Schuh */}
+            <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Linker Schuh:</label>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (left.mm === 0) return
+                            updateLeft({ op: left.op === "widen" ? null : "widen" })
+                        }}
+                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                            left.op === "widen"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${left.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={left.mm === 0}
+                    >
+                        +
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (left.mm === 0) return
+                            updateLeft({ op: left.op === "narrow" ? null : "narrow" })
+                        }}
+                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                            left.op === "narrow"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${left.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={left.mm === 0}
+                    >
+                        −
+                    </button>
+                    <select
+                        value={left.mm}
+                        onChange={(e) => {
+                            const mm = parseInt(e.target.value)
+                            // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
+                            updateLeft({ mm, op: mm === 0 ? null : (left.op || "widen") })
+                        }}
+                        className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                            <option key={val} value={val}>
+                                {val} mm
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
-            {/* Lateral (außen) */}
-            <div className="flex items-center gap-3 mb-2">
-                <span className="text-sm font-medium text-gray-700 w-32">Lateral (außen):</span>
-                <button
-                    type="button"
-                    onClick={() => {
-                        if (lateral.mm === 0) return
-                        updateLateral({ op: lateral.op === "widen" ? null : "widen" })
-                    }}
-                    className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                        lateral.op === "widen"
-                            ? 'bg-green-500 text-white border-green-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    } ${lateral.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    disabled={lateral.mm === 0}
-                >
-                    +
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        if (lateral.mm === 0) return
-                        updateLateral({ op: lateral.op === "narrow" ? null : "narrow" })
-                    }}
-                    className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                        lateral.op === "narrow"
-                            ? 'bg-green-500 text-white border-green-500'
-                            : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                    } ${lateral.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    disabled={lateral.mm === 0}
-                >
-                    −
-                </button>
-                <select
-                    value={lateral.mm}
-                    onChange={(e) => {
-                        const mm = parseInt(e.target.value)
-                        // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
-                        updateLateral({ mm, op: mm === 0 ? null : (lateral.op || "widen") })
-                    }}
-                    className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
-                        <option key={val} value={val}>
-                            {val} mm
-                        </option>
-                    ))}
-                </select>
+            {/* Rechter Schuh */}
+            <div className="mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Rechter Schuh:</label>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (right.mm === 0) return
+                            updateRight({ op: right.op === "widen" ? null : "widen" })
+                        }}
+                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                            right.op === "widen"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${right.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={right.mm === 0}
+                    >
+                        +
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (right.mm === 0) return
+                            updateRight({ op: right.op === "narrow" ? null : "narrow" })
+                        }}
+                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                            right.op === "narrow"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${right.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={right.mm === 0}
+                    >
+                        −
+                    </button>
+                    <select
+                        value={right.mm}
+                        onChange={(e) => {
+                            const mm = parseInt(e.target.value)
+                            // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
+                            updateRight({ mm, op: mm === 0 ? null : (right.op || "widen") })
+                        }}
+                        className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                            <option key={val} value={val}>
+                                {val} mm
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
 
             {/* Helper text */}
-            <p className="text-xs text-gray-500 mt-1 ml-36">+ = aufbauen, − = einschleifen</p>
+            <p className="text-xs text-gray-500 mt-1">+ = aufbauen, − = einschleifen</p>
         </div>
     )
 }

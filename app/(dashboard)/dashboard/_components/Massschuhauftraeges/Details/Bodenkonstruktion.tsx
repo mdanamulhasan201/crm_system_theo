@@ -304,6 +304,9 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         if (textAreas.besondere_hinweise) {
             formData.append('Besondere_Hinweise', textAreas.besondere_hinweise)
         }
+        if (textAreas.schlemmaterial_preferred_colour) {
+            formData.append('Sohlenmaterial_Bevorzugte_Farbe', textAreas.schlemmaterial_preferred_colour)
+        }
 
         // Add total price (Bodenkonstruktion grandTotal)
         formData.append('totalPrice', grandTotal.toFixed(2))
@@ -405,6 +408,9 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         // Besondere_Hinweise
         if (textAreas.besondere_hinweise) {
             formData.append('Besondere_Hinweise', textAreas.besondere_hinweise)
+        }
+        if (textAreas.schlemmaterial_preferred_colour) {
+            formData.append('Sohlenmaterial_Bevorzugte_Farbe', textAreas.schlemmaterial_preferred_colour)
         }
 
         // totalPrice (grandTotal includes base price + all additional options)

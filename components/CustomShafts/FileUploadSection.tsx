@@ -72,6 +72,10 @@ export default function FileUploadSection({
   const [showBusinessAddressModal, setShowBusinessAddressModal] = useState(false);
   const [showShippingAddress, setShowShippingAddress] = useState(false);
 
+  // Disable one customer input when the other is filled
+  const isCustomerSelectDisabled = !!otherCustomerNumber;
+  const isExternalCustomerDisabled = !!selectedCustomer;
+
   const shippingAddress = {
     company: 'FeetF1rst S.R.L.S.',
     street: 'Via Pipen, 5',
@@ -145,10 +149,34 @@ export default function FileUploadSection({
                   placeholder="Suche..."
                   value={selectedCustomer ? selectedCustomer.name : ''}
                   readOnly
-                  onClick={() => setShowCustomerModal(true)}
-                  className="pl-10 cursor-pointer bg-white border-gray-300 rounded-md h-12 text-base"
+                  disabled={isCustomerSelectDisabled}
+                  onClick={() => {
+                    if (!isCustomerSelectDisabled) {
+                      setShowCustomerModal(true);
+                    }
+                  }}
+                  className={`pl-10 pr-10 border-gray-300 rounded-md h-12 text-base ${
+                    isCustomerSelectDisabled
+                      ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                      : 'bg-white cursor-pointer'
+                  }`}
                 />
+                {/* Clear button for selected customer */}
+                {selectedCustomer && !isCustomerSelectDisabled && (
+                  <button
+                    type="button"
+                    onClick={() => onSelectCustomer(null)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
+              {isCustomerSelectDisabled && (
+                <span className="text-xs text-gray-500">
+                  Deaktiviert, da ein externer Kunde eingetragen ist.
+                </span>
+              )}
             </div>
           )}
 
@@ -166,20 +194,47 @@ export default function FileUploadSection({
           {!hideCustomerSearch && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Kunden Extern</label>
-              <Input
-                type="text"
-                placeholder="Textfeld..."
-                value={otherCustomerNumber}
-                onChange={(e) => {
-                  setOtherCustomerNumber(e.target.value);
-                  if (e.target.value) {
-                    onSelectCustomer(null);
-                  }
-                }}
-                onClick={() => setShowOtherCustomerModal(true)}
-                className="bg-white border-gray-300 rounded-md h-12 text-base cursor-pointer"
-                readOnly
-              />
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Textfeld..."
+                  value={otherCustomerNumber}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setOtherCustomerNumber(value);
+                    if (value) {
+                      onSelectCustomer(null);
+                    }
+                  }}
+                  onClick={() => {
+                    if (!isExternalCustomerDisabled) {
+                      setShowOtherCustomerModal(true);
+                    }
+                  }}
+                  disabled={isExternalCustomerDisabled}
+                  className={`pr-10 border-gray-300 rounded-md h-12 text-base ${
+                    isExternalCustomerDisabled
+                      ? 'bg-gray-100 cursor-not-allowed text-gray-400'
+                      : 'bg-white cursor-pointer'
+                  }`}
+                  readOnly={false}
+                />
+                {/* Clear button for external customer text */}
+                {otherCustomerNumber && !isExternalCustomerDisabled && (
+                  <button
+                    type="button"
+                    onClick={() => setOtherCustomerNumber('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-sm"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {isExternalCustomerDisabled && (
+                <span className="text-xs text-gray-500">
+                  Deaktiviert, da ein Kunde ausgewählt ist.
+                </span>
+              )}
             </div>
           )}
 
