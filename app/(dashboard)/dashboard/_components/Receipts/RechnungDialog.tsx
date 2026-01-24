@@ -2,18 +2,31 @@
 
 import React from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Printer, Share2 } from 'lucide-react'
 import Image from 'next/image'
 
 interface RechnungDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     customerData?: any
+    rechnungData?: any
 }
 
-export default function RechnungDialog({ open, onOpenChange, customerData }: RechnungDialogProps) {
+export default function RechnungDialog({ open, onOpenChange, customerData, rechnungData }: RechnungDialogProps) {
+    const handlePrint = () => {
+        window.print()
+    }
+
+    const handleShare = () => {
+        const subject = encodeURIComponent(`Rechnung für ${customerData?.vorname || ''} ${customerData?.nachname || ''}`)
+        const body = encodeURIComponent(`Sehr geehrte/r ${customerData?.vorname || ''} ${customerData?.nachname || ''},\n\nanbei erhalten Sie Ihre Rechnung.\n\nMit freundlichen Grüßen\nFEET FIRST`)
+        window.location.href = `mailto:${customerData?.email || ''}?subject=${subject}&body=${body}`
+    }
+
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0">
+            <DialogContent className="w-[95vw] sm:max-w-5xl max-h-[90vh] overflow-y-auto p-0">
                 <DialogHeader className="sr-only">
                     <DialogTitle>Rechnung (Firma)</DialogTitle>
                 </DialogHeader>
@@ -147,6 +160,26 @@ export default function RechnungDialog({ open, onOpenChange, customerData }: Rec
                                 <span className="text-xs text-gray-500">Datum</span>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+                        <Button
+                            onClick={handlePrint}
+                            variant="outline"
+                            className="flex items-center gap-2 cursor-pointer"
+                        >
+                            <Printer className="w-4 h-4" />
+                            Drucken
+                        </Button>
+                        <Button
+                            onClick={handleShare}
+                            variant="outline"
+                            className="flex items-center gap-2 cursor-pointer"
+                        >
+                            <Share2 className="w-4 h-4" />
+                            Teilen
+                        </Button>
                     </div>
                 </div>
             </DialogContent>

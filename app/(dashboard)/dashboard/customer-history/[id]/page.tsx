@@ -17,6 +17,7 @@ import scanImg from '@/public/images/history/scan.png'
 import AdvancedFeaturesModal from '@/app/(dashboard)/dashboard/_components/Customers/AdvancedFeaturesModal'
 import KostenvoranschlagDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KostenvoranschlagDialog'
 import RechnungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/RechnungDialog'
+import RechnungErstellenDialog from '@/app/(dashboard)/dashboard/_components/Receipts/RechnungErstellenDialog'
 import DatenschutzDialog from '@/app/(dashboard)/dashboard/_components/Receipts/DatenschutzDialog'
 import GebrauchsanweisungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/GebrauchsanweisungDialog'
 import KonformitatDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KonformitatDialog'
@@ -52,7 +53,9 @@ export default function CustomerHistory() {
     const [selectedDocumentType, setSelectedDocumentType] = useState<string | null>(null);
     const [isDocumentPopoverOpen, setIsDocumentPopoverOpen] = useState(false);
     const [isKostenvoranschlagOpen, setIsKostenvoranschlagOpen] = useState(false);
+    const [isRechnungErstellenOpen, setIsRechnungErstellenOpen] = useState(false);
     const [isRechnungOpen, setIsRechnungOpen] = useState(false);
+    const [rechnungData, setRechnungData] = useState<any>(null);
     const [isDatenschutzOpen, setIsDatenschutzOpen] = useState(false);
     const [isGebrauchsanweisungOpen, setIsGebrauchsanweisungOpen] = useState(false);
     const [isKonformitatOpen, setIsKonformitatOpen] = useState(false);
@@ -188,7 +191,7 @@ export default function CustomerHistory() {
                 setIsKostenvoranschlagOpen(true);
                 break;
             case 'Rechnung (Firma)':
-                setIsRechnungOpen(true);
+                setIsRechnungErstellenOpen(true);
                 break;
             case 'Datenschutzerklärung':
                 setIsDatenschutzOpen(true);
@@ -202,6 +205,12 @@ export default function CustomerHistory() {
             default:
                 toast.error('Dokument nicht gefunden');
         }
+    }
+
+    const handleRechnungErstellen = (data: any) => {
+        setRechnungData(data);
+        setIsRechnungErstellenOpen(false);
+        setIsRechnungOpen(true);
     }
 
 
@@ -705,10 +714,18 @@ export default function CustomerHistory() {
                 customerData={scanData}
             />
 
+            <RechnungErstellenDialog
+                open={isRechnungErstellenOpen}
+                onOpenChange={setIsRechnungErstellenOpen}
+                customerData={scanData}
+                onErstellen={handleRechnungErstellen}
+            />
+
             <RechnungDialog
                 open={isRechnungOpen}
                 onOpenChange={setIsRechnungOpen}
                 customerData={scanData}
+                rechnungData={rechnungData}
             />
 
             <DatenschutzDialog
