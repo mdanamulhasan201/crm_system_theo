@@ -313,7 +313,6 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
         leisten_wuensche: "",
     })
     const [showModal, setShowModal] = useState(false)
-    const [checkboxError, setCheckboxError] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     
     // File upload states for STL files
@@ -420,22 +419,7 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
         return shoe.price + extraPriceTotal
     }, [order, extraPriceTotal])
 
-    const requiredCheckboxGroups = useMemo(
-        () => GROUPS.filter(g => !g.fieldType || g.fieldType === "checkbox").filter(g => g.fieldType !== "section" && g.fieldType !== "textarea"),
-        []
-    )
-
-    const isAllCheckboxAnswered = requiredCheckboxGroups.every(g => {
-        const sel = selected[g.id]
-        return sel !== undefined && sel !== null && sel !== ""
-    })
-
     const handleWeiterClick = () => {
-        if (!isAllCheckboxAnswered) {
-            setCheckboxError(true)
-            return
-        }
-        setCheckboxError(false)
         setShowModal(true)
         localStorage.setItem("currentBalance", String(grandTotal.toFixed(2)))
     }
@@ -468,10 +452,10 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
                         <div className="flex-1">
                             <h2 className="text-2xl font-bold text-black mb-2">{orderDataForPDF.productName || shoe.name}</h2>
                             <p className="text-lg text-black mb-2">
-                                Kunde: <span className="font-medium">{orderDataForPDF.customerName || shoe.brand}</span>
+                                Kunde: <span className="font-medium">{orderDataForPDF.customerName || ""}</span>
                             </p>
                             <p className="text-base text-black mb-4">
-                                Bestellnr: <span className="font-bold">{orderDataForPDF.orderNumber || '#123456789'}</span> &nbsp; Liefertermin: <span className="font-bold">{orderDataForPDF.deliveryDate || '12.04.2024'}</span>
+                                Bestellnr: <span className="font-bold">{orderDataForPDF.orderNumber || ''}</span> &nbsp; Liefertermin: <span className="font-bold">{orderDataForPDF.deliveryDate || ''}</span>
                             </p>
                             
                             {/* STL File Upload Buttons */}
@@ -581,12 +565,6 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
                     </React.Fragment>
                 ))}
 
-                {checkboxError && (
-                    <div className="mb-4 text-red-600 text-sm">
-                        Bitte beantworten Sie alle Pflichtfragen (Checkbox-Gruppen).
-                    </div>
-                )}
-
                 <div className="flex justify-end gap-4 mt-8">
                     <button
                         className="px-6 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50"
@@ -694,104 +672,58 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
                                 return option.label
                             }
                             
-                            // Add all required fields to FormData (send all fields, even if empty)
+                            // Helper function to get selected option price
+                            const getSelectedOptionPrice = (groupId: string): number | null => {
+                                const selectedOptId = selected[groupId]
+                                if (!selectedOptId) return null
+                                const group = GROUPS.find(g => g.id === groupId)
+                                const option = group?.options.find(o => o.id === selectedOptId)
+                                if (!option) return null
+                                const price = parseEuroFromText(option.label)
+                                return price > 0 ? price : null
+                            }
                             
-                            // Bettung_korrigierend
-                            const bettungValue = getSelectedOptionLabel("bettung")
-                            formData.append('Bettung_korrigierend', bettungValue || "")
+                            // Build JSON structure for Halbprobenerstellung_json
+                            const halbprobenerstellungJson = {
+                                // Bettungskonfigurator fields
+                                soll_die_bettung_neutral_oder_korrigierend: getSelectedOptionLabel("bettung") || null,
+                                bettungsdicke: getSelectedOptionLabel("bettungsdicke") || null,
+                                haertegrad_shore: getSelectedOptionLabel("shore") || null,
+                                fersenschale: getSelectedOptionLabel("fersenschale") || null,
+                                laengsgewoelbestuetze: getSelectedOptionLabel("laengsgewoelbe") || null,
+                                soll_eine_pelotte_oder_querpelotte: getSelectedOptionLabel("pelotte") || null,
+                                korrektur_der_fussstellung: getSelectedOptionLabel("fussstellung") || null,
+                                zehenelemente: getSelectedOptionWithInputs("zehenelemente") || null,
+                                wenn_eine_korrektur_noetig_ist: textAreas["korrektur_bereich"] || null,
+                                gibt_es_ein_spezielles_fussproblem_das_wir_bei_der: textAreas["fussproblem_bettung"] || null,
+                                vertiefungen_aussparungen: getSelectedOptionLabel("vertiefungen") || null,
+                                zusatzkorrekturen: getSelectedOptionWithInputs("zusatzkorrekturen") || null,
+                                oberflaeche_finish: getSelectedOptionLabel("finish") || null,
+                                ueberzug: getSelectedOptionWithInputs("ueberzug") || null,
+                                sonstige_anmerkungen_oder_wuensche_zur_bettung: textAreas["bettung_wuensche"] || null,
+                                
+                                // Leistenkonfigurator fields
+                                leistenkonfigurator: {
+                                    soll_der_leisten_mit_oder_ohne_platzhalter_fuer_die_bettung: getSelectedOptionLabel("leisten_platzhalter") || null,
+                                    schuhleisten_typ: getSelectedOptionLabel("schuhleisten_typ") || null,
+                                    schuhleisten_typ_price: getSelectedOptionPrice("schuhleisten_typ"),
+                                    material_des_leisten: getSelectedOptionLabel("leisten_material") || null,
+                                    soll_beide_leisten_die_gleiche_laenge_haben: getSelectedOptionLabel("gleiche_laenge") || null,
+                                    absatzhoehe: getSelectedOptionLabel("absatzhoehe") || null,
+                                    abrollhilfe: getSelectedOptionLabel("abrollhilfe") || null,
+                                    gibt_es_spezielle_fussprobleme_die_wir_bei_der_fertigung: textAreas["fussproblem_leisten"] || null,
+                                    sonstige_anmerkungen_oder_wuensche_zum_leisten: textAreas["leisten_wuensche"] || null
+                                }
+                            }
                             
-                            // Bettungsdicke
-                            const bettungsdickeValue = getSelectedOptionLabel("bettungsdicke")
-                            formData.append('Bettungsdicke', bettungsdickeValue || "")
-                            
-                            // Haertegrad_Shore
-                            const shoreValue = getSelectedOptionLabel("shore")
-                            formData.append('Haertegrad_Shore', shoreValue || "")
-                            
-                            // Fersenschale
-                            const fersenschaleValue = getSelectedOptionLabel("fersenschale")
-                            formData.append('Fersenschale', fersenschaleValue || "")
-                            
-                            // Laengsgewölbestütze
-                            const laengsgewoelbeValue = getSelectedOptionLabel("laengsgewoelbe")
-                            formData.append('Laengsgewölbestütze', laengsgewoelbeValue || "")
-                            
-                            // Palotte_oder_Querpalotte
-                            const pelotteValue = getSelectedOptionLabel("pelotte")
-                            formData.append('Palotte_oder_Querpalotte', pelotteValue || "")
-                            
-                            // Korrektur_der_Fußstellung
-                            const fussstellungValue = getSelectedOptionLabel("fussstellung")
-                            formData.append('Korrektur_der_Fußstellung', fussstellungValue || "")
-                            
-                            // Zehenelemente_Details
-                            const zehenelementeValue = getSelectedOptionWithInputs("zehenelemente")
-                            formData.append('Zehenelemente_Details', zehenelementeValue || "")
-                            
-                            // eine_korrektur_nötig_ist
-                            const korrekturBereichValue = textAreas["korrektur_bereich"] || ""
-                            formData.append('eine_korrektur_nötig_ist', korrekturBereichValue)
-                            
-                            // Spezielles_Fußproblem
-                            const fussproblemBettungValue = textAreas["fussproblem_bettung"] || ""
-                            formData.append('Spezielles_Fußproblem', fussproblemBettungValue)
-                            
-                            // Zusatzkorrektur_Absatzerhöhung
-                            const zusatzkorrekturenValue = getSelectedOptionWithInputs("zusatzkorrekturen")
-                            formData.append('Zusatzkorrektur_Absatzerhöhung', zusatzkorrekturenValue || "")
-                            
-                            // Vertiefungen_Aussparungen
-                            const vertiefungenValue = getSelectedOptionLabel("vertiefungen")
-                            formData.append('Vertiefungen_Aussparungen', vertiefungenValue || "")
-                            
-                            // Oberfläche_finish
-                            const finishValue = getSelectedOptionLabel("finish")
-                            formData.append('Oberfläche_finish', finishValue || "")
-                            
-                            // Überzug_Stärke
-                            const ueberzugValue = getSelectedOptionWithInputs("ueberzug")
-                            formData.append('Überzug_Stärke', ueberzugValue || "")
-                            
-                            // Anmerkungen_zur_Bettung
-                            const bettungWuenscheValue = textAreas["bettung_wuensche"] || ""
-                            formData.append('Anmerkungen_zur_Bettung', bettungWuenscheValue)
-                            
-                            // Leisten_mit_ohne_Platzhalter
-                            const leistenPlatzhalterValue = getSelectedOptionLabel("leisten_platzhalter")
-                            formData.append('Leisten_mit_ohne_Platzhalter', leistenPlatzhalterValue || "")
-                            
-                            // Schuhleisten_Typ
-                            const schuhleistenTypValue = getSelectedOptionLabel("schuhleisten_typ")
-                            formData.append('Schuhleisten_Typ', schuhleistenTypValue || "")
-                            
-                            // Material_des_Leisten
-                            const leistenMaterialValue = getSelectedOptionLabel("leisten_material")
-                            formData.append('Material_des_Leisten', leistenMaterialValue || "")
-                            
-                            // Leisten_gleiche_Länge
-                            const gleicheLaengeValue = getSelectedOptionLabel("gleiche_laenge")
-                            formData.append('Leisten_gleiche_Länge', gleicheLaengeValue || "")
-                            
-                            // Absatzhöhe
-                            const absatzhoeheValue = getSelectedOptionLabel("absatzhoehe")
-                            formData.append('Absatzhöhe', absatzhoeheValue || "")
-                            
-                            // Abrollhilfe
-                            const abrollhilfeValue = getSelectedOptionLabel("abrollhilfe")
-                            formData.append('Abrollhilfe', abrollhilfeValue || "")
-                            
-                            // Spezielle_Fußprobleme_Leisten
-                            const fussproblemLeistenValue = textAreas["fussproblem_leisten"] || ""
-                            formData.append('Spezielle_Fußprobleme_Leisten', fussproblemLeistenValue)
-                            
-                            // Anmerkungen_zum_Leisten
-                            const leistenWuenscheValue = textAreas["leisten_wuensche"] || ""
-                            formData.append('Anmerkungen_zum_Leisten', leistenWuenscheValue)
+                            // Append JSON as string to FormData
+                            formData.append('Halbprobenerstellung_json', JSON.stringify(halbprobenerstellungJson))
                             
                             // totalPrice (always send)
                             formData.append('totalPrice', grandTotal.toFixed(2))
                             
                             console.log('Calling API with orderId:', orderId)
+                            console.log('Halbprobenerstellung_json:', halbprobenerstellungJson)
                             console.log('FormData entries:', Array.from(formData.entries()))
                             
                             const response = await sendMassschuheOrderToAdmin1(orderId, formData)
