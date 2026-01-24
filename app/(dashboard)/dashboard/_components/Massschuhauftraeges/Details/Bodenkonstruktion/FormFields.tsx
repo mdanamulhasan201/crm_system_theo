@@ -123,7 +123,10 @@ export function HeelWidthAdjustmentField({
 
     return (
         <div className="mb-6">
-            <label className="block text-base font-bold text-gray-800 mb-4">{def.question}</label>
+            <label className="block text-base font-bold text-gray-800 mb-4">
+                {def.question}
+                {def.id === "absatzbreite" && <span className="text-gray-500 font-normal text-sm ml-2">(Optional)</span>}
+            </label>
             
             {/* Linker Schuh */}
             <div className="mb-4">
@@ -623,15 +626,28 @@ export function OptionGroup({
         })
     }, [def, optionInputs, setOptionInputs])
 
+    // Special layout for certain fields: question on top, options below
+    const verticalLayoutFields = [
+        "Konstruktionsart",
+        "brandsohle",
+        "schlemmaterial",
+        "abrollhilfe",
+        "absatzform",
+        "laufsohle_lose_beilegen"
+    ]
+    const useVerticalLayout = verticalLayoutFields.includes(def.id)
+
     return (
         <div
-            className="flex items-start mb-6"
+            className={useVerticalLayout ? "mb-6" : "flex items-start mb-6"}
             role="radiogroup"
             aria-label={def.question}
             onDoubleClick={() => onSelect(null)}
         >
-            <div className="text-base font-bold text-gray-800 mr-6 min-w-[200px]">{def.question}</div>
-            <div className="flex flex-wrap items-center gap-4">
+            <div className={`text-base font-bold text-gray-800 ${useVerticalLayout ? "mb-4" : "mr-6 min-w-[200px]"}`}>
+                {def.question}
+            </div>
+            <div className={`flex flex-wrap items-center gap-4`}>
                 {def.options.map((opt) => {
                     const isChecked = isMultiSelect 
                         ? (selectedArray?.includes(opt.id) || false)
