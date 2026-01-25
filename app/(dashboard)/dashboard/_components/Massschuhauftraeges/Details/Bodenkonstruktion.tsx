@@ -28,7 +28,7 @@ import { useSoleData } from "@/hooks/massschuhe/useSoleData"
 import { useBodenkonstruktionCalculations } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 
 // Utils
-import { prepareOrderDataForPDF } from "./HelperFunctions"
+import { prepareOrderDataForPDF, parseEuroFromText } from "./HelperFunctions"
 
 interface BodenkonstruktionProps {
     orderId?: string | null
@@ -450,8 +450,94 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return formData
     }
 
+    // Helper function to get price for an option
+    const getOptionPrice = (groupId: string, optionId: string | null): number => {
+        if (!optionId) return 0
+        
+        const group = GROUPS2.find(g => g.id === groupId)
+        if (!group) return 0
+        
+        const option = group.options.find(opt => opt.id === optionId)
+        if (!option) return 0
+        
+        return parseEuroFromText(option.label)
+    }
+
+    // Helper function to get sub-option price
+    const getSubOptionPrice = (groupId: string, subOptionId: string | null): number => {
+        if (!subOptionId) return 0
+        
+        const group = GROUPS2.find(g => g.id === groupId)
+        if (!group || !group.subOptions?.leder) return 0
+        
+        const subOption = group.subOptions.leder.find(opt => opt.id === subOptionId)
+        return subOption?.price || 0
+    }
+
+    // Prepare bodenkonstruktion_json
+    const prepareBodenkonstruktionJson = () => {
+        const json: any = {
+            "Mehr_ansehen_title": selectedSole?.name || "",
+            "Mehr_ansehen_description": selectedSole?.description || "",
+            "hinterkappe": getSelectedValue(selected.hinterkappe) || "",
+            "leder_auswahl": "",
+            "leder_auswahl_price": 0.0,
+            "Konstruktionsart": getSelectedValue(selected.Konstruktionsart) || "",
+            "Konstruktionsart_price": 0.0,
+            "brandsohle": getSelectedValue(selected.brandsohle) || "",
+            "brandsohle_price": 0.0,
+            "ohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
+            "absatz_höhe_am_besten_wie_bei_leisten_beachten": getSelectedValue(selected.absatzhoehe) || "",
+            "abrollhilfe_Rolle": getSelectedValue(selected.abrollhilfe) || "",
+            "absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich": getSelectedValue(selected.absatzform) || "",
+            "linker_schuh_left_Shoe": "",
+            "rechter_schuh_right_Shoe": "",
+            "möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen": getSelectedValue(selected.laufsohle_lose_beilegen) || "",
+            "möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price": 0.0,
+            "besondere_hinweise": textAreas.besondere_hinweise || ""
+        }
+
+        // Get leder_auswahl and price if hinterkappe is "leder"
+        if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {
+            const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
+            if (hinterkappeSub) {
+                json.leder_auswahl = hinterkappeSub
+                json.leder_auswahl_price = getSubOptionPrice("hinterkappe", hinterkappeSub)
+            }
+        }
+
+        // Get Konstruktionsart price
+        const konstruktionsartValue = getSelectedValue(selected.Konstruktionsart)
+        if (konstruktionsartValue) {
+            json.Konstruktionsart_price = getOptionPrice("Konstruktionsart", konstruktionsartValue)
+        }
+
+        // Get brandsohle price
+        const brandsohleValue = getSelectedValue(selected.brandsohle)
+        if (brandsohleValue) {
+            json.brandsohle_price = getOptionPrice("brandsohle", brandsohleValue)
+        }
+
+        // Get laufsohle_lose_beilegen price
+        const laufsohleValue = getSelectedValue(selected.laufsohle_lose_beilegen)
+        if (laufsohleValue) {
+            json.möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price = getOptionPrice("laufsohle_lose_beilegen", laufsohleValue)
+        }
+
+        // Get left and right shoe images from order
+        const orderAny = order as any
+        if (orderAny?.threed_model_left || orderAny?.image3d_2) {
+            json.rechter_schuh_right_Shoe = orderAny.threed_model_left || orderAny.image3d_2 || ""
+        }
+        if (orderAny?.threed_model_right || orderAny?.image3d_1) {
+            json.linker_schuh_left_Shoe = orderAny.threed_model_right || orderAny.image3d_1 || ""
+        }
+
+        return json
+    }
+
     // Prepare form data for API
-    const prepareFormDataForAdmin3 = (pdfBlob: Blob | null): FormData => {
+    const prepareFormDataForAdmin3 = async (pdfBlob: Blob | null): Promise<FormData> => {
         const formData = new FormData()
 
         // Add PDF invoice if available
@@ -459,6 +545,45 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             formData.append('invoice', pdfBlob, 'invoice.pdf')
         }
 
+        // Add totalPrice
+        formData.append('totalPrice', grandTotal.toFixed(2))
+
+        // Add staticImage (selectedSole.image) - fetch if it's a URL and convert to Blob
+        if (selectedSole?.image) {
+            try {
+                // Check if it's a URL (http/https) or data URL
+                if (typeof selectedSole.image === 'string' && (selectedSole.image.startsWith('http') || selectedSole.image.startsWith('data:'))) {
+                    try {
+                        const response = await fetch(selectedSole.image)
+                        if (response.ok) {
+                            const blob = await response.blob()
+                            formData.append('staticImage', blob, 'staticImage.png')
+                        } else {
+                            // If fetch fails, send the URL as a string
+                            formData.append('staticImage', selectedSole.image)
+                        }
+                    } catch (fetchError) {
+                        // If fetch fails, send the URL as a string
+                        formData.append('staticImage', selectedSole.image)
+                    }
+                } else {
+                    // If it's already a File or Blob, append directly
+                    formData.append('staticImage', selectedSole.image)
+                }
+            } catch (error) {
+                console.error('Error processing staticImage:', error)
+                // Fallback: send as string if processing fails
+                if (typeof selectedSole.image === 'string') {
+                    formData.append('staticImage', selectedSole.image)
+                }
+            }
+        }
+
+        // Add bodenkonstruktion_json
+        const bodenkonstruktionJson = prepareBodenkonstruktionJson()
+        formData.append('bodenkonstruktion_json', JSON.stringify(bodenkonstruktionJson))
+
+        // Also keep the old fields for backward compatibility (if needed)
         // Map form fields to API fields
         // Konstruktionsart
         const konstruktionsart = getSelectedValue(selected.Konstruktionsart)
@@ -557,9 +682,6 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             formData.append('Sohlenmaterial_Bevorzugte_Farbe', textAreas.schlemmaterial_preferred_colour)
         }
 
-        // totalPrice (grandTotal includes base price + all additional options)
-        formData.append('totalPrice', grandTotal.toFixed(2))
-
         // Add sole id "4" specific fields if selected
         if (selectedSole?.id === "4") {
             if (sole4Thickness) {
@@ -602,7 +724,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
         setIsSubmitting(true)
         try {
-            const formData = prepareFormDataForAdmin3(pdfBlob)
+            const formData = await prepareFormDataForAdmin3(pdfBlob)
             const response = await sendMassschuheOrderToAdmin3(orderId, formData)
             toast.success(response.message || "Bestellung erfolgreich gesendet!", { id: "sending-order" })
             // Close completion popup and navigate after successful API call
