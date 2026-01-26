@@ -1,0 +1,96 @@
+'use client'
+import React, { useState } from 'react'
+import { CreditCard, Shield, Save } from 'lucide-react'
+
+export default function BankingPayoutDetails() {
+  const [formData, setFormData] = useState({
+    accountHolderName: 'Wellness Studio GmbH',
+    iban: 'DE89 3704 0044 0532 0130 00',
+    bic: 'COBADEFFXXX'
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleSaveChanges = () => {
+    console.log('Saving banking details:', formData)
+    // Add your save logic here
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+          <CreditCard className="w-5 h-5 text-blue-600" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Banking & Payout Details</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Used for payouts and settlements from FeetFirst.</p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            Account Holder Name
+          </label>
+          <input
+            type="text"
+            name="accountHolderName"
+            value={formData.accountHolderName}
+            onChange={handleChange}
+            className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            IBAN
+          </label>
+          <input
+            type="text"
+            name="iban"
+            value={formData.iban}
+            onChange={handleChange}
+            className="w-full px-3 py-2 text-sm font-mono bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            BIC <span className="text-gray-400">(optional)</span>
+          </label>
+          <input
+            type="text"
+            name="bic"
+            value={formData.bic}
+            onChange={handleChange}
+            className="w-full px-3 py-2 text-sm font-mono bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+
+        <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg mt-4">
+          <Shield className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-green-800">
+            Your banking information is encrypted and stored securely. We use bank-level security protocols to protect your financial data.
+          </p>
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <button
+            onClick={handleSaveChanges}
+            className="w-full sm:w-auto px-5 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+          >
+            <Save className="w-4 h-4" />
+            Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
