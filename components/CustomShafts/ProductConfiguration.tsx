@@ -59,6 +59,10 @@ interface ProductConfigurationProps {
   onOrderComplete: () => void;
   category?: string; // Category from the shaft data
   allowCategoryEdit?: boolean; // If true, show dropdown; if false, show read-only field
+  zipperImage?: string | null;
+  setZipperImage?: (image: string | null) => void;
+  paintImage?: string | null;
+  setPaintImage?: (image: string | null) => void;
 }
 
 export default function ProductConfiguration({
@@ -106,6 +110,10 @@ export default function ProductConfiguration({
   onOrderComplete,
   category,
   allowCategoryEdit,
+  zipperImage,
+  setZipperImage,
+  paintImage,
+  setPaintImage,
 }: ProductConfigurationProps) {
   // Default value for allowCategoryEdit
   const isCategoryEditable = allowCategoryEdit ?? false;
@@ -116,7 +124,8 @@ export default function ProductConfiguration({
   const [localZipperExtra, setLocalZipperExtra] = useState<boolean | undefined>(undefined);
   const [showLeatherColorModal, setShowLeatherColorModal] = useState(false);
   const [showZipperPlacementModal, setShowZipperPlacementModal] = useState(false);
-  const [zipperPlacementImage, setZipperPlacementImage] = useState<string | null>(null);
+  const [zipperPlacementImage, setZipperPlacementImage] = useState<string | null>(zipperImage || null);
+  const [leatherPaintImage, setLeatherPaintImage] = useState<string | null>(paintImage || null);
   const isSavingZipperRef = useRef(false);
 
   // Use parent state if provided, otherwise use local state
@@ -203,9 +212,17 @@ export default function ProductConfiguration({
   };
 
   // Handle modal save
-  const handleModalSave = (assignments: LeatherColorAssignment[], colors: string[]) => {
+  const handleModalSave = (assignments: LeatherColorAssignment[], colors: string[], paintedImage?: string | null) => {
     setLeatherColorAssignments(assignments);
     setLeatherColors(colors);
+    // Save painted image locally
+    if (paintedImage) {
+      setLeatherPaintImage(paintedImage);
+      // Also update parent state if provided
+      if (setPaintImage) {
+        setPaintImage(paintedImage);
+      }
+    }
     setShowLeatherColorModal(false);
   };
 
@@ -682,8 +699,12 @@ export default function ProductConfiguration({
           onSave={(imageDataUrl) => {
             // Mark that we're saving to prevent onClose from resetting closureType
             isSavingZipperRef.current = true;
-            // Save the zipper placement image
+            // Save the zipper placement image locally
             setZipperPlacementImage(imageDataUrl);
+            // Also update parent state if provided
+            if (setZipperImage) {
+              setZipperImage(imageDataUrl);
+            }
             // Always set closureType to Zipper when image is saved (even when editing)
             // This ensures the dropdown shows Zipper as selected
             setClosureType('Zipper');

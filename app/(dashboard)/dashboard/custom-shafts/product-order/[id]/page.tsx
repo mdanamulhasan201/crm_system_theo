@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
 import toast from 'react-hot-toast';
 
@@ -22,6 +22,9 @@ interface Customer {
 }
 
 export default function OrderPage() {
+  // Router for navigation
+  const router = useRouter();
+
   // State management
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
@@ -67,6 +70,10 @@ export default function OrderPage() {
 
   // Product info (user-entered)
   const [productDescription, setProductDescription] = useState<string>('');
+
+  // Image states
+  const [zipperImage, setZipperImage] = useState<string | null>(null);
+  const [paintImage, setPaintImage] = useState<string | null>(null);
 
   // Business address for abholung
   interface BusinessAddressData {
@@ -163,37 +170,68 @@ export default function OrderPage() {
 
   const orderPrice = calculateTotalPrice();
 
-  // Handle Boden Konfigurieren - Just close modal and show message
+  // Handle Boden Konfigurieren - Store data and redirect to step 2
   const handleBodenKonfigurieren = async () => {
-    if (!selectedCustomer && !otherCustomerNumber.trim()) {
-      toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
+    // If orderId exists, store data in sessionStorage and redirect
+    if (orderId) {
+      const customShaftData = {
+        image3d_1: rechterLeistenFile,
+        image3d_2: linkerLeistenFile,
+        uploadedImage,
+        productDescription,
+        zipperImage,
+        paintImage,
+        cadModeling,
+        cadModeling_2x_price: cadModeling === '2x' ? CAD_MODELING_2X_PRICE : null,
+        customCategory,
+        customCategoryPrice,
+        lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
+        numberOfLeatherColors,
+        leatherColors: numberOfLeatherColors !== '1' ? leatherColors : [],
+        leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
+        innenfutter,
+        schafthohe,
+        polsterung,
+        verstarkungen,
+        polsterung_text: polsterungText,
+        verstarkungen_text: verstarkungenText,
+        nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
+        nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
+        lederType,
+        closureType,
+        passenden_schnursenkel: passendenSchnursenkel === true,
+        moechten_sie_passende_schnuersenkel_zum_schuh_price: passendenSchnursenkel === true ? '4.49' : null,
+        osen_einsetzen: osenEinsetzen === true,
+        moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: osenEinsetzen === true ? '8.99' : null,
+        zipper_extra: zipperExtra === true,
+        moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
+        businessAddress: isAbholung ? businessAddress : null,
+        isAbholung,
+        totalPrice: orderPrice,
+        // Store file names for reference
+        linkerLeistenFileName,
+        rechterLeistenFileName,
+      };
+
+      sessionStorage.setItem(`customShaftData_${orderId}`, JSON.stringify({
+        ...customShaftData,
+        hasImage3d_1: !!rechterLeistenFile,
+        hasImage3d_2: !!linkerLeistenFile,
+      }));
+
+      setShowConfirmationModal(false);
+      router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`);
       return;
     }
 
-    if (isAbholung && !businessAddress) {
-      toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
-      return;
-    }
-
-    setIsCreatingOrder(true);
-    setShowConfirmationModal(false);
-    
-    // Simulate processing
-    setTimeout(() => {
-      setIsCreatingOrder(false);
-      toast.success("Boden Konfigurieren - API wird hier implementiert");
-    }, 1000);
+    // No orderId: just show error
+    toast.error("Order ID is required for Boden Konfigurieren");
   };
 
   // Handle Order Confirmation - Just show message
   const handleOrderConfirmation = async () => {
     if (!selectedCustomer && !otherCustomerNumber.trim()) {
       toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
-      return;
-    }
-
-    if (isAbholung && !businessAddress) {
-      toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
       return;
     }
 
@@ -211,11 +249,6 @@ export default function OrderPage() {
   const handleSendToAdmin2 = async () => {
     if (!selectedCustomer && !otherCustomerNumber.trim()) {
       toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
-      return;
-    }
-
-    if (isAbholung && !businessAddress) {
-      toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
       return;
     }
 
@@ -327,6 +360,10 @@ export default function OrderPage() {
             onOrderComplete={() => setShowConfirmationModal(true)}
             category={customCategory}
             allowCategoryEdit={true}
+            zipperImage={zipperImage}
+            setZipperImage={setZipperImage}
+            paintImage={paintImage}
+            setPaintImage={setPaintImage}
           />
         </div>
 
