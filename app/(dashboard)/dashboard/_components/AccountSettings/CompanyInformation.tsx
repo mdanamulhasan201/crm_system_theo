@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { Building2, Save } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useUpdatePartnerInfo } from '@/hooks/updatePartnerInfo/useUpdatePartnerInfo'
+import ProfileImage from '@/components/DashboardSettings/ProfileImage'
 import toast from 'react-hot-toast'
 
 export default function CompanyInformation() {
@@ -18,6 +19,9 @@ export default function CompanyInformation() {
     email: '',
     absenderEmail: ''
   })
+  
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null)
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null)
 
   useEffect(() => {
     if (user) {
@@ -30,8 +34,14 @@ export default function CompanyInformation() {
         email: user?.email ?? '',
         absenderEmail: user?.email ?? ''
       })
+      setPreviewImageUrl(user?.image ?? null)
     }
   }, [user])
+
+  const handleImageChange = (file: File, dataUrl: string) => {
+    setSelectedImageFile(file)
+    setPreviewImageUrl(dataUrl)
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
@@ -42,7 +52,7 @@ export default function CompanyInformation() {
 
   const handleSaveChanges = async () => {
     try {
-      await update({
+      const res = await update({
         name: formData.accountName,
         phone: formData.phoneNumber,
         absenderEmail: formData.absenderEmail,
@@ -50,22 +60,25 @@ export default function CompanyInformation() {
         hauptstandort: user?.hauptstandort ?? [],
         bankName: user?.bankName ?? '',
         bankNumber: user?.bankNumber ?? '',
-        image: null
+        image: selectedImageFile
       })
       
       if (user) {
+        const newImage = (res?.user?.image as string) || previewImageUrl || user.image || null
         setUser({
           ...user,
           name: formData.accountName,
           phone: formData.phoneNumber,
           absenderEmail: formData.absenderEmail,
-          busnessName: formData.companyName
+          busnessName: formData.companyName,
+          image: newImage
         })
+        setPreviewImageUrl(newImage)
       }
       
-      toast.success('Company information updated successfully')
+      toast.success('Unternehmensinformationen erfolgreich aktualisiert')
     } catch (e: any) {
-      toast.error(e?.message || 'Update failed')
+      toast.error(e?.message || 'Aktualisierung fehlgeschlagen')
     }
   }
 
@@ -76,16 +89,26 @@ export default function CompanyInformation() {
           <Building2 className="w-5 h-5 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Company Information</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Your business details used for invoicing and legal documentation</p>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Unternehmensinformationen</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Ihre Geschäftsdaten für Rechnungen und rechtliche Dokumentation</p>
         </div>
+      </div>
+
+      {/* Company Logo/Image */}
+      <div className="mb-6">
+        <ProfileImage 
+          src={previewImageUrl ?? user?.image ?? null} 
+          editable={true} 
+          onChange={handleImageChange}
+        />
+        <p className="text-xs text-gray-500 text-center mt-2">Firmenlogo / Geschäftsbild</p>
       </div>
 
       <div className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Company / Business Name
+              Firmenname / Geschäftsname
             </label>
             <input
               type="text"
@@ -98,7 +121,7 @@ export default function CompanyInformation() {
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              VAT / IVA Number <span className="text-red-500">*</span>
+              USt-IdNr. / MwSt-Nummer <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -108,14 +131,14 @@ export default function CompanyInformation() {
               placeholder="DE123456789"
               className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
-            <p className="text-xs text-gray-500 mt-0.5">Required for orders and billing within the EU</p>
+            <p className="text-xs text-gray-500 mt-0.5">Erforderlich für Bestellungen und Abrechnung innerhalb der EU</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              VAT Country
+              MwSt-Land
             </label>
             <select
               name="vatCountry"
@@ -123,16 +146,16 @@ export default function CompanyInformation() {
               onChange={handleChange}
               className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             >
-              <option>Germany (DE)</option>
-              <option>Austria (AT)</option>
-              <option>Switzerland (CH)</option>
-              <option>France (FR)</option>
-              <option>Netherlands (NL)</option>
+              <option>Deutschland (DE)</option>
+              <option>Österreich (AT)</option>
+              <option>Schweiz (CH)</option>
+              <option>Frankreich (FR)</option>
+              <option>Niederlande (NL)</option>
             </select>
           </div>
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Business Phone Number
+              Geschäftstelefonnummer
             </label>
             <input
               type="tel"
@@ -147,7 +170,7 @@ export default function CompanyInformation() {
 
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1.5">
-            Default Business Email
+            Standard-Geschäfts-E-Mail
           </label>
           <input
             type="email"
@@ -171,12 +194,12 @@ export default function CompanyInformation() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                 </svg>
-                Saving...
+                Speichern...
               </>
             ) : (
               <>
                 <Save className="w-4 h-4" />
-                Save Changes
+                Änderungen speichern
               </>
             )}
           </button>

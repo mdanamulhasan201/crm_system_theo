@@ -17,7 +17,7 @@ export default function AccountSettingsPage() {
   const copyPartnerId = () => {
     const partnerId = user?.id ?? 'FF-BRU-001'
     navigator.clipboard.writeText(partnerId)
-    toast.success('Partner ID copied to clipboard')
+    toast.success('Partner-ID in Zwischenablage kopiert')
   }
 
   return (
@@ -27,13 +27,13 @@ export default function AccountSettingsPage() {
         <div className='max-w-7xl mx-auto'>
           <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4'>
             <div className='flex flex-wrap items-center gap-2 sm:gap-3'>
-              <h1 className='text-2xl sm:text-3xl font-bold text-gray-900'>Account Settings</h1>
+              <h1 className='text-2xl sm:text-3xl font-bold text-gray-900'>Kontoeinstellungen</h1>
               <span className='px-2 sm:px-3 py-0.5 sm:py-1 bg-blue-100 text-blue-700 text-xs sm:text-sm rounded-full font-medium whitespace-nowrap'>
-                ⓘ Main Business Account
+                ⓘ Hauptgeschäftskonto
               </span>
             </div>
             <div className='flex items-center gap-1.5 sm:gap-2'>
-              <span className='text-xs sm:text-sm text-gray-500'>Partner ID</span>
+              <span className='text-xs sm:text-sm text-gray-500'>Partner-ID</span>
               <span className='font-mono text-sm sm:text-base font-semibold text-gray-900'>
                 {user?.id ?? 'Loading...'}
               </span>
@@ -47,7 +47,7 @@ export default function AccountSettingsPage() {
             </div>
           </div>
           <p className='mt-2 text-xs sm:text-sm text-gray-600 max-w-2xl'>
-            You have full control over your business account, including company settings, billing, employee management, and security preferences.
+            Sie haben volle Kontrolle über Ihr Geschäftskonto, einschließlich Unternehmenseinstellungen, Abrechnung, Mitarbeiterverwaltung und Sicherheitseinstellungen.
           </p>
         </div>
       </div>

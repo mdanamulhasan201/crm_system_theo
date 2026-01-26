@@ -28,16 +28,16 @@ export default function BankingPayoutDetails() {
           <CreditCard className="w-5 h-5 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Banking & Payout Details</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Used for payouts and settlements from FeetFirst.</p>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Bank- & Auszahlungsdetails</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Wird für Auszahlungen und Abrechnungen von FeetFirst verwendet.</p>
         </div>
       </div>
 
       <div className="space-y-3">
         <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1.5">
-            Account Holder Name
-          </label>
+            <label className="block text-xs font-medium text-gray-700 mb-1.5">
+              Kontoinhaber
+            </label>
           <input
             type="text"
             name="accountHolderName"
@@ -76,7 +76,7 @@ export default function BankingPayoutDetails() {
         <div className="flex items-start gap-2 p-3 bg-green-50 border border-green-200 rounded-lg mt-4">
           <Shield className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
           <p className="text-xs text-green-800">
-            Your banking information is encrypted and stored securely. We use bank-level security protocols to protect your financial data.
+            Ihre Bankdaten werden verschlüsselt und sicher gespeichert. Wir verwenden bankübliche Sicherheitsprotokolle zum Schutz Ihrer Finanzdaten.
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function BankingPayoutDetails() {
             className="w-full sm:w-auto px-5 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" />
-            Save Changes
+            Änderungen speichern
           </button>
         </div>
       </div>

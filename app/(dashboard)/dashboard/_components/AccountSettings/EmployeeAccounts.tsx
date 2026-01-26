@@ -66,11 +66,11 @@ export default function EmployeeAccounts() {
     try {
       setShowDeleteModal(false)
       await remove(employeeToDelete.id)
-      toast.success('Employee deleted successfully')
+      toast.success('Mitarbeiter erfolgreich gelöscht')
       setEmployeeToDelete(null)
       await loadEmployees()
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete employee'
+      const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Löschen des Mitarbeiters'
       toast.error(errorMessage)
       setShowDeleteModal(true) // Reopen if failed
     }
@@ -87,8 +87,8 @@ export default function EmployeeAccounts() {
           <Users className="w-5 h-5 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Employee Accounts</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Manage team members and their access permissions</p>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Mitarbeiterkonten</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Verwalten Sie Teammitglieder und deren Zugriffsberechtigungen</p>
         </div>
       </div>
 
@@ -148,14 +148,14 @@ export default function EmployeeAccounts() {
                         className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
                       >
                         <Edit2 className="w-4 h-4" />
-                        Edit Employee
+                        Mitarbeiter bearbeiten
                       </button>
                       <button
                         onClick={() => handleDeleteClick(employee)}
                         className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                       >
                         <Trash2 className="w-4 h-4" />
-                        Delete Employee
+                        Mitarbeiter löschen
                       </button>
                     </div>
                   </>
@@ -181,15 +181,15 @@ export default function EmployeeAccounts() {
               </div>
             </div>
             <div className="mt-2 text-center">
-              <h3 className="text-sm font-medium text-gray-600 group-hover:text-green-600">Add Employee</h3>
+              <h3 className="text-sm font-medium text-gray-600 group-hover:text-green-600">Mitarbeiter hinzufügen</h3>
             </div>
           </div>
 
             {/* Empty State */}
             {employees.length === 0 && (
               <div className="col-span-full text-center py-8 text-gray-500">
-                <p className="mb-2">No employees found</p>
-                <p className="text-sm">Click "Add Employee" to add your first team member</p>
+              <p className="mb-2">Keine Mitarbeiter gefunden</p>
+              <p className="text-sm">Klicken Sie auf "Mitarbeiter hinzufügen", um Ihr erstes Teammitglied hinzuzufügen</p>
               </div>
             )}
           </>
@@ -220,14 +220,14 @@ export default function EmployeeAccounts() {
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Employee</DialogTitle>
+            <DialogTitle>Mitarbeiter löschen</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-gray-600 mb-4">
-              Are you sure you want to delete <strong>{employeeToDelete?.employeeName}</strong>?
+              Sind Sie sicher, dass Sie <strong>{employeeToDelete?.employeeName}</strong> löschen möchten?
             </p>
             <p className="text-sm text-gray-500">
-              This action cannot be undone.
+              Diese Aktion kann nicht rückgängig gemacht werden.
             </p>
           </div>
           <DialogFooter className="gap-2">
@@ -238,13 +238,13 @@ export default function EmployeeAccounts() {
               }}
               className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
             >
-              Cancel
+              Abbrechen
             </button>
             <button
               onClick={handleDeleteEmployee}
               className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
             >
-              Delete
+              Löschen
             </button>
           </DialogFooter>
         </DialogContent>

@@ -41,7 +41,7 @@ export default function Security() {
   const onPasswordSubmit = async (data: PasswordFormData) => {
     try {
       if (data.newPassword !== data.confirmPassword) {
-        toast.error('New passwords do not match')
+        toast.error('Neue Passwörter stimmen nicht überein')
         return
       }
 
@@ -50,12 +50,12 @@ export default function Security() {
       const response = await changePassword(data.currentPassword, data.newPassword)
       
       if (response.success) {
-        toast.success('Password changed successfully')
+        toast.success('Passwort erfolgreich geändert')
         reset()
       }
     } catch (error) {
       console.error('Error changing password:', error)
-      toast.error(error instanceof Error ? error.message : 'Failed to change password')
+      toast.error(error instanceof Error ? error.message : 'Fehler beim Ändern des Passworts')
     } finally {
       setIsPasswordLoading(false)
     }
@@ -63,7 +63,7 @@ export default function Security() {
 
   const handleTerminateSession = (device: string) => {
     console.log('Terminating session:', device)
-    toast.success(`Session terminated: ${device}`)
+    toast.success(`Sitzung beendet: ${device}`)
     // Add your terminate session logic here
   }
 
@@ -74,28 +74,28 @@ export default function Security() {
           <Lock className="w-5 h-5 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Security</h2>
-          <p className="text-xs text-gray-500 mt-0.5">Manage your password and security settings</p>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Sicherheit</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Verwalten Sie Ihr Passwort und Ihre Sicherheitseinstellungen</p>
         </div>
       </div>
 
       <div className="space-y-6">
         {/* Change Password Section */}
         <form onSubmit={handleSubmit(onPasswordSubmit)}>
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Change Password</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Passwort ändern</h3>
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Current Password
+                Aktuelles Passwort
               </label>
               <div className="relative">
                 <input
                   type={showCurrentPassword ? "text" : "password"}
                   {...register('currentPassword', {
-                    required: 'Current password is required'
+                    required: 'Aktuelles Passwort ist erforderlich'
                   })}
                   className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Enter current password"
+                  placeholder="Aktuelles Passwort eingeben"
                 />
                 <button
                   type="button"
@@ -116,20 +116,20 @@ export default function Security() {
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                New Password
+                Neues Passwort
               </label>
               <div className="relative">
                 <input
                   type={showNewPassword ? "text" : "password"}
                   {...register('newPassword', {
-                    required: 'New password is required',
+                    required: 'Neues Passwort ist erforderlich',
                     minLength: {
                       value: 6,
-                      message: 'Password must be at least 6 characters'
+                      message: 'Passwort muss mindestens 6 Zeichen lang sein'
                     }
                   })}
                   className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Enter new password"
+                  placeholder="Neues Passwort eingeben"
                 />
                 <button
                   type="button"
@@ -150,16 +150,16 @@ export default function Security() {
 
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                Confirm New Password
+                Neues Passwort bestätigen
               </label>
               <div className="relative">
                 <input
                   type={showConfirmPassword ? "text" : "password"}
                   {...register('confirmPassword', {
-                    required: 'Please confirm your new password'
+                    required: 'Bitte bestätigen Sie Ihr neues Passwort'
                   })}
                   className="w-full px-3 py-2 pr-10 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  placeholder="Confirm new password"
+                  placeholder="Neues Passwort bestätigen"
                 />
                 <button
                   type="button"
@@ -205,10 +205,10 @@ export default function Security() {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Updating...
+                  Aktualisieren...
                 </>
               ) : (
-                'Update Password'
+                'Passwort aktualisieren'
               )}
             </button>
           </div>
@@ -218,18 +218,18 @@ export default function Security() {
         <div className="pt-4 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-900">Two-Factor Authentication</h3>
-              <p className="text-xs text-gray-500 mt-0.5">Add an extra layer of security to your account</p>
+              <h3 className="text-sm font-semibold text-gray-900">Zwei-Faktor-Authentifizierung</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Fügen Sie Ihrem Konto eine zusätzliche Sicherheitsebene hinzu</p>
             </div>
             <span className="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full font-medium whitespace-nowrap">
-              Coming soon
+              Demnächst verfügbar
             </span>
           </div>
         </div>
 
         {/* Active Sessions */}
         <div className="pt-4 border-t border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900 mb-3">Active Sessions</h3>
+          <h3 className="text-sm font-semibold text-gray-900 mb-3">Aktive Sitzungen</h3>
           <div className="space-y-2">
             {activeSessions.map((session, index) => (
               <div
@@ -245,7 +245,7 @@ export default function Security() {
                       <h4 className="text-xs sm:text-sm font-semibold text-gray-900">{session.device}</h4>
                       {session.current && (
                         <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs rounded-full font-medium">
-                          Current
+                          Aktuell
                         </span>
                       )}
                     </div>
@@ -258,7 +258,7 @@ export default function Security() {
                     onClick={() => handleTerminateSession(session.device)}
                     className="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors whitespace-nowrap ml-2"
                   >
-                    Terminate
+                    Beenden
                   </button>
                 )}
               </div>

@@ -29,8 +29,8 @@ export default function AddressesLocations() {
             <MapPin className="w-5 h-5 text-blue-600" />
           </div>
           <div className="flex-1 min-w-0">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Addresses & Locations</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Manage your business locations and delivery addresses</p>
+            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Adressen & Standorte</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Verwalten Sie Ihre Geschäftsstandorte und Lieferadressen</p>
           </div>
         </div>
         <button 
@@ -38,7 +38,7 @@ export default function AddressesLocations() {
           className="w-full sm:w-auto px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
         >
           <span className="text-lg">+</span>
-          <span className="font-medium">Add Location</span>
+            <span className="font-medium">Standort hinzufügen</span>
         </button>
       </div>
 
@@ -54,7 +54,7 @@ export default function AddressesLocations() {
                   <span className="font-semibold text-xs sm:text-sm text-gray-900">{location.name}</span>
                   {location.isPrimary && (
                     <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
-                      Primary
+                      Hauptstandort
                     </span>
                   )}
                 </div>
