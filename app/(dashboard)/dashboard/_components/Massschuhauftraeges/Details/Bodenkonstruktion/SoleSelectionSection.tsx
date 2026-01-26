@@ -1,6 +1,7 @@
 import React from "react"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import { FaArrowRight } from "react-icons/fa"
+import Image from "next/image"
 
 interface SoleSelectionSectionProps {
     selectedSole: SoleType | null
@@ -55,7 +56,9 @@ export default function SoleSelectionSection({
             {selectedSole ? (
                 <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                        <img 
+                        <Image
+                            width={96}
+                            height={96}
                             src={selectedSole.image} 
                             alt={selectedSole.name} 
                             className="w-24 h-24 object-contain" 

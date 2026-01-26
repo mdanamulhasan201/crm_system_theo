@@ -148,7 +148,9 @@ export default function ChecklistSection({
             })}
 
             <div className="mb-4">
-                <label className="block text-base font-bold text-gray-800 mb-2">Besondere Hinweise</label>
+                <label className="block text-base font-bold text-gray-800 mb-2">
+                    Besondere Hinweise <span className="text-gray-500 font-normal text-sm">(Optional)</span>
+                </label>
                 <textarea
                     className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[100px]"
                     placeholder="Textfeld"

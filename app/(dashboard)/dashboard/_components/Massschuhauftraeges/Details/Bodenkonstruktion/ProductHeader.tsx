@@ -25,14 +25,14 @@ export default function ProductHeader({ orderData }: ProductHeaderProps) {
 
                     <div className="flex-1">
                         <h2 className="text-2xl font-bold text-black mb-2">
-                            {orderData.productName || shoe2.name}
+                            {orderData.productName || ""}
                         </h2>
                         <p className="text-lg text-black mb-2">
-                            Kunde: <span className="font-medium">{orderData.customerName || shoe2.brand}</span>
+                            Kunde: <span className="font-medium">{orderData.customerName || ""}</span>
                         </p>
                         <p className="text-base text-black mb-4">
-                            Bestellnr: <span className="font-bold">{orderData.orderNumber || '#121212'}</span> &nbsp; 
-                            Voraussichtlicher Liefertermin: <span>{orderData.deliveryDate || '10.02.2025'}</span>
+                            Bestellnr: <span className="font-bold">{orderData.orderNumber || ''}</span> &nbsp; 
+                            Voraussichtlicher Liefertermin: <span>{orderData.deliveryDate || ''}</span>
                         </p>
                         {/* <p className="text-sm text-black underline cursor-pointer">
                             Bild hier hochladen, wenn die Bodenkonstruktion nach Vorlage erfolgen soll.

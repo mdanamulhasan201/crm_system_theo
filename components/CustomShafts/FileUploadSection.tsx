@@ -126,11 +126,11 @@ export default function FileUploadSection({
       {/* Header with Title and History Icon */}
       <div className="flex items-center justify-center relative mb-6">
         <h2 className="text-3xl font-bold text-gray-800">Kundenauswahl</h2>
-        {!hideCustomerSearch && (
+        {/* {!hideCustomerSearch && (
           <div className="absolute right-0 w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-200">
             <History className="w-5 h-5 text-green-600" />
           </div>
-        )}
+        )} */}
       </div>
 
       {/* Main Form Card */}
@@ -174,11 +174,6 @@ export default function FileUploadSection({
                   </button>
                 )}
               </div>
-              {isCustomerSelectDisabled && (
-                <span className="text-xs text-gray-500">
-                  Deaktiviert, da ein externer Kunde eingetragen ist.
-                </span>
-              )}
             </div>
           )}
 
@@ -232,11 +227,6 @@ export default function FileUploadSection({
                   </button>
                 )}
               </div>
-              {isExternalCustomerDisabled && (
-                <span className="text-xs text-gray-500">
-                  Deaktiviert, da ein Kunde ausgewählt ist.
-                </span>
-              )}
             </div>
           )}
 
@@ -321,10 +311,14 @@ export default function FileUploadSection({
                 <Button
                   variant="outline"
                   type="button"
-                  className="flex-1 justify-center cursor-pointer h-10 text-sm font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-2 bg-white"
+                  className={`flex-1 justify-center cursor-pointer h-10 text-sm font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-2 bg-white ${showShippingAddress ? 'items-center' : ''}`}
                   onClick={() => setShowShippingAddress(!showShippingAddress)}
                 >
-                  Leisten selber versenden
+                  {showShippingAddress ? (
+                    <X className="w-4 h-4 text-gray-700" />
+                  ) : (
+                    'Leisten selber versenden'
+                  )}
                 </Button>
               </div>
 

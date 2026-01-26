@@ -8,6 +8,7 @@ import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/C
 import { createCustomShaft } from '@/apis/customShaftsApis';
 import { createMassschuheWithoutOrderId } from '@/apis/MassschuheAddedApis';
 import { sendMassschuheOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
+import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 
 // Import separated components
 import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
@@ -38,6 +39,9 @@ interface Customer {
 export default function DetailsPage() {
   // Router for navigation
   const router = useRouter();
+
+  // Custom shaft data context
+  const { setCustomShaftData: setContextData } = useCustomShaftData();
 
   // State management
   const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
@@ -370,189 +374,72 @@ export default function DetailsPage() {
     return formData;
   };
 
-  // Handle Boden Konfigurieren
+  // Handle Boden Konfigurieren - Store data in context and redirect to Bodenkonstruktion
   const handleBodenKonfigurieren = async () => {
-    // If we already have an orderId, keep existing behavior (store data and go to step 2)
-    if (orderId) {
-      const customShaftData = {
-        image3d_1: rechterLeistenFile,
-        image3d_2: linkerLeistenFile,
-        mabschaftKollektionId: shaftId,
-        cadModeling,
-        cadModeling_2x_price: cadModeling === '2x' ? CAD_MODELING_2X_PRICE : null,
-        lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
-        numberOfLeatherColors,
-        leatherColors: numberOfLeatherColors !== '1' ? leatherColors : [],
-        leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
-        innenfutter,
-        schafthohe,
-        polsterung,
-        verstarkungen,
-        polsterung_text: polsterungText,
-        verstarkungen_text: verstarkungenText,
-        nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
-        nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
-        lederType,
-        closureType,
-        passenden_schnursenkel: passendenSchnursenkel === true,
-        moechten_sie_passende_schnuersenkel_zum_schuh_price: passendenSchnursenkel === true ? '4.49' : null,
-        osen_einsetzen: osenEinsetzen === true,
-        moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: osenEinsetzen === true ? '8.99' : null,
-        zipper_extra: zipperExtra === true,
-        moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
-        totalPrice: orderPrice,
-        // Store file names for reference
-        linkerLeistenFileName,
-        rechterLeistenFileName,
-      };
-
-      sessionStorage.setItem(`customShaftData_${orderId}`, JSON.stringify({
-        ...customShaftData,
-        hasImage3d_1: !!rechterLeistenFile,
-        hasImage3d_2: !!linkerLeistenFile,
-      }));
-
-      setShowConfirmationModal(false);
-      router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`);
-      return;
+    // Validate customer selection if no orderId
+    if (!orderId) {
+      if (!selectedCustomer && !otherCustomerNumber.trim()) {
+        toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
+        return;
+      }
     }
 
-    // No orderId: create massschuhe directly via /custom_shafts/create with same payload
-    setIsCreatingOrder(true);
-    try {
-      const formData = new FormData();
+    // Prepare custom shaft data (same for both with and without orderId)
+    const customShaftData = {
+      orderId,
+      mabschaftKollektionId: shaftId,
+      cadModeling,
+      cadModeling_2x_price: cadModeling === '2x' ? CAD_MODELING_2X_PRICE : null,
+      customCategory,
+      customCategoryPrice,
+      lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
+      numberOfLeatherColors,
+      leatherColors: numberOfLeatherColors !== '1' ? leatherColors : [],
+      leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
+      innenfutter,
+      schafthohe,
+      polsterung,
+      verstarkungen,
+      polsterung_text: polsterungText,
+      verstarkungen_text: verstarkungenText,
+      nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
+      nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
+      lederType,
+      closureType,
+      passenden_schnursenkel: passendenSchnursenkel === true,
+      moechten_sie_passende_schnuersenkel_zum_schuh_price: passendenSchnursenkel === true ? '4.49' : null,
+      osen_einsetzen: osenEinsetzen === true,
+      moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: osenEinsetzen === true ? '8.99' : null,
+      zipper_extra: zipperExtra === true,
+      moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
+      businessAddress: isAbholung ? businessAddress : null,
+      isAbholung,
+      totalPrice: orderPrice,
+      // Store customer info for orders without orderId
+      customerId: selectedCustomer?.id,
+      other_customer_number: otherCustomerNumber.trim() || null,
+      // Store file names for reference
+      linkerLeistenFileName,
+      rechterLeistenFileName,
+    };
 
-      // Customer info (optional)
-      if (selectedCustomer) {
-        formData.append('customerId', selectedCustomer.id);
-      } else if (otherCustomerNumber.trim()) {
-        formData.append('other_customer_number', otherCustomerNumber.trim());
-      }
+    // Store data in context (in-memory state)
+    setContextData({
+      ...customShaftData as any,
+      hasImage3d_1: !!rechterLeistenFile,
+      hasImage3d_2: !!linkerLeistenFile,
+      hasUploadedImage: false, // Collection-based, not custom upload
+      hasZipperImage: false,
+      hasPaintImage: false,
+    });
 
-      // Files
-      if (rechterLeistenFile) {
-        formData.append('image3d_1', rechterLeistenFile);
-      }
-      if (linkerLeistenFile) {
-        formData.append('image3d_2', linkerLeistenFile);
-      }
+    setShowConfirmationModal(false);
 
-      // Update image flag
-      formData.append('update_image', shouldUpdateImage ? 'true' : 'false');
-
-      // Base configuration
-      formData.append('mabschaftKollektionId', shaftId);
-      formData.append('lederType', lederType);
-
-      // CAD Modeling
-      formData.append('cadModeling', cadModeling);
-      if (cadModeling === '2x') {
-        formData.append('cadModeling_2x_price', CAD_MODELING_2X_PRICE.toString());
-      }
-
-      // Custom category & price
-      if (customCategory) {
-        formData.append('custom_catagoary', customCategory);
-      }
-      if (customCategoryPrice !== null) {
-        formData.append('custom_catagoary_price', customCategoryPrice.toString());
-      }
-
-      if (closureType) {
-        formData.append('closureType', closureType);
-        formData.append('verschlussart', closureType);
-      }
-
-      // Leather color
-      if (numberOfLeatherColors === '1') {
-        formData.append('lederfarbe', lederfarbe);
-      } else if (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') {
-        formData.append('numberOfLeatherColors', numberOfLeatherColors);
-        leatherColors.forEach((color, index) => {
-          formData.append(`leatherColor_${index + 1}`, color);
-        });
-        formData.append('leatherColorAssignments', JSON.stringify(leatherColorAssignments));
-      }
-
-      // Other config fields
-      formData.append('innenfutter', innenfutter);
-      formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
-      formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
-      formData.append('schafthohe', schafthohe);
-      formData.append('polsterung', polsterung.join(','));
-      formData.append('vestarkungen', verstarkungen.join(','));
-      formData.append('polsterung_text', polsterungText);
-      formData.append('vestarkungen_text', verstarkungenText);
-
-      // Add-on prices and flags
-      if (passendenSchnursenkel === true) {
-        formData.append('passenden_schnursenkel', 'true');
-        formData.append('moechten_sie_passende_schnuersenkel_zum_schuh_price', '4.49');
-      }
-      if (osenEinsetzen === true) {
-        formData.append('osen_einsetzen', 'true');
-        formData.append('moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price', '8.99');
-      }
-      if (zipperExtra === true) {
-        formData.append('zipper_extra', 'true');
-        formData.append('moechten_sie_einen_zusaetzlichen_reissverschluss_price', '9.99');
-      }
-
-      // Zusatzfragen als eigene Felder
-      if (passendenSchnursenkel !== undefined) {
-        formData.append(
-          'moechten_sie_passende_schnuersenkel_zum_schuh',
-          passendenSchnursenkel ? 'true' : 'false'
-        );
-      }
-      if (osenEinsetzen !== undefined) {
-        formData.append(
-          'moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen',
-          osenEinsetzen ? 'true' : 'false'
-        );
-      }
-      if (zipperExtra !== undefined) {
-        formData.append(
-          'moechten_sie_einen_zusaetzlichen_reissverschluss',
-          zipperExtra ? 'true' : 'false'
-        );
-      }
-
-      // Business address for abholung
-      if (isAbholung && businessAddress) {
-        formData.append('abholung', 'true');
-        formData.append(
-          'abholung_price',
-          String(
-            Number.isFinite(businessAddress.price)
-              ? businessAddress.price
-              : ABHOLUNG_PRICE_DEFAULT
-          )
-        );
-        formData.append('business_companyName', businessAddress.companyName);
-        formData.append('business_address', businessAddress.address);
-      }
-
-      // Total price
-      formData.append('totalPrice', orderPrice.toString());
-
-      const response = await createMassschuheWithoutOrderId(formData);
-
-      clearFormData();
-      setShowSuccessMessage(true);
-      setShowConfirmationModal(false);
-      toast.success(response.message || 'Bestellung erfolgreich erstellt!', {
-        id: 'creating-order',
-      });
-
-      // After creating without order id, go back to custom shafts overview
-      setTimeout(() => {
-        router.push('/dashboard/custom-shafts');
-      }, 200);
-    } catch (error) {
-      toast.error('Fehler beim Erstellen der Bestellung.', { id: 'creating-order' });
-    } finally {
-      setIsCreatingOrder(false);
+    // Redirect to Bodenkonstruktion page (works with or without orderId)
+    if (orderId) {
+      router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`);
+    } else {
+      router.push(`/dashboard/massschuhauftraege-deatils/2`);
     }
   };
 

@@ -1,7 +1,9 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
+import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
+import { createMassschuheWithoutOrderId, createMassschuheWithoutOrderIdWithoutCustomModels } from '@/apis/MassschuheAddedApis';
 import toast from 'react-hot-toast';
 
 // Import separated components
@@ -22,6 +24,12 @@ interface Customer {
 }
 
 export default function OrderPage() {
+  // Router for navigation
+  const router = useRouter();
+  
+  // Custom shaft data context
+  const { setCustomShaftData: setContextData } = useCustomShaftData();
+
   // State management
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
@@ -67,6 +75,10 @@ export default function OrderPage() {
 
   // Product info (user-entered)
   const [productDescription, setProductDescription] = useState<string>('');
+
+  // Image states
+  const [zipperImage, setZipperImage] = useState<string | null>(null);
+  const [paintImage, setPaintImage] = useState<string | null>(null);
 
   // Business address for abholung
   interface BusinessAddressData {
@@ -163,59 +175,305 @@ export default function OrderPage() {
 
   const orderPrice = calculateTotalPrice();
 
-  // Handle Boden Konfigurieren - Just close modal and show message
+  // Handle Boden Konfigurieren - Store data and redirect to step 2
   const handleBodenKonfigurieren = async () => {
-    if (!selectedCustomer && !otherCustomerNumber.trim()) {
-      toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
-      return;
+    // Validate customer selection if no orderId
+    if (!orderId) {
+      if (!selectedCustomer && !otherCustomerNumber.trim()) {
+        toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
+        return;
+      }
     }
+    
+    // Prepare custom shaft data
+    const customShaftData = {
+      orderId,
+      uploadedImage,
+      zipperImage,
+      paintImage,
+      productDescription,
+      cadModeling,
+      cadModeling_2x_price: cadModeling === '2x' ? CAD_MODELING_2X_PRICE : null,
+      customCategory,
+      customCategoryPrice,
+      lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
+      numberOfLeatherColors,
+      leatherColors: numberOfLeatherColors !== '1' ? leatherColors : [],
+      leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
+      innenfutter,
+      schafthohe,
+      polsterung,
+      verstarkungen,
+      polsterung_text: polsterungText,
+      verstarkungen_text: verstarkungenText,
+      nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
+      nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
+      lederType,
+      closureType,
+      passenden_schnursenkel: passendenSchnursenkel === true,
+      moechten_sie_passende_schnuersenkel_zum_schuh_price: passendenSchnursenkel === true ? '4.49' : null,
+      osen_einsetzen: osenEinsetzen === true,
+      moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: osenEinsetzen === true ? '8.99' : null,
+      zipper_extra: zipperExtra === true,
+      moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
+      businessAddress: isAbholung ? businessAddress : null,
+      isAbholung,
+      totalPrice: orderPrice,
+      // Store customer info for orders without orderId
+      customerId: selectedCustomer?.id,
+      other_customer_number: otherCustomerNumber.trim() || null,
+      // Store file names for reference
+      linkerLeistenFileName,
+      rechterLeistenFileName,
+    };
 
-    if (isAbholung && !businessAddress) {
-      toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
-      return;
-    }
+    // Store data in context (in-memory state)
+    setContextData({
+      ...customShaftData as any,
+      hasImage3d_1: !!rechterLeistenFile,
+      hasImage3d_2: !!linkerLeistenFile,
+      hasUploadedImage: !!uploadedImage,
+      hasZipperImage: !!zipperImage,
+      hasPaintImage: !!paintImage,
+    });
 
-    setIsCreatingOrder(true);
     setShowConfirmationModal(false);
     
-    // Simulate processing
-    setTimeout(() => {
-      setIsCreatingOrder(false);
-      toast.success("Boden Konfigurieren - API wird hier implementiert");
-    }, 1000);
+    // Redirect to Bodenkonstruktion page (works with or without orderId)
+    if (orderId) {
+      router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`);
+    } else {
+      router.push(`/dashboard/massschuhauftraege-deatils/2`);
+    }
   };
 
-  // Handle Order Confirmation - Just show message
+  // Handle Order Confirmation - Create order with or without orderId
   const handleOrderConfirmation = async () => {
     if (!selectedCustomer && !otherCustomerNumber.trim()) {
       toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
       return;
     }
 
-    if (isAbholung && !businessAddress) {
-      toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
-      return;
-    }
-
     setIsCreatingOrder(true);
     setShowConfirmationModal(false);
     
-    // Simulate processing
-    setTimeout(() => {
+    try {
+      const formData = new FormData();
+
+      // Customer info
+      if (selectedCustomer) {
+        formData.append('customerId', selectedCustomer.id);
+      } else if (otherCustomerNumber.trim()) {
+        formData.append('other_customer_number', otherCustomerNumber.trim());
+      }
+
+      // Files
+      if (rechterLeistenFile) {
+        formData.append('image3d_1', rechterLeistenFile);
+      }
+      if (linkerLeistenFile) {
+        formData.append('image3d_2', linkerLeistenFile);
+      }
+
+      // Detect if it's a custom order
+      const isCustomOrder = !!uploadedImage;
+
+      // Add custom models image and fields (only for custom orders)
+      if (isCustomOrder && uploadedImage) {
+        // Convert base64 to File
+        const uploadedImageFile = await convertImageToFile(uploadedImage, 'custom_model.png');
+        if (uploadedImageFile) {
+          formData.append('custom_models_image', uploadedImageFile);
+        }
+
+        // Custom models fields
+        if (customCategoryPrice !== null && customCategoryPrice !== undefined) {
+          formData.append('custom_models_price', customCategoryPrice.toString());
+        }
+        if (closureType) {
+          formData.append('custom_models_verschlussart', closureType);
+        }
+        if (productDescription) {
+          formData.append('custom_models_description', productDescription);
+          formData.append('custom_models_name', productDescription);
+        }
+      }
+
+      // Add zipper and paint images if they exist
+      if (zipperImage) {
+        const zipperImageFile = await convertImageToFile(zipperImage, 'zipper_image.png');
+        if (zipperImageFile) {
+          formData.append('zipper_image', zipperImageFile);
+        }
+      }
+
+      if (paintImage) {
+        const paintImageFile = await convertImageToFile(paintImage, 'paint_image.png');
+        if (paintImageFile) {
+          formData.append('paintImage', paintImageFile);
+        }
+      }
+
+      // CAD Modeling
+      formData.append('cadModeling', cadModeling);
+      if (cadModeling === '2x') {
+        formData.append('cadModeling_2x_price', CAD_MODELING_2X_PRICE.toString());
+      }
+
+      // Custom category & price
+      if (customCategory) {
+        formData.append('custom_catagoary', customCategory);
+      }
+      if (customCategoryPrice !== null) {
+        formData.append('custom_catagoary_price', customCategoryPrice.toString());
+      }
+
+      // Closure type
+      if (closureType) {
+        formData.append('closureType', closureType);
+        formData.append('verschlussart', closureType);
+      }
+
+      // Leather color
+      if (numberOfLeatherColors === '1') {
+        formData.append('lederfarbe', lederfarbe);
+      } else if (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') {
+        formData.append('numberOfLeatherColors', numberOfLeatherColors);
+        leatherColors.forEach((color, index) => {
+          formData.append(`leatherColor_${index + 1}`, color);
+        });
+        formData.append('leatherColorAssignments', JSON.stringify(leatherColorAssignments));
+      }
+
+      // Other config fields
+      formData.append('lederType', lederType);
+      formData.append('innenfutter', innenfutter);
+      formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
+      formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
+      formData.append('schafthohe', schafthohe);
+      formData.append('polsterung', polsterung.join(','));
+      formData.append('vestarkungen', verstarkungen.join(','));
+      formData.append('polsterung_text', polsterungText);
+      formData.append('vestarkungen_text', verstarkungenText);
+
+      // Add-on prices and flags
+      if (passendenSchnursenkel === true) {
+        formData.append('passenden_schnursenkel', 'true');
+        formData.append('moechten_sie_passende_schnuersenkel_zum_schuh_price', '4.49');
+      }
+      if (osenEinsetzen === true) {
+        formData.append('osen_einsetzen', 'true');
+        formData.append('moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price', '8.99');
+      }
+      if (zipperExtra === true) {
+        formData.append('zipper_extra', 'true');
+        formData.append('moechten_sie_einen_zusaetzlichen_reissverschluss_price', '9.99');
+      }
+
+      // Zusatzfragen als eigene Felder
+      if (passendenSchnursenkel !== undefined) {
+        formData.append('moechten_sie_passende_schnuersenkel_zum_schuh', passendenSchnursenkel ? 'true' : 'false');
+      }
+      if (osenEinsetzen !== undefined) {
+        formData.append('moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen', osenEinsetzen ? 'true' : 'false');
+      }
+      if (zipperExtra !== undefined) {
+        formData.append('moechten_sie_einen_zusaetzlichen_reissverschluss', zipperExtra ? 'true' : 'false');
+      }
+
+      // Business address for abholung
+      if (isAbholung && businessAddress) {
+        formData.append('abholung', 'true');
+        formData.append('abholung_price', String(Number.isFinite(businessAddress.price) ? businessAddress.price : ABHOLUNG_PRICE_DEFAULT));
+        formData.append('business_companyName', businessAddress.companyName);
+        formData.append('business_address', businessAddress.address);
+        if (businessAddress.phone) formData.append('business_phone', businessAddress.phone);
+        if (businessAddress.email) formData.append('business_email', businessAddress.email);
+      }
+
+      // Total price
+      formData.append('totalPrice', orderPrice.toString());
+
+      // Prepare Massschafterstellung_json1
+      const massschafterstellungJson1 = {
+        kategorie: customCategory || null,
+        ledertyp: lederType || null,
+        ledertypen_definieren: {},
+        anzahl_der_ledertypen: numberOfLeatherColors || null,
+        Innenfutter: innenfutter || null,
+        lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
+        schafthöhe: schafthohe || null,
+        polsterung: polsterung.join(',') || null,
+        verstärkungen: verstarkungen.join(',') || null,
+        verschlussart: closureType || null,
+        moechten_sie_passende_schnuersenkel_zum_schuh: passendenSchnursenkel || null,
+        moechten_sie_passende_schnuersenkel_zum_schuh_price: passendenSchnursenkel === true ? '4.49' : null,
+        moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen: osenEinsetzen || null,
+        moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: osenEinsetzen === true ? '8.99' : null,
+        moechten_sie_einen_zusaetzlichen_reissverschluss: zipperExtra || null,
+        moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
+      };
+
+      // Add leather types definition if multiple colors
+      if (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') {
+        const ledertypenDefinieren: any = {};
+        leatherColors?.forEach((color: string, index: number) => {
+          ledertypenDefinieren[`leatherColor_${index + 1}`] = color;
+        });
+        if (leatherColorAssignments) {
+          ledertypenDefinieren.assignments = leatherColorAssignments;
+        }
+        massschafterstellungJson1.ledertypen_definieren = ledertypenDefinieren;
+      }
+
+      formData.append('Massschafterstellung_json1', JSON.stringify(massschafterstellungJson1));
+
+      // Call appropriate API based on order type
+      const response = isCustomOrder 
+        ? await createMassschuheWithoutOrderId(formData)
+        : await createMassschuheWithoutOrderIdWithoutCustomModels(formData);
+
+      toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
+      
+      // Navigate back
+      router.push('/dashboard/custom-shafts');
+    } catch (error) {
+      toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" });
+    } finally {
       setIsCreatingOrder(false);
-      toast.success("Bestellung bestätigt - API wird hier implementiert");
-    }, 1000);
+    }
+  };
+
+  // Helper function to convert base64/URL to File
+  const convertImageToFile = async (imageString: string, fileName: string = 'image.png'): Promise<File | null> => {
+    try {
+      if (!imageString) return null;
+      
+      if (imageString.startsWith('data:')) {
+        const response = await fetch(imageString);
+        const blob = await response.blob();
+        return new File([blob], fileName, { type: blob.type });
+      }
+      
+      if (imageString.startsWith('http') || imageString.startsWith('/')) {
+        const response = await fetch(imageString);
+        if (response.ok) {
+          const blob = await response.blob();
+          return new File([blob], fileName, { type: blob.type });
+        }
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error converting image to file:', error);
+      return null;
+    }
   };
 
   // Handle Send to Admin2 - Just show message
   const handleSendToAdmin2 = async () => {
     if (!selectedCustomer && !otherCustomerNumber.trim()) {
       toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
-      return;
-    }
-
-    if (isAbholung && !businessAddress) {
-      toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
       return;
     }
 
@@ -327,6 +585,10 @@ export default function OrderPage() {
             onOrderComplete={() => setShowConfirmationModal(true)}
             category={customCategory}
             allowCategoryEdit={true}
+            zipperImage={zipperImage}
+            setZipperImage={setZipperImage}
+            paintImage={paintImage}
+            setPaintImage={setPaintImage}
           />
         </div>
 
