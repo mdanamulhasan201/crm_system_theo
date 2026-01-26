@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { CustomShaftDataProvider } from "@/contexts/CustomShaftDataContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,7 +51,9 @@ export default function RootLayout({
         />
         <LanguageProvider>
           <AuthProvider>
-            {children}
+            <CustomShaftDataProvider>
+              {children}
+            </CustomShaftDataProvider>
           </AuthProvider>
         </LanguageProvider>
         <Toaster />

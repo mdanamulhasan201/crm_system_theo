@@ -11,6 +11,8 @@ import {
     sendMassschuheOrderToAdmin3, 
     sendMassschuheCustomShaftOrderToAdmin2 
 } from "@/apis/MassschuheManagemantApis"
+import { createMassschuheWithoutOrderId, createMassschuheWithoutOrderIdWithoutCustomModels } from "@/apis/MassschuheAddedApis"
+import { useCustomShaftData } from "@/contexts/CustomShaftDataContext"
 import toast from "react-hot-toast"
 
 // Types
@@ -40,6 +42,9 @@ interface BodenkonstruktionProps {
 
 export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const router = useRouter()
+    
+    // Custom shaft data context
+    const { customShaftData: contextData, clearCustomShaftData } = useCustomShaftData()
     
     // Form states
     const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff" })
@@ -236,21 +241,16 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 return
             }
         }
-        
-        if (!orderId) {
-            toast.error("Order ID is required")
-            return
-        }
 
-        // Check if custom shaft data exists in sessionStorage
-        const customShaftDataStr = sessionStorage.getItem(`customShaftData_${orderId}`)
-        
-        if (customShaftDataStr) {
-            // Store custom shaft data for later API call (when user clicks "Verbindlich bestellen")
-            const parsedCustomShaftData = JSON.parse(customShaftDataStr)
-            const hasUploadedImage = !!parsedCustomShaftData.uploadedImage
-            setCustomShaftData(parsedCustomShaftData)
-            setIsCustomOrder(hasUploadedImage)
+        // Check if custom shaft data exists in context (for both with and without orderId)
+        if (contextData) {
+            // Check if orderId matches (if provided) or if no orderId is required
+            if (!orderId || contextData.orderId === orderId) {
+                // Store custom shaft data for later API call (when user clicks "Verbindlich bestellen")
+                const hasUploadedImage = !!contextData.uploadedImage || !!contextData.hasUploadedImage
+                setCustomShaftData(contextData)
+                setIsCustomOrder(hasUploadedImage)
+            }
         }
         
         // Show PDF modal (same for both custom and normal flow)
@@ -355,8 +355,21 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     }
 
     // Prepare form data for Admin2 API (custom shaft + Bodenkonstruktion)
-    const prepareFormDataForAdmin2 = async (customShaftData: any): Promise<{ formData: FormData; isCustomOrder: boolean }> => {
+    const prepareFormDataForAdmin2 = async (customShaftData: any, pdfBlobData: Blob | null = null): Promise<{ formData: FormData; isCustomOrder: boolean }> => {
         const formData = new FormData()
+        
+        // Add customer info (for orders without orderId)
+        if (customShaftData.customerId) {
+            formData.append('customerId', customShaftData.customerId)
+        } else if (customShaftData.other_customer_number) {
+            formData.append('other_customer_number', customShaftData.other_customer_number)
+        }
+        
+        // Add PDF invoices if available
+        if (pdfBlobData) {
+            formData.append('invoice', pdfBlobData, 'invoice.pdf')
+            formData.append('invoice2', pdfBlobData, 'invoice2.pdf')
+        }
         
         // Detect if it's a custom order (user uploaded their own image) or from collection
         const isCustomOrder = !!customShaftData.uploadedImage
@@ -911,7 +924,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                 // Call Admin2 API with custom shaft data + Bodenkonstruktion data
                                 setIsSubmitting(true)
                                 try {
-                                    const { formData } = await prepareFormDataForAdmin2(customShaftData)
+                                    const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
                                     
                                     // Use the appropriate API based on order type
                                     const response = isCustomOrder 
@@ -920,8 +933,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                     
                                     toast.success(response.message || "Bestellung erfolgreich gesendet!", { id: "sending-order" })
                                     
-                                    // Clear sessionStorage after successful API call
-                                    sessionStorage.removeItem(`customShaftData_${orderId}`)
+                                    // Clear context after successful API call
+                                    clearCustomShaftData()
                                     
                                     // Close modal and navigate
                                     setShowModal2(false)
@@ -937,9 +950,36 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                 await handleFormSubmit(pdfBlob)
                             }
                         } else {
-                            // If no orderId, just navigate
-                            router.push("/dashboard/balance-dashboard")
-                            setShowModal2(false)
+                            // No orderId: Create new order with custom shaft data + Bodenkonstruktion
+                            if (customShaftData) {
+                                setIsSubmitting(true)
+                                try {
+                                    const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
+                                    
+                                    // Call the appropriate API based on order type (custom model or collection)
+                                    const response = isCustomOrder
+                                        ? await createMassschuheWithoutOrderId(formData)
+                                        : await createMassschuheWithoutOrderIdWithoutCustomModels(formData)
+                                    
+                                    toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" })
+                                    
+                                    // Clear context after successful API call
+                                    clearCustomShaftData()
+                                    
+                                    // Close modal and navigate
+                                    setShowModal2(false)
+                                    router.push("/dashboard/custom-shafts")
+                                } catch (error) {
+                                    console.error('Failed to create order:', error)
+                                    toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" })
+                                } finally {
+                                    setIsSubmitting(false)
+                                }
+                            } else {
+                                // If no custom shaft data and no orderId, just navigate
+                                router.push("/dashboard/balance-dashboard")
+                                setShowModal2(false)
+                            }
                         }
                     }}
                 />
