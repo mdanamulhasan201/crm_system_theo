@@ -138,12 +138,7 @@ export default function ProductConfiguration({
     }
   };
 
-  // Ensure closureType is 'Zipper' when zipperPlacementImage exists
-  useEffect(() => {
-    if (zipperPlacementImage && closureType !== 'Zipper') {
-      setClosureType('Zipper');
-    }
-  }, [zipperPlacementImage, closureType, setClosureType]);
+  // Zipper is now controlled by the "Zusätzlicher Reißverschluss" checkbox, not by closureType
 
   const CATEGORY_OPTIONS = [
     { value: 'Halbschuhe', label: 'Halbschuhe', price: 209.99 },
@@ -509,79 +504,22 @@ export default function ProductConfiguration({
         </div>
 
         {/* Verschlussart */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Label className="font-medium text-base md:w-1/3">Verschlussart:</Label>
-            <Select 
-              value={closureType} 
-              onValueChange={(value) => {
-                if (value === 'Zipper') {
-                  // If there's already a saved drawing, allow selection
-                  if (zipperPlacementImage) {
-                    setClosureType('Zipper');
-                  } else {
-                    // Show zipper placement modal when Zipper is selected
-                    // Don't set closureType yet - wait for user to save the drawing
-                    if (!shoeImage) {
-                      // Need an image to draw the zipper on
-                      toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
-                      return;
-                    }
-                    setShowZipperPlacementModal(true);
-                  }
-                } else {
-                  setClosureType(value);
-                  // Clear zipper placement when switching to other closure types
-                  setZipperPlacementImage(null);
-                }
-              }}
-            >
-              <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-                <SelectValue placeholder="Verschlussart wählen..." />
-              </SelectTrigger>
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Label className="font-medium text-base md:w-1/3">Verschlussart:</Label>
+          <Select 
+            value={closureType} 
+            onValueChange={(value) => {
+              setClosureType(value);
+            }}
+          >
+            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
+              <SelectValue placeholder="Verschlussart wählen..." />
+            </SelectTrigger>
               <SelectContent>
-                <SelectItem className='cursor-pointer' value="Eyelets">Eyelets</SelectItem>
-                <SelectItem className='cursor-pointer' value="Zipper">Zipper</SelectItem>
-                <SelectItem className='cursor-pointer' value="Velcro">Velcro</SelectItem>
+                <SelectItem className='cursor-pointer' value="Eyelets">Ösen (Schnürung)</SelectItem>
+                <SelectItem className='cursor-pointer' value="Velcro">Klettverschluss</SelectItem>
               </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Zipper Placement Indicator */}
-          {closureType === 'Zipper' && (
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <Label className="font-medium text-base md:w-1/3"></Label>
-              <div className="w-full md:w-1/2">
-                {zipperPlacementImage ? (
-                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <span className="text-sm text-green-700">✓ Zipper placement marked</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowZipperPlacementModal(true)}
-                      className="ml-auto h-8 text-xs"
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <span className="text-sm text-yellow-700">⚠ Please mark zipper placement</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowZipperPlacementModal(true)}
-                      className="ml-auto h-8 text-xs"
-                    >
-                      Mark Now
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          </Select>
         </div>
 
 
@@ -635,30 +573,48 @@ export default function ProductConfiguration({
           </div>
         )}
 
-        {/* Zusätze: Zusätzlicher Reißverschluss - Only show for Zipper */}
-        {closureType === 'Zipper' && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Label className="font-medium text-base md:w-1/3">
-              Möchten Sie einen zusätzlichen Reißverschluss? (+9,99€)
-            </Label>
-            <div className="flex items-center gap-8">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektZipperExtra === false}
-                  onChange={() => updateZipperExtra(effektZipperExtra === false ? undefined : false)}
-                />
-                <span>Nein, ohne zusätzlichen Reißverschluss</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektZipperExtra === true}
-                  onChange={() => updateZipperExtra(effektZipperExtra === true ? undefined : true)}
-                />
-                <span>Ja, zusätzlichen Reißverschluss (+9,99€)</span>
-              </label>
-            </div>
+        {/* Zusätze: Zusätzlicher Reißverschluss - Always visible */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Label className="font-medium text-base md:w-1/3">
+            Möchten Sie einen zusätzlichen Reißverschluss? (+9,99€)
+          </Label>
+          <div className="flex items-center gap-8">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektZipperExtra === false}
+                onChange={() => updateZipperExtra(effektZipperExtra === false ? undefined : false)}
+              />
+              <span>Nein, ohne zusätzlichen Reißverschluss</span>
+            </label>
+             <label className="flex items-center gap-2 cursor-pointer">
+               <Checkbox
+                 checked={effektZipperExtra === true}
+                 onChange={() => {
+                   // If checking the box (turning it on)
+                   if (effektZipperExtra !== true) {
+                     // Check if there's already a zipper image
+                     if (zipperPlacementImage) {
+                       // Just update the checkbox
+                       updateZipperExtra(true);
+                     } else {
+                       // Need to show modal to mark zipper placement
+                       if (!shoeImage) {
+                         toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
+                         return;
+                       }
+                       // Show modal first, then update checkbox after save
+                       setShowZipperPlacementModal(true);
+                     }
+                   } else {
+                     // Unchecking - just update the checkbox
+                     updateZipperExtra(undefined);
+                   }
+                 }}
+               />
+               <span>Ja, zusätzlichen Reißverschluss (+9,99€)</span>
+             </label>
           </div>
-        )}
+        </div>
         {/* Submit Button */}
         <div className="flex justify-center mt-4">
           <Button
@@ -686,13 +642,7 @@ export default function ProductConfiguration({
         <ZipperPlacementModal
           isOpen={showZipperPlacementModal}
           onClose={() => {
-            // Only reset closureType if modal is closed without saving AND no image exists
-            // Don't reset if we just saved (check ref for immediate value)
-            if (!isSavingZipperRef.current) {
-              if (!zipperPlacementImage) {
-                setClosureType('');
-              }
-            }
+            // Reset flag and close modal
             isSavingZipperRef.current = false;
             setShowZipperPlacementModal(false);
           }}
@@ -705,9 +655,8 @@ export default function ProductConfiguration({
             if (setZipperImage) {
               setZipperImage(imageDataUrl);
             }
-            // Always set closureType to Zipper when image is saved (even when editing)
-            // This ensures the dropdown shows Zipper as selected
-            setClosureType('Zipper');
+            // Set the checkbox to true when zipper placement is saved
+            updateZipperExtra(true);
             setShowZipperPlacementModal(false);
             // Reset flag after a brief delay
             setTimeout(() => {
