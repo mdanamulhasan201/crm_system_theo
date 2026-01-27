@@ -77,6 +77,10 @@ export default function FileUploadSection({
   // Disable one customer input when the other is filled
   const isCustomerSelectDisabled = !!otherCustomerNumber;
   const isExternalCustomerDisabled = !!selectedCustomer;
+  
+  // Check if buttons are active
+  const isAbholenActive = !!(businessAddress && (businessAddress.companyName || businessAddress.address));
+  const isVersendenActive = showShippingAddress;
 
   const shippingAddress = {
     company: 'FeetF1rst S.R.L.S.',
@@ -137,7 +141,7 @@ export default function FileUploadSection({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className={`grid gap-4 md:gap-6 ${
           hideFileUploads 
-            ? (hideCustomerSearch ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3') 
+            ? (hideCustomerSearch ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4') 
             : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
         }`}>
           {/* Kunde auswählen Section */}
@@ -274,87 +278,126 @@ export default function FileUploadSection({
             </div>
           )}
 
-          {/* Leisten abholen & Versenden Section - Show when hideFileUploads is true */}
+          {/* Abholen Button - Show when hideFileUploads is true */}
           {hideFileUploads && (
-            <div className="flex flex-col gap-3 mt-7">
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  type="button"
-                  className={`flex-1 justify-center cursor-pointer h-10 text-sm font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-2 bg-white ${businessAddress ? 'items-center' : ''}`}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (businessAddress && (businessAddress.companyName || businessAddress.address)) {
-                      // If address is set, clear it when clicked (set to null)
-                      if (onBusinessAddressSave) {
-                        onBusinessAddressSave({
-                          companyName: '',
-                          address: '',
-                          price: 13,
-                          phone: '',
-                          email: '',
-                        });
-                      }
-                    } else {
-                      // Show unavailable message popup
-                      setShowAbholungUnavailableModal(true);
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">Abholen</label>
+              <Button
+                variant="outline"
+                type="button"
+                disabled={isVersendenActive}
+                className={`w-full justify-center h-12 text-base font-normal border border-gray-300 rounded-md gap-2 ${
+                  isVersendenActive 
+                    ? 'bg-gray-100 cursor-not-allowed text-gray-400' 
+                    : 'cursor-pointer hover:bg-gray-50 bg-white'
+                }`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (isVersendenActive) return;
+                  
+                  if (businessAddress && (businessAddress.companyName || businessAddress.address)) {
+                    // If address is set, clear it when clicked (set to null)
+                    if (onBusinessAddressSave) {
+                      onBusinessAddressSave({
+                        companyName: '',
+                        address: '',
+                        price: 13,
+                        phone: '',
+                        email: '',
+                      });
                     }
-                  }}
-                >
-                  {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
+                  } else {
+                    // Clear versenden state and show unavailable message popup
+                    setShowShippingAddress(false);
+                    setShowAbholungUnavailableModal(true);
+                  }
+                }}
+              >
+                {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
+                  <>
                     <X className="w-4 h-4 text-gray-700" />
-                  ) : (
-                    'Leisten abholen lassen'
-                  )}
-                </Button>
-                <Button
-                  variant="outline"
-                  type="button"
-                  className={`flex-1 justify-center cursor-pointer h-10 text-sm font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-2 bg-white ${showShippingAddress ? 'items-center' : ''}`}
-                  onClick={() => setShowShippingAddress(!showShippingAddress)}
-                >
-                  {showShippingAddress ? (
-                    <X className="w-4 h-4 text-gray-700" />
-                  ) : (
-                    'Leisten selber versenden'
-                  )}
-                </Button>
-              </div>
+                    <span className="text-sm">Abholen</span>
+                  </>
+                ) : (
+                  'Abholen lassen'
+                )}
+              </Button>
+            </div>
+          )}
 
-              {/* Shipping Address Display */}
-              {showShippingAddress && (
-                <div className="bg-gray-50 border border-gray-200 rounded-md p-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900 mb-1">
-                        {shippingAddress.company}
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        {shippingAddress.street}
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        {shippingAddress.city}
-                      </p>
-                      <p className="text-sm text-gray-700">
-                        {shippingAddress.country}
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleCopyAddress}
-                      className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-100"
-                      title="Adresse kopieren"
-                    >
-                      <Copy className="w-4 h-4 text-gray-600" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+          {/* Versenden Button - Show when hideFileUploads is true */}
+          {hideFileUploads && (
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium text-gray-700">Versenden</label>
+              <Button
+                variant="outline"
+                type="button"
+                disabled={isAbholenActive}
+                className={`w-full justify-center h-12 text-base font-normal border border-gray-300 rounded-md gap-2 ${
+                  isAbholenActive 
+                    ? 'bg-gray-100 cursor-not-allowed text-gray-400' 
+                    : 'cursor-pointer hover:bg-gray-50 bg-white'
+                }`}
+                onClick={() => {
+                  if (isAbholenActive) return;
+                  
+                  // If activating, clear Abholen state
+                  if (!showShippingAddress && onBusinessAddressSave) {
+                    onBusinessAddressSave({
+                      companyName: '',
+                      address: '',
+                      price: 13,
+                      phone: '',
+                      email: '',
+                    });
+                  }
+                  setShowShippingAddress(!showShippingAddress);
+                }}
+              >
+                {showShippingAddress ? (
+                  <>
+                    <X className="w-4 h-4 text-gray-700" />
+                    <span className="text-sm">Versenden</span>
+                  </>
+                ) : (
+                  'Selber versenden'
+                )}
+              </Button>
             </div>
           )}
         </div>
+
+        {/* Shipping Address Display - Outside grid but inside card */}
+        {hideFileUploads && showShippingAddress && (
+          <div className="mt-4 bg-gray-50 border border-gray-200 rounded-md p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-gray-900 mb-1">
+                  {shippingAddress.company}
+                </p>
+                <p className="text-sm text-gray-700">
+                  {shippingAddress.street}
+                </p>
+                <p className="text-sm text-gray-700">
+                  {shippingAddress.city}
+                </p>
+                <p className="text-sm text-gray-700">
+                  {shippingAddress.country}
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyAddress}
+                className="h-8 w-8 p-0 border-gray-300 hover:bg-gray-100"
+                title="Adresse kopieren"
+              >
+                <Copy className="w-4 h-4 text-gray-600" />
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* File Preview Sections - Hide when hideFileUploads is true */}
         {!hideFileUploads && (
