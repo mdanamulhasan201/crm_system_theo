@@ -141,7 +141,7 @@ export default function OrderPage() {
   const OSEN_EINSETZEN_PRICE = 8.99;
   const ZIPPER_EXTRA_PRICE = 9.99;
   const CAD_MODELING_2X_PRICE = 6.99;
-  const ABHOLUNG_PRICE_DEFAULT = 13.0;
+  const ABHOLUNG_PRICE_DEFAULT = 0;
 
   const calculateTotalPrice = () => {
     let total = basePrice;

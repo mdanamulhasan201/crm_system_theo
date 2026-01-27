@@ -230,8 +230,8 @@ export default function ProductConfiguration({
     <TooltipProvider>
       <div className="flex flex-col gap-6">
         {/* CAD-Modellierung Section */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex items-center gap-2 md:w-1/3">
             <Label className="font-medium text-base">CAD-Modellierung</Label>
             <div className="relative group">
               <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center cursor-help hover:bg-gray-300 transition-colors">
@@ -244,7 +244,7 @@ export default function ProductConfiguration({
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-3 ml-0 md:ml-[calc(33.333%-0.5rem)]">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-6 flex-1">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
@@ -256,7 +256,7 @@ export default function ProductConfiguration({
               />
               <span className="text-base text-gray-700">1× CAD-Modellierung (Standard)</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
               <input
                 type="radio"
                 name="cadModeling"

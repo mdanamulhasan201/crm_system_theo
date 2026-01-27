@@ -60,7 +60,7 @@ export default function BusinessAddressModal({
     phone: '',
     email: '',
     address: '',
-    price: 13,
+    price: 0,
   });
   const [locations, setLocations] = useState<LocationItem[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
@@ -79,7 +79,7 @@ export default function BusinessAddressModal({
         phone: savedAddress.phone ?? '',
         email: savedAddress.email ?? '',
         address: savedAddress.address ?? '',
-        price: savedAddress.price ?? 13,
+        price: savedAddress.price ?? 0,
         addressPayload: savedAddress.addressPayload,
       });
     } else if (isOpen) {
@@ -89,7 +89,7 @@ export default function BusinessAddressModal({
         phone: '',
         email: '',
         address: '',
-        price: 13,
+        price: 0,
         addressPayload: undefined,
       });
     }
@@ -115,7 +115,7 @@ export default function BusinessAddressModal({
           phone: item.phone || prev.phone || '',
           email: item.email || prev.email || '',
           address: combined || prev.address || '',
-          price: typeof item.price === 'number' ? item.price : (prev.price || 13),
+          price: typeof item.price === 'number' ? item.price : (prev.price || 0),
           addressPayload: addrObj.address || addrObj.description ? {
             address: addrStr,
             description,
@@ -418,7 +418,7 @@ export default function BusinessAddressModal({
                 type="number"
                 step="0.01"
                 min="0"
-                placeholder="13"
+                placeholder="0"
                 value={Number.isFinite(formData.price) ? String(formData.price) : ''}
                 onChange={(e) => {
                   const next = Number(e.target.value);
@@ -430,7 +430,7 @@ export default function BusinessAddressModal({
                 className="mt-1 h-12"
               />
               <div className="text-xs text-gray-500 mt-1">
-                13,00 €
+                0,00 €
               </div>
             </div>
           </div>

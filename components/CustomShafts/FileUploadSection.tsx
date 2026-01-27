@@ -302,10 +302,9 @@ export default function FileUploadSection({
                       onBusinessAddressSave({
                         companyName: '',
                         address: '',
-                        price: 13,
                         phone: '',
                         email: '',
-                      });
+                      } as any);
                     }
                   } else {
                     // Clear versenden state and show unavailable message popup
@@ -317,10 +316,10 @@ export default function FileUploadSection({
                 {businessAddress && (businessAddress.companyName || businessAddress.address) ? (
                   <>
                     <X className="w-4 h-4 text-gray-700" />
-                    <span className="text-sm">Abholen</span>
+                    {/* <span className="text-sm">Abholen</span> */}
                   </>
                 ) : (
-                  'Abholen lassen'
+                  'Leisten abholen lassen'
                 )}
               </Button>
             </div>
@@ -347,10 +346,9 @@ export default function FileUploadSection({
                     onBusinessAddressSave({
                       companyName: '',
                       address: '',
-                      price: 13,
                       phone: '',
                       email: '',
-                    });
+                    } as any);
                   }
                   setShowShippingAddress(!showShippingAddress);
                 }}
@@ -358,10 +356,10 @@ export default function FileUploadSection({
                 {showShippingAddress ? (
                   <>
                     <X className="w-4 h-4 text-gray-700" />
-                    <span className="text-sm">Versenden</span>
+                    {/* <span className="text-sm">Versenden</span> */}
                   </>
                 ) : (
-                  'Selber versenden'
+                  ' Leisten selber versenden'
                 )}
               </Button>
             </div>

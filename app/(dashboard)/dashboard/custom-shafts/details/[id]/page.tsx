@@ -119,6 +119,7 @@ export default function DetailsPage() {
   }, [shaftId, shaft]);
 
   // Preselect category from API (shaft.catagoary) but allow user to change it
+  // NOTE: Category is set but price is NOT automatically overridden - we use shaft's original price
   useEffect(() => {
     if (!shaft) return;
     if (customCategory) return; // don't override user selection
@@ -126,8 +127,9 @@ export default function DetailsPage() {
     const initialCategory = shaft?.catagoary || '';
     if (initialCategory) {
       setCustomCategory(initialCategory);
-      const mappedPrice = CATEGORY_PRICE_MAP[initialCategory];
-      setCustomCategoryPrice(Number.isFinite(mappedPrice) ? mappedPrice : null);
+      // Price mapping disabled - using original shaft price instead
+      // const mappedPrice = CATEGORY_PRICE_MAP[initialCategory];
+      // setCustomCategoryPrice(Number.isFinite(mappedPrice) ? mappedPrice : null);
     }
   }, [shaft, customCategory]);
 
@@ -180,8 +182,8 @@ export default function DetailsPage() {
   }, [massschuheOrder]);
 
   // Order handling
-  // Use custom category price when selected, otherwise fall back to shaft base price
-  const basePrice = (customCategoryPrice ?? shaft?.price) || 0;
+  // Use shaft base price first (original product price), only fall back to custom category price if shaft price is not available
+  const basePrice = (shaft?.price ?? customCategoryPrice) || 0;
 
 
 
@@ -189,7 +191,7 @@ export default function DetailsPage() {
   const OSEN_EINSETZEN_PRICE = 8.99;
   const ZIPPER_EXTRA_PRICE = 9.99;
   const CAD_MODELING_2X_PRICE = 6.99;
-  const ABHOLUNG_PRICE_DEFAULT = 13.0;
+  const ABHOLUNG_PRICE_DEFAULT = 0;
 
   // Helper to determine if images should be updated
   const shouldUpdateImage = !!(rechterLeistenFile || linkerLeistenFile);

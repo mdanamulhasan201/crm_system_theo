@@ -120,10 +120,10 @@ export default function ProductImageUploadInfo({
       {/* Product info section */}
       <div className="w-full md:w-1/2 flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-2xl font-bold ">
             Custom Made #1000
           </span>
-          <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
+          {/* <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
             Beschreibung:
           </Label>
           <textarea
@@ -132,10 +132,10 @@ export default function ProductImageUploadInfo({
             value={productDescription}
             onChange={(e) => setProductDescription(e.target.value)}
             className="min-h-[100px] p-3 border border-gray-300 rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-          />
+          /> */}
         </div>
 
-        <div className="mt-2">
+        <div className="">
           <span className="text-xs text-gray-500 block mb-1">
             Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
           </span>
