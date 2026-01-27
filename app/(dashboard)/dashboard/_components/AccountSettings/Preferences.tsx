@@ -1,23 +1,42 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Globe, Save } from 'lucide-react'
+import LanguageSwitcher from '@/components/Shared/LanguageSwitcher'
 
 export default function Preferences() {
-  const [language, setLanguage] = useState('Deutsch')
   const [applyToAll, setApplyToAll] = useState(false)
-
-  const languages = [
-    'Deutsch',
-    'English',
-    'Français',
-    'Español',
-    'Italiano'
-  ]
+  const [dropdownKey, setDropdownKey] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const handleSavePreferences = () => {
-    console.log('Saving preferences:', { language, applyToAll })
+    console.log('Saving preferences:', { applyToAll })
     // Add your save logic here
   }
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        // Force re-render to close dropdown
+        setDropdownKey(prev => prev + 1)
+      }
+    }
+    
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  // Close dropdown on Escape key
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setDropdownKey(prev => prev + 1)
+      }
+    }
+    
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
@@ -32,19 +51,11 @@ export default function Preferences() {
       </div>
 
       <div className="space-y-3">
-        <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Software-Sprache
-            </label>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            {languages.map((lang) => (
-              <option key={lang}>{lang}</option>
-            ))}
-          </select>
+        <div ref={containerRef}>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            Software-Sprache
+          </label>
+          <LanguageSwitcher key={dropdownKey} variant="minimal" />
         </div>
 
         <div className="pt-1">
