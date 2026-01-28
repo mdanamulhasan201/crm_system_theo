@@ -1,9 +1,7 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-
-import { ChevronDown, Search, Loader2 } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Loader2 } from 'lucide-react';
 import ImageWithShimmer from '@/components/CustomShafts/ImageWithShimmer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCustomShafts } from '@/hooks/customShafts/useCustomShafts';
@@ -11,21 +9,13 @@ import useDebounce from '@/hooks/useDebounce';
 import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
 import CustomShaftProductCardShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftProductCardShimmer';
 import SchaftErstellungModal from '@/components/CustomShafts/SchaftErstellungModal';
-
-const categories = [
-    { label: 'Alle Kategorien', value: 'alle' },
-    { label: 'Halbschuhe', value: 'Halbschuhe' },
-    { label: 'Stiefel', value: 'Stiefel' },
-    { label: 'Knöchelhoch', value: 'Knöchelhoch' },
-    { label: 'Sandalen', value: 'Sandalen' },
-    { label: 'Bergschuhe', value: 'Bergschuhe' },
-    { label: 'Business-Schuhe', value: 'Business-Schuhe' },
-];
+import BottomFooter from '@/components/CustomShafts/BottomFooter';
+import CustomShaftsHeader from '@/components/CustomShafts/CustomShaftsHeader';
 
 export default function CustomShafts() {
     const [gender, setGender] = useState<'Herren' | 'Damen'>('Herren');
     const [category, setCategory] = useState('alle');
-    const [categoryOpen, setCategoryOpen] = useState(false);
+    const [sortOption, setSortOption] = useState('price_asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [displayedCount, setDisplayedCount] = useState(8);
@@ -49,20 +39,6 @@ export default function CustomShafts() {
     // Fetch data from API
     const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery, gender, apiCategory);
 
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            if (categoryOpen && !target.closest('.category-dropdown')) {
-                setCategoryOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [categoryOpen]);
-
     const prevFilteredLengthRef = React.useRef(0);
 
     useEffect(() => {
@@ -85,10 +61,6 @@ export default function CustomShafts() {
         setIsFetchingNewPage(false);
         prevFilteredLengthRef.current = 0;
     }, [gender, category, debouncedSearchQuery]);
-
-    const availableCategories = useMemo(() => {
-        return categories;
-    }, []);
 
     const filteredData = useMemo(() => {
         if (allFetchedItems.length === 0) return [];
@@ -198,85 +170,19 @@ export default function CustomShafts() {
     }
 
     return (
-        <div className="  py-6">
-            {/* Header & Description */}
-            <div className="mb-6">
-                <h1 className="text-xl md:text-2xl font-bold mb-1"> Individuelle Maßschäfte</h1>
-                <div className="text-xs md:text-sm text-gray-700 leading-snug mb-1">
-                3D-basiert oder physisch umgesetzt. Schnell gefertigt. Klar kalkulierbar.<br />
-                    <span 
-                        className="font-bold cursor-pointer underline hover:text-green-600 transition-colors"
-                        onClick={() => setIsCustomOrderModalOpen(true)}
-                    >
-                        Jetzt neu: Eigenes Modell konfigurieren
-                    </span>
-                </div>
-            </div>
-
-            {/* Filter Bar */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            className={`rounded-none cursor-pointer border border-black px-6 py-1.5 text-base font-normal h-10 ${gender === 'Herren' ? 'bg-black text-white' : 'bg-white text-black'}`}
-                            onClick={() => setGender('Herren')}
-                        >
-                            Herren
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className={`rounded-none cursor-pointer border border-black px-6 py-1.5 text-base font-normal h-10 ${gender === 'Damen' ? 'bg-black text-white' : 'bg-white text-black'}`}
-                            onClick={() => setGender('Damen')}
-                        >
-                            Damen
-                        </Button>
-                    </div>
-                    {/* Category Dropdown as text with chevron */}
-                    <div className="relative mt-1 category-dropdown">
-                        <button
-                            className="flex cursor-pointer items-center text-base md:text-sm font-normal text-black bg-transparent px-0 py-1 focus:outline-none"
-                            onClick={() => setCategoryOpen((v) => !v)}
-                            type="button"
-                        >
-                            {availableCategories.find((c) => c.value === category)?.label || 'Alle Kategorien'}
-                            <ChevronDown className={`ml-1 w-5 h-5 transition-transform ${categoryOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        {categoryOpen && (
-                            <div className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-y-auto">
-                                {availableCategories.map((cat) => (
-                                    <div
-                                        key={cat.value}
-                                        className={`px-4 py-2 cursor-pointer text-sm transition-colors ${category === cat.value
-                                                ? 'bg-black text-white font-semibold hover:bg-gray-800'
-                                                : 'text-black hover:bg-gray-100'
-                                            }`}
-                                        onClick={() => {
-                                            setCategory(cat.value);
-                                            setCategoryOpen(false);
-                                        }}
-                                    >
-                                        {cat.label}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                {/* Search Field */}
-                <div className="flex items-center justify-end w-full md:w-auto">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            type="text"
-                            placeholder="Suchen..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-64 pl-10 pr-4 h-10 rounded-full border border-gray-300 focus:border-black focus:ring-0"
-                        />
-                    </div>
-                </div>
-            </div>
+        <div className="py-6">
+            {/* Header & Filter Section */}
+            <CustomShaftsHeader
+                gender={gender}
+                category={category}
+                searchQuery={searchQuery}
+                sortOption={sortOption}
+                onGenderChange={setGender}
+                onCategoryChange={setCategory}
+                onSearchChange={setSearchQuery}
+                onSortChange={setSortOption}
+                onCustomOrderClick={() => setIsCustomOrderModalOpen(true)}
+            />
 
             {/* Error State */}
             {error && (
@@ -310,8 +216,7 @@ export default function CustomShafts() {
                                         <div className="font-bold text-lg mb-2 text-left">ab {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
                                     </div>
                                     <Button
-                                        variant="outline"
-                                        className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-none border border-black bg-white text-black hover:bg-gray-100 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-full bg-[#61A175] text-white hover:bg-[#61A175]/50 text-sm font-semibold py-6 disabled:opacity-50 disabled:cursor-not-allowed border-0"
                                         onClick={() => handleClick(item.id)}
                                         disabled={loadingButtonId === item.id}
                                     >
@@ -386,39 +291,7 @@ export default function CustomShafts() {
 
             {/* footer  logo*/}
 
-            <div className='flex justify-between items-start gap-8 mt-16 pt-8 border-t border-gray-200'>
-
-                {/* adresse */}
-                <div className='flex-1'>
-                    {/* Logo */}
-                    <div className='mb-4'>
-                        <img 
-                            src="/images/logo.png" 
-                            alt="Logo" 
-                            className='h-12 w-auto object-contain'
-                        />
-                    </div>
-                    
-                    {/* Address */}
-                    <div className='text-sm text-gray-600'>
-                        <p>THEO GmbH, Musterstraße 123, 10115 Berlin, Deutschland | Tel: +49 (0) 30 1234567 | E-Mail: info@theo-custom.de</p>
-                    </div>
-                </div>
-
-                {/* right side */}
-                <div className='flex-1 max-w-2xl'>
-                    <h3 className='text-lg font-bold mb-3'>Bodenkonstruktion & Leistenversand</h3>
-                    <p className='text-sm text-gray-600 mb-4 leading-relaxed'>
-                        Für die Bodenkonstruktion benötigen wir – je nach Auftrag – den passenden Leisten. 
-                        Bitte sende physische Leisten gut verpackt an die angeführte Adresse und lege die Bestellnummer bei.
-                    </p>
-                    <button className='text-sm font-medium text-black hover:text-gray-600 transition-colors flex items-center gap-2 group cursor-pointer'>
-                        Zur Bodenkonstruktion 
-                        <span className='transform transition-transform group-hover:translate-x-1'>→</span>
-                    </button>
-                </div>
-
-            </div>
+            <BottomFooter />
         </div>
     );
 }

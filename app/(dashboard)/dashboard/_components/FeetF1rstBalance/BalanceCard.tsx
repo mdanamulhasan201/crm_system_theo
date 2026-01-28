@@ -21,7 +21,7 @@ interface BalanceCardProps {
 
 const defaultData: BalanceCardData = {
     gesamteinnahmen: null,
-    gesamteinnahmenChange: '10% Mehr als vergangenen Monat',
+    gesamteinnahmenChange: '---',
     naechsteAuszahlung: null,
     naechsteAuszahlungDatum: '01.05.2025',
     kuerzlicheAuszahlungen: [
@@ -29,7 +29,7 @@ const defaultData: BalanceCardData = {
         { amount: null, date: '01.05.2025' },
     ],
     ruecklagebetrag: null,
-    ruecklagebetragDatum: '01.05.2025',
+    ruecklagebetragDatum: '--',
 };
 
 export default function BalanceCard({ data = defaultData }: BalanceCardProps) {
@@ -71,7 +71,7 @@ export default function BalanceCard({ data = defaultData }: BalanceCardProps) {
                 </div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
                     Nächste Auszahlung<br />
-                    <span className="text-gray-500">(Geplant)</span>
+                    <span className="text-gray-500">(Gesamtausgaben Konto)</span>
                 </h3>
                 <div className="flex items-baseline gap-1 mb-2">
                     <span className="text-2xl font-bold text-gray-800">

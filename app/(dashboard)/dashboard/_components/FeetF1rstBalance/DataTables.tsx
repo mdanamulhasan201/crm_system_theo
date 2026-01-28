@@ -7,6 +7,7 @@ export interface TransactionData {
     id: string;
     datum: string;
     transaktionsnummer: string;
+    kundenname: string;
     beschreibung: string | null;
     einnahmesumme: number;
     feetfirstGebuehren: number | null;
@@ -23,6 +24,7 @@ const sampleEinnahmenData: TransactionData[] = [
         id: '1',
         datum: '01.08.2025',
         transaktionsnummer: 'FE200500OP25',
+        kundenname: 'Max Mustermann',
         beschreibung: null,
         einnahmesumme: 150.00,
         feetfirstGebuehren: 10.00,
@@ -34,6 +36,7 @@ const sampleEinnahmenData: TransactionData[] = [
         id: '2',
         datum: '01.08.2025',
         transaktionsnummer: 'FE200500OP25',
+        kundenname: 'Anna Schmidt',
         beschreibung: null,
         einnahmesumme: 150.00,
         feetfirstGebuehren: 10.00,
@@ -45,6 +48,7 @@ const sampleEinnahmenData: TransactionData[] = [
         id: '3',
         datum: '01.08.2025',
         transaktionsnummer: 'FE200500OP25',
+        kundenname: 'Peter Weber',
         beschreibung: null,
         einnahmesumme: 300.00,
         feetfirstGebuehren: 10.00,
@@ -56,6 +60,7 @@ const sampleEinnahmenData: TransactionData[] = [
         id: '4',
         datum: '01.08.2025',
         transaktionsnummer: 'FE200500OP25',
+        kundenname: 'Maria Müller',
         beschreibung: null,
         einnahmesumme: 150.00,
         feetfirstGebuehren: 20.00,
@@ -67,6 +72,7 @@ const sampleEinnahmenData: TransactionData[] = [
         id: '5',
         datum: '10.12.2025',
         transaktionsnummer: 'FE200500OP26',
+        kundenname: 'Thomas Fischer',
         beschreibung: 'Halbprob...',
         einnahmesumme: 295.97,
         feetfirstGebuehren: null,
@@ -78,6 +84,7 @@ const sampleEinnahmenData: TransactionData[] = [
         id: '6',
         datum: '10.12.2025',
         transaktionsnummer: 'FE200500OP27',
+        kundenname: 'Julia Becker',
         beschreibung: 'Bodenko...',
         einnahmesumme: 279.97,
         feetfirstGebuehren: null,
@@ -189,41 +196,23 @@ export default function DataTables({
             className: 'text-blue-600 font-medium',
         },
         {
+            key: 'kundenname',
+            header: 'Kundenname',
+            className: 'text-gray-800 font-medium',
+        },
+        {
             key: 'beschreibung',
             header: 'Beschreib...',
             render: (value) => value || '-',
         },
         {
             key: 'einnahmesumme',
-            header: 'Einnahmesumme',
+            header: 'Summe',
             render: (value) => (
                 <span className="text-emerald-600 font-medium">
                     {formatCurrency(value)}
                 </span>
             ),
-        },
-        {
-            key: 'feetfirstGebuehren',
-            header: 'FeetF1rst-Gebühren',
-            render: (value) => (
-                <span className="text-emerald-600">
-                    {formatCurrency(value)}
-                </span>
-            ),
-        },
-        {
-            key: 'andere',
-            header: 'Andere',
-            render: (value) => (
-                <span className="text-emerald-600">
-                    {formatCurrency(value)}
-                </span>
-            ),
-        },
-        {
-            key: 'entgueltigeEinnahmen',
-            header: 'Entgültige Einnah...',
-            render: (value) => value || '-',
         },
         {
             key: 'status',
