@@ -50,6 +50,12 @@ export default function DetailsPage() {
   const [lederfarbe, setLederfarbe] = useState('');
   const [innenfutter, setInnenfutter] = useState('');
   const [schafthohe, setSchafthohe] = useState('');
+  // Separate shaft heights for left and right
+  const [schafthoheLinks, setSchafthoheLinks] = useState('');
+  const [schafthoheRechts, setSchafthoheRechts] = useState('');
+  // Umfangmaße (circumference) - only required when shaft height > 15cm
+  const [umfangmasseLinks, setUmfangmasseLinks] = useState('');
+  const [umfangmasseRechts, setUmfangmasseRechts] = useState('');
   const [linkerLeistenFileName, setLinkerLeistenFileName] = useState('');
   const [rechterLeistenFileName, setRechterLeistenFileName] = useState('');
   const [linkerLeistenFile, setLinkerLeistenFile] = useState<File | null>(null);
@@ -309,6 +315,16 @@ export default function DetailsPage() {
     // Add other fields
     formData.append('innenfutter', innenfutter);
     formData.append('schafthohe', schafthohe);
+    // Add separate shaft heights for left and right
+    formData.append('schafthohe_links', schafthoheLinks);
+    formData.append('schafthohe_rechts', schafthoheRechts);
+    // Add circumference measurements if shaft height > 15cm
+    if (parseFloat(schafthoheLinks) > 15 && umfangmasseLinks) {
+      formData.append('umfangmasse_links', umfangmasseLinks);
+    }
+    if (parseFloat(schafthoheRechts) > 15 && umfangmasseRechts) {
+      formData.append('umfangmasse_rechts', umfangmasseRechts);
+    }
     formData.append('polsterung', polsterung.join(','));
     formData.append('vestarkungen', verstarkungen.join(','));
     formData.append('polsterung_text', polsterungText);
@@ -400,6 +416,10 @@ export default function DetailsPage() {
       leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
       innenfutter,
       schafthohe,
+      schafthohe_links: schafthoheLinks,
+      schafthohe_rechts: schafthoheRechts,
+      umfangmasse_links: parseFloat(schafthoheLinks) > 15 ? umfangmasseLinks : null,
+      umfangmasse_rechts: parseFloat(schafthoheRechts) > 15 ? umfangmasseRechts : null,
       polsterung,
       verstarkungen,
       polsterung_text: polsterungText,
@@ -453,6 +473,10 @@ export default function DetailsPage() {
     setLederfarbe('');
     setInnenfutter('');
     setSchafthohe('');
+    setSchafthoheLinks('');
+    setSchafthoheRechts('');
+    setUmfangmasseLinks('');
+    setUmfangmasseRechts('');
     setLinkerLeistenFileName('');
     setRechterLeistenFileName('');
     setLinkerLeistenFile(null);
@@ -539,6 +563,16 @@ export default function DetailsPage() {
       formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
       formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
       formData.append('schafthohe', schafthohe);
+      // Add separate shaft heights for left and right
+      formData.append('schafthohe_links', schafthoheLinks);
+      formData.append('schafthohe_rechts', schafthoheRechts);
+      // Add circumference measurements if shaft height > 15cm
+      if (parseFloat(schafthoheLinks) > 15 && umfangmasseLinks) {
+        formData.append('umfangmasse_links', umfangmasseLinks);
+      }
+      if (parseFloat(schafthoheRechts) > 15 && umfangmasseRechts) {
+        formData.append('umfangmasse_rechts', umfangmasseRechts);
+      }
       formData.append('polsterung', polsterung.join(','));
       formData.append('vestarkungen', verstarkungen.join(','));
 
@@ -590,14 +624,34 @@ export default function DetailsPage() {
       }
       formData.append('totalPrice', orderPrice.toString());
 
-      // Use orderId if present, otherwise show error (orderId is required for this flow)
-      if (!orderId) {
-        toast.error("Order ID is required");
-        setIsCreatingOrder(false);
-        return;
+      // Add business address if abholung is selected
+      if (isAbholung && businessAddress) {
+        formData.append('abholung', 'true');
+        formData.append(
+          'abholung_price',
+          String(
+            Number.isFinite(businessAddress.price)
+              ? businessAddress.price
+              : ABHOLUNG_PRICE_DEFAULT
+          )
+        );
+        formData.append('business_companyName', businessAddress.companyName);
+        formData.append('business_address', businessAddress.address);
+        if (businessAddress.phone) {
+          formData.append('business_phone', businessAddress.phone);
+        }
+        if (businessAddress.email) {
+          formData.append('business_email', businessAddress.email);
+        }
       }
 
-      const response = await createCustomShaft(orderId, formData);
+      // Use orderId if present, otherwise create without orderId
+      let response;
+      if (orderId) {
+        response = await createCustomShaft(orderId, formData);
+      } else {
+        response = await createMassschuheWithoutOrderId(formData);
+      }
       clearFormData();
       setShowSuccessMessage(true);
       setShowConfirmationModal(false);
@@ -721,6 +775,14 @@ export default function DetailsPage() {
             setInnenfutter={setInnenfutter}
             schafthohe={schafthohe}
             setSchafthohe={setSchafthohe}
+            schafthoheLinks={schafthoheLinks}
+            setSchafthoheLinks={setSchafthoheLinks}
+            schafthoheRechts={schafthoheRechts}
+            setSchafthoheRechts={setSchafthoheRechts}
+            umfangmasseLinks={umfangmasseLinks}
+            setUmfangmasseLinks={setUmfangmasseLinks}
+            umfangmasseRechts={umfangmasseRechts}
+            setUmfangmasseRechts={setUmfangmasseRechts}
             polsterung={polsterung}
             setPolsterung={setPolsterung}
             verstarkungen={verstarkungen}
@@ -755,23 +817,51 @@ export default function DetailsPage() {
           onClose={() => setShowConfirmationModal(false)}
           onConfirm={handleOrderConfirmation}
           onSendToAdmin2={async () => {
+            // Validate customer selection if no orderId
             if (!orderId) {
-              toast.error("Order ID is required");
+              if (!selectedCustomer && !otherCustomerNumber.trim()) {
+                toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
+                return;
+              }
+            }
+
+            // For abholung, validate business address is provided
+            if (isAbholung && !businessAddress) {
+              toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
               return;
             }
+
             setIsCreatingOrder(true);
             try {
               const formData = prepareFormDataForAdmin2();
-              const response = await sendMassschuheOrderToAdmin2(orderId, formData);
+              
+              // Add customer info if no orderId
+              if (!orderId) {
+                if (selectedCustomer) {
+                  formData.append('customerId', selectedCustomer.id);
+                } else if (otherCustomerNumber.trim()) {
+                  formData.append('other_customer_number', otherCustomerNumber.trim());
+                }
+              }
+
+              let response;
+              if (orderId) {
+                // If orderId exists, use sendMassschuheOrderToAdmin2
+                response = await sendMassschuheOrderToAdmin2(orderId, formData);
+              } else {
+                // If no orderId, use createMassschuheWithoutOrderId
+                response = await createMassschuheWithoutOrderId(formData);
+              }
+
               clearFormData();
               setShowSuccessMessage(true);
               setShowConfirmationModal(false);
-              toast.success(response.message || "Bestellung erfolgreich gesendet!", { id: "sending-order" });
+              toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "sending-order" });
               setTimeout(() => {
                 router.push('/dashboard/custom-shafts');
               }, 200);
             } catch (error) {
-              toast.error("Fehler beim Senden der Bestellung.", { id: "sending-order" });
+              toast.error("Fehler beim Erstellen der Bestellung.", { id: "sending-order" });
             } finally {
               setIsCreatingOrder(false);
             }

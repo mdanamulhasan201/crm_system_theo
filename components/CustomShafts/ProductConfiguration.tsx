@@ -41,6 +41,16 @@ interface ProductConfigurationProps {
   setInnenfutter: (futter: string) => void;
   schafthohe: string;
   setSchafthohe: (hohe: string) => void;
+  // Separate shaft heights for left and right
+  schafthoheLinks: string;
+  setSchafthoheLinks: (hohe: string) => void;
+  schafthoheRechts: string;
+  setSchafthoheRechts: (hohe: string) => void;
+  // Umfangmaße (circumference) - only required when shaft height > 15cm
+  umfangmasseLinks: string;
+  setUmfangmasseLinks: (masse: string) => void;
+  umfangmasseRechts: string;
+  setUmfangmasseRechts: (masse: string) => void;
   polsterung: string[];
   setPolsterung: (items: string[]) => void;
   verstarkungen: string[];
@@ -92,6 +102,14 @@ export default function ProductConfiguration({
   setInnenfutter,
   schafthohe,
   setSchafthohe,
+  schafthoheLinks,
+  setSchafthoheLinks,
+  schafthoheRechts,
+  setSchafthoheRechts,
+  umfangmasseLinks,
+  setUmfangmasseLinks,
+  umfangmasseRechts,
+  setUmfangmasseRechts,
   polsterung,
   setPolsterung,
   verstarkungen,
@@ -420,18 +438,69 @@ export default function ProductConfiguration({
           </div>
         </div>
 
-        {/* Schafthöhe */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Schafthöhe:</Label>
-          <div className="flex items-center gap-2 w-full md:w-1/2">
-            <Input
-              type="number"
-              placeholder="z.B. 5"
-              className="flex-1 border-gray-300"
-              value={schafthohe}
-              onChange={e => setSchafthohe(e.target.value)}
-            />
-            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
+        {/* Schafthöhe Links (Left) */}
+        <div className="flex flex-col md:flex-row md:items-start gap-4">
+          <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Links:</Label>
+          <div className="flex flex-col gap-3 w-full md:w-2/3">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="z.B. 15"
+                className="flex-1 border-gray-300"
+                value={schafthoheLinks}
+                onChange={e => setSchafthoheLinks(e.target.value)}
+              />
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
+            </div>
+            
+            {/* Show Umfangmaße field only if shaft height > 15cm */}
+            {parseFloat(schafthoheLinks) > 15 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <Label className="text-sm font-medium text-yellow-900 mb-2 block">
+                  Umfangmaße Links (erforderlich bei Schafthöhe {'>'} 15cm):
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="z.B. 35cm"
+                  className="w-full border-yellow-300 bg-white"
+                  value={umfangmasseLinks}
+                  onChange={e => setUmfangmasseLinks(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Schafthöhe Rechts (Right) */}
+        <div className="flex flex-col md:flex-row md:items-start gap-4">
+          <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Rechts:</Label>
+          <div className="flex flex-col gap-3 w-full md:w-2/3">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="z.B. 15"
+                className="flex-1 border-gray-300"
+                value={schafthoheRechts}
+                onChange={e => setSchafthoheRechts(e.target.value)}
+              />
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
+            </div>
+            
+            {/* Show Umfangmaße field only if shaft height > 15cm */}
+            {parseFloat(schafthoheRechts) > 15 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <Label className="text-sm font-medium text-yellow-900 mb-2 block">
+                  Umfangmaße Rechts (erforderlich bei Schafthöhe {'>'} 15cm):
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="z.B. 35cm"
+                  className="w-full border-yellow-300 bg-white"
+                  value={umfangmasseRechts}
+                  onChange={e => setUmfangmasseRechts(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -626,7 +695,29 @@ export default function ProductConfiguration({
         {/* Submit Button */}
         <div className="flex justify-center mt-4">
           <Button
-            onClick={onOrderComplete}
+            onClick={() => {
+              // Validate shaft height fields
+              if (!schafthoheLinks || !schafthoheRechts) {
+                toast.error('Bitte geben Sie die Schafthöhe für beide Füße ein.');
+                return;
+              }
+
+              // Validate Umfangmaße if shaft height > 15cm
+              const leftHeight = parseFloat(schafthoheLinks);
+              const rightHeight = parseFloat(schafthoheRechts);
+
+              if (leftHeight > 15 && !umfangmasseLinks) {
+                toast.error('Bitte geben Sie die Umfangmaße Links ein (erforderlich bei Schafthöhe > 15cm).');
+                return;
+              }
+
+              if (rightHeight > 15 && !umfangmasseRechts) {
+                toast.error('Bitte geben Sie die Umfangmaße Rechts ein (erforderlich bei Schafthöhe > 15cm).');
+                return;
+              }
+
+              onOrderComplete();
+            }}
             className="w-full cursor-pointer md:w-1/3 px-8 py-5 rounded-full bg-black text-white hover:bg-gray-800 text-base font-semibold"
           >
             Abschließen
