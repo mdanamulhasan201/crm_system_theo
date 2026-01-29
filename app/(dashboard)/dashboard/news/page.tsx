@@ -34,8 +34,8 @@ export default function NewsPage() {
     currentPage: Number(searchParams.get("page")) || 1,
     totalPages: 0,
     total: 0,
-    hasNextPage: false,
-    hasPreviousPage: false,
+    hasMore: false,
+    nextCursor: null as string | null,
   });
   const itemsPerPage = 9;
 
@@ -54,147 +54,27 @@ export default function NewsPage() {
     }, 500);
   }, []);
 
-  // Dummy data for demo
-  const dummyBlogs: Blog[] = [
-    {
-      id: 1,
-      title: "Die Zukunft der Orthopädieschuhtechnik",
-      subtitle: "Innovative Technologien revolutionieren die Branche",
-      image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
-      shortDescription:
-        "Erfahren Sie, wie moderne 3D-Scantechnologie und digitale Fertigung die Herstellung von Maßschuhen und Einlagen grundlegend verändern.",
-      createdAt: "2024-01-20T10:30:00Z",
-    },
-    {
-      id: 2,
-      title: "Fußgesundheit im Winter",
-      subtitle: "Tipps für die kalte Jahreszeit",
-      image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800",
-      shortDescription:
-        "Der Winter stellt besondere Anforderungen an unsere Füße. Wir zeigen Ihnen, wie Sie Ihre Füße optimal schützen und pflegen können.",
-      createdAt: "2024-01-18T14:20:00Z",
-    },
-    {
-      id: 3,
-      title: "Einlagen richtig pflegen",
-      subtitle: "So halten Ihre Einlagen länger",
-      image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?w=800",
-      shortDescription:
-        "Die richtige Pflege Ihrer orthopädischen Einlagen verlängert deren Lebensdauer erheblich. Hier sind unsere Expertentipps.",
-      createdAt: "2024-01-15T09:15:00Z",
-    },
-    {
-      id: 4,
-      title: "Diabetes und Fußgesundheit",
-      subtitle: "Wichtige Informationen für Diabetiker",
-      image:
-        "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=800",
-      shortDescription:
-        "Menschen mit Diabetes müssen besonders auf ihre Füße achten. Wir erklären, worauf es ankommt und wie wir Sie unterstützen können.",
-      createdAt: "2024-01-12T16:45:00Z",
-    },
-    {
-      id: 5,
-      title: "Kinderfüße richtig versorgen",
-      subtitle: "Von Anfang an gesunde Füße",
-      image:
-        "https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=800",
-      shortDescription:
-        "Die Entwicklung von Kinderfüßen verläuft in verschiedenen Phasen. Erfahren Sie, wie Sie Ihr Kind optimal unterstützen können.",
-      createdAt: "2024-01-10T11:00:00Z",
-    },
-    {
-      id: 6,
-      title: "Sportschuhe individuell anpassen",
-      subtitle: "Maximale Leistung durch perfekte Passform",
-      image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
-      shortDescription:
-        "Sportler profitieren besonders von individuell angepassten Schuhen. Wir zeigen die Möglichkeiten moderner Anpassungstechniken.",
-      createdAt: "2024-01-08T13:30:00Z",
-    },
-    {
-      id: 7,
-      title: "Arbeitsschuhe mit Komfort",
-      subtitle: "Den ganzen Tag bequem auf den Beinen",
-      image:
-        "https://images.unsplash.com/photo-1533867617858-e7b97e060509?w=800",
-      shortDescription:
-        "Wer den ganzen Tag steht oder geht, braucht besondere Schuhe. Unsere Arbeitsschuhe vereinen Sicherheit, Komfort und Stil.",
-      createdAt: "2024-01-05T10:15:00Z",
-    },
-    {
-      id: 8,
-      title: "Neue Materialien in der Schuhfertigung",
-      subtitle: "Nachhaltigkeit trifft Innovation",
-      image: "https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=800",
-      shortDescription:
-        "Moderne Materialien ermöglichen leichtere, atmungsaktivere und nachhaltigere Schuhe. Ein Blick auf die neuesten Entwicklungen.",
-      createdAt: "2024-01-02T15:20:00Z",
-    },
-    {
-      id: 9,
-      title: "Häufige Fußprobleme und Lösungen",
-      subtitle: "Wenn der Schuh drückt",
-      image: "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=800",
-      shortDescription:
-        "Fersensporn, Hallux Valgus, Plattfuß - wir erklären die häufigsten Fußprobleme und zeigen wirksame Behandlungsmöglichkeiten.",
-      createdAt: "2023-12-28T09:45:00Z",
-    },
-  ];
 
   // Fetch blogs
-  const fetchBlogs = async () => {
+  const fetchBlogs = async (cursor: string | null = null) => {
     try {
       setLoading(true);
       setError(null);
 
-      // Try to fetch from API
-      try {
-        const result = await getAllBlogs({
-          search: debouncedSearchTerm,
-          page: pagination.currentPage,
-          limit: itemsPerPage,
-        });
+      const result = await getAllBlogs({
+        search: debouncedSearchTerm,
+        cursor: cursor,
+        limit: itemsPerPage,
+      });
 
-        setBlogs(result.blogs);
-        setPagination({
-          currentPage: result.currentPage,
-          totalPages: result.totalPages,
-          total: result.total,
-          hasNextPage: result.hasNextPage,
-          hasPreviousPage: result.hasPreviousPage,
-        });
-      } catch (apiError) {
-        // Use dummy data for demo
-        console.log("Using dummy data for demo");
-
-        // Filter dummy data based on search
-        const filtered = debouncedSearchTerm
-          ? dummyBlogs.filter(
-              (blog) =>
-                blog.title
-                  .toLowerCase()
-                  .includes(debouncedSearchTerm.toLowerCase()) ||
-                blog.subtitle
-                  ?.toLowerCase()
-                  .includes(debouncedSearchTerm.toLowerCase()),
-            )
-          : dummyBlogs;
-
-        // Paginate dummy data
-        const startIndex = (pagination.currentPage - 1) * itemsPerPage;
-        const endIndex = startIndex + itemsPerPage;
-        const paginatedBlogs = filtered.slice(startIndex, endIndex);
-
-        setBlogs(paginatedBlogs);
-        setPagination({
-          currentPage: pagination.currentPage,
-          totalPages: Math.ceil(filtered.length / itemsPerPage),
-          total: filtered.length,
-          hasNextPage: endIndex < filtered.length,
-          hasPreviousPage: pagination.currentPage > 1,
-        });
-      }
+      setBlogs(result.blogs);
+      setPagination((prev) => ({
+        ...prev,
+        total: result.total,
+        hasMore: result.hasMore,
+        nextCursor: result.nextCursor,
+        totalPages: Math.ceil(result.total / itemsPerPage),
+      }));
     } catch (error: any) {
       console.error("Failed to fetch blogs:", error);
       setError(error.message);
@@ -308,13 +188,19 @@ export default function NewsPage() {
                   onClick={() => handleBlogClick(blog.id)}
                 >
                   {/* Blog Image */}
-                  <div className="relative h-48 bg-gray-200">
+                  <div className="relative h-48 bg-gray-200 overflow-hidden">
                     {blog.image ? (
                       <Image
-                        src={blog.image}
+                        key={`blog-card-${blog.id}-${Date.now()}`}
+                        src={`${blog.image}${blog.image.includes('?') ? '&' : '?'}t=${Date.now()}`}
                         alt={blog.title}
-                        fill
-                        className="object-cover"
+                        width={600}
+                        height={400}
+                        className="w-full h-full object-cover"
+                        unoptimized
+                        onError={(e) => {
+                          console.error(`Image failed to load for blog ${blog.id}:`, blog.image);
+                        }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-100">
@@ -361,7 +247,7 @@ export default function NewsPage() {
                 <Button
                   variant="outline"
                   onClick={() => changePage(pagination.currentPage - 1)}
-                  disabled={!pagination.hasPreviousPage}
+                  disabled={pagination.currentPage === 1}
                   size="sm"
                 >
                   Zurück
@@ -404,7 +290,7 @@ export default function NewsPage() {
                 <Button
                   variant="outline"
                   onClick={() => changePage(pagination.currentPage + 1)}
-                  disabled={!pagination.hasNextPage}
+                  disabled={!pagination.hasMore}
                   size="sm"
                 >
                   Weiter

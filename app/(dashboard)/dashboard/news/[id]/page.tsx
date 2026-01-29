@@ -27,154 +27,14 @@ export default function BlogDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Dummy blog data for demo
-  const dummyBlogData: Record<string, Blog> = {
-    "1": {
-      id: 1,
-      title: "Die Zukunft der Orthopädieschuhtechnik",
-      subtitle: "Innovative Technologien revolutionieren die Branche",
-      image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800",
-      shortDescription: "Erfahren Sie, wie moderne 3D-Scantechnologie und digitale Fertigung die Herstellung von Maßschuhen und Einlagen grundlegend verändern.",
-      completeDescription: `
-        <h2>Die Revolution hat begonnen</h2>
-        <p>Die Orthopädieschuhtechnik durchläuft derzeit eine der spannendsten Phasen ihrer Geschichte. Moderne 3D-Scantechnologie, digitale Fertigung und innovative Materialien verändern die Art und Weise, wie Maßschuhe und orthopädische Einlagen hergestellt werden, grundlegend.</p>
-
-        <h3>3D-Scanning: Präzision auf höchstem Niveau</h3>
-        <p>Mit hochauflösenden 3D-Scannern können wir heute die Form und Struktur des Fußes mit einer Genauigkeit erfassen, die vor wenigen Jahren noch undenkbar war. Jede Erhebung, jede Vertiefung wird millimetergenau dokumentiert. Dies ermöglicht eine Passform, die perfekt auf die individuellen Bedürfnisse zugeschnitten ist.</p>
-
-        <h3>Digitale Fertigung: Von der Messung zum fertigen Produkt</h3>
-        <p>Die erfassten Daten werden direkt in den Fertigungsprozess eingespeist. CNC-Fräsen und 3D-Drucker erstellen Leisten und Einlagen mit einer Präzision, die händisch nicht erreichbar wäre. Der gesamte Prozess ist dokumentiert und reproduzierbar.</p>
-
-        <h3>Innovative Materialien</h3>
-        <p>Neue Materialien bieten verbesserte Eigenschaften:</p>
-        <ul>
-          <li>Leichtere und gleichzeitig stabilere Konstruktionen</li>
-          <li>Atmungsaktive Membranen für besseres Fußklima</li>
-          <li>Nachhaltige und recycelbare Komponenten</li>
-          <li>Antibakterielle Oberflächen für mehr Hygiene</li>
-        </ul>
-
-        <h3>Ausblick</h3>
-        <p>Die Entwicklung geht weiter. Künstliche Intelligenz hilft bereits heute bei der Analyse von Gangbildern und der Optimierung von Schuhkonstruktionen. Sensoren in Schuhen können Belastungsmuster erfassen und Anpassungen vorschlagen. Die Zukunft der Orthopädieschuhtechnik ist digital, präzise und individueller denn je.</p>
-      `,
-      author: "Dr. Schmidt",
-      tags: ["Technologie", "Innovation", "3D-Scan"],
-      createdAt: "2024-01-20T10:30:00Z"
-    },
-    "2": {
-      id: 2,
-      title: "Fußgesundheit im Winter",
-      subtitle: "Tipps für die kalte Jahreszeit",
-      image: "https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800",
-      shortDescription: "Der Winter stellt besondere Anforderungen an unsere Füße. Wir zeigen Ihnen, wie Sie Ihre Füße optimal schützen und pflegen können.",
-      completeDescription: `
-        <h2>Gesunde Füße auch bei Kälte</h2>
-        <p>Die kalte Jahreszeit stellt unsere Füße vor besondere Herausforderungen. Kälte, Nässe und das Tragen von schwerem Schuhwerk können zu verschiedenen Problemen führen. Mit den richtigen Maßnahmen bleiben Ihre Füße aber auch im Winter gesund und warm.</p>
-
-        <h3>Die richtige Schuhwahl</h3>
-        <p>Winterschuhe sollten wasserdicht, atmungsaktiv und gut isoliert sein. Achten Sie auf:</p>
-        <ul>
-          <li>Ausreichend Platz für warme Socken</li>
-          <li>Rutschfeste Sohlen mit gutem Profil</li>
-          <li>Wasserdichte Materialien oder Imprägnierung</li>
-          <li>Gute Isolierung ohne Hitzestau</li>
-        </ul>
-
-        <h3>Pflege im Winter</h3>
-        <p>Ihre Füße brauchen im Winter besondere Aufmerksamkeit:</p>
-        <ul>
-          <li>Regelmäßiges Eincremen verhindert trockene, rissige Haut</li>
-          <li>Fußbäder fördern die Durchblutung</li>
-          <li>Wechseln Sie nasse Schuhe und Socken sofort</li>
-          <li>Lüften Sie Ihre Schuhe täglich</li>
-        </ul>
-
-        <h3>Durchblutung fördern</h3>
-        <p>Kalte Füße sind oft ein Zeichen schlechter Durchblutung. Helfen Sie nach:</p>
-        <ul>
-          <li>Fußgymnastik mehrmals täglich</li>
-          <li>Wechselduschen regen die Durchblutung an</li>
-          <li>Bewegung ist die beste Medizin</li>
-          <li>Warme Fußbäder mit ätherischen Ölen</li>
-        </ul>
-
-        <p>Mit diesen Tipps kommen Sie und Ihre Füße gut durch den Winter!</p>
-      `,
-      author: "Anna Müller",
-      tags: ["Pflege", "Winter", "Gesundheit"],
-      createdAt: "2024-01-18T14:20:00Z"
-    },
-    "3": {
-      id: 3,
-      title: "Einlagen richtig pflegen",
-      subtitle: "So halten Ihre Einlagen länger",
-      image: "https://images.unsplash.com/photo-1556906781-9a412961c28c?w=800",
-      shortDescription: "Die richtige Pflege Ihrer orthopädischen Einlagen verlängert deren Lebensdauer erheblich. Hier sind unsere Expertentipps.",
-      completeDescription: `
-        <h2>Langlebigkeit durch richtige Pflege</h2>
-        <p>Orthopädische Einlagen sind präzise gefertigte Hilfsmittel, die täglich hohen Belastungen ausgesetzt sind. Mit der richtigen Pflege können Sie ihre Lebensdauer deutlich verlängern und ihre Wirksamkeit erhalten.</p>
-
-        <h3>Tägliche Pflege</h3>
-        <p>Nach jedem Tragen sollten Sie:</p>
-        <ul>
-          <li>Einlagen aus den Schuhen nehmen und auslüften lassen</li>
-          <li>Mit einem trockenen Tuch abwischen</li>
-          <li>Auf starke Geruchsbildung achten</li>
-        </ul>
-
-        <h3>Reinigung</h3>
-        <p>Je nach Material unterscheidet sich die Reinigung:</p>
-        <ul>
-          <li><strong>Kunststoff-Einlagen:</strong> Mit lauwarmem Wasser und milder Seife reinigen</li>
-          <li><strong>Leder-Einlagen:</strong> Nur feucht abwischen, spezielle Lederpflege verwenden</li>
-          <li><strong>Textil-Bezüge:</strong> Meist waschbar, Herstellerangaben beachten</li>
-        </ul>
-
-        <h3>Wichtige Hinweise</h3>
-        <ul>
-          <li>Niemals in die Waschmaschine geben</li>
-          <li>Nicht auf der Heizung oder in der Sonne trocknen</li>
-          <li>Keine aggressiven Reinigungsmittel verwenden</li>
-          <li>Bei Beschädigungen sofort zum Fachmann</li>
-        </ul>
-
-        <h3>Wann müssen Einlagen erneuert werden?</h3>
-        <p>Auch bei guter Pflege haben Einlagen eine begrenzte Lebensdauer. Anzeichen für einen Wechsel:</p>
-        <ul>
-          <li>Sichtbare Abnutzung oder Verformung</li>
-          <li>Nachlassende Stützwirkung</li>
-          <li>Materialermüdung (Risse, Brüche)</li>
-          <li>Veränderung der Fußform oder Beschwerden</li>
-        </ul>
-
-        <p>In der Regel sollten Einlagen alle 12-18 Monate erneuert werden.</p>
-      `,
-      author: "Thomas Weber",
-      tags: ["Einlagen", "Pflege", "Ratgeber"],
-      createdAt: "2024-01-15T09:15:00Z"
-    }
-  }
-
   useEffect(() => {
     const fetchBlog = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        // Try to fetch from API
-        try {
-          const blogData = await getBlogById(params.id as string)
-          setBlog(blogData)
-        } catch (apiError) {
-          // Use dummy data for demo
-          console.log('Using dummy blog data for demo')
-          const dummyBlog = dummyBlogData[params.id as string]
-          if (dummyBlog) {
-            setBlog(dummyBlog)
-          } else {
-            throw new Error('Blog nicht gefunden')
-          }
-        }
+        const blogData = await getBlogById(params.id as string)
+        setBlog(blogData)
       } catch (error: any) {
         console.error('Failed to fetch blog:', error)
         setError(error.message)
@@ -251,13 +111,19 @@ export default function BlogDetailPage() {
         <Card className="overflow-hidden bg-white">
           {/* Featured Image */}
           {blog.image && (
-            <div className="relative w-full h-96">
+            <div className="relative w-full h-96 overflow-hidden">
               <Image
-                src={blog.image}
+                key={`blog-detail-${blog.id}-${Date.now()}`}
+                src={`${blog.image}${blog.image.includes('?') ? '&' : '?'}t=${Date.now()}`}
                 alt={blog.title}
-                fill
-                className="object-cover"
+                width={1200}
+                height={600}
+                className="w-full h-full object-cover"
                 priority
+                unoptimized
+                onError={(e) => {
+                  console.error(`Image failed to load for blog ${blog.id}:`, blog.image);
+                }}
               />
             </div>
           )}
