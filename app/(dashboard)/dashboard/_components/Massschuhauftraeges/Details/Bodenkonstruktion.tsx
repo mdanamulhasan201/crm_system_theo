@@ -97,8 +97,18 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return prepareOrderDataForPDF(order)
     }, [order])
 
-    // Calculations
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, orderDataForPDF.totalPrice)
+    // Determine base price: use custom shaft price if available, otherwise use order price
+    const basePrice = useMemo(() => {
+        // If custom shaft data exists and has totalPrice, use it
+        if (contextData && contextData.totalPrice) {
+            return contextData.totalPrice
+        }
+        // Otherwise use order total price
+        return orderDataForPDF.totalPrice || 0
+    }, [contextData, orderDataForPDF.totalPrice])
+
+    // Calculations - use basePrice which includes shaft price
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice)
 
     // Reset sole id "4", "5", and "6" options when sole changes
     React.useEffect(() => {
@@ -287,8 +297,16 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             Innenfutter: customShaftData.innenfutter || null,
             lederfarbe: customShaftData.numberOfLeatherColors === '1' ? customShaftData.lederfarbe : null,
             schafthöhe: customShaftData.schafthohe || null,
+            schafthoheLinks: customShaftData.schafthoheLinks || customShaftData.schafthohe_links || null,
+            schafthoheRechts: customShaftData.schafthoheRechts || customShaftData.schafthohe_rechts || null,
+            umfangmasseLinks: customShaftData.umfangmasseLinks || customShaftData.umfangmasse_links || null,
+            umfangmasseRechts: customShaftData.umfangmasseRechts || customShaftData.umfangmasse_rechts || null,
             polsterung: customShaftData.polsterung?.join(',') || null,
+            polsterung_text: customShaftData.polsterung_text || null,
             verstärkungen: customShaftData.verstarkungen?.join(',') || null,
+            verstarkungen_text: customShaftData.verstarkungen_text || customShaftData.verstarkungen_text || null,
+            nahtfarbe: customShaftData.nahtfarbe || null,
+            nahtfarbe_text: customShaftData.nahtfarbe_text || null,
             verschlussart: customShaftData.closureType || null,
             moechten_sie_passende_schnuersenkel_zum_schuh: customShaftData.passenden_schnursenkel || null,
             moechten_sie_passende_schnuersenkel_zum_schuh_price: customShaftData.moechten_sie_passende_schnuersenkel_zum_schuh_price || null,
@@ -296,6 +314,18 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: customShaftData.moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price || null,
             moechten_sie_einen_zusaetzlichen_reissverschluss: customShaftData.zipper_extra || null,
             moechten_sie_einen_zusaetzlichen_reissverschluss_price: customShaftData.moechten_sie_einen_zusaetzlichen_reissverschluss_price || null,
+            cadModeling: customShaftData.cadModeling || null,
+            cadModeling_2x_price: customShaftData.cadModeling_2x_price || null,
+        }
+
+        // Add business address (Leisten abholen) if present
+        if (customShaftData.isAbholung && customShaftData.businessAddress) {
+            json.abholung = true
+            json.abholung_price = customShaftData.businessAddress.price || 13
+            json.business_companyName = customShaftData.businessAddress.companyName || null
+            json.business_address = customShaftData.businessAddress.address || null
+            json.business_phone = customShaftData.businessAddress.phone || null
+            json.business_email = customShaftData.businessAddress.email || null
         }
 
         // Add leather types definition if multiple colors
@@ -966,9 +996,10 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                     // Clear context after successful API call
                                     clearCustomShaftData()
                                     
-                                    // Close modal and navigate
+                                    // Close modal and navigate to balance dashboard
                                     setShowModal2(false)
-                                    router.push("/dashboard/custom-shafts")
+                                    router.push("/dashboard/balance-dashboard")
+                                    setShowModal2(false)
                                 } catch (error) {
                                     console.error('Failed to create order:', error)
                                     toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" })

@@ -410,6 +410,8 @@ export default function DetailsPage() {
     const customShaftData = {
       orderId,
       mabschaftKollektionId: shaftId,
+      zipperImage,
+      paintImage,
       cadModeling,
       cadModeling_2x_price: cadModeling === '2x' ? CAD_MODELING_2X_PRICE : null,
       customCategory,
@@ -455,8 +457,8 @@ export default function DetailsPage() {
       hasImage3d_1: !!rechterLeistenFile,
       hasImage3d_2: !!linkerLeistenFile,
       hasUploadedImage: false, // Collection-based, not custom upload
-      hasZipperImage: false,
-      hasPaintImage: false,
+      hasZipperImage: !!zipperImage,
+      hasPaintImage: !!paintImage,
     });
 
     setShowConfirmationModal(false);

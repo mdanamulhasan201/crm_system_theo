@@ -60,7 +60,7 @@ export default function BusinessAddressModal({
     phone: '',
     email: '',
     address: '',
-    price: 0,
+    price: 13,
   });
   const [locations, setLocations] = useState<LocationItem[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(false);
@@ -79,7 +79,7 @@ export default function BusinessAddressModal({
         phone: savedAddress.phone ?? '',
         email: savedAddress.email ?? '',
         address: savedAddress.address ?? '',
-        price: savedAddress.price ?? 0,
+        price: 13, // Always use 13 as fixed price
         addressPayload: savedAddress.addressPayload,
       });
     } else if (isOpen) {
@@ -89,7 +89,7 @@ export default function BusinessAddressModal({
         phone: '',
         email: '',
         address: '',
-        price: 0,
+        price: 13, // Fixed price always 13
         addressPayload: undefined,
       });
     }
@@ -115,7 +115,7 @@ export default function BusinessAddressModal({
           phone: item.phone || prev.phone || '',
           email: item.email || prev.email || '',
           address: combined || prev.address || '',
-          price: typeof item.price === 'number' ? item.price : (prev.price || 0),
+          price: 13, // Always use fixed price 13
           addressPayload: addrObj.address || addrObj.description ? {
             address: addrStr,
             description,
@@ -410,29 +410,8 @@ export default function BusinessAddressModal({
               </Popover>
             </div>
 
-            {/* Price */}
-            <div>
-              <Label htmlFor="abholungPrice">Preis (Abholung) *</Label>
-              <Input
-                id="abholungPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="0"
-                value={Number.isFinite(formData.price) ? String(formData.price) : ''}
-                onChange={(e) => {
-                  const next = Number(e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    price: Number.isFinite(next) ? next : prev.price,
-                  }));
-                }}
-                className="mt-1 h-12"
-              />
-              <div className="text-xs text-gray-500 mt-1">
-                0,00 €
-              </div>
-            </div>
+            {/* Price - Hidden field, fixed value 13 will be sent to backend */}
+            {/* Price field is hidden but price: 13 is maintained in state for backend submission */}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">
