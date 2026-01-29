@@ -16,25 +16,22 @@ export default function BottomFooter() {
         <div className='flex justify-between items-start gap-8 mt-16 pt-8 border-t border-gray-200'>
 
             {/* adresse */}
-            <div className='flex-1'>
+            <div className='flex-1 flex items-start gap-6'>
                 {/* Logo */}
-                <div className='mb-4'>
+                <div className='flex-shrink-0'>
                     <img
                         src="/images/logo.png"
-                        alt="Logo"
-                        className='h-12 w-auto object-contain'
+                        alt="FeetF1rst Logo"
+                        className='h-24 w-auto object-contain'
                     />
                 </div>
 
                 {/* Address */}
-                <div className='text-sm text-gray-600'>
-
-                    <p className='text-sm text-gray-400'>
-                        Adresse Fehlt -
-                        <span>Via Pipen, 5
-                            39031 Brunico (BZ)
-                            Italien</span>
-                    </p>
+                <div className='text-sm text-gray-600 space-y-0.5'>
+                    <p className='font-semibold text-gray-800'>FeetF1rst S.R.L.S.</p>
+                    <p>Via Pipen, 5</p>
+                    <p>39031 Brunico (BZ)</p>
+                    <p>Italien</p>
                 </div>
             </div>
 

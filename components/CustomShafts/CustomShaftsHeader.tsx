@@ -67,27 +67,27 @@ export default function CustomShaftsHeader({
         <div>
             {/* Header & Description */}
             <div className="mb-6">
-                <h1 className="text-xl md:text-2xl font-bold mb-1">Individuelle Maßschäfte</h1>
-                <div className="text-xs md:text-sm text-gray-700 leading-snug mb-1">
-                    3D-basiert oder physisch umgesetzt. Schnell gefertigt. Klar kalkulierbar.<br />
-                    <span
-                        className="font-bold cursor-pointer underline hover:text-green-600 transition-colors"
-                        onClick={onCustomOrderClick}
-                    >
-                        Jetzt neu: Eigenes Modell konfigurieren
-                    </span>
-                </div>
+                <h1 className="text-2xl md:text-3xl font-bold mb-3 text-gray-900">Individuelle Maßschäfte</h1>
+                <p className="text-sm md:text-base text-gray-600 mb-4">
+                    3D-basiert oder physisch umgesetzt. Schnell gefertigt. Klar kalkulierbar.
+                </p>
+                <Button
+                    onClick={onCustomOrderClick}
+                    className="rounded-xl bg-[#61A175] text-white hover:bg-[#61A175]/50 px-6 py-3 text-sm font-semibold transition-all duration-300 cursor-pointer border-0"
+                >
+                    Eigenes Modell konfigurieren
+                </Button>
             </div>
 
             {/* Filter Bar */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-8 pb-4 border-b border-gray-200">
-                {/* Left Side - Gender & Category */}
-                <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+            <div className="my-8">
+                {/* First Row - Gender Buttons and Search */}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
                     {/* Gender Buttons */}
                     <div className="flex items-center gap-3">
                         <Button
                             variant="outline"
-                            className={`rounded-sm cursor-pointer border px-6 py-2 text-sm font-normal h-9 transition-all ${
+                            className={`rounded-lg cursor-pointer border px-8 py-2.5 text-sm font-medium h-10 transition-all ${
                                 gender === 'Herren'
                                     ? 'bg-black text-white border-black'
                                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
@@ -98,7 +98,7 @@ export default function CustomShaftsHeader({
                         </Button>
                         <Button
                             variant="outline"
-                            className={`rounded-sm cursor-pointer border px-6 py-2 text-sm font-normal h-9 transition-all ${
+                            className={`rounded-lg cursor-pointer border px-8 py-2.5 text-sm font-medium h-10 transition-all ${
                                 gender === 'Damen'
                                     ? 'bg-black text-white border-black'
                                     : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
@@ -109,11 +109,26 @@ export default function CustomShaftsHeader({
                         </Button>
                     </div>
 
+                    {/* Search Field */}
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                            type="text"
+                            placeholder="Suchen..."
+                            value={searchQuery}
+                            onChange={(e) => onSearchChange(e.target.value)}
+                            className="w-full lg:w-[300px] pl-9 pr-4 h-10 text-sm rounded-lg border border-gray-300 focus:border-black focus:ring-0 placeholder:text-gray-400"
+                        />
+                    </div>
+                </div>
+
+                {/* Second Row - Category and Sort */}
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-6 border-b border-gray-200">
                     {/* Category Dropdown */}
-                    <div className="relative category-dropdown flex items-center gap-2">
-                        <span className="text-sm text-gray-600 font-medium">Kategorie</span>
+                    <div className="relative category-dropdown flex items-center gap-3">
+                        <span className="text-sm text-gray-700 font-medium whitespace-nowrap">Kategorie</span>
                         <button
-                            className="flex cursor-pointer items-center gap-2 text-sm font-normal text-black bg-white border border-gray-300 rounded-sm px-4 py-2 h-9 hover:border-gray-400 transition-all min-w-[180px] justify-between"
+                            className="flex cursor-pointer items-center gap-2 text-sm font-normal text-gray-700 bg-white border border-gray-300 rounded-lg px-4 py-2.5 h-10 hover:border-gray-400 transition-all min-w-[200px] justify-between"
                             onClick={() => setCategoryOpen((v) => !v)}
                             type="button"
                         >
@@ -121,7 +136,7 @@ export default function CustomShaftsHeader({
                             <ChevronDown className={`w-4 h-4 transition-transform ${categoryOpen ? 'rotate-180' : ''}`} />
                         </button>
                         {categoryOpen && (
-                            <div className="absolute z-10 top-full mt-1 w-[200px] bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-y-auto">
+                            <div className="absolute z-10 top-full mt-1 w-[220px] bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                 {categories.map((cat) => (
                                     <div
                                         key={cat.value}
@@ -141,27 +156,12 @@ export default function CustomShaftsHeader({
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Right Side - Search & Sort */}
-                <div className="flex items-center gap-4">
-                    {/* Search Field */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            type="text"
-                            placeholder="Suchen..."
-                            value={searchQuery}
-                            onChange={(e) => onSearchChange(e.target.value)}
-                            className="w-[200px] pl-9 pr-4 h-9 text-sm rounded-sm border border-gray-300 focus:border-black focus:ring-0 placeholder:text-gray-400"
-                        />
-                    </div>
 
                     {/* Sort Dropdown */}
-                    <div className="relative sort-dropdown flex items-center gap-2">
-                        <span className="text-sm text-gray-600 font-medium">Sortieren</span>
+                    <div className="relative sort-dropdown flex items-center gap-3">
+                        <span className="text-sm text-gray-700 font-medium whitespace-nowrap">Sortieren</span>
                         <button
-                            className="flex cursor-pointer items-center gap-2 text-sm font-normal text-black bg-white border border-gray-300 rounded-sm px-4 py-2 h-9 hover:border-gray-400 transition-all min-w-[180px] justify-between"
+                            className="flex cursor-pointer items-center gap-2 text-sm font-normal text-gray-700 bg-white border border-gray-300 rounded-lg px-4 py-2.5 h-10 hover:border-gray-400 transition-all min-w-[200px] justify-between"
                             onClick={() => setSortOpen((v) => !v)}
                             type="button"
                         >
@@ -169,7 +169,7 @@ export default function CustomShaftsHeader({
                             <ChevronDown className={`w-4 h-4 transition-transform ${sortOpen ? 'rotate-180' : ''}`} />
                         </button>
                         {sortOpen && (
-                            <div className="absolute z-10 top-full mt-1 right-0 w-[220px] bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-y-auto">
+                            <div className="absolute z-10 top-full mt-1 right-0 w-[240px] bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                                 {sortOptions.map((sort) => (
                                     <div
                                         key={sort.value}

@@ -527,7 +527,7 @@ export default function ProductConfiguration({
         {(closureType === 'Eyelets' || closureType === 'Zipper') && (
           <div className="flex flex-col md:flex-row md:items-center gap-4 mt-5">
             <Label className="font-medium text-base md:w-1/3">
-              Möchten Sie passende Schnürsenkel zum Schuh? (+4,49€)
+              Möchten Sie passende Schnürsenkel zum Schuh?
             </Label>
             <div className="flex items-center gap-8">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -542,7 +542,9 @@ export default function ProductConfiguration({
                   checked={effektSchnursenkel === true}
                   onChange={() => updateSchnursenkel(effektSchnursenkel === true ? undefined : true)}
                 />
-                <span>Ja mit passenden Schnürsenkel (+4,49€)</span>
+                <span>Ja mit passenden Schnürsenkel
+                  <span className="text-green-600 font-semibold"> (+4,49€)</span>
+                  </span>
               </label>
             </div>
           </div>
@@ -552,7 +554,7 @@ export default function ProductConfiguration({
         {(closureType === 'Eyelets' || closureType === 'Zipper') && (
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <Label className="font-medium text-base md:w-1/3">
-              Möchten Sie den Schaft bereits mit eingesetzten Ösen? (+8,99€)
+              Möchten Sie den Schaft bereits mit eingesetzten Ösen?
             </Label>
             <div className="flex items-center gap-8">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -567,7 +569,11 @@ export default function ProductConfiguration({
                   checked={effektOsen === true}
                   onChange={() => updateOsen(effektOsen === true ? undefined : true)}
                 />
-                <span>Ja, Ösen einsetzen (+8,99€)</span>
+                <span>Ja, Ösen einsetzen
+                  
+                  
+                  <span className="text-green-600 font-semibold"> (+8,99€)</span>
+                  </span>
               </label>
             </div>
           </div>
@@ -576,7 +582,7 @@ export default function ProductConfiguration({
         {/* Zusätze: Zusätzlicher Reißverschluss - Always visible */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">
-            Möchten Sie einen zusätzlichen Reißverschluss? (+9,99€)
+            Möchten Sie einen zusätzlichen Reißverschluss?
           </Label>
           <div className="flex items-center gap-8">
             <label className="flex items-center gap-2 cursor-pointer">
@@ -611,7 +617,9 @@ export default function ProductConfiguration({
                    }
                  }}
                />
-               <span>Ja, zusätzlichen Reißverschluss (+9,99€)</span>
+               <span>Ja, zusätzlichen Reißverschluss 
+                <span className="text-green-600 font-semibold"> (+9,99€)</span>
+                </span>
              </label>
           </div>
         </div>

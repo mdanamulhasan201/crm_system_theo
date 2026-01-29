@@ -241,15 +241,21 @@ export default function CustomShafts() {
 
                     {/* Show More Button */}
                     {hasMoreDataAvailable && (
-                        <div className="flex justify-center mt-8">
+                        <div className="flex justify-center mt-12">
                             <Button
                                 type="button"
-                                variant="outline"
                                 onClick={handleShowMore}
                                 disabled={loading && !hasMoreItems}
-                                className="rounded-none border border-black px-8 py-2 text-base font-normal bg-white text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="rounded-full cursor-pointer bg-gray-800 text-white hover:bg-gray-700 px-12 py-6 text-sm font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                             >
-                                {loading && !hasMoreItems ? 'Laden...' : 'Mehr anzeigen'}
+                                {loading && !hasMoreItems ? (
+                                    <span className="flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Laden...
+                                    </span>
+                                ) : (
+                                    'Mehr anzeigen'
+                                )}
                             </Button>
                         </div>
                     )}
