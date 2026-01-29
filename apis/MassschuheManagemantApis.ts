@@ -180,6 +180,43 @@ export const totalRadioMassschuheOrder = async () => {
 }
 
 
+// Get all order transitions with cursor-based pagination
+// GET /v2/admin-order-transitions/get-all-transitions?limit=10&cursor=
+// Returns: { success: boolean, message: string, data: Array<OrderData>, hasMore: boolean }
+// cursor: pass empty string '' for first page, then pass the last item's ID for next page
+export const getAllOrderData = async (limit: number, cursor: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/admin-order-transitions/get-all-transitions?limit=${limit}&cursor=${cursor}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// calcel order 
+// POST /v2/admin-order-transitions/cancel-order
+// body: { orderId: string }
+// Returns: { success: boolean, message: string }
+export const cancelOrder = async (orderId: string) => {
+    try {
+        const response = await axiosClient.post(`/v2/admin-order-transitions/cancel-order`, { orderId });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// card data visble v2/admin-order-transitions/least-one-month-payment
+export const getLeastOneMonthPaymentData = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/admin-order-transitions/least-one-month-payment`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
 // send massschuhe order to admin 1 /massschuhe-order/admin-order/send-to-admin-1/:orderId
 // body pass threed_model_right and threed_model_left and invoice  
 
