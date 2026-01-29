@@ -1,9 +1,10 @@
 'use client'
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { HiOutlineCurrencyEuro } from 'react-icons/hi'
 import { BsCalendarCheck } from 'react-icons/bs'
 import { TbArrowsExchange } from 'react-icons/tb'
 import { MdOutlineSavings } from 'react-icons/md'
+import { getLeastOneMonthPaymentData } from '@/apis/MassschuheManagemantApis'
 
 interface BalanceCardData {
     gesamteinnahmen?: number | null;
@@ -21,7 +22,7 @@ interface BalanceCardProps {
 
 const defaultData: BalanceCardData = {
     gesamteinnahmen: null,
-    gesamteinnahmenChange: '10% Mehr als vergangenen Monat',
+    gesamteinnahmenChange: '---',
     naechsteAuszahlung: null,
     naechsteAuszahlungDatum: '01.05.2025',
     kuerzlicheAuszahlungen: [
@@ -29,10 +30,38 @@ const defaultData: BalanceCardData = {
         { amount: null, date: '01.05.2025' },
     ],
     ruecklagebetrag: null,
-    ruecklagebetragDatum: '01.05.2025',
+    ruecklagebetragDatum: '--',
 };
 
 export default function BalanceCard({ data = defaultData }: BalanceCardProps) {
+    const [lastMonthData, setLastMonthData] = useState<{
+        totalPrice: number | null;
+        period: string;
+    } | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    // Fetch last month payment data
+    useEffect(() => {
+        const fetchLastMonthData = async () => {
+            try {
+                setLoading(true);
+                const response = await getLeastOneMonthPaymentData();
+                if (response.success && response.data?.lastMonth) {
+                    setLastMonthData({
+                        totalPrice: response.data.lastMonth.totalPrice,
+                        period: response.data.lastMonth.period,
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to fetch last month payment data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLastMonthData();
+    }, []);
+
     const formatCurrency = (value: number | null | undefined) => {
         if (value === null || value === undefined) {
             return '_ _ _';
@@ -71,7 +100,7 @@ export default function BalanceCard({ data = defaultData }: BalanceCardProps) {
                 </div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">
                     Nächste Auszahlung<br />
-                    <span className="text-gray-500">(Geplant)</span>
+                    <span className="text-gray-500">(Gesamtausgaben Konto)</span>
                 </h3>
                 <div className="flex items-baseline gap-1 mb-2">
                     <span className="text-2xl font-bold text-gray-800">
@@ -91,17 +120,30 @@ export default function BalanceCard({ data = defaultData }: BalanceCardProps) {
                 </div>
                 <h3 className="text-sm font-semibold text-gray-700 mb-3">Kürzliche Auszahlungen</h3>
                 <div className="space-y-2">
-                    {data.kuerzlicheAuszahlungen?.map((item, index) => (
-                        <div key={index} className="flex items-center justify-between">
-                            <div className="flex items-baseline gap-1">
-                                <span className="text-lg font-bold text-gray-800">
-                                    {formatCurrency(item.amount)}
-                                </span>
-                                <span className="text-emerald-500 text-base font-bold">€</span>
-                            </div>
-                            <span className="text-xs text-gray-500">{item.date}</span>
+                    {loading ? (
+                        <div className="flex flex-col gap-2">
+                            <div className="h-6 bg-gray-200 rounded animate-pulse w-24"></div>
+                            <div className="h-4 bg-gray-200 rounded animate-pulse w-full"></div>
                         </div>
-                    ))}
+                    ) : lastMonthData ? (
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-lg sm:text-xl font-bold text-gray-800">
+                                    {formatCurrency(lastMonthData.totalPrice)}
+                                </span>
+                                <span className="text-emerald-500 text-base sm:text-lg font-bold">€</span>
+                            </div>
+                            <span className="text-xs text-gray-500 break-words">{lastMonthData.period}</span>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-lg sm:text-xl font-bold text-gray-800">_ _ _</span>
+                                <span className="text-emerald-500 text-base sm:text-lg font-bold">€</span>
+                            </div>
+                            <span className="text-xs text-gray-500">--</span>
+                        </div>
+                    )}
                 </div>
             </div>
 

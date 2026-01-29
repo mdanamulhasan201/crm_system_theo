@@ -19,6 +19,7 @@ interface ConfirmationModalProps {
   orderPrice: number;
   passendenSchnursenkel?: boolean | undefined;
   osenEinsetzen?: boolean | undefined;
+  zipperExtra?: boolean | undefined;
   selectedCustomer: Customer | null;
   otherCustomerNumber?: string;
   shaftName?: string;
@@ -35,6 +36,7 @@ export default function ConfirmationModal({
   orderPrice,
   passendenSchnursenkel,
   osenEinsetzen,
+  zipperExtra,
   selectedCustomer,
   otherCustomerNumber,
   shaftName,
@@ -125,7 +127,7 @@ export default function ConfirmationModal({
           </div>
 
           {/* Zusatzoptionen */}
-          {(passendenSchnursenkel !== undefined || osenEinsetzen !== undefined) && (
+          {(passendenSchnursenkel !== undefined || osenEinsetzen !== undefined || zipperExtra !== undefined) && (
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4">
               <h4 className="font-medium text-gray-900 mb-2 text-sm">Zusätzlich ausgewählte Optionen:</h4>
               <ul className="list-disc pl-5 text-gray-800 space-y-1 text-sm text-left">
@@ -137,6 +139,11 @@ export default function ConfirmationModal({
                 {osenEinsetzen !== undefined && (
                   <li>
                     Ösen einsetzen: {osenEinsetzen ? <span className="font-semibold text-green-700">Ja (+8,99€)</span> : 'Nein'}
+                  </li>
+                )}
+                {zipperExtra !== undefined && (
+                  <li>
+                    Zusätzlicher Reißverschluss: {zipperExtra ? <span className="font-semibold text-green-700">Ja (+9,99€)</span> : 'Nein'}
                   </li>
                 )}
               </ul>

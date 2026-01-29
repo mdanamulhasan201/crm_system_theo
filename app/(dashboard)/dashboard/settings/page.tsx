@@ -102,11 +102,15 @@ export default function Settingss() {
         },
     ];
 
+    // const handleSettingsClick = () => {
+    //     router.push("/dashboard/account-settings");
+    // };
+
     return (
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Accountverwaltung</h1>
 
-            <Link href="/dashboard/users" className="block mb-8 w-full lg:w-[40%]">
+            <Link href="/dashboard/account-settings" className="block mb-8 w-full lg:w-[40%]">
                 <div className="flex items-center border-2 border-gray-600 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors p-4">
                     <div className="border border-gray-300 rounded-md mr-4 p-2 w-40 h-40">
                         <Image

@@ -15,23 +15,22 @@ export function InlineLabelWithInputs({
   const parts = normalized.split("___")
  
   const restrictNumber = (value: string): string => {
- 
     const cleaned = value.replace(/[^\d.,]/g, "")
     if (cleaned === "") return ""
- 
+
     const sepMatch = cleaned.match(/[.,]/)
     const sepIndex = sepMatch ? sepMatch.index ?? -1 : -1
     const intPartRaw = sepIndex >= 0 ? cleaned.slice(0, sepIndex) : cleaned
     const intPart = intPartRaw.replace(/\D/g, "").slice(0, 2)
+    
     if (sepIndex === -1) {
- 
       return intPart
     }
+    
     const decPartRaw = cleaned.slice(sepIndex + 1)
     const decPart = decPartRaw.replace(/\D/g, "").slice(0, 2)
- 
     return `${intPart}.${decPart}`
-  } 
+  }
   const isNumericAt = (i: number): boolean => {
     if (groupId === "zehenelemente") return false
     const prev = parts[i] ?? ""
@@ -85,10 +84,6 @@ export function OptionGroup({
   optionInputs: OptionInputsState
   setOptionInputs: React.Dispatch<React.SetStateAction<OptionInputsState>>
 }) {
-  const handleSelect = (optId: string) => {
-    onSelect(optId)
-  }
-
   const handleDoubleClick = () => {
     onSelect(null)
   }
@@ -118,7 +113,6 @@ export function OptionGroup({
         }
       }
     })
- 
   }, [def, optionInputs, setOptionInputs])
 
   return (
@@ -150,13 +144,13 @@ export function OptionGroup({
                 type="checkbox"
                 className="checkbox-input"
                 checked={isChecked}
-                onChange={() => handleSelect(opt.id)}
+                onChange={() => onSelect(opt.id)}
                 aria-label={opt.label}
               />
               {placeholderCount > 0 ? (
                 <div
                   className="option-label-text"
-                  onClick={() => handleSelect(opt.id)}
+                  onClick={() => onSelect(opt.id)}
                   role="button"
                   aria-label={opt.label}
                 >
@@ -188,13 +182,48 @@ export function OptionGroup({
   )
 }
 
-
+/**
+ * Parses a price from text that may contain Euro amounts.
+ * Supports both positive and negative prices in various formats:
+ * - Positive: "10€", "+10€", "(+10€)", "(10€)"
+ * - Negative: "-10€", "(-10€)"
+ * 
+ * @param txt - Text containing price information
+ * @returns Parsed price as a number (negative if indicated, positive otherwise, 0 if not found)
+ */
 export function parseEuroFromText(txt: string): number {
-  const match = txt.match(/(\d{1,3}(?:[.,]\d{2})?)\s*€/)
-  if (!match) return 0
-  const raw = match[1].replace(/\./g, "").replace(",", ".")
-  const n = Number(raw)
-  return Number.isFinite(n) ? n : 0
+  if (!txt || typeof txt !== 'string') {
+    return 0
+  }
+
+  // Pattern to match negative prices: "-10€", "(-10€)", "–10€", or "(–10€)" (handles both hyphen and en dash)
+  const negativePricePattern = /(?:[-–]|\([-–])(\d{1,3}(?:[.,]\d{2})?)\s*€/
+  const negativeMatch = txt.match(negativePricePattern)
+  
+  if (negativeMatch) {
+    const priceString = negativeMatch[1]
+    const normalizedPrice = priceString.replace(/\./g, "").replace(",", ".")
+    const priceValue = Number(normalizedPrice)
+    
+    if (Number.isFinite(priceValue)) {
+      return -priceValue // Return negative value
+    }
+    return 0
+  }
+
+  // Pattern to match positive prices: "10€", "+10€", "(+10€)", "(10€)"
+  const positivePricePattern = /(\d{1,3}(?:[.,]\d{2})?)\s*€/
+  const positiveMatch = txt.match(positivePricePattern)
+  
+  if (!positiveMatch) {
+    return 0
+  }
+
+  const priceString = positiveMatch[1]
+  const normalizedPrice = priceString.replace(/\./g, "").replace(",", ".")
+  const priceValue = Number(normalizedPrice)
+  
+  return Number.isFinite(priceValue) ? priceValue : 0
 }
 
 export function normalizeUnderscores(txt: string): string {

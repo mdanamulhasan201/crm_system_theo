@@ -1,35 +1,30 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-
-import { ChevronDown, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
+import { Loader2 } from 'lucide-react';
 import ImageWithShimmer from '@/components/CustomShafts/ImageWithShimmer';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCustomShafts } from '@/hooks/customShafts/useCustomShafts';
 import useDebounce from '@/hooks/useDebounce';
 import { CustomShaft } from '@/hooks/customShafts/useCustomShafts';
 import CustomShaftProductCardShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftProductCardShimmer';
-
-const categories = [
-    { label: 'Alle Kategorien', value: 'alle' },
-    { label: 'Halbschuhe', value: 'Halbschuhe' },
-    { label: 'Stiefel', value: 'Stiefel' },
-    { label: 'Knöchelhoch', value: 'Knöchelhoch' },
-    { label: 'Sandalen', value: 'Sandalen' },
-    { label: 'Bergschuhe', value: 'Bergschuhe' },
-    { label: 'Business-Schuhe', value: 'Business-Schuhe' },
-];
+import SchaftErstellungModal from '@/components/CustomShafts/SchaftErstellungModal';
+import BottomFooter from '@/components/CustomShafts/BottomFooter';
+import CustomShaftsHeader from '@/components/CustomShafts/CustomShaftsHeader';
 
 export default function CustomShafts() {
     const [gender, setGender] = useState<'Herren' | 'Damen'>('Herren');
     const [category, setCategory] = useState('alle');
-    const [categoryOpen, setCategoryOpen] = useState(false);
+    const [sortOption, setSortOption] = useState('price_asc');
     const [currentPage, setCurrentPage] = useState(1);
     const [searchQuery, setSearchQuery] = useState('');
     const [displayedCount, setDisplayedCount] = useState(8);
     const [allFetchedItems, setAllFetchedItems] = useState<CustomShaft[]>([]);
     const [isFetchingNewPage, setIsFetchingNewPage] = useState(false);
+    const [selectedShaftId, setSelectedShaftId] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCustomOrderModalOpen, setIsCustomOrderModalOpen] = useState(false);
+    const [loadingButtonId, setLoadingButtonId] = useState<string | null>(null);
     const itemsPerPage = 8;
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -43,20 +38,6 @@ export default function CustomShafts() {
 
     // Fetch data from API
     const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery, gender, apiCategory);
-
-    // Close dropdown when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            if (categoryOpen && !target.closest('.category-dropdown')) {
-                setCategoryOpen(false);
-            }
-        };
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [categoryOpen]);
 
     const prevFilteredLengthRef = React.useRef(0);
 
@@ -80,10 +61,6 @@ export default function CustomShafts() {
         setIsFetchingNewPage(false);
         prevFilteredLengthRef.current = 0;
     }, [gender, category, debouncedSearchQuery]);
-
-    const availableCategories = useMemo(() => {
-        return categories;
-    }, []);
 
     const filteredData = useMemo(() => {
         if (allFetchedItems.length === 0) return [];
@@ -144,91 +121,68 @@ export default function CustomShafts() {
         }
     };
 
-    // handle click on the button
+    // handle click on the button - open modal instead of direct navigation
     const handleClick = (id: string) => {
-        // Pass orderId as query parameter if it exists
-        const url = orderId 
-            ? `/dashboard/custom-shafts/details/${id}?orderId=${orderId}`
-            : `/dashboard/custom-shafts/details/${id}`;
+        setLoadingButtonId(id);
+        setSelectedShaftId(id);
+        // Small delay to show loading state
+        setTimeout(() => {
+            setIsModalOpen(true);
+            setLoadingButtonId(null);
+        }, 200);
+    }
+
+    // Handle 3D Upload selection - navigate to details page
+    const handle3DUpload = () => {
+        if (selectedShaftId) {
+            const url = orderId
+                ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}`
+                : `/dashboard/custom-shafts/details/${selectedShaftId}`;
+            router.push(url);
+        }
+    }
+
+    // Handle Abholung (Pickup) selection
+    const handleAbholung = () => {
+        if (selectedShaftId) {
+            // Navigate to details page for pickup option
+            const url = orderId
+                ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}&type=abholung`
+                : `/dashboard/custom-shafts/details/${selectedShaftId}?type=abholung`;
+            router.push(url);
+        }
+    }
+
+    // Handle custom order 3D Upload - navigate to product-order page
+    const handleCustomOrder3DUpload = () => {
+        const url = orderId
+            ? `/dashboard/custom-shafts/product-order/new?orderId=${orderId}`
+            : `/dashboard/custom-shafts/product-order/new`;
+        router.push(url);
+    }
+
+    // Handle custom order Abholung - navigate to product-order page
+    const handleCustomOrderAbholung = () => {
+        const url = orderId
+            ? `/dashboard/custom-shafts/product-order/new?orderId=${orderId}&type=abholung`
+            : `/dashboard/custom-shafts/product-order/new?type=abholung`;
         router.push(url);
     }
 
     return (
-        <div className="  py-6">
-            {/* Header & Description */}
-            <div className="mb-6">
-                <h1 className="text-xl md:text-2xl font-bold mb-1">Maßschaft - individuell für deinen Kunden.</h1>
-                <div className="text-xs md:text-sm text-gray-700 leading-snug mb-1">
-                    Basierend auf dem 3D-Modell des Kundenfußes stellen wir passgenaue Maßschäfte her. So sparst du dir unnötigen Versand, erhältst eine deutlich schnellere Lieferzeit und profitierst von besten Preisen.<br />
-
-                </div>
-            </div>
-
-            {/* Filter Bar */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-                <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2">
-                        <Button
-                            variant="outline"
-                            className={`rounded-none cursor-pointer border border-black px-6 py-1.5 text-base font-normal h-10 ${gender === 'Herren' ? 'bg-black text-white' : 'bg-white text-black'}`}
-                            onClick={() => setGender('Herren')}
-                        >
-                            Herren
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className={`rounded-none cursor-pointer border border-black px-6 py-1.5 text-base font-normal h-10 ${gender === 'Damen' ? 'bg-black text-white' : 'bg-white text-black'}`}
-                            onClick={() => setGender('Damen')}
-                        >
-                            Damen
-                        </Button>
-                    </div>
-                    {/* Category Dropdown as text with chevron */}
-                    <div className="relative mt-1 category-dropdown">
-                        <button
-                            className="flex cursor-pointer items-center text-base md:text-sm font-normal text-black bg-transparent px-0 py-1 focus:outline-none"
-                            onClick={() => setCategoryOpen((v) => !v)}
-                            type="button"
-                        >
-                            {availableCategories.find((c) => c.value === category)?.label || 'Alle Kategorien'}
-                            <ChevronDown className={`ml-1 w-5 h-5 transition-transform ${categoryOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        {categoryOpen && (
-                            <div className="absolute z-10 mt-1 w-48 bg-white border border-gray-200 rounded shadow-lg max-h-60 overflow-y-auto">
-                                {availableCategories.map((cat) => (
-                                    <div
-                                        key={cat.value}
-                                        className={`px-4 py-2 cursor-pointer text-sm transition-colors ${
-                                            category === cat.value 
-                                                ? 'bg-black text-white font-semibold hover:bg-gray-800' 
-                                                : 'text-black hover:bg-gray-100'
-                                        }`}
-                                        onClick={() => {
-                                            setCategory(cat.value);
-                                            setCategoryOpen(false);
-                                        }}
-                                    >
-                                        {cat.label}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-                {/* Search Field */}
-                <div className="flex items-center justify-end w-full md:w-auto">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                        <Input
-                            type="text"
-                            placeholder="Suchen..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-64 pl-10 pr-4 h-10 rounded-full border border-gray-300 focus:border-black focus:ring-0"
-                        />
-                    </div>
-                </div>
-            </div>
+        <div className="py-6">
+            {/* Header & Filter Section */}
+            <CustomShaftsHeader
+                gender={gender}
+                category={category}
+                searchQuery={searchQuery}
+                sortOption={sortOption}
+                onGenderChange={setGender}
+                onCategoryChange={setCategory}
+                onSearchChange={setSearchQuery}
+                onSortChange={setSortOption}
+                onCustomOrderClick={() => setIsCustomOrderModalOpen(true)}
+            />
 
             {/* Error State */}
             {error && (
@@ -261,7 +215,20 @@ export default function CustomShafts() {
                                         <div className="text-xs text-gray-500 mb-2 text-left">#{item.ide}</div>
                                         <div className="font-bold text-lg mb-2 text-left">ab {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
                                     </div>
-                                    <Button variant="outline" className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-none border border-black bg-white text-black hover:bg-gray-100 text-sm font-medium" onClick={() => handleClick(item.id)}>Jetzt konfigurieren</Button>
+                                    <Button
+                                        className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-full bg-[#61A175] text-white hover:bg-[#61A175]/50 text-sm font-semibold py-6 disabled:opacity-50 disabled:cursor-not-allowed border-0"
+                                        onClick={() => handleClick(item.id)}
+                                        disabled={loadingButtonId === item.id}
+                                    >
+                                        {loadingButtonId === item.id ? (
+                                            <span className="flex items-center justify-center gap-2">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Lade...
+                                            </span>
+                                        ) : (
+                                            'Jetzt konfigurieren'
+                                        )}
+                                    </Button>
                                 </div>
                             </div>
                         ))}
@@ -274,15 +241,21 @@ export default function CustomShafts() {
 
                     {/* Show More Button */}
                     {hasMoreDataAvailable && (
-                        <div className="flex justify-center mt-8">
+                        <div className="flex justify-center mt-12">
                             <Button
                                 type="button"
-                                variant="outline"
                                 onClick={handleShowMore}
                                 disabled={loading && !hasMoreItems}
-                                className="rounded-none border border-black px-8 py-2 text-base font-normal bg-white text-black hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="rounded-full cursor-pointer bg-gray-800 text-white hover:bg-gray-700 px-12 py-6 text-sm font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                             >
-                                {loading && !hasMoreItems ? 'Laden...' : 'Mehr anzeigen'}
+                                {loading && !hasMoreItems ? (
+                                    <span className="flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                        Laden...
+                                    </span>
+                                ) : (
+                                    'Mehr anzeigen'
+                                )}
                             </Button>
                         </div>
                     )}
@@ -299,6 +272,32 @@ export default function CustomShafts() {
                     </div>
                 </div>
             )}
+
+            {/* Schaft Erstellung Modal */}
+            <SchaftErstellungModal
+                isOpen={isModalOpen}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setLoadingButtonId(null);
+                }}
+                onSelect3DUpload={handle3DUpload}
+                onSelectAbholung={handleAbholung}
+            />
+
+            {/* Custom Order Modal - for "Eigenen Schuh konfigurieren" */}
+            <SchaftErstellungModal
+                isOpen={isCustomOrderModalOpen}
+                onClose={() => {
+                    setIsCustomOrderModalOpen(false);
+                }}
+                onSelect3DUpload={handleCustomOrder3DUpload}
+                onSelectAbholung={handleCustomOrderAbholung}
+            />
+
+
+            {/* footer  logo*/}
+
+            <BottomFooter />
         </div>
     );
 }

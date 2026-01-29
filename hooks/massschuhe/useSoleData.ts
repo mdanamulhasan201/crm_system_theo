@@ -3,6 +3,7 @@ import { useState, useEffect } from "react"
 export type SoleType = {
     id: string
     name: string
+    des?: string
     image: string
     description: string
 }

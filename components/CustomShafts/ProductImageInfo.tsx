@@ -10,22 +10,20 @@ interface ProductImageInfoProps {
     price: number;
     image: string;
   };
-  uploadedImage: string | null;
-  setUploadedImage: (image: string | null) => void;
 }
 
-export default function ProductImageInfo({ shaft, uploadedImage }: ProductImageInfoProps) {
+export default function ProductImageInfo({ shaft }: ProductImageInfoProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-10 items-center justify-center">
-      {/* Image */}
-      <div className="w-full md:w-1/2 flex justify-center my-10">
-        <div className="w-full h-full">
+    <div className="flex flex-col md:flex-row gap-10 items-center">
+      {/* Image - Read only, only from backend */}
+      <div className="w-full md:w-1/2 flex justify-start mb-8">
+        <div className="relative">
           <Image
-            src={uploadedImage || shaft.image}
+            src={shaft.image}
             alt={shaft.name}
             width={1000}
             height={1000}
-            className="w-[550px] h-full object-cover"
+            className="w-[400px] h-auto object-cover rounded-md border border-gray-200"
             priority
           />
         </div>

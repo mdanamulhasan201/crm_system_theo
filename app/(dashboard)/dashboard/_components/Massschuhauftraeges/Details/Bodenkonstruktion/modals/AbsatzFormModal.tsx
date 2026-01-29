@@ -1,4 +1,10 @@
 import React from "react"
+import Image from "next/image"
+
+// images\massschuhauftraege
+import Absatzkeil from "@/public/images/massschuhauftraege/absatzkeil.png"
+import keilabsatz from "@/public/images/massschuhauftraege/keilabsatz.png"
+import stegkeil from "@/public/images/massschuhauftraege/stegkeil.png"
 
 interface AbsatzFormModalProps {
     isOpen: boolean
@@ -12,8 +18,16 @@ const FORM_TITLES: Record<string, string> = {
     Absatzkeil: "Absatzkeil",
 }
 
+const FORM_IMAGES: Record<string, any> = {
+    Keilabsatz: keilabsatz,
+    Stegkeil: Absatzkeil,
+    Absatzkeil: stegkeil,
+}
+
 export default function AbsatzFormModal({ isOpen, onClose, selectedForm }: AbsatzFormModalProps) {
     if (!isOpen || !selectedForm) return null
+
+    const selectedImage = FORM_IMAGES[selectedForm]
 
     return (
         <div 
@@ -40,11 +54,23 @@ export default function AbsatzFormModal({ isOpen, onClose, selectedForm }: Absat
                 </div>
                 <div className="p-6">
                     <div className="flex flex-col items-center justify-center">
-                        <img
-                            src="/shoe.png"
-                            alt={selectedForm}
-                            className="w-full max-w-md h-auto object-contain"
-                        />
+                        {selectedImage ? (
+                            <Image
+                                src={selectedImage}
+                                alt={selectedForm}
+                                className="w-full max-w-md h-auto object-contain"
+                                width={800}
+                                height={600}
+                            />
+                        ) : (
+                            <Image
+                                src="/shoe.png"
+                                alt={selectedForm}
+                                className="w-full max-w-md h-auto object-contain"
+                                width={800}
+                                height={600}
+                            />
+                        )}
                     </div>
                 </div>
             </div>

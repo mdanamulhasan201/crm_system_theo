@@ -1,5 +1,6 @@
 import React from "react"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
+import Image from "next/image"
 
 interface SoleSelectionModalProps {
     isOpen: boolean
@@ -58,7 +59,7 @@ export default function SoleSelectionModal({
                             >
                                 <div className="absolute top-2 right-2">
                                     <button
-                                        className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold hover:bg-orange-600"
+                                        className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-xs font-bold cursor-pointer hover:bg-orange-600"
                                         onClick={(e) => {
                                             e.stopPropagation()
                                             onShowDetail(sole)
@@ -68,29 +69,38 @@ export default function SoleSelectionModal({
                                     </button>
                                 </div>
                                 <div className="flex flex-col items-center">
-                                    <img
+                                    <Image
+                                        width={128}
+                                        height={128}
                                         src={sole.image}
                                         alt={sole.name}
                                         className="w-32 h-32 object-contain mb-3"
                                     />
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="radio"
-                                            checked={selectedSole?.id === sole.id}
-                                            onChange={(e) => {
-                                                e.stopPropagation()
-                                                onSelectSole(sole)
-                                                onClose()
-                                            }}
-                                            onClick={(e) => e.stopPropagation()}
-                                            className="w-4 h-4 text-green-500 cursor-pointer"
-                                        />
-                                        <label 
-                                            className="text-sm font-medium text-gray-700 cursor-pointer"
-                                            onClick={(e) => e.stopPropagation()}
-                                        >
-                                            {sole.name}
-                                        </label>
+                                    <div className="flex flex-col items-center gap-1 w-full">
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="radio"
+                                                checked={selectedSole?.id === sole.id}
+                                                onChange={(e) => {
+                                                    e.stopPropagation()
+                                                    onSelectSole(sole)
+                                                    onClose()
+                                                }}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="w-4 h-4 text-green-500 cursor-pointer"
+                                            />
+                                            <label 
+                                                className="text-sm font-medium text-gray-700 cursor-pointer"
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                {sole.name}
+                                            </label>
+                                        </div>
+                                        {sole.des && (
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {sole.des}
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>

@@ -259,6 +259,15 @@ export const GROUPS2: GroupDef2[] = [
     },
   },
   {
+    id: "verbindungsleder",
+    question: "Verbindungsleder",
+    fieldType: "yesNo",
+    options: [
+      { id: "ja", label: "Ja" },
+      { id: "nein", label: "Nein" },
+    ],
+  },
+  {
     id: "Konstruktionsart",
     question: "Konstruktionsart",
     fieldType: "checkbox",
@@ -272,23 +281,33 @@ export const GROUPS2: GroupDef2[] = [
     question: "Brandsohle",
     fieldType: "checkbox",
     options: [
-      { id: "standard", label: "Standard mit mitlaufendem Kork von 3mm (+4,99€)" },
+      { id: "standard", label: "Standard" },
+      { id: "standard_kork", label: "Standard mit mitlaufendem Kork von 3mm (+4,99€)" },
       { id: "leder", label: "Leder (+7,99€)" },
       { id: "diabetes", label: "Diabetes/Versteift (+9,99€)" },
 
     ],
   },
- 
   {
-    id: "farbauswahl",
-    question: "Farbauswahl Bodenkonstruktion",
-    fieldType: "checkbox",
+    id: "sohlenerhoehung",
+    question: "Sohlenerhöhung",
+    fieldType: "soleElevation",
     options: [
-      { id: "produktion", label: "Nach Produktfoto" },
-      { id: "personal", label: "Nach Personal (passendstes)" },
-      { id: "eigene", label: "Eigene Angabe" },
+      { id: "ja", label: "Ja" },
+      { id: "nein", label: "Nein" },
     ],
   },
+ 
+  // {
+  //   id: "farbauswahl",
+  //   question: "Farbauswahl Bodenkonstruktion",
+  //   fieldType: "checkbox",
+  //   options: [
+  //     { id: "produktion", label: "Nach Produktfoto" },
+  //     { id: "personal", label: "Nach Personal (passendstes)" },
+  //     { id: "eigene", label: "Eigene Angabe" },
+  //   ],
+  // },
   {
     id: "schlemmaterial",
     question: "Sohlenmaterial",
@@ -311,6 +330,7 @@ export const GROUPS2: GroupDef2[] = [
     id: "abrollhilfe",
     question: "Abrollhilfe (Rolle)",
     fieldType: "checkbox",
+    multiSelect: true,
     options: [
       { id: "keine", label: "Keine" },
       { id: "mittelfussrolle", label: "Mittelfußrolle" },
@@ -329,26 +349,40 @@ export const GROUPS2: GroupDef2[] = [
     ],
   },
   {
-    id: "laufkohle",
-    question: "Laufsohle / Profil / Art",
-    fieldType: "select", // Changed to select field type
-    options: [
-      { id: "select1", label: "Ganze Sohle – Standard" },
-      { id: "select2", label: "Ganze Sohle – Mit mehr Profil" },
-      { id: "select3", label: "Halbe Sohle – Standard" },
-      { id: "select4", label: "Halbe Sohle – Mit mehr Profil" },
-      { id: "select5", label: "Spezialsystem (z. B. Vibram): " },
-      
-
-    ],
+    id: "absatzbreite",
+    question: "Absatzbreite anpassen (mm)",
+    fieldType: "heelWidthAdjustment",
+    options: [],
   },
   {
-    id: "schlenstaerke",
-    question: "Sohlenstärke",
+    id: "laufsohle_lose_beilegen",
+    question: "Möchten Sie die Laufsohle lose der Bestellung beilegen?",
     fieldType: "checkbox",
     options: [
-      { id: "4mm", label: "4 mm" },
-      { id: "6mm", label: "6 mm" },
+      { id: "ja", label: "Ja (–5,99 €)" },
+      { id: "nein", label: "Nein (derzeit nicht verfügbar)", disabled: true },
     ],
   },
+  // {
+  //   id: "laufkohle",
+  //   question: "Laufsohle / Profil / Art",
+  //   fieldType: "select", // Changed to select field type
+  //   options: [
+  //     { id: "select1", label: "Ganze Sohle – Standard" },
+  //     { id: "select2", label: "Ganze Sohle – Mit mehr Profil" },
+  //     { id: "select3", label: "Halbe Sohle – Standard" },
+  //     { id: "select4", label: "Halbe Sohle – Mit mehr Profil" },
+  //     { id: "select5", label: "Spezialsystem (z. B. Vibram): " },
+  //     { id: "laufsohle_lose_beilegen", label: "Laufsohle lose beilegen (-10€)" },
+  //   ],
+  // },
+  // {
+  //   id: "schlenstaerke",
+  //   question: "Sohlenstärke",
+  //   fieldType: "checkbox",
+  //   options: [
+  //     { id: "4mm", label: "4 mm" },
+  //     { id: "6mm", label: "6 mm" },
+  //   ],
+  // },
 ]

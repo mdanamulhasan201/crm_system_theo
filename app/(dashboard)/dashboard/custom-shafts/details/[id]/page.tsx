@@ -1,20 +1,31 @@
-"use client";
-import React, { useState, useEffect } from "react";
-import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useSingleCustomShaft } from "@/hooks/customShafts/useSingleCustomShaft";
-import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder";
-import toast from "react-hot-toast";
-import CustomShaftDetailsShimmer from "@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer";
-import { createCustomShaft } from "@/apis/customShaftsApis";
-import { sendMassschuheOrderToAdmin2 } from "@/apis/MassschuheManagemantApis";
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useSingleCustomShaft } from '@/hooks/customShafts/useSingleCustomShaft';
+import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
+import toast from 'react-hot-toast';
+import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
+import { createCustomShaft } from '@/apis/customShaftsApis';
+import { createMassschuheWithoutOrderId } from '@/apis/MassschuheAddedApis';
+import { sendMassschuheOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
+import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 
 // Import separated components
-import ConfirmationModal from "@/components/CustomShafts/ConfirmationModal";
-import SuccessMessage from "@/components/CustomShafts/SuccessMessage";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { LeatherColorAssignment } from "@/components/CustomShafts/LeatherColorSectionModal";
+import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
+import ProductImageInfo from '@/components/CustomShafts/ProductImageInfo';
+import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
+import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
+import SuccessMessage from '@/components/CustomShafts/SuccessMessage';
+import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
 
+const CATEGORY_PRICE_MAP: Record<string, number> = {
+  Halbschuhe: 209.99,
+  Stiefel: 314.99,
+  Knöchelhoch: 219.99,
+  Sandalen: 189.99,
+  Bergschuhe: 234.99,
+  Businessschuhe: 224.99,
+};
 
 interface Customer {
   id: string;
@@ -29,67 +40,84 @@ export default function DetailsPage() {
   // Router for navigation
   const router = useRouter();
 
+  // Custom shaft data context
+  const { setCustomShaftData: setContextData } = useCustomShaftData();
+
   // State management
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [nahtfarbeOption, setNahtfarbeOption] = useState("default");
-  const [customNahtfarbe, setCustomNahtfarbe] = useState("");
-  const [lederType, setLederType] = useState("");
-  const [lederfarbe, setLederfarbe] = useState("");
-  const [innenfutter, setInnenfutter] = useState("");
-  const [schafthohe, setSchafthohe] = useState("");
-  const [linkerLeistenFileName, setLinkerLeistenFileName] = useState("");
-  const [rechterLeistenFileName, setRechterLeistenFileName] = useState("");
+  const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
+  const [customNahtfarbe, setCustomNahtfarbe] = useState('');
+  const [lederType, setLederType] = useState('');
+  const [lederfarbe, setLederfarbe] = useState('');
+  const [innenfutter, setInnenfutter] = useState('');
+  const [schafthohe, setSchafthohe] = useState('');
+  // Separate shaft heights for left and right
+  const [schafthoheLinks, setSchafthoheLinks] = useState('');
+  const [schafthoheRechts, setSchafthoheRechts] = useState('');
+  // Umfangmaße (circumference) - only required when shaft height > 15cm
+  const [umfangmasseLinks, setUmfangmasseLinks] = useState('');
+  const [umfangmasseRechts, setUmfangmasseRechts] = useState('');
+  const [linkerLeistenFileName, setLinkerLeistenFileName] = useState('');
+  const [rechterLeistenFileName, setRechterLeistenFileName] = useState('');
   const [linkerLeistenFile, setLinkerLeistenFile] = useState<File | null>(null);
-  const [rechterLeistenFile, setRechterLeistenFile] = useState<File | null>(
-    null
-  );
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
-  const [otherCustomerNumber, setOtherCustomerNumber] = useState<string>("");
+  const [rechterLeistenFile, setRechterLeistenFile] = useState<File | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [otherCustomerNumber, setOtherCustomerNumber] = useState<string>('');
   const [polsterung, setPolsterung] = useState<string[]>([]);
   const [verstarkungen, setVerstarkungen] = useState<string[]>([]);
-  const [polsterungText, setPolsterungText] = useState("");
-  const [verstarkungenText, setVerstarkungenText] = useState("");
-
+  const [polsterungText, setPolsterungText] = useState('');
+  const [verstarkungenText, setVerstarkungenText] = useState('');
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
   // Add-ons
-  const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<
-    boolean | undefined
-  >(undefined);
-  const [osenEinsetzen, setOsenEinsetzen] = useState<boolean | undefined>(
-    undefined
-  );
+  const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<boolean | undefined>(undefined);
+  const [osenEinsetzen, setOsenEinsetzen] = useState<boolean | undefined>(undefined);
+  const [zipperExtra, setZipperExtra] = useState<boolean | undefined>(undefined);
+
+  // Closure type
+  const [closureType, setClosureType] = useState<string>('');
+
+  // CAD Modeling selection
+  const [cadModeling, setCadModeling] = useState<'1x' | '2x'>('1x');
 
   // Leather color configuration
-  const [numberOfLeatherColors, setNumberOfLeatherColors] =
-    useState<string>("1");
-  const [leatherColorAssignments, setLeatherColorAssignments] = useState<
-    LeatherColorAssignment[]
-  >([]);
-
+  // Default: no selection, UX will only show fields after user chooses a value
+  const [numberOfLeatherColors, setNumberOfLeatherColors] = useState<string>('');
+  const [leatherColorAssignments, setLeatherColorAssignments] = useState<LeatherColorAssignment[]>([]);
   const [leatherColors, setLeatherColors] = useState<string[]>([]);
+
+  // Custom category & price
+  const [customCategory, setCustomCategory] = useState<string>('');
+  const [customCategoryPrice, setCustomCategoryPrice] = useState<number | null>(null);
+  
+  // Zipper and paint images
+  const [zipperImage, setZipperImage] = useState<string | null>(null);
+  const [paintImage, setPaintImage] = useState<string | null>(null);
+
+  // Business address for abholung
+  interface BusinessAddressData {
+    companyName: string;
+    address: string;
+    price: number;
+    phone: string;
+    email: string;
+  }
+  const [businessAddress, setBusinessAddress] = useState<BusinessAddressData | null>(null);
 
   // Get params and search params
   const params = useParams();
   const searchParams = useSearchParams();
   const shaftId = params.id as string;
-  const orderId = searchParams.get("orderId");
+  const orderId = searchParams.get('orderId');
+  const type = searchParams.get('type'); // 'abholung' or null
+  const isAbholung = type === 'abholung';
 
   // Fetch order data if orderId is present
-  const { order: massschuheOrder, loading: orderLoading } =
-    useGetSingleMassschuheOrder(orderId);
+  const { order: massschuheOrder, loading: orderLoading } = useGetSingleMassschuheOrder(orderId);
 
   // Fetch shaft data
-  const {
-    data: apiData,
-    loading: shaftLoading,
-    error: shaftError,
-  } = useSingleCustomShaft(shaftId);
+  const { data: apiData, loading: shaftLoading, error: shaftError } = useSingleCustomShaft(shaftId);
   const shaft = apiData?.data;
-
 
   const loading = orderLoading || shaftLoading;
   const error = shaftError;
@@ -100,6 +128,40 @@ export default function DetailsPage() {
     }
   }, [shaftId, shaft]);
 
+  // Preselect category from API (shaft.catagoary) but allow user to change it
+  // NOTE: Category is set but price is NOT automatically overridden - we use shaft's original price
+  useEffect(() => {
+    if (!shaft) return;
+    if (customCategory) return; // don't override user selection
+
+    const initialCategory = shaft?.catagoary || '';
+    if (initialCategory) {
+      setCustomCategory(initialCategory);
+      // Price mapping disabled - using original shaft price instead
+      // const mappedPrice = CATEGORY_PRICE_MAP[initialCategory];
+      // setCustomCategoryPrice(Number.isFinite(mappedPrice) ? mappedPrice : null);
+    }
+  }, [shaft, customCategory]);
+
+  // Preselect closure type from API (shaft.verschlussart) but allow user to change it
+  useEffect(() => {
+    if (!shaft) return;
+    if (closureType) return; // don't override user selection
+
+    const initialClosureType = shaft?.verschlussart || '';
+    if (initialClosureType) {
+      setClosureType(initialClosureType);
+    }
+  }, [shaft, closureType]);
+
+  // Reset business address when switching modes (no localStorage storage)
+  useEffect(() => {
+    if (!isAbholung) {
+      // Clear business address when not in abholung mode
+      setBusinessAddress(null);
+    }
+  }, [isAbholung]);
+
   // Pre-fill customer when orderId is present
   useEffect(() => {
     if (massschuheOrder) {
@@ -109,41 +171,48 @@ export default function DetailsPage() {
         const customer = orderWithCustomer.customer;
         setSelectedCustomer({
           id: customer.id,
-          name: `${customer.vorname || ""} ${customer.nachname || ""}`.trim(),
-          email: customer.email || "",
+          name: `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
+          email: customer.email || '',
           phone: null,
-          location: "",
-          createdAt: "",
+          location: '',
+          createdAt: '',
         });
-      } else if (
-        massschuheOrder.customerId &&
-        massschuheOrder.kunde &&
-        massschuheOrder.email
-      ) {
-
+      } else if (massschuheOrder.customerId && massschuheOrder.kunde && massschuheOrder.email) {
         // Fallback: use order data if customer object not available
         setSelectedCustomer({
           id: massschuheOrder.customerId,
           name: massschuheOrder.kunde,
           email: massschuheOrder.email,
           phone: massschuheOrder.telefon || null,
-          location: massschuheOrder.location || "",
-          createdAt: "",
-
+          location: massschuheOrder.location || '',
+          createdAt: '',
         });
       }
     }
   }, [massschuheOrder]);
 
   // Order handling
-  const basePrice = shaft?.price || 0;
+  // Use shaft base price first (original product price), only fall back to custom category price if shaft price is not available
+  const basePrice = (shaft?.price ?? customCategoryPrice) || 0;
+
 
 
   const SCHNURSENKEL_PRICE = 4.49;
   const OSEN_EINSETZEN_PRICE = 8.99;
+  const ZIPPER_EXTRA_PRICE = 9.99;
+  const CAD_MODELING_2X_PRICE = 6.99;
+  const ABHOLUNG_PRICE_DEFAULT = 0;
+
+  // Helper to determine if images should be updated
+  const shouldUpdateImage = !!(rechterLeistenFile || linkerLeistenFile);
 
   const calculateTotalPrice = () => {
     let total = basePrice;
+
+    // Add CAD modeling surcharge if 2x is selected
+    if (cadModeling === '2x') {
+      total += CAD_MODELING_2X_PRICE;
+    }
 
     if (passendenSchnursenkel) {
       total += SCHNURSENKEL_PRICE;
@@ -151,6 +220,17 @@ export default function DetailsPage() {
 
     if (osenEinsetzen) {
       total += OSEN_EINSETZEN_PRICE;
+    }
+
+    if (zipperExtra) {
+      total += ZIPPER_EXTRA_PRICE;
+    }
+
+    // Add abholung price when business address is set
+    if (isAbholung && businessAddress) {
+      total += Number.isFinite(businessAddress.price)
+        ? businessAddress.price
+        : ABHOLUNG_PRICE_DEFAULT;
     }
 
     return total;
@@ -164,160 +244,276 @@ export default function DetailsPage() {
 
     // Add files
     if (rechterLeistenFile) {
-      formData.append("image3d_1", rechterLeistenFile);
+      formData.append('image3d_1', rechterLeistenFile);
     }
     if (linkerLeistenFile) {
-      formData.append("image3d_2", linkerLeistenFile);
+      formData.append('image3d_2', linkerLeistenFile);
     }
 
     // Add mabschaftKollektionId
-    formData.append("mabschaftKollektionId", shaftId);
+    formData.append('mabschaftKollektionId', shaftId);
+
+    // Custom category & price
+    if (customCategory) {
+      formData.append('custom_catagoary', customCategory);
+    }
+    if (customCategoryPrice !== null) {
+      formData.append('custom_catagoary_price', customCategoryPrice.toString());
+    }
+
+    // Add business address if abholung is selected
+    if (isAbholung && businessAddress) {
+      formData.append('abholung', 'true');
+      formData.append(
+        'abholung_price',
+        String(
+          Number.isFinite(businessAddress.price)
+            ? businessAddress.price
+            : ABHOLUNG_PRICE_DEFAULT
+        )
+      );
+      formData.append('business_companyName', businessAddress.companyName);
+      formData.append('business_address', businessAddress.address);
+      if (businessAddress.phone) {
+        formData.append('business_phone', businessAddress.phone);
+      }
+      if (businessAddress.email) {
+        formData.append('business_email', businessAddress.email);
+      }
+      if (businessAddress.phone) {
+        formData.append('business_phone', businessAddress.phone);
+      }
+      if (businessAddress.email) {
+        formData.append('business_email', businessAddress.email);
+      }
+    }
+
+    // Update image flag
+    formData.append('update_image', shouldUpdateImage ? 'true' : 'false');
+
+    // CAD Modeling
+    formData.append('cadModeling', cadModeling);
+    if (cadModeling === '2x') {
+      formData.append('cadModeling_2x_price', CAD_MODELING_2X_PRICE.toString());
+    }
+
+    // Verschlussart mapping
+    if (closureType) {
+      formData.append('closureType', closureType);
+      formData.append('verschlussart', closureType);
+    }
 
     // Add lederfarbe only if 1 color is selected
-    if (numberOfLeatherColors === "1") {
-      formData.append("lederfarbe", lederfarbe);
-    } else if (numberOfLeatherColors === "2" || numberOfLeatherColors === "3") {
+    if (numberOfLeatherColors === '1') {
+      formData.append('lederfarbe', lederfarbe);
+    } else if (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') {
       // Add multiple leather colors
-      formData.append("numberOfLeatherColors", numberOfLeatherColors);
-
+      formData.append('numberOfLeatherColors', numberOfLeatherColors);
       leatherColors.forEach((color, index) => {
         formData.append(`leatherColor_${index + 1}`, color);
       });
       // Add section assignments as JSON
-      formData.append(
-        "leatherColorAssignments",
-        JSON.stringify(leatherColorAssignments)
-      );
+      formData.append('leatherColorAssignments', JSON.stringify(leatherColorAssignments));
     }
 
     // Add other fields
-    formData.append("innenfutter", innenfutter);
-    formData.append("schafthohe", schafthohe);
-    formData.append("polsterung", polsterung.join(","));
-    formData.append("vestarkungen", verstarkungen.join(","));
-    formData.append("polsterung_text", polsterungText);
-    formData.append("vestarkungen_text", verstarkungenText);
-    formData.append(
-      "nahtfarbe",
-      nahtfarbeOption === "custom" ? customNahtfarbe : "default"
-    );
-    formData.append(
-      "nahtfarbe_text",
-      nahtfarbeOption === "custom" ? customNahtfarbe : ""
-    );
-    formData.append("lederType", lederType);
+    formData.append('innenfutter', innenfutter);
+    formData.append('schafthohe', schafthohe);
+    // Add separate shaft heights for left and right
+    formData.append('schafthohe_links', schafthoheLinks);
+    formData.append('schafthohe_rechts', schafthoheRechts);
+    // Add circumference measurements if shaft height > 15cm
+    if (parseFloat(schafthoheLinks) > 15 && umfangmasseLinks) {
+      formData.append('umfangmasse_links', umfangmasseLinks);
+    }
+    if (parseFloat(schafthoheRechts) > 15 && umfangmasseRechts) {
+      formData.append('umfangmasse_rechts', umfangmasseRechts);
+    }
+    formData.append('polsterung', polsterung.join(','));
+    formData.append('vestarkungen', verstarkungen.join(','));
+    formData.append('polsterung_text', polsterungText);
+    formData.append('vestarkungen_text', verstarkungenText);
+    formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
+    formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
+    formData.append('lederType', lederType);
+    // keep for backward compatibility (also added above when set)
+    if (!formData.has('closureType') && closureType) {
+      formData.append('closureType', closureType);
+    }
+
+    // Zusatzfragen als eigene Felder
+    if (passendenSchnursenkel !== undefined) {
+      formData.append(
+        'moechten_sie_passende_schnuersenkel_zum_schuh',
+        passendenSchnursenkel ? 'true' : 'false'
+      );
+    }
+    if (osenEinsetzen !== undefined) {
+      formData.append(
+        'moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen',
+        osenEinsetzen ? 'true' : 'false'
+      );
+    }
+    if (zipperExtra !== undefined) {
+      formData.append(
+        'moechten_sie_einen_zusaetzlichen_reissverschluss',
+        zipperExtra ? 'true' : 'false'
+      );
+    }
 
     // Add prices only if options are selected
     if (passendenSchnursenkel === true) {
-      formData.append("passenden_schnursenkel", "true");
-      formData.append("passenden_schnursenkel_price", "4.49");
+      formData.append('passenden_schnursenkel', 'true');
+      formData.append('moechten_sie_passende_schnuersenkel_zum_schuh_price', '4.49');
     }
     if (osenEinsetzen === true) {
-      formData.append("osen_einsetzen", "true");
-      formData.append("osen_einsetzen_price", "8.99");
+      formData.append('osen_einsetzen', 'true');
+      formData.append('moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price', '8.99');
+    }
+    if (zipperExtra === true) {
+      formData.append('zipper_extra', 'true');
+      formData.append('moechten_sie_einen_zusaetzlichen_reissverschluss_price', '9.99');
+    }
+
+    // Add business address if abholung is selected
+    if (isAbholung && businessAddress) {
+      formData.append('abholung', 'true');
+      formData.append(
+        'abholung_price',
+        String(
+          Number.isFinite(businessAddress.price)
+            ? businessAddress.price
+            : ABHOLUNG_PRICE_DEFAULT
+        )
+      );
+      formData.append('business_companyName', businessAddress.companyName);
+      formData.append('business_address', businessAddress.address);
     }
 
     // Add total price
-    formData.append("totalPrice", orderPrice.toString());
-
+    formData.append('totalPrice', orderPrice.toString());
 
     return formData;
   };
 
-  // Handle Boden Konfigurieren - stores form data and redirects to Bodenkonstruktion (no API call)
-  const handleBodenKonfigurieren = () => {
+  // Handle Boden Konfigurieren - Store data in context and redirect to Bodenkonstruktion
+  const handleBodenKonfigurieren = async () => {
+    // Validate customer selection if no orderId
     if (!orderId) {
-      toast.error("Order ID is required");
-      return;
+      if (!selectedCustomer && !otherCustomerNumber.trim()) {
+        toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
+        return;
+      }
     }
 
-    // Store custom shaft form data in sessionStorage for later use
+    // Prepare custom shaft data (same for both with and without orderId)
     const customShaftData = {
-      image3d_1: rechterLeistenFile,
-      image3d_2: linkerLeistenFile,
+      orderId,
       mabschaftKollektionId: shaftId,
-      lederfarbe: numberOfLeatherColors === "1" ? lederfarbe : null,
+      zipperImage,
+      paintImage,
+      cadModeling,
+      cadModeling_2x_price: cadModeling === '2x' ? CAD_MODELING_2X_PRICE : null,
+      customCategory,
+      customCategoryPrice,
+      lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
       numberOfLeatherColors,
-      leatherColors: numberOfLeatherColors !== "1" ? leatherColors : [],
-      leatherColorAssignments:
-        numberOfLeatherColors !== "1" ? leatherColorAssignments : [],
-
+      leatherColors: numberOfLeatherColors !== '1' ? leatherColors : [],
+      leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
       innenfutter,
       schafthohe,
+      schafthohe_links: schafthoheLinks,
+      schafthohe_rechts: schafthoheRechts,
+      umfangmasse_links: parseFloat(schafthoheLinks) > 15 ? umfangmasseLinks : null,
+      umfangmasse_rechts: parseFloat(schafthoheRechts) > 15 ? umfangmasseRechts : null,
       polsterung,
       verstarkungen,
       polsterung_text: polsterungText,
       verstarkungen_text: verstarkungenText,
-      nahtfarbe: nahtfarbeOption === "custom" ? customNahtfarbe : "default",
-      nahtfarbe_text: nahtfarbeOption === "custom" ? customNahtfarbe : "",
+      nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
+      nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
       lederType,
+      closureType,
       passenden_schnursenkel: passendenSchnursenkel === true,
-      passenden_schnursenkel_price:
-        passendenSchnursenkel === true ? "4.49" : null,
+      moechten_sie_passende_schnuersenkel_zum_schuh_price: passendenSchnursenkel === true ? '4.49' : null,
       osen_einsetzen: osenEinsetzen === true,
-      osen_einsetzen_price: osenEinsetzen === true ? "8.99" : null,
-
+      moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: osenEinsetzen === true ? '8.99' : null,
+      zipper_extra: zipperExtra === true,
+      moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
+      businessAddress: isAbholung ? businessAddress : null,
+      isAbholung,
       totalPrice: orderPrice,
+      // Store customer info for orders without orderId
+      customerId: selectedCustomer?.id,
+      other_customer_number: otherCustomerNumber.trim() || null,
       // Store file names for reference
       linkerLeistenFileName,
       rechterLeistenFileName,
     };
 
-    // Store in sessionStorage (we'll need to handle files separately)
-    sessionStorage.setItem(
-      `customShaftData_${orderId}`,
-      JSON.stringify({
-        ...customShaftData,
-        // Store file references (we'll need to recreate FormData in Bodenkonstruktion)
-        hasImage3d_1: !!rechterLeistenFile,
-        hasImage3d_2: !!linkerLeistenFile,
-      })
-    );
+    // Store data in context (in-memory state)
+    setContextData({
+      ...customShaftData as any,
+      hasImage3d_1: !!rechterLeistenFile,
+      hasImage3d_2: !!linkerLeistenFile,
+      hasUploadedImage: false, // Collection-based, not custom upload
+      hasZipperImage: !!zipperImage,
+      hasPaintImage: !!paintImage,
+    });
 
-
-    // Store files in a way that can be accessed later
-    // Note: Files can't be stored in sessionStorage, so we'll need to handle them differently
-    // For now, we'll store the form data and handle files when calling API
-
-    // Close modal
     setShowConfirmationModal(false);
 
-
-    // Redirect to Bodenkonstruktion page
-    router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`);
+    // Redirect to Bodenkonstruktion page (works with or without orderId)
+    if (orderId) {
+      router.push(`/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`);
+    } else {
+      router.push(`/dashboard/massschuhauftraege-deatils/2`);
+    }
   };
 
   // Function to clear all form data
   const clearFormData = () => {
-    setUploadedImage(null);
-    setNahtfarbeOption("default");
-    setCustomNahtfarbe("");
-    setLederType("");
-    setLederfarbe("");
-    setInnenfutter("");
-    setSchafthohe("");
-    setLinkerLeistenFileName("");
-    setRechterLeistenFileName("");
+    setNahtfarbeOption('default');
+    setCustomNahtfarbe('');
+    setLederType('');
+    setLederfarbe('');
+    setInnenfutter('');
+    setSchafthohe('');
+    setSchafthoheLinks('');
+    setSchafthoheRechts('');
+    setUmfangmasseLinks('');
+    setUmfangmasseRechts('');
+    setLinkerLeistenFileName('');
+    setRechterLeistenFileName('');
     setLinkerLeistenFile(null);
     setRechterLeistenFile(null);
     setSelectedCustomer(null);
-    setOtherCustomerNumber("");
+    setOtherCustomerNumber('');
     setPolsterung([]);
     setVerstarkungen([]);
-    setPolsterungText("");
-    setVerstarkungenText("");
-    setNumberOfLeatherColors("1");
-
+    setPolsterungText('');
+    setVerstarkungenText('');
+    setNumberOfLeatherColors('');
     setLeatherColorAssignments([]);
     setLeatherColors([]);
+    setClosureType('');
+    setPassendenSchnursenkel(undefined);
+    setOsenEinsetzen(undefined);
+    setZipperExtra(undefined);
+    setCadModeling('1x');
+    setCustomCategory('');
+    setCustomCategoryPrice(null);
   };
 
   const handleOrderConfirmation = async () => {
     if (!selectedCustomer && !otherCustomerNumber.trim()) {
-      toast.error(
-        "Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein."
-      );
+      toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
+      return;
+    }
 
+    // For abholung, validate business address is provided
+    if (isAbholung && !businessAddress) {
+      toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
       return;
     }
 
@@ -327,93 +523,152 @@ export default function DetailsPage() {
 
       // Use selected customer ID if available, otherwise use other_customer_number
       if (selectedCustomer) {
-        formData.append("customerId", selectedCustomer.id);
+        formData.append('customerId', selectedCustomer.id);
       } else if (otherCustomerNumber.trim()) {
-        formData.append("other_customer_number", otherCustomerNumber.trim());
+        formData.append('other_customer_number', otherCustomerNumber.trim());
       }
 
       if (rechterLeistenFile) {
-        formData.append("image3d_1", rechterLeistenFile);
+        formData.append('image3d_1', rechterLeistenFile);
       }
       if (linkerLeistenFile) {
-        formData.append("image3d_2", linkerLeistenFile);
+        formData.append('image3d_2', linkerLeistenFile);
       }
 
-      formData.append("lederType", lederType);
+      // Update image flag
+      formData.append('update_image', shouldUpdateImage ? 'true' : 'false');
+
+      formData.append('lederType', lederType);
+
+      // CAD Modeling
+      formData.append('cadModeling', cadModeling);
+      if (cadModeling === '2x') {
+        formData.append('cadModeling_2x_price', CAD_MODELING_2X_PRICE.toString());
+      }
+
+      // Verschlussart mapping
+      if (closureType) {
+        formData.append('closureType', closureType);
+        formData.append('verschlussart', closureType);
+      }
 
       // Handle leather color based on number of colors
-      if (numberOfLeatherColors === "1") {
-        formData.append("lederfarbe", lederfarbe);
-      } else if (
-        numberOfLeatherColors === "2" ||
-        numberOfLeatherColors === "3"
-      ) {
+      if (numberOfLeatherColors === '1') {
+        formData.append('lederfarbe', lederfarbe);
+      } else if (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') {
         // Add multiple leather colors
-        formData.append("numberOfLeatherColors", numberOfLeatherColors);
-
+        formData.append('numberOfLeatherColors', numberOfLeatherColors);
         leatherColors.forEach((color, index) => {
           formData.append(`leatherColor_${index + 1}`, color);
         });
         // Add section assignments as JSON
-        formData.append(
-          "leatherColorAssignments",
-          JSON.stringify(leatherColorAssignments)
-        );
+        formData.append('leatherColorAssignments', JSON.stringify(leatherColorAssignments));
       }
 
-      formData.append("innenfutter", innenfutter);
-      formData.append(
-        "nahtfarbe",
-        nahtfarbeOption === "custom" ? customNahtfarbe : "default"
-      );
-      formData.append(
-        "nahtfarbe_text",
-        nahtfarbeOption === "custom" ? customNahtfarbe : ""
-      );
-      formData.append("schafthohe", schafthohe);
-      formData.append("polsterung", polsterung.join(","));
-      formData.append("vestarkungen", verstarkungen.join(","));
+      formData.append('innenfutter', innenfutter);
+      formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
+      formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
+      formData.append('schafthohe', schafthohe);
+      // Add separate shaft heights for left and right
+      formData.append('schafthohe_links', schafthoheLinks);
+      formData.append('schafthohe_rechts', schafthoheRechts);
+      // Add circumference measurements if shaft height > 15cm
+      if (parseFloat(schafthoheLinks) > 15 && umfangmasseLinks) {
+        formData.append('umfangmasse_links', umfangmasseLinks);
+      }
+      if (parseFloat(schafthoheRechts) > 15 && umfangmasseRechts) {
+        formData.append('umfangmasse_rechts', umfangmasseRechts);
+      }
+      formData.append('polsterung', polsterung.join(','));
+      formData.append('vestarkungen', verstarkungen.join(','));
 
-      formData.append("polsterung_text", polsterungText);
-      formData.append("vestarkungen_text", verstarkungenText);
+      formData.append('polsterung_text', polsterungText);
+      formData.append('vestarkungen_text', verstarkungenText);
       if (passendenSchnursenkel === true) {
-        formData.append("passenden_schnursenkel", "true");
+        formData.append('passenden_schnursenkel', 'true');
 
-        formData.append("Passenden_schnursenkel_price", "4.49");
+        formData.append('Passenden_schnursenkel_price', '4.49');
       }
       if (osenEinsetzen === true) {
-        formData.append("osen_einsetzen", "true");
+        formData.append('osen_einsetzen', 'true');
 
-        formData.append("osen_einsetzen_price", "8.99");
+        formData.append('osen_einsetzen_price', '8.99');
       }
-      formData.append("mabschaftKollektionId", shaftId);
-      formData.append("totalPrice", orderPrice.toString());
+      if (zipperExtra === true) {
+        formData.append('zipper_extra', 'true');
 
-
-      // Use orderId if present, otherwise show error (orderId is required for this flow)
-      if (!orderId) {
-        toast.error("Order ID is required");
-        setIsCreatingOrder(false);
-        return;
+        formData.append('zipper_extra_price', '9.99');
       }
 
-      const response = await createCustomShaft(orderId, formData);
+      // Zusatzfragen als eigene Felder
+      if (passendenSchnursenkel !== undefined) {
+        formData.append(
+          'moechten_sie_passende_schnuersenkel_zum_schuh',
+          passendenSchnursenkel ? 'true' : 'false'
+        );
+      }
+      if (osenEinsetzen !== undefined) {
+        formData.append(
+          'moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen',
+          osenEinsetzen ? 'true' : 'false'
+        );
+      }
+      if (zipperExtra !== undefined) {
+        formData.append(
+          'moechten_sie_einen_zusaetzlichen_reissverschluss',
+          zipperExtra ? 'true' : 'false'
+        );
+      }
+      formData.append('mabschaftKollektionId', shaftId);
+
+      // Custom category & price
+      if (customCategory) {
+        formData.append('custom_catagoary', customCategory);
+      }
+      if (customCategoryPrice !== null) {
+        formData.append('custom_catagoary_price', customCategoryPrice.toString());
+      }
+      formData.append('totalPrice', orderPrice.toString());
+
+      // Add business address if abholung is selected
+      if (isAbholung && businessAddress) {
+        formData.append('abholung', 'true');
+        formData.append(
+          'abholung_price',
+          String(
+            Number.isFinite(businessAddress.price)
+              ? businessAddress.price
+              : ABHOLUNG_PRICE_DEFAULT
+          )
+        );
+        formData.append('business_companyName', businessAddress.companyName);
+        formData.append('business_address', businessAddress.address);
+        if (businessAddress.phone) {
+          formData.append('business_phone', businessAddress.phone);
+        }
+        if (businessAddress.email) {
+          formData.append('business_email', businessAddress.email);
+        }
+      }
+
+      // Use orderId if present, otherwise create without orderId
+      let response;
+      if (orderId) {
+        response = await createCustomShaft(orderId, formData);
+      } else {
+        response = await createMassschuheWithoutOrderId(formData);
+      }
       clearFormData();
       setShowSuccessMessage(true);
       setShowConfirmationModal(false);
-      toast.success(response.message || "Bestellung erfolgreich erstellt!", {
-        id: "creating-order",
-      });
+      toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
 
       // Navigate back to custom-shafts page after success
       setTimeout(() => {
-        router.push("/dashboard/custom-shafts");
+        router.push('/dashboard/custom-shafts');
       }, 200);
     } catch (error) {
-      toast.error("Fehler beim Erstellen der Bestellung.", {
-        id: "creating-order",
-      });
-
+      toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" });
     } finally {
       setIsCreatingOrder(false);
     }
@@ -428,11 +683,10 @@ export default function DetailsPage() {
   if (error) {
     return (
       <div className="px-2 md:px-6 py-8 w-full flex flex-col items-center justify-center min-h-[400px]">
-        <div className="text-red-500 text-lg font-medium mb-2">
-          Fehler beim Laden der Daten
+        <div className="text-red-500 text-lg font-medium mb-2">Fehler beim Laden der Daten</div>
+        <div className="text-gray-400 text-sm text-center">
+          {error}
         </div>
-        <div className="text-gray-400 text-sm text-center">{error}</div>
-
       </div>
     );
   }
@@ -441,10 +695,7 @@ export default function DetailsPage() {
   if (!shaft) {
     return (
       <div className="px-2 md:px-6 py-8 w-full flex flex-col items-center justify-center min-h-[400px]">
-        <div className="text-gray-500 text-lg font-medium mb-2">
-          Produkt nicht gefunden
-        </div>
-
+        <div className="text-gray-500 text-lg font-medium mb-2">Produkt nicht gefunden</div>
         <div className="text-gray-400 text-sm text-center">
           Das angeforderte Produkt konnte nicht gefunden werden.
         </div>
@@ -454,277 +705,114 @@ export default function DetailsPage() {
 
   return (
     <>
-      <div className="w-full px-4 md:px-8 py-6">
-        {/* Header Section */}
-        <div className="flex items-center justify-center gap-3 mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold">Kundenauswahl</h1>
+      <div className="px-2 md:px-6 py-8 w-full">
+
+
+        {/* File Upload Section - Hide file uploads when type is 'abholung' */}
+        <FileUploadSection
+          linkerLeistenFileName={linkerLeistenFileName}
+          setLinkerLeistenFileName={setLinkerLeistenFileName}
+          rechterLeistenFileName={rechterLeistenFileName}
+          setRechterLeistenFileName={setRechterLeistenFileName}
+          linkerLeistenFile={linkerLeistenFile}
+          setLinkerLeistenFile={setLinkerLeistenFile}
+          rechterLeistenFile={rechterLeistenFile}
+          setRechterLeistenFile={setRechterLeistenFile}
+          selectedCustomer={selectedCustomer}
+          onSelectCustomer={setSelectedCustomer}
+          otherCustomerNumber={otherCustomerNumber}
+          setOtherCustomerNumber={setOtherCustomerNumber}
+          hideCustomerSearch={!!orderId}
+          hideFileUploads={isAbholung}
+          businessAddress={businessAddress}
+          onBusinessAddressSave={(data) => {
+            // Set to null if both fields are empty, otherwise set the data
+            if (!data.companyName && !data.address) {
+              setBusinessAddress(null);
+            } else {
+              setBusinessAddress({
+                companyName: data.companyName,
+                address: data.address,
+                price: Number.isFinite(data.price) ? data.price : ABHOLUNG_PRICE_DEFAULT,
+                phone: data.phone || '',
+                email: data.email || '',
+              });
+            }
+          }}
+          orderId={orderId}
+        />
+
+        <div className="flex flex-col border-2 border-gray-200 rounded-lg p-4 shadow-md">
+          {/* Heading with separator */}
+          <div className="text-left mb-6">
+            <h1 className="text-lg md:text-xl font-bold text-gray-800 mb-4">Massschaftkonfigurator</h1>
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+
+          {/* Product Image and Info */}
+          <ProductImageInfo
+            shaft={shaft}
+          />
+          {/* Product Configuration */}
+          <ProductConfiguration
+            cadModeling={cadModeling}
+            setCadModeling={setCadModeling}
+            customCategory={customCategory}
+            setCustomCategory={setCustomCategory}
+            customCategoryPrice={customCategoryPrice}
+            setCustomCategoryPrice={setCustomCategoryPrice}
+            nahtfarbeOption={nahtfarbeOption}
+            setNahtfarbeOption={setNahtfarbeOption}
+            customNahtfarbe={customNahtfarbe}
+            setCustomNahtfarbe={setCustomNahtfarbe}
+            passendenSchnursenkel={passendenSchnursenkel}
+            setPassendenSchnursenkel={setPassendenSchnursenkel}
+            osenEinsetzen={osenEinsetzen}
+            setOsenEinsetzen={setOsenEinsetzen}
+            zipperExtra={zipperExtra}
+            setZipperExtra={setZipperExtra}
+            closureType={closureType}
+            setClosureType={setClosureType}
+            lederType={lederType}
+            setLederType={setLederType}
+            lederfarbe={lederfarbe}
+            setLederfarbe={setLederfarbe}
+            innenfutter={innenfutter}
+            setInnenfutter={setInnenfutter}
+            schafthohe={schafthohe}
+            setSchafthohe={setSchafthohe}
+            schafthoheLinks={schafthoheLinks}
+            setSchafthoheLinks={setSchafthoheLinks}
+            schafthoheRechts={schafthoheRechts}
+            setSchafthoheRechts={setSchafthoheRechts}
+            umfangmasseLinks={umfangmasseLinks}
+            setUmfangmasseLinks={setUmfangmasseLinks}
+            umfangmasseRechts={umfangmasseRechts}
+            setUmfangmasseRechts={setUmfangmasseRechts}
+            polsterung={polsterung}
+            setPolsterung={setPolsterung}
+            verstarkungen={verstarkungen}
+            setVerstarkungen={setVerstarkungen}
+            polsterungText={polsterungText}
+            setPolsterungText={setPolsterungText}
+            verstarkungenText={verstarkungenText}
+            setVerstarkungenText={setVerstarkungenText}
+            numberOfLeatherColors={numberOfLeatherColors}
+            setNumberOfLeatherColors={setNumberOfLeatherColors}
+            leatherColorAssignments={leatherColorAssignments}
+            setLeatherColorAssignments={setLeatherColorAssignments}
+            leatherColors={leatherColors}
+            setLeatherColors={setLeatherColors}
+            shoeImage={shaft?.image || null}
+            onOrderComplete={() => setShowConfirmationModal(true)}
+            category={shaft?.catagoary}
+            allowCategoryEdit={false}
+            zipperImage={zipperImage}
+            setZipperImage={setZipperImage}
+            paintImage={paintImage}
+            setPaintImage={setPaintImage}
+          />
         </div>
-
-        {/* Search and Upload Section */}
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_1fr_1fr_auto] gap-4 mb-8 bg-white border p-6 rounded-lg">
-          {/* Kunde auswählen */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
-              Kunde auswählen
-            </label>
-            <Input
-              placeholder="Suche..."
-              className="w-full"
-              value={selectedCustomer?.name || ""}
-              readOnly
-            />
-          </div>
-
-          {/* Kunden Extern */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
-              Kunden Extern
-            </label>
-            <Input
-              placeholder="Textfeld..."
-              className="w-full"
-              value={otherCustomerNumber}
-              onChange={(e) => setOtherCustomerNumber(e.target.value)}
-            />
-          </div>
-
-          {/* Linker Leisten */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
-              Linker Leisten
-            </label>
-            <div className="relative">
-              <input
-                type="file"
-                id="linkerLeisten"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setLinkerLeistenFile(file);
-                    setLinkerLeistenFileName(file.name);
-                  }
-                }}
-                accept=".stl,.obj,.3ds"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full cursor-pointer"
-                onClick={() =>
-                  document.getElementById("linkerLeisten")?.click()
-                }
-              >
-                Upload 3D-File
-              </Button>
-              {linkerLeistenFileName && (
-                <p className="text-xs text-gray-500 mt-1 truncate">
-                  {linkerLeistenFileName}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Rechter Leisten */}
-          <div>
-            <label className="text-sm font-medium text-gray-700 mb-2 block">
-              Rechter Leisten
-            </label>
-            <div className="relative">
-              <input
-                type="file"
-                id="rechterLeisten"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setRechterLeistenFile(file);
-                    setRechterLeistenFileName(file.name);
-                  }
-                }}
-                accept=".stl,.obj,.3ds"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full cursor-pointer"
-                onClick={() =>
-                  document.getElementById("rechterLeisten")?.click()
-                }
-              >
-                Upload 3D-File
-              </Button>
-              {rechterLeistenFileName && (
-                <p className="text-xs text-gray-500 mt-1 truncate">
-                  {rechterLeistenFileName}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Search Button */}
-          <div className="flex items-end">
-            <Button className="bg-[#62A07C] hover:bg-[#62a07c98] text-white px-6 h-10 cursor-pointer">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5 mr-2"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"
-                />
-              </svg>
-              Suchen
-            </Button>
-          </div>
-        </div>
-        <div className="border p-8 rounded-lg shadow-lg">
-          {/* Main Title */}
-          <h2 className="text-2xl font-bold mb-6 border-b pb-4">
-            Masschaftkonfigurator
-          </h2>
-
-          {/* Single Card Container */}
-          <div className="bg-white mb-8">
-            {/* Product Display Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 pb-8 border-b border-gray-200">
-              {/* Product Image */}
-              <div className="flex items-center justify-center bg-gray-50 rounded-lg p-8">
-                <img
-                  src={uploadedImage || shaft?.image || "/placeholder-shoe.png"}
-                  alt={shaft?.name || "Product"}
-                  className="max-w-full h-auto object-contain"
-                  style={{ maxHeight: "300px" }}
-                />
-              </div>
-
-              {/* Product Details */}
-              <div className="flex flex-col justify-center">
-                <h3 className="text-2xl font-bold mb-2">
-                  {shaft?.name || "Product Name"}
-                </h3>
-                <p className="text-gray-500 mb-4">#{shaft?.id || "5229"}</p>
-                <p className="text-gray-700 mb-6 leading-relaxed">
-                  {shaft?.description ||
-                    "Ein leichter, weicher Alltagsschuh mit doppeltem Klettverschluss für komfortables An- und Ausziehen und entspanntes Gehen."}
-                </p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-3xl font-bold">
-                    {basePrice.toFixed(2)} €
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    (Preis kann automatisiert aktualisiert)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Configuration Fields */}
-            {/* Ledertyp - Inline Layout */}
-            <div className="grid grid-cols-[200px_1fr] gap-4 items-center mb-6">
-              <label className="text-sm font-medium text-gray-700">
-                Ledertyp:
-              </label>
-              <select
-                className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={lederType}
-                onChange={(e) => setLederType(e.target.value)}
-              >
-                <option value="">Herschleder Gemustert</option>
-                <option value="Herschleder Gemustert">
-                  Herschleder Gemustert
-                </option>
-                <option value="Glattleder">Glattleder</option>
-                <option value="Rauleder">Rauleder</option>
-                <option value="Nubukleder">Nubukleder</option>
-              </select>
-            </div>
-
-            {/* Anzahl der Ledertypen - Inline Layout */}
-            <div className="grid grid-cols-[200px_1fr] gap-4 items-center mb-6">
-              <label className="text-sm font-medium text-gray-700">
-                Anzahl der Ledertypen:
-              </label>
-              <select
-                className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={numberOfLeatherColors}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setNumberOfLeatherColors(value);
-                  // Initialize leather colors array based on selection
-                  if (value === "2") {
-                    setLeatherColors(["", ""]);
-                  } else if (value === "3") {
-                    setLeatherColors(["", "", ""]);
-                  } else {
-                    setLeatherColors([]);
-                  }
-                }}
-              >
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-              </select>
-            </div>
-
-            {/* Leather Type Assignment Section */}
-            {numberOfLeatherColors !== "1" && (
-              <div className="grid grid-cols-[200px_1fr] gap-4 items-start mb-6">
-                <label className="text-sm font-medium text-gray-700">
-                  Ledertypen-Zuordnung:
-                </label>
-                <div className="space-y-3">
-                  {/* Display leather types inline */}
-                  <div className="flex flex-wrap gap-4">
-                    {Array.from({
-                      length: parseInt(numberOfLeatherColors),
-                    }).map((_, index) => (
-                      <span key={index} className="text-sm">
-                        <span className="font-medium">Leder {index + 1}:</span>{" "}
-                        {leatherColors[index] ||
-                          (index === 0
-                            ? "nubuckleder"
-                            : index === 1
-                            ? "nappa"
-                            : "softveloursleder")}
-                      </span>
-                    ))}
-                  </div>
-
-                  {/* 9 Bereiche zugeordnet text */}
-                  <div className="text-sm text-gray-600">
-                    9 Bereiche zugeordnet
-                  </div>
-
-                  {/* Zuordnung bearbeiten button */}
-                  <Button variant="outline" className="cursor-pointer">
-                    Zuordnung bearbeiten
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Single Leather Color - Inline Layout */}
-            {numberOfLeatherColors === "1" && (
-              <div className="grid grid-cols-[200px_1fr] gap-4 items-center mb-6">
-                <label className="text-sm font-medium text-gray-700">
-                  Lederfarbe:
-                </label>
-                <Input
-                  placeholder="Lederfarbe eingeben"
-                  value={lederfarbe}
-                  onChange={(e) => setLederfarbe(e.target.value)}
-                />
-              </div>
-            )}
-          </div>
-        </div>
-
 
         {/* Success Message */}
         <SuccessMessage
@@ -739,32 +827,51 @@ export default function DetailsPage() {
           onClose={() => setShowConfirmationModal(false)}
           onConfirm={handleOrderConfirmation}
           onSendToAdmin2={async () => {
+            // Validate customer selection if no orderId
             if (!orderId) {
-              toast.error("Order ID is required");
+              if (!selectedCustomer && !otherCustomerNumber.trim()) {
+                toast.error("Bitte wählen Sie einen Kunden aus oder geben Sie einen Kundenname ein.");
+                return;
+              }
+            }
+
+            // For abholung, validate business address is provided
+            if (isAbholung && !businessAddress) {
+              toast.error("Bitte geben Sie eine Geschäftsadresse für die Leistenabholung ein.");
               return;
             }
+
             setIsCreatingOrder(true);
             try {
               const formData = prepareFormDataForAdmin2();
-              const response = await sendMassschuheOrderToAdmin2(
-                orderId,
-                formData
-              );
+              
+              // Add customer info if no orderId
+              if (!orderId) {
+                if (selectedCustomer) {
+                  formData.append('customerId', selectedCustomer.id);
+                } else if (otherCustomerNumber.trim()) {
+                  formData.append('other_customer_number', otherCustomerNumber.trim());
+                }
+              }
+
+              let response;
+              if (orderId) {
+                // If orderId exists, use sendMassschuheOrderToAdmin2
+                response = await sendMassschuheOrderToAdmin2(orderId, formData);
+              } else {
+                // If no orderId, use createMassschuheWithoutOrderId
+                response = await createMassschuheWithoutOrderId(formData);
+              }
+
               clearFormData();
               setShowSuccessMessage(true);
               setShowConfirmationModal(false);
-              toast.success(
-                response.message || "Bestellung erfolgreich gesendet!",
-                { id: "sending-order" }
-              );
+              toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "sending-order" });
               setTimeout(() => {
-                router.push("/dashboard/custom-shafts");
+                router.push('/dashboard/custom-shafts');
               }, 200);
             } catch (error) {
-              toast.error("Fehler beim Senden der Bestellung.", {
-                id: "sending-order",
-              });
-
+              toast.error("Fehler beim Erstellen der Bestellung.", { id: "sending-order" });
             } finally {
               setIsCreatingOrder(false);
             }
@@ -773,6 +880,7 @@ export default function DetailsPage() {
           orderPrice={orderPrice}
           passendenSchnursenkel={passendenSchnursenkel}
           osenEinsetzen={osenEinsetzen}
+          zipperExtra={zipperExtra}
           selectedCustomer={selectedCustomer}
           otherCustomerNumber={otherCustomerNumber}
           shaftName={shaft?.name}
@@ -781,6 +889,6 @@ export default function DetailsPage() {
         />
       </div>
     </>
+
   );
 }
-

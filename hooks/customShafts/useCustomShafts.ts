@@ -10,6 +10,7 @@ export interface CustomShaft {
   catagoary: string;
   gender: string;
   description: string;
+  verschlussart?: string;
   createdAt: string;
   updatedAt: string;
 }

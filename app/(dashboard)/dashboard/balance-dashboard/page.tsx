@@ -8,10 +8,9 @@ export default function BalanceDashboard() {
         <div className="">
             <h1 className="text-2xl font-bold text-gray-800">FeetF1rst Balance</h1>
             <p className="text-gray-500 mt-2 max-w-6xl mb-6">
-                Hier siehst du nur Beträge, die dir über die FeetF1rst App oder durch Gutschriften
-                gutgeschrieben wurden (nicht Umsätze aus deinem Geschäft). Dieses Guthaben kannst
-                du direkt für Bestellungen in FeetF1rst verwenden. Am Monatsende wird alles gesammelt
-                abgerechnet bzw. ausbezahlt.
+            Hier sehen Sie alle über FeetF1rst entstandenen Einnahmen und Ausgaben.
+Am Monatsende erfolgt eine automatische Abrechnung – je nach Saldo erhalten Sie eine Auszahlung oder der Betrag wird eingezogen.
+
             </p>
 
             {/* Top Row: Aktuelle Balance + Balance Verlauf Chart */}

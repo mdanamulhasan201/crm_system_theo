@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
@@ -17,7 +18,7 @@ export interface LeatherColorAssignment {
 interface LeatherColorSectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (assignments: LeatherColorAssignment[], leatherColors: string[]) => void;
+  onSave: (assignments: LeatherColorAssignment[], leatherColors: string[], paintedImage?: string | null) => void;
   numberOfColors: number; // 2 or 3
   shoeImage: string | null; // The uploaded shoe image
   initialAssignments?: LeatherColorAssignment[];
@@ -90,6 +91,11 @@ export default function LeatherColorSectionModal({
     return Array(numberOfColors).fill('');
   });
 
+  const [leatherColorNames, setLeatherColorNames] = useState<string[]>(() => {
+    // Initialize with empty strings for each leather
+    return Array(numberOfColors).fill('');
+  });
+
   const [assignments, setAssignments] = useState<LeatherColorAssignment[]>(() => {
     return [...initialAssignments];
   });
@@ -105,6 +111,7 @@ export default function LeatherColorSectionModal({
       } else {
         setLeatherColors(Array(numberOfColors).fill(''));
       }
+      setLeatherColorNames(Array(numberOfColors).fill(''));
       setAssignments([...initialAssignments]);
       setSelectedLeatherNumber(1);
     }
@@ -124,12 +131,19 @@ export default function LeatherColorSectionModal({
       return;
     }
 
-    // Add new assignment
+    // Check if color name is defined for selected leather number
+    if (!leatherColorNames[colorIndex] || !leatherColorNames[colorIndex].trim()) {
+      toast.error(`Bitte wählen Sie zuerst einen Farbnamen für Leder ${selectedLeatherNumber} aus.`);
+      return;
+    }
+
+    // Add new assignment with color name
+    const colorName = leatherColorNames[colorIndex] || '';
     const newAssignment: LeatherColorAssignment = {
       x,
       y,
       leatherNumber: selectedLeatherNumber,
-      color: leatherColors[colorIndex],
+      color: colorName ? `${leatherColors[colorIndex]} - ${colorName}` : leatherColors[colorIndex],
     };
 
     setAssignments([...assignments, newAssignment]);
@@ -141,14 +155,26 @@ export default function LeatherColorSectionModal({
     setLeatherColors(newColors);
   };
 
+  const handleLeatherColorNameChange = (index: number, colorName: string) => {
+    const newColorNames = [...leatherColorNames];
+    newColorNames[index] = colorName;
+    setLeatherColorNames(newColorNames);
+  };
+
   const handleRemoveAssignment = (index: number) => {
     setAssignments(assignments.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate that all leather types are selected
     if (leatherColors.some((color) => !color.trim())) {
       toast.error('Bitte wählen Sie für alle Ledertypen einen Typ aus.');
+      return;
+    }
+
+    // Validate that all color names are entered
+    if (leatherColorNames.some((colorName) => !colorName.trim())) {
+      toast.error('Bitte geben Sie für alle Ledertypen einen Farbnamen ein.');
       return;
     }
 
@@ -157,8 +183,110 @@ export default function LeatherColorSectionModal({
       return;
     }
 
-    onSave(assignments, leatherColors);
+    // Combine leather type and color name for each leather
+    const leatherColorsWithNames = leatherColors.map((type, index) => {
+      const colorName = leatherColorNames[index] || '';
+      return colorName ? `${type} - ${colorName}` : type;
+    });
+
+    // Generate painted image with all assignments
+    let paintedImage: string | null = null;
+    
+    if (shoeImage && imageRef.current) {
+      try {
+        paintedImage = await generatePaintedImage();
+        console.log('Painted image generated successfully');
+      } catch (error) {
+        console.error('Error generating painted image:', error);
+        // Don't show error to user - save without painted image
+        // The assignments are still saved, painted image is optional
+        toast.success('Ledertypen-Zuordnung gespeichert (Bild-Markierung übersprungen)');
+      }
+    }
+
+    onSave(assignments, leatherColorsWithNames, paintedImage);
     onClose();
+  };
+
+  const generatePaintedImage = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!shoeImage || !imageRef.current) {
+        console.error('No shoe image or imageRef available');
+        reject('No image available');
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      // Use native browser Image constructor, not Next.js Image component
+      const img = new window.Image();
+      
+      // Set crossOrigin BEFORE setting src - important for CORS
+      // Always set for http/https URLs, skip for data URLs
+      if (shoeImage.startsWith('http')) {
+        img.crossOrigin = 'anonymous';
+      }
+      
+      img.onload = () => {
+        try {
+          canvas.width = img.width || 800;
+          canvas.height = img.height || 600;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          
+          if (!ctx) {
+            reject('Could not get canvas context');
+            return;
+          }
+
+          // Draw base image
+          ctx.drawImage(img, 0, 0);
+
+          // Draw all assignments on top
+          assignments.forEach((assignment) => {
+            const x = (assignment.x / 100) * canvas.width;
+            const y = (assignment.y / 100) * canvas.height;
+            const color = getColorForLeather(assignment.leatherNumber);
+
+            // Draw marker circle
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw white border
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw leather number
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(assignment.leatherNumber.toString(), x, y);
+          });
+
+          // Convert to data URL with error handling
+          try {
+            const dataUrl = canvas.toDataURL('image/png');
+            resolve(dataUrl);
+          } catch (canvasError) {
+            console.error('Canvas toDataURL error:', canvasError);
+            reject('Failed to convert canvas to image');
+          }
+        } catch (drawError) {
+          console.error('Canvas drawing error:', drawError);
+          reject('Failed to draw on canvas');
+        }
+      };
+
+      img.onerror = (error) => {
+        console.error('Image loading error:', error);
+        reject('Failed to load image');
+      };
+
+      // Set src last, after all event handlers are attached
+      img.src = shoeImage;
+    });
   };
 
   const getColorForLeather = (leatherNumber: number): string => {
@@ -227,6 +355,21 @@ export default function LeatherColorSectionModal({
                       <SelectItem className='cursor-pointer' value="metallic-finish">Metallic Finish</SelectItem>
                     </SelectContent>
                   </Select>
+                  
+                  {/* Color Name Field - Text Input */}
+                  <div className="space-y-1">
+                    <Label htmlFor={`color-${index + 1}`} className="text-sm font-medium">
+                      Farbname:
+                    </Label>
+                    <Input
+                      id={`color-${index + 1}`}
+                      type="text"
+                      placeholder={`Farbe ${index + 1} eingeben...`}
+                      value={leatherColorNames[index] || ''}
+                      onChange={(e) => handleLeatherColorNameChange(index, e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
                 </div>
               ))}
             </div>
@@ -240,7 +383,9 @@ export default function LeatherColorSectionModal({
                 const leatherNum = index + 1;
                 const isSelected = selectedLeatherNumber === leatherNum;
                 const leatherTypeValue = leatherColors[index];
+                const colorName = leatherColorNames[index] || '';
                 const displayName = leatherTypeValue ? getLeatherTypeDisplayName(leatherTypeValue) : '';
+                const displayText = colorName ? `${displayName} (${colorName})` : displayName;
                 return (
                   <Button
                     key={index}
@@ -250,10 +395,10 @@ export default function LeatherColorSectionModal({
                     className={`flex items-center gap-2 ${
                       isSelected ? 'bg-black text-white' : ''
                     }`}
-                    disabled={!leatherTypeValue || !leatherTypeValue.trim()}
+                    disabled={!leatherTypeValue || !leatherTypeValue.trim() || !colorName || !colorName.trim()}
                   >
                     Leder {leatherNum}
-                    {displayName && ` - ${displayName}`}
+                    {displayText && ` - ${displayText}`}
                     {isSelected && ' ✓'}
                   </Button>
                 );
@@ -294,7 +439,7 @@ export default function LeatherColorSectionModal({
                     e.stopPropagation();
                     handleRemoveAssignment(index);
                   }}
-                  title={`Leder ${assignment.leatherNumber} - ${getLeatherTypeDisplayName(assignment.color)} (Klicken zum Entfernen)`}
+                  title={`Leder ${assignment.leatherNumber} - ${assignment.color} (Klicken zum Entfernen)`}
                 >
                   <div
                     className="w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-xs bg-emerald-500"
@@ -302,7 +447,7 @@ export default function LeatherColorSectionModal({
                     {assignment.leatherNumber}
                   </div>
                   <div className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                    {getLeatherTypeDisplayName(assignment.color)}
+                    {assignment.color}
                   </div>
                 </div>
               ))}
@@ -311,7 +456,7 @@ export default function LeatherColorSectionModal({
             {/* Instructions */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <p className="text-sm text-blue-800">
-                <strong>Anleitung:</strong> Wählen Sie für jeden Ledertyp einen Typ aus dem Dropdown aus, 
+                <strong>Anleitung:</strong> Wählen Sie für jeden Ledertyp einen Typ und einen Farbnamen aus dem Dropdown aus, 
                 dann klicken Sie auf das Schuhbild, um Bereiche zuzuordnen. 
                 Klicken Sie auf einen Marker, um ihn zu entfernen.
               </p>
@@ -331,7 +476,7 @@ export default function LeatherColorSectionModal({
                         className="w-4 h-4 rounded border bg-emerald-500"
                       />
                       <span>
-                        Leder {assignment.leatherNumber} - {getLeatherTypeDisplayName(assignment.color)}
+                        Leder {assignment.leatherNumber} - {assignment.color}
                       </span>
                     </div>
                   ))}
