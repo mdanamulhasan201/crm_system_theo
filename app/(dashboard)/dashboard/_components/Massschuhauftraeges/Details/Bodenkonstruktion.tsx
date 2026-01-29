@@ -379,7 +379,6 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             
             return null
         } catch (error) {
-            console.error('Error converting image to file:', error)
             return null
         }
     }
@@ -700,7 +699,6 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     formData.append('staticImage', selectedSole.image)
                 }
             } catch (error) {
-                console.error('Error processing staticImage:', error)
                 // Fallback: send as string if processing fails
                 if (typeof selectedSole.image === 'string') {
                     formData.append('staticImage', selectedSole.image)
@@ -863,7 +861,6 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             setShowModal2(false)
             router.push("/dashboard/balance-dashboard")
         } catch (error) {
-            console.error('Failed to send order to admin:', error)
             toast.error("Fehler beim Senden der Bestellung.", { id: "sending-order" })
         } finally {
             setIsSubmitting(false)
@@ -970,7 +967,6 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                     setShowModal2(false)
                                     router.push("/dashboard/balance-dashboard")
                                 } catch (error) {
-                                    console.error('Failed to send order to admin2:', error)
                                     toast.error("Fehler beim Senden der Bestellung.", { id: "sending-order" })
                                 } finally {
                                     setIsSubmitting(false)
@@ -1001,7 +997,6 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                     router.push("/dashboard/balance-dashboard")
                                     setShowModal2(false)
                                 } catch (error) {
-                                    console.error('Failed to create order:', error)
                                     toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" })
                                 } finally {
                                     setIsSubmitting(false)

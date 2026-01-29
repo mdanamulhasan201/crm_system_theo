@@ -302,3 +302,15 @@ export const getBusinessAddress = async (customerId: string) => {
         throw error;
     }
 }
+
+
+
+// create custom bodenkonstruktion /custom_shafts/custom-bodenkonstruktion/create
+export const createCustomBodenkonstruktion = async (formData: FormData | any) => {
+    try {
+        const response = await axiosClient.post(`/custom_shafts/custom-bodenkonstruktion/create`, formData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

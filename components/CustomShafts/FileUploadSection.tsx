@@ -306,9 +306,9 @@ export default function FileUploadSection({
                       } as any);
                     }
                   } else {
-                    // Check if customer is selected (customer with ID required for business address)
-                    if (!selectedCustomer) {
-                      toast.error('Bitte wählen Sie zuerst einen Kunden aus der Kundenliste aus.');
+                    // Check if any customer is selected (either from list or external)
+                    if (!selectedCustomer && !otherCustomerNumber.trim()) {
+                      toast.error('Bitte wählen Sie zuerst einen Kunden aus (entweder aus der Liste oder als externen Kunden).');
                       return;
                     }
                     // Clear versenden state and show BusinessAddressModal to enter address

@@ -7,7 +7,7 @@ export default function BottomFooter() {
 
     const handleOrder = () => {
         // console.log('order');
-        router.push('/dashboard/massschuhauftraege-deatils/2');
+        router.push('/dashboard/bodenkonstruktion');
     }
 
     return (

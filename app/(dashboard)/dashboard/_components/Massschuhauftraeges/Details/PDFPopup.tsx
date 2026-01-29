@@ -257,7 +257,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
       return pdf
     } catch (err) {
-      console.warn('PDF generation error:', err);
       return null
     }
   }
@@ -423,7 +422,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     <div className="text-lg font-semibold text-slate-800 mb-2">{displayProductName}</div>
                     <div className="text-sm text-slate-800 leading-relaxed">
                       <div><span className="font-medium">{displayCustomerName}</span></div>
-                      <div><span className="font-medium">Bestellnr:</span> <span className="text-xs text-slate-500">{displayOrderNumber}</span></div>
+                      {orderData?.orderNumber && (
+                        <div><span className="font-medium">Bestellnr:</span> <span className="text-xs text-slate-500">{displayOrderNumber}</span></div>
+                      )}
                       <div><span className="font-medium">Liefertermin:</span> <span className="text-xs text-slate-500">{displayDeliveryDate}</span></div>
                     </div>
                   </div>
@@ -692,7 +693,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>{displayProductName}</div>
                   <div style={{ fontSize: '13px', color: '#1e293b', lineHeight: 1.6 }}>
                     <div><span style={{ fontWeight: 500 }}>{displayCustomerName}</span></div>
-                    <div><span style={{ fontWeight: 500 }}>Bestellnr:</span> <span style={{ fontSize: '11px', color: '#64748b' }}>{displayOrderNumber}</span></div>
+                    {orderData?.orderNumber && (
+                      <div><span style={{ fontWeight: 500 }}>Bestellnr:</span> <span style={{ fontSize: '11px', color: '#64748b' }}>{displayOrderNumber}</span></div>
+                    )}
                     <div><span style={{ fontWeight: 500 }}>Liefertermin:</span> <span style={{ fontSize: '11px', color: '#64748b' }}>{displayDeliveryDate}</span></div>
                   </div>
                 </div>
