@@ -154,10 +154,25 @@ export const updateMassschuheOrderPartner2 = async (orderId: string, isByPartner
 }
 
 
-// balance massschuhe order /custom_shafts/total-price-resio
+// balance massschuhe order - Get total price from admin order transitions
+// GET /v2/admin-order-transitions/total-price
+// Returns: { success: boolean, message: string, data: { totalPrice: number } }
 export const balanceMassschuheOrder = async () => {
     try {
         const response = await axiosClient.get(`/v2/admin-order-transitions/total-price`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// Get total price ratio with daily data for balance chart
+// GET /v2/admin-order-transitions/total-price-ratio
+// Returns: { success: boolean, message: string, data: { partnerId: string, month: number, year: number, dailyData: Array<{ date: string, value: number, count: number }> } }
+export const totalRadioMassschuheOrder = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/admin-order-transitions/total-price-ratio`);
         return response.data;
     } catch (error) {
         throw error;
