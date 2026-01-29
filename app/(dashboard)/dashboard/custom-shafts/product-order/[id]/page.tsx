@@ -38,6 +38,10 @@ export default function OrderPage() {
   const [lederfarbe, setLederfarbe] = useState('');
   const [innenfutter, setInnenfutter] = useState('');
   const [schafthohe, setSchafthohe] = useState('');
+  const [schafthoheLinks, setSchafthoheLinks] = useState('');
+  const [schafthoheRechts, setSchafthoheRechts] = useState('');
+  const [umfangmasseLinks, setUmfangmasseLinks] = useState('');
+  const [umfangmasseRechts, setUmfangmasseRechts] = useState('');
   const [linkerLeistenFileName, setLinkerLeistenFileName] = useState('');
   const [rechterLeistenFileName, setRechterLeistenFileName] = useState('');
   const [linkerLeistenFile, setLinkerLeistenFile] = useState<File | null>(null);
@@ -202,6 +206,10 @@ export default function OrderPage() {
       leatherColorAssignments: numberOfLeatherColors !== '1' ? leatherColorAssignments : [],
       innenfutter,
       schafthohe,
+      schafthoheLinks,
+      schafthoheRechts,
+      umfangmasseLinks,
+      umfangmasseRechts,
       polsterung,
       verstarkungen,
       polsterung_text: polsterungText,
@@ -351,6 +359,10 @@ export default function OrderPage() {
       formData.append('nahtfarbe', nahtfarbeOption === 'custom' ? customNahtfarbe : 'default');
       formData.append('nahtfarbe_text', nahtfarbeOption === 'custom' ? customNahtfarbe : '');
       formData.append('schafthohe', schafthohe);
+      if (schafthoheLinks) formData.append('schafthoheLinks', schafthoheLinks);
+      if (schafthoheRechts) formData.append('schafthoheRechts', schafthoheRechts);
+      if (umfangmasseLinks) formData.append('umfangmasseLinks', umfangmasseLinks);
+      if (umfangmasseRechts) formData.append('umfangmasseRechts', umfangmasseRechts);
       formData.append('polsterung', polsterung.join(','));
       formData.append('vestarkungen', verstarkungen.join(','));
       formData.append('polsterung_text', polsterungText);
@@ -403,6 +415,10 @@ export default function OrderPage() {
         Innenfutter: innenfutter || null,
         lederfarbe: numberOfLeatherColors === '1' ? lederfarbe : null,
         schafthöhe: schafthohe || null,
+        schafthoheLinks: schafthoheLinks || null,
+        schafthoheRechts: schafthoheRechts || null,
+        umfangmasseLinks: umfangmasseLinks || null,
+        umfangmasseRechts: umfangmasseRechts || null,
         polsterung: polsterung.join(',') || null,
         verstärkungen: verstarkungen.join(',') || null,
         verschlussart: closureType || null,
@@ -567,6 +583,14 @@ export default function OrderPage() {
             setInnenfutter={setInnenfutter}
             schafthohe={schafthohe}
             setSchafthohe={setSchafthohe}
+            schafthoheLinks={schafthoheLinks}
+            setSchafthoheLinks={setSchafthoheLinks}
+            schafthoheRechts={schafthoheRechts}
+            setSchafthoheRechts={setSchafthoheRechts}
+            umfangmasseLinks={umfangmasseLinks}
+            setUmfangmasseLinks={setUmfangmasseLinks}
+            umfangmasseRechts={umfangmasseRechts}
+            setUmfangmasseRechts={setUmfangmasseRechts}
             polsterung={polsterung}
             setPolsterung={setPolsterung}
             verstarkungen={verstarkungen}

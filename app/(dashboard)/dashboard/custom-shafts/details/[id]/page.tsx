@@ -89,6 +89,10 @@ export default function DetailsPage() {
   // Custom category & price
   const [customCategory, setCustomCategory] = useState<string>('');
   const [customCategoryPrice, setCustomCategoryPrice] = useState<number | null>(null);
+  
+  // Zipper and paint images
+  const [zipperImage, setZipperImage] = useState<string | null>(null);
+  const [paintImage, setPaintImage] = useState<string | null>(null);
 
   // Business address for abholung
   interface BusinessAddressData {
@@ -801,6 +805,10 @@ export default function DetailsPage() {
             onOrderComplete={() => setShowConfirmationModal(true)}
             category={shaft?.catagoary}
             allowCategoryEdit={false}
+            zipperImage={zipperImage}
+            setZipperImage={setZipperImage}
+            paintImage={paintImage}
+            setPaintImage={setPaintImage}
           />
         </div>
 
