@@ -50,20 +50,17 @@ export default function GebrauchsanweisungDialog({ open, onOpenChange, customerD
                     {/* Instructions Section */}
                     <div className="mb-6">
                         <h3 className="text-lg font-bold mb-4 border-b-2 border-black pb-1">
-                            BITTE BEACHTEN SIE DIE FOLGENDEN HINWEISE, UM <span className="underline">EINE OPTIMALE WIRKUNG ZU UNTERSTÜTZEN:</span>
+                            BITTE BEACHTEN SIE DIE FOLGENDEN HINWEISE, UM EINE OPTIMALE WIRKUNG ZU UNTERSTÜTZEN:
                         </h3>
                         <ul className="space-y-3 text-sm">
                             <li className="leading-relaxed">
-                                • <span className="font-bold underline">Mindestens täglich tragen:</span> Tragen Sie sie <span className="underline">so oft</span> wie möglich, idealerweise pro Tag und <span className="underline">täglich</span> Sie sind <span className="underline">täglich</span> im Alltag. Nach 20 Tagen haben sich die <span className="underline">Füßen</span> oft an die <span className="underline">Veränderung gewöhnt</span>.
+                                <span className="font-bold">Anfängliche Tragezeit:</span> Beginnen Sie mit nur wenigen Stunden Tragezeit pro Tag und steigern Sie dies allmählich. Nach 20 Tagen sollten Sie die Einlagen problemlos den ganzen Tag tragen können.
                             </li>
                             <li className="leading-relaxed">
-                                • <span className="font-bold underline">Eingewöhnung</span> in verschiedenen Schuhen: Überwinden Sie die <span className="underline">Fesslung</span> in verschiedenen <span className="underline">Schuhen</span>. Diese ist <span className="underline">normalerweise</span> kurze und <span className="underline">vorübergehend</span>.
+                                <span className="font-bold">Verwendung in verschiedenen Schuhen:</span> Überprüfen Sie die Passform in verschiedenen Schuhen. Dabei ist auf ausreichende Länge und Breite zu achten.
                             </li>
                             <li className="leading-relaxed">
-                                • <span className="font-bold underline">Tägliche Fußkontrolle kontrollieren:</span> Sie ihre <span className="underline">Füße</span> in den ersten Tagen <span className="underline">regelmäßig</span> auf Druckstellen oder Hautreizungen.
-                            </li>
-                            <li className="leading-relaxed">
-                                Bei <span className="underline font-bold">Auffälligkeiten</span> setzen Sie die <span className="underline">Nutzung</span> bitte aus und <span className="underline font-bold">kontaktieren</span> Sie <span className="underline">Ihren</span> Ansprechpartner.
+                                <span className="font-bold">Tägliche Fußkontrolle:</span> Kontrollieren Sie Ihre Füße in den ersten Tagen regelmäßig auf Druckstellen oder Hautreizungen. Bei Auffälligkeiten setzen Sie die Nutzung bitte aus und kontaktieren Sie Ihren Ansprechpartner.
                             </li>
                         </ul>
                     </div>
@@ -75,13 +72,13 @@ export default function GebrauchsanweisungDialog({ open, onOpenChange, customerD
                         </h3>
                         <ul className="space-y-2 text-sm">
                             <li className="leading-relaxed">
-                                • <span className="font-bold underline">Reinigung:</span> Lassen Sie die <span className="underline">Einlagen täglich trocknen lüften</span>. Sie sie aus den <span className="underline">Schuhen</span> nehmen <span className="font-bold underline">oder</span> täglich wechseln.
+                                <span className="font-bold">Belüftung:</span> Lassen Sie die Einlagen täglich atmen, indem Sie sie aus den Schuhen nehmen oder täglich wechseln.
                             </li>
                             <li className="leading-relaxed">
-                                • <span className="font-bold underline">Feuchtigkeit:</span> Verwenden Sie ein <span className="underline">feuchtes Tuch</span> zur <span className="underline">Reinigung</span> und bei <span className="underline">Bedarf</span> ein mildes Reinigungsmittel. Vermeiden Sie <span className="underline">Einweichen</span>.
+                                <span className="font-bold">Reinigung:</span> Verwenden Sie ein feuchtes Tuch zur Reinigung und bei Bedarf ein mildes Desinfektionsmittel. Vermeiden Sie die Waschmaschine.
                             </li>
                             <li className="leading-relaxed">
-                                • <span className="font-bold underline">Trocknung:</span> Trocknen Sie nasse <span className="underline">Einlagen</span> an der Luft. <span className="underline">Vermeiden</span> Sie <span className="underline">Hitzequellen</span> wie Heizkörpern oder <span className="underline">Föhns</span>.
+                                <span className="font-bold">Trocknung:</span> Trocknen Sie nasse Einlagen an der Luft. Vermeiden Sie Hitzequellen wie Heizungen oder Föhn.
                             </li>
                         </ul>
                     </div>

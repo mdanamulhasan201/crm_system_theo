@@ -8,7 +8,7 @@ import {
     HiOutlineCube
 } from 'react-icons/hi';
 import { RxDashboard } from "react-icons/rx";
-import {  HiOutlineChatBubbleOvalLeft } from "react-icons/hi2";
+import {  HiOutlineChatBubbleOvalLeft, HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
@@ -111,6 +111,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                 label: 'Kundenmanagement',
                 items: [
                     { icon: Nachrichten, label: 'Nachrichten', href: '/dashboard/email/inbox' },
+                    { icon: HiOutlineChatBubbleLeftRight, label: 'Automatisierte Nachrichten', href: '/dashboard/automatisierte-nachrichten' },
                     { icon: Terminkalender, label: 'Terminkalender', href: '/dashboard/calendar' }
                 ]
             },

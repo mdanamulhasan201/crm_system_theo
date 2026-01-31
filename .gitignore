@@ -39,3 +39,7 @@ coverage/
 # Misc
 *.tsbuildinfo
 .turbo/
+
+# claude
+.claude/
+.claude-local/
