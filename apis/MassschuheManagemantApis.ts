@@ -237,7 +237,7 @@ export const sendMassschuheOrderToAdmin1 = async (orderId: string, formData: For
 // /massschuhe-order/admin-order/send-to-admin-2-order/c76be3b8-f7e9-4428-a3cd-3d4b1e1b425c
 export const sendMassschuheOrderToAdmin2 = async (orderId: string, formData: FormData | any) => {
     try {
-        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}/?custom_models=false`, formData, {
+        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}/?custom_models=false&isCourierContact=yes`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -253,7 +253,7 @@ export const sendMassschuheOrderToAdmin2 = async (orderId: string, formData: For
 // /massschuhe-order/admin-order/send-to-admin-2-order/d4fd8996-8862-45bb-9cdd-7d46332c7cfe?custom_models=true
 export const sendMassschuheCustomShaftOrderToAdmin2 = async (orderId: string, formData: FormData | any) => {
     try {
-        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}?custom_models=true`, formData, {
+        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}?custom_models=true&isCourierContact=yes`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
 import { createCustomShaft } from '@/apis/customShaftsApis';
 import { createMassschuheWithoutOrderId } from '@/apis/MassschuheAddedApis';
-import { sendMassschuheOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
+import { sendMassschuheOrderToAdmin2, sendMassschuheCustomShaftOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
 import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 
 // Import separated components
@@ -94,7 +94,7 @@ export default function DetailsPage() {
   const [zipperImage, setZipperImage] = useState<string | null>(null);
   const [paintImage, setPaintImage] = useState<string | null>(null);
 
-  // Business address for abholung
+  // Courier address for abholung (new system)
   interface BusinessAddressData {
     companyName: string;
     address: string;
@@ -261,7 +261,7 @@ export default function DetailsPage() {
       formData.append('custom_catagoary_price', customCategoryPrice.toString());
     }
 
-    // Add business address if abholung is selected
+    // Add courier address if abholung is selected (new system)
     if (isAbholung && businessAddress) {
       formData.append('abholung', 'true');
       formData.append(
@@ -272,20 +272,22 @@ export default function DetailsPage() {
             : ABHOLUNG_PRICE_DEFAULT
         )
       );
-      formData.append('business_companyName', businessAddress.companyName);
-      formData.append('business_address', businessAddress.address);
+      formData.append('courier_companyName', businessAddress.companyName);
+      formData.append('courier_address', businessAddress.address);
       if (businessAddress.phone) {
-        formData.append('business_phone', businessAddress.phone);
+        formData.append('courier_phone', businessAddress.phone);
       }
       if (businessAddress.email) {
-        formData.append('business_email', businessAddress.email);
+        formData.append('courier_email', businessAddress.email);
       }
-      if (businessAddress.phone) {
-        formData.append('business_phone', businessAddress.phone);
-      }
-      if (businessAddress.email) {
-        formData.append('business_email', businessAddress.email);
-      }
+      formData.append(
+        'courier_price',
+        String(
+          Number.isFinite(businessAddress.price)
+            ? businessAddress.price
+            : ABHOLUNG_PRICE_DEFAULT
+        )
+      );
     }
 
     // Update image flag
@@ -375,20 +377,34 @@ export default function DetailsPage() {
       formData.append('moechten_sie_einen_zusaetzlichen_reissverschluss_price', '9.99');
     }
 
-    // Add business address if abholung is selected
-    if (isAbholung && businessAddress) {
-      formData.append('abholung', 'true');
-      formData.append(
-        'abholung_price',
-        String(
-          Number.isFinite(businessAddress.price)
-            ? businessAddress.price
-            : ABHOLUNG_PRICE_DEFAULT
-        )
-      );
-      formData.append('business_companyName', businessAddress.companyName);
-      formData.append('business_address', businessAddress.address);
-    }
+      // Courier address for abholung (new system)
+      if (isAbholung && businessAddress) {
+        formData.append('abholung', 'true');
+        formData.append(
+          'abholung_price',
+          String(
+            Number.isFinite(businessAddress.price)
+              ? businessAddress.price
+              : ABHOLUNG_PRICE_DEFAULT
+          )
+        );
+        formData.append('courier_companyName', businessAddress.companyName);
+        formData.append('courier_address', businessAddress.address);
+        if (businessAddress.phone) {
+          formData.append('courier_phone', businessAddress.phone);
+        }
+        if (businessAddress.email) {
+          formData.append('courier_email', businessAddress.email);
+        }
+        formData.append(
+          'courier_price',
+          String(
+            Number.isFinite(businessAddress.price)
+              ? businessAddress.price
+              : ABHOLUNG_PRICE_DEFAULT
+          )
+        );
+      }
 
     // Add total price
     formData.append('totalPrice', orderPrice.toString());
@@ -630,7 +646,7 @@ export default function DetailsPage() {
       }
       formData.append('totalPrice', orderPrice.toString());
 
-      // Add business address if abholung is selected
+      // Courier address for abholung (new system)
       if (isAbholung && businessAddress) {
         formData.append('abholung', 'true');
         formData.append(
@@ -641,14 +657,22 @@ export default function DetailsPage() {
               : ABHOLUNG_PRICE_DEFAULT
           )
         );
-        formData.append('business_companyName', businessAddress.companyName);
-        formData.append('business_address', businessAddress.address);
+        formData.append('courier_companyName', businessAddress.companyName);
+        formData.append('courier_address', businessAddress.address);
         if (businessAddress.phone) {
-          formData.append('business_phone', businessAddress.phone);
+          formData.append('courier_phone', businessAddress.phone);
         }
         if (businessAddress.email) {
-          formData.append('business_email', businessAddress.email);
+          formData.append('courier_email', businessAddress.email);
         }
+        formData.append(
+          'courier_price',
+          String(
+            Number.isFinite(businessAddress.price)
+              ? businessAddress.price
+              : ABHOLUNG_PRICE_DEFAULT
+          )
+        );
       }
 
       // Use orderId if present, otherwise create without orderId
@@ -856,8 +880,8 @@ export default function DetailsPage() {
 
               let response;
               if (orderId) {
-                // If orderId exists, use sendMassschuheOrderToAdmin2
-                response = await sendMassschuheOrderToAdmin2(orderId, formData);
+                // Use the new custom shaft API for orders with courier contact
+                response = await sendMassschuheCustomShaftOrderToAdmin2(orderId, formData);
               } else {
                 // If no orderId, use createMassschuheWithoutOrderId
                 response = await createMassschuheWithoutOrderId(formData);

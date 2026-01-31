@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
-import { createBusinessAddress, getBusinessAddress } from '@/apis/MassschuheManagemantApis';
 import {
   Popover,
   PopoverContent,
@@ -69,7 +68,6 @@ export default function BusinessAddressModal({
   const addressTriggerRef = useRef<HTMLDivElement | null>(null);
   const [triggerWidth, setTriggerWidth] = useState<number | undefined>(undefined);
   const [emailError, setEmailError] = useState<string>('');
-  const [isSaving, setIsSaving] = useState(false);
 
   // Load saved address when modal opens
   useEffect(() => {
@@ -96,6 +94,8 @@ export default function BusinessAddressModal({
   }, [isOpen, savedAddress]);
 
   // Prefill from backend for selected customer when opening, if no savedAddress
+  // OLD SYSTEM - COMMENTED OUT: Customer ID-wise data fetching disabled
+  /*
   useEffect(() => {
     const fetchBusinessAddress = async () => {
       if (!isOpen || savedAddress || !customerId) return;
@@ -128,6 +128,7 @@ export default function BusinessAddressModal({
 
     fetchBusinessAddress();
   }, [isOpen, customerId, savedAddress]);
+  */
 
   // Fetch locations on open
   useEffect(() => {
@@ -209,7 +210,7 @@ export default function BusinessAddressModal({
     }
   }, [isAddressDropdownOpen, formData.address]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     // Validate required fields
     if (!formData.companyName || !formData.address) {
       return;
@@ -221,34 +222,9 @@ export default function BusinessAddressModal({
       return;
     }
 
-    // Call backend to create business address (courier-contact)
-    try {
-      setIsSaving(true);
-      const payload: any = {
-        companyName: formData.companyName,
-        phone: formData.phone,
-        email: formData.email,
-        price: formData.price,
-        address: formData.addressPayload ?? {
-          address: formData.address,
-          description: formData.companyName,
-        },
-      };
-      if (customerId) {
-        payload.customerId = customerId;
-      }
-      if (orderId) {
-        payload.orderId = orderId;
-      }
-      await createBusinessAddress(payload);
-    } catch (error) {
-      console.error('Failed to create business address', error);
-      // We still close modal and save locally so user flow is not blocked
-    } finally {
-      setIsSaving(false);
-    }
-
-    // Save to parent state (used for pricing + summary)
+    // NO API CALL - Just save to state
+    // The courier data will be sent with the final order submission
+    // Save to parent state (used for pricing + summary + sending with order data)
     onSave(formData);
     onClose();
   };

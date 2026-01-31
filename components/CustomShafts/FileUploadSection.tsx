@@ -306,11 +306,14 @@ export default function FileUploadSection({
                       } as any);
                     }
                   } else {
-                    // Check if any customer is selected (either from list or external)
-                    if (!selectedCustomer && !otherCustomerNumber.trim()) {
-                      toast.error('Bitte wählen Sie zuerst einen Kunden aus (entweder aus der Liste oder als externen Kunden).');
-                      return;
-                    }
+                    // NEW COURIER SYSTEM: No customer validation required
+                    // Customer selection is independent of courier pickup
+                    // Old validation (DISABLED):
+                    // if (!selectedCustomer && !otherCustomerNumber.trim()) {
+                    //   toast.error('Bitte wählen Sie zuerst einen Kunden aus (entweder aus der Liste oder als externen Kunden).');
+                    //   return;
+                    // }
+                    
                     // Clear versenden state and show BusinessAddressModal to enter address
                     setShowShippingAddress(false);
                     setShowBusinessAddressModal(true);
@@ -401,6 +404,53 @@ export default function FileUploadSection({
           </div>
         )}
 
+        {/* Business Address Display - Show saved courier pickup address */}
+        {hideFileUploads && businessAddress && (businessAddress.companyName || businessAddress.address) && (
+          <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-blue-900 mb-2">
+                  Kurieradresse für Leistenabholung
+                </p>
+                {businessAddress.companyName && (
+                  <p className="text-sm text-gray-900 font-medium">
+                    {businessAddress.companyName}
+                  </p>
+                )}
+                {businessAddress.address && (
+                  <p className="text-sm text-gray-700">
+                    {businessAddress.address}
+                  </p>
+                )}
+                {businessAddress.phone && (
+                  <p className="text-sm text-gray-700">
+                    Tel: {businessAddress.phone}
+                  </p>
+                )}
+                {businessAddress.email && (
+                  <p className="text-sm text-gray-700">
+                    Email: {businessAddress.email}
+                  </p>
+                )}
+                {Number.isFinite(businessAddress.price) && businessAddress.price > 0 && (
+                  <p className="text-sm text-gray-900 font-semibold mt-2">
+                    Preis: {businessAddress.price.toFixed(2)} €
+                  </p>
+                )}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowBusinessAddressModal(true)}
+                className="h-8 px-3 border-blue-300 hover:bg-blue-100 text-blue-700"
+                title="Bearbeiten"
+              >
+                Bearbeiten
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* File Preview Sections - Hide when hideFileUploads is true */}
         {!hideFileUploads && (
           <>
@@ -453,8 +503,11 @@ export default function FileUploadSection({
             setShowBusinessAddressModal(false);
           }}
           savedAddress={businessAddress}
-          customerId={selectedCustomer?.id}
-          orderId={orderId}
+          // Old system: customer ID-based data fetching - DISABLED for new courier system
+          // customerId={selectedCustomer?.id}
+          // orderId={orderId}
+          customerId={undefined}
+          orderId={undefined}
         />
       )}
     </div>

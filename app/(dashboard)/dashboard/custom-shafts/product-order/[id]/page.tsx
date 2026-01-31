@@ -407,7 +407,7 @@ export default function OrderPage() {
       formData.append('totalPrice', orderPrice.toString());
 
       // Prepare Massschafterstellung_json1
-      const massschafterstellungJson1 = {
+      const massschafterstellungJson1: any = {
         kategorie: customCategory || null,
         ledertyp: lederType || null,
         ledertypen_definieren: {},
@@ -429,6 +429,16 @@ export default function OrderPage() {
         moechten_sie_einen_zusaetzlichen_reissverschluss: zipperExtra || null,
         moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
       };
+
+      // Add courier_address if abholung is selected
+      if (isAbholung && businessAddress) {
+        massschafterstellungJson1.courier_address = {
+          courier_companyName: businessAddress.companyName,
+          courier_phone: businessAddress.phone,
+          courier_email: businessAddress.email,
+          courier_price: businessAddress.price?.toString() || '13',
+        };
+      }
 
       // Add leather types definition if multiple colors
       if (numberOfLeatherColors === '2' || numberOfLeatherColors === '3') {
