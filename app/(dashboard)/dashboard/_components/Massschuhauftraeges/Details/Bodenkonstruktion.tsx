@@ -94,8 +94,20 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     // Prepare order data for PDF
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
+        // If no orderId, use context data (custom order from Step 1)
+        if (!orderId && contextData) {
+            const { getOrderNumber, getDeliveryDate } = require('@/utils/customShoeOrderHelpers')
+            return {
+                customerName: contextData.customerName || contextData.other_customer_name || 'Kunde',
+                orderNumber: getOrderNumber(),
+                deliveryDate: getDeliveryDate(),
+                productName: contextData.productDescription || 'Custom Made #1000',
+                totalPrice: contextData.totalPrice || 0,
+            }
+        }
+        // Otherwise use order data from API
         return prepareOrderDataForPDF(order)
-    }, [order])
+    }, [order, orderId, contextData])
 
     // Determine base price: use custom shaft price if available, otherwise use order price
     const basePrice = useMemo(() => {
@@ -252,15 +264,12 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             }
         }
 
-        // Check if custom shaft data exists in context (for both with and without orderId)
-        if (contextData) {
-            // Check if orderId matches (if provided) or if no orderId is required
-            if (!orderId || contextData.orderId === orderId) {
-                // Store custom shaft data for later API call (when user clicks "Verbindlich bestellen")
-                const hasUploadedImage = !!contextData.uploadedImage || !!contextData.hasUploadedImage
-                setCustomShaftData(contextData)
-                setIsCustomOrder(hasUploadedImage)
-            }
+        // Check if custom shaft data exists in context (for custom orders without orderId)
+        if (contextData && !orderId) {
+            // Store custom shaft data for later API call (when user clicks "Verbindlich bestellen")
+            const hasUploadedImage = !!contextData.uploadedImage
+            setCustomShaftData(contextData)
+            setIsCustomOrder(hasUploadedImage)
         }
         
         // Show PDF modal (same for both custom and normal flow)
@@ -383,15 +392,74 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         }
     }
 
+    // Prepare Massschafterstellung_json2 with sole-specific fields
+    const prepareMassschafterstellungJson2WithSoleFields = () => {
+        const json = prepareMassschafterstellungJson2()
+        
+        // Add sole specific fields
+        if (selectedSole?.id === "4") {
+            json.sole4_thickness = sole4Thickness || null
+            json.sole4_color = sole4Color || null
+        }
+        if (selectedSole?.id === "5") {
+            json.sole5_thickness = sole5Thickness || null
+            json.sole5_color = sole5Color || null
+        }
+        if (selectedSole?.id === "6") {
+            json.sole6_thickness = sole6Thickness || null
+            json.sole6_color = sole6Color || null
+        }
+        
+        return json
+    }
+
     // Prepare form data for Admin2 API (custom shaft + Bodenkonstruktion)
     const prepareFormDataForAdmin2 = async (customShaftData: any, pdfBlobData: Blob | null = null): Promise<{ formData: FormData; isCustomOrder: boolean }> => {
+        const { prepareStep2FormData } = require('@/utils/customShoeOrderHelpers')
+        
+        // Prepare Massschafterstellung_json2 (Bodenkonstruktion data)
+        const massschafterstellungJson2 = prepareMassschafterstellungJson2WithSoleFields()
+        
+        // Use helper to prepare complete form data
+        const formData = await prepareStep2FormData(
+            customShaftData,
+            massschafterstellungJson2,
+            selectedSole?.image || null,
+            pdfBlobData
+        )
+        
+        // Add sole specific fields to form data (for backward compatibility)
+        if (selectedSole?.id === "4") {
+            if (sole4Thickness) formData.append('sole4_thickness', sole4Thickness)
+            if (sole4Color) formData.append('sole4_color', sole4Color)
+        }
+        if (selectedSole?.id === "5") {
+            if (sole5Thickness) formData.append('sole5_thickness', sole5Thickness)
+            if (sole5Color) formData.append('sole5_color', sole5Color)
+        }
+        if (selectedSole?.id === "6") {
+            if (sole6Thickness) formData.append('sole6_thickness', sole6Thickness)
+            if (sole6Color) formData.append('sole6_color', sole6Color)
+        }
+        
+        // Update total price with Bodenkonstruktion additions
+        formData.set('totalPrice', grandTotal.toFixed(2))
+        
+        // Detect if it's a custom order
+        const isCustomOrder = !!customShaftData.uploadedImage
+        
+        return { formData, isCustomOrder }
+    }
+
+    // DEPRECATED: Old implementation kept for reference - will be removed
+    const prepareFormDataForAdmin2_OLD = async (customShaftData: any, pdfBlobData: Blob | null = null): Promise<{ formData: FormData; isCustomOrder: boolean }> => {
         const formData = new FormData()
         
         // Add customer info (for orders without orderId)
         if (customShaftData.customerId) {
             formData.append('customerId', customShaftData.customerId)
-        } else if (customShaftData.other_customer_number) {
-            formData.append('other_customer_number', customShaftData.other_customer_number)
+        } else if (customShaftData.other_customer_name) {
+            formData.append('other_customer_name', customShaftData.other_customer_name)
         }
         
         // Add PDF invoices if available

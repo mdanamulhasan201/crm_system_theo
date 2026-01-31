@@ -50,31 +50,31 @@ export default function ProductImageUploadInfo({
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-10 items-center">
+    <div className="flex flex-col lg:flex-row gap-6 md:gap-8 lg:gap-10 items-start lg:items-center mb-6">
       {/* Image */}
-      <div className="w-full md:w-1/2 flex justify-start mb-8">
-        <div className="relative group">
+      <div className="w-full lg:w-1/2  mb-4 lg:mb-0">
+        <div className="relative group w-full max-w-[350px] sm:max-w-[400px]">
           <button
             type="button"
             onClick={handleImageClick}
             className="relative block focus:outline-none cursor-pointer w-full"
           >
             {uploadedImage ? (
-              <div className="relative w-[400px]">
+              <div className="relative w-full">
                 <Image
                   src={uploadedImage}
                   alt="Product image"
                   width={1000}
                   height={1000}
-                  className="w-[400px] h-auto object-cover rounded-md border border-gray-200"
+                  className="w-full h-auto object-cover rounded-md border border-gray-200"
                   priority
                 />
               </div>
             ) : (
-              <div className="w-[400px] h-[300px] border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
-                <Upload className="w-12 h-12 text-gray-400 mb-2" />
-                <span className="text-sm text-gray-500 font-medium">Bild hochladen</span>
-                <span className="text-xs text-gray-400 mt-1">Klicken Sie hier, um ein Bild auszuwählen</span>
+              <div className="w-full aspect-4/3 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
+                <Upload className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mb-2" />
+                <span className="text-sm sm:text-base text-gray-500 font-medium">Bild hochladen</span>
+                <span className="text-xs text-gray-400 mt-1 px-2 text-center">Klicken Sie hier, um ein Bild auszuwählen</span>
               </div>
             )}
             <div className="absolute inset-0 rounded-md bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center pointer-events-none">
@@ -89,12 +89,12 @@ export default function ProductImageUploadInfo({
             <button
               type="button"
               onClick={handleRemoveImage}
-              className="absolute top-2 right-2 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg z-10"
+              className="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 bg-red-500 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center shadow-lg z-10"
               title="Bild entfernen"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
+                className="h-4 w-4 sm:h-5 sm:w-5"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -118,9 +118,9 @@ export default function ProductImageUploadInfo({
       </div>
 
       {/* Product info section */}
-      <div className="w-full md:w-1/2 flex flex-col gap-4">
+      <div className="w-full lg:w-1/2 flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-2xl font-bold ">
+          <span className="text-xl sm:text-2xl lg:text-2xl font-bold">
             Custom Made #1000
           </span>
           {/* <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
@@ -135,11 +135,11 @@ export default function ProductImageUploadInfo({
           /> */}
         </div>
 
-        <div className="">
+        <div>
           <span className="text-xs text-gray-500 block mb-1">
             Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
           </span>
-          <span className="text-3xl font-extrabold tracking-tight">
+          <span className="text-2xl sm:text-3xl font-extrabold tracking-tight">
             {basePrice > 0 
               ? basePrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
               : '0,00 €'}

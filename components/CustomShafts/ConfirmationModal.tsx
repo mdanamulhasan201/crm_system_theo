@@ -24,6 +24,7 @@ interface ConfirmationModalProps {
   otherCustomerNumber?: string;
   shaftName?: string;
   isCreatingOrder?: boolean;
+  isCreatingWithoutBoden?: boolean;
   orderId?: string | null;
 }
 
@@ -41,9 +42,13 @@ export default function ConfirmationModal({
   otherCustomerNumber,
   shaftName,
   isCreatingOrder = false,
+  isCreatingWithoutBoden = false,
   orderId,
 }: ConfirmationModalProps) {
   const router = useRouter();
+  
+  // Use specific loading state for "NEIN, WEITER OHNE BODEN" button
+  const isLoadingWithoutBoden = isCreatingWithoutBoden || isCreatingOrder;
 
   const handleBodenKonfigurieren = async () => {
     if (onBodenKonfigurieren) {
@@ -54,7 +59,8 @@ export default function ConfirmationModal({
   };
 
   const handleWeiterOhneBoden = async () => {
-    await onSendToAdmin2();
+    // This should call onConfirm (which creates order without Bodenkonstruktion)
+    await onConfirm();
   };
 
   if (!isOpen) return null;
@@ -66,7 +72,7 @@ export default function ConfirmationModal({
         <button 
           className="absolute top-2.5 right-4 bg-transparent border-none text-xl sm:text-2xl text-slate-500 cursor-pointer transition-colors hover:text-slate-600 z-10" 
           onClick={onClose}
-          disabled={isCreatingOrder}
+          disabled={isLoadingWithoutBoden}
         >
           ✕
         </button>
@@ -156,7 +162,7 @@ export default function ConfirmationModal({
           </p>
 
           {/* Loading State */}
-          {isCreatingOrder && (
+          {isLoadingWithoutBoden && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
               <div className="flex items-center justify-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-yellow-600"></div>
@@ -174,18 +180,21 @@ export default function ConfirmationModal({
         {/* Fixed Buttons at Bottom */}
         <div className="flex gap-3 justify-center items-center p-5 border-t border-slate-200 bg-gradient-to-b from-white to-slate-50 rounded-b-2xl">
           <button 
-            className="bg-red-600 border-none text-white py-3 px-6 sm:px-8 rounded-full text-sm sm:text-base font-semibold cursor-pointer shadow-lg shadow-red-600/40 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase"
+            className="bg-red-600 border-none text-white py-3 px-6 sm:px-8 rounded-full text-sm sm:text-base font-semibold cursor-pointer shadow-lg shadow-red-600/40 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase flex items-center justify-center gap-2"
             onClick={handleWeiterOhneBoden}
-            disabled={isCreatingOrder}
+            disabled={isLoadingWithoutBoden}
           >
-           NEIN, WEITER OHNE BODEN 
+            {isLoadingWithoutBoden && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            )}
+            {isLoadingWithoutBoden ? 'Wird erstellt...' : 'NEIN, WEITER OHNE BODEN'}
           </button>
           <button 
-            className="bg-[#28a745] border-none text-white py-3 px-6 sm:px-8 rounded-full text-sm sm:text-base font-semibold cursor-pointer shadow-lg shadow-[#28a745]/40 transition-all duration-300 hover:bg-[#218838] hover:shadow-xl hover:shadow-[#28a745]/50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase"
+            className="bg-[#28a745] border-none text-white py-3 px-6 sm:px-8 rounded-full text-sm sm:text-base font-semibold cursor-pointer shadow-lg shadow-[#28a745]/40 transition-all duration-300 hover:bg-[#218838] hover:shadow-xl hover:shadow-[#28a745]/50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase flex items-center justify-center gap-2"
             onClick={handleBodenKonfigurieren}
-            disabled={isCreatingOrder}
+            disabled={isLoadingWithoutBoden}
           >
-            {isCreatingOrder ? 'Wird erstellt...' : 'JA, BODEN KONFIGURIEREN'}
+            JA, BODEN KONFIGURIEREN
           </button>
         </div>
       </div>

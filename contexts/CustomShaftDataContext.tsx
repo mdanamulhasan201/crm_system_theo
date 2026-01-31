@@ -1,49 +1,79 @@
 'use client';
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
+interface BusinessAddress {
+  companyName: string;
+  address: string;
+  price: number;
+  phone: string;
+  email: string;
+}
+
 interface CustomShaftData {
-  orderId: string | null;
+  // Customer info
+  customerId?: string;
+  other_customer_name?: string | null;
+  customerName?: string;
+  
+  // Images (base64 or URLs)
   uploadedImage: string | null;
   zipperImage: string | null;
   paintImage: string | null;
+  
+  // Files (for upload)
+  image3d_1_file?: File | null;
+  image3d_2_file?: File | null;
+  
+  // Product info
   productDescription: string;
   customCategory: string;
   customCategoryPrice: number | null;
+  
+  // Collection product ID (for non-custom orders)
+  mabschaftKollektionId?: string;
+  
+  // CAD modeling
   cadModeling: '1x' | '2x';
+  cadModeling_2x_price: number | null;
+  
+  // Leather configuration
   lederType: string;
   lederfarbe: string;
+  numberOfLeatherColors: string;
+  leatherColors: string[];
+  leatherColorAssignments: any[];
+  
+  // Shaft configuration
   innenfutter: string;
   schafthohe: string;
+  schafthoheLinks: string;
+  schafthoheRechts: string;
+  umfangmasseLinks: string;
+  umfangmasseRechts: string;
   polsterung: string[];
   verstarkungen: string[];
   polsterung_text: string;
   verstarkungen_text: string;
+  
+  // Seam and closure
   nahtfarbe: string;
   nahtfarbe_text: string;
   closureType: string;
-  numberOfLeatherColors: string;
-  leatherColors: string[];
-  leatherColorAssignments: any[];
+  
+  // Add-ons
   passenden_schnursenkel: boolean;
   moechten_sie_passende_schnuersenkel_zum_schuh_price: string | null;
   osen_einsetzen: boolean;
   moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: string | null;
   zipper_extra: boolean;
   moechten_sie_einen_zusaetzlichen_reissverschluss_price: string | null;
-  businessAddress: any;
+  
+  // Business address (for courier)
+  businessAddress: BusinessAddress | null;
   isAbholung: boolean;
+  
+  // Pricing
   totalPrice: number;
-  customerId?: string;
-  other_customer_number?: string | null;
-  mabschaftKollektionId?: string;
-  linkerLeistenFileName?: string;
-  rechterLeistenFileName?: string;
-  cadModeling_2x_price: number | null;
-  hasUploadedImage: boolean;
-  hasZipperImage: boolean;
-  hasPaintImage: boolean;
-  hasImage3d_1: boolean;
-  hasImage3d_2: boolean;
 }
 
 interface CustomShaftDataContextType {
