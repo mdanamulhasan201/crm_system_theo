@@ -19,6 +19,7 @@ import ProductSelectionSection from './Einlagen/FormSections/ProductSelectionSec
 import SupplySection from './Einlagen/FormSections/SupplySection';
 import AdditionalFieldsSection from './Einlagen/FormSections/AdditionalFieldsSection';
 import WerkstattzettelModal from './WerkstattzettelModal';
+import SpringerDialog from './SpringerDialog';
 import { getSettingData } from '@/apis/einlagenApis';
 
 interface Customer {
@@ -242,6 +243,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [showUserInfoUpdateModal, setShowUserInfoUpdateModal] = useState(false);
     const [formDataForOrder, setFormDataForOrder] = useState<any>(null);
     const [orderPrices, setOrderPrices] = useState<{ fussanalysePreis: number; einlagenversorgungPreis: number } | null>(null);
+    const [showSpringerDialog, setShowSpringerDialog] = useState(false);
     
     // Settings data state
     const [coverTypes, setCoverTypes] = useState<string[]>([]);
@@ -314,6 +316,15 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             setValue('einlagentyp', selectedEinlage as string);
         }
     }, [selectedEinlage, einlagentyp, setEinlagentyp, setValue]);
+
+    // TEMPORARY: Set a dummy einlagentyp for testing the SPRINGER logo
+    useEffect(() => {
+        if (!einlagentyp && !selectedEinlage && einlageOptions.length === 0) {
+            // Set a dummy value to show the logo
+            setEinlagentyp('Test Einlage');
+            setValue('einlagentyp', 'Test Einlage');
+        }
+    }, []);
 
     // Reset prefill tracker when order changes back to null
     useEffect(() => {
@@ -527,6 +538,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setShowEinlageDropdown(false);
     };
 
+    const handleSpringerLogoClick = () => {
+        setShowSpringerDialog(true);
+    };
+
     const orderData = createOrderData({
         customer,
         realOrderData,
@@ -645,6 +660,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         setValue('menge', value);
                     }}
                     mengeError={errors.menge?.message}
+                    onSpringerLogoClick={handleSpringerLogoClick}
                 />
 
                 {/* Supply Section */}
@@ -686,6 +702,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             </div>
 
             {/* Modals */}
+            <SpringerDialog
+                isOpen={showSpringerDialog}
+                onClose={() => setShowSpringerDialog(false)}
+                customerSize="EU 42"
+            />
+
             <WerkstattzettelModal
                 isOpen={showUserInfoUpdateModal}
                 onOpenChange={setShowUserInfoUpdateModal}
