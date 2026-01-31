@@ -50,7 +50,7 @@ export default function ProductImageUploadInfo({
   };
 
   return (
-    <div className="flex flex-col md:flex-row gap-10 items-start">
+    <div className="flex flex-col md:flex-row gap-10 items-center">
       {/* Image */}
       <div className="w-full md:w-1/2 flex justify-start mb-8">
         <div className="relative group">
@@ -60,7 +60,7 @@ export default function ProductImageUploadInfo({
             className="relative block focus:outline-none cursor-pointer w-full"
           >
             {uploadedImage ? (
-              <div className="relative">
+              <div className="relative w-[400px]">
                 <Image
                   src={uploadedImage}
                   alt="Product image"
@@ -69,12 +69,6 @@ export default function ProductImageUploadInfo({
                   className="w-[400px] h-auto object-cover rounded-md border border-gray-200"
                   priority
                 />
-                {/* Custom Made #1000 overlay - centered on image */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="text-xs font-semibold text-white uppercase tracking-wide bg-black/60 px-3 py-1.5 rounded-md backdrop-blur-sm">
-                    Custom Made #1000
-                  </span>
-                </div>
               </div>
             ) : (
               <div className="w-[400px] h-[300px] border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center bg-gray-50 hover:bg-gray-100 transition-colors">
@@ -126,7 +120,10 @@ export default function ProductImageUploadInfo({
       {/* Product info section */}
       <div className="w-full md:w-1/2 flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
+          <span className="text-2xl font-bold ">
+            Custom Made #1000
+          </span>
+          {/* <Label htmlFor="productDescription" className="text-sm font-medium text-gray-700">
             Beschreibung:
           </Label>
           <textarea
@@ -135,10 +132,10 @@ export default function ProductImageUploadInfo({
             value={productDescription}
             onChange={(e) => setProductDescription(e.target.value)}
             className="min-h-[100px] p-3 border border-gray-300 rounded-md resize-y focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent"
-          />
+          /> */}
         </div>
 
-        <div className="mt-2">
+        <div className="">
           <span className="text-xs text-gray-500 block mb-1">
             Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
           </span>

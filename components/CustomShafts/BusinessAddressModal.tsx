@@ -11,7 +11,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
-import { createBusinessAddress, getBusinessAddress } from '@/apis/MassschuheManagemantApis';
 import {
   Popover,
   PopoverContent,
@@ -69,7 +68,6 @@ export default function BusinessAddressModal({
   const addressTriggerRef = useRef<HTMLDivElement | null>(null);
   const [triggerWidth, setTriggerWidth] = useState<number | undefined>(undefined);
   const [emailError, setEmailError] = useState<string>('');
-  const [isSaving, setIsSaving] = useState(false);
 
   // Load saved address when modal opens
   useEffect(() => {
@@ -79,7 +77,7 @@ export default function BusinessAddressModal({
         phone: savedAddress.phone ?? '',
         email: savedAddress.email ?? '',
         address: savedAddress.address ?? '',
-        price: savedAddress.price ?? 13,
+        price: 13, // Always use 13 as fixed price
         addressPayload: savedAddress.addressPayload,
       });
     } else if (isOpen) {
@@ -89,13 +87,15 @@ export default function BusinessAddressModal({
         phone: '',
         email: '',
         address: '',
-        price: 13,
+        price: 13, // Fixed price always 13
         addressPayload: undefined,
       });
     }
   }, [isOpen, savedAddress]);
 
   // Prefill from backend for selected customer when opening, if no savedAddress
+  // OLD SYSTEM - COMMENTED OUT: Customer ID-wise data fetching disabled
+  /*
   useEffect(() => {
     const fetchBusinessAddress = async () => {
       if (!isOpen || savedAddress || !customerId) return;
@@ -115,7 +115,7 @@ export default function BusinessAddressModal({
           phone: item.phone || prev.phone || '',
           email: item.email || prev.email || '',
           address: combined || prev.address || '',
-          price: typeof item.price === 'number' ? item.price : (prev.price || 13),
+          price: 13, // Always use fixed price 13
           addressPayload: addrObj.address || addrObj.description ? {
             address: addrStr,
             description,
@@ -128,6 +128,7 @@ export default function BusinessAddressModal({
 
     fetchBusinessAddress();
   }, [isOpen, customerId, savedAddress]);
+  */
 
   // Fetch locations on open
   useEffect(() => {
@@ -209,7 +210,7 @@ export default function BusinessAddressModal({
     }
   }, [isAddressDropdownOpen, formData.address]);
 
-  const handleSave = async () => {
+  const handleSave = () => {
     // Validate required fields
     if (!formData.companyName || !formData.address) {
       return;
@@ -221,34 +222,9 @@ export default function BusinessAddressModal({
       return;
     }
 
-    // Call backend to create business address (courier-contact)
-    try {
-      setIsSaving(true);
-      const payload: any = {
-        companyName: formData.companyName,
-        phone: formData.phone,
-        email: formData.email,
-        price: formData.price,
-        address: formData.addressPayload ?? {
-          address: formData.address,
-          description: formData.companyName,
-        },
-      };
-      if (customerId) {
-        payload.customerId = customerId;
-      }
-      if (orderId) {
-        payload.orderId = orderId;
-      }
-      await createBusinessAddress(payload);
-    } catch (error) {
-      console.error('Failed to create business address', error);
-      // We still close modal and save locally so user flow is not blocked
-    } finally {
-      setIsSaving(false);
-    }
-
-    // Save to parent state (used for pricing + summary)
+    // NO API CALL - Just save to state
+    // The courier data will be sent with the final order submission
+    // Save to parent state (used for pricing + summary + sending with order data)
     onSave(formData);
     onClose();
   };
@@ -410,29 +386,8 @@ export default function BusinessAddressModal({
               </Popover>
             </div>
 
-            {/* Price */}
-            <div>
-              <Label htmlFor="abholungPrice">Preis (Abholung) *</Label>
-              <Input
-                id="abholungPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="13"
-                value={Number.isFinite(formData.price) ? String(formData.price) : ''}
-                onChange={(e) => {
-                  const next = Number(e.target.value);
-                  setFormData((prev) => ({
-                    ...prev,
-                    price: Number.isFinite(next) ? next : prev.price,
-                  }));
-                }}
-                className="mt-1 h-12"
-              />
-              <div className="text-xs text-gray-500 mt-1">
-                13,00 €
-              </div>
-            </div>
+            {/* Price - Hidden field, fixed value 13 will be sent to backend */}
+            {/* Price field is hidden but price: 13 is maintained in state for backend submission */}
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t">

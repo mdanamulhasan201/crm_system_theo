@@ -18,7 +18,7 @@ export interface LeatherColorAssignment {
 interface LeatherColorSectionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (assignments: LeatherColorAssignment[], leatherColors: string[]) => void;
+  onSave: (assignments: LeatherColorAssignment[], leatherColors: string[], paintedImage?: string | null) => void;
   numberOfColors: number; // 2 or 3
   shoeImage: string | null; // The uploaded shoe image
   initialAssignments?: LeatherColorAssignment[];
@@ -165,7 +165,7 @@ export default function LeatherColorSectionModal({
     setAssignments(assignments.filter((_, i) => i !== index));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // Validate that all leather types are selected
     if (leatherColors.some((color) => !color.trim())) {
       toast.error('Bitte wählen Sie für alle Ledertypen einen Typ aus.');
@@ -189,8 +189,104 @@ export default function LeatherColorSectionModal({
       return colorName ? `${type} - ${colorName}` : type;
     });
 
-    onSave(assignments, leatherColorsWithNames);
+    // Generate painted image with all assignments
+    let paintedImage: string | null = null;
+    
+    if (shoeImage && imageRef.current) {
+      try {
+        paintedImage = await generatePaintedImage();
+        console.log('Painted image generated successfully');
+      } catch (error) {
+        console.error('Error generating painted image:', error);
+        // Don't show error to user - save without painted image
+        // The assignments are still saved, painted image is optional
+        toast.success('Ledertypen-Zuordnung gespeichert (Bild-Markierung übersprungen)');
+      }
+    }
+
+    onSave(assignments, leatherColorsWithNames, paintedImage);
     onClose();
+  };
+
+  const generatePaintedImage = (): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      if (!shoeImage || !imageRef.current) {
+        console.error('No shoe image or imageRef available');
+        reject('No image available');
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      // Use native browser Image constructor, not Next.js Image component
+      const img = new window.Image();
+      
+      // Set crossOrigin BEFORE setting src - important for CORS
+      // Always set for http/https URLs, skip for data URLs
+      if (shoeImage.startsWith('http')) {
+        img.crossOrigin = 'anonymous';
+      }
+      
+      img.onload = () => {
+        try {
+          canvas.width = img.width || 800;
+          canvas.height = img.height || 600;
+          const ctx = canvas.getContext('2d', { willReadFrequently: true });
+          
+          if (!ctx) {
+            reject('Could not get canvas context');
+            return;
+          }
+
+          // Draw base image
+          ctx.drawImage(img, 0, 0);
+
+          // Draw all assignments on top
+          assignments.forEach((assignment) => {
+            const x = (assignment.x / 100) * canvas.width;
+            const y = (assignment.y / 100) * canvas.height;
+            const color = getColorForLeather(assignment.leatherNumber);
+
+            // Draw marker circle
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(x, y, 15, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Draw white border
+            ctx.strokeStyle = '#FFFFFF';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Draw leather number
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(assignment.leatherNumber.toString(), x, y);
+          });
+
+          // Convert to data URL with error handling
+          try {
+            const dataUrl = canvas.toDataURL('image/png');
+            resolve(dataUrl);
+          } catch (canvasError) {
+            console.error('Canvas toDataURL error:', canvasError);
+            reject('Failed to convert canvas to image');
+          }
+        } catch (drawError) {
+          console.error('Canvas drawing error:', drawError);
+          reject('Failed to draw on canvas');
+        }
+      };
+
+      img.onerror = (error) => {
+        console.error('Image loading error:', error);
+        reject('Failed to load image');
+      };
+
+      // Set src last, after all event handlers are attached
+      img.src = shoeImage;
+    });
   };
 
   const getColorForLeather = (leatherNumber: number): string => {

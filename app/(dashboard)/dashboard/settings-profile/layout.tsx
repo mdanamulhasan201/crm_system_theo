@@ -65,7 +65,10 @@ export default function SettingsProfileLayout({
                 item.action && 
                 isPathAllowed(item.path) &&
                 !item.path.endsWith("/software-scanstation") &&
-                !item.path.endsWith("/design")
+                !item.path.endsWith("/design") &&
+                !item.path.endsWith("/changes-password") &&
+                !item.path.endsWith("/sprache") &&
+                !item.path.endsWith("/notifications") 
             )
             .map((item) => ({
                 id: mapIdFromPath(item.path),
@@ -131,18 +134,18 @@ export default function SettingsProfileLayout({
                 //     label: "Design & Logo",
                 //     href: "/dashboard/settings-profile/design"
                 // },
-                {
-                    id: "changes-password",
-                    icon: Lock,
-                    label: "Passwort ändern",
-                    href: "/dashboard/settings-profile/changes-password"
-                },
-                {
-                    id: "sprache",
-                    icon: BiGlobe,
-                    label: "Sprache",
-                    href: "/dashboard/settings-profile/sprache"
-                },
+                // {
+                //     id: "changes-password",
+                //     icon: Lock,
+                //     label: "Passwort ändern",
+                //     href: "/dashboard/settings-profile/changes-password"
+                // },
+                // {
+                //     id: "sprache",
+                //     icon: BiGlobe,
+                //     label: "Sprache",
+                //     href: "/dashboard/settings-profile/sprache"
+                // },
                 {
                     id: "fragen",
                     icon: HelpCircle,

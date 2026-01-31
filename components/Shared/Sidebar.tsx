@@ -22,6 +22,7 @@ import { GrCubes } from "react-icons/gr";
 import { FiDollarSign } from 'react-icons/fi';
 import { BsCashStack } from 'react-icons/bs';
 import { HiOutlineDocumentText } from 'react-icons/hi';
+import { BiNews, BiPackage } from 'react-icons/bi';
 import Einlagenauftrag from '@/public/images/dashboard/partner_sidebar/Einlagenaufträge.png';
 import Einstellungen from '@/public/images/dashboard/partner_sidebar/Einstellungen.png';
 import Fußübungen from '@/public/images/dashboard/partner_sidebar/Fußübungen.png';
@@ -133,6 +134,14 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     { icon: Fußübungen, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
                     { icon: Musterzettel, label: 'Musterzettel', href: '/dashboard/musterzettel' },
                     { icon: Einstellungen, label: 'Einstellungen', href: '/dashboard/settings' },
+                ]
+            },
+            {
+                id: '6',
+                label: 'Kundeninformationen',
+                items: [
+                    { icon: BiNews, label: 'News & Aktuelles', href: '/dashboard/news' },
+                    { icon: BiPackage, label: 'Produktkatalog', href: '/dashboard/products' },
                 ]
             }
         ],

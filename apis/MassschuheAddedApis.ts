@@ -17,10 +17,20 @@ export const createMassschuheAdded = async (massschuheAddedData: any) => {
 
 
 
-// without order id post massschuhe /custom_shafts/create
+// without order id post massschuhe custom_shafts/create?custom_models=
 export const createMassschuheWithoutOrderId = async (massschuheData: any) => {
     try {
-        const response = await axiosClient.post('/custom_shafts/create', massschuheData);
+        const response = await axiosClient.post('/custom_shafts/create?custom_models=true', massschuheData);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// without order id post massschuhe custom_shafts/create?custom_models=
+export const createMassschuheWithoutOrderIdWithoutCustomModels = async (massschuheData: any) => {
+    try {
+        const response = await axiosClient.post('/custom_shafts/create?custom_models=false', massschuheData);
         return response.data;
     } catch (error: any) {
         throw error;

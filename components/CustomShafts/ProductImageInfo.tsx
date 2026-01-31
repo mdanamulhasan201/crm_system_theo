@@ -14,7 +14,7 @@ interface ProductImageInfoProps {
 
 export default function ProductImageInfo({ shaft }: ProductImageInfoProps) {
   return (
-    <div className="flex flex-col md:flex-row gap-10 items-start">
+    <div className="flex flex-col md:flex-row gap-10 items-center">
       {/* Image - Read only, only from backend */}
       <div className="w-full md:w-1/2 flex justify-start mb-8">
         <div className="relative">

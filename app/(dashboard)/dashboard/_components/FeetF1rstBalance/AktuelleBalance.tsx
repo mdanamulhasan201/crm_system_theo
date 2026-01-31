@@ -2,6 +2,14 @@
 import React, { useEffect, useState } from 'react'
 import { balanceMassschuheOrder } from '@/apis/MassschuheManagemantApis'
 
+interface BalanceResponse {
+    success: boolean
+    message: string
+    data: {
+        totalPrice: number
+    }
+}
+
 export default function AktuelleBalance() {
     const [balance, setBalance] = useState<number | null>(null)
     const [loading, setLoading] = useState(false)
@@ -10,15 +18,18 @@ export default function AktuelleBalance() {
         const fetchBalance = async () => {
             try {
                 setLoading(true)
-                const response = await balanceMassschuheOrder()
-                // New API returns { data: { totalPrice } }
-                const value = (response as any)?.data?.totalPrice ?? (response as any)?.totalPrice
-                const parsed =
-                    value === null || value === undefined || value === ''
+                const response = await balanceMassschuheOrder() as BalanceResponse
+                
+                // Extract totalPrice from the response
+                const totalPrice = response?.data?.totalPrice
+                
+                // Parse and validate the value
+                const parsed = 
+                    totalPrice === null || totalPrice === undefined
                         ? null
-                        : typeof value === 'number'
-                            ? value
-                            : Number(value)
+                        : typeof totalPrice === 'number'
+                            ? totalPrice
+                            : Number(totalPrice)
 
                 setBalance(typeof parsed === 'number' && Number.isFinite(parsed) ? parsed : null)
             } catch (error) {

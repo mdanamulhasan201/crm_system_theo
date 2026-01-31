@@ -154,10 +154,62 @@ export const updateMassschuheOrderPartner2 = async (orderId: string, isByPartner
 }
 
 
-// balance massschuhe order /custom_shafts/total-price-resio
+// balance massschuhe order - Get total price from admin order transitions
+// GET /v2/admin-order-transitions/total-price
+// Returns: { success: boolean, message: string, data: { totalPrice: number } }
 export const balanceMassschuheOrder = async () => {
     try {
         const response = await axiosClient.get(`/v2/admin-order-transitions/total-price`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// Get total price ratio with daily data for balance chart
+// GET /v2/admin-order-transitions/total-price-ratio
+// Returns: { success: boolean, message: string, data: { partnerId: string, month: number, year: number, dailyData: Array<{ date: string, value: number, count: number }> } }
+export const totalRadioMassschuheOrder = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/admin-order-transitions/total-price-ratio`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// Get all order transitions with cursor-based pagination
+// GET /v2/admin-order-transitions/get-all-transitions?limit=10&cursor=
+// Returns: { success: boolean, message: string, data: Array<OrderData>, hasMore: boolean }
+// cursor: pass empty string '' for first page, then pass the last item's ID for next page
+export const getAllOrderData = async (limit: number, cursor: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/admin-order-transitions/get-all-transitions?limit=${limit}&cursor=${cursor}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// calcel order 
+// POST /v2/admin-order-transitions/cancel-order
+// body: { orderId: string }
+// Returns: { success: boolean, message: string }
+export const cancelOrder = async (orderId: string) => {
+    try {
+        const response = await axiosClient.post(`/v2/admin-order-transitions/cancel-order`, { orderId });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// card data visble v2/admin-order-transitions/least-one-month-payment
+export const getLeastOneMonthPaymentData = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/admin-order-transitions/least-one-month-payment`);
         return response.data;
     } catch (error) {
         throw error;
@@ -185,7 +237,23 @@ export const sendMassschuheOrderToAdmin1 = async (orderId: string, formData: For
 // /massschuhe-order/admin-order/send-to-admin-2-order/c76be3b8-f7e9-4428-a3cd-3d4b1e1b425c
 export const sendMassschuheOrderToAdmin2 = async (orderId: string, formData: FormData | any) => {
     try {
-        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}`, formData, {
+        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}/?custom_models=false&isCourierContact=yes`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// Custom shaft order (with uploaded image) - send to admin 2
+// /massschuhe-order/admin-order/send-to-admin-2-order/d4fd8996-8862-45bb-9cdd-7d46332c7cfe?custom_models=true
+export const sendMassschuheCustomShaftOrderToAdmin2 = async (orderId: string, formData: FormData | any) => {
+    try {
+        const response = await axiosClient.post(`/massschuhe-order/admin-order/send-to-admin-2-order/${orderId}?custom_models=true&isCourierContact=yes`, formData, {
             headers: {
                 'Content-Type': 'multipart/form-data',
             },
@@ -229,6 +297,18 @@ export const getBusinessAddress = async (customerId: string) => {
         const response = await axiosClient.get(
             `/massschuhe-order/admin-order/courier-contact/customer-list-order-contact/${customerId}`
         );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
+// create custom bodenkonstruktion /custom_shafts/custom-bodenkonstruktion/create
+export const createCustomBodenkonstruktion = async (formData: FormData | any) => {
+    try {
+        const response = await axiosClient.post(`/custom_shafts/custom-bodenkonstruktion/create`, formData);
         return response.data;
     } catch (error) {
         throw error;

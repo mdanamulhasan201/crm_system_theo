@@ -41,6 +41,16 @@ interface ProductConfigurationProps {
   setInnenfutter: (futter: string) => void;
   schafthohe: string;
   setSchafthohe: (hohe: string) => void;
+  // Separate shaft heights for left and right
+  schafthoheLinks: string;
+  setSchafthoheLinks: (hohe: string) => void;
+  schafthoheRechts: string;
+  setSchafthoheRechts: (hohe: string) => void;
+  // Umfangmaße (circumference) - only required when shaft height > 15cm
+  umfangmasseLinks: string;
+  setUmfangmasseLinks: (masse: string) => void;
+  umfangmasseRechts: string;
+  setUmfangmasseRechts: (masse: string) => void;
   polsterung: string[];
   setPolsterung: (items: string[]) => void;
   verstarkungen: string[];
@@ -59,6 +69,10 @@ interface ProductConfigurationProps {
   onOrderComplete: () => void;
   category?: string; // Category from the shaft data
   allowCategoryEdit?: boolean; // If true, show dropdown; if false, show read-only field
+  zipperImage?: string | null;
+  setZipperImage?: (image: string | null) => void;
+  paintImage?: string | null;
+  setPaintImage?: (image: string | null) => void;
 }
 
 export default function ProductConfiguration({
@@ -88,6 +102,14 @@ export default function ProductConfiguration({
   setInnenfutter,
   schafthohe,
   setSchafthohe,
+  schafthoheLinks,
+  setSchafthoheLinks,
+  schafthoheRechts,
+  setSchafthoheRechts,
+  umfangmasseLinks,
+  setUmfangmasseLinks,
+  umfangmasseRechts,
+  setUmfangmasseRechts,
   polsterung,
   setPolsterung,
   verstarkungen,
@@ -106,6 +128,10 @@ export default function ProductConfiguration({
   onOrderComplete,
   category,
   allowCategoryEdit,
+  zipperImage,
+  setZipperImage,
+  paintImage,
+  setPaintImage,
 }: ProductConfigurationProps) {
   // Default value for allowCategoryEdit
   const isCategoryEditable = allowCategoryEdit ?? false;
@@ -116,7 +142,8 @@ export default function ProductConfiguration({
   const [localZipperExtra, setLocalZipperExtra] = useState<boolean | undefined>(undefined);
   const [showLeatherColorModal, setShowLeatherColorModal] = useState(false);
   const [showZipperPlacementModal, setShowZipperPlacementModal] = useState(false);
-  const [zipperPlacementImage, setZipperPlacementImage] = useState<string | null>(null);
+  const [zipperPlacementImage, setZipperPlacementImage] = useState<string | null>(zipperImage || null);
+  const [leatherPaintImage, setLeatherPaintImage] = useState<string | null>(paintImage || null);
   const isSavingZipperRef = useRef(false);
 
   // Use parent state if provided, otherwise use local state
@@ -129,12 +156,7 @@ export default function ProductConfiguration({
     }
   };
 
-  // Ensure closureType is 'Zipper' when zipperPlacementImage exists
-  useEffect(() => {
-    if (zipperPlacementImage && closureType !== 'Zipper') {
-      setClosureType('Zipper');
-    }
-  }, [zipperPlacementImage, closureType, setClosureType]);
+  // Zipper is now controlled by the "Zusätzlicher Reißverschluss" checkbox, not by closureType
 
   const CATEGORY_OPTIONS = [
     { value: 'Halbschuhe', label: 'Halbschuhe', price: 209.99 },
@@ -203,9 +225,17 @@ export default function ProductConfiguration({
   };
 
   // Handle modal save
-  const handleModalSave = (assignments: LeatherColorAssignment[], colors: string[]) => {
+  const handleModalSave = (assignments: LeatherColorAssignment[], colors: string[], paintedImage?: string | null) => {
     setLeatherColorAssignments(assignments);
     setLeatherColors(colors);
+    // Save painted image locally
+    if (paintedImage) {
+      setLeatherPaintImage(paintedImage);
+      // Also update parent state if provided
+      if (setPaintImage) {
+        setPaintImage(paintedImage);
+      }
+    }
     setShowLeatherColorModal(false);
   };
 
@@ -213,8 +243,8 @@ export default function ProductConfiguration({
     <TooltipProvider>
       <div className="flex flex-col gap-6">
         {/* CAD-Modellierung Section */}
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex items-center gap-2 md:w-1/3">
             <Label className="font-medium text-base">CAD-Modellierung</Label>
             <div className="relative group">
               <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center cursor-help hover:bg-gray-300 transition-colors">
@@ -227,7 +257,7 @@ export default function ProductConfiguration({
               </div>
             </div>
           </div>
-          <div className="flex flex-col gap-3 ml-0 md:ml-[calc(33.333%-0.5rem)]">
+          <div className="flex flex-col md:flex-row gap-3 md:gap-6 flex-1">
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="radio"
@@ -239,7 +269,7 @@ export default function ProductConfiguration({
               />
               <span className="text-base text-gray-700">1× CAD-Modellierung (Standard)</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer">
+            <label className="flex items-center gap-2 cursor-pointer whitespace-nowrap">
               <input
                 type="radio"
                 name="cadModeling"
@@ -408,18 +438,69 @@ export default function ProductConfiguration({
           </div>
         </div>
 
-        {/* Schafthöhe */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Schafthöhe:</Label>
-          <div className="flex items-center gap-2 w-full md:w-1/2">
-            <Input
-              type="number"
-              placeholder="z.B. 5"
-              className="flex-1 border-gray-300"
-              value={schafthohe}
-              onChange={e => setSchafthohe(e.target.value)}
-            />
-            <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
+        {/* Schafthöhe Links (Left) */}
+        <div className="flex flex-col md:flex-row md:items-start gap-4">
+          <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Links:</Label>
+          <div className="flex flex-col gap-3 w-full md:w-2/3">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="z.B. 15"
+                className="flex-1 border-gray-300"
+                value={schafthoheLinks}
+                onChange={e => setSchafthoheLinks(e.target.value)}
+              />
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
+            </div>
+            
+            {/* Show Umfangmaße field only if shaft height > 15cm */}
+            {parseFloat(schafthoheLinks) > 15 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <Label className="text-sm font-medium text-yellow-900 mb-2 block">
+                  Umfangmaße Links (erforderlich bei Schafthöhe {'>'} 15cm):
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="z.B. 35cm"
+                  className="w-full border-yellow-300 bg-white"
+                  value={umfangmasseLinks}
+                  onChange={e => setUmfangmasseLinks(e.target.value)}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Schafthöhe Rechts (Right) */}
+        <div className="flex flex-col md:flex-row md:items-start gap-4">
+          <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Rechts:</Label>
+          <div className="flex flex-col gap-3 w-full md:w-2/3">
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="z.B. 15"
+                className="flex-1 border-gray-300"
+                value={schafthoheRechts}
+                onChange={e => setSchafthoheRechts(e.target.value)}
+              />
+              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
+            </div>
+            
+            {/* Show Umfangmaße field only if shaft height > 15cm */}
+            {parseFloat(schafthoheRechts) > 15 && (
+              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <Label className="text-sm font-medium text-yellow-900 mb-2 block">
+                  Umfangmaße Rechts (erforderlich bei Schafthöhe {'>'} 15cm):
+                </Label>
+                <Input
+                  type="text"
+                  placeholder="z.B. 35cm"
+                  className="w-full border-yellow-300 bg-white"
+                  value={umfangmasseRechts}
+                  onChange={e => setUmfangmasseRechts(e.target.value)}
+                />
+              </div>
+            )}
           </div>
         </div>
 
@@ -492,79 +573,22 @@ export default function ProductConfiguration({
         </div>
 
         {/* Verschlussart */}
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Label className="font-medium text-base md:w-1/3">Verschlussart:</Label>
-            <Select 
-              value={closureType} 
-              onValueChange={(value) => {
-                if (value === 'Zipper') {
-                  // If there's already a saved drawing, allow selection
-                  if (zipperPlacementImage) {
-                    setClosureType('Zipper');
-                  } else {
-                    // Show zipper placement modal when Zipper is selected
-                    // Don't set closureType yet - wait for user to save the drawing
-                    if (!shoeImage) {
-                      // Need an image to draw the zipper on
-                      toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
-                      return;
-                    }
-                    setShowZipperPlacementModal(true);
-                  }
-                } else {
-                  setClosureType(value);
-                  // Clear zipper placement when switching to other closure types
-                  setZipperPlacementImage(null);
-                }
-              }}
-            >
-              <SelectTrigger className="w-full md:w-1/2 border-gray-300">
-                <SelectValue placeholder="Verschlussart wählen..." />
-              </SelectTrigger>
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Label className="font-medium text-base md:w-1/3">Verschlussart:</Label>
+          <Select 
+            value={closureType} 
+            onValueChange={(value) => {
+              setClosureType(value);
+            }}
+          >
+            <SelectTrigger className="w-full md:w-1/2 border-gray-300">
+              <SelectValue placeholder="Verschlussart wählen..." />
+            </SelectTrigger>
               <SelectContent>
-                <SelectItem className='cursor-pointer' value="Eyelets">Eyelets</SelectItem>
-                <SelectItem className='cursor-pointer' value="Zipper">Zipper</SelectItem>
-                <SelectItem className='cursor-pointer' value="Velcro">Velcro</SelectItem>
+                <SelectItem className='cursor-pointer' value="Eyelets">Ösen (Schnürung)</SelectItem>
+                <SelectItem className='cursor-pointer' value="Velcro">Klettverschluss</SelectItem>
               </SelectContent>
-            </Select>
-          </div>
-          
-          {/* Zipper Placement Indicator */}
-          {closureType === 'Zipper' && (
-            <div className="flex flex-col md:flex-row md:items-center gap-4">
-              <Label className="font-medium text-base md:w-1/3"></Label>
-              <div className="w-full md:w-1/2">
-                {zipperPlacementImage ? (
-                  <div className="flex items-center gap-2 p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <span className="text-sm text-green-700">✓ Zipper placement marked</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowZipperPlacementModal(true)}
-                      className="ml-auto h-8 text-xs"
-                    >
-                      Edit
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <span className="text-sm text-yellow-700">⚠ Please mark zipper placement</span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setShowZipperPlacementModal(true)}
-                      className="ml-auto h-8 text-xs"
-                    >
-                      Mark Now
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+          </Select>
         </div>
 
 
@@ -572,7 +596,7 @@ export default function ProductConfiguration({
         {(closureType === 'Eyelets' || closureType === 'Zipper') && (
           <div className="flex flex-col md:flex-row md:items-center gap-4 mt-5">
             <Label className="font-medium text-base md:w-1/3">
-              Möchten Sie passende Schnürsenkel zum Schuh? (+4,49€)
+              Möchten Sie passende Schnürsenkel zum Schuh?
             </Label>
             <div className="flex items-center gap-8">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -587,7 +611,9 @@ export default function ProductConfiguration({
                   checked={effektSchnursenkel === true}
                   onChange={() => updateSchnursenkel(effektSchnursenkel === true ? undefined : true)}
                 />
-                <span>Ja mit passenden Schnürsenkel (+4,49€)</span>
+                <span>Ja mit passenden Schnürsenkel
+                  <span className="text-green-600 font-semibold"> (+4,49€)</span>
+                  </span>
               </label>
             </div>
           </div>
@@ -597,7 +623,7 @@ export default function ProductConfiguration({
         {(closureType === 'Eyelets' || closureType === 'Zipper') && (
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <Label className="font-medium text-base md:w-1/3">
-              Möchten Sie den Schaft bereits mit eingesetzten Ösen? (+8,99€)
+              Möchten Sie den Schaft bereits mit eingesetzten Ösen?
             </Label>
             <div className="flex items-center gap-8">
               <label className="flex items-center gap-2 cursor-pointer">
@@ -612,40 +638,86 @@ export default function ProductConfiguration({
                   checked={effektOsen === true}
                   onChange={() => updateOsen(effektOsen === true ? undefined : true)}
                 />
-                <span>Ja, Ösen einsetzen (+8,99€)</span>
+                <span>Ja, Ösen einsetzen
+                  
+                  
+                  <span className="text-green-600 font-semibold"> (+8,99€)</span>
+                  </span>
               </label>
             </div>
           </div>
         )}
 
-        {/* Zusätze: Zusätzlicher Reißverschluss - Only show for Zipper */}
-        {closureType === 'Zipper' && (
-          <div className="flex flex-col md:flex-row md:items-center gap-4">
-            <Label className="font-medium text-base md:w-1/3">
-              Möchten Sie einen zusätzlichen Reißverschluss? (+9,99€)
-            </Label>
-            <div className="flex items-center gap-8">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektZipperExtra === false}
-                  onChange={() => updateZipperExtra(effektZipperExtra === false ? undefined : false)}
-                />
-                <span>Nein, ohne zusätzlichen Reißverschluss</span>
-              </label>
-              <label className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={effektZipperExtra === true}
-                  onChange={() => updateZipperExtra(effektZipperExtra === true ? undefined : true)}
-                />
-                <span>Ja, zusätzlichen Reißverschluss (+9,99€)</span>
-              </label>
-            </div>
+        {/* Zusätze: Zusätzlicher Reißverschluss - Always visible */}
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <Label className="font-medium text-base md:w-1/3">
+            Möchten Sie einen zusätzlichen Reißverschluss?
+          </Label>
+          <div className="flex items-center gap-8">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox
+                checked={effektZipperExtra === false}
+                onChange={() => updateZipperExtra(effektZipperExtra === false ? undefined : false)}
+              />
+              <span>Nein, ohne zusätzlichen Reißverschluss</span>
+            </label>
+             <label className="flex items-center gap-2 cursor-pointer">
+               <Checkbox
+                 checked={effektZipperExtra === true}
+                 onChange={() => {
+                   // If checking the box (turning it on)
+                   if (effektZipperExtra !== true) {
+                     // Check if there's already a zipper image
+                     if (zipperPlacementImage) {
+                       // Just update the checkbox
+                       updateZipperExtra(true);
+                     } else {
+                       // Need to show modal to mark zipper placement
+                       if (!shoeImage) {
+                         toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
+                         return;
+                       }
+                       // Show modal first, then update checkbox after save
+                       setShowZipperPlacementModal(true);
+                     }
+                   } else {
+                     // Unchecking - just update the checkbox
+                     updateZipperExtra(undefined);
+                   }
+                 }}
+               />
+               <span>Ja, zusätzlichen Reißverschluss 
+                <span className="text-green-600 font-semibold"> (+9,99€)</span>
+                </span>
+             </label>
           </div>
-        )}
+        </div>
         {/* Submit Button */}
         <div className="flex justify-center mt-4">
           <Button
-            onClick={onOrderComplete}
+            onClick={() => {
+              // Validate shaft height fields
+              if (!schafthoheLinks || !schafthoheRechts) {
+                toast.error('Bitte geben Sie die Schafthöhe für beide Füße ein.');
+                return;
+              }
+
+              // Validate Umfangmaße if shaft height > 15cm
+              const leftHeight = parseFloat(schafthoheLinks);
+              const rightHeight = parseFloat(schafthoheRechts);
+
+              if (leftHeight > 15 && !umfangmasseLinks) {
+                toast.error('Bitte geben Sie die Umfangmaße Links ein (erforderlich bei Schafthöhe > 15cm).');
+                return;
+              }
+
+              if (rightHeight > 15 && !umfangmasseRechts) {
+                toast.error('Bitte geben Sie die Umfangmaße Rechts ein (erforderlich bei Schafthöhe > 15cm).');
+                return;
+              }
+
+              onOrderComplete();
+            }}
             className="w-full cursor-pointer md:w-1/3 px-8 py-5 rounded-full bg-black text-white hover:bg-gray-800 text-base font-semibold"
           >
             Abschließen
@@ -669,24 +741,21 @@ export default function ProductConfiguration({
         <ZipperPlacementModal
           isOpen={showZipperPlacementModal}
           onClose={() => {
-            // Only reset closureType if modal is closed without saving AND no image exists
-            // Don't reset if we just saved (check ref for immediate value)
-            if (!isSavingZipperRef.current) {
-              if (!zipperPlacementImage) {
-                setClosureType('');
-              }
-            }
+            // Reset flag and close modal
             isSavingZipperRef.current = false;
             setShowZipperPlacementModal(false);
           }}
           onSave={(imageDataUrl) => {
             // Mark that we're saving to prevent onClose from resetting closureType
             isSavingZipperRef.current = true;
-            // Save the zipper placement image
+            // Save the zipper placement image locally
             setZipperPlacementImage(imageDataUrl);
-            // Always set closureType to Zipper when image is saved (even when editing)
-            // This ensures the dropdown shows Zipper as selected
-            setClosureType('Zipper');
+            // Also update parent state if provided
+            if (setZipperImage) {
+              setZipperImage(imageDataUrl);
+            }
+            // Set the checkbox to true when zipper placement is saved
+            updateZipperExtra(true);
             setShowZipperPlacementModal(false);
             // Reset flag after a brief delay
             setTimeout(() => {

@@ -41,6 +41,10 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'backend.feetf1rst.tech',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
       }
     ],
   },
