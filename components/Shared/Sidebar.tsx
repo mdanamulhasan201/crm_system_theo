@@ -8,21 +8,22 @@ import {
     HiOutlineCube
 } from 'react-icons/hi';
 import { RxDashboard } from "react-icons/rx";
-import {  HiOutlineChatBubbleOvalLeft, HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
+import {  HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
 import { TbActivityHeartbeat, TbUsers } from 'react-icons/tb';
-import { HiArrowLeft } from 'react-icons/hi';
+
 
 import type { IconType } from 'react-icons';
 import type { StaticImageData } from 'next/image';
 import { FiBarChart, FiUserPlus } from 'react-icons/fi';
-import { GrCubes } from "react-icons/gr";
+
 import { FiDollarSign } from 'react-icons/fi';
 import { BsCashStack } from 'react-icons/bs';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { BiNews, BiPackage } from 'react-icons/bi';
+import { MdAccountBalanceWallet } from 'react-icons/md';
 import Einlagenauftrag from '@/public/images/dashboard/partner_sidebar/Einlagenaufträge.png';
 import Einstellungen from '@/public/images/dashboard/partner_sidebar/Einstellungen.png';
 import Fußübungen from '@/public/images/dashboard/partner_sidebar/Fußübungen.png';
@@ -31,7 +32,7 @@ import Maßschuhaufträge from '@/public/images/dashboard/partner_sidebar/Maßsc
 import Musterzettel from '@/public/images/dashboard/partner_sidebar/Musterzettel.png';
 import Nachrichten from '@/public/images/dashboard/partner_sidebar/Nachrichten.png';
 import Terminkalender from '@/public/images/dashboard/partner_sidebar/Terminkalender.png';
-import { MdKeyboardArrowLeft, MdKeyboardArrowRight } from 'react-icons/md';
+import { MdKeyboardArrowLeft } from 'react-icons/md';
 
 
 
@@ -143,6 +144,13 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     { icon: BiNews, label: 'News & Aktuelles', href: '/dashboard/news' },
                     { icon: BiPackage, label: 'Produktkatalog', href: '/dashboard/products' },
                 ]
+            },
+            {
+                id: '7',
+                standalone: true,
+                icon: MdAccountBalanceWallet,
+                label: 'Balance',
+                href: '/dashboard/balance-dashboard'
             }
         ],
         []

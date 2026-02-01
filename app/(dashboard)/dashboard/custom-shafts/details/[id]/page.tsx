@@ -6,7 +6,7 @@ import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMass
 import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 import { createMassschuheWithoutOrderIdWithoutCustomModels } from '@/apis/MassschuheAddedApis';
 import { sendMassschuheOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
-import { prepareStep1FormData } from '@/utils/customShoeOrderHelpers';
+// import { prepareStep1FormData } from '@/utils/customShoeOrderHelpers';
 import toast from 'react-hot-toast';
 import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
 
