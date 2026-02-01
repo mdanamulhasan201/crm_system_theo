@@ -5,6 +5,7 @@ import { useSingleCustomShaft } from '@/hooks/customShafts/useSingleCustomShaft'
 import { useGetSingleMassschuheOrder } from '@/hooks/massschuhe/useGetSingleMassschuheOrder';
 import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 import { createMassschuheWithoutOrderIdWithoutCustomModels } from '@/apis/MassschuheAddedApis';
+import { sendMassschuheOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
 import { prepareStep1FormData } from '@/utils/customShoeOrderHelpers';
 import toast from 'react-hot-toast';
 import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
@@ -276,18 +277,19 @@ export default function CollectionShaftDetailsPage() {
     };
   };
 
-  // Helper to prepare FormData for collection products
+  // Prepare FormData for collection products (custom_models=false)
+  // Key difference from custom orders: Sends mabschaftKollektionId instead of custom_models_image
   const prepareCollectionFormData = async (data: any): Promise<FormData> => {
     const formData = new FormData();
 
-    // Customer info
+    // Customer info (customerId OR other_customer_name)
     if (data.customerId) {
       formData.append('customerId', data.customerId);
     } else if (data.other_customer_name) {
       formData.append('other_customer_name', data.other_customer_name);
     }
 
-    // 3D model files
+    // 3D model files (optional)
     if (data.image3d_1_file) {
       formData.append('image3d_1', data.image3d_1_file);
     }
@@ -295,10 +297,11 @@ export default function CollectionShaftDetailsPage() {
       formData.append('image3d_2', data.image3d_2_file);
     }
 
-    // Collection product ID (KEY DIFFERENCE from custom orders)
+    // ⭐ Collection product ID (REQUIRED for collection orders)
+    // This is the key field that identifies which collection product was selected
     formData.append('mabschaftKollektionId', data.mabschaftKollektionId);
 
-    // Zipper and paint images
+    // Additional images (optional)
     if (data.zipperImage) {
       const { convertImageToFile } = require('@/utils/customShoeOrderHelpers');
       const zipperImageFile = await convertImageToFile(data.zipperImage, 'zipper_image.png');
@@ -315,17 +318,17 @@ export default function CollectionShaftDetailsPage() {
       }
     }
 
-    // Massschafterstellung_json1 (all shaft configuration)
+    // Massschafterstellung_json1 (all shaft configuration: leather, height, closures, add-ons, etc.)
     const { prepareMassschafterstellungJson1 } = require('@/utils/customShoeOrderHelpers');
     const massschafterstellungJson1 = prepareMassschafterstellungJson1(data);
     formData.append('Massschafterstellung_json1', JSON.stringify(massschafterstellungJson1));
 
-    // Total price
+    // Total price (including add-ons and courier if applicable)
     formData.append('totalPrice', data.totalPrice.toString());
 
-    // Courier/Business address (if Abholung)
+    // Courier/Business address (if Abholung/pickup option selected)
     if (data.isAbholung && data.businessAddress) {
-      // Send individual fields
+      // Send individual courier fields
       formData.append('courier_companyName', data.businessAddress.companyName);
       formData.append('courier_phone', data.businessAddress.phone);
       formData.append('courier_email', data.businessAddress.email);
@@ -341,45 +344,62 @@ export default function CollectionShaftDetailsPage() {
     return formData;
   };
 
-  // Handle "JA, BODEN KONFIGURIEREN" - Save to context and redirect to Step 2
+  // Handle "JA, BODEN KONFIGURIEREN" - Save data to context and proceed to Step 2
   const handleBodenKonfigurieren = async () => {
     if (!validateCustomer()) return;
 
+    // Prepare collection shaft data (includes mabschaftKollektionId and all configuration)
     const collectionShaftData = prepareCollectionShaftData();
 
-    // Store data in context
+    // Store Step 1 data in context (will be combined with Step 2 data in Bodenkonstruktion)
     setContextData(collectionShaftData as any);
 
     // Close modal
     setShowConfirmationModal(false);
 
     // Redirect to Bodenkonstruktion page (Step 2)
-    router.push(`/dashboard/massschuhauftraege-deatils/2`);
+    // - If orderId exists: Pass it for existing order customization
+    // - If no orderId: Create new order after Step 2 completion
+    const redirectUrl = orderId 
+      ? `/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`
+      : `/dashboard/massschuhauftraege-deatils/2`;
+    router.push(redirectUrl);
   };
 
-  // Handle "NEIN, WEITER OHNE BODEN" - Create order without Bodenkonstruktion
+  // Handle "NEIN, WEITER OHNE BODEN" - Submit order without Bodenkonstruktion
   const handleOrderWithoutBoden = async () => {
     if (!validateCustomer()) return;
 
     setIsCreatingOrder(true);
 
     try {
+      // Prepare collection shaft data (includes mabschaftKollektionId)
       const collectionShaftData = prepareCollectionShaftData();
 
-      // Prepare form data for API (collection products use different API)
+      // Prepare FormData with mabschaftKollektionId and all configuration
       const formData = await prepareCollectionFormData(collectionShaftData);
 
-      // Call API for collection products (without custom_models)
-      const response = await createMassschuheWithoutOrderIdWithoutCustomModels(formData);
-      
-      toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
+      // Call appropriate API based on context:
+      // - If orderId exists: Update existing order (API: sendMassschuheOrderToAdmin2)
+      // - If no orderId: Create new order (API: createMassschuheWithoutOrderIdWithoutCustomModels)
+      let response;
+      if (orderId) {
+        // Existing order customization: Send to Admin2 API with custom_models=false
+        // Payload includes: mabschaftKollektionId, Massschafterstellung_json1, totalPrice, courier details
+        response = await sendMassschuheOrderToAdmin2(orderId, formData);
+        toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "creating-order" });
+      } else {
+        // New order: Create with collection product (custom_models=false)
+        response = await createMassschuheWithoutOrderIdWithoutCustomModels(formData);
+        toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
+      }
 
-      // Close modal and redirect to balance dashboard
+      // Order completed without Bodenkonstruktion → Redirect to balance dashboard
       setShowConfirmationModal(false);
       router.push('/dashboard/balance-dashboard');
     } catch (error) {
-      console.error('Error creating order:', error);
-      toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" });
+      console.error('Error creating/updating order:', error);
+      toast.error("Fehler beim Erstellen/Aktualisieren der Bestellung.", { id: "creating-order" });
     } finally {
       setIsCreatingOrder(false);
     }
@@ -526,7 +546,7 @@ export default function CollectionShaftDetailsPage() {
         onClose={() => setShowConfirmationModal(false)}
         onConfirm={handleOrderWithoutBoden}
         onSendToAdmin2={() => {
-          // Admin2 function placeholder
+          // Admin2 function placeholder (not needed for collection orders)
         }}
         onBodenKonfigurieren={handleBodenKonfigurieren}
         orderPrice={orderPrice}
@@ -537,7 +557,7 @@ export default function CollectionShaftDetailsPage() {
         otherCustomerNumber={otherCustomerNumber}
         shaftName={shaft?.name}
         isCreatingWithoutBoden={isCreatingOrder}
-        orderId={null}
+        orderId={orderId}
       />
     </div>
   );

@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useCustomShaftData } from '@/contexts/CustomShaftDataContext';
 import { createMassschuheWithoutOrderId } from '@/apis/MassschuheAddedApis';
+import { sendMassschuheCustomShaftOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
 import { prepareStep1FormData } from '@/utils/customShoeOrderHelpers';
 import toast from 'react-hot-toast';
 
@@ -39,6 +40,9 @@ export default function CustomShoeOrderPage() {
   // Get type from URL (abholung or null)
   const type = searchParams.get('type');
   const isAbholung = type === 'abholung';
+
+  // Get orderId from URL (for existing order customization)
+  const existingOrderId = searchParams.get('orderId');
 
   // Customer selection
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -221,7 +225,11 @@ export default function CustomShoeOrderPage() {
     setShowConfirmationModal(false);
 
     // Redirect to Bodenkonstruktion page (Step 2)
-    router.push(`/dashboard/massschuhauftraege-deatils/2`);
+    // If orderId exists, pass it in the URL for existing order customization
+    const redirectUrl = existingOrderId 
+      ? `/dashboard/massschuhauftraege-deatils/2?orderId=${existingOrderId}`
+      : `/dashboard/massschuhauftraege-deatils/2`;
+    router.push(redirectUrl);
   };
 
   // Handle "NEIN, WEITER OHNE BODEN" - Create order without Bodenkonstruktion
@@ -236,17 +244,24 @@ export default function CustomShoeOrderPage() {
       // Prepare form data for API
       const formData = await prepareStep1FormData(customShaftData as any);
 
-      // Call API
-      const response = await createMassschuheWithoutOrderId(formData);
-      
-      toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
+      // Call appropriate API based on whether this is a new order or updating an existing order
+      let response;
+      if (existingOrderId) {
+        // Update existing order (orderId exists in URL params)
+        response = await sendMassschuheCustomShaftOrderToAdmin2(existingOrderId, formData);
+        toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "creating-order" });
+      } else {
+        // Create new order (no orderId)
+        response = await createMassschuheWithoutOrderId(formData);
+        toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
+      }
 
-      // Close modal and redirect to balance dashboard
+      // Close modal and redirect to balance dashboard (order completed without Bodenkonstruktion)
       setShowConfirmationModal(false);
       router.push('/dashboard/balance-dashboard');
     } catch (error) {
-      console.error('Error creating order:', error);
-      toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" });
+      console.error('Error creating/updating order:', error);
+      toast.error("Fehler beim Erstellen/Aktualisieren der Bestellung.", { id: "creating-order" });
     } finally {
       setIsCreatingOrder(false);
     }
@@ -372,7 +387,7 @@ export default function CustomShoeOrderPage() {
         onClose={() => setShowConfirmationModal(false)}
         onConfirm={handleOrderWithoutBoden}
         onSendToAdmin2={() => {
-          // Admin2 function placeholder
+          // Admin2 function placeholder (not needed for custom orders)
         }}
         onBodenKonfigurieren={handleBodenKonfigurieren}
         orderPrice={orderPrice}
@@ -383,7 +398,7 @@ export default function CustomShoeOrderPage() {
         otherCustomerNumber={otherCustomerNumber}
         shaftName={productDescription || 'Custom Made #1000'}
         isCreatingWithoutBoden={isCreatingOrder}
-        orderId={null}
+        orderId={existingOrderId}
       />
     </div>
   );

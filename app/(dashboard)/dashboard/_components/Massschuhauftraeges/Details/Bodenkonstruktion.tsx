@@ -264,8 +264,9 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             }
         }
 
-        // Check if custom shaft data exists in context (for custom orders without orderId)
-        if (contextData && !orderId) {
+        // Check if custom shaft data exists in context (from Step 1: Schafterstellung)
+        // This applies to both new orders (no orderId) and existing orders (with orderId)
+        if (contextData) {
             // Store custom shaft data for later API call (when user clicks "Verbindlich bestellen")
             const hasUploadedImage = !!contextData.uploadedImage
             setCustomShaftData(contextData)
@@ -913,7 +914,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return formData
     }
 
-    // Handle form submission to API
+    // Handle form submission to Admin3 API (for existing orders with only Bodenkonstruktion updates)
     const handleFormSubmit = async (pdfBlob: Blob | null) => {
         if (!orderId) {
             toast.error("Order ID is required")
@@ -924,12 +925,12 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         try {
             const formData = await prepareFormDataForAdmin3(pdfBlob)
             const response = await sendMassschuheOrderToAdmin3(orderId, formData)
-            toast.success(response.message || "Bestellung erfolgreich gesendet!", { id: "sending-order" })
-            // Close completion popup and navigate after successful API call
+            toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "sending-order" })
+            // Close completion popup and redirect back to massschuhauftraege page with orderId
             setShowModal2(false)
-            router.push("/dashboard/balance-dashboard")
+            router.push(`/dashboard/massschuhauftraege?orderId=${orderId}`)
         } catch (error) {
-            toast.error("Fehler beim Senden der Bestellung.", { id: "sending-order" })
+            toast.error("Fehler beim Aktualisieren der Bestellung.", { id: "sending-order" })
         } finally {
             setIsSubmitting(false)
         }
@@ -1014,33 +1015,33 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     onConfirm={async () => {
                         // Call API when "Verbindlich bestellen" is clicked
                         if (orderId) {
-                            // Check if we have custom shaft data
+                            // Check if we have custom shaft data (from Step 1: Schafterstellung)
                             if (customShaftData) {
-                                // Call Admin2 API with custom shaft data + Bodenkonstruktion data
+                                // Existing order customization: Call Admin2 API with custom shaft data + Bodenkonstruktion data
                                 setIsSubmitting(true)
                                 try {
                                     const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
                                     
-                                    // Use the appropriate API based on order type
+                                    // Use the appropriate API based on order type (custom upload or collection product)
                                     const response = isCustomOrder 
                                         ? await sendMassschuheCustomShaftOrderToAdmin2(orderId, formData)
                                         : await sendMassschuheOrderToAdmin2(orderId, formData)
                                     
-                                    toast.success(response.message || "Bestellung erfolgreich gesendet!", { id: "sending-order" })
+                                    toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "sending-order" })
                                     
                                     // Clear context after successful API call
                                     clearCustomShaftData()
                                     
-                                    // Close modal and navigate
+                                    // Close modal and redirect to balance dashboard (order completed with Bodenkonstruktion)
                                     setShowModal2(false)
-                                    router.push("/dashboard/balance-dashboard")
+                                    router.push('/dashboard/balance-dashboard')
                                 } catch (error) {
-                                    toast.error("Fehler beim Senden der Bestellung.", { id: "sending-order" })
+                                    toast.error("Fehler beim Aktualisieren der Bestellung.", { id: "sending-order" })
                                 } finally {
                                     setIsSubmitting(false)
                                 }
                             } else {
-                                // Normal flow - call Admin3 API
+                                // Existing order: Only adding Bodenkonstruktion (no new shaft data) - call Admin3 API
                                 await handleFormSubmit(pdfBlob)
                             }
                         } else {
