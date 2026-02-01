@@ -229,7 +229,7 @@ export default function ZipperPlacementModal({
     }
   };
 
-  // Generate composite image with improved CORS handling
+  // Generate composite image - optimized to avoid CORS errors
   const generateCompositeImage = async (): Promise<{ compositeImage: string | null; drawingOnly: string | null }> => {
     const drawingLayer = drawingLayerRef.current;
     const img = imageRef.current;
@@ -250,21 +250,33 @@ export default function ZipperPlacementModal({
       return { compositeImage: null, drawingOnly };
     }
 
+    // Helper function to check if image is from same origin
+    const isSameOrigin = (url: string): boolean => {
+      try {
+        const imageOrigin = new URL(url, window.location.href).origin;
+        const currentOrigin = window.location.origin;
+        return imageOrigin === currentOrigin;
+      } catch {
+        return false;
+      }
+    };
+
     return new Promise((resolve) => {
-      // Strategy 1: Try using already-loaded DOM image
-      if (img && img.complete && img.naturalWidth > 0) {
+      // Strategy 1: Try using already-loaded DOM image (only for same-origin images)
+      if (isSameOrigin(imageUrl) && img && img.complete && img.naturalWidth > 0) {
         try {
           compositeCtx.drawImage(img, 0, 0, compositeCanvas.width, compositeCanvas.height);
           compositeCtx.drawImage(drawingLayer, 0, 0, compositeCanvas.width, compositeCanvas.height);
           const dataUrl = compositeCanvas.toDataURL('image/png');
           resolve({ compositeImage: dataUrl, drawingOnly });
           return;
-        } catch (corsError: any) {
-          // CORS issue, continue to next strategy
+        } catch (error: any) {
+          // Continue to cross-origin strategy
         }
       }
 
-      // Strategy 2: Try reloading with CORS
+      // For cross-origin images: Use crossOrigin='anonymous' approach directly
+      // This works for S3 with proper CORS headers
       const baseImg = new Image();
       baseImg.crossOrigin = 'anonymous';
       
@@ -276,12 +288,13 @@ export default function ZipperPlacementModal({
       baseImg.onload = () => {
         clearTimeout(timeoutId);
         try {
+          compositeCtx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
           compositeCtx.drawImage(baseImg, 0, 0, compositeCanvas.width, compositeCanvas.height);
           compositeCtx.drawImage(drawingLayer, 0, 0, compositeCanvas.width, compositeCanvas.height);
           const dataUrl = compositeCanvas.toDataURL('image/png');
           resolve({ compositeImage: dataUrl, drawingOnly });
         } catch (error: any) {
-          // CORS error - return drawing only
+          // Failed - return drawing only
           resolve({ compositeImage: null, drawingOnly });
         }
       };
@@ -292,7 +305,7 @@ export default function ZipperPlacementModal({
         resolve({ compositeImage: null, drawingOnly });
       };
       
-      // Add cache buster to try to bypass CORS
+      // Add cache buster to ensure fresh load
       const cacheBuster = `?t=${Date.now()}`;
       baseImg.src = imageUrl.includes('?') ? `${imageUrl}&t=${Date.now()}` : `${imageUrl}${cacheBuster}`;
     });
@@ -319,14 +332,14 @@ export default function ZipperPlacementModal({
       const result = await generateCompositeImage();
       
       if (result.compositeImage) {
-        // Successfully created composite image
+        // Successfully created composite image (shoe + drawing combined)
         toast.success('Reißverschluss-Position gespeichert!');
         onSave(result.compositeImage);
         handleClose();
       } else if (result.drawingOnly) {
-        // CORS issue - save drawing only but inform user
+        // Fallback: save drawing only
         toast.success(
-          'Zeichnung gespeichert! Die Markierung wird über dem Schuhbild angezeigt.',
+          'Zeichnung gespeichert! Hinweis: Nur die Markierung wurde gespeichert.',
           { duration: 4000 }
         );
         onSave(result.drawingOnly);
@@ -415,8 +428,7 @@ export default function ZipperPlacementModal({
                     }}
                     onLoad={handleImageLoad}
                     onError={(e) => {
-                      console.error('Image failed to load:', imageUrl);
-                      // Still allow drawing even if image fails
+                      // Still allow drawing even if image fails to load
                       setImageLoaded(true);
                     }}
                   />
