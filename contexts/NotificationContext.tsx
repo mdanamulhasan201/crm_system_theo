@@ -106,6 +106,12 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   useEffect(() => {
     let isMounted = true;
 
+    // Skip notifications for employees - they don't have access to this endpoint
+    if (user?.role === 'EMPLOYEE') {
+      console.log('[Notifications] Skipping notification fetch for employee user');
+      return;
+    }
+
     const loadInitialNotifications = async () => {
       try {
         setIsLoading(true);
@@ -119,11 +125,16 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         if (!isMounted) return;
 
         setNotifications(apiNotifications.map(mapApiNotification));
-      } catch (error) {
-        console.error(
-          "[NotificationProvider] Failed to load notifications:",
-          error
-        );
+      } catch (error: any) {
+        // Handle 403 errors gracefully for employees
+        if (error.response?.status === 403) {
+          console.log("[NotificationProvider] Access denied (403) - likely employee user");
+        } else {
+          console.error(
+            "[NotificationProvider] Failed to load notifications:",
+            error
+          );
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -138,11 +149,16 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         // Assuming the API returns { data: { count: number } } or { count: number }
         const count = response.data?.count ?? response.count ?? 0;
         setServerUnreadCount(count);
-      } catch (error) {
-        console.error(
-          "[NotificationProvider] Failed to load unread count:",
-          error
-        );
+      } catch (error: any) {
+        // Handle 403 errors gracefully for employees
+        if (error.response?.status === 403) {
+          console.log("[NotificationProvider] Access denied (403) - likely employee user");
+        } else {
+          console.error(
+            "[NotificationProvider] Failed to load unread count:",
+            error
+          );
+        }
       }
     };
 
@@ -152,10 +168,16 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [user?.role]);
 
   // === REAL‑TIME UPDATES VIA SOCKET.IO ======================================
   useEffect(() => {
+    // Skip socket connection for employees
+    if (user?.role === 'EMPLOYEE') {
+      console.log('[Notifications] Skipping socket connection for employee user');
+      return;
+    }
+
     // Initialise socket with userId - it will emit "join" event after connection
     initSocket(user?.id ?? null);
 

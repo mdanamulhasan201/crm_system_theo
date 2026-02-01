@@ -1,5 +1,5 @@
 'use client';
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 
 interface ProductImageInfoProps {
@@ -13,32 +13,80 @@ interface ProductImageInfoProps {
 }
 
 export default function ProductImageInfo({ shaft }: ProductImageInfoProps) {
+  const [useFallback, setUseFallback] = useState(false);
+
+  // Ensure image URL is valid
+  const imageUrl = shaft?.image || '';
+
+  if (!imageUrl) {
+    return (
+      <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-center lg:items-start">
+        <div className="w-full lg:w-1/2 flex justify-center lg:justify-start">
+          <div className="w-full max-w-[400px] aspect-square bg-gray-200 rounded-md border border-gray-200 flex items-center justify-center">
+            <span className="text-gray-400 text-sm">Kein Bild verfügbar</span>
+          </div>
+        </div>
+        {/* Product info section */}
+        <div className="w-full lg:w-1/2 flex flex-col text-center lg:text-left">
+          <h2 className="text-xl md:text-2xl font-bold mb-1">{shaft.name}</h2>
+          <p className="text-gray-500 text-sm font-medium mb-4">#{shaft.ide}</p>
+          <p className="text-base md:text-lg font-medium mb-6">{shaft.description}</p>
+          <div className="mt-2">
+            <span className="text-xs text-gray-500 block mb-1">
+              Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
+            </span>
+            <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              {shaft.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col md:flex-row gap-10 items-center">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-center lg:items-start">
       {/* Image - Read only, only from backend */}
-      <div className="w-full md:w-1/2 flex justify-start mb-8">
-        <div className="relative">
-          <Image
-            src={shaft.image}
-            alt={shaft.name}
-            width={1000}
-            height={1000}
-            className="w-[400px] h-auto object-cover rounded-md border border-gray-200"
-            priority
-          />
+      <div className="w-full lg:w-1/2 flex justify-center lg:justify-start">
+        <div className="relative w-full max-w-[400px]">
+          {!useFallback ? (
+            <Image
+              src={imageUrl}
+              alt={shaft.name || 'Product image'}
+              width={1000}
+              height={1000}
+              className="w-full h-auto object-cover rounded-md border border-gray-200"
+              priority
+              unoptimized={true}
+              onError={() => {
+                console.warn('Next.js Image failed, using fallback img tag');
+                setUseFallback(true);
+              }}
+            />
+          ) : (
+            <img
+              src={imageUrl}
+              alt={shaft.name || 'Product image'}
+              className="w-full h-auto object-cover rounded-md border border-gray-200"
+              onError={(e) => {
+                console.error('Image failed to load:', imageUrl);
+                e.currentTarget.style.display = 'none';
+              }}
+            />
+          )}
         </div>
       </div>
 
       {/* Product info section */}
-      <div className="w-full md:w-1/2 flex flex-col">
-        <h2 className="text-2xl font-bold mb-1">{shaft.name}</h2>
+      <div className="w-full lg:w-1/2 flex flex-col text-center lg:text-left">
+        <h2 className="text-xl md:text-2xl font-bold mb-1">{shaft.name}</h2>
         <p className="text-gray-500 text-sm font-medium mb-4">#{shaft.ide}</p>
-        <p className="text-lg font-medium mb-6">{shaft.description}</p>
+        <p className="text-base md:text-lg font-medium mb-6">{shaft.description}</p>
         <div className="mt-2">
           <span className="text-xs text-gray-500 block mb-1">
             Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
           </span>
-          <span className="text-3xl font-extrabold tracking-tight">
+          <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
             {shaft.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
           </span>
         </div>

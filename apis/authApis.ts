@@ -110,3 +110,20 @@ export const changePassword = async (currentPassword: string, newPassword: strin
     throw new Error(errorMessage);
   }
 };
+
+
+
+
+// employee login with id 
+
+
+// employees/auth/login/id
+export const employeeLoginWithId = async (id: string) => {
+  try {
+    const response = await axiosClient.post('/employees/auth/login/id', { id });
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.message || error.message || 'Failed to login with id';
+    throw new Error(errorMessage);
+  }
+}

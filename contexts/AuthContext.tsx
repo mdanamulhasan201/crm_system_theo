@@ -18,6 +18,11 @@ interface User {
   defaultHauptstandort?: string | null;
   createdAt: string;
   updatedAt: string;
+  // Employee specific fields
+  accountName?: string;
+  employeeName?: string;
+  jobPosition?: string | null;
+  financialAccess?: boolean;
 }
 
 interface AuthContextType {
@@ -28,6 +33,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   validateToken: () => Promise<boolean>;
+  isEmployeeMode: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,6 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isEmployeeMode, setIsEmployeeMode] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
@@ -52,9 +59,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [pathname, isInitialized, isAuthenticated]);
 
   const validateToken = async (): Promise<boolean> => {
-    const token = localStorage.getItem('token');
+    const employeeToken = localStorage.getItem('employeeToken');
+    const mainToken = localStorage.getItem('token');
 
-    if (!token) {
+    if (!mainToken) {
       await forceLogout();
       return false;
     }
@@ -62,20 +70,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await userCheckAuth();
 
-      if (response.success && response.user) {
-        // Update user data in case it changed
-        setUser(response.user);
-        setIsAuthenticated(true);
-        return true;
-      } else {
-        // Invalid token response
-        await forceLogout();
-        return false;
+      if (response.success) {
+        const userData = response.data || response.user;
+        
+        if (userData) {
+          const isEmployeeMode = !!employeeToken && userData.role === 'EMPLOYEE';
+          
+          setUser(userData);
+          setIsAuthenticated(true);
+          setIsEmployeeMode(isEmployeeMode);
+          return true;
+        }
       }
-    } catch (error) {
-      console.error('Token validation failed:', error);
-      // Any error means invalid token
-      await forceLogout();
+      
+      return false;
+    } catch (error: any) {
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        if (employeeToken) {
+          localStorage.removeItem('employeeToken');
+          localStorage.removeItem('currentEmployeeId');
+          localStorage.removeItem('currentEmployeeData');
+          window.location.reload();
+        } else {
+          await forceLogout();
+        }
+      }
       return false;
     }
   };
@@ -83,24 +102,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const forceLogout = async () => {
     try {
       localStorage.removeItem('token');
+      localStorage.removeItem('employeeToken');
+      
       setUser(null);
       setIsAuthenticated(false);
+      setIsEmployeeMode(false);
 
-      // Only redirect if not already on login page
       if (pathname !== '/login') {
         router.push('/login');
       }
     } catch (error) {
-      console.error('Force logout error:', error);
+      // Silent error handling
     }
   };
 
   const checkAuth = async () => {
-    const token = localStorage.getItem('token');
+    const employeeToken = localStorage.getItem('employeeToken');
+    const mainToken = localStorage.getItem('token');
 
-    if (!token) {
+    if (!mainToken) {
       setUser(null);
       setIsAuthenticated(false);
+      setIsEmployeeMode(false);
       setIsInitialized(true);
       return;
     }
@@ -109,17 +132,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(true);
       const response = await userCheckAuth();
 
-      if (response.success && response.user) {
-        setUser(response.user);
-        setIsAuthenticated(true);
+      if (response.success) {
+        const userData = response.data || response.user;
+        
+        if (userData) {
+          const isEmployeeMode = !!employeeToken && userData.role === 'EMPLOYEE';
+          
+          if (employeeToken && userData.role !== 'EMPLOYEE') {
+            localStorage.removeItem('employeeToken');
+            localStorage.removeItem('currentEmployeeId');
+            localStorage.removeItem('currentEmployeeData');
+          }
+          
+          setUser(userData);
+          setIsAuthenticated(true);
+          setIsEmployeeMode(isEmployeeMode);
+        } else {
+          await forceLogout();
+        }
       } else {
-        // Invalid token, clear it
-        await forceLogout();
+        setIsAuthenticated(false);
       }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      // Clear invalid token
-      await forceLogout();
+    } catch (error: any) {
+      if (error.response?.status === 401 || error.response?.status === 403) {
+        if (employeeToken) {
+          localStorage.removeItem('employeeToken');
+          localStorage.removeItem('currentEmployeeId');
+          localStorage.removeItem('currentEmployeeData');
+          setTimeout(() => {
+            window.location.reload();
+          }, 500);
+        } else {
+          await forceLogout();
+        }
+      } else {
+        setIsAuthenticated(false);
+      }
     } finally {
       setIsLoading(false);
       setIsInitialized(true);
@@ -129,21 +177,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (token: string) => {
     try {
       setIsLoading(true);
-      // Store only the token
+      localStorage.removeItem('employeeToken');
       localStorage.setItem('token', token);
 
-      // Verify the token and get user data
       const response = await userCheckAuth();
 
-      if (response.success && response.user) {
-        setUser(response.user);
-        setIsAuthenticated(true);
+      if (response.success) {
+        const userData = response.data || response.user;
+        
+        if (userData) {
+          setUser(userData);
+          setIsAuthenticated(true);
+          setIsEmployeeMode(false);
+        } else {
+          throw new Error('Failed to verify authentication');
+        }
       } else {
         throw new Error('Failed to verify authentication');
       }
     } catch (error) {
-      console.error('Login error:', error);
-      // Clear token if verification fails
       localStorage.removeItem('token');
       throw error;
     } finally {
@@ -154,11 +206,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = async () => {
     try {
       localStorage.removeItem('token');
+      localStorage.removeItem('employeeToken');
+      
       setUser(null);
       setIsAuthenticated(false);
+      setIsEmployeeMode(false);
       router.push('/login');
     } catch (error) {
-      console.error('Logout error:', error);
+      // Silent error handling
     }
   };
 
@@ -171,7 +226,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, isAuthenticated, isLoading, validateToken }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout, isAuthenticated, isLoading, validateToken, isEmployeeMode }}>
       {children}
     </AuthContext.Provider>
   );

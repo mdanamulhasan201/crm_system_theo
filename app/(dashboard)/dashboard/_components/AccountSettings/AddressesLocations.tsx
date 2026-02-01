@@ -75,6 +75,13 @@ export default function AddressesLocations() {
         setLocations([])
       }
     } catch (error: any) {
+      // Handle 403 errors gracefully (employee users don't have access)
+      if (error.response?.status === 403) {
+        console.log("[AddressesLocations] Access denied (403) - likely employee user without permissions")
+        setLocations([])
+        setError(null) // Don't show error for permission issues
+        return
+      }
       console.error("Error fetching locations:", error)
       
       // Handle different error types

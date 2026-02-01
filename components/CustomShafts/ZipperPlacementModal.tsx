@@ -31,6 +31,7 @@ export default function ZipperPlacementModal({
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0, displayWidth: 0, displayHeight: 0 });
   const [hasDrawing, setHasDrawing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Update canvas overlay to show drawing
   const updateCanvasOverlay = useCallback(() => {
@@ -54,6 +55,7 @@ export default function ZipperPlacementModal({
       setIsDrawing(false);
       setDrawingMode('pen');
       setHasDrawing(false);
+      setIsSaving(false);
       drawingLayerRef.current = null;
       imageRef.current = null;
       setImageDimensions({ width: 0, height: 0, displayWidth: 0, displayHeight: 0 });
@@ -166,90 +168,187 @@ export default function ZipperPlacementModal({
     return false; // No drawing found
   };
 
-  // Save drawing - create composite image
-  const handleSave = () => {
+  // Handle image load - setup dimensions and canvas
+  const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const img = e.currentTarget;
+    if (!imageDimensions.width) {
+      const maxDisplayWidth = 800;
+      const maxDisplayHeight = 600;
+      let displayWidth = img.width;
+      let displayHeight = img.height;
+      
+      if (displayWidth > maxDisplayWidth || displayHeight > maxDisplayHeight) {
+        const scale = Math.min(maxDisplayWidth / displayWidth, maxDisplayHeight / displayHeight);
+        displayWidth = img.width * scale;
+        displayHeight = img.height * scale;
+      }
+      
+      setImageDimensions({
+        width: img.width,
+        height: img.height,
+        displayWidth,
+        displayHeight,
+      });
+      
+      // Setup canvas overlay
+      if (canvasRef.current) {
+        const canvas = canvasRef.current;
+        canvas.width = img.width;
+        canvas.height = img.height;
+        canvas.style.width = `${displayWidth}px`;
+        canvas.style.height = `${displayHeight}px`;
+      }
+      
+      // Initialize drawing layer
+      const drawingLayer = document.createElement('canvas');
+      drawingLayer.width = img.width;
+      drawingLayer.height = img.height;
+      drawingLayerRef.current = drawingLayer;
+      
+      // Load saved drawing if exists
+      if (savedDrawing) {
+        const savedImg = new window.Image();
+        savedImg.onload = () => {
+          const drawingCtx = drawingLayer.getContext('2d');
+          if (drawingCtx) {
+            drawingCtx.drawImage(savedImg, 0, 0, img.width, img.height);
+            updateCanvasOverlay();
+            setHasDrawing(true);
+          }
+          setImageLoaded(true);
+        };
+        savedImg.onerror = () => {
+          updateCanvasOverlay();
+          setImageLoaded(true);
+        };
+        savedImg.src = savedDrawing;
+      } else {
+        updateCanvasOverlay();
+        setImageLoaded(true);
+      }
+    }
+  };
+
+  // Generate composite image with improved CORS handling
+  const generateCompositeImage = async (): Promise<{ compositeImage: string | null; drawingOnly: string | null }> => {
     const drawingLayer = drawingLayerRef.current;
     const img = imageRef.current;
     
-    if (!drawingLayer || !img) return;
+    if (!drawingLayer || !imageUrl) {
+      return { compositeImage: null, drawingOnly: null };
+    }
+
+    // Always save the drawing layer as fallback
+    const drawingOnly = drawingLayer.toDataURL('image/png');
+
+    const compositeCanvas = document.createElement('canvas');
+    compositeCanvas.width = imageDimensions.width;
+    compositeCanvas.height = imageDimensions.height;
+    const compositeCtx = compositeCanvas.getContext('2d', { willReadFrequently: true });
+    
+    if (!compositeCtx) {
+      return { compositeImage: null, drawingOnly };
+    }
+
+    return new Promise((resolve) => {
+      // Strategy 1: Try using already-loaded DOM image
+      if (img && img.complete && img.naturalWidth > 0) {
+        try {
+          compositeCtx.drawImage(img, 0, 0, compositeCanvas.width, compositeCanvas.height);
+          compositeCtx.drawImage(drawingLayer, 0, 0, compositeCanvas.width, compositeCanvas.height);
+          const dataUrl = compositeCanvas.toDataURL('image/png');
+          resolve({ compositeImage: dataUrl, drawingOnly });
+          return;
+        } catch (corsError: any) {
+          // CORS issue, continue to next strategy
+        }
+      }
+
+      // Strategy 2: Try reloading with CORS
+      const baseImg = new Image();
+      baseImg.crossOrigin = 'anonymous';
+      
+      const timeoutId = setTimeout(() => {
+        // Timeout - return drawing only
+        resolve({ compositeImage: null, drawingOnly });
+      }, 5000);
+      
+      baseImg.onload = () => {
+        clearTimeout(timeoutId);
+        try {
+          compositeCtx.drawImage(baseImg, 0, 0, compositeCanvas.width, compositeCanvas.height);
+          compositeCtx.drawImage(drawingLayer, 0, 0, compositeCanvas.width, compositeCanvas.height);
+          const dataUrl = compositeCanvas.toDataURL('image/png');
+          resolve({ compositeImage: dataUrl, drawingOnly });
+        } catch (error: any) {
+          // CORS error - return drawing only
+          resolve({ compositeImage: null, drawingOnly });
+        }
+      };
+      
+      baseImg.onerror = () => {
+        clearTimeout(timeoutId);
+        // Failed to load - return drawing only
+        resolve({ compositeImage: null, drawingOnly });
+      };
+      
+      // Add cache buster to try to bypass CORS
+      const cacheBuster = `?t=${Date.now()}`;
+      baseImg.src = imageUrl.includes('?') ? `${imageUrl}&t=${Date.now()}` : `${imageUrl}${cacheBuster}`;
+    });
+  };
+
+  // Save drawing - create composite image
+  const handleSave = async () => {
+    const drawingLayer = drawingLayerRef.current;
+    
+    if (!drawingLayer) return;
 
     // Check if any drawing has been done
     const drawingExists = checkIfDrawingExists() || hasDrawing;
     
     if (!drawingExists) {
-    toast.error('Bitte markieren Sie die Position des Reißverschlusses.');
+      toast.error('Bitte markieren Sie die Position des Reißverschlusses.');
       return;
     }
 
+    setIsSaving(true);
+
     try {
-      // Create a new canvas for the composite
-      const compositeCanvas = document.createElement('canvas');
-      compositeCanvas.width = imageDimensions.width;
-      compositeCanvas.height = imageDimensions.height;
-      const compositeCtx = compositeCanvas.getContext('2d');
+      // Try to generate composite image (base image + drawing)
+      const result = await generateCompositeImage();
       
-      if (!compositeCtx) {
-        throw new Error('Could not get canvas context');
+      if (result.compositeImage) {
+        // Successfully created composite image
+        toast.success('Reißverschluss-Position gespeichert!');
+        onSave(result.compositeImage);
+        handleClose();
+      } else if (result.drawingOnly) {
+        // CORS issue - save drawing only but inform user
+        toast.success(
+          'Zeichnung gespeichert! Die Markierung wird über dem Schuhbild angezeigt.',
+          { duration: 4000 }
+        );
+        onSave(result.drawingOnly);
+        handleClose();
+      } else {
+        toast.error('Fehler beim Speichern der Zeichnung.');
       }
-
-      // Try to draw the base image (without crossOrigin, might work)
-      const baseImg = new Image();
-      baseImg.onload = () => {
-        try {
-          // Draw base image
-          compositeCtx.drawImage(baseImg, 0, 0, compositeCanvas.width, compositeCanvas.height);
-          
-          // Draw drawing layer on top
-          compositeCtx.drawImage(drawingLayer, 0, 0, compositeCanvas.width, compositeCanvas.height);
-          
-          // Get the composite as data URL
-          const imageDataUrl = compositeCanvas.toDataURL('image/png');
-          onSave(imageDataUrl);
-          handleClose();
-        } catch (error) {
-          console.error('Error creating composite:', error);
-          // Fallback: save only drawing layer
-          saveDrawingOnly();
-        }
-      };
-      
-      baseImg.onerror = () => {
-        // If we can't load the base image, save only the drawing
-        console.warn('Could not load base image for composite, saving drawing only');
-        saveDrawingOnly();
-      };
-      
-      baseImg.src = imageUrl || '';
-    } catch (error) {
-      console.error('Error saving:', error);
-      // Fallback: save only drawing layer
-      saveDrawingOnly();
-    }
-  };
-
-  // Save only the drawing layer
-  const saveDrawingOnly = () => {
-    const drawingLayer = drawingLayerRef.current;
-    if (!drawingLayer) {
-      alert('Failed to save drawing.');
-      return;
-    }
-    
-    try {
-      const drawingDataUrl = drawingLayer.toDataURL('image/png');
-      onSave(drawingDataUrl);
-      handleClose();
-    } catch (error) {
-      console.error('Error saving drawing:', error);
-      alert('Failed to save drawing.');
+    } catch (error: any) {
+      console.error('Error saving zipper drawing:', error);
+      toast.error('Fehler beim Speichern der Zeichnung.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
   // Close modal
   const handleClose = () => {
-    setDrawingMode('pen');
-    setIsDrawing(false);
-    onClose();
+    if (!isSaving) {
+      setDrawingMode('pen');
+      setIsDrawing(false);
+      onClose();
+    }
   };
 
   return (
@@ -292,86 +391,38 @@ export default function ZipperPlacementModal({
               </div>
             ) : (
               <>
+                {/* Loading overlay */}
                 {!imageLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
-                    <div className="text-gray-400">Loading image...</div>
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-20">
+                    <div className="text-gray-400">Bild wird geladen...</div>
                   </div>
                 )}
                 
-                {/* Base image displayed using img tag (works with CORS) */}
+                {/* Base image displayed using img tag - always visible */}
                 {imageUrl && (
                   <img
                     ref={imageRef}
                     src={imageUrl}
                     alt="Shoe"
-                    className="max-w-full h-auto max-h-[600px]"
+                    className="relative z-0 max-w-full h-auto max-h-[600px] object-contain"
                     style={{ 
                       pointerEvents: 'none',
-                      display: imageLoaded ? 'block' : 'none'
+                      display: 'block',
+                      visibility: 'visible',
+                      opacity: 1,
+                      width: 'auto',
+                      height: 'auto'
                     }}
-                    onLoad={(e) => {
-                      const img = e.currentTarget;
-                      if (!imageDimensions.width) {
-                        const maxDisplayWidth = 800;
-                        const maxDisplayHeight = 600;
-                        let displayWidth = img.width;
-                        let displayHeight = img.height;
-                        
-                        if (displayWidth > maxDisplayWidth || displayHeight > maxDisplayHeight) {
-                          const scale = Math.min(maxDisplayWidth / displayWidth, maxDisplayHeight / displayHeight);
-                          displayWidth = img.width * scale;
-                          displayHeight = img.height * scale;
-                        }
-                        
-                        setImageDimensions({
-                          width: img.width,
-                          height: img.height,
-                          displayWidth,
-                          displayHeight,
-                        });
-                        
-                        // Setup canvas overlay
-                        if (canvasRef.current) {
-                          const canvas = canvasRef.current;
-                          canvas.width = img.width;
-                          canvas.height = img.height;
-                          canvas.style.width = `${displayWidth}px`;
-                          canvas.style.height = `${displayHeight}px`;
-                        }
-                        
-                        // Initialize drawing layer
-                        const drawingLayer = document.createElement('canvas');
-                        drawingLayer.width = img.width;
-                        drawingLayer.height = img.height;
-                        drawingLayerRef.current = drawingLayer;
-                        
-                        // Load saved drawing if exists
-                        if (savedDrawing) {
-                          const savedImg = new Image();
-                          savedImg.onload = () => {
-                            const drawingCtx = drawingLayer.getContext('2d');
-                            if (drawingCtx) {
-                              drawingCtx.drawImage(savedImg, 0, 0, img.width, img.height);
-                              updateCanvasOverlay();
-                              setHasDrawing(true); // Mark that saved drawing exists
-                            }
-                            setImageLoaded(true);
-                          };
-                          savedImg.onerror = () => {
-                            updateCanvasOverlay();
-                            setImageLoaded(true);
-                          };
-                          savedImg.src = savedDrawing;
-                        } else {
-                          updateCanvasOverlay();
-                          setImageLoaded(true);
-                        }
-                      }
+                    onLoad={handleImageLoad}
+                    onError={(e) => {
+                      console.error('Image failed to load:', imageUrl);
+                      // Still allow drawing even if image fails
+                      setImageLoaded(true);
                     }}
                   />
                 )}
                 
-                {/* Canvas overlay for drawing (positioned absolutely on top) */}
+                {/* Canvas overlay for drawing (positioned absolutely on top of image) */}
                 <canvas
                   ref={canvasRef}
                   onMouseDown={(e) => {
@@ -403,10 +454,10 @@ export default function ZipperPlacementModal({
                     }
                   }}
                   onTouchEnd={stopDrawing}
-                  className={`absolute top-0 left-0 cursor-crosshair touch-none ${imageLoaded ? 'block' : 'hidden'}`}
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 cursor-crosshair touch-none z-10"
                   style={{ 
-                    maxHeight: '600px',
-                    pointerEvents: imageLoaded ? 'auto' : 'none'
+                    pointerEvents: imageLoaded ? 'auto' : 'none',
+                    display: imageLoaded ? 'block' : 'none'
                   }}
                 />
               </>
@@ -466,16 +517,47 @@ export default function ZipperPlacementModal({
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={handleClose}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={handleClose}
+            disabled={isSaving}
+          >
             Cancel
           </Button>
           <Button
             type="button"
             onClick={handleSave}
-            disabled={!imageLoaded}
-            className="bg-black text-white hover:bg-gray-800"
+            disabled={!imageLoaded || isSaving}
+            className="bg-black text-white hover:bg-gray-800 min-w-[100px]"
           >
-            Save
+            {isSaving ? (
+              <div className="flex items-center gap-2">
+                <svg 
+                  className="animate-spin h-4 w-4 text-white" 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  fill="none" 
+                  viewBox="0 0 24 24"
+                >
+                  <circle 
+                    className="opacity-25" 
+                    cx="12" 
+                    cy="12" 
+                    r="10" 
+                    stroke="currentColor" 
+                    strokeWidth="4"
+                  />
+                  <path 
+                    className="opacity-75" 
+                    fill="currentColor" 
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span>Saving...</span>
+              </div>
+            ) : (
+              'Save'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

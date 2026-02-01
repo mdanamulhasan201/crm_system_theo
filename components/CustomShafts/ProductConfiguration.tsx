@@ -156,6 +156,22 @@ export default function ProductConfiguration({
     }
   };
 
+  // Sync zipper image from parent prop
+  useEffect(() => {
+    if (zipperImage !== undefined && zipperImage !== zipperPlacementImage) {
+      setZipperPlacementImage(zipperImage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zipperImage]);
+
+  // Sync paint image from parent prop
+  useEffect(() => {
+    if (paintImage !== undefined && paintImage !== leatherPaintImage) {
+      setLeatherPaintImage(paintImage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paintImage]);
+
   // Zipper is now controlled by the "Zusätzlicher Reißverschluss" checkbox, not by closureType
 
   const CATEGORY_OPTIONS = [
@@ -692,6 +708,47 @@ export default function ProductConfiguration({
              </label>
           </div>
         </div>
+
+        {/* Display Zipper Drawing Image if exists */}
+        {effektZipperExtra === true && zipperPlacementImage && (
+          <div className="flex flex-col md:flex-row md:items-start gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <Label className="font-medium text-base md:w-1/3 md:mt-2">Reißverschluss-Position:</Label>
+            <div className="flex-1 space-y-3">
+              <div className="relative inline-block">
+                {/* Show shoe image as background if available, otherwise just the drawing */}
+                {shoeImage ? (
+                  <div className="relative">
+                    <img 
+                      src={shoeImage} 
+                      alt="Shoe base" 
+                      className="max-w-full h-auto max-h-[300px] rounded border border-gray-300"
+                    />
+                    <img 
+                      src={zipperPlacementImage} 
+                      alt="Zipper placement" 
+                      className="absolute top-0 left-0 w-full h-full object-contain"
+                    />
+                  </div>
+                ) : (
+                  <img 
+                    src={zipperPlacementImage} 
+                    alt="Zipper placement" 
+                    className="max-w-full h-auto max-h-[300px] rounded border border-gray-300"
+                  />
+                )}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowZipperPlacementModal(true)}
+                className="mt-2"
+              >
+                Position bearbeiten
+              </Button>
+            </div>
+          </div>
+        )}
         {/* Submit Button */}
         <div className="flex justify-center mt-4">
           <Button
