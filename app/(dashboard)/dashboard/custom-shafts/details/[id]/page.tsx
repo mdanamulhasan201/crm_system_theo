@@ -34,6 +34,13 @@ interface BusinessAddressData {
   email: string;
 }
 
+interface VersendenData {
+  company: string;
+  street: string;
+  city: string;
+  country: string;
+}
+
 export default function CollectionShaftDetailsPage() {
   const router = useRouter();
   const params = useParams();
@@ -106,6 +113,8 @@ export default function CollectionShaftDetailsPage() {
 
   // Business address for courier (abholung)
   const [businessAddress, setBusinessAddress] = useState<BusinessAddressData | null>(null);
+  // Versenden data (shipping address)
+  const [versendenData, setVersendenData] = useState<VersendenData | null>(null);
 
   // Modal states
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -271,6 +280,7 @@ export default function CollectionShaftDetailsPage() {
       // Business address
       businessAddress,
       isAbholung,
+      versendenData,
 
       // Pricing
       totalPrice: orderPrice,
@@ -341,6 +351,11 @@ export default function CollectionShaftDetailsPage() {
       formData.append('courier_address', JSON.stringify(courierAddressObj));
     }
 
+    // Versenden data (if Versenden/shipping option selected)
+    if (data.versendenData) {
+      formData.append('versenden', JSON.stringify(data.versendenData));
+    }
+
     return formData;
   };
 
@@ -379,6 +394,13 @@ export default function CollectionShaftDetailsPage() {
       // Prepare FormData with mabschaftKollektionId and all configuration
       const formData = await prepareCollectionFormData(collectionShaftData);
 
+      // Determine isCourierContact based on selection:
+      // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
+      // - Versenden selected (versendenData exists) → isCourierContact = 'no'
+      const isAbholenSelected = !!(businessAddress && (businessAddress.companyName || businessAddress.address));
+      const isVersendenSelected = !!versendenData;
+      const isCourierContact = isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'); // Default to 'yes' if neither selected
+
       // Call appropriate API based on context:
       // - If orderId exists: Update existing order (API: sendMassschuheOrderToAdmin2)
       // - If no orderId: Create new order (API: createMassschuheWithoutOrderIdWithoutCustomModels)
@@ -386,11 +408,11 @@ export default function CollectionShaftDetailsPage() {
       if (orderId) {
         // Existing order customization: Send to Admin2 API with custom_models=false
         // Payload includes: mabschaftKollektionId, Massschafterstellung_json1, totalPrice, courier details
-        response = await sendMassschuheOrderToAdmin2(orderId, formData);
+        response = await sendMassschuheOrderToAdmin2(orderId, formData, isCourierContact);
         toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "creating-order" });
       } else {
         // New order: Create with collection product (custom_models=false)
-        response = await createMassschuheWithoutOrderIdWithoutCustomModels(formData);
+        response = await createMassschuheWithoutOrderIdWithoutCustomModels(formData, isCourierContact);
         toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
       }
 
@@ -464,6 +486,8 @@ export default function CollectionShaftDetailsPage() {
             });
           }
         }}
+        versendenData={versendenData}
+        onVersendenChange={setVersendenData}
         orderId={orderId}
       />
 
@@ -537,6 +561,9 @@ export default function CollectionShaftDetailsPage() {
           setZipperImage={setZipperImage}
           paintImage={paintImage}
           setPaintImage={setPaintImage}
+          requireAbholenOrVersenden={isAbholung}
+          isAbholenSelected={!!(businessAddress && (businessAddress.companyName || businessAddress.address))}
+          isVersendenSelected={!!versendenData}
         />
       </div>
 

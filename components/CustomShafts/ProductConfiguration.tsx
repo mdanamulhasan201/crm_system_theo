@@ -73,6 +73,10 @@ interface ProductConfigurationProps {
   setZipperImage?: (image: string | null) => void;
   paintImage?: string | null;
   setPaintImage?: (image: string | null) => void;
+  // Validation props for Abholen/Versenden
+  requireAbholenOrVersenden?: boolean; // If true, require at least one option to be selected
+  isAbholenSelected?: boolean; // Whether Abholen is selected
+  isVersendenSelected?: boolean; // Whether Versenden is selected
 }
 
 export default function ProductConfiguration({
@@ -132,6 +136,9 @@ export default function ProductConfiguration({
   setZipperImage,
   paintImage,
   setPaintImage,
+  requireAbholenOrVersenden = false,
+  isAbholenSelected = false,
+  isVersendenSelected = false,
 }: ProductConfigurationProps) {
   // Default value for allowCategoryEdit
   const isCategoryEditable = allowCategoryEdit ?? false;
@@ -806,6 +813,12 @@ export default function ProductConfiguration({
 
               if (rightHeight > 15 && !umfangmasseRechts) {
                 toast.error('Bitte geben Sie die Umfangmaße Rechts ein (erforderlich bei Schafthöhe > 15cm).');
+                return;
+              }
+
+              // Validate Abholen or Versenden selection (when required)
+              if (requireAbholenOrVersenden && !isAbholenSelected && !isVersendenSelected) {
+                toast.error('Bitte wählen Sie entweder "Abholen" oder "Versenden" aus.');
                 return;
               }
 

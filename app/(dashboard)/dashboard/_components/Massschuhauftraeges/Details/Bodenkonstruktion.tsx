@@ -1040,10 +1040,17 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                 try {
                                     const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
                                     
+                                    // Determine isCourierContact based on selection:
+                                    // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
+                                    // - Versenden selected (versendenData exists) → isCourierContact = 'no'
+                                    const isAbholenSelected = !!(customShaftData?.businessAddress && (customShaftData.businessAddress.companyName || customShaftData.businessAddress.address));
+                                    const isVersendenSelected = !!customShaftData?.versendenData;
+                                    const isCourierContact = isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'); // Default to 'yes' if neither selected
+                                    
                                     // Use the appropriate API based on order type (custom upload or collection product)
                                     const response = isCustomOrder 
-                                        ? await sendMassschuheCustomShaftOrderToAdmin2(orderId, formData)
-                                        : await sendMassschuheOrderToAdmin2(orderId, formData)
+                                        ? await sendMassschuheCustomShaftOrderToAdmin2(orderId, formData, isCourierContact)
+                                        : await sendMassschuheOrderToAdmin2(orderId, formData, isCourierContact)
                                     
                                     toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "sending-order" })
                                     
@@ -1069,10 +1076,17 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                 try {
                                     const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
                                     
+                                    // Determine isCourierContact based on selection:
+                                    // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
+                                    // - Versenden selected (versendenData exists) → isCourierContact = 'no'
+                                    const isAbholenSelected = !!(customShaftData?.businessAddress && (customShaftData.businessAddress.companyName || customShaftData.businessAddress.address));
+                                    const isVersendenSelected = !!customShaftData?.versendenData;
+                                    const isCourierContact = isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'); // Default to 'yes' if neither selected
+                                    
                                     // Call the appropriate API based on order type (custom model or collection)
                                     const response = isCustomOrder
-                                        ? await createMassschuheWithoutOrderId(formData)
-                                        : await createMassschuheWithoutOrderIdWithoutCustomModels(formData)
+                                        ? await createMassschuheWithoutOrderId(formData, isCourierContact)
+                                        : await createMassschuheWithoutOrderIdWithoutCustomModels(formData, isCourierContact)
                                     
                                     toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" })
                                     

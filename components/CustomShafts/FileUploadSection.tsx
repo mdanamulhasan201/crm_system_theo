@@ -26,6 +26,13 @@ interface BusinessAddressData {
   email: string;
 }
 
+interface VersendenData {
+  company: string;
+  street: string;
+  city: string;
+  country: string;
+}
+
 interface FileUploadSectionProps {
   linkerLeistenFileName: string;
   setLinkerLeistenFileName: (fileName: string) => void;
@@ -43,6 +50,8 @@ interface FileUploadSectionProps {
   hideFileUploads?: boolean;
   businessAddress?: BusinessAddressData | null;
   onBusinessAddressSave?: (data: BusinessAddressData) => void;
+  versendenData?: VersendenData | null;
+  onVersendenChange?: (data: VersendenData | null) => void;
   orderId?: string | null;
 }
 
@@ -63,6 +72,8 @@ export default function FileUploadSection({
   hideFileUploads = false,
   businessAddress,
   onBusinessAddressSave,
+  versendenData,
+  onVersendenChange,
   orderId,
 }: FileUploadSectionProps) {
   const linkerLeistenInputRef = useRef<HTMLInputElement>(null);
@@ -70,7 +81,6 @@ export default function FileUploadSection({
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showOtherCustomerModal, setShowOtherCustomerModal] = useState(false);
   const [showBusinessAddressModal, setShowBusinessAddressModal] = useState(false);
-  const [showShippingAddress, setShowShippingAddress] = useState(false);
 
   // Disable one customer input when the other is filled
   const isCustomerSelectDisabled = !!otherCustomerNumber;
@@ -78,16 +88,21 @@ export default function FileUploadSection({
   
   // Check if buttons are active
   const isAbholenActive = !!(businessAddress && (businessAddress.companyName || businessAddress.address));
-  const isVersendenActive = showShippingAddress;
+  const isVersendenActive = !!(versendenData && (versendenData.company || versendenData.street));
 
-  const shippingAddress = {
+  // Default shipping address
+  const defaultShippingAddress: VersendenData = {
     company: 'FeetF1rst S.R.L.S.',
     street: 'Via Pipen, 5',
     city: '39031 Brunico (BZ)',
     country: 'Italien'
   };
 
+  // Use versendenData from props
+  const shippingAddress = versendenData;
+
   const handleCopyAddress = () => {
+    if (!shippingAddress) return;
     const fullAddress = `${shippingAddress.company}\n${shippingAddress.street}\n${shippingAddress.city}\n${shippingAddress.country}`;
     navigator.clipboard.writeText(fullAddress);
     toast.success('Adresse in die Zwischenablage kopiert');
@@ -315,7 +330,9 @@ export default function FileUploadSection({
                     // }
                     
                     // Clear versenden state and show BusinessAddressModal to enter address
-                    setShowShippingAddress(false);
+                    if (onVersendenChange) {
+                      onVersendenChange(null);
+                    }
                     setShowBusinessAddressModal(true);
                   }
                 }}
@@ -348,19 +365,31 @@ export default function FileUploadSection({
                 onClick={() => {
                   if (isAbholenActive) return;
                   
-                  // If activating, clear Abholen state
-                  if (!showShippingAddress && onBusinessAddressSave) {
-                    onBusinessAddressSave({
-                      companyName: '',
-                      address: '',
-                      phone: '',
-                      email: '',
-                    } as any);
+                  // If activating Versenden, set default address and clear Abholen state
+                  if (!isVersendenActive) {
+                    // Set default versenden data
+                    if (onVersendenChange) {
+                      onVersendenChange(defaultShippingAddress);
+                    }
+                    // Clear Abholen state
+                    if (onBusinessAddressSave) {
+                      onBusinessAddressSave({
+                        companyName: '',
+                        address: '',
+                        phone: '',
+                        email: '',
+                        price: 0,
+                      } as any);
+                    }
+                  } else {
+                    // Deactivating - clear versenden data
+                    if (onVersendenChange) {
+                      onVersendenChange(null);
+                    }
                   }
-                  setShowShippingAddress(!showShippingAddress);
                 }}
               >
-                {showShippingAddress ? (
+                {isVersendenActive ? (
                   <>
                     <X className="w-4 h-4 text-gray-700" />
                     {/* <span className="text-sm">Versenden</span> */}
@@ -374,7 +403,7 @@ export default function FileUploadSection({
         </div>
 
         {/* Shipping Address Display - Outside grid but inside card */}
-        {hideFileUploads && showShippingAddress && (
+        {hideFileUploads && isVersendenActive && shippingAddress && (
           <div className="mt-4 bg-gray-50 border border-gray-200 rounded-md p-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">

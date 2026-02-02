@@ -10,6 +10,13 @@ interface BusinessAddress {
   email: string;
 }
 
+interface VersendenData {
+  company: string;
+  street: string;
+  city: string;
+  country: string;
+}
+
 interface CustomShaftData {
   customerId?: string;
   other_customer_name?: string | null;
@@ -51,6 +58,7 @@ interface CustomShaftData {
   moechten_sie_einen_zusaetzlichen_reissverschluss_price: string | null;
   businessAddress: BusinessAddress | null;
   isAbholung: boolean;
+  versendenData?: VersendenData | null;
   totalPrice: number;
 }
 
@@ -234,6 +242,11 @@ export const prepareStep1FormData = async (data: CustomShaftData): Promise<FormD
       address: data.businessAddress.address,
     };
     formData.append('courier_address', JSON.stringify(courierAddressObj));
+  }
+
+  // Versenden data (if Versenden/shipping option selected)
+  if (data.versendenData) {
+    formData.append('versenden', JSON.stringify(data.versendenData));
   }
 
   return formData;

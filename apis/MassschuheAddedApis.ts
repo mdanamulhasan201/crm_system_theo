@@ -17,20 +17,20 @@ export const createMassschuheAdded = async (massschuheAddedData: any) => {
 
 
 
-// without order id post massschuhe /custom_shafts/create?custom_models=true&isCourierContact=yes
-export const createMassschuheWithoutOrderId = async (massschuheData: any) => {
+// without order id post massschuhe /custom_shafts/create?custom_models=true&isCourierContact=yes/no
+export const createMassschuheWithoutOrderId = async (massschuheData: any, isCourierContact: 'yes' | 'no' = 'yes') => {
     try {
-        const response = await axiosClient.post('/custom_shafts/create?custom_models=true&isCourierContact=yes', massschuheData);
+        const response = await axiosClient.post(`/custom_shafts/create?custom_models=true&isCourierContact=${isCourierContact}`, massschuheData);
         return response.data;
     } catch (error: any) {
         throw error;
     }
 }
 
-// without order id post massschuhe /custom_shafts/create?custom_models=false&isCourierContact=yes
-export const createMassschuheWithoutOrderIdWithoutCustomModels = async (massschuheData: any) => {
+// without order id post massschuhe /custom_shafts/create?custom_models=false&isCourierContact=yes/no
+export const createMassschuheWithoutOrderIdWithoutCustomModels = async (massschuheData: any, isCourierContact: 'yes' | 'no' = 'yes') => {
     try {
-        const response = await axiosClient.post('/custom_shafts/create?custom_models=&isCourierContact=yes', massschuheData);
+        const response = await axiosClient.post(`/custom_shafts/create?custom_models=&isCourierContact=${isCourierContact}`, massschuheData);
         return response.data;
     } catch (error: any) {
         throw error;

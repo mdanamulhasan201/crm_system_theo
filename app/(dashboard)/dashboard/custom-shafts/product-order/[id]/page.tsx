@@ -31,6 +31,13 @@ interface BusinessAddressData {
   email: string;
 }
 
+interface VersendenData {
+  company: string;
+  street: string;
+  city: string;
+  country: string;
+}
+
 export default function CustomShoeOrderPage() {
   const router = useRouter();
   const params = useParams();
@@ -100,6 +107,8 @@ export default function CustomShoeOrderPage() {
 
   // Business address for courier (abholung)
   const [businessAddress, setBusinessAddress] = useState<BusinessAddressData | null>(null);
+  // Versenden data (shipping address)
+  const [versendenData, setVersendenData] = useState<VersendenData | null>(null);
 
   // Modal states
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -206,6 +215,7 @@ export default function CustomShoeOrderPage() {
       // Business address
       businessAddress,
       isAbholung,
+      versendenData,
 
       // Pricing
       totalPrice: orderPrice,
@@ -244,15 +254,22 @@ export default function CustomShoeOrderPage() {
       // Prepare form data for API
       const formData = await prepareStep1FormData(customShaftData as any);
 
+      // Determine isCourierContact based on selection:
+      // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
+      // - Versenden selected (versendenData exists) → isCourierContact = 'no'
+      const isAbholenSelected = !!(businessAddress && (businessAddress.companyName || businessAddress.address));
+      const isVersendenSelected = !!versendenData;
+      const isCourierContact = isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'); // Default to 'yes' if neither selected
+
       // Call appropriate API based on whether this is a new order or updating an existing order
       let response;
       if (existingOrderId) {
         // Update existing order (orderId exists in URL params)
-        response = await sendMassschuheCustomShaftOrderToAdmin2(existingOrderId, formData);
+        response = await sendMassschuheCustomShaftOrderToAdmin2(existingOrderId, formData, isCourierContact);
         toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "creating-order" });
       } else {
         // Create new order (no orderId)
-        response = await createMassschuheWithoutOrderId(formData);
+        response = await createMassschuheWithoutOrderId(formData, isCourierContact);
         toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
       }
 
@@ -299,6 +316,8 @@ export default function CustomShoeOrderPage() {
             });
           }
         }}
+        versendenData={versendenData}
+        onVersendenChange={setVersendenData}
         orderId={null}
       />
 
@@ -378,6 +397,9 @@ export default function CustomShoeOrderPage() {
           setZipperImage={setZipperImage}
           paintImage={paintImage}
           setPaintImage={setPaintImage}
+          requireAbholenOrVersenden={isAbholung}
+          isAbholenSelected={!!(businessAddress && (businessAddress.companyName || businessAddress.address))}
+          isVersendenSelected={!!versendenData}
         />
       </div>
 
