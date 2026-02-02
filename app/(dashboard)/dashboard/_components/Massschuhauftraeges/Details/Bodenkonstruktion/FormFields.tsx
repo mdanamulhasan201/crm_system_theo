@@ -972,7 +972,7 @@ export function SohlenhoeheDifferenziertField({
             spitze: field === "spitze" ? newValue : spitze,
         }
         // Only save if at least one value is > 0
-        if (updatedData.ferse > 0 || updatedData.ballen > 0 || updatedData.spitze > 0) {
+        if ((updatedData.ferse || 0) > 0 || (updatedData.ballen || 0) > 0 || (updatedData.spitze || 0) > 0) {
             onChange(updatedData)
         } else {
             onChange(null)
