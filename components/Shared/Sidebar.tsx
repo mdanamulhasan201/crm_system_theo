@@ -133,7 +133,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                 label: 'System & Einstellungen',
                 items: [
                     { icon: Fußübungen, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
-                    { icon: Musterzettel, label: 'Musterzettel', href: '/dashboard/musterzettel' },
+                    // { icon: Musterzettel, label: 'Musterzettel', href: '/dashboard/musterzettel' },
                     { icon: Einstellungen, label: 'Einstellungen', href: '/dashboard/settings' },
                 ]
             },

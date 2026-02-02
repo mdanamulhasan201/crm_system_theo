@@ -8,6 +8,10 @@ import ConfirmModal from '@/components/OrdersPage/ConfirmModal/ConfirmModal'
 
 export interface TransactionData {
     id: string;
+    // ID of the custom shaft order (used for cancel)
+    custom_shafts_id?: string | null;
+    // Order status of the custom shaft ("active" | "canceled" | ...)
+    custom_shafts_order_status?: string | null;
     datum: string;
     transaktionsnummer: string;
     kundenname: string;
@@ -29,15 +33,18 @@ interface ApiOrderData {
     note: string | null;
     custom_shafts_catagoary: string | null;
     custom_shafts: {
+        id?: string;
         invoice?: string;
         status?: string;
+        order_status?: string;
         isCompleted?: boolean;
         invoice2?: string;
+        other_customer_name?: string | null;
     };
     customer: {
         vorname: string;
         nachname: string;
-    };
+    } | null;
     createdAt: string;
     customerId: string;
 }
@@ -116,11 +123,17 @@ export default function DataTables({
         return apiData.map((item, index) => {
             try {
                 return {
+                    // Keep transition ID for table row key
                     id: item.id || `fallback-${index}`,
+                    // Use custom shafts ID for actions like cancel
+                    custom_shafts_id: item.custom_shafts?.id || null,
+                    custom_shafts_order_status: item.custom_shafts?.order_status || null,
                     datum: formatDate(item.createdAt),
                     transaktionsnummer: item.orderNumber ? `FE${item.orderNumber}` : '-',
-                    kundenname: `${item.customer?.vorname || ''} ${item.customer?.nachname || ''}`.trim() || '--',
-                    beschreibung: item.note || item.custom_shafts_catagoary || null,
+                    kundenname: item.customer 
+                        ? `${item.customer.vorname || ''} ${item.customer.nachname || ''}`.trim() || '--'
+                        : (item.custom_shafts?.other_customer_name || '--'),
+                    beschreibung: item.custom_shafts_catagoary || item.note || null,
                     einnahmesumme: item.price || 0,
                     feetfirstGebuehren: null,
                     andere: null,
@@ -131,6 +144,8 @@ export default function DataTables({
             } catch (error) {
                 return {
                     id: `error-${index}`,
+                    custom_shafts_id: null,
+                    custom_shafts_order_status: null,
                     datum: '-',
                     transaktionsnummer: '-',
                     kundenname: '--',
@@ -212,7 +227,9 @@ export default function DataTables({
 
         try {
             setIsCancelling(true);
-            const response = await cancelOrder(selectedOrder.id);
+            // Use custom shaft ID for cancel if available, fallback to main id
+            const cancelId = selectedOrder.custom_shafts_id || selectedOrder.id;
+            const response = await cancelOrder(cancelId);
             if (response.success) {
                 toast.success('Bestellung erfolgreich storniert');
                 setShowCancelModal(false);
@@ -334,7 +351,7 @@ export default function DataTables({
         },
         {
             key: 'beschreibung',
-            header: 'Beschreib...',
+            header: 'Beschreibung',
             render: (value) => value || '-',
         },
         {
@@ -370,12 +387,33 @@ export default function DataTables({
         }
     };
 
-    // Build cancel action - only show if status is "Neu"
+    // Build cancel action - only show if status is "Neu" AND order_status is "active"
+    // Use a custom action so it does NOT use the delete/trash icon
     const cancelAction: TableAction<TransactionData> = {
-        type: 'delete',
+        type: 'custom',
         label: 'Bestellung stornieren',
+        icon: (
+            <span className="text-xs font-semibold">
+                Stornieren
+            </span>
+        ),
+        className: 'text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer border border-red-200 rounded-md p-2',
         onClick: (row) => handleCancelOrder(row),
-        show: (row) => row.custom_shafts_status === 'Neu',
+        show: (row) => row.custom_shafts_order_status === 'active' && row.custom_shafts_status === 'Neu',
+    };
+
+    // Show a non-clickable "Storniert" badge in the actions column when order is canceled
+    const canceledStatusAction: TableAction<TransactionData> = {
+        type: 'custom',
+        label: 'Storniert',
+        icon: (
+            <span className="text-xs font-semibold text-gray-600">
+                Storniert
+            </span>
+        ),
+        className: 'bg-gray-100 border border-gray-200 rounded-md px-3 py-1 cursor-default',
+        onClick: () => {},
+        show: (row) => row.custom_shafts_order_status === 'canceled',
     };
 
     // Combine all actions
@@ -383,8 +421,9 @@ export default function DataTables({
         const baseActions = buildActions();
         const actions = baseActions ? [...baseActions] : [];
         
-        // Always add cancel action (it will conditionally show based on status)
+        // Add cancel and canceled-status actions (they conditionally show based on status)
         actions.push(cancelAction);
+        actions.push(canceledStatusAction);
         
         return actions.length > 0 ? actions : undefined;
     };

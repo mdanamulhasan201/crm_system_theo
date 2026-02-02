@@ -466,7 +466,7 @@ export default function ProductConfiguration({
         {/* Schafthöhe Links (Left) */}
         <div className="flex flex-col md:flex-row md:items-start gap-4">
           <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Links:</Label>
-          <div className="flex flex-col gap-3 w-full md:w-2/3">
+          <div className="flex flex-col gap-3 w-full md:w-1/2">
             <div className="flex items-center gap-2">
               <Input
                 type="number"
@@ -499,7 +499,7 @@ export default function ProductConfiguration({
         {/* Schafthöhe Rechts (Right) */}
         <div className="flex flex-col md:flex-row md:items-start gap-4">
           <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Rechts:</Label>
-          <div className="flex flex-col gap-3 w-full md:w-2/3">
+          <div className="flex flex-col gap-3 w-full md:w-1/2">
             <div className="flex items-center gap-2">
               <Input
                 type="number"

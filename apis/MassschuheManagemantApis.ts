@@ -193,13 +193,10 @@ export const getAllOrderData = async (limit: number, cursor: string) => {
     }
 }
 
-// calcel order 
-// POST /v2/admin-order-transitions/cancel-order
-// body: { orderId: string }
-// Returns: { success: boolean, message: string }
+// custom_shafts/cancel-order/0efa9d0f-6971-4932-ba3e-e18dc3159328
 export const cancelOrder = async (orderId: string) => {
     try {
-        const response = await axiosClient.post(`/v2/admin-order-transitions/cancel-order`, { orderId });
+        const response = await axiosClient.post(`/custom_shafts/cancel-order/${orderId}`);
         return response.data;
     } catch (error) {
         throw error;
