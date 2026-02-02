@@ -15,7 +15,7 @@ export default function AccountSettingsPage() {
   const { user } = useAuth()
   
   const copyPartnerId = () => {
-    const partnerId = user?.id ?? 'FF-BRU-001'
+    const partnerId = user?.accountInfo?.barcodeLabel ?? user?.id ?? 'N/A'
     navigator.clipboard.writeText(partnerId)
     toast.success('Partner-ID in Zwischenablage kopiert')
   }
@@ -32,19 +32,21 @@ export default function AccountSettingsPage() {
                 ⓘ Hauptgeschäftskonto
               </span>
             </div>
-            <div className='flex items-center gap-1.5 sm:gap-2'>
-              <span className='text-xs sm:text-sm text-gray-500'>Partner-ID</span>
-              <span className='font-mono text-sm sm:text-base font-semibold text-gray-900'>
-                {user?.id ?? 'Loading...'}
-              </span>
-              <button
-                onClick={copyPartnerId}
-                className="p-1 sm:p-1.5 hover:bg-gray-100 rounded transition-colors"
-                title="Copy Partner ID"
-              >
-                <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
-              </button>
-            </div>
+            {user?.accountInfo?.barcodeLabel && (
+              <div className='flex items-center gap-1.5 sm:gap-2'>
+                <span className='text-xs sm:text-sm text-gray-500'>Partner-ID</span>
+                <span className='font-mono text-sm sm:text-base font-semibold text-gray-900'>
+                  {user.accountInfo.barcodeLabel}
+                </span>
+                <button
+                  onClick={copyPartnerId}
+                  className="p-1 sm:p-1.5 hover:bg-gray-100 rounded transition-colors"
+                  title="Copy Partner ID"
+                >
+                  <Copy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-500" />
+                </button>
+              </div>
+            )}
           </div>
           <p className='mt-2 text-xs sm:text-sm text-gray-600 max-w-2xl'>
             Sie haben volle Kontrolle über Ihr Geschäftskonto, einschließlich Unternehmenseinstellungen, Abrechnung, Mitarbeiterverwaltung und Sicherheitseinstellungen.

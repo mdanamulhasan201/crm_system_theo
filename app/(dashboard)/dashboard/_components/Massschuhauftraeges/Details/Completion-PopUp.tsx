@@ -1,6 +1,15 @@
 import { CloseIcon } from './Icons';
 
-const CompletionPopUp = ({ onClose, onConfirm, productName, value, isLoading }: { onClose: () => void; onConfirm: () => void; productName: string; value: string; isLoading?: boolean }) => {
+interface CompletionPopUpProps {
+  onClose: () => void;
+  onConfirm: () => void;
+  productName: string;
+  customerName?: string;
+  value: string;
+  isLoading?: boolean;
+}
+
+const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value, isLoading }: CompletionPopUpProps) => {
   const value2 = value || null;
   // Store the value in localStorage under a unique key for each productName
   if (productName && value2 !== null) {
@@ -47,7 +56,7 @@ const CompletionPopUp = ({ onClose, onConfirm, productName, value, isLoading }: 
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-100">
               <span className="text-sm text-slate-500 font-medium">Kunde:</span>
-              <span className="text-sm text-slate-900 font-semibold">Brugger Theo</span>
+              <span className="text-sm text-slate-900 font-semibold">{customerName || 'N/A'}</span>
             </div>
             <div className="flex justify-between items-center py-2 border-b border-slate-100">
               <span className="text-sm text-slate-500 font-medium">Preis:</span>

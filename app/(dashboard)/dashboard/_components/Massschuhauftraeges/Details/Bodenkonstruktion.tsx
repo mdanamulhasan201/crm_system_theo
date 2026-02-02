@@ -1009,7 +1009,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             {showModal2 && (
                 <CompletionPopUp
                     onClose={() => setShowModal2(false)}
-                    productName={shoe2.name}
+                    productName={orderDataForPDF.productName || shoe2.name}
+                    customerName={orderDataForPDF.customerName}
                     value={grandTotal.toFixed(2)}
                     isLoading={isSubmitting}
                     onConfirm={async () => {

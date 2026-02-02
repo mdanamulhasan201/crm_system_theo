@@ -45,7 +45,7 @@ export default function ProductImageInfo({ shaft }: ProductImageInfoProps) {
   }
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-center lg:items-start">
+    <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 items-center mb-10">
       {/* Image - Read only, only from backend */}
       <div className="w-full lg:w-1/2 flex justify-center lg:justify-start">
         <div className="relative w-full max-w-[400px]">

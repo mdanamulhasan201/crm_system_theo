@@ -23,6 +23,17 @@ interface User {
   employeeName?: string;
   jobPosition?: string | null;
   financialAccess?: boolean;
+  // Account information
+  accountInfo?: {
+    bankInfo?: {
+      bankName: string;
+      bankNumber: string;
+    };
+    barcodeLabel?: string;
+    two_factor_auth?: boolean;
+    vat_country?: string | null;
+    vat_number?: string | null;
+  };
 }
 
 interface AuthContextType {
