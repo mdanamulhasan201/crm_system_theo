@@ -74,6 +74,9 @@ interface CustomShaftData {
   
   // Pricing
   totalPrice: number;
+  
+  // PDF blob from shaft configuration (Step 1)
+  shaftPdfBlob?: Blob | null;
 }
 
 interface CustomShaftDataContextType {

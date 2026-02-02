@@ -432,19 +432,45 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     }
 
     // Prepare form data for Admin2 API (custom shaft + Bodenkonstruktion)
-    const prepareFormDataForAdmin2 = async (customShaftData: any, pdfBlobData: Blob | null = null): Promise<{ formData: FormData; isCustomOrder: boolean }> => {
+    const prepareFormDataForAdmin2 = async (customShaftData: any, bodenPdfBlob: Blob | null = null): Promise<{ formData: FormData; isCustomOrder: boolean }> => {
         const { prepareStep2FormData } = require('@/utils/customShoeOrderHelpers')
         
         // Prepare Massschafterstellung_json2 (Bodenkonstruktion data)
         const massschafterstellungJson2 = prepareMassschafterstellungJson2WithSoleFields()
         
+        // Get the shaft PDF from context (stored in Step 1)
+        const shaftPdfBlob = customShaftData.shaftPdfBlob || null
+        
         // Use helper to prepare complete form data
+        // Pass BOTH PDFs: shaft PDF and bodenkonstruktion PDF
         const formData = await prepareStep2FormData(
             customShaftData,
             massschafterstellungJson2,
             selectedSole?.image || null,
-            pdfBlobData
+            bodenPdfBlob  // This is the bodenkonstruktion PDF
         )
+        
+        // CRITICAL: Replace the PDF attachments with correct ones
+        // - invoice = shaft PDF (from Step 1)
+        // - invoice2 = bodenkonstruktion PDF (from Step 2)
+        
+        // Remove any existing invoice attachments first
+        // Note: FormData doesn't have a direct delete method, so we'll append the correct ones
+        // The backend should handle multiple files with the same key by taking the last one
+        
+        if (shaftPdfBlob) {
+            console.log('📎 Adding shaft PDF as invoice:', shaftPdfBlob.size, 'bytes')
+            formData.set('invoice', shaftPdfBlob, 'shaft_invoice.pdf')
+        } else {
+            console.warn('⚠️ No shaft PDF found in context')
+        }
+        
+        if (bodenPdfBlob) {
+            console.log('📎 Adding bodenkonstruktion PDF as invoice2:', bodenPdfBlob.size, 'bytes')
+            formData.set('invoice2', bodenPdfBlob, 'boden_invoice.pdf')
+        } else {
+            console.warn('⚠️ No bodenkonstruktion PDF provided')
+        }
         
         // Add sole specific fields to form data (for backward compatibility)
         if (selectedSole?.id === "4") {

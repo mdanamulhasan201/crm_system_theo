@@ -6,16 +6,21 @@ export type SelectedState = {
     [groupId: string]: string | string[] | null
 }
 
+// Import orthopedic field types
+import type { RahmenData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+
 /**
  * Custom hook to calculate prices for Bodenkonstruktion configuration.
  * 
  * @param selected - Object containing selected options for each field group
  * @param orderTotalPrice - Optional base price from the order (defaults to 0)
+ * @param rahmen - Rahmen selection data (EVA or Gummi with color)
  * @returns Object containing extraPriceTotal (sum of option prices) and grandTotal (base + extras)
  */
 export function useBodenkonstruktionCalculations(
     selected: SelectedState, 
-    orderTotalPrice?: number
+    orderTotalPrice?: number,
+    rahmen?: RahmenData | null
 ) {
     // Calculate the sum of all selected option prices (can be positive or negative)
     const extraPriceTotal = useMemo(() => {
@@ -73,9 +78,22 @@ export function useBodenkonstruktionCalculations(
                 }
             }
         }
+        
+        // Add orthopedic field prices
+        // 1. Hinterkappe Muster: "nein" = +4.99€
+        if (selected.hinterkappe_muster === "nein") {
+            totalExtraPrice += 4.99
+        }
+        
+        // 2. Rahmen: "gummi" = +20.00€
+        if (rahmen && rahmen.type === "gummi") {
+            totalExtraPrice += 20.00
+        }
+        
+        // Note: vorderkappe and sohlenhoehe_differenziert have no price impact
 
         return totalExtraPrice
-    }, [selected])
+    }, [selected, rahmen])
 
     // Calculate grand total: base price + extra prices from selected options
     const grandTotal = useMemo(() => {

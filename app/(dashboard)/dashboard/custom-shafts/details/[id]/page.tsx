@@ -15,6 +15,8 @@ import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
 import ProductImageInfo from '@/components/CustomShafts/ProductImageInfo';
 import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
+import ShaftPDFPopup, { ShaftOrderDataForPDF } from '@/components/CustomShafts/ShaftPDFPopup';
+import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp';
 import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
 
 interface Customer {
@@ -117,8 +119,13 @@ export default function CollectionShaftDetailsPage() {
   const [versendenData, setVersendenData] = useState<VersendenData | null>(null);
 
   // Modal states
+  const [showPDFModal, setShowPDFModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [isLoadingBodenKonfigurieren, setIsLoadingBodenKonfigurieren] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [pendingAction, setPendingAction] = useState<'boden' | 'ohne-boden' | null>(null);
 
   // Pricing constants
   const SCHNURSENKEL_PRICE = 4.49;
@@ -207,6 +214,15 @@ export default function CollectionShaftDetailsPage() {
 
   const orderPrice = calculateTotalPrice();
 
+  // Prepare order data for PDF
+  const orderDataForPDF: ShaftOrderDataForPDF = {
+    orderNumber: orderId ? `#${orderId}` : undefined,
+    customerName: selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde',
+    productName: shaft?.name || 'Maßschaft',
+    deliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE'), // 2 weeks from now
+    totalPrice: orderPrice,
+  };
+
   // Validate customer selection
   const validateCustomer = (): boolean => {
     if (!selectedCustomer && !otherCustomerNumber.trim()) {
@@ -289,7 +305,7 @@ export default function CollectionShaftDetailsPage() {
 
   // Prepare FormData for collection products (custom_models=false)
   // Key difference from custom orders: Sends mabschaftKollektionId instead of custom_models_image
-  const prepareCollectionFormData = async (data: any): Promise<FormData> => {
+  const prepareCollectionFormData = async (data: any, pdfBlobData: Blob | null = null): Promise<FormData> => {
     const formData = new FormData();
 
     // Customer info (customerId OR other_customer_name)
@@ -297,6 +313,14 @@ export default function CollectionShaftDetailsPage() {
       formData.append('customerId', data.customerId);
     } else if (data.other_customer_name) {
       formData.append('other_customer_name', data.other_customer_name);
+    }
+
+    // Add PDF invoice if available
+    if (pdfBlobData) {
+      console.log('📎 Adding invoice to FormData:', pdfBlobData.size, 'bytes');
+      formData.append('invoice', pdfBlobData, 'invoice.pdf');
+    } else {
+      console.warn('⚠️ No PDF blob provided to prepareCollectionFormData');
     }
 
     // 3D model files (optional)
@@ -359,40 +383,41 @@ export default function CollectionShaftDetailsPage() {
     return formData;
   };
 
-  // Handle "JA, BODEN KONFIGURIEREN" - Save data to context and proceed to Step 2
+  // Handle "JA, BODEN KONFIGURIEREN" - Show PDF popup to generate PDF, then redirect
   const handleBodenKonfigurieren = async () => {
     if (!validateCustomer()) return;
 
-    // Prepare collection shaft data (includes mabschaftKollektionId and all configuration)
-    const collectionShaftData = prepareCollectionShaftData();
-
-    // Store Step 1 data in context (will be combined with Step 2 data in Bodenkonstruktion)
-    setContextData(collectionShaftData as any);
-
-    // Close modal
+    setIsLoadingBodenKonfigurieren(true);
+    
+    // Close confirmation modal and show PDF popup
     setShowConfirmationModal(false);
-
-    // Redirect to Bodenkonstruktion page (Step 2)
-    // - If orderId exists: Pass it for existing order customization
-    // - If no orderId: Create new order after Step 2 completion
-    const redirectUrl = orderId 
-      ? `/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`
-      : `/dashboard/massschuhauftraege-deatils/2`;
-    router.push(redirectUrl);
+    setPendingAction('boden');
+    setShowPDFModal(true);
   };
 
-  // Handle "NEIN, WEITER OHNE BODEN" - Submit order without Bodenkonstruktion
+  // Handle "NEIN, WEITER OHNE BODEN" - Show PDF first, then submit
   const handleOrderWithoutBoden = async () => {
     if (!validateCustomer()) return;
 
+    // Show PDF modal first
+    setPendingAction('ohne-boden');
+    setShowPDFModal(true);
+  };
+
+  // After PDF is confirmed, proceed with order creation
+  const proceedWithOrderWithoutBoden = async (blobToUse?: Blob | null) => {
     setIsCreatingOrder(true);
 
     try {
+      // Use the passed blob or fall back to state
+      const finalBlob = blobToUse !== undefined ? blobToUse : pdfBlob;
+      console.log('🚀 Starting order creation with PDF blob:', finalBlob ? `${finalBlob.size} bytes` : 'null');
+      
       // Prepare collection shaft data (includes mabschaftKollektionId)
       const collectionShaftData = prepareCollectionShaftData();
 
-      // Prepare FormData with mabschaftKollektionId and all configuration
-      const formData = await prepareCollectionFormData(collectionShaftData);
+      // Prepare FormData with mabschaftKollektionId and all configuration (includes PDF as 'invoice')
+      const formData = await prepareCollectionFormData(collectionShaftData, finalBlob);
 
       // Determine isCourierContact based on selection:
       // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
@@ -407,7 +432,7 @@ export default function CollectionShaftDetailsPage() {
       let response;
       if (orderId) {
         // Existing order customization: Send to Admin2 API with custom_models=false
-        // Payload includes: mabschaftKollektionId, Massschafterstellung_json1, totalPrice, courier details
+        // Payload includes: mabschaftKollektionId, Massschafterstellung_json1, totalPrice, courier details, invoice PDF
         response = await sendMassschuheOrderToAdmin2(orderId, formData, isCourierContact);
         toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "creating-order" });
       } else {
@@ -417,6 +442,7 @@ export default function CollectionShaftDetailsPage() {
       }
 
       // Order completed without Bodenkonstruktion → Redirect to balance dashboard
+      setShowPDFModal(false);
       setShowConfirmationModal(false);
       router.push('/dashboard/balance-dashboard');
     } catch (error) {
@@ -567,6 +593,71 @@ export default function CollectionShaftDetailsPage() {
         />
       </div>
 
+      {/* PDF Popup */}
+      {showPDFModal && (
+        <ShaftPDFPopup
+          isOpen={showPDFModal}
+          onClose={() => {
+            setShowPDFModal(false);
+            setPendingAction(null);
+            setIsLoadingBodenKonfigurieren(false);
+          }}
+          onConfirm={(blob) => {
+            console.log('📄 PDF Blob received in page:', blob ? `${blob.size} bytes` : 'null');
+            setPdfBlob(blob || null);
+            setShowPDFModal(false);
+
+            // If this is for Boden configuration, redirect immediately
+            if (pendingAction === 'boden') {
+              const collectionShaftData = prepareCollectionShaftData();
+              
+              // Store data in context INCLUDING the shaft PDF blob
+              setContextData({
+                ...collectionShaftData,
+                shaftPdfBlob: blob || null,
+              } as any);
+
+              setIsLoadingBodenKonfigurieren(false);
+              
+              // Redirect to Bodenkonstruktion page (Step 2)
+              const redirectUrl = orderId 
+                ? `/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`
+                : `/dashboard/massschuhauftraege-deatils/2`;
+              
+              router.push(redirectUrl);
+            } else {
+              // Otherwise show completion popup for "ohne-boden" flow
+              setShowCompletionModal(true);
+            }
+          }}
+          orderData={orderDataForPDF}
+          shaftImage={shaft?.image || null}
+          shaftConfiguration={{
+            customCategory,
+            cadModeling,
+            lederType,
+            lederfarbe,
+            numberOfLeatherColors,
+            leatherColors,
+            innenfutter,
+            schafthohe,
+            schafthoheLinks,
+            schafthoheRechts,
+            umfangmasseLinks,
+            umfangmasseRechts,
+            polsterung,
+            verstarkungen,
+            polsterungText,
+            verstarkungenText,
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'Standard',
+            closureType,
+            passendenSchnursenkel,
+            osenEinsetzen,
+            zipperExtra,
+          }}
+        />
+      )}
+
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={showConfirmationModal}
@@ -584,8 +675,30 @@ export default function CollectionShaftDetailsPage() {
         otherCustomerNumber={otherCustomerNumber}
         shaftName={shaft?.name}
         isCreatingWithoutBoden={isCreatingOrder}
+        isLoadingBodenKonfigurieren={isLoadingBodenKonfigurieren}
         orderId={orderId}
       />
+
+      {/* Completion Popup - Shows after PDF confirmation for "ohne-boden" only */}
+      {showCompletionModal && (
+        <CompletionPopUp
+          onClose={() => {
+            setShowCompletionModal(false);
+            setIsCreatingOrder(false);
+          }}
+          productName={shaft?.name || 'Maßschaft'}
+          customerName={selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde'}
+          value={orderPrice.toFixed(2)}
+          isLoading={isCreatingOrder}
+          onConfirm={async () => {
+            // Only "ohne-boden" flow uses completion popup now
+            if (pendingAction === 'ohne-boden') {
+              await proceedWithOrderWithoutBoden(pdfBlob);
+            }
+            setShowCompletionModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }

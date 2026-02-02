@@ -7,7 +7,7 @@ type GroupDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo"
+    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenhoeheDifferenziert" | "section"
 }
 
 export type HeelWidthAdjustmentData = {
@@ -405,8 +405,11 @@ export function YesNoField({
     onSelect: (optionId: string | null) => void
     tooltipText?: string
 }) {
-    const isJa = selected === "ja"
-    const isNein = selected === "nein"
+    // Support both generic "ja/nein" and custom option values from def.options
+    const options = def.options && def.options.length > 0 ? def.options : [
+        { id: "ja", label: "Ja" },
+        { id: "nein", label: "Nein" }
+    ]
 
     return (
         <div className="mb-6">
@@ -426,28 +429,20 @@ export function YesNoField({
                 )}
             </div>
             
-            {/* Ja/Nein Options */}
-            <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                        type="radio"
-                        name={`${def.id}-yesno`}
-                        checked={isJa}
-                        onChange={() => onSelect("ja")}
-                        className="w-4 h-4 text-green-500 focus:ring-green-500"
-                    />
-                    <span className="text-base text-gray-700">Ja</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                        type="radio"
-                        name={`${def.id}-yesno`}
-                        checked={isNein}
-                        onChange={() => onSelect("nein")}
-                        className="w-4 h-4 text-green-500 focus:ring-green-500"
-                    />
-                    <span className="text-base text-gray-700">Nein</span>
-                </label>
+            {/* Options */}
+            <div className="flex flex-col gap-3">
+                {options.map((option) => (
+                    <label key={option.id} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name={`${def.id}-yesno`}
+                            checked={selected === option.id}
+                            onChange={() => onSelect(option.id)}
+                            className="w-4 h-4 text-green-500 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">{option.label}</span>
+                    </label>
+                ))}
             </div>
         </div>
     )
@@ -564,6 +559,7 @@ export function OptionGroup({
     setOptionInputs,
     onOptionClick,
     selectedSole,
+    tooltipText,
 }: {
     def: GroupDef & { multiSelect?: boolean }
     selected: string | string[] | null
@@ -572,6 +568,7 @@ export function OptionGroup({
     setOptionInputs: React.Dispatch<React.SetStateAction<OptionInputsState>>
     onOptionClick?: (groupId: string, optionId: string) => void
     selectedSole?: { id: string; name: string; [key: string]: any } | null
+    tooltipText?: string
 }) {
     const isMultiSelect = def.multiSelect === true
     const selectedArray = isMultiSelect 
@@ -772,6 +769,271 @@ export function OptionGroup({
                         </div>
                     )
                 })}
+            </div>
+        </div>
+    )
+}
+
+// Vorderkappe Field - Side selection + Material selection
+export type VorderkappeSideSelection = "links" | "rechts" | "beidseitig" | null
+export type VorderkappeMatSel = "leicht" | "normal" | null
+
+export type VorderkappeSideData = {
+    side: VorderkappeSideSelection
+    material: VorderkappeMatSel
+}
+
+export function VorderkappeSideField({
+    def,
+    value,
+    onChange,
+}: {
+    def: GroupDef
+    value: VorderkappeSideData | null
+    onChange: (value: VorderkappeSideData | null) => void
+}) {
+    const side = value?.side || null
+    const material = value?.material || null
+
+    const updateSide = (newSide: VorderkappeSideSelection) => {
+        const newValue: VorderkappeSideData = {
+            side: newSide,
+            material: material || "normal",
+        }
+        onChange(newValue)
+    }
+
+    const updateMaterial = (newMaterial: VorderkappeMatSel) => {
+        if (!side) return
+        const newValue: VorderkappeSideData = {
+            side,
+            material: newMaterial,
+        }
+        onChange(newValue)
+    }
+
+    return (
+        <div className="mb-6">
+            <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
+            
+            {/* Side Selection */}
+            <div className="mb-4">
+                <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
+                <div className="flex gap-4">
+                    {["links", "rechts", "beidseitig"].map((sideOption) => (
+                        <label key={sideOption} className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="radio"
+                                name={`${def.id}_side`}
+                                value={sideOption}
+                                checked={side === sideOption}
+                                onChange={(e) => updateSide(e.target.value as VorderkappeSideSelection)}
+                                className="w-4 h-4 text-green-500 cursor-pointer"
+                            />
+                            <span className="text-gray-700 capitalize">{sideOption}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+
+            {/* Material Selection - only show if side is selected */}
+            {side && (
+                <div>
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Material:</div>
+                    <div className="flex gap-4">
+                        {["leicht", "normal"].map((matOption) => (
+                            <label key={matOption} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name={`${def.id}_material`}
+                                    value={matOption}
+                                    checked={material === matOption}
+                                    onChange={(e) => updateMaterial(e.target.value as VorderkappeMatSel)}
+                                    className="w-4 h-4 text-green-500 cursor-pointer"
+                                />
+                                <span className="text-gray-700 capitalize">{matOption}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+// Rahmen Field - Selection + Color Text Input
+export type RahmenData = {
+    type: "eva" | "gummi" | null
+    color?: string
+}
+
+export function RahmenField({
+    def,
+    value,
+    onChange,
+}: {
+    def: GroupDef
+    value: RahmenData | null
+    onChange: (value: RahmenData | null) => void
+}) {
+    const type = value?.type || null
+    const color = value?.color || ""
+
+    const updateType = (newType: "eva" | "gummi") => {
+        const newValue: RahmenData = {
+            type: newType,
+            color: newType === "gummi" ? color : undefined,
+        }
+        onChange(newValue)
+    }
+
+    const updateColor = (newColor: string) => {
+        if (type !== "gummi") return
+        const newValue: RahmenData = {
+            type,
+            color: newColor,
+        }
+        onChange(newValue)
+    }
+
+    return (
+        <div className="mb-6">
+            <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
+            
+            {/* Type Selection */}
+            <div className="space-y-3 mb-4">
+                <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                        type="radio"
+                        name={`${def.id}_type`}
+                        value="eva"
+                        checked={type === "eva"}
+                        onChange={() => updateType("eva")}
+                        className="w-4 h-4 text-green-500 cursor-pointer"
+                    />
+                    <span className="text-gray-700">EVA-Rahmen</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                        type="radio"
+                        name={`${def.id}_type`}
+                        value="gummi"
+                        checked={type === "gummi"}
+                        onChange={() => updateType("gummi")}
+                        className="w-4 h-4 text-green-500 cursor-pointer"
+                    />
+                    <span className="text-gray-700">Gummi-Rahmen (+20,00 €)</span>
+                </label>
+            </div>
+
+            {/* Color Input - only show if Gummi-Rahmen is selected */}
+            {type === "gummi" && (
+                <div className="mt-3 ml-7">
+                    <label className="block text-sm font-semibold text-gray-800 mb-1">
+                        Rahmenfarbe
+                    </label>
+                    <input
+                        type="text"
+                        className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        placeholder="Farbe eingeben (z. B. Schwarz, Braun...)"
+                        value={color}
+                        onChange={(e) => updateColor(e.target.value)}
+                    />
+                </div>
+            )}
+        </div>
+    )
+}
+
+// Sohlenhöhe Differenziert Field - 3 mm inputs (Ferse, Ballen, Spitze)
+export type SohlenhoeheDifferenziertData = {
+    ferse?: number
+    ballen?: number
+    spitze?: number
+}
+
+export function SohlenhoeheDifferenziertField({
+    def,
+    value,
+    onChange,
+}: {
+    def: GroupDef
+    value: SohlenhoeheDifferenziertData | null
+    onChange: (value: SohlenhoeheDifferenziertData | null) => void
+}) {
+    const ferse = value?.ferse || 0
+    const ballen = value?.ballen || 0
+    const spitze = value?.spitze || 0
+
+    const updateValue = (field: "ferse" | "ballen" | "spitze", newValue: number) => {
+        const updatedData: SohlenhoeheDifferenziertData = {
+            ferse: field === "ferse" ? newValue : ferse,
+            ballen: field === "ballen" ? newValue : ballen,
+            spitze: field === "spitze" ? newValue : spitze,
+        }
+        // Only save if at least one value is > 0
+        if (updatedData.ferse > 0 || updatedData.ballen > 0 || updatedData.spitze > 0) {
+            onChange(updatedData)
+        } else {
+            onChange(null)
+        }
+    }
+
+    return (
+        <div className="mb-6">
+            <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
+            <div className="text-sm text-gray-600 mb-3">
+                Detaillierte Höhenangabe für orthopädische Fertigung
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Ferse */}
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Ferse (mm)
+                    </label>
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        placeholder="0"
+                        value={ferse || ""}
+                        onChange={(e) => updateValue("ferse", parseFloat(e.target.value) || 0)}
+                    />
+                </div>
+                
+                {/* Ballen */}
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Ballen (mm)
+                    </label>
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        placeholder="0"
+                        value={ballen || ""}
+                        onChange={(e) => updateValue("ballen", parseFloat(e.target.value) || 0)}
+                    />
+                </div>
+                
+                {/* Spitze */}
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">
+                        Spitze (mm)
+                    </label>
+                    <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                        placeholder="0"
+                        value={spitze || ""}
+                        onChange={(e) => updateValue("spitze", parseFloat(e.target.value) || 0)}
+                    />
+                </div>
             </div>
         </div>
     )

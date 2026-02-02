@@ -1,5 +1,8 @@
 import type { GroupDef, GroupDef2 } from "./Types";
 
+// Re-export types for use in other components
+export type { GroupDef, GroupDef2 } from "./Types";
+
 export const GROUPS: GroupDef[] = [
   {
     id: "bettungskonfigurator_header",
@@ -363,26 +366,47 @@ export const GROUPS2: GroupDef2[] = [
       { id: "nein", label: "Nein (derzeit nicht verfügbar)", disabled: true },
     ],
   },
-  // {
-  //   id: "laufkohle",
-  //   question: "Laufsohle / Profil / Art",
-  //   fieldType: "select", // Changed to select field type
-  //   options: [
-  //     { id: "select1", label: "Ganze Sohle – Standard" },
-  //     { id: "select2", label: "Ganze Sohle – Mit mehr Profil" },
-  //     { id: "select3", label: "Halbe Sohle – Standard" },
-  //     { id: "select4", label: "Halbe Sohle – Mit mehr Profil" },
-  //     { id: "select5", label: "Spezialsystem (z. B. Vibram): " },
-  //     { id: "laufsohle_lose_beilegen", label: "Laufsohle lose beilegen (-10€)" },
-  //   ],
-  // },
-  // {
-  //   id: "schlenstaerke",
-  //   question: "Sohlenstärke",
-  //   fieldType: "checkbox",
-  //   options: [
-  //     { id: "4mm", label: "4 mm" },
-  //     { id: "6mm", label: "6 mm" },
-  //   ],
-  // },
+  {
+    id: "orthopaedic_section",
+    question: "Orthopädische Zusatzangaben",
+    fieldType: "section",
+    options: [],
+  },
+  {
+    id: "hinterkappe_muster",
+    question: "Hinterkappe – Muster wird vom Kunden bereitgestellt",
+    fieldType: "yesNo",
+    options: [
+      { id: "ja", label: "Ja" },
+      { id: "nein", label: "Nein (+4,99 €)" },
+    ],
+  },
+  {
+    id: "vorderkappe",
+    question: "Vorderkappe",
+    fieldType: "vorderkappeSide",
+    options: [],
+  },
+  {
+    id: "rahmen",
+    question: "Rahmen",
+    fieldType: "rahmen",
+    options: [],
+  },
+  {
+    id: "sohlenhoehe_differenziert",
+    question: "Sohlenhöhe gesamt – Differenziert",
+    fieldType: "sohlenhoeheDifferenziert",
+    options: [],
+  },
+  {
+    id: "leisten_belassen",
+    question: "Leisten im Schuh belassen oder ausleisten?",
+    fieldType: "yesNo",
+    options: [
+      { id: "belassen", label: "Leisten im Schuh belassen" },
+      { id: "ausleisten", label: "Leisten ausleisten (entfernen)" },
+    ],
+    tooltipText: "Zum leichteren Herausnehmen kann der Leisten im Fersenbereich eingeschnitten werden. Der Leisten wird anschließend mit Klebeband fixiert und ist für die Nutzung ausreichend stabil. Für daraus entstehende Schäden oder Einschränkungen übernehmen wir keine Haftung.",
+  },
 ]

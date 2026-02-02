@@ -10,7 +10,7 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, SoleElevationData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, SoleElevationData, VorderkappeSideData, RahmenData, SohlenhoeheDifferenziertData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 // Components
 import SoleSelectionSection from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/SoleSelectionSection"
@@ -45,6 +45,11 @@ export default function BodenkonstruktionPage() {
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
     const [soleElevation, setSoleElevation] = useState<SoleElevationData | null>(null)
+    
+    // Orthopedic fields
+    const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
+    const [rahmen, setRahmen] = useState<RahmenData | null>(null)
+    const [sohlenhoeheDifferenziert, setSohlenhoeheDifferenziert] = useState<SohlenhoeheDifferenziertData | null>(null)
     
     // Modal states
     const [showModal, setShowModal] = useState(false)
@@ -105,7 +110,7 @@ export default function BodenkonstruktionPage() {
     const basePrice = 189.99
 
     // Calculations
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen)
 
     // Reset sole options when sole changes
     React.useEffect(() => {
@@ -441,6 +446,42 @@ export default function BodenkonstruktionPage() {
             if (sole6Color) bodenkonstruktionJson.sole6_color = sole6Color
         }
 
+        // Add orthopedic fields
+        // 1. Hinterkappe Muster
+        if (selected.hinterkappe_muster) {
+            bodenkonstruktionJson.hinterkappe_muster = getSelectedValue(selected.hinterkappe_muster)
+        }
+
+        // 2. Vorderkappe
+        if (vorderkappeSide) {
+            bodenkonstruktionJson.vorderkappe = {
+                side: vorderkappeSide.side,
+                material: vorderkappeSide.material
+            }
+        }
+
+        // 3. Rahmen
+        if (rahmen) {
+            bodenkonstruktionJson.rahmen = {
+                type: rahmen.type,
+                color: rahmen.color || ""
+            }
+        }
+
+        // 4. Sohlenhöhe Differenziert
+        if (sohlenhoeheDifferenziert) {
+            bodenkonstruktionJson.sohlenhoehe_differenziert = {
+                ferse: sohlenhoeheDifferenziert.ferse || 0,
+                ballen: sohlenhoeheDifferenziert.ballen || 0,
+                spitze: sohlenhoeheDifferenziert.spitze || 0
+            }
+        }
+
+        // 5. Leisten belassen
+        if (selected.leisten_belassen) {
+            bodenkonstruktionJson.leisten_belassen = getSelectedValue(selected.leisten_belassen)
+        }
+
         formData.append('bodenkonstruktion_json', JSON.stringify(bodenkonstruktionJson))
 
         // Add staticImage (selectedSole image) - convert to File
@@ -535,6 +576,13 @@ export default function BodenkonstruktionPage() {
                 onCancel={() => router.back()}
                 isSubmitting={isSubmitting}
                 selectedSole={selectedSole}
+                showOrthopedicFields={true}
+                onVorderkappeChange={setVorderkappeSide}
+                vorderkappeSide={vorderkappeSide}
+                onRahmenChange={setRahmen}
+                rahmen={rahmen}
+                onSohlenhoeheDifferenziertChange={setSohlenhoeheDifferenziert}
+                sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
             />
 
             {/* PDF Popup */}
@@ -555,6 +603,9 @@ export default function BodenkonstruktionPage() {
                     selectedSole={selectedSole}
                     heelWidthAdjustment={heelWidthAdjustment}
                     soleElevation={soleElevation}
+                    vorderkappeSide={vorderkappeSide}
+                    rahmen={rahmen}
+                    sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                 />
             )}
 

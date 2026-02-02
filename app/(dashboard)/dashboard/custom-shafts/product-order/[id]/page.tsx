@@ -12,6 +12,8 @@ import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
 import ProductImageUploadInfo from '@/components/CustomShafts/ProductImageUploadInfo';
 import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
+import ShaftPDFPopup, { ShaftOrderDataForPDF } from '@/components/CustomShafts/ShaftPDFPopup';
+import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp';
 import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
 
 interface Customer {
@@ -111,8 +113,13 @@ export default function CustomShoeOrderPage() {
   const [versendenData, setVersendenData] = useState<VersendenData | null>(null);
 
   // Modal states
+  const [showPDFModal, setShowPDFModal] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [isCreatingOrder, setIsCreatingOrder] = useState(false);
+  const [isLoadingBodenKonfigurieren, setIsLoadingBodenKonfigurieren] = useState(false);
+  const [pdfBlob, setPdfBlob] = useState<Blob | null>(null);
+  const [pendingAction, setPendingAction] = useState<'boden' | 'ohne-boden' | null>(null);
 
   // Pricing constants
   const SCHNURSENKEL_PRICE = 4.49;
@@ -144,6 +151,15 @@ export default function CustomShoeOrderPage() {
   };
 
   const orderPrice = calculateTotalPrice();
+
+  // Prepare order data for PDF
+  const orderDataForPDF: ShaftOrderDataForPDF = {
+    orderNumber: existingOrderId ? `#${existingOrderId}` : undefined,
+    customerName: selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde',
+    productName: productDescription || 'Custom Made #1000',
+    deliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE'), // 2 weeks from now
+    totalPrice: orderPrice,
+  };
 
   // Validate customer selection
   const validateCustomer = (): boolean => {
@@ -222,37 +238,48 @@ export default function CustomShoeOrderPage() {
     };
   };
 
-  // Handle "JA, BODEN KONFIGURIEREN" - Save to context and redirect to Step 2
+  // Handle "JA, BODEN KONFIGURIEREN" - Show PDF popup to generate PDF, then redirect
   const handleBodenKonfigurieren = async () => {
     if (!validateCustomer()) return;
 
-    const customShaftData = prepareCustomShaftData();
-
-    // Store data in context
-    setContextData(customShaftData as any);
-
-    // Close modal
+    setIsLoadingBodenKonfigurieren(true);
+    
+    // Close confirmation modal and show PDF popup
     setShowConfirmationModal(false);
-
-    // Redirect to Bodenkonstruktion page (Step 2)
-    // If orderId exists, pass it in the URL for existing order customization
-    const redirectUrl = existingOrderId 
-      ? `/dashboard/massschuhauftraege-deatils/2?orderId=${existingOrderId}`
-      : `/dashboard/massschuhauftraege-deatils/2`;
-    router.push(redirectUrl);
+    setPendingAction('boden');
+    setShowPDFModal(true);
   };
 
-  // Handle "NEIN, WEITER OHNE BODEN" - Create order without Bodenkonstruktion
+  // Handle "NEIN, WEITER OHNE BODEN" - Show PDF first, then submit
   const handleOrderWithoutBoden = async () => {
     if (!validateCustomer()) return;
 
+    // Show PDF modal first
+    setPendingAction('ohne-boden');
+    setShowPDFModal(true);
+  };
+
+  // After PDF is confirmed, proceed with order creation
+  const proceedWithOrderWithoutBoden = async (blobToUse?: Blob | null) => {
     setIsCreatingOrder(true);
 
     try {
+      // Use the passed blob or fall back to state
+      const finalBlob = blobToUse !== undefined ? blobToUse : pdfBlob;
+      console.log('🚀 Starting order creation with PDF blob:', finalBlob ? `${finalBlob.size} bytes` : 'null');
+      
       const customShaftData = prepareCustomShaftData();
 
       // Prepare form data for API
       const formData = await prepareStep1FormData(customShaftData as any);
+
+      // Add PDF invoice if available
+      if (finalBlob) {
+        console.log('📎 Adding invoice to FormData:', finalBlob.size, 'bytes');
+        formData.append('invoice', finalBlob, 'invoice.pdf');
+      } else {
+        console.warn('⚠️ No PDF blob available to add to FormData');
+      }
 
       // Determine isCourierContact based on selection:
       // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
@@ -274,6 +301,7 @@ export default function CustomShoeOrderPage() {
       }
 
       // Close modal and redirect to balance dashboard (order completed without Bodenkonstruktion)
+      setShowPDFModal(false);
       setShowConfirmationModal(false);
       router.push('/dashboard/balance-dashboard');
     } catch (error) {
@@ -403,6 +431,71 @@ export default function CustomShoeOrderPage() {
         />
       </div>
 
+      {/* PDF Popup */}
+      {showPDFModal && (
+        <ShaftPDFPopup
+          isOpen={showPDFModal}
+          onClose={() => {
+            setShowPDFModal(false);
+            setPendingAction(null);
+            setIsLoadingBodenKonfigurieren(false);
+          }}
+          onConfirm={(blob) => {
+            console.log('📄 PDF Blob received in page:', blob ? `${blob.size} bytes` : 'null');
+            setPdfBlob(blob || null);
+            setShowPDFModal(false);
+
+            // If this is for Boden configuration, redirect immediately
+            if (pendingAction === 'boden') {
+              const customShaftData = prepareCustomShaftData();
+              
+              // Store data in context INCLUDING the shaft PDF blob
+              setContextData({
+                ...customShaftData,
+                shaftPdfBlob: blob || null,
+              } as any);
+
+              setIsLoadingBodenKonfigurieren(false);
+              
+              // Redirect to Bodenkonstruktion page (Step 2)
+              const redirectUrl = existingOrderId 
+                ? `/dashboard/massschuhauftraege-deatils/2?orderId=${existingOrderId}`
+                : `/dashboard/massschuhauftraege-deatils/2`;
+              
+              router.push(redirectUrl);
+            } else {
+              // Otherwise show completion popup for "ohne-boden" flow
+              setShowCompletionModal(true);
+            }
+          }}
+          orderData={orderDataForPDF}
+          shaftImage={uploadedImage}
+          shaftConfiguration={{
+            customCategory,
+            cadModeling,
+            lederType,
+            lederfarbe,
+            numberOfLeatherColors,
+            leatherColors,
+            innenfutter,
+            schafthohe,
+            schafthoheLinks,
+            schafthoheRechts,
+            umfangmasseLinks,
+            umfangmasseRechts,
+            polsterung,
+            verstarkungen,
+            polsterungText,
+            verstarkungenText,
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'Standard',
+            closureType,
+            passendenSchnursenkel,
+            osenEinsetzen,
+            zipperExtra,
+          }}
+        />
+      )}
+
       {/* Confirmation Modal */}
       <ConfirmationModal
         isOpen={showConfirmationModal}
@@ -420,8 +513,30 @@ export default function CustomShoeOrderPage() {
         otherCustomerNumber={otherCustomerNumber}
         shaftName={productDescription || 'Custom Made #1000'}
         isCreatingWithoutBoden={isCreatingOrder}
+        isLoadingBodenKonfigurieren={isLoadingBodenKonfigurieren}
         orderId={existingOrderId}
       />
+
+      {/* Completion Popup - Shows after PDF confirmation for "ohne-boden" only */}
+      {showCompletionModal && (
+        <CompletionPopUp
+          onClose={() => {
+            setShowCompletionModal(false);
+            setIsCreatingOrder(false);
+          }}
+          productName={productDescription || 'Custom Made #1000'}
+          customerName={selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde'}
+          value={orderPrice.toFixed(2)}
+          isLoading={isCreatingOrder}
+          onConfirm={async () => {
+            // Only "ohne-boden" flow uses completion popup now
+            if (pendingAction === 'ohne-boden') {
+              await proceedWithOrderWithoutBoden(pdfBlob);
+            }
+            setShowCompletionModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }

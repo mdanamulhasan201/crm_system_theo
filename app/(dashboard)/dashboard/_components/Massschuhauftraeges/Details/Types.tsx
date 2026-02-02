@@ -12,16 +12,17 @@ export type OptionDef = {
     placeholder?: string
   }
   
-  export type GroupDef2 = {
-    id: string
-    question: string
-    options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo"
-    multiSelect?: boolean
-    subOptions?: {
-      [key: string]: Array<{ id: string; label: string; price: number }>
-    }
+export type GroupDef2 = {
+  id: string
+  question: string
+  options: OptionDef[]
+  fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenhoeheDifferenziert" | "section"
+  multiSelect?: boolean
+  subOptions?: {
+    [key: string]: Array<{ id: string; label: string; price: number }>
   }
+  tooltipText?: string
+}
   
   export type SelectedState = {
     [groupId: string]: string | string[] | null

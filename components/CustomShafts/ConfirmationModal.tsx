@@ -25,6 +25,7 @@ interface ConfirmationModalProps {
   shaftName?: string;
   isCreatingOrder?: boolean;
   isCreatingWithoutBoden?: boolean;
+  isLoadingBodenKonfigurieren?: boolean;
   orderId?: string | null;
 }
 
@@ -43,12 +44,16 @@ export default function ConfirmationModal({
   shaftName,
   isCreatingOrder = false,
   isCreatingWithoutBoden = false,
+  isLoadingBodenKonfigurieren = false,
   orderId,
 }: ConfirmationModalProps) {
   const router = useRouter();
   
   // Use specific loading state for "NEIN, WEITER OHNE BODEN" button
   const isLoadingWithoutBoden = isCreatingWithoutBoden || isCreatingOrder;
+  
+  // Disable all buttons if any operation is in progress
+  const isAnyLoading = isLoadingWithoutBoden || isLoadingBodenKonfigurieren;
 
   const handleBodenKonfigurieren = async () => {
     if (onBodenKonfigurieren) {
@@ -66,8 +71,8 @@ export default function ConfirmationModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-[999] p-4">
-      <div className="relative bg-gradient-to-b from-white to-slate-50 rounded-2xl w-[90%] max-w-[650px] shadow-xl max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/25 flex items-center justify-center z-999 p-4">
+      <div className="relative bg-linear-to-b from-white to-slate-50 rounded-2xl w-[90%] max-w-[650px] shadow-xl max-h-[90vh] flex flex-col">
         {/* Close Button */}
         <button 
           className="absolute top-2.5 right-4 bg-transparent border-none text-xl sm:text-2xl text-slate-500 cursor-pointer transition-colors hover:text-slate-600 z-10" 
@@ -170,6 +175,15 @@ export default function ConfirmationModal({
               </div>
             </div>
           )}
+          
+          {isLoadingBodenKonfigurieren && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+              <div className="flex items-center justify-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <p className="text-blue-800 font-medium text-sm">PDF wird generiert...</p>
+              </div>
+            </div>
+          )}
 
           {/* Info Text */}
           <p className="text-xs sm:text-sm text-slate-500 mb-4">
@@ -178,11 +192,11 @@ export default function ConfirmationModal({
         </div>
 
         {/* Fixed Buttons at Bottom */}
-        <div className="flex gap-3 justify-center items-center p-5 border-t border-slate-200 bg-gradient-to-b from-white to-slate-50 rounded-b-2xl">
+        <div className="flex gap-3 justify-center items-center p-5 border-t border-slate-200 bg-linear-to-b from-white to-slate-50 rounded-b-2xl">
           <button 
             className="bg-red-600 border-none text-white py-3 px-6 sm:px-8 rounded-full text-sm sm:text-base font-semibold cursor-pointer shadow-lg shadow-red-600/40 transition-all duration-300 hover:bg-red-700 hover:shadow-xl hover:shadow-red-600/50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase flex items-center justify-center gap-2"
             onClick={handleWeiterOhneBoden}
-            disabled={isLoadingWithoutBoden}
+            disabled={isAnyLoading}
           >
             {isLoadingWithoutBoden && (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
@@ -192,9 +206,12 @@ export default function ConfirmationModal({
           <button 
             className="bg-[#28a745] border-none text-white py-3 px-6 sm:px-8 rounded-full text-sm sm:text-base font-semibold cursor-pointer shadow-lg shadow-[#28a745]/40 transition-all duration-300 hover:bg-[#218838] hover:shadow-xl hover:shadow-[#28a745]/50 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed uppercase flex items-center justify-center gap-2"
             onClick={handleBodenKonfigurieren}
-            disabled={isLoadingWithoutBoden}
+            disabled={isAnyLoading}
           >
-            JA, BODEN KONFIGURIEREN
+            {isLoadingBodenKonfigurieren && (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            )}
+            {isLoadingBodenKonfigurieren ? 'PDF wird generiert...' : 'JA, BODEN KONFIGURIEREN'}
           </button>
         </div>
       </div>

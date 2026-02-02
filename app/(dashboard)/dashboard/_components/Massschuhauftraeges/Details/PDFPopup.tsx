@@ -3,6 +3,7 @@
 import React, { useRef } from "react"
 
 import { CloseIcon, DownloadIcon, PrintIcon } from "./Icons"
+import type { GroupDef2 } from "./ShoeData"
 
 // Order data interface for dynamic PDF content
 export interface OrderDataForPDF {
@@ -24,7 +25,7 @@ interface PDFPopupProps {
   isOpen: boolean
   onClose: () => void
   onConfirm: (pdfBlob?: Blob) => void
-  allGroups: GroupDef[]
+  allGroups: GroupDef2[]
   selected: Record<string, string | string[] | null>
   optionInputs: Record<string, Record<string, string[]>>
   textAreas?: {
@@ -42,19 +43,13 @@ interface PDFPopupProps {
   selectedSole?: { id: string; name: string; image: string; des?: string; description?: string } | null
   heelWidthAdjustment?: { left?: { op: "widen" | "narrow" | null; mm: number }; right?: { op: "widen" | "narrow" | null; mm: number }; medial?: { op: "widen" | "narrow" | null; mm: number }; lateral?: { op: "widen" | "narrow" | null; mm: number } } | null
   soleElevation?: { enabled: boolean; side: "links" | "rechts" | "beidseitig" | null; height_mm: number } | null
+  // Orthopedic fields
+  vorderkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; material: "leicht" | "normal" | null } | null
+  rahmen?: { type: "eva" | "gummi" | null; color?: string } | null
+  sohlenhoeheDifferenziert?: { ferse?: number; ballen?: number; spitze?: number } | null
 }
 
 type OptionDef = { id: string; label: string }
-type GroupDef = { 
-  id: string
-  question: string
-  options: OptionDef[]
-  fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo"
-  multiSelect?: boolean
-  subOptions?: {
-    [key: string]: Array<{ id: string; label: string; price: number }>
-  }
-}
 
 // InlineLabelWithInputs for Modal (uses Tailwind classes)
 function InlineLabelWithInputsModal({
@@ -124,6 +119,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   selectedSole,
   heelWidthAdjustment,
   soleElevation,
+  vorderkappeSide,
+  rahmen,
+  sohlenhoeheDifferenziert,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
@@ -322,7 +320,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   }
 
   // Render options with label content
-  const renderModalOptions = (g: GroupDef) => {
+  const renderModalOptions = (g: GroupDef2) => {
     const selectedOptionId = selected[g.id]
     
     // Handle multi-select fields (arrays)
@@ -347,7 +345,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     })
   }
 
-  const renderPDFOptions = (g: GroupDef) => {
+  const renderPDFOptions = (g: GroupDef2) => {
     const selectedOptionId = selected[g.id]
     
     // Handle multi-select fields (arrays)
@@ -523,6 +521,77 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     </div>
                   )}
 
+                  {/* Vorderkappe Section */}
+                  {vorderkappeSide && vorderkappeSide.side && (
+                    <div className="mb-6 pb-4 border-b border-gray-300">
+                      <div className="text-sm font-semibold text-slate-800 mb-3">Vorderkappe:</div>
+                      <div className="mb-2">
+                        <span className="text-xs text-slate-700 font-medium">Seite:</span>
+                        <span className="ml-2 text-xs text-slate-600 capitalize">
+                          {vorderkappeSide.side}
+                        </span>
+                      </div>
+                      <div className="mb-2">
+                        <span className="text-xs text-slate-700 font-medium">Material:</span>
+                        <span className="ml-2 text-xs text-slate-600 capitalize">
+                          {vorderkappeSide.material || "-"}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rahmen Section */}
+                  {rahmen && rahmen.type && (
+                    <div className="mb-6 pb-4 border-b border-gray-300">
+                      <div className="text-sm font-semibold text-slate-800 mb-3">Rahmen:</div>
+                      <div className="mb-2">
+                        <span className="text-xs text-slate-700 font-medium">Typ:</span>
+                        <span className="ml-2 text-xs text-slate-600">
+                          {rahmen.type === "eva" ? "EVA-Rahmen" : "Gummi-Rahmen"}
+                        </span>
+                      </div>
+                      {rahmen.type === "gummi" && rahmen.color && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Farbe:</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {rahmen.color}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Sohlenhöhe Differenziert Section */}
+                  {sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze) && (
+                    <div className="mb-6 pb-4 border-b border-gray-300">
+                      <div className="text-sm font-semibold text-slate-800 mb-3">Sohlenhöhe gesamt – Differenziert:</div>
+                      {sohlenhoeheDifferenziert.ferse && sohlenhoeheDifferenziert.ferse > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Ferse:</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {sohlenhoeheDifferenziert.ferse} mm
+                          </span>
+                        </div>
+                      )}
+                      {sohlenhoeheDifferenziert.ballen && sohlenhoeheDifferenziert.ballen > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Ballen:</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {sohlenhoeheDifferenziert.ballen} mm
+                          </span>
+                        </div>
+                      )}
+                      {sohlenhoeheDifferenziert.spitze && sohlenhoeheDifferenziert.spitze > 0 && (
+                        <div className="mb-2">
+                          <span className="text-xs text-slate-700 font-medium">Spitze:</span>
+                          <span className="ml-2 text-xs text-slate-600">
+                            {sohlenhoeheDifferenziert.spitze} mm
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {showDetails ? (
                     <>
                     <div className="text-lg font-bold text-slate-800 mb-2">Checkliste Halbprobe</div>
@@ -535,7 +604,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   <div className="text-lg font-bold text-slate-800 mb-2">Checkliste</div>
                   )}
 
-                  {allGroups.map((g: GroupDef) => {
+                  {allGroups.map((g: GroupDef2) => {
                     const selectedOptionId = selected[g.id]
                     
                     // Handle text field type (generic handling for all text fields)
@@ -794,6 +863,77 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 </div>
               )}
 
+              {/* Vorderkappe Section */}
+              {vorderkappeSide && vorderkappeSide.side && (
+                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Vorderkappe:</div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Seite:</span>
+                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569', textTransform: 'capitalize' }}>
+                      {vorderkappeSide.side}
+                    </span>
+                  </div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Material:</span>
+                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569', textTransform: 'capitalize' }}>
+                      {vorderkappeSide.material || "-"}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Rahmen Section */}
+              {rahmen && rahmen.type && (
+                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Rahmen:</div>
+                  <div style={{ marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Typ:</span>
+                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                      {rahmen.type === "eva" ? "EVA-Rahmen" : "Gummi-Rahmen"}
+                    </span>
+                  </div>
+                  {rahmen.type === "gummi" && rahmen.color && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Farbe:</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {rahmen.color}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sohlenhöhe Differenziert Section */}
+              {sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze) && (
+                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Sohlenhöhe gesamt – Differenziert:</div>
+                  {sohlenhoeheDifferenziert.ferse && sohlenhoeheDifferenziert.ferse > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Ferse:</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {sohlenhoeheDifferenziert.ferse} mm
+                      </span>
+                    </div>
+                  )}
+                  {sohlenhoeheDifferenziert.ballen && sohlenhoeheDifferenziert.ballen > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Ballen:</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {sohlenhoeheDifferenziert.ballen} mm
+                      </span>
+                    </div>
+                  )}
+                  {sohlenhoeheDifferenziert.spitze && sohlenhoeheDifferenziert.spitze > 0 && (
+                    <div style={{ marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Spitze:</span>
+                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
+                        {sohlenhoeheDifferenziert.spitze} mm
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {showDetails ? (
                 <>
                   <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste Halbprobe</div>
@@ -806,7 +946,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste</div>
               )}
 
-              {allGroups.map((g: GroupDef) => {
+              {allGroups.map((g: GroupDef2) => {
                 const selectedOptionId = selected[g.id]
                 
                 // Handle text field type (generic handling for all text fields)

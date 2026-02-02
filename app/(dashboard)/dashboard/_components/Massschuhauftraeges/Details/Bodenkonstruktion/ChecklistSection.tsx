@@ -1,6 +1,6 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, type HeelWidthAdjustmentData, type SoleElevationData } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData } from "./FormFields"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -24,6 +24,14 @@ interface ChecklistSectionProps {
     onCancel: () => void
     isSubmitting?: boolean
     selectedSole?: SoleType | null
+    // Orthopedic fields - only shown when showOrthopedicFields is true
+    showOrthopedicFields?: boolean
+    onVorderkappeChange?: (value: VorderkappeSideData | null) => void
+    vorderkappeSide?: VorderkappeSideData | null
+    onRahmenChange?: (value: RahmenData | null) => void
+    rahmen?: RahmenData | null
+    onSohlenhoeheDifferenziertChange?: (value: SohlenhoeheDifferenziertData | null) => void
+    sohlenhoeheDifferenziert?: SohlenhoeheDifferenziertData | null
 }
 
 export default function ChecklistSection({
@@ -45,12 +53,35 @@ export default function ChecklistSection({
     onCancel,
     isSubmitting = false,
     selectedSole,
+    // Orthopedic fields
+    showOrthopedicFields = false,
+    onVorderkappeChange,
+    vorderkappeSide,
+    onRahmenChange,
+    rahmen,
+    onSohlenhoeheDifferenziertChange,
+    sohlenhoeheDifferenziert,
 }: ChecklistSectionProps) {
+    // Orthopedic field IDs that should only show when showOrthopedicFields is true
+    const orthopedicFieldIds = [
+        "orthopaedic_section",
+        "hinterkappe_muster",
+        "vorderkappe",
+        "rahmen",
+        "sohlenhoehe_differenziert",
+        "leisten_belassen"
+    ]
+
+    // Filter groups based on showOrthopedicFields flag
+    const filteredGroups = showOrthopedicFields 
+        ? GROUPS2 
+        : GROUPS2.filter(g => !orthopedicFieldIds.includes(g.id))
+
     return (
         <div className="bg-white rounded-lg p-4 w-full">
             <h2 className="text-2xl font-bold text-gray-800 mb-8">Checkliste</h2>
 
-            {GROUPS2.map((g) => {
+            {filteredGroups.map((g) => {
                 // Normalize selected value for SelectField (convert array to string or null)
                 const normalizeSelected = (value: string | string[] | null | undefined): string | null => {
                     if (!value) return null
@@ -67,7 +98,15 @@ export default function ChecklistSection({
 
                 return (
                     <React.Fragment key={g.id}>
-                        {g.fieldType === "select" ? (
+                        {g.fieldType === "section" ? (
+                            <>
+                                <div className="mt-8 mb-6">
+                                    <h3 className="text-xl font-bold text-gray-800 bg-green-50 px-4 py-3 rounded-lg border-l-4 border-green-500">
+                                        {g.question}
+                                    </h3>
+                                </div>
+                            </>
+                        ) : g.fieldType === "select" ? (
                             <SelectField
                                 def={g}
                                 selected={normalizedSelected}
@@ -102,11 +141,29 @@ export default function ChecklistSection({
                                 def={g}
                                 selected={normalizedSelected}
                                 onSelect={(optId) => onSetGroup(g.id, optId)}
-                                tooltipText={
+                                tooltipText={g.tooltipText || (
                                     g.id === "verbindungsleder"
                                         ? "Lederstück zur Verbindung von Vorder- und Hinterkappe für zusätzliche Stabilität im Schaftbereich."
                                         : undefined
-                                }
+                                )}
+                            />
+                        ) : g.fieldType === "vorderkappeSide" && showOrthopedicFields ? (
+                            <VorderkappeSideField
+                                def={g}
+                                value={vorderkappeSide || null}
+                                onChange={onVorderkappeChange || (() => {})}
+                            />
+                        ) : g.fieldType === "rahmen" && showOrthopedicFields ? (
+                            <RahmenField
+                                def={g}
+                                value={rahmen || null}
+                                onChange={onRahmenChange || (() => {})}
+                            />
+                        ) : g.fieldType === "sohlenhoeheDifferenziert" && showOrthopedicFields ? (
+                            <SohlenhoeheDifferenziertField
+                                def={g}
+                                value={sohlenhoeheDifferenziert || null}
+                                onChange={onSohlenhoeheDifferenziertChange || (() => {})}
                             />
                         ) : (
                             <>
@@ -118,6 +175,7 @@ export default function ChecklistSection({
                                     setOptionInputs={setOptionInputs}
                                     onOptionClick={onAbsatzFormClick}
                                     selectedSole={selectedSole}
+                                    tooltipText={(g as any).tooltipText}
                                 />
 
                                 {/* Bevorzugte Farbe input für Sohlenmaterial */}
