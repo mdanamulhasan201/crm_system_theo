@@ -36,8 +36,16 @@ export default function CustomShafts() {
     // Convert 'alle' to empty string for API (all categories)
     const apiCategory = category === 'alle' ? '' : category;
 
+    // Extract sort direction from sortOption (price_asc -> 'asc', price_desc -> 'desc')
+    const getSortPrice = (sortOption: string): string => {
+        if (sortOption === 'price_asc') return 'asc';
+        if (sortOption === 'price_desc') return 'desc';
+        return 'asc'; // default to ascending for other options like 'favorites'
+    };
+    const sortPrice = getSortPrice(sortOption);
+
     // Fetch data from API
-    const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery, gender, apiCategory);
+    const { data: apiData, loading, error } = useCustomShafts(currentPage, itemsPerPage, debouncedSearchQuery, gender, apiCategory, sortPrice);
 
     const prevFilteredLengthRef = React.useRef(0);
 
@@ -60,12 +68,12 @@ export default function CustomShafts() {
         setCurrentPage(1);
         setIsFetchingNewPage(false);
         prevFilteredLengthRef.current = 0;
-    }, [gender, category, debouncedSearchQuery]);
+    }, [gender, category, debouncedSearchQuery, sortOption]);
 
     const filteredData = useMemo(() => {
         if (allFetchedItems.length === 0) return [];
 
-        return allFetchedItems.filter(item => {
+        let filtered = allFetchedItems.filter(item => {
             const normalizedItemGender = (item.gender || '').trim().toLowerCase();
             const normalizedSelectedGender = gender.toLowerCase();
             const genderMatch = normalizedItemGender === normalizedSelectedGender;
@@ -76,7 +84,16 @@ export default function CustomShafts() {
 
             return genderMatch && categoryMatch;
         });
-    }, [allFetchedItems, gender, category]);
+
+        // Apply client-side sorting (backup for cached items)
+        if (sortOption === 'price_asc') {
+            filtered = [...filtered].sort((a, b) => a.price - b.price);
+        } else if (sortOption === 'price_desc') {
+            filtered = [...filtered].sort((a, b) => b.price - a.price);
+        }
+
+        return filtered;
+    }, [allFetchedItems, gender, category, sortOption]);
 
     useEffect(() => {
         if (isFetchingNewPage && filteredData.length > prevFilteredLengthRef.current && currentPage > 1) {

@@ -1,9 +1,9 @@
 import axiosClient from "@/lib/axiosClient";
 
-// get all custom shafts 
-export const getAllCustomShafts = async (page: number, limit: number, search: string, gender: string, category: string) => {
+// get all custom shafts all shoes 
+export const getAllCustomShafts = async (page: number, limit: number, search: string, gender: string, category: string, sortPrice: string) => {
     try {
-        const response = await axiosClient.get(`/custom_shafts/mabschaft_kollektion?page=${page}&limit=${limit}&search=${search}&gender=${gender}&category=${category}`);
+        const response = await axiosClient.get(`/custom_shafts/mabschaft_kollektion?page=${page}&limit=${limit}&search=${search}&gender=${gender}&category=${category}&sortPrice=${sortPrice}`);
         return response.data;
     } catch (error) {
         throw error;

@@ -1,4 +1,8 @@
+"use client"
+
 import { CloseIcon } from './Icons';
+import { useState, useEffect } from 'react';
+import { balanceMassschuheOrder } from '@/apis/MassschuheManagemantApis';
 
 interface CompletionPopUpProps {
   onClose: () => void;
@@ -11,23 +15,59 @@ interface CompletionPopUpProps {
 
 const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value, isLoading }: CompletionPopUpProps) => {
   const value2 = value || null;
+  const [availableBalance, setAvailableBalance] = useState<number | null>(null);
+  const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+
   // Store the value in localStorage under a unique key for each productName
   if (productName && value2 !== null) {
     localStorage.setItem(`completionValue_${productName}`, value2);
   }
-  const formatBalance = (balance: string | null) => {
-    if (!balance) return "0,00 €";
-    const num = parseFloat(balance);
+
+  // Fetch available balance from API
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        setIsLoadingBalance(true);
+        const response = await balanceMassschuheOrder() as { success: boolean; data: { totalPrice: number } };
+        if (response?.success && response?.data?.totalPrice) {
+          setAvailableBalance(response.data.totalPrice);
+        } else {
+          setAvailableBalance(0);
+        }
+      } catch (error) {
+        console.error('Error fetching balance:', error);
+        setAvailableBalance(0);
+      } finally {
+        setIsLoadingBalance(false);
+      }
+    };
+
+    fetchBalance();
+  }, []);
+
+  const formatBalance = (balance: string | number | null) => {
+    if (balance === null || balance === undefined) return "0,00 €";
+    const num = typeof balance === 'string' ? parseFloat(balance) : balance;
+    if (isNaN(num)) return "0,00 €";
     return num.toFixed(2).replace('.', ',') + ' €';
   };
-  const availableBalance = localStorage.getItem('availableBalance') || "00,00 €";
-  const calculateRemainingBalance = (available: string, cost: string | null) => {
-    if (!cost) return available;
-    const availableNum = parseFloat(available.replace(',', '.'));
+
+  const calculateRemainingBalance = (available: number | null, cost: string | null) => {
+    if (available === null || available === undefined) return "0,00 €";
+    if (!cost) return formatBalance(available);
     const costNum = parseFloat(cost);
-    const remaining = availableNum - costNum;
-    return remaining.toFixed(2).replace('.', ',') + ' €';
-  }
+    if (isNaN(costNum)) return formatBalance(available);
+    const remaining = available + costNum;
+    return formatBalance(remaining);
+  };
+
+  const displayAvailableBalance = isLoadingBalance 
+    ? "Lädt..." 
+    : formatBalance(availableBalance);
+  
+  const displayRemainingBalance = isLoadingBalance 
+    ? "Lädt..." 
+    : calculateRemainingBalance(availableBalance, value2);
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-[1000]">
       <div className="bg-white rounded-xl w-[90%] max-w-[550px] shadow-2xl animate-[slideIn_0.3s_ease-out]">
@@ -66,7 +106,7 @@ const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value,
             <div className="bg-slate-50 rounded-lg p-4 mt-4">
               <p className="text-sm text-slate-600 leading-relaxed m-0">
                 Wird von Ihrer FeetFirst Balance abgerechnet.<br />
-                Verfügbares Guthaben: <strong className="text-slate-900">{availableBalance} €</strong> – Restguthaben nach Kauf: <strong className="text-slate-900">{calculateRemainingBalance(availableBalance, value2)}</strong>
+                Verfügbares Guthaben: <strong className="text-slate-900">{displayAvailableBalance}</strong> – Restguthaben nach Kauf: <strong className="text-slate-900">{displayRemainingBalance}</strong>
               </p>
             </div>
             

@@ -60,6 +60,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const [showModal2, setShowModal2] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
+    const [isWeiterLoading, setIsWeiterLoading] = useState(false)
     const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
     
     // Store custom shaft data for later API call
@@ -110,13 +111,21 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     }, [order, orderId, contextData])
 
     // Determine base price: use custom shaft price if available, otherwise use order price
+    // Always add default value of 189 to the base price
     const basePrice = useMemo(() => {
+        const DEFAULT_BASE_PRICE = 189
+        let additionalPrice = 0
+        
         // If custom shaft data exists and has totalPrice, use it
         if (contextData && contextData.totalPrice) {
-            return contextData.totalPrice
+            additionalPrice = contextData.totalPrice
+        } else {
+            // Otherwise use order total price
+            additionalPrice = orderDataForPDF.totalPrice || 0
         }
-        // Otherwise use order total price
-        return orderDataForPDF.totalPrice || 0
+        
+        // Return default 189 + additional prices
+        return DEFAULT_BASE_PRICE + additionalPrice
     }, [contextData, orderDataForPDF.totalPrice])
 
     // Calculations - use basePrice which includes shaft price
@@ -264,18 +273,26 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             }
         }
 
-        // Check if custom shaft data exists in context (from Step 1: Schafterstellung)
-        // This applies to both new orders (no orderId) and existing orders (with orderId)
-        if (contextData) {
-            // Store custom shaft data for later API call (when user clicks "Verbindlich bestellen")
-            const hasUploadedImage = !!contextData.uploadedImage
-            setCustomShaftData(contextData)
-            setIsCustomOrder(hasUploadedImage)
+        setIsWeiterLoading(true)
+        try {
+            // Check if custom shaft data exists in context (from Step 1: Schafterstellung)
+            // This applies to both new orders (no orderId) and existing orders (with orderId)
+            if (contextData) {
+                // Store custom shaft data for later API call (when user clicks "Verbindlich bestellen")
+                const hasUploadedImage = !!contextData.uploadedImage
+                setCustomShaftData(contextData)
+                setIsCustomOrder(hasUploadedImage)
+            }
+            
+            // Show PDF modal (same for both custom and normal flow)
+            setShowModal(true)
+            localStorage.setItem("currentBalance", String(grandTotal.toFixed(2)))
+        } finally {
+            // Keep loading state briefly to show spinner, then reset when modal opens
+            setTimeout(() => {
+                setIsWeiterLoading(false)
+            }, 300)
         }
-        
-        // Show PDF modal (same for both custom and normal flow)
-        setShowModal(true)
-        localStorage.setItem("currentBalance", String(grandTotal.toFixed(2)))
     }
 
     const handleAbsatzFormClick = (groupId: string, optionId: string) => {
@@ -979,7 +996,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 grandTotal={grandTotal}
                 onWeiterClick={handleWeiterClick}
                 onCancel={() => router.back()}
-                isSubmitting={isSubmitting}
+                isSubmitting={isWeiterLoading}
                 selectedSole={selectedSole}
             />
 

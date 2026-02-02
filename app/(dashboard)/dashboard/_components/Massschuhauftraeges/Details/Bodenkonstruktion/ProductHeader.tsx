@@ -31,7 +31,6 @@ export default function ProductHeader({ orderData }: ProductHeaderProps) {
                             Kunde: <span className="font-medium">{orderData.customerName || ""}</span>
                         </p>
                         <p className="text-base text-black mb-4">
-                            Bestellnr: <span className="font-bold">{orderData.orderNumber || ''}</span> &nbsp; 
                             Voraussichtlicher Liefertermin: <span>{orderData.deliveryDate || ''}</span>
                         </p>
                         {/* <p className="text-sm text-black underline cursor-pointer">

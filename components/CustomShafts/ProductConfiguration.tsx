@@ -25,12 +25,12 @@ interface ProductConfigurationProps {
   setNahtfarbeOption: (option: string) => void;
   customNahtfarbe: string;
   setCustomNahtfarbe: (color: string) => void;
-  passendenSchnursenkel?: boolean;
-  setPassendenSchnursenkel?: (value: boolean) => void;
-  osenEinsetzen?: boolean;
-  setOsenEinsetzen?: (value: boolean) => void;
-  zipperExtra?: boolean;
-  setZipperExtra?: (value: boolean) => void;
+  passendenSchnursenkel?: boolean | undefined;
+  setPassendenSchnursenkel?: (value: boolean | undefined) => void;
+  osenEinsetzen?: boolean | undefined;
+  setOsenEinsetzen?: (value: boolean | undefined) => void;
+  zipperExtra?: boolean | undefined;
+  setZipperExtra?: (value: boolean | undefined) => void;
   closureType: string;
   setClosureType: (type: string) => void;
   lederType: string;
@@ -196,8 +196,8 @@ export default function ProductConfiguration({
   const effektSchnursenkel = typeof passendenSchnursenkel === 'boolean' ? passendenSchnursenkel : localSchnursenkel;
   const updateSchnursenkel = (value: boolean | undefined) => {
     if (setPassendenSchnursenkel) {
-      // If parent manages state, fallback to boolean only
-      setPassendenSchnursenkel(value ?? false);
+      // Keep undefined as undefined, don't convert to false
+      setPassendenSchnursenkel(value);
     } else {
       setLocalSchnursenkel(value);
     }
@@ -206,7 +206,8 @@ export default function ProductConfiguration({
   const effektOsen = typeof osenEinsetzen === 'boolean' ? osenEinsetzen : localOsenEinsetzen;
   const updateOsen = (value: boolean | undefined) => {
     if (setOsenEinsetzen) {
-      setOsenEinsetzen(value ?? false);
+      // Keep undefined as undefined, don't convert to false
+      setOsenEinsetzen(value);
     } else {
       setLocalOsenEinsetzen(value);
     }
@@ -215,7 +216,8 @@ export default function ProductConfiguration({
   const effektZipperExtra = typeof zipperExtra === 'boolean' ? zipperExtra : localZipperExtra;
   const updateZipperExtra = (value: boolean | undefined) => {
     if (setZipperExtra) {
-      setZipperExtra(value ?? false);
+      // Keep undefined as undefined, don't convert to false
+      setZipperExtra(value);
     } else {
       setLocalZipperExtra(value);
     }
@@ -595,6 +597,12 @@ export default function ProductConfiguration({
             value={closureType} 
             onValueChange={(value) => {
               setClosureType(value);
+              // Clear checkbox states when switching closure types
+              // Only Eyelets supports Schnürsenkel and Ösen, so clear them for Velcro
+              if (value === 'Velcro') {
+                updateSchnursenkel(undefined);
+                updateOsen(undefined);
+              }
             }}
           >
             <SelectTrigger className="w-full md:w-1/2 border-gray-300">
@@ -608,8 +616,8 @@ export default function ProductConfiguration({
         </div>
 
 
-        {/* Zusätze: Schnürsenkel - Only show for Eyelets and Zipper */}
-        {(closureType === 'Eyelets' || closureType === 'Zipper') && (
+        {/* Zusätze: Schnürsenkel - Only show for Eyelets */}
+        {closureType === 'Eyelets' && (
           <div className="flex flex-col md:flex-row md:items-center gap-4 mt-5">
             <Label className="font-medium text-base md:w-1/3">
               Möchten Sie passende Schnürsenkel zum Schuh?
@@ -618,25 +626,37 @@ export default function ProductConfiguration({
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
                   checked={effektSchnursenkel === false}
-                  onChange={() => updateSchnursenkel(effektSchnursenkel === false ? undefined : false)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      updateSchnursenkel(false);
+                    } else {
+                      updateSchnursenkel(undefined);
+                    }
+                  }}
                 />
                 <span>Nein, ohne</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
                   checked={effektSchnursenkel === true}
-                  onChange={() => updateSchnursenkel(effektSchnursenkel === true ? undefined : true)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      updateSchnursenkel(true);
+                    } else {
+                      updateSchnursenkel(undefined);
+                    }
+                  }}
                 />
                 <span>Ja mit passenden Schnürsenkel
                   <span className="text-green-600 font-semibold"> (+4,49€)</span>
-                  </span>
+                </span>
               </label>
             </div>
           </div>
         )}
 
-        {/* Zusätze: Ösen einsetzen - Only show for Eyelets and Zipper */}
-        {(closureType === 'Eyelets' || closureType === 'Zipper') && (
+        {/* Zusätze: Ösen einsetzen - Only show for Eyelets */}
+        {closureType === 'Eyelets' && (
           <div className="flex flex-col md:flex-row md:items-center gap-4">
             <Label className="font-medium text-base md:w-1/3">
               Möchten Sie den Schaft bereits mit eingesetzten Ösen?
@@ -645,20 +665,30 @@ export default function ProductConfiguration({
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
                   checked={effektOsen === false}
-                  onChange={() => updateOsen(effektOsen === false ? undefined : false)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      updateOsen(false);
+                    } else {
+                      updateOsen(undefined);
+                    }
+                  }}
                 />
                 <span>Nein, ohne Ösen</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <Checkbox
                   checked={effektOsen === true}
-                  onChange={() => updateOsen(effektOsen === true ? undefined : true)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      updateOsen(true);
+                    } else {
+                      updateOsen(undefined);
+                    }
+                  }}
                 />
                 <span>Ja, Ösen einsetzen
-                  
-                  
                   <span className="text-green-600 font-semibold"> (+8,99€)</span>
-                  </span>
+                </span>
               </label>
             </div>
           </div>
@@ -670,42 +700,48 @@ export default function ProductConfiguration({
             Möchten Sie einen zusätzlichen Reißverschluss?
           </Label>
           <div className="flex items-center gap-8">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <Checkbox
-                checked={effektZipperExtra === false}
-                onChange={() => updateZipperExtra(effektZipperExtra === false ? undefined : false)}
-              />
-              <span>Nein, ohne zusätzlichen Reißverschluss</span>
-            </label>
-             <label className="flex items-center gap-2 cursor-pointer">
-               <Checkbox
-                 checked={effektZipperExtra === true}
-                 onChange={() => {
-                   // If checking the box (turning it on)
-                   if (effektZipperExtra !== true) {
-                     // Check if there's already a zipper image
-                     if (zipperPlacementImage) {
-                       // Just update the checkbox
-                       updateZipperExtra(true);
-                     } else {
-                       // Need to show modal to mark zipper placement
-                       if (!shoeImage) {
-                         toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
-                         return;
-                       }
-                       // Show modal first, then update checkbox after save
-                       setShowZipperPlacementModal(true);
-                     }
-                   } else {
-                     // Unchecking - just update the checkbox
-                     updateZipperExtra(undefined);
-                   }
-                 }}
-               />
-               <span>Ja, zusätzlichen Reißverschluss 
-                <span className="text-green-600 font-semibold"> (+9,99€)</span>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={effektZipperExtra === false}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      updateZipperExtra(false);
+                    } else {
+                      updateZipperExtra(undefined);
+                    }
+                  }}
+                />
+                <span>Nein, ohne zusätzlichen Reißverschluss</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <Checkbox
+                  checked={effektZipperExtra === true}
+                  onChange={(e) => {
+                    // If checking the box (turning it on)
+                    if (e.target.checked) {
+                      // Check if there's already a zipper image
+                      if (zipperPlacementImage) {
+                        // Just update the checkbox
+                        updateZipperExtra(true);
+                      } else {
+                        // Need to show modal to mark zipper placement
+                        if (!shoeImage) {
+                          toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
+                          return;
+                        }
+                        // Show modal first, then update checkbox after save
+                        setShowZipperPlacementModal(true);
+                      }
+                    } else {
+                      // Unchecking - just update the checkbox
+                      updateZipperExtra(undefined);
+                    }
+                  }}
+                />
+                <span>Ja, zusätzlichen Reißverschluss 
+                  <span className="text-green-600 font-semibold"> (+9,99€)</span>
                 </span>
-             </label>
+              </label>
           </div>
         </div>
 
