@@ -17,9 +17,6 @@ export interface TransactionData {
     kundenname: string;
     beschreibung: string | null;
     einnahmesumme: number;
-    feetfirstGebuehren: number | null;
-    andere: number | null;
-    entgueltigeEinnahmen: string;
     status: string | null;
     custom_shafts_status?: string | null;
 }
@@ -28,7 +25,6 @@ interface ApiOrderData {
     id: string;
     orderNumber: string;
     status: string;
-    orderFor: string;
     price: number;
     note: string | null;
     custom_shafts_catagoary: string | null;
@@ -37,16 +33,15 @@ interface ApiOrderData {
         invoice?: string;
         status?: string;
         order_status?: string;
-        isCompleted?: boolean;
         invoice2?: string;
         other_customer_name?: string | null;
+        orderNumber?: string;
     };
     customer: {
         vorname: string;
         nachname: string;
     } | null;
     createdAt: string;
-    customerId: string;
 }
 
 interface ApiResponse {
@@ -58,12 +53,8 @@ interface ApiResponse {
 
 export type TabType = 'einnahmen' | 'ausgaben';
 
-
-const sampleAusgabenData: TransactionData[] = [];
-
 interface DataTablesProps {
     einnahmenData?: TransactionData[];
-    ausgabenData?: TransactionData[];
     isLoading?: boolean;
     onShowMore?: (tab: TabType) => void;
 
@@ -82,7 +73,6 @@ interface DataTablesProps {
 
 export default function DataTables({
     einnahmenData,
-    ausgabenData,
     isLoading: externalLoading = false,
     onShowMore,
     onView,
@@ -129,15 +119,12 @@ export default function DataTables({
                     custom_shafts_id: item.custom_shafts?.id || null,
                     custom_shafts_order_status: item.custom_shafts?.order_status || null,
                     datum: formatDate(item.createdAt),
-                    transaktionsnummer: item.orderNumber ? `FF${item.orderNumber}` : '-',
+                    transaktionsnummer: item.custom_shafts?.orderNumber || item.orderNumber || '-',
                     kundenname: item.customer 
                         ? `${item.customer.vorname || ''} ${item.customer.nachname || ''}`.trim() || '--'
                         : (item.custom_shafts?.other_customer_name || '--'),
                     beschreibung: item.custom_shafts_catagoary || item.note || null,
                     einnahmesumme: item.price || 0,
-                    feetfirstGebuehren: null,
-                    andere: null,
-                    entgueltigeEinnahmen: formatDate(item.createdAt),
                     status: item.status || null,
                     custom_shafts_status: item.custom_shafts?.status || null,
                 };
@@ -151,9 +138,6 @@ export default function DataTables({
                     kundenname: '--',
                     beschreibung: 'Mapping Error',
                     einnahmesumme: 0,
-                    feetfirstGebuehren: null,
-                    andere: null,
-                    entgueltigeEinnahmen: '-',
                     status: null,
                     custom_shafts_status: null,
                 };
@@ -250,7 +234,7 @@ export default function DataTables({
     // Fetch data on component mount
     useEffect(() => {
         // Only fetch if no external data is provided
-        if (!einnahmenData && !ausgabenData) {
+        if (!einnahmenData) {
             fetchData();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
