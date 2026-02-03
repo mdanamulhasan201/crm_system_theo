@@ -155,7 +155,7 @@ export default function FileUploadSection({
         <div className={`grid gap-4 md:gap-6 ${
           hideFileUploads 
             ? (hideCustomerSearch ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4') 
-            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
+            : (hideCustomerSearch ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4')
         }`}>
           {/* Kunde auswählen Section */}
           {!hideCustomerSearch && (
@@ -291,7 +291,7 @@ export default function FileUploadSection({
             </div>
           )}
 
-          {/* Abholen Button - Show when hideFileUploads is true */}
+          {/* Abholen Button - Only show when hideFileUploads is true (PHYSISCH flow) */}
           {hideFileUploads && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Abholen</label>
@@ -349,7 +349,7 @@ export default function FileUploadSection({
             </div>
           )}
 
-          {/* Versenden Button - Show when hideFileUploads is true */}
+          {/* Versenden Button - Only show when hideFileUploads is true (PHYSISCH flow) */}
           {hideFileUploads && (
             <div className="flex flex-col gap-2">
               <label className="text-sm font-medium text-gray-700">Versenden</label>
@@ -402,7 +402,7 @@ export default function FileUploadSection({
           )}
         </div>
 
-        {/* Shipping Address Display - Outside grid but inside card */}
+        {/* Shipping Address Display - Outside grid but inside card - Only show when hideFileUploads is true */}
         {hideFileUploads && isVersendenActive && shippingAddress && (
           <div className="mt-4 bg-gray-50 border border-gray-200 rounded-md p-4">
             <div className="flex items-start justify-between gap-4">
@@ -433,7 +433,7 @@ export default function FileUploadSection({
           </div>
         )}
 
-        {/* Business Address Display - Show saved courier pickup address */}
+        {/* Business Address Display - Show saved courier pickup address - Only show when hideFileUploads is true */}
         {hideFileUploads && businessAddress && (businessAddress.companyName || businessAddress.address) && (
           <div className="mt-4 bg-blue-50 border border-blue-200 rounded-md p-4">
             <div className="flex items-start justify-between gap-4">
@@ -520,7 +520,7 @@ export default function FileUploadSection({
         currentValue={otherCustomerNumber}
       />
 
-      {/* Business Address Modal - Always show when hideFileUploads is true */}
+      {/* Business Address Modal - Only show when hideFileUploads is true (PHYSISCH flow) */}
       {hideFileUploads && (
         <BusinessAddressModal
           isOpen={showBusinessAddressModal}

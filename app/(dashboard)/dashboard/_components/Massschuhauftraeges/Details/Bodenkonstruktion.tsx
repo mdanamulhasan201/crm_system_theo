@@ -1057,82 +1057,68 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     value={grandTotal.toFixed(2)}
                     isLoading={isSubmitting}
                     onConfirm={async () => {
-                        // Call API when "Verbindlich bestellen" is clicked
-                        if (orderId) {
-                            // Check if we have custom shaft data (from Step 1: Schafterstellung)
-                            if (customShaftData) {
-                                // Existing order customization: Call Admin2 API with custom shaft data + Bodenkonstruktion data
-                                setIsSubmitting(true)
-                                try {
-                                    const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
-                                    
-                                    // Determine isCourierContact based on selection:
-                                    // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
-                                    // - Versenden selected (versendenData exists) → isCourierContact = 'no'
+                        // Set loading state immediately
+                        setIsSubmitting(true)
+                        
+                        try {
+                            if (orderId) {
+                                if (customShaftData) {
+                                    // Prepare FormData and determine isCourierContact in parallel where possible
+                                    const has3DFiles = !!(customShaftData?.image3d_1_file || customShaftData?.image3d_2_file);
                                     const isAbholenSelected = !!(customShaftData?.businessAddress && (customShaftData.businessAddress.companyName || customShaftData.businessAddress.address));
                                     const isVersendenSelected = !!customShaftData?.versendenData;
-                                    const isCourierContact = isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'); // Default to 'yes' if neither selected
                                     
-                                    // Use the appropriate API based on order type (custom upload or collection product)
+                                    // Determine isCourierContact (synchronous, fast)
+                                    const isCourierContact: 'yes' | 'no' = has3DFiles 
+                                        ? 'no' 
+                                        : (isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'));
+                                    
+                                    // Prepare FormData (async operation)
+                                    const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
+                                    
+                                    // Make API call
                                     const response = isCustomOrder 
                                         ? await sendMassschuheCustomShaftOrderToAdmin2(orderId, formData, isCourierContact)
                                         : await sendMassschuheOrderToAdmin2(orderId, formData, isCourierContact)
                                     
                                     toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "sending-order" })
-                                    
-                                    // Clear context after successful API call
                                     clearCustomShaftData()
-                                    
-                                    // Close modal and redirect to balance dashboard (order completed with Bodenkonstruktion)
                                     setShowModal2(false)
                                     router.push('/dashboard/balance-dashboard')
-                                } catch (error) {
-                                    toast.error("Fehler beim Aktualisieren der Bestellung.", { id: "sending-order" })
-                                } finally {
-                                    setIsSubmitting(false)
+                                } else {
+                                    await handleFormSubmit(pdfBlob)
                                 }
                             } else {
-                                // Existing order: Only adding Bodenkonstruktion (no new shaft data) - call Admin3 API
-                                await handleFormSubmit(pdfBlob)
-                            }
-                        } else {
-                            // No orderId: Create new order with custom shaft data + Bodenkonstruktion
-                            if (customShaftData) {
-                                setIsSubmitting(true)
-                                try {
-                                    const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
-                                    
-                                    // Determine isCourierContact based on selection:
-                                    // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
-                                    // - Versenden selected (versendenData exists) → isCourierContact = 'no'
+                                if (customShaftData) {
+                                    // Prepare isCourierContact (synchronous, fast)
+                                    const has3DFiles = !!(customShaftData?.image3d_1_file || customShaftData?.image3d_2_file);
                                     const isAbholenSelected = !!(customShaftData?.businessAddress && (customShaftData.businessAddress.companyName || customShaftData.businessAddress.address));
                                     const isVersendenSelected = !!customShaftData?.versendenData;
-                                    const isCourierContact = isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'); // Default to 'yes' if neither selected
                                     
-                                    // Call the appropriate API based on order type (custom model or collection)
+                                    const isCourierContact: 'yes' | 'no' = has3DFiles 
+                                        ? 'no' 
+                                        : (isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'));
+                                    
+                                    // Prepare FormData (async operation)
+                                    const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
+                                    
+                                    // Make API call
                                     const response = isCustomOrder
                                         ? await createMassschuheWithoutOrderId(formData, isCourierContact)
                                         : await createMassschuheWithoutOrderIdWithoutCustomModels(formData, isCourierContact)
                                     
                                     toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" })
-                                    
-                                    // Clear context after successful API call
                                     clearCustomShaftData()
-                                    
-                                    // Close modal and navigate to balance dashboard
                                     setShowModal2(false)
                                     router.push("/dashboard/balance-dashboard")
-                                    setShowModal2(false)
-                                } catch (error) {
-                                    toast.error("Fehler beim Erstellen der Bestellung.", { id: "creating-order" })
-                                } finally {
-                                    setIsSubmitting(false)
+                                } else {
+                                    await handleFormSubmit(pdfBlob)
                                 }
-                            } else {
-                                // If no custom shaft data and no orderId, just navigate
-                                router.push("/dashboard/balance-dashboard")
-                                setShowModal2(false)
                             }
+                        } catch (error) {
+                            console.error('Error in onConfirm:', error)
+                            toast.error("Fehler beim Verarbeiten der Bestellung.", { id: "creating-order" })
+                            setIsSubmitting(false)
                         }
                     }}
                 />

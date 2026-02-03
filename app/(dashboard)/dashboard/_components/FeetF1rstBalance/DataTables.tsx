@@ -129,7 +129,7 @@ export default function DataTables({
                     custom_shafts_id: item.custom_shafts?.id || null,
                     custom_shafts_order_status: item.custom_shafts?.order_status || null,
                     datum: formatDate(item.createdAt),
-                    transaktionsnummer: item.orderNumber ? `FE${item.orderNumber}` : '-',
+                    transaktionsnummer: item.orderNumber ? `FF${item.orderNumber}` : '-',
                     kundenname: item.customer 
                         ? `${item.customer.vorname || ''} ${item.customer.nachname || ''}`.trim() || '--'
                         : (item.custom_shafts?.other_customer_name || '--'),

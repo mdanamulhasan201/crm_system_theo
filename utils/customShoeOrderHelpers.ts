@@ -198,9 +198,10 @@ export const prepareStep1FormData = async (data: CustomShaftData): Promise<FormD
       formData.append('custom_models_price', data.customCategoryPrice.toString());
     }
     
-    // Use productDescription or default name
-    const productName = data.productDescription || 'Custom Made #1000';
-    formData.append('custom_models_name', productName);
+    // Only send custom_models_name if productDescription is provided (remove default "Custom Made #1000")
+    if (data.productDescription && data.productDescription.trim()) {
+      formData.append('custom_models_name', data.productDescription.trim());
+    }
     
     if (data.closureType) {
       formData.append('custom_models_verschlussart', data.closureType);

@@ -404,51 +404,44 @@ export default function CollectionShaftDetailsPage() {
     setShowPDFModal(true);
   };
 
-  // After PDF is confirmed, proceed with order creation
+  // After PDF is confirmed, proceed with order creation - Optimized function
   const proceedWithOrderWithoutBoden = async (blobToUse?: Blob | null) => {
     setIsCreatingOrder(true);
 
     try {
       // Use the passed blob or fall back to state
       const finalBlob = blobToUse !== undefined ? blobToUse : pdfBlob;
-      console.log('🚀 Starting order creation with PDF blob:', finalBlob ? `${finalBlob.size} bytes` : 'null');
       
-      // Prepare collection shaft data (includes mabschaftKollektionId)
-      const collectionShaftData = prepareCollectionShaftData();
-
-      // Prepare FormData with mabschaftKollektionId and all configuration (includes PDF as 'invoice')
-      const formData = await prepareCollectionFormData(collectionShaftData, finalBlob);
-
-      // Determine isCourierContact based on selection:
-      // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
-      // - Versenden selected (versendenData exists) → isCourierContact = 'no'
+      // Determine isCourierContact FIRST (synchronous, fast) - before async operations
+      const has3DFiles = !!(linkerLeistenFile || rechterLeistenFile);
       const isAbholenSelected = !!(businessAddress && (businessAddress.companyName || businessAddress.address));
       const isVersendenSelected = !!versendenData;
-      const isCourierContact = isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'); // Default to 'yes' if neither selected
+      
+      const isCourierContact: 'yes' | 'no' = has3DFiles 
+        ? 'no' 
+        : (isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'));
 
-      // Call appropriate API based on context:
-      // - If orderId exists: Update existing order (API: sendMassschuheOrderToAdmin2)
-      // - If no orderId: Create new order (API: createMassschuheWithoutOrderIdWithoutCustomModels)
-      let response;
-      if (orderId) {
-        // Existing order customization: Send to Admin2 API with custom_models=false
-        // Payload includes: mabschaftKollektionId, Massschafterstellung_json1, totalPrice, courier details, invoice PDF
-        response = await sendMassschuheOrderToAdmin2(orderId, formData, isCourierContact);
-        toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "creating-order" });
-      } else {
-        // New order: Create with collection product (custom_models=false)
-        response = await createMassschuheWithoutOrderIdWithoutCustomModels(formData, isCourierContact);
-        toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
-      }
+      // Prepare collection shaft data (synchronous)
+      const collectionShaftData = prepareCollectionShaftData();
 
-      // Order completed without Bodenkonstruktion → Redirect to balance dashboard
+      // Prepare FormData with mabschaftKollektionId and all configuration (async operation)
+      const formData = await prepareCollectionFormData(collectionShaftData, finalBlob);
+
+      // Call appropriate API based on context
+      const response = orderId
+        ? await sendMassschuheOrderToAdmin2(orderId, formData, isCourierContact)
+        : await createMassschuheWithoutOrderIdWithoutCustomModels(formData, isCourierContact);
+
+      toast.success(response.message || (orderId ? "Bestellung erfolgreich aktualisiert!" : "Bestellung erfolgreich erstellt!"), { id: "creating-order" });
+
+      // Order completed without Bodenkonstruktion → Close modals and redirect to balance dashboard
       setShowPDFModal(false);
       setShowConfirmationModal(false);
+      setShowCompletionModal(false);
       router.push('/dashboard/balance-dashboard');
     } catch (error) {
       console.error('Error creating/updating order:', error);
       toast.error("Fehler beim Erstellen/Aktualisieren der Bestellung.", { id: "creating-order" });
-    } finally {
       setIsCreatingOrder(false);
     }
   };
@@ -683,6 +676,10 @@ export default function CollectionShaftDetailsPage() {
       {showCompletionModal && (
         <CompletionPopUp
           onClose={() => {
+            // Don't allow closing modal while order is being processed
+            if (isCreatingOrder) {
+              return;
+            }
             setShowCompletionModal(false);
             setIsCreatingOrder(false);
           }}
@@ -690,12 +687,14 @@ export default function CollectionShaftDetailsPage() {
           customerName={selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde'}
           value={orderPrice.toFixed(2)}
           isLoading={isCreatingOrder}
-          onConfirm={async () => {
+          onConfirm={() => {
             // Only "ohne-boden" flow uses completion popup now
+            // Call function directly (no await - function handles async internally)
+            // Modal will be closed after order is successfully completed in proceedWithOrderWithoutBoden
             if (pendingAction === 'ohne-boden') {
-              await proceedWithOrderWithoutBoden(pdfBlob);
+              proceedWithOrderWithoutBoden(pdfBlob);
             }
-            setShowCompletionModal(false);
+            // Don't close modal here - let proceedWithOrderWithoutBoden handle it after success
           }}
         />
       )}

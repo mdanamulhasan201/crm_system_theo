@@ -117,7 +117,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
     });
 
     const opt = {
-      margin: [40, 40, 90, 40],
+      margin: [40, 40, 80, 40], // Reduced bottom margin from 90 to 80 to prevent extra page
       filename: "document.pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
@@ -126,7 +126,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
         allowTaint: true,
         backgroundColor: "#ffffff",
         scrollY: 0,
-        logging: true,
+        logging: false, // Disable logging to reduce overhead
         windowWidth: 794,
         windowHeight: clone.scrollHeight,
         onclone: (clonedDoc: Document) => {
@@ -190,7 +190,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
         }
       },
       jsPDF: { unit: "pt", format: "a4", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"], avoid: ['.pdf-page-break-avoid'] },
+      pagebreak: { mode: ["css", "legacy"], avoid: ['.pdf-page-break-avoid'], before: '.pdf-page-break-before', after: '.pdf-page-break-after' },
     }
     const html2pdfModule = (await import('html2pdf.js')) as any
     const html2pdf = html2pdfModule.default || html2pdfModule
@@ -206,6 +206,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
           const pageHeight = pdf.internal.pageSize.getHeight()
           const pageWidth = pdf.internal.pageSize.getWidth()
 
+          // Add footer to all pages
           for (let i = 1; i <= pageCount; i++) {
             pdf.setPage(i)
             pdf.setFillColor(0, 0, 0)
@@ -239,21 +240,28 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      console.log('✅ PDF downloaded successfully')
+      // console.log('✅ PDF downloaded successfully')
     }
   }
 
   const handleAbschließen = async () => {
     setIsAbschließenLoading(true)
     try {
-      // Always generate fresh PDF on confirm
+      // Reuse existing PDF if already generated (from "PDF Prüfen" button)
+      // This significantly reduces loading time
+      if (pdfBlob) {
+        // PDF already exists, use it immediately
+        onConfirm(pdfBlob)
+        setIsAbschließenLoading(false)
+        return
+      }
+
+      // Only generate PDF if it doesn't exist yet
       const blob = await generatePDFBlob()
       if (blob) {
-        console.log('✅ PDF generated successfully:', blob.size, 'bytes')
         setPdfBlob(blob)
         onConfirm(blob)
       } else {
-        console.error('❌ PDF generation failed')
         // Still call onConfirm even if PDF fails
         onConfirm(undefined)
       }
@@ -363,7 +371,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
               <div className="pt-6 pb-2 px-10">
                 <div className="flex gap-6 items-center pb-3 border-b-2 border-gray-300">
                   <div className="w-[70px] h-[70px] flex items-center justify-center flex-shrink-0 aspect-square overflow-hidden">
-                    <img src={footerImage || "/Logo.png"} alt="Logo" className="w-full h-full object-contain aspect-square" />
+                    <img src={footerImage || "/images/logo.png"} alt="Logo" className="w-full h-full object-contain aspect-square" />
                   </div>
                   <div>
                     <div className="text-lg font-semibold text-slate-800 mb-2">{displayProductName}</div>
@@ -702,7 +710,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
             <div style={{ padding: '10px 40px 8px 40px', background: '#ffffff' }}>
               <div style={{ display: 'flex', gap: '24px', alignItems: 'center', paddingBottom: '12px', borderBottom: '2px solid #d1d5db' }}>
                 <div style={{ width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, aspectRatio: '1/1', overflow: 'hidden' }}>
-                  <img src={footerImage || "/Logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', aspectRatio: '1/1' }} />
+                  <img src={footerImage || "/images/logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', aspectRatio: '1/1' }} />
                 </div>
                 <div>
                   <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>{displayProductName}</div>
@@ -718,7 +726,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
             </div>
 
             {/* Body */}
-            <div style={{ padding: '8px 40px 40px 40px', flex: 1, background: '#ffffff', pageBreakInside: 'auto', overflow: 'visible' }}>
+            <div style={{ padding: '8px 40px 20px 40px', flex: 1, background: '#ffffff', pageBreakInside: 'auto', overflow: 'visible' }}>
               <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste</div>
 
               {/* Configuration Details - PDF Version - Show ALL options */}
@@ -994,11 +1002,12 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 {/* Total Price */}
                 <div className="pdf-page-break-avoid pdf-total-price-section" style={{ 
                   marginTop: '24px', 
-                  marginBottom: '60px', 
+                  marginBottom: '20px', // Reduced from 60px to prevent extra page
                   paddingTop: '20px', 
                   paddingBottom: '20px',
                   borderTop: '3px solid #000000', 
                   pageBreakInside: 'avoid',
+                  pageBreakAfter: 'avoid', // Prevent page break after this section
                   backgroundColor: '#ffffff',
                   width: '100%',
                   maxWidth: '100%',

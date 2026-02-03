@@ -156,7 +156,7 @@ export default function CustomShoeOrderPage() {
   const orderDataForPDF: ShaftOrderDataForPDF = {
     orderNumber: existingOrderId ? `#${existingOrderId}` : undefined,
     customerName: selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde',
-    productName: productDescription || 'Custom Made #1000',
+    productName: productDescription || '',
     deliveryDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toLocaleDateString('de-DE'), // 2 weeks from now
     totalPrice: orderPrice,
   };
@@ -188,7 +188,7 @@ export default function CustomShoeOrderPage() {
       image3d_2_file: linkerLeistenFile,
 
       // Product info
-      productDescription: productDescription || 'Custom Made #1000',
+      productDescription: productDescription || '',
       customCategory,
       customCategoryPrice,
 
@@ -259,55 +259,49 @@ export default function CustomShoeOrderPage() {
     setShowPDFModal(true);
   };
 
-  // After PDF is confirmed, proceed with order creation
+  // After PDF is confirmed, proceed with order creation - Optimized function
   const proceedWithOrderWithoutBoden = async (blobToUse?: Blob | null) => {
     setIsCreatingOrder(true);
 
     try {
       // Use the passed blob or fall back to state
       const finalBlob = blobToUse !== undefined ? blobToUse : pdfBlob;
-      console.log('🚀 Starting order creation with PDF blob:', finalBlob ? `${finalBlob.size} bytes` : 'null');
       
-      const customShaftData = prepareCustomShaftData();
-
-      // Prepare form data for API
-      const formData = await prepareStep1FormData(customShaftData as any);
-
-      // Add PDF invoice if available
-      if (finalBlob) {
-        console.log('📎 Adding invoice to FormData:', finalBlob.size, 'bytes');
-        formData.append('invoice', finalBlob, 'invoice.pdf');
-      } else {
-        console.warn('⚠️ No PDF blob available to add to FormData');
-      }
-
-      // Determine isCourierContact based on selection:
-      // - Abholen selected (businessAddress exists) → isCourierContact = 'yes'
-      // - Versenden selected (versendenData exists) → isCourierContact = 'no'
+      // Determine isCourierContact FIRST (synchronous, fast) - before async operations
+      const has3DFiles = !!(linkerLeistenFile || rechterLeistenFile);
       const isAbholenSelected = !!(businessAddress && (businessAddress.companyName || businessAddress.address));
       const isVersendenSelected = !!versendenData;
-      const isCourierContact = isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'); // Default to 'yes' if neither selected
+      
+      const isCourierContact: 'yes' | 'no' = has3DFiles 
+        ? 'no' 
+        : (isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'));
 
-      // Call appropriate API based on whether this is a new order or updating an existing order
-      let response;
-      if (existingOrderId) {
-        // Update existing order (orderId exists in URL params)
-        response = await sendMassschuheCustomShaftOrderToAdmin2(existingOrderId, formData, isCourierContact);
-        toast.success(response.message || "Bestellung erfolgreich aktualisiert!", { id: "creating-order" });
-      } else {
-        // Create new order (no orderId)
-        response = await createMassschuheWithoutOrderId(formData, isCourierContact);
-        toast.success(response.message || "Bestellung erfolgreich erstellt!", { id: "creating-order" });
+      // Prepare data (synchronous)
+      const customShaftData = prepareCustomShaftData();
+
+      // Prepare form data for API (async operation)
+      const formData = await prepareStep1FormData(customShaftData as any);
+
+      // Add PDF invoice if available (synchronous)
+      if (finalBlob) {
+        formData.append('invoice', finalBlob, 'invoice.pdf');
       }
 
-      // Close modal and redirect to balance dashboard (order completed without Bodenkonstruktion)
+      // Call appropriate API based on whether this is a new order or updating an existing order
+      const response = existingOrderId
+        ? await sendMassschuheCustomShaftOrderToAdmin2(existingOrderId, formData, isCourierContact)
+        : await createMassschuheWithoutOrderId(formData, isCourierContact);
+
+      toast.success(response.message || (existingOrderId ? "Bestellung erfolgreich aktualisiert!" : "Bestellung erfolgreich erstellt!"), { id: "creating-order" });
+
+      // Close modals and redirect to balance dashboard (order completed without Bodenkonstruktion)
       setShowPDFModal(false);
       setShowConfirmationModal(false);
+      setShowCompletionModal(false);
       router.push('/dashboard/balance-dashboard');
     } catch (error) {
       console.error('Error creating/updating order:', error);
       toast.error("Fehler beim Erstellen/Aktualisieren der Bestellung.", { id: "creating-order" });
-    } finally {
       setIsCreatingOrder(false);
     }
   };
@@ -511,7 +505,7 @@ export default function CustomShoeOrderPage() {
         zipperExtra={zipperExtra}
         selectedCustomer={selectedCustomer}
         otherCustomerNumber={otherCustomerNumber}
-        shaftName={productDescription || 'Custom Made #1000'}
+        shaftName={productDescription || ''}
         isCreatingWithoutBoden={isCreatingOrder}
         isLoadingBodenKonfigurieren={isLoadingBodenKonfigurieren}
         orderId={existingOrderId}
@@ -521,19 +515,25 @@ export default function CustomShoeOrderPage() {
       {showCompletionModal && (
         <CompletionPopUp
           onClose={() => {
+            // Don't allow closing modal while order is being processed
+            if (isCreatingOrder) {
+              return;
+            }
             setShowCompletionModal(false);
             setIsCreatingOrder(false);
           }}
-          productName={productDescription || 'Custom Made #1000'}
+          productName={productDescription || ''}
           customerName={selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde'}
           value={orderPrice.toFixed(2)}
           isLoading={isCreatingOrder}
-          onConfirm={async () => {
+          onConfirm={() => {
             // Only "ohne-boden" flow uses completion popup now
+            // Call function directly (no await - function handles async internally)
+            // Modal will be closed after order is successfully completed in proceedWithOrderWithoutBoden
             if (pendingAction === 'ohne-boden') {
-              await proceedWithOrderWithoutBoden(pdfBlob);
+              proceedWithOrderWithoutBoden(pdfBlob);
             }
-            setShowCompletionModal(false);
+            // Don't close modal here - let proceedWithOrderWithoutBoden handle it after success
           }}
         />
       )}
