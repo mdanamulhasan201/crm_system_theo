@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 interface WohnortInputProps {
   value: string;
   onChange: (value: string) => void;
+  hideLabel?: boolean;
+  placeholder?: string;
 }
 
 interface NominatimResult {
@@ -19,13 +21,13 @@ interface NominatimResult {
   };
 }
 
-export default function WohnortInput({ value, onChange }: WohnortInputProps) {
+export default function WohnortInput({ value, onChange, hideLabel = false, placeholder = "Ex. Musterstraße 123, Berlin, DE" }: WohnortInputProps) {
   const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load German & Italian place suggestions for Wohnort (OpenStreetMap Nominatim, free & policy-compliant)
+  // Load German, Italian & Austrian place suggestions for Wohnort (OpenStreetMap Nominatim, free & policy-compliant)
   useEffect(() => {
     const query = value.trim();
     if (!query || query.length < 2) {
@@ -39,7 +41,7 @@ export default function WohnortInput({ value, onChange }: WohnortInputProps) {
         setIsLoading(true);
         setError(null);
 
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=de,it&q=${encodeURIComponent(
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=de,it,at&q=${encodeURIComponent(
           query,
         )}`;
 
@@ -69,13 +71,15 @@ export default function WohnortInput({ value, onChange }: WohnortInputProps) {
   return (
     <div className="grid grid-cols-1 text-sm">
       <div className="relative">
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Wohnort
-        </label>
+        {!hideLabel && (
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Wohnort
+          </label>
+        )}
         <Input
           type="text"
           className="w-full"
-          placeholder="Ex. Musterstraße 123, Berlin, DE"
+          placeholder={placeholder}
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
@@ -86,7 +90,7 @@ export default function WohnortInput({ value, onChange }: WohnortInputProps) {
         />
 
         {isLoading && (
-          <span className="absolute right-3 top-9 h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500" />
+          <span className={`absolute right-3 ${hideLabel ? 'top-2' : 'top-9'} h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500`} />
         )}
 
         {showSuggestions && (

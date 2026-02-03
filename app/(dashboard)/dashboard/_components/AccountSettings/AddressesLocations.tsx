@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { createLocation, getAllLocations, updateLocation, deleteLocation } from "@/apis/setting/locationManagementApis"
 import toast from "react-hot-toast"
+import WohnortInput from "../Customers/WohnortInput"
 
 interface Location {
   id: string
@@ -372,12 +373,11 @@ export default function AddressesLocations() {
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="address">Adresse *</Label>
-              <Input
-                id="address"
-                placeholder="z.B. Friedrichstraße 123, 10117 Berlin, Germany"
+              <WohnortInput
                 value={formData.address}
-                onChange={(e) => handleInputChange("address", e.target.value)}
-                className="w-full"
+                onChange={(value) => handleInputChange("address", value)}
+                hideLabel={true}
+                placeholder="z.B. Friedrichstraße 123, 10117 Berlin, Germany"
               />
             </div>
 

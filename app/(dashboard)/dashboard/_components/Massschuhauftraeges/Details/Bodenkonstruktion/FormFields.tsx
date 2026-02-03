@@ -304,28 +304,52 @@ export function SoleElevationField({
                 </div>
             </div>
             
-            {/* Ja/Nein Options */}
-            <div className="flex items-center gap-4 mb-4">
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                        type="radio"
-                        name={`${def.id}-enabled`}
-                        checked={enabled}
-                        onChange={() => handleEnabledChange(true)}
-                        className="w-4 h-4 text-green-500 focus:ring-green-500"
-                    />
-                    <span className="text-base text-gray-700">Ja</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                        type="radio"
-                        name={`${def.id}-enabled`}
-                        checked={!enabled}
-                        onChange={() => handleEnabledChange(false)}
-                        className="w-4 h-4 text-green-500 focus:ring-green-500"
-                    />
-                    <span className="text-base text-gray-700">Nein</span>
-                </label>
+            {/* Ja/Nein Options - simple checkbox style like YesNoField */}
+            <div className="flex flex-wrap items-center gap-4 mb-4">
+                {[
+                    { id: "ja", label: "Ja", value: true },
+                    { id: "nein", label: "Nein", value: false }
+                ].map((option) => {
+                    const isChecked = enabled === option.value
+                    const handleToggle = () => {
+                        // Toggle: if already checked, uncheck it; otherwise check it
+                        if (isChecked) {
+                            onChange(null)
+                        } else {
+                            handleEnabledChange(option.value)
+                        }
+                    }
+                    return (
+                        <div key={option.id} className="flex items-center gap-2">
+                            <div className="relative flex items-center">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={isChecked}
+                                    onChange={handleToggle}
+                                    aria-label={option.label}
+                                />
+                                <div 
+                                    className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                        isChecked 
+                                            ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                            : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                    }`}
+                                    onClick={handleToggle}
+                                >
+                                    {isChecked && (
+                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    )}
+                                </div>
+                            </div>
+                            <span className="text-base text-gray-700 cursor-pointer" onClick={handleToggle}>
+                                {option.label}
+                            </span>
+                        </div>
+                    )
+                })}
             </div>
 
             {/* Conditional fields - shown only when "Ja" is selected */}
@@ -429,20 +453,45 @@ export function YesNoField({
                 )}
             </div>
             
-            {/* Options */}
-            <div className="flex flex-col gap-3">
-                {options.map((option) => (
-                    <label key={option.id} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name={`${def.id}-yesno`}
-                            checked={selected === option.id}
-                            onChange={() => onSelect(option.id)}
-                            className="w-4 h-4 text-green-500 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">{option.label}</span>
-                    </label>
-                ))}
+            {/* Options - simple checkbox style like Brandsohle */}
+            <div className="flex flex-wrap items-center gap-4">
+                {options.map((option) => {
+                    const isChecked = selected === option.id
+                    const handleToggle = () => {
+                        // Toggle: if already checked, uncheck it; otherwise check it
+                        onSelect(isChecked ? null : option.id)
+                    }
+                    return (
+                        <div key={option.id} className="flex items-center gap-2">
+                            <div className="relative flex items-center">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={isChecked}
+                                    onChange={handleToggle}
+                                    aria-label={option.label}
+                                />
+                                <div 
+                                    className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                        isChecked 
+                                            ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                            : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                    }`}
+                                    onClick={handleToggle}
+                                >
+                                    {isChecked && (
+                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    )}
+                                </div>
+                            </div>
+                            <span className="text-base text-gray-700 cursor-pointer" onClick={handleToggle}>
+                                {option.label}
+                            </span>
+                        </div>
+                    )
+                })}
             </div>
         </div>
     )
@@ -641,8 +690,20 @@ export function OptionGroup({
             aria-label={def.question}
             onDoubleClick={() => onSelect(null)}
         >
-            <div className={`text-base font-bold text-gray-800 ${useVerticalLayout ? "mb-4" : "mr-6 min-w-[200px]"}`}>
-                {def.question}
+            <div className={`text-base font-bold text-gray-800 ${useVerticalLayout ? "mb-4" : "mr-6 min-w-[200px]"} flex items-center gap-2`}>
+                <span>{def.question}</span>
+                {tooltipText && (
+                    <div className="relative group">
+                        <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center cursor-help hover:bg-gray-300 transition-colors">
+                            <svg className="w-3 h-3 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                            </svg>
+                        </div>
+                        <div className="absolute left-0 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                            {tooltipText}
+                        </div>
+                    </div>
+                )}
             </div>
             <div className={`flex flex-wrap items-center gap-4`}>
                 {def.options.map((opt) => {
@@ -774,13 +835,14 @@ export function OptionGroup({
     )
 }
 
-// Vorderkappe Field - Side selection + Material selection
+// Vorderkappe Field - Side selection + Material selection (separate for each side)
 export type VorderkappeSideSelection = "links" | "rechts" | "beidseitig" | null
 export type VorderkappeMatSel = "leicht" | "normal" | null
 
 export type VorderkappeSideData = {
     side: VorderkappeSideSelection
-    material: VorderkappeMatSel
+    leftMaterial?: VorderkappeMatSel
+    rightMaterial?: VorderkappeMatSel
 }
 
 export function VorderkappeSideField({
@@ -793,21 +855,34 @@ export function VorderkappeSideField({
     onChange: (value: VorderkappeSideData | null) => void
 }) {
     const side = value?.side || null
-    const material = value?.material || null
+    const leftMaterial = value?.leftMaterial || null
+    const rightMaterial = value?.rightMaterial || null
 
     const updateSide = (newSide: VorderkappeSideSelection) => {
         const newValue: VorderkappeSideData = {
             side: newSide,
-            material: material || "normal",
+            leftMaterial: (newSide === "links" || newSide === "beidseitig") ? (leftMaterial || null) : undefined,
+            rightMaterial: (newSide === "rechts" || newSide === "beidseitig") ? (rightMaterial || null) : undefined,
         }
         onChange(newValue)
     }
 
-    const updateMaterial = (newMaterial: VorderkappeMatSel) => {
+    const updateLeftMaterial = (newMaterial: VorderkappeMatSel) => {
         if (!side) return
         const newValue: VorderkappeSideData = {
             side,
-            material: newMaterial,
+            leftMaterial: newMaterial,
+            rightMaterial: rightMaterial,
+        }
+        onChange(newValue)
+    }
+
+    const updateRightMaterial = (newMaterial: VorderkappeMatSel) => {
+        if (!side) return
+        const newValue: VorderkappeSideData = {
+            side,
+            leftMaterial: leftMaterial,
+            rightMaterial: newMaterial,
         }
         onChange(newValue)
     }
@@ -819,41 +894,134 @@ export function VorderkappeSideField({
             {/* Side Selection */}
             <div className="mb-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
-                <div className="flex gap-4">
-                    {["links", "rechts", "beidseitig"].map((sideOption) => (
-                        <label key={sideOption} className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name={`${def.id}_side`}
-                                value={sideOption}
-                                checked={side === sideOption}
-                                onChange={(e) => updateSide(e.target.value as VorderkappeSideSelection)}
-                                className="w-4 h-4 text-green-500 cursor-pointer"
-                            />
-                            <span className="text-gray-700 capitalize">{sideOption}</span>
-                        </label>
-                    ))}
+                <div className="flex flex-wrap items-center gap-4">
+                    {["links", "rechts", "beidseitig"].map((sideOption) => {
+                        const isChecked = side === sideOption
+                        const handleToggle = () => {
+                            // Toggle: if already checked, uncheck it; otherwise check it
+                            updateSide(isChecked ? null : (sideOption as VorderkappeSideSelection))
+                        }
+                        return (
+                            <div key={sideOption} className="flex items-center gap-2">
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={isChecked}
+                                        onChange={handleToggle}
+                                        aria-label={sideOption}
+                                    />
+                                    <div 
+                                        className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                            isChecked 
+                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                        }`}
+                                        onClick={handleToggle}
+                                    >
+                                        {isChecked && (
+                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                </div>
+                                <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={handleToggle}>
+                                    {sideOption}
+                                </span>
+                            </div>
+                        )
+                    })}
                 </div>
             </div>
 
-            {/* Material Selection - only show if side is selected */}
-            {side && (
-                <div>
-                    <div className="text-sm font-semibold text-gray-700 mb-2">Material:</div>
-                    <div className="flex gap-4">
-                        {["leicht", "normal"].map((matOption) => (
-                            <label key={matOption} className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name={`${def.id}_material`}
-                                    value={matOption}
-                                    checked={material === matOption}
-                                    onChange={(e) => updateMaterial(e.target.value as VorderkappeMatSel)}
-                                    className="w-4 h-4 text-green-500 cursor-pointer"
-                                />
-                                <span className="text-gray-700 capitalize">{matOption}</span>
-                            </label>
-                        ))}
+            {/* Material Selection - show based on selected side */}
+            {side && (side === "links" || side === "beidseitig") && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Material (Links):</div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {["leicht", "normal"].map((matOption) => {
+                            const isChecked = leftMaterial === matOption
+                            const handleToggle = () => {
+                                // Toggle: if already checked, uncheck it; otherwise check it
+                                updateLeftMaterial(isChecked ? null : (matOption as VorderkappeMatSel))
+                            }
+                            return (
+                                <div key={matOption} className="flex items-center gap-2">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={isChecked}
+                                            onChange={handleToggle}
+                                            aria-label={`Material Links ${matOption}`}
+                                        />
+                                        <div 
+                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                                isChecked 
+                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                            }`}
+                                            onClick={handleToggle}
+                                        >
+                                            {isChecked && (
+                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={handleToggle}>
+                                        {matOption}
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {side && (side === "rechts" || side === "beidseitig") && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Material (Rechts):</div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {["leicht", "normal"].map((matOption) => {
+                            const isChecked = rightMaterial === matOption
+                            const handleToggle = () => {
+                                // Toggle: if already checked, uncheck it; otherwise check it
+                                updateRightMaterial(isChecked ? null : (matOption as VorderkappeMatSel))
+                            }
+                            return (
+                                <div key={matOption} className="flex items-center gap-2">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={isChecked}
+                                            onChange={handleToggle}
+                                            aria-label={`Material Rechts ${matOption}`}
+                                        />
+                                        <div 
+                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                                isChecked 
+                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                            }`}
+                                            onClick={handleToggle}
+                                        >
+                                            {isChecked && (
+                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={handleToggle}>
+                                        {matOption}
+                                    </span>
+                                </div>
+                            )
+                        })}
                     </div>
                 </div>
             )}
@@ -879,12 +1047,16 @@ export function RahmenField({
     const type = value?.type || null
     const color = value?.color || ""
 
-    const updateType = (newType: "eva" | "gummi") => {
-        const newValue: RahmenData = {
-            type: newType,
-            color: newType === "gummi" ? color : undefined,
+    const updateType = (newType: "eva" | "gummi" | null) => {
+        if (newType === null) {
+            onChange(null)
+        } else {
+            const newValue: RahmenData = {
+                type: newType,
+                color: newType === "gummi" ? color : undefined,
+            }
+            onChange(newValue)
         }
-        onChange(newValue)
     }
 
     const updateColor = (newColor: string) => {
@@ -901,34 +1073,52 @@ export function RahmenField({
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             
             {/* Type Selection */}
-            <div className="space-y-3 mb-4">
-                <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                        type="radio"
-                        name={`${def.id}_type`}
-                        value="eva"
-                        checked={type === "eva"}
-                        onChange={() => updateType("eva")}
-                        className="w-4 h-4 text-green-500 cursor-pointer"
-                    />
-                    <span className="text-gray-700">EVA-Rahmen</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                        type="radio"
-                        name={`${def.id}_type`}
-                        value="gummi"
-                        checked={type === "gummi"}
-                        onChange={() => updateType("gummi")}
-                        className="w-4 h-4 text-green-500 cursor-pointer"
-                    />
-                    <span className="text-gray-700">Gummi-Rahmen (+20,00 €)</span>
-                </label>
+            <div className="flex flex-wrap items-center gap-4 mb-4">
+                {[
+                    { value: "eva", label: "EVA-Rahmen" },
+                    { value: "gummi", label: "Gummi-Rahmen (+20,00 €)" }
+                ].map((option) => {
+                    const isChecked = type === option.value
+                    const handleToggle = () => {
+                        // Toggle: if already checked, uncheck it; otherwise check it
+                        updateType(isChecked ? null : (option.value as "eva" | "gummi"))
+                    }
+                    return (
+                        <div key={option.value} className="flex items-center gap-2">
+                            <div className="relative flex items-center">
+                                <input
+                                    type="checkbox"
+                                    className="sr-only"
+                                    checked={isChecked}
+                                    onChange={handleToggle}
+                                    aria-label={option.label}
+                                />
+                                <div 
+                                    className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                        isChecked 
+                                            ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                            : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                    }`}
+                                    onClick={handleToggle}
+                                >
+                                    {isChecked && (
+                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    )}
+                                </div>
+                            </div>
+                            <span className="text-base text-gray-700 cursor-pointer" onClick={handleToggle}>
+                                {option.label}
+                            </span>
+                        </div>
+                    )
+                })}
             </div>
 
             {/* Color Input - only show if Gummi-Rahmen is selected */}
             {type === "gummi" && (
-                <div className="mt-3 ml-7">
+                <div className="mt-3">
                     <label className="block text-sm font-semibold text-gray-800 mb-1">
                         Rahmenfarbe
                     </label>

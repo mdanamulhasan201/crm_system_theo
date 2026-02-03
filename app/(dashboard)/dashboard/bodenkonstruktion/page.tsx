@@ -128,6 +128,7 @@ export default function BodenkonstruktionPage() {
         }
     }, [selectedSole?.id])
 
+
     // Auto-deselect options based on selected sole
     React.useEffect(() => {
         if (selected.absatzform) {
@@ -261,6 +262,25 @@ export default function BodenkonstruktionPage() {
         setTextAreas((prev) => ({ ...prev, [key]: value }))
     }
 
+    // Clear dependent fields when Sohlenmaterial is deselected
+    React.useEffect(() => {
+        const schlemmaterialValue = selected.schlemmaterial
+        const hasSelection = schlemmaterialValue && (
+            Array.isArray(schlemmaterialValue) ? schlemmaterialValue.length > 0 : true
+        )
+        
+        if (!hasSelection) {
+            // Clear color field
+            if (textAreas.schlemmaterial_preferred_colour) {
+                handleTextAreaChange("schlemmaterial_preferred_colour", "")
+            }
+            // Clear height fields
+            if (sohlenhoeheDifferenziert) {
+                setSohlenhoeheDifferenziert(null)
+            }
+        }
+    }, [selected.schlemmaterial, textAreas.schlemmaterial_preferred_colour, sohlenhoeheDifferenziert])
+
     // Handle final form submission
     const handleFinalSubmit = async () => {
         setIsSubmitting(true)
@@ -351,7 +371,7 @@ export default function BodenkonstruktionPage() {
 
         // Add customer name
         if (customerName) {
-            formData.append('customerName', customerName)
+            formData.append('other_customer_name', customerName)
         }
 
         // Add delivery date (ISO format)
@@ -367,11 +387,14 @@ export default function BodenkonstruktionPage() {
             formData.append('invoice', pdfBlob, 'invoice.pdf')
         }
 
-        // Prepare bodenkonstruktion_json
+        // Prepare bodenkonstruktion_json - Include ALL fields
         const bodenkonstruktionJson: any = {
+            // Sole information
             Mehr_ansehen_image: selectedSole?.image || "",
             Mehr_ansehen_title: selectedSole?.name || "",
             Mehr_ansehen_description: selectedSole?.description || "",
+            
+            // Standard fields
             hinterkappe: getSelectedValue(selected.hinterkappe) || "",
             leder_auswahl: "",
             leder_auswahl_price: 0.0,
@@ -393,6 +416,10 @@ export default function BodenkonstruktionPage() {
             laufkohle: getSelectedValue(selected.laufkohle) || "",
             schlenstaerke: getSelectedValue(selected.schlenstaerke) || "",
             schlemmaterial_preferred_colour: textAreas.schlemmaterial_preferred_colour || "",
+            
+            // Special adjustment fields
+            heel_width_adjustment: heelWidthAdjustment || null,
+            sole_elevation: (soleElevation && soleElevation.enabled) ? soleElevation : null,
         }
 
         // Get leder_auswahl and price if hinterkappe is "leder"
@@ -422,16 +449,6 @@ export default function BodenkonstruktionPage() {
             bodenkonstruktionJson.möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price = getOptionPrice("laufsohle_lose_beilegen", laufsohleValue)
         }
 
-        // Add heel width adjustment
-        if (heelWidthAdjustment) {
-            bodenkonstruktionJson.heel_width_adjustment = heelWidthAdjustment
-        }
-
-        // Add sole elevation
-        if (soleElevation && soleElevation.enabled) {
-            bodenkonstruktionJson.sole_elevation = soleElevation
-        }
-
         // Add sole specific fields
         if (selectedSole?.id === "4") {
             if (sole4Thickness) bodenkonstruktionJson.sole4_thickness = sole4Thickness
@@ -446,22 +463,23 @@ export default function BodenkonstruktionPage() {
             if (sole6Color) bodenkonstruktionJson.sole6_color = sole6Color
         }
 
-        // Add orthopedic fields
+        // Add orthopedic fields to JSON
         // 1. Hinterkappe Muster
         if (selected.hinterkappe_muster) {
             bodenkonstruktionJson.hinterkappe_muster = getSelectedValue(selected.hinterkappe_muster)
         }
 
         // 2. Vorderkappe
-        if (vorderkappeSide) {
+        if (vorderkappeSide && vorderkappeSide.side) {
             bodenkonstruktionJson.vorderkappe = {
                 side: vorderkappeSide.side,
-                material: vorderkappeSide.material
+                leftMaterial: vorderkappeSide.leftMaterial || null,
+                rightMaterial: vorderkappeSide.rightMaterial || null
             }
         }
 
         // 3. Rahmen
-        if (rahmen) {
+        if (rahmen && rahmen.type) {
             bodenkonstruktionJson.rahmen = {
                 type: rahmen.type,
                 color: rahmen.color || ""
@@ -469,7 +487,7 @@ export default function BodenkonstruktionPage() {
         }
 
         // 4. Sohlenhöhe Differenziert
-        if (sohlenhoeheDifferenziert) {
+        if (sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze)) {
             bodenkonstruktionJson.sohlenhoehe_differenziert = {
                 ferse: sohlenhoeheDifferenziert.ferse || 0,
                 ballen: sohlenhoeheDifferenziert.ballen || 0,

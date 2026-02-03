@@ -240,10 +240,19 @@ export const shoe2 = {
   imageUrl: "/placeholder2.svg",
   description: "Custom sole construction service.",
 }
- 
+
 
 
 export const GROUPS2: GroupDef2[] = [
+  {
+    id: "hinterkappe_muster",
+    question: "Hinterkappe - Muster wird bereitgestellt",
+    fieldType: "yesNo",
+    options: [
+      { id: "ja", label: "Ja" },
+      { id: "nein", label: "Nein (+4,99 €)" },
+    ],
+  },
   {
     id: "hinterkappe",
     question: "Hinterkappe",
@@ -262,6 +271,26 @@ export const GROUPS2: GroupDef2[] = [
     },
   },
   {
+    id: "vorderkappe",
+    question: "Vorderkappe",
+    fieldType: "vorderkappeSide",
+    options: [],
+  },
+
+  {
+    id: "brandsohle",
+    question: "Brandsohle",
+    fieldType: "checkbox",
+    options: [
+      { id: "standard", label: "Standard" },
+      { id: "standard_kork", label: "Standard mit mitlaufendem Kork von 3mm (+4,99€)" },
+      { id: "leder", label: "Leder (+7,99€)" },
+      { id: "diabetes", label: "Diabetes/Versteift (+9,99€)" },
+
+    ],
+  },
+ 
+  {
     id: "verbindungsleder",
     question: "Verbindungsleder",
     fieldType: "yesNo",
@@ -279,28 +308,18 @@ export const GROUPS2: GroupDef2[] = [
       { id: "reimmargandritt", label: "Rahmengenäht (Maschine) (+30 € Aufpreis)" },
     ],
   },
+  
   {
-    id: "brandsohle",
-    question: "Brandsohle",
-    fieldType: "checkbox",
-    options: [
-      { id: "standard", label: "Standard" },
-      { id: "standard_kork", label: "Standard mit mitlaufendem Kork von 3mm (+4,99€)" },
-      { id: "leder", label: "Leder (+7,99€)" },
-      { id: "diabetes", label: "Diabetes/Versteift (+9,99€)" },
+    id: "rahmen",
+    question: "Rahmen",
+    fieldType: "rahmen",
+    options: [],
+  },
 
-    ],
-  },
-  {
-    id: "sohlenerhoehung",
-    question: "Sohlenerhöhung",
-    fieldType: "soleElevation",
-    options: [
-      { id: "ja", label: "Ja" },
-      { id: "nein", label: "Nein" },
-    ],
-  },
  
+
+  
+
   // {
   //   id: "farbauswahl",
   //   question: "Farbauswahl Bodenkonstruktion",
@@ -321,12 +340,43 @@ export const GROUPS2: GroupDef2[] = [
       { id: "eva30", label: "EVA Shore 30 (SLW)" },
       { id: "leder", label: "Leder" },
     ],
+    tooltipText: "Die Gesamthöhe der Sohle muss berücksichtigt werden. Die angegebenen Werte beziehen sich auf die Gesamthöhe/Dicke der kompletten Sohle und Aufbaumaterialien, wobei die Absatzhöhe (Absatzhöhe) berücksichtigt werden muss. Daher sollte die Gesamtsolhöhe differenziert für Ferse (Ferse), Ballen (Ballen) und Zehenspitze (Spitze) in Millimetern eingegeben werden, wie es für die orthopädische Fertigung erforderlich ist.",
   },
+
   {
-    id: "absatzhoehe",
-    question: "Absatz Höhe (Am besten wie bei Leisten beachtet)",
-    fieldType: "text", // Changed to text field type
-    options: [{ id: "mm", label: "mm" }],
+    id: "sohlenhoehe_differenziert",
+    question: "Sohlenhöhe gesamt – Differenziert",
+    fieldType: "sohlenhoeheDifferenziert",
+    options: [],
+  },
+
+  {
+    id: "sohlenerhoehung",
+    question: "Sohlenerhöhung",
+    fieldType: "soleElevation",
+    options: [
+      { id: "ja", label: "Ja" },
+      { id: "nein", label: "Nein" },
+    ],
+  },
+
+  // {
+  //   id: "absatzhoehe",
+  //   question: "Absatz Höhe (Am besten wie bei Leisten beachtet)",
+  //   fieldType: "text", // Changed to text field type
+  //   options: [{ id: "mm", label: "mm" }],
+  // },
+
+
+  {
+    id: "absatzform",
+    question: "Absatz Form (Achtung bitte auch Sohle beachten ob möglich)",
+    fieldType: "checkbox",
+    options: [
+      { id: "Keilabsatz", label: "Keilabsatz" },
+      { id: "Stegkeil", label: "Stegkeil" },
+      { id: "Absatzkeil", label: "Absatzkeil" },
+    ],
   },
 
   {
@@ -339,16 +389,6 @@ export const GROUPS2: GroupDef2[] = [
       { id: "mittelfussrolle", label: "Mittelfußrolle" },
       { id: "abzezzolle", label: "Absatzrolle" },
       { id: "beilemdie", label: "Ballenrolle" },
-    ],
-  },
-  {
-    id: "absatzform",
-    question: "Absatz Form (Achtung bitte auch Sohle beachten ob möglich)",
-    fieldType: "checkbox",
-    options: [
-      { id: "Keilabsatz", label: "Keilabsatz" },
-      { id: "Stegkeil", label: "Stegkeil" },
-      { id: "Absatzkeil", label: "Absatzkeil" },
     ],
   },
   {
@@ -366,39 +406,8 @@ export const GROUPS2: GroupDef2[] = [
       { id: "nein", label: "Nein (derzeit nicht verfügbar)", disabled: true },
     ],
   },
-  {
-    id: "orthopaedic_section",
-    question: "Orthopädische Zusatzangaben",
-    fieldType: "section",
-    options: [],
-  },
-  {
-    id: "hinterkappe_muster",
-    question: "Hinterkappe – Muster wird vom Kunden bereitgestellt",
-    fieldType: "yesNo",
-    options: [
-      { id: "ja", label: "Ja" },
-      { id: "nein", label: "Nein (+4,99 €)" },
-    ],
-  },
-  {
-    id: "vorderkappe",
-    question: "Vorderkappe",
-    fieldType: "vorderkappeSide",
-    options: [],
-  },
-  {
-    id: "rahmen",
-    question: "Rahmen",
-    fieldType: "rahmen",
-    options: [],
-  },
-  {
-    id: "sohlenhoehe_differenziert",
-    question: "Sohlenhöhe gesamt – Differenziert",
-    fieldType: "sohlenhoeheDifferenziert",
-    options: [],
-  },
+ 
+
   {
     id: "leisten_belassen",
     question: "Leisten im Schuh belassen oder ausleisten?",

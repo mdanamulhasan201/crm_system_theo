@@ -77,6 +77,16 @@ export default function ChecklistSection({
         ? GROUPS2 
         : GROUPS2.filter(g => !orthopedicFieldIds.includes(g.id))
 
+    // Check if Sohlenmaterial has at least one option selected
+    const hasSohlenmaterialSelected = (() => {
+        const schlemmaterialValue = selected.schlemmaterial
+        if (!schlemmaterialValue) return false
+        if (Array.isArray(schlemmaterialValue)) {
+            return schlemmaterialValue.length > 0
+        }
+        return !!schlemmaterialValue
+    })()
+
     return (
         <div className="bg-white rounded-lg p-4 w-full">
             <h2 className="text-2xl font-bold text-gray-800 mb-8">Checkliste</h2>
@@ -93,8 +103,15 @@ export default function ChecklistSection({
 
                 const normalizedSelected = normalizeSelected(selected[g.id])
 
+                // Show color input only when Sohlenmaterial is selected
                 const showSohlenmaterialColorInput =
-                    g.id === "schlemmaterial" && !!normalizedSelected
+                    g.id === "schlemmaterial" && hasSohlenmaterialSelected
+                
+                // Show Sohlenhöhe differenziert only when Sohlenmaterial is selected AND showOrthopedicFields is true
+                const shouldShowSohlenhoeheDifferenziert = 
+                    g.id === "sohlenhoehe_differenziert" && 
+                    showOrthopedicFields && 
+                    hasSohlenmaterialSelected
 
                 return (
                     <React.Fragment key={g.id}>
@@ -159,12 +176,15 @@ export default function ChecklistSection({
                                 value={rahmen || null}
                                 onChange={onRahmenChange || (() => {})}
                             />
-                        ) : g.fieldType === "sohlenhoeheDifferenziert" && showOrthopedicFields ? (
+                        ) : g.fieldType === "sohlenhoeheDifferenziert" && shouldShowSohlenhoeheDifferenziert ? (
                             <SohlenhoeheDifferenziertField
                                 def={g}
                                 value={sohlenhoeheDifferenziert || null}
                                 onChange={onSohlenhoeheDifferenziertChange || (() => {})}
                             />
+                        ) : g.id === "sohlenhoehe_differenziert" ? (
+                            // Hide this field if Sohlenmaterial is not selected
+                            null
                         ) : (
                             <>
                                 <OptionGroup

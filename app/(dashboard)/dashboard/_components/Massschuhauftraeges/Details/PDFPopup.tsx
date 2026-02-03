@@ -44,7 +44,7 @@ interface PDFPopupProps {
   heelWidthAdjustment?: { left?: { op: "widen" | "narrow" | null; mm: number }; right?: { op: "widen" | "narrow" | null; mm: number }; medial?: { op: "widen" | "narrow" | null; mm: number }; lateral?: { op: "widen" | "narrow" | null; mm: number } } | null
   soleElevation?: { enabled: boolean; side: "links" | "rechts" | "beidseitig" | null; height_mm: number } | null
   // Orthopedic fields
-  vorderkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; material: "leicht" | "normal" | null } | null
+  vorderkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; leftMaterial?: "leicht" | "normal" | null; rightMaterial?: "leicht" | "normal" | null } | null
   rahmen?: { type: "eva" | "gummi" | null; color?: string } | null
   sohlenhoeheDifferenziert?: { ferse?: number; ballen?: number; spitze?: number } | null
 }
@@ -206,12 +206,30 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
       html2canvas: {
         scale: 2,
         useCORS: true,
+        allowTaint: true,
         backgroundColor: "#ffffff",
         scrollY: 0,
         logging: false,
         windowWidth: 794,
         windowHeight: clone.scrollHeight,
-        onclone: (clonedDoc: Document) => {
+        onclone: async (clonedDoc: Document) => {
+          // Ensure all images are loaded before PDF generation
+          const images = clonedDoc.querySelectorAll('img');
+          await Promise.all(
+            Array.from(images).map((img) => {
+              return new Promise((resolve) => {
+                if (img.complete) {
+                  resolve(null);
+                } else {
+                  img.onload = () => resolve(null);
+                  img.onerror = () => resolve(null);
+                  // Fallback timeout
+                  setTimeout(() => resolve(null), 2000);
+                }
+              });
+            })
+          );
+          
           clonedDoc.querySelectorAll('*').forEach((el: Element) => {
             const htmlEl = el as HTMLElement;
             if (htmlEl.style) {
@@ -420,7 +438,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
               <div className="pt-6 pb-2 px-10">
                 <div className="flex gap-6 items-center pb-3 border-b-2 border-gray-300">
                   <div className="w-[70px] h-[70px] flex items-center justify-center flex-shrink-0 aspect-square overflow-hidden">
-                    <img src={footerImage || "/Logo.png"} alt="Logo" className="w-full h-full object-contain aspect-square" />
+                    <img src={footerImage || "/images/logo.png"} alt="Logo" className="w-full h-full object-contain aspect-square" />
                   </div>
                   <div>
                     <div className="text-lg font-semibold text-slate-800 mb-2">{displayProductName}</div>
@@ -457,138 +475,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           )}
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {/* Heel Width Adjustment Section */}
-                  {heelWidthAdjustment && (heelWidthAdjustment.left || heelWidthAdjustment.right || heelWidthAdjustment.medial || heelWidthAdjustment.lateral) && (
-                    <div className="mb-6 pb-4 border-b border-gray-300">
-                      <div className="text-sm font-semibold text-slate-800 mb-3">Absatzbreite anpassen (mm):</div>
-                      {heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0 && (
-                        <div className="mb-2">
-                          <span className="text-xs text-slate-700 font-medium">Linker Schuh:</span>
-                          <span className="ml-2 text-xs text-slate-600">
-                            {heelWidthAdjustment.left.op === "widen" ? "+" : "−"} {heelWidthAdjustment.left.mm} mm
-                          </span>
-                        </div>
-                      )}
-                      {heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0 && (
-                        <div className="mb-2">
-                          <span className="text-xs text-slate-700 font-medium">Rechter Schuh:</span>
-                          <span className="ml-2 text-xs text-slate-600">
-                            {heelWidthAdjustment.right.op === "widen" ? "+" : "−"} {heelWidthAdjustment.right.mm} mm
-                          </span>
-                        </div>
-                      )}
-                      {/* Backward compatibility with medial/lateral */}
-                      {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
-                        <div className="mb-2">
-                          <span className="text-xs text-slate-700 font-medium">Medial (innen):</span>
-                          <span className="ml-2 text-xs text-slate-600">
-                            {heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} {heelWidthAdjustment.medial.mm} mm
-                          </span>
-                        </div>
-                      )}
-                      {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
-                        <div className="mb-2">
-                          <span className="text-xs text-slate-700 font-medium">Lateral (außen):</span>
-                          <span className="ml-2 text-xs text-slate-600">
-                            {heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} {heelWidthAdjustment.lateral.mm} mm
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Sole Elevation Section */}
-                  {soleElevation && soleElevation.enabled && soleElevation.height_mm > 0 && (
-                    <div className="mb-6 pb-4 border-b border-gray-300">
-                      <div className="text-sm font-semibold text-slate-800 mb-3">Sohlenerhöhung:</div>
-                      <div className="mb-2">
-                        <span className="text-xs text-slate-700 font-medium">Seite:</span>
-                        <span className="ml-2 text-xs text-slate-600">
-                          {soleElevation.side === "links" ? "Links" : 
-                           soleElevation.side === "rechts" ? "Rechts" : 
-                           soleElevation.side === "beidseitig" ? "Beidseitig" : "-"}
-                        </span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="text-xs text-slate-700 font-medium">Höhe:</span>
-                        <span className="ml-2 text-xs text-slate-600">
-                          {soleElevation.height_mm} mm
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Vorderkappe Section */}
-                  {vorderkappeSide && vorderkappeSide.side && (
-                    <div className="mb-6 pb-4 border-b border-gray-300">
-                      <div className="text-sm font-semibold text-slate-800 mb-3">Vorderkappe:</div>
-                      <div className="mb-2">
-                        <span className="text-xs text-slate-700 font-medium">Seite:</span>
-                        <span className="ml-2 text-xs text-slate-600 capitalize">
-                          {vorderkappeSide.side}
-                        </span>
-                      </div>
-                      <div className="mb-2">
-                        <span className="text-xs text-slate-700 font-medium">Material:</span>
-                        <span className="ml-2 text-xs text-slate-600 capitalize">
-                          {vorderkappeSide.material || "-"}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Rahmen Section */}
-                  {rahmen && rahmen.type && (
-                    <div className="mb-6 pb-4 border-b border-gray-300">
-                      <div className="text-sm font-semibold text-slate-800 mb-3">Rahmen:</div>
-                      <div className="mb-2">
-                        <span className="text-xs text-slate-700 font-medium">Typ:</span>
-                        <span className="ml-2 text-xs text-slate-600">
-                          {rahmen.type === "eva" ? "EVA-Rahmen" : "Gummi-Rahmen"}
-                        </span>
-                      </div>
-                      {rahmen.type === "gummi" && rahmen.color && (
-                        <div className="mb-2">
-                          <span className="text-xs text-slate-700 font-medium">Farbe:</span>
-                          <span className="ml-2 text-xs text-slate-600">
-                            {rahmen.color}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Sohlenhöhe Differenziert Section */}
-                  {sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze) && (
-                    <div className="mb-6 pb-4 border-b border-gray-300">
-                      <div className="text-sm font-semibold text-slate-800 mb-3">Sohlenhöhe gesamt – Differenziert:</div>
-                      {sohlenhoeheDifferenziert.ferse && sohlenhoeheDifferenziert.ferse > 0 && (
-                        <div className="mb-2">
-                          <span className="text-xs text-slate-700 font-medium">Ferse:</span>
-                          <span className="ml-2 text-xs text-slate-600">
-                            {sohlenhoeheDifferenziert.ferse} mm
-                          </span>
-                        </div>
-                      )}
-                      {sohlenhoeheDifferenziert.ballen && sohlenhoeheDifferenziert.ballen > 0 && (
-                        <div className="mb-2">
-                          <span className="text-xs text-slate-700 font-medium">Ballen:</span>
-                          <span className="ml-2 text-xs text-slate-600">
-                            {sohlenhoeheDifferenziert.ballen} mm
-                          </span>
-                        </div>
-                      )}
-                      {sohlenhoeheDifferenziert.spitze && sohlenhoeheDifferenziert.spitze > 0 && (
-                        <div className="mb-2">
-                          <span className="text-xs text-slate-700 font-medium">Spitze:</span>
-                          <span className="ml-2 text-xs text-slate-600">
-                            {sohlenhoeheDifferenziert.spitze} mm
-                          </span>
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -646,14 +532,132 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       )
                     }
                     
-                    // Handle heelWidthAdjustment field type (handled separately above)
+                    // Handle heelWidthAdjustment field type
                     if (g.fieldType === "heelWidthAdjustment") {
-                      return null // Already handled above
+                      if (!heelWidthAdjustment || (!heelWidthAdjustment.left?.mm && !heelWidthAdjustment.right?.mm && !heelWidthAdjustment.medial?.mm && !heelWidthAdjustment.lateral?.mm)) {
+                        return null
+                      }
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0 && (
+                              <div className="mb-1">
+                                <ModalCheckbox isSelected={true} label={`Linker Schuh: ${heelWidthAdjustment.left.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.left.mm} mm`} />
+                              </div>
+                            )}
+                            {heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0 && (
+                              <div className="mb-1">
+                                <ModalCheckbox isSelected={true} label={`Rechter Schuh: ${heelWidthAdjustment.right.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.right.mm} mm`} />
+                              </div>
+                            )}
+                            {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
+                              <div className="mb-1">
+                                <ModalCheckbox isSelected={true} label={`Medial (innen): ${heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.medial.mm} mm`} />
+                              </div>
+                            )}
+                            {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
+                              <div className="mb-1">
+                                <ModalCheckbox isSelected={true} label={`Lateral (außen): ${heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.lateral.mm} mm`} />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
                     }
                     
-                    // Handle soleElevation field type (handled separately above)
+                    // Handle soleElevation field type
                     if (g.fieldType === "soleElevation") {
-                      return null // Already handled above
+                      if (!soleElevation || !soleElevation.enabled || !soleElevation.height_mm) {
+                        return null
+                      }
+                      const sideLabel = soleElevation.side === "links" ? "Links" : soleElevation.side === "rechts" ? "Rechts" : soleElevation.side === "beidseitig" ? "Beidseitig" : ""
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            <ModalCheckbox isSelected={true} label={`Seite: ${sideLabel}, Höhe: ${soleElevation.height_mm} mm`} />
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    // Handle vorderkappeSide field type
+                    if (g.fieldType === "vorderkappeSide") {
+                      if (!vorderkappeSide || !vorderkappeSide.side) {
+                        return null
+                      }
+                      const parts: string[] = [`Seite: ${vorderkappeSide.side.charAt(0).toUpperCase() + vorderkappeSide.side.slice(1)}`]
+                      if ((vorderkappeSide.side === "links" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.leftMaterial) {
+                        parts.push(`Material (Links): ${vorderkappeSide.leftMaterial.charAt(0).toUpperCase() + vorderkappeSide.leftMaterial.slice(1)}`)
+                      }
+                      if ((vorderkappeSide.side === "rechts" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.rightMaterial) {
+                        parts.push(`Material (Rechts): ${vorderkappeSide.rightMaterial.charAt(0).toUpperCase() + vorderkappeSide.rightMaterial.slice(1)}`)
+                      }
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {parts.map((part, idx) => (
+                              <div key={idx} className="mb-1">
+                                <ModalCheckbox isSelected={true} label={part} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    // Handle rahmen field type
+                    if (g.fieldType === "rahmen") {
+                      if (!rahmen || !rahmen.type) {
+                        return null
+                      }
+                      const parts: string[] = [`Typ: ${rahmen.type === "eva" ? "EVA-Rahmen" : "Gummi-Rahmen"}`]
+                      if (rahmen.type === "gummi" && rahmen.color) {
+                        parts.push(`Farbe: ${rahmen.color}`)
+                      }
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {parts.map((part, idx) => (
+                              <div key={idx} className="mb-1">
+                                <ModalCheckbox isSelected={true} label={part} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    // Handle sohlenhoeheDifferenziert field type
+                    if (g.fieldType === "sohlenhoeheDifferenziert") {
+                      if (!sohlenhoeheDifferenziert || (!sohlenhoeheDifferenziert.ferse && !sohlenhoeheDifferenziert.ballen && !sohlenhoeheDifferenziert.spitze)) {
+                        return null
+                      }
+                      const parts: string[] = []
+                      if (sohlenhoeheDifferenziert.ferse && sohlenhoeheDifferenziert.ferse > 0) {
+                        parts.push(`Ferse: ${sohlenhoeheDifferenziert.ferse} mm`)
+                      }
+                      if (sohlenhoeheDifferenziert.ballen && sohlenhoeheDifferenziert.ballen > 0) {
+                        parts.push(`Ballen: ${sohlenhoeheDifferenziert.ballen} mm`)
+                      }
+                      if (sohlenhoeheDifferenziert.spitze && sohlenhoeheDifferenziert.spitze > 0) {
+                        parts.push(`Spitze: ${sohlenhoeheDifferenziert.spitze} mm`)
+                      }
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {parts.map((part, idx) => (
+                              <div key={idx} className="mb-1">
+                                <ModalCheckbox isSelected={true} label={part} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
                     }
                     
                     // Handle yesNo field type (e.g., verbindungsleder)
@@ -762,7 +766,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
             <div style={{ padding: '10px 40px 8px 40px', background: '#ffffff' }}>
               <div style={{ display: 'flex', gap: '24px', alignItems: 'center', paddingBottom: '12px', borderBottom: '2px solid #d1d5db' }}>
                 <div style={{ width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, aspectRatio: '1/1', overflow: 'hidden' }}>
-                  <img src={footerImage || "/Logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', aspectRatio: '1/1' }} />
+                  <img src={footerImage || "/images/logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', aspectRatio: '1/1' }} crossOrigin="anonymous" />
                 </div>
                 <div>
                   <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>{displayProductName}</div>
@@ -799,138 +803,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       )}
                     </div>
                   </div>
-                </div>
-              )}
-
-              {/* Heel Width Adjustment Section */}
-              {heelWidthAdjustment && (heelWidthAdjustment.left || heelWidthAdjustment.right || heelWidthAdjustment.medial || heelWidthAdjustment.lateral) && (
-                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Absatzbreite anpassen (mm):</div>
-                  {heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0 && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Linker Schuh:</span>
-                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                        {heelWidthAdjustment.left.op === "widen" ? "+" : "−"} {heelWidthAdjustment.left.mm} mm
-                      </span>
-                    </div>
-                  )}
-                  {heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0 && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Rechter Schuh:</span>
-                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                        {heelWidthAdjustment.right.op === "widen" ? "+" : "−"} {heelWidthAdjustment.right.mm} mm
-                      </span>
-                    </div>
-                  )}
-                  {/* Backward compatibility with medial/lateral */}
-                  {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Medial (innen):</span>
-                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                        {heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} {heelWidthAdjustment.medial.mm} mm
-                      </span>
-                    </div>
-                  )}
-                  {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Lateral (außen):</span>
-                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                        {heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} {heelWidthAdjustment.lateral.mm} mm
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Sole Elevation Section */}
-              {soleElevation && soleElevation.enabled && soleElevation.height_mm > 0 && (
-                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Sohlenerhöhung:</div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Seite:</span>
-                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                      {soleElevation.side === "links" ? "Links" : 
-                       soleElevation.side === "rechts" ? "Rechts" : 
-                       soleElevation.side === "beidseitig" ? "Beidseitig" : "-"}
-                    </span>
-                  </div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Höhe:</span>
-                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                      {soleElevation.height_mm} mm
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Vorderkappe Section */}
-              {vorderkappeSide && vorderkappeSide.side && (
-                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Vorderkappe:</div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Seite:</span>
-                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569', textTransform: 'capitalize' }}>
-                      {vorderkappeSide.side}
-                    </span>
-                  </div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Material:</span>
-                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569', textTransform: 'capitalize' }}>
-                      {vorderkappeSide.material || "-"}
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* Rahmen Section */}
-              {rahmen && rahmen.type && (
-                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Rahmen:</div>
-                  <div style={{ marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Typ:</span>
-                    <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                      {rahmen.type === "eva" ? "EVA-Rahmen" : "Gummi-Rahmen"}
-                    </span>
-                  </div>
-                  {rahmen.type === "gummi" && rahmen.color && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Farbe:</span>
-                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                        {rahmen.color}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Sohlenhöhe Differenziert Section */}
-              {sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze) && (
-                <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: '1px solid #d1d5db' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>Sohlenhöhe gesamt – Differenziert:</div>
-                  {sohlenhoeheDifferenziert.ferse && sohlenhoeheDifferenziert.ferse > 0 && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Ferse:</span>
-                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                        {sohlenhoeheDifferenziert.ferse} mm
-                      </span>
-                    </div>
-                  )}
-                  {sohlenhoeheDifferenziert.ballen && sohlenhoeheDifferenziert.ballen > 0 && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Ballen:</span>
-                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                        {sohlenhoeheDifferenziert.ballen} mm
-                      </span>
-                    </div>
-                  )}
-                  {sohlenhoeheDifferenziert.spitze && sohlenhoeheDifferenziert.spitze > 0 && (
-                    <div style={{ marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#1e293b', fontWeight: 500 }}>Spitze:</span>
-                      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#475569' }}>
-                        {sohlenhoeheDifferenziert.spitze} mm
-                      </span>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -988,14 +860,132 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   )
                 }
                 
-                // Handle heelWidthAdjustment field type (handled separately above)
+                // Handle heelWidthAdjustment field type
                 if (g.fieldType === "heelWidthAdjustment") {
-                  return null // Already handled above
+                  if (!heelWidthAdjustment || (!heelWidthAdjustment.left?.mm && !heelWidthAdjustment.right?.mm && !heelWidthAdjustment.medial?.mm && !heelWidthAdjustment.lateral?.mm)) {
+                    return null
+                  }
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0 && (
+                          <div style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={`Linker Schuh: ${heelWidthAdjustment.left.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.left.mm} mm`} />
+                          </div>
+                        )}
+                        {heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0 && (
+                          <div style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={`Rechter Schuh: ${heelWidthAdjustment.right.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.right.mm} mm`} />
+                          </div>
+                        )}
+                        {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
+                          <div style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={`Medial (innen): ${heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.medial.mm} mm`} />
+                          </div>
+                        )}
+                        {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
+                          <div style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={`Lateral (außen): ${heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.lateral.mm} mm`} />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
                 }
                 
-                // Handle soleElevation field type (handled separately above)
+                // Handle soleElevation field type
                 if (g.fieldType === "soleElevation") {
-                  return null // Already handled above
+                  if (!soleElevation || !soleElevation.enabled || !soleElevation.height_mm) {
+                    return null
+                  }
+                  const sideLabel = soleElevation.side === "links" ? "Links" : soleElevation.side === "rechts" ? "Rechts" : soleElevation.side === "beidseitig" ? "Beidseitig" : ""
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        <PDFCheckbox isSelected={true} label={`Seite: ${sideLabel}, Höhe: ${soleElevation.height_mm} mm`} />
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Handle vorderkappeSide field type
+                if (g.fieldType === "vorderkappeSide") {
+                  if (!vorderkappeSide || !vorderkappeSide.side) {
+                    return null
+                  }
+                  const parts: string[] = [`Seite: ${vorderkappeSide.side.charAt(0).toUpperCase() + vorderkappeSide.side.slice(1)}`]
+                  if ((vorderkappeSide.side === "links" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.leftMaterial) {
+                    parts.push(`Material (Links): ${vorderkappeSide.leftMaterial.charAt(0).toUpperCase() + vorderkappeSide.leftMaterial.slice(1)}`)
+                  }
+                  if ((vorderkappeSide.side === "rechts" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.rightMaterial) {
+                    parts.push(`Material (Rechts): ${vorderkappeSide.rightMaterial.charAt(0).toUpperCase() + vorderkappeSide.rightMaterial.slice(1)}`)
+                  }
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {parts.map((part, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={part} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Handle rahmen field type
+                if (g.fieldType === "rahmen") {
+                  if (!rahmen || !rahmen.type) {
+                    return null
+                  }
+                  const parts: string[] = [`Typ: ${rahmen.type === "eva" ? "EVA-Rahmen" : "Gummi-Rahmen"}`]
+                  if (rahmen.type === "gummi" && rahmen.color) {
+                    parts.push(`Farbe: ${rahmen.color}`)
+                  }
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {parts.map((part, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={part} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Handle sohlenhoeheDifferenziert field type
+                if (g.fieldType === "sohlenhoeheDifferenziert") {
+                  if (!sohlenhoeheDifferenziert || (!sohlenhoeheDifferenziert.ferse && !sohlenhoeheDifferenziert.ballen && !sohlenhoeheDifferenziert.spitze)) {
+                    return null
+                  }
+                  const parts: string[] = []
+                  if (sohlenhoeheDifferenziert.ferse && sohlenhoeheDifferenziert.ferse > 0) {
+                    parts.push(`Ferse: ${sohlenhoeheDifferenziert.ferse} mm`)
+                  }
+                  if (sohlenhoeheDifferenziert.ballen && sohlenhoeheDifferenziert.ballen > 0) {
+                    parts.push(`Ballen: ${sohlenhoeheDifferenziert.ballen} mm`)
+                  }
+                  if (sohlenhoeheDifferenziert.spitze && sohlenhoeheDifferenziert.spitze > 0) {
+                    parts.push(`Spitze: ${sohlenhoeheDifferenziert.spitze} mm`)
+                  }
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {parts.map((part, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={part} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
                 }
                 
                 // Handle yesNo field type (e.g., verbindungsleder)
