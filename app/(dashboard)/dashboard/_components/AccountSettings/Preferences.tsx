@@ -2,15 +2,44 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Globe, Save } from 'lucide-react'
 import LanguageSwitcher from '@/components/Shared/LanguageSwitcher'
+import { useLanguage } from '@/contexts/LanguageContext'
 
 export default function Preferences() {
+  const { selectedLang, setSelectedLang } = useLanguage()
   const [applyToAll, setApplyToAll] = useState(false)
   const [dropdownKey, setDropdownKey] = useState(0)
+  const [pendingLanguage, setPendingLanguage] = useState(selectedLang)
   const containerRef = useRef<HTMLDivElement>(null)
 
+  // Update pending language when selectedLang changes externally
+  useEffect(() => {
+    setPendingLanguage(selectedLang)
+  }, [selectedLang])
+
   const handleSavePreferences = () => {
-    console.log('Saving preferences:', { applyToAll })
-    // Add your save logic here
+    // Apply the pending language change
+    if (pendingLanguage !== selectedLang) {
+      setSelectedLang(pendingLanguage)
+      
+      // Initialize Google Translate with new language
+      const waitForGoogleTranslate = setInterval(() => {
+        if (typeof window.google !== 'undefined' && window.google.translate) {
+          clearInterval(waitForGoogleTranslate)
+          const selectElement = document.querySelector('.goog-te-combo') as HTMLSelectElement
+          if (selectElement) {
+            selectElement.value = pendingLanguage
+            selectElement.dispatchEvent(new Event('change'))
+          }
+        }
+      }, 100)
+      
+      setTimeout(() => clearInterval(waitForGoogleTranslate), 5000)
+    }
+  }
+
+  const handleLanguageChange = (lang: string) => {
+    // Only update pending language, don't apply immediately
+    setPendingLanguage(lang)
   }
 
   // Close dropdown on outside click
@@ -55,7 +84,13 @@ export default function Preferences() {
           <label className="block text-xs font-medium text-gray-700 mb-1.5">
             Software-Sprache
           </label>
-          <LanguageSwitcher key={dropdownKey} variant="minimal" />
+          <LanguageSwitcher 
+            key={dropdownKey} 
+            variant="minimal" 
+            controlledValue={pendingLanguage}
+            onLanguageChange={handleLanguageChange}
+            disableImmediateChange={true}
+          />
         </div>
 
         <div className="pt-1">

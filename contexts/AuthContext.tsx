@@ -23,6 +23,11 @@ interface User {
   employeeName?: string;
   jobPosition?: string | null;
   financialAccess?: boolean;
+  // Store locations
+  storeLocations?: Array<{
+    address: string;
+    description?: string;
+  }>;
   // Account information
   accountInfo?: {
     bankInfo?: {

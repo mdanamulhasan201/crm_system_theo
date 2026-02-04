@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { X } from 'lucide-react';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
+import { useAuth } from '@/contexts/AuthContext';
 import {
   Popover,
   PopoverContent,
@@ -54,6 +55,7 @@ export default function BusinessAddressModal({
   customerId,
   orderId,
 }: BusinessAddressModalProps) {
+  const { user } = useAuth();
   const [formData, setFormData] = useState<BusinessAddressData>({
     companyName: '',
     phone: '',
@@ -69,7 +71,7 @@ export default function BusinessAddressModal({
   const [triggerWidth, setTriggerWidth] = useState<number | undefined>(undefined);
   const [emailError, setEmailError] = useState<string>('');
 
-  // Load saved address when modal opens
+  // Load saved address when modal opens, or prefill from auth user data
   useEffect(() => {
     if (isOpen && savedAddress) {
       setFormData({
@@ -80,8 +82,35 @@ export default function BusinessAddressModal({
         price: 13, // Always use 13 as fixed price
         addressPayload: savedAddress.addressPayload,
       });
+    } else if (isOpen && user) {
+      // Prefill from auth user data when modal opens without saved address
+      const userCompanyName = user?.busnessName ?? '';
+      const userPhone = user?.phone ?? '';
+      const userEmail = user?.email ?? '';
+      
+      // Get address from storeLocations (first location) or hauptstandort
+      let userAddress = '';
+      if (user?.storeLocations && user.storeLocations.length > 0) {
+        const firstLocation = user.storeLocations[0];
+        const addressParts = [
+          firstLocation.address,
+          firstLocation.description
+        ].filter(Boolean);
+        userAddress = addressParts.join(' - ');
+      } else if (user?.hauptstandort && user.hauptstandort.length > 0) {
+        userAddress = user.hauptstandort[0];
+      }
+      
+      setFormData({
+        companyName: userCompanyName,
+        phone: userPhone,
+        email: userEmail,
+        address: userAddress,
+        price: 13, // Fixed price always 13
+        addressPayload: undefined,
+      });
     } else if (isOpen) {
-      // Reset form when modal opens without saved address
+      // Reset form when modal opens without saved address and no user data
       setFormData({
         companyName: '',
         phone: '',
@@ -91,7 +120,7 @@ export default function BusinessAddressModal({
         addressPayload: undefined,
       });
     }
-  }, [isOpen, savedAddress]);
+  }, [isOpen, savedAddress, user]);
 
   // Prefill from backend for selected customer when opening, if no savedAddress
   // OLD SYSTEM - COMMENTED OUT: Customer ID-wise data fetching disabled

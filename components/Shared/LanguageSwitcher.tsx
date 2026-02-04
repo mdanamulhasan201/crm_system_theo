@@ -23,14 +23,25 @@ interface LanguageSwitcherProps {
     variant?: 'default' | 'minimal';
     className?: string;
     onLanguageChange?: (lang: string) => void;
+    controlledValue?: string;
+    disableImmediateChange?: boolean;
 }
 
-const LanguageSwitcher = ({ variant = 'default', className = '', onLanguageChange }: LanguageSwitcherProps) => {
+const LanguageSwitcher = ({ 
+    variant = 'default', 
+    className = '', 
+    onLanguageChange,
+    controlledValue,
+    disableImmediateChange = false
+}: LanguageSwitcherProps) => {
     const [languageDropDown, setLanguageDropDown] = useState(false);
     const [language, setLanguage] = useState("DE");
     const languageDropdownRef = useRef(null);
     const dropdownContentRef = useRef(null);
     const { selectedLang, setSelectedLang } = useLanguage();
+    
+    // Use controlled value if provided, otherwise use selectedLang
+    const displayLang = controlledValue !== undefined ? controlledValue : selectedLang;
 
     const handleDropdownToggle = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -49,29 +60,36 @@ const LanguageSwitcher = ({ variant = 'default', className = '', onLanguageChang
         const langInfo = languageMap[lang as keyof typeof languageMap];
 
         if (langInfo) {
-            setSelectedLang(langInfo.code);
+            // Update local display state
             setLanguage(langInfo.short);
             setLanguageDropDown(false);
+            
+            // Call the callback with the language code
             onLanguageChange?.(langInfo.code);
 
-            // Initialize Google Translate
-            const waitForGoogleTranslate = setInterval(() => {
-                if (typeof window.google !== 'undefined' && window.google.translate) {
-                    clearInterval(waitForGoogleTranslate);
-                    const selectElement = document.querySelector('.goog-te-combo') as HTMLSelectElement;
-                    if (selectElement) {
-                        selectElement.value = langInfo.code;
-                        selectElement.dispatchEvent(new Event('change'));
-                    }
-                    new window.google.translate.TranslateElement({
-                        pageLanguage: 'de',
-                        includedLanguages: 'en,de',
-                        autoDisplay: false
-                    });
-                }
-            }, 100);
+            // Only apply immediately if not in controlled mode
+            if (!disableImmediateChange) {
+                setSelectedLang(langInfo.code);
 
-            setTimeout(() => clearInterval(waitForGoogleTranslate), 5000);
+                // Initialize Google Translate
+                const waitForGoogleTranslate = setInterval(() => {
+                    if (typeof window.google !== 'undefined' && window.google.translate) {
+                        clearInterval(waitForGoogleTranslate);
+                        const selectElement = document.querySelector('.goog-te-combo') as HTMLSelectElement;
+                        if (selectElement) {
+                            selectElement.value = langInfo.code;
+                            selectElement.dispatchEvent(new Event('change'));
+                        }
+                        new window.google.translate.TranslateElement({
+                            pageLanguage: 'de',
+                            includedLanguages: 'en,de',
+                            autoDisplay: false
+                        });
+                    }
+                }, 100);
+
+                setTimeout(() => clearInterval(waitForGoogleTranslate), 5000);
+            }
         }
     };
 
@@ -92,7 +110,7 @@ const LanguageSwitcher = ({ variant = 'default', className = '', onLanguageChang
     }, []);
 
     useEffect(() => {
-        // Set initial language based on selectedLang
+        // Set language display based on controlled value or selectedLang
         const langMap = {
             'de': 'DE',
             'en': 'EN',
@@ -100,8 +118,9 @@ const LanguageSwitcher = ({ variant = 'default', className = '', onLanguageChang
             // 'zh-CN': 'ZH',
             // 'fr': 'FR'
         };
-        setLanguage(langMap[selectedLang as keyof typeof langMap] || 'DE');
-    }, [selectedLang]);
+        const langToDisplay = controlledValue !== undefined ? controlledValue : selectedLang;
+        setLanguage(langMap[langToDisplay as keyof typeof langMap] || 'DE');
+    }, [selectedLang, controlledValue]);
 
     const dropdownStyles = variant === 'minimal' ? 'w-[180px]' : 'w-[220px]';
     const buttonStyles = variant === 'minimal'
@@ -151,7 +170,7 @@ const LanguageSwitcher = ({ variant = 'default', className = '', onLanguageChang
                             <button
                                 key={lang}
                                 onClick={() => handleLanguageChange(lang)}
-                                className={`flex cursor-pointer items-center gap-3 w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors duration-150 ${selectedLang === info.code ? 'bg-primary-50/50 text-primary-700 font-medium' : 'text-gray-700'}`}
+                                className={`flex cursor-pointer items-center gap-3 w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 transition-colors duration-150 ${displayLang === info.code ? 'bg-primary-50/50 text-primary-700 font-medium' : 'text-gray-700'}`}
                             >
                                 <span className="text-base">{info.flag}</span>
                                 <span className="flex-1">{lang}</span>

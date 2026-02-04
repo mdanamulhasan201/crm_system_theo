@@ -60,13 +60,47 @@ export default function CompanyInformation() {
         image: selectedImageFile
       })
       
-      if (user) {
-        const newImage = (res?.user?.image as string) || previewImageUrl || user.image || null
+      if (user && res?.user) {
+        const updatedUser = res.user
+        const newImage = (updatedUser?.image as string) || previewImageUrl || user.image || null
+        
+        // Update user state with all response data including accountInfo
+        setUser({
+          ...user,
+          phone: updatedUser.phone ?? formData.phoneNumber,
+          busnessName: updatedUser.busnessName ?? formData.companyName,
+          image: newImage,
+          accountInfo: {
+            ...user.accountInfo,
+            vat_number: updatedUser.accountInfo?.vat_number ?? formData.vatNumber,
+            vat_country: updatedUser.accountInfo?.vat_country ?? formData.vatCountry,
+            ...updatedUser.accountInfo
+          }
+        })
+        
+        // Update form data immediately with saved values
+        setFormData({
+          ...formData,
+          companyName: updatedUser.busnessName ?? formData.companyName,
+          phoneNumber: updatedUser.phone ?? formData.phoneNumber,
+          vatNumber: updatedUser.accountInfo?.vat_number ?? formData.vatNumber,
+          vatCountry: updatedUser.accountInfo?.vat_country ?? formData.vatCountry,
+        })
+        
+        setPreviewImageUrl(newImage)
+      } else if (user) {
+        // Fallback: update with form data if response doesn't have user
+        const newImage = previewImageUrl || user.image || null
         setUser({
           ...user,
           phone: formData.phoneNumber,
           busnessName: formData.companyName,
-          image: newImage
+          image: newImage,
+          accountInfo: {
+            ...user.accountInfo,
+            vat_number: formData.vatNumber,
+            vat_country: formData.vatCountry,
+          }
         })
         setPreviewImageUrl(newImage)
       }
