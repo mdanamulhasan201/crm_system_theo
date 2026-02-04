@@ -28,8 +28,8 @@ export default function CompanyInformation() {
       setFormData({
         companyName: user?.busnessName ?? '',
         accountName: user?.name ?? '',
-        vatNumber: '',
-        vatCountry: 'Germany (DE)',
+        vatNumber: user?.accountInfo?.vat_number ?? '',
+        vatCountry: user?.accountInfo?.vat_country ?? '',
         phoneNumber: user?.phone ?? '',
         email: user?.email ?? '',
         absenderEmail: user?.email ?? ''
@@ -53,13 +53,10 @@ export default function CompanyInformation() {
   const handleSaveChanges = async () => {
     try {
       const res = await update({
-        name: formData.accountName,
         phone: formData.phoneNumber,
-        absenderEmail: formData.absenderEmail,
         busnessName: formData.companyName,
-        hauptstandort: user?.hauptstandort ?? [],
-        bankName: user?.bankName ?? '',
-        bankNumber: user?.bankNumber ?? '',
+        vatNumber: formData.vatNumber,
+        vatCountry: formData.vatCountry,
         image: selectedImageFile
       })
       
@@ -67,9 +64,7 @@ export default function CompanyInformation() {
         const newImage = (res?.user?.image as string) || previewImageUrl || user.image || null
         setUser({
           ...user,
-          name: formData.accountName,
           phone: formData.phoneNumber,
-          absenderEmail: formData.absenderEmail,
           busnessName: formData.companyName,
           image: newImage
         })

@@ -12,6 +12,8 @@ export type PartnerProfileUpdatePayload = {
   image?: File | null
   hauptstandort?: string[]
   defaultHauptstandort?: string
+  vatNumber?: string
+  vatCountry?: string
 }
 
 export function useUpdatePartnerInfo() {
@@ -37,6 +39,8 @@ export function useUpdatePartnerInfo() {
       }
       if (payload.defaultHauptstandort !== undefined) form.append('defaultHauptstandort', payload.defaultHauptstandort)
       if (payload.image) form.append('image', payload.image)
+      if (payload.vatNumber !== undefined) form.append('vat_number', payload.vatNumber)
+      if (payload.vatCountry !== undefined) form.append('vat_country', payload.vatCountry)
 
       const res = await updateUserProfile(form)
       return res

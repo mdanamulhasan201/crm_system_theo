@@ -54,7 +54,7 @@ export const userCheckAuth = async () => {
 // Update user profile
 export const updateUserProfile = async (formData: FormData) => {
   try {
-    const response = await axiosClient.patch('/partner/update-partner-profile', formData);
+    const response = await axiosClient.patch('/partner/update-partner-info', formData);
     return response.data;
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to update profile';
