@@ -581,7 +581,6 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
         // Add Massschafterstellung_json2 (Bodenkonstruktion data)
         const massschafterstellungJson2: any = {
-            Mehr_ansehen_image: selectedSole?.image || "",
             Mehr_ansehen_title: selectedSole?.name || "",
             Mehr_ansehen_description: selectedSole?.description || "",
             hinterkappe: getSelectedValue(selected.hinterkappe) || "",
@@ -716,7 +715,6 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     // Prepare Massschafterstellung_json2 (Bodenkonstruktion data)
     const prepareMassschafterstellungJson2 = () => {
         const json: any = {
-            "Mehr_ansehen_image": selectedSole?.image || "",
             "Mehr_ansehen_title": selectedSole?.name || "",
             "Mehr_ansehen_description": selectedSole?.description || "",
             "hinterkappe": getSelectedValue(selected.hinterkappe) || "",
