@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 
 interface WohnortInputProps {
@@ -17,7 +17,14 @@ interface NominatimResult {
     city?: string;
     town?: string;
     village?: string;
+    state?: string;
+    county?: string;
+    municipality?: string;
+    postcode?: string;
     country_code?: string;
+    country?: string;
+    road?: string;
+    house_number?: string;
   };
 }
 
@@ -26,8 +33,10 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Load German, Italian & Austrian place suggestions for Wohnort (OpenStreetMap Nominatim, free & policy-compliant)
+  // Enhanced to show all Austrian states (Bundesländer) and addresses
   useEffect(() => {
     const query = value.trim();
     if (!query || query.length < 2) {
@@ -41,7 +50,9 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
         setIsLoading(true);
         setError(null);
 
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=de,it,at&q=${encodeURIComponent(
+        // Improved query for better Austrian address results
+        // Using namedetails=1 and extratags=1 for better address parsing
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&namedetails=1&extratags=1&limit=10&countrycodes=de,it,at&q=${encodeURIComponent(
           query,
         )}`;
 
@@ -68,9 +79,26 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
     return () => clearTimeout(timeoutId);
   }, [value]);
 
+  // Close suggestions when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    if (showSuggestions) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showSuggestions]);
+
   return (
     <div className="grid grid-cols-1 text-sm">
-      <div className="relative">
+      <div className="relative" ref={containerRef}>
         {!hideLabel && (
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Wohnort
@@ -112,12 +140,23 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
                 const address = s.address || {};
                 const countryCode = (address.country_code || '').toUpperCase();
 
-                // Extract city/town for display
+                // Extract city/town/village for display (prioritize city)
                 const cityLabel =
                   address.city ||
                   address.town ||
                   address.village ||
+                  address.municipality ||
                   '';
+
+                // Extract state/province (important for Austria - Bundesländer)
+                const stateLabel = address.state || address.county || '';
+
+                // Build a more informative display label
+                const displayParts = [];
+                if (cityLabel) displayParts.push(cityLabel);
+                if (stateLabel) displayParts.push(stateLabel);
+                if (countryCode) displayParts.push(countryCode);
+                const displayLabel = displayParts.join(', ');
 
                 return (
                   <button
@@ -125,7 +164,7 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
                     type="button"
                     className="flex w-full flex-col items-start px-3 py-2 text-left text-xs hover:bg-gray-50"
                     onClick={() => {
-                      // Set the full address (includes street, city, country)
+                      // Set the full address (includes street, city, state, country)
                       onChange(fullAddress);
                       setShowSuggestions(false);
                     }}
@@ -133,9 +172,9 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
                     <span className="font-medium text-gray-800">
                       {fullAddress}
                     </span>
-                    {cityLabel && (
+                    {displayLabel && (
                       <span className="mt-0.5 line-clamp-1 text-[11px] text-gray-500">
-                        {cityLabel} {countryCode ? `, ${countryCode}` : ''}
+                        {displayLabel}
                       </span>
                     )}
                   </button>
