@@ -27,6 +27,7 @@ interface ConfirmationModalProps {
   isCreatingWithoutBoden?: boolean;
   isLoadingBodenKonfigurieren?: boolean;
   orderId?: string | null;
+  isFrom3DUpload?: boolean;
 }
 
 export default function ConfirmationModal({
@@ -46,8 +47,10 @@ export default function ConfirmationModal({
   isCreatingWithoutBoden = false,
   isLoadingBodenKonfigurieren = false,
   orderId,
+  isFrom3DUpload = false,
 }: ConfirmationModalProps) {
   const router = useRouter();
+  const [show3DUploadPopup, setShow3DUploadPopup] = React.useState(false);
   
   // Use specific loading state for "NEIN, WEITER OHNE BODEN" button
   const isLoadingWithoutBoden = isCreatingWithoutBoden || isCreatingOrder;
@@ -56,6 +59,12 @@ export default function ConfirmationModal({
   const isAnyLoading = isLoadingWithoutBoden || isLoadingBodenKonfigurieren;
 
   const handleBodenKonfigurieren = async () => {
+    // If user came from 3D-UPLOAD, show popup instead
+    if (isFrom3DUpload) {
+      setShow3DUploadPopup(true);
+      return;
+    }
+    
     if (onBodenKonfigurieren) {
       await onBodenKonfigurieren();
     } else {
@@ -215,6 +224,53 @@ export default function ConfirmationModal({
           </button>
         </div>
       </div>
+
+      {/* 3D Upload Popup */}
+      {show3DUploadPopup && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
+          <div className="relative bg-white rounded-2xl w-[90%] max-w-[500px] shadow-xl p-6 sm:p-8">
+            {/* Close Button */}
+            <button 
+              className="absolute top-3 right-4 bg-transparent border-none text-xl sm:text-2xl text-slate-500 cursor-pointer transition-colors hover:text-slate-600 z-10" 
+              onClick={() => setShow3DUploadPopup(false)}
+            >
+              ✕
+            </button>
+
+            {/* Icon */}
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-800 text-center mb-4">
+              Bestellung nicht möglich
+            </h3>
+
+            {/* Message */}
+            <p className="text-sm sm:text-base text-gray-600 text-center mb-6 leading-relaxed">
+              Mit der Option "3D-UPLOAD" können Sie keine Bestellung über den Button "JA, BODEN KONFIGURIEREN" abschließen.
+            </p>
+            <p className="text-sm sm:text-base text-gray-700 text-center mb-6 leading-relaxed font-medium">
+              Bitte verwenden Sie stattdessen den Button "NEIN, WEITER OHNE BODEN", um Ihre Bestellung abzuschließen.
+            </p>
+
+            {/* OK Button */}
+            <div className="flex justify-center">
+              <button 
+                className="bg-[#28a745] border-none text-white py-3 px-8 rounded-full text-sm sm:text-base font-semibold cursor-pointer shadow-lg shadow-[#28a745]/40 transition-all duration-300 hover:bg-[#218838] hover:shadow-xl hover:shadow-[#28a745]/50 active:scale-95"
+                onClick={() => setShow3DUploadPopup(false)}
+              >
+                Verstanden
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

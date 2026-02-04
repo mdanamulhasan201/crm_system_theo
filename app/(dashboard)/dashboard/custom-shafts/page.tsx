@@ -153,8 +153,8 @@ export default function CustomShafts() {
     const handle3DUpload = () => {
         if (selectedShaftId) {
             const url = orderId
-                ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}`
-                : `/dashboard/custom-shafts/details/${selectedShaftId}`;
+                ? `/dashboard/custom-shafts/details/${selectedShaftId}?orderId=${orderId}&source=3dupload`
+                : `/dashboard/custom-shafts/details/${selectedShaftId}?source=3dupload`;
             router.push(url);
         }
     }

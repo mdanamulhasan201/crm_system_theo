@@ -53,7 +53,9 @@ export default function CollectionShaftDetailsPage() {
   const shaftId = params.id as string;
   const orderId = searchParams.get('orderId');
   const type = searchParams.get('type');
+  const source = searchParams.get('source');
   const isAbholung = type === 'abholung';
+  const isFrom3DUpload = source === '3dupload';
 
   // Fetch data
   const { data: apiData, loading: shaftLoading, error: shaftError } = useSingleCustomShaft(shaftId);
@@ -670,6 +672,7 @@ export default function CollectionShaftDetailsPage() {
         isCreatingWithoutBoden={isCreatingOrder}
         isLoadingBodenKonfigurieren={isLoadingBodenKonfigurieren}
         orderId={orderId}
+        isFrom3DUpload={isFrom3DUpload}
       />
 
       {/* Completion Popup - Shows after PDF confirmation for "ohne-boden" only */}
