@@ -23,6 +23,16 @@ interface User {
   employeeName?: string;
   jobPosition?: string | null;
   financialAccess?: boolean;
+  partner?: {
+    id: string;
+    name: string;
+    email: string;
+    image: string | null;
+    hauptstandort: string[];
+    busnessName: string;
+    absenderEmail: string;
+    phone: string;
+  };
   // Store locations
   storeLocations?: Array<{
     address: string;

@@ -12,7 +12,7 @@ import {  HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
-import { TbActivityHeartbeat, TbUsers } from 'react-icons/tb';
+import { TbActivityHeartbeat, TbUsers, TbUserCircle } from 'react-icons/tb';
 
 
 import type { IconType } from 'react-icons';
@@ -49,22 +49,23 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
     const { isPathAllowed, loading: featureLoading } = useFeatureAccess();
 
     const menuSections = useMemo(
-        () => [
-            {
-                id: '0',
-                standalone: true,
-                icon: RxDashboard,
-                label: 'Dashboard',
-                href: '/dashboard'
-            },
-            // {
-            //     id: '1',
-            //     standalone: true,
-            //     icon: HiOutlineChatBubbleOvalLeft,
-            //     label: 'Teamchat',
-            //     href: '/dashboard/teamchat'
-            // },
-            {
+        () => {
+            return [
+                {
+                    id: '0',
+                    standalone: true,
+                    icon: RxDashboard,
+                    label: 'Dashboard',
+                    href: '/dashboard'
+                },
+                // {
+                //     id: '1',
+                //     standalone: true,
+                //     icon: HiOutlineChatBubbleOvalLeft,
+                //     label: 'Teamchat',
+                //     href: '/dashboard/teamchat'
+                // },
+                {
                 id: '1a',
                 standalone: true,
                 icon: IoSearchOutline,
@@ -151,9 +152,19 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                 icon: MdAccountBalanceWallet,
                 label: 'Balance',
                 href: '/dashboard/balance-dashboard'
-            }
-        ],
-        []
+            },
+            // Employee Profile - Always at bottom, only for EMPLOYEE role
+            ...(user?.role === 'EMPLOYEE' ? [{
+                id: 'employee-profile',
+                standalone: true,
+                icon: TbUserCircle,
+                label: 'Mitarbeiterprofil',
+                href: '/dashboard/employee-profile',
+                employeeOnly: true
+            }] : [])
+            ];
+        },
+        [user?.role]
     );
 
     type MenuItem =
@@ -162,7 +173,13 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
 
     const menuItems: MenuItem[] = useMemo(() => {
         // While loading feature config, just show the full menu to avoid a flicker
-        const canShow = (href: string) => (featureLoading ? true : isPathAllowed(href));
+        const canShow = (href: string, section?: any) => {
+            // Check if it's employee-only route
+            if (section?.employeeOnly && user?.role !== 'EMPLOYEE') {
+                return false;
+            }
+            return featureLoading ? true : isPathAllowed(href);
+        };
 
         return menuSections.flatMap((section, index) => {
             const rawItems = section.standalone
@@ -173,7 +190,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     label: section.label,
                     href: section.href
                 }]
-                : (section.items ?? []).map((item, subIndex) => ({
+                : (section.items ?? []).map((item: any, subIndex: number) => ({
                     type: 'link' as const,
                     key: `${section.id}-${subIndex}`,
                     icon: item.icon,
@@ -181,19 +198,22 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     href: item.href
                 }));
 
-            const items = rawItems.filter((item) => canShow(item.href));
+            const items = rawItems.filter((item: any) => canShow(item.href, section));
 
             const result: MenuItem[] = [];
             if (index > 0 && items.length > 0) {
                 const prevSection = menuSections[index - 1];
-                if (!section.standalone || !prevSection.standalone || section.id === '1c') {
+                // Add divider before employee profile to separate it at bottom
+                if (section.id === 'employee-profile') {
+                    result.push({ type: 'divider', key: `divider-${section.id}` });
+                } else if (!section.standalone || !prevSection.standalone || section.id === '1c') {
                     result.push({ type: 'divider', key: `divider-${section.id}` });
                 }
             }
             result.push(...items);
             return result;
         });
-    }, [menuSections, isPathAllowed, featureLoading]);
+    }, [menuSections, isPathAllowed, featureLoading, user?.role]);
 
     // Get user first letter for avatar
     const getUserInitials = () => {

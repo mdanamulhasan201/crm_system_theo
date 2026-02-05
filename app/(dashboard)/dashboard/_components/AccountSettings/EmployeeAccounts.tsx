@@ -3,28 +3,26 @@ import React, { useState, useEffect, useCallback } from 'react'
 import { Users, MoreVertical, Edit2, Trash2, RefreshCw, LogIn } from 'lucide-react'
 import { useEmployeeManagement, Employee } from '@/hooks/employee/useEmployeeManagement'
 import AddUpdateEmployeeModal from '@/components/DashboardSettings/AddUpdateEmployeeModal'
+import UpdateEmployeePermissionsModal from '@/components/DashboardSettings/UpdateEmployeePermissionsModal'
 import { employeeLoginWithId } from '@/apis/authApis'
 import { useAuth } from '@/contexts/AuthContext'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog"
 import toast from 'react-hot-toast'
+import DeleteEmployeeModal from './DeleteEmployeeModal'
+import SwitchAccountModal from './SwitchAccountModal'
+import { Settings } from 'lucide-react'
 
 export default function EmployeeAccounts() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showPermissionsModal, setShowPermissionsModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [showSwitchModal, setShowSwitchModal] = useState(false)
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null)
+  const [employeeForPermissions, setEmployeeForPermissions] = useState<Employee | null>(null)
   const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null)
   const [employeeToSwitch, setEmployeeToSwitch] = useState<Employee | null>(null)
   const [openMenuIndex, setOpenMenuIndex] = useState<number | null>(null)
   const [switchingAccountId, setSwitchingAccountId] = useState<string | null>(null)
-  const [currentEmployeeId, setCurrentEmployeeId] = useState<string | null>(null)
 
   const { isEmployeeMode } = useAuth()
   const {
@@ -46,12 +44,6 @@ export default function EmployeeAccounts() {
 
   useEffect(() => {
     loadEmployees()
-    // Check if currently switched to an employee account
-    const employeeToken = localStorage.getItem('employeeToken')
-    const employeeId = localStorage.getItem('currentEmployeeId')
-    if (employeeToken && employeeId) {
-      setCurrentEmployeeId(employeeId)
-    }
   }, [loadEmployees])
 
   const handleCreateEmployee = () => {
@@ -66,6 +58,12 @@ export default function EmployeeAccounts() {
   const handleEditEmployee = (employee: Employee) => {
     setEditingEmployee(employee)
     setShowEditModal(true)
+    setOpenMenuIndex(null)
+  }
+
+  const handleEditPermissions = (employee: Employee) => {
+    setEmployeeForPermissions(employee)
+    setShowPermissionsModal(true)
     setOpenMenuIndex(null)
   }
 
@@ -110,15 +108,14 @@ export default function EmployeeAccounts() {
         localStorage.setItem('employeeToken', response.token)
         localStorage.setItem('currentEmployeeId', employeeToSwitch.id)
         
-        setCurrentEmployeeId(employeeToSwitch.id)
-        
         toast.success(`Zu ${employeeToSwitch.accountName} gewechselt`, {
           icon: '🔄',
           duration: 3000,
         })
         
+        // Redirect to employee profile page
         setTimeout(() => {
-          window.location.reload()
+          window.location.href = '/dashboard/employee-profile'
         }, 500)
       } else {
         throw new Error('Token nicht erhalten')
@@ -132,22 +129,6 @@ export default function EmployeeAccounts() {
     }
   }
 
-  const handleSwitchBackToMain = () => {
-    localStorage.removeItem('employeeToken')
-    localStorage.removeItem('currentEmployeeId')
-    localStorage.removeItem('currentEmployeeData')
-    
-    setCurrentEmployeeId(null)
-    
-    toast.success('Zurück zum Hauptkonto', {
-      icon: '↩️',
-      duration: 2000,
-    })
-    
-    setTimeout(() => {
-      window.location.reload()
-    }, 500)
-  }
 
   const getInitials = (name: string) => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase()
@@ -165,36 +146,9 @@ export default function EmployeeAccounts() {
         </div>
       </div>
 
-      {/* Active Employee Banner */}
-      {currentEmployeeId && (
-        <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-                <LogIn className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-green-900">
-                  Aktiver Mitarbeiter-Account
-                </p>
-                <p className="text-xs text-green-700">
-                  {employees.find(e => e.id === currentEmployeeId)?.accountName || 'Mitarbeiter'}
-                </p>
-              </div>
-            </div>
-            <button
-              onClick={handleSwitchBackToMain}
-              className="px-4 py-2 bg-white border border-green-300 text-green-700 rounded-lg text-sm font-medium hover:bg-green-50 transition-colors flex items-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Zurück zum Hauptkonto
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Netflix-Style Employee Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6">
         {isLoading ? (
           // Skeleton Loaders
           <>
@@ -212,7 +166,6 @@ export default function EmployeeAccounts() {
           <>
           {/* Employee Cards */}
           {employees.map((employee, index) => {
-            const isCurrentEmployee = currentEmployeeId === employee.id
             const isSwitching = switchingAccountId === employee.id
             
             return (
@@ -223,12 +176,8 @@ export default function EmployeeAccounts() {
               <div className="relative">
                 {/* Avatar - Now clickable for switching */}
                 <div 
-                  onClick={() => !isSwitching && !isCurrentEmployee && handleSwitchClick(employee)}
-                  className={`aspect-square rounded-lg bg-gradient-to-br flex items-center justify-center text-white font-bold text-2xl sm:text-3xl md:text-4xl transition-all duration-200 ${
-                    isCurrentEmployee 
-                      ? 'from-green-400 to-green-600 ring-4 ring-green-400 scale-105 cursor-default' 
-                      : 'from-blue-400 to-blue-600 hover:ring-4 hover:ring-blue-300 group-hover:scale-105 cursor-pointer'
-                  } ${isSwitching ? 'opacity-50 cursor-wait' : ''}`}
+                  onClick={() => !isSwitching && handleSwitchClick(employee)}
+                  className={`aspect-square rounded-lg bg-gradient-to-br flex items-center justify-center text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl 2xl:text-4xl transition-all duration-200 from-blue-400 to-blue-600 hover:ring-4 hover:ring-blue-300 group-hover:scale-105 cursor-pointer ${isSwitching ? 'opacity-50 cursor-wait' : ''}`}
                 >
                   {isSwitching ? (
                     <RefreshCw className="w-8 h-8 animate-spin" />
@@ -236,16 +185,6 @@ export default function EmployeeAccounts() {
                     getInitials(employee.employeeName)
                   )}
                 </div>
-                
-                {/* Active Badge */}
-                {isCurrentEmployee && (
-                  <div className="absolute -top-2 -right-2 z-10">
-                    <div className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
-                      <LogIn className="w-3 h-3" />
-                      Aktiv
-                    </div>
-                  </div>
-                )}
 
                 {/* Menu Button - Only show for partner accounts */}
                 {!isEmployeeMode && (
@@ -274,21 +213,28 @@ export default function EmployeeAccounts() {
                       className="fixed inset-0 z-10" 
                       onClick={() => setOpenMenuIndex(null)}
                     />
-                    <div className="absolute top-12 left-0 w-48 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-20">
+                    <div className="absolute top-12 left-0 w-56 bg-white rounded-lg shadow-2xl border border-gray-200 py-2 z-20">
                       <div className="px-4 py-2 border-b border-gray-100">
                         <p className="text-xs font-semibold text-gray-900">{employee.accountName}</p>
                         <p className="text-xs text-gray-500 truncate">{employee.email}</p>
                       </div>
                       <button
                         onClick={() => handleEditEmployee(employee)}
-                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
                       >
                         <Edit2 className="w-4 h-4" />
-                        Bearbeiten
+                        Konto bearbeiten
+                      </button>
+                      <button
+                        onClick={() => handleEditPermissions(employee)}
+                        className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 cursor-pointer"
+                      >
+                        <Settings className="w-4 h-4" />
+                        Routen-Zugriff
                       </button>
                       <button
                         onClick={() => handleDeleteClick(employee)}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                         Löschen
@@ -298,7 +244,7 @@ export default function EmployeeAccounts() {
                 )}
 
                 {/* Switch Overlay Hover Effect */}
-                {!isCurrentEmployee && !isSwitching && (
+                {!isSwitching && (
                   <div 
                     className="absolute inset-0 rounded-lg bg-black/0 group-hover:bg-black/20 transition-all duration-200 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none"
                   >
@@ -370,92 +316,37 @@ export default function EmployeeAccounts() {
       />
 
       {/* Delete Confirmation Modal */}
-      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Mitarbeiter löschen</DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <p className="text-gray-600 mb-4">
-              Sind Sie sicher, dass Sie <strong>{employeeToDelete?.employeeName}</strong> löschen möchten?
-            </p>
-            <p className="text-sm text-gray-500">
-              Diese Aktion kann nicht rückgängig gemacht werden.
-            </p>
-          </div>
-          <DialogFooter className="gap-2">
-            <button
-              onClick={() => {
-                setShowDeleteModal(false)
-                setEmployeeToDelete(null)
-              }}
-              className="px-4 py-2 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors"
-            >
-              Abbrechen
-            </button>
-            <button
-              onClick={handleDeleteEmployee}
-              className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700 transition-colors"
-            >
-              Löschen
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteEmployeeModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false)
+          setEmployeeToDelete(null)
+        }}
+        employee={employeeToDelete}
+        onConfirm={handleDeleteEmployee}
+      />
 
       {/* Switch Account Confirmation Modal */}
-      <Dialog open={showSwitchModal} onOpenChange={setShowSwitchModal}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <LogIn className="w-5 h-5 text-blue-600" />
-              </div>
-              Account wechseln
-            </DialogTitle>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 mb-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {employeeToSwitch && getInitials(employeeToSwitch.employeeName)}
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900">{employeeToSwitch?.accountName}</p>
-                  <p className="text-sm text-gray-600">{employeeToSwitch?.employeeName}</p>
-                  <p className="text-xs text-gray-500">{employeeToSwitch?.email}</p>
-                </div>
-              </div>
-            </div>
-            <p className="text-gray-600 text-sm mb-3">
-              Möchten Sie zu diesem Mitarbeiter-Account wechseln?
-            </p>
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-              <p className="text-xs text-yellow-800">
-                <strong>Hinweis:</strong> Sie werden als dieser Mitarbeiter angemeldet. Ihre aktuelle Sitzung bleibt gespeichert.
-              </p>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-2">
-            <button
-              onClick={() => {
-                setShowSwitchModal(false)
-                setEmployeeToSwitch(null)
-              }}
-              className="flex-1 px-4 py-2.5 rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-            >
-              Abbrechen
-            </button>
-            <button
-              onClick={handleSwitchAccount}
-              className="flex-1 px-4 py-2.5 rounded-md bg-blue-600 text-white hover:bg-blue-700 transition-colors font-medium flex items-center justify-center gap-2"
-            >
-              <RefreshCw className="w-4 h-4" />
-              Wechseln
-            </button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <SwitchAccountModal
+        isOpen={showSwitchModal}
+        onClose={() => {
+          setShowSwitchModal(false)
+          setEmployeeToSwitch(null)
+        }}
+        employee={employeeToSwitch}
+        onConfirm={handleSwitchAccount}
+      />
+
+      {/* Update Permissions Modal */}
+      <UpdateEmployeePermissionsModal
+        isOpen={showPermissionsModal}
+        onClose={() => {
+          setShowPermissionsModal(false)
+          setEmployeeForPermissions(null)
+        }}
+        employee={employeeForPermissions}
+        onSuccess={handleModalSuccess}
+      />
     </div>
   )
 }
