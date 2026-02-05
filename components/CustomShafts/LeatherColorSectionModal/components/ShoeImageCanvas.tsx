@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 import { LeatherColorAssignment } from '../types';
+import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 
 interface ShoeImageCanvasProps {
   shoeImage: string;
@@ -39,7 +40,7 @@ export const ShoeImageCanvas: React.FC<ShoeImageCanvasProps> = ({
           alt="Schuhbild"
           fill
           className="object-contain"
-          unoptimized={false}
+          unoptimized={shouldUnoptimizeImage(shoeImage)}
         />
 
         {/* Render assignment markers */}

@@ -6,12 +6,15 @@ const axiosClient = axios.create({
 
 axiosClient.interceptors.request.use(
   (config) => {
-    const employeeToken = localStorage.getItem('employeeToken');
-    const mainToken = localStorage.getItem('token');
-    const activeToken = employeeToken || mainToken;
-    
-    if (activeToken) {
-      config.headers.Authorization = `${activeToken}`;
+    // SSR safety check - localStorage only available in browser
+    if (typeof window !== 'undefined') {
+      const employeeToken = localStorage.getItem('employeeToken');
+      const mainToken = localStorage.getItem('token');
+      const activeToken = employeeToken || mainToken;
+      
+      if (activeToken) {
+        config.headers.Authorization = `${activeToken}`;
+      }
     }
     return config;
   },

@@ -6,6 +6,7 @@ import { searchCustomers, getSingleCustomer } from '@/apis/customerApis';
 import useDebounce from '@/hooks/useDebounce';
 import router from 'next/router';
 import { useRouter } from 'next/navigation';
+import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 
 interface CustomerData {
     id: string;
@@ -467,6 +468,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                             height={80}
                                             alt={selectedCustomer.name || 'Customer'}
                                             className="h-full w-full object-cover"
+                                            unoptimized={shouldUnoptimizeImage(selectedCustomer.profileImage || selectedCustomer.image)}
                                             onError={() => {
                                                 setImageError(true);
                                             }}

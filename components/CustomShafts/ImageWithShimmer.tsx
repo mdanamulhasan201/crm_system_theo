@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 
 interface ImageWithShimmerProps {
   src: string;
@@ -67,6 +68,7 @@ const ImageWithShimmer: React.FC<ImageWithShimmerProps> = ({
           loading={priority ? undefined : "lazy"}
           quality={85}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+          unoptimized={shouldUnoptimizeImage(src)}
           onLoad={() => setIsLoading(false)}
           onError={() => {
             setIsLoading(false);

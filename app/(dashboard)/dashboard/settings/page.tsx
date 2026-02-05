@@ -13,6 +13,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import LanguageSwitcher from '@/components/Shared/LanguageSwitcher'
 import Image from 'next/image'
 import { MdProductionQuantityLimits } from 'react-icons/md'
+import { shouldUnoptimizeImage } from '@/lib/imageUtils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 
@@ -125,6 +126,7 @@ export default function Settingss() {
                             width={500}
                             height={500}
                             className="w-full h-full rounded-md object-contain"
+                            unoptimized={user?.image ? shouldUnoptimizeImage(user.image) : false}
                         />
                     </div>
                     <div className='flex justify-between items-center w-full'>

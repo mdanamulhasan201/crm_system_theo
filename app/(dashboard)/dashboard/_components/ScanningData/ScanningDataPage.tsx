@@ -9,13 +9,13 @@ import ScanDataDisplay from '@/components/Shared/ScanDataDisplay';
 import EinlagenQuestions from '../Scanning/EinlagenQuestions';
 import MassschuheQuestions from '../Scanning/MassschuheQuestion';
 
-interface ScannningDataPageProps {
+interface ScanningDataPageProps {
     scanData: ScanData;
     selectedForm?: 'einlagen' | 'massschuhe';
     onScreenerIdChange?: (screenerId: string | null) => void;
 }
 
-export default function ScannningDataPage({ scanData, selectedForm = 'einlagen', onScreenerIdChange }: ScannningDataPageProps) {
+export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', onScreenerIdChange }: ScanningDataPageProps) {
     const router = useRouter();
     const [modalOpen, setModalOpen] = useState(false);
     const [modalImg, setModalImg] = useState<string | null>(null);
@@ -311,3 +311,4 @@ export default function ScannningDataPage({ scanData, selectedForm = 'einlagen',
         </>
     )
 }
+

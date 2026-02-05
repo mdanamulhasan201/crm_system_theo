@@ -1,6 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Image from 'next/image';
+import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 
 interface ProductImageInfoProps {
   shaft: {
@@ -57,7 +58,7 @@ export default function ProductImageInfo({ shaft }: ProductImageInfoProps) {
               height={1000}
               className="w-full h-auto object-cover rounded-md border border-gray-200"
               priority
-              unoptimized={true}
+              unoptimized={shouldUnoptimizeImage(imageUrl)}
               onError={() => {
                 console.warn('Next.js Image failed, using fallback img tag');
                 setUseFallback(true);

@@ -3,6 +3,7 @@ import React, { useRef } from 'react';
 import Image from 'next/image';
 import { Label } from '@/components/ui/label';
 import { Upload } from 'lucide-react';
+import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 
 interface ProductImageUploadInfoProps {
   uploadedImage: string | null;
@@ -68,6 +69,7 @@ export default function ProductImageUploadInfo({
                   height={1000}
                   className="w-full h-auto object-cover rounded-md border border-gray-200"
                   priority
+                  unoptimized={shouldUnoptimizeImage(uploadedImage)}
                 />
               </div>
             ) : (

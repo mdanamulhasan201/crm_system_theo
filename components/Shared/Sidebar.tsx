@@ -12,6 +12,7 @@ import {  HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
+import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 import { TbActivityHeartbeat, TbUsers, TbUserCircle } from 'react-icons/tb';
 
 
@@ -242,6 +243,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                             width={showLabels ? 56 : 40}
                             height={showLabels ? 56 : 40}
                             className="w-full h-full object-contain"
+                            unoptimized={shouldUnoptimizeImage(user.image)}
                         />
                     ) : (
                         showLabels ? (

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
 import MassschuheForm from '@/app/(dashboard)/dashboard/_components/Scanning/MassschuheForm';
-import ScannningDataPage from '@/app/(dashboard)/dashboard/_components/ScannningData/ScannningDataPage';
+import ScanningDataPage from '@/app/(dashboard)/dashboard/_components/ScanningData/ScanningDataPage';
 
 import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
 import { Button } from '@/components/ui/button';
@@ -168,7 +168,7 @@ export default function ScanningData() {
             </div>
 
 
-            <ScannningDataPage
+            <ScanningDataPage
                 scanData={scanData}
                 selectedForm={selectedForm}
                 onScreenerIdChange={setSelectedScreenerId}

@@ -6,6 +6,7 @@ import { RefreshCw, User, Mail, Shield, Camera, Edit2, Save, X, Loader2 } from '
 import Image from 'next/image'
 import toast from 'react-hot-toast'
 import { updateEmployee } from '@/apis/employeeaApis'
+import { shouldUnoptimizeImage } from '@/lib/imageUtils'
 import {
   Dialog,
   DialogContent,
@@ -302,6 +303,7 @@ export default function EmployeeProfilePage() {
                     width={160}
                     height={160}
                     className="w-full h-full object-cover"
+                    unoptimized={shouldUnoptimizeImage(imagePreview)}
                   />
                   {isEditing && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">

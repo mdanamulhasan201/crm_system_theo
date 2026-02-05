@@ -3,6 +3,7 @@ import React, { useRef } from 'react';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 
 interface ProductImageInfoUploadProps {
   uploadedImage: string | null;
@@ -77,6 +78,7 @@ export default function ProductImageInfoUpload({
                 height={1000}
                 className="w-[400px] h-auto object-cover rounded-md border border-gray-200"
                 priority
+                unoptimized={shouldUnoptimizeImage(uploadedImage)}
               />
             ) : (
               <div className="w-[400px] h-[300px] border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center bg-gray-50">

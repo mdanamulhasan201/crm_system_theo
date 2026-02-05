@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import Image from "next/image";
 import { FaCamera } from "react-icons/fa";
+import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 
 type ProfileImageProps = {
   src?: string | null
@@ -67,6 +68,7 @@ export default function ProfileImage({ src = null, onChange, editable = true }: 
                 src={logo}
                 alt="Logo Preview"
                 className="w-full h-full "
+                unoptimized={shouldUnoptimizeImage(logo)}
               />
             </div>
           ) : (

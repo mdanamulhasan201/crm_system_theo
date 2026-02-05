@@ -7,6 +7,7 @@ import { RiArrowDownSLine } from 'react-icons/ri'
 import { ScanData } from '@/types/scan'
 import { useAuth } from '@/contexts/AuthContext'
 import { generateFeetPdf } from '@/lib/FootPdfGenerate'
+import { shouldUnoptimizeImage } from '@/lib/imageUtils'
 import ZoomMode from './ZoomMode'
 
 
@@ -467,6 +468,7 @@ export default function ScanDataDisplay({
                                                 width={300}
                                                 height={500}
                                                 className="w-full h-auto"
+                                                unoptimized={shouldUnoptimizeImage(leftImage)}
                                                 onLoadingComplete={() => {
                                                     setTimeout(() => setLeftImageLoading(false), 200)
                                                 }}
@@ -541,6 +543,7 @@ export default function ScanDataDisplay({
                                                 width={300}
                                                 height={500}
                                                 className="w-full h-auto"
+                                                unoptimized={shouldUnoptimizeImage(rightImage)}
                                                 onLoadingComplete={() => {
                                                     setTimeout(() => setRightImageLoading(false), 200)
                                                 }}
