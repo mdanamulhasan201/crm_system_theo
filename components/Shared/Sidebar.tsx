@@ -46,7 +46,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
     const { user } = useAuth();
     const pathname = usePathname();
     const showLabels = !isCollapsed;
-    const { isPathAllowed, loading: featureLoading } = useFeatureAccess();
+    const { isPathAllowed, loading: featureLoading, features } = useFeatureAccess();
 
     const menuSections = useMemo(
         () => {
@@ -172,13 +172,15 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
         | { type: 'divider'; key: string };
 
     const menuItems: MenuItem[] = useMemo(() => {
-        // While loading feature config, just show the full menu to avoid a flicker
+        // Wait for API to load features - don't show anything until features are loaded
+        if (featureLoading || features.length === 0) {
+            return []; // Return empty array while loading from API
+        }
+
         const canShow = (href: string, section?: any) => {
-            // Check if it's employee-only route
-            if (section?.employeeOnly && user?.role !== 'EMPLOYEE') {
-                return false;
-            }
-            return featureLoading ? true : isPathAllowed(href);
+            if (section?.employeeOnly && user?.role !== 'EMPLOYEE') return false;
+            // Features are loaded from API, check if path is allowed
+            return isPathAllowed(href);
         };
 
         return menuSections.flatMap((section, index) => {
@@ -198,12 +200,15 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     href: item.href
                 }));
 
+            // Filter items based on access - only show allowed routes
             const items = rawItems.filter((item: any) => canShow(item.href, section));
 
+            // Don't add section if no items are allowed
+            if (items.length === 0) return [];
+
             const result: MenuItem[] = [];
-            if (index > 0 && items.length > 0) {
+            if (index > 0) {
                 const prevSection = menuSections[index - 1];
-                // Add divider before employee profile to separate it at bottom
                 if (section.id === 'employee-profile') {
                     result.push({ type: 'divider', key: `divider-${section.id}` });
                 } else if (!section.standalone || !prevSection.standalone || section.id === '1c') {
@@ -213,7 +218,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
             result.push(...items);
             return result;
         });
-    }, [menuSections, isPathAllowed, featureLoading, user?.role]);
+    }, [menuSections, isPathAllowed, features, user, featureLoading]);
 
     // Get user first letter for avatar
     const getUserInitials = () => {
@@ -272,7 +277,12 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
             {/* main menu section */}
 
             <nav className={`mt-4 flex-1 overflow-y-auto px-3 ${isCollapsed ? 'space-y-6' : 'space-y-2'}`}>
-                {menuItems.map((item) => {
+                {featureLoading && features.length === 0 ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-gray-400" />
+                    </div>
+                ) : (
+                    menuItems.map((item) => {
                     if (item.type === 'divider') {
                         return (
                             <div
@@ -315,7 +325,8 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                             </span>
                         </Link>
                     );
-                })}
+                })
+                )}
             </nav>
 
             {/* User Profile Section */}

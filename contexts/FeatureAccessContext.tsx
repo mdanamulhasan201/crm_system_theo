@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 import { usePathname } from "next/navigation";
 import { getAllDynamicRoutes } from "@/apis/dynamicApis";
 
-const STORAGE_KEY = "td_feature_access_config";
+const COOKIE_NAME = "td_feature_access_config";
 
 type FeatureItem = {
   title: string;
@@ -30,24 +30,43 @@ type FeatureAccessContextType = {
   getNestedForPath: (parentPath: string) => FeatureItem["nested"];
 };
 
-const normalizePath = (value: string) => value.replace(/\/+$/, "");
+// Improved path normalization - handles query params and trailing slashes
+const normalizePath = (value: string): string => {
+  // Remove query parameters and hash
+  const pathWithoutQuery = value.split('?')[0].split('#')[0];
+  // Remove trailing slashes
+  return pathWithoutQuery.replace(/\/+$/, "") || "/";
+};
+
+// Sync features to cookie for middleware access
+const syncFeaturesToCookie = (features: FeatureItem[]) => {
+  if (typeof document === "undefined") return;
+  
+  try {
+    const cookieValue = JSON.stringify({
+      features,
+      updatedAt: Date.now(),
+    });
+    
+    // Set cookie with proper attributes
+    // Max age: 7 days (same as typical session)
+    document.cookie = `${COOKIE_NAME}=${encodeURIComponent(cookieValue)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
+  } catch (error) {
+    console.error("Failed to sync features to cookie:", error);
+  }
+};
 
 const FeatureAccessContext = createContext<FeatureAccessContextType | undefined>(undefined);
 
 export const FeatureAccessProvider = ({ children }: { children: React.ReactNode }) => {
-  const [features, setFeatures] = useState<FeatureItem[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw) as { features?: FeatureItem[] };
-      return Array.isArray(parsed.features) ? parsed.features : [];
-    } catch {
-      return [];
-    }
-  });
+  // Start with empty array - always fetch fresh data from API
+  const [features, setFeatures] = useState<FeatureItem[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const [loading, setLoading] = useState<boolean>(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || features.length === 0) return;
+    syncFeaturesToCookie(features);
+  }, [features]);
 
   useEffect(() => {
     let isMounted = true;
@@ -56,28 +75,29 @@ export const FeatureAccessProvider = ({ children }: { children: React.ReactNode 
       try {
         setLoading(true);
         const res = (await getAllDynamicRoutes()) as FeatureAccessResponse;
-        if (!isMounted || !res?.success || !Array.isArray(res.data)) return;
-
-        setFeatures(res.data);
-
-        try {
-          window.localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({
-              features: res.data,
-              updatedAt: Date.now(),
-            })
-          );
-        } catch {
-          // ignore storage errors
+        
+        if (!isMounted) return;
+        
+        if (!res?.success || !Array.isArray(res.data)) {
+          setLoading(false);
+          return;
         }
+
+        // Set features from API immediately (real-time data)
+        setFeatures(res.data);
+        setLoading(false);
+
+        // Sync to cookie for middleware access (if needed)
+        syncFeaturesToCookie(res.data);
       } catch (error) {
         console.error("Failed to load feature access configuration", error);
-      } finally {
-        if (isMounted) setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
+    // Always fetch fresh data from API on mount
     fetchFeatures();
 
     return () => {
@@ -88,21 +108,44 @@ export const FeatureAccessProvider = ({ children }: { children: React.ReactNode 
   const isPathAllowed = useMemo(
     () =>
       (path: string) => {
-        if (!features.length) return true;
+        if (!features || features.length === 0) return false;
 
         const target = normalizePath(path);
 
+        // Check exact matches first (most important - blocks routes with action: false)
         for (const item of features) {
-          if (normalizePath(item.path) === target) return item.action;
+          const itemPath = normalizePath(item.path);
+          if (itemPath === target) return item.action;
 
-          if (item.nested) {
+          if (item.nested?.length) {
             for (const nested of item.nested) {
-              if (normalizePath(nested.path) === target) return nested.action;
+              const nestedPath = normalizePath(nested.path);
+              if (nestedPath === target) {
+                return nested.action && item.action;
+              }
             }
           }
         }
 
-        return true;
+        // Check parent routes only if no exact match found
+        for (const item of features) {
+          if (item.nested?.length) {
+            for (const nested of item.nested) {
+              const nestedPath = normalizePath(nested.path);
+              if (target.startsWith(nestedPath + '/') || target.startsWith(nestedPath + '?')) {
+                if (!nested.action || !item.action) return false;
+              }
+            }
+          }
+
+          const itemPath = normalizePath(item.path);
+          if (target.startsWith(itemPath + '/') || target.startsWith(itemPath + '?')) {
+            if (!item.action) return false;
+            return true;
+          }
+        }
+
+        return false;
       },
     [features]
   );
@@ -140,12 +183,12 @@ export const useFeatureAccess = () => {
 };
 
 export const useCurrentRouteAccess = () => {
-  const { isPathAllowed, loading } = useFeatureAccess();
+  const { isPathAllowed, loading, features } = useFeatureAccess();
   const pathname = usePathname();
 
   return {
     loading,
-    allowed: pathname ? isPathAllowed(pathname) : true,
+    allowed: features.length === 0 ? false : (pathname ? isPathAllowed(pathname) : false),
   };
 };
 

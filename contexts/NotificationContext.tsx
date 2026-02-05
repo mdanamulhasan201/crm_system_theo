@@ -174,7 +174,7 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
   useEffect(() => {
     // Skip socket connection for employees
     if (user?.role === 'EMPLOYEE') {
-      console.log('[Notifications] Skipping socket connection for employee user');
+      // console.log('[Notifications] Skipping socket connection for employee user');
       return;
     }
 

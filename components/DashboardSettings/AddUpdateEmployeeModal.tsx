@@ -31,7 +31,7 @@ import toast from 'react-hot-toast'
 const createEmployeeSchema = z.object({
   accountName: z.string().min(1, "Account name is required").min(2, "Account name must be at least 2 characters"),
   employeeName: z.string().min(1, "Employee name is required").min(2, "Employee name must be at least 2 characters"),
-  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  // email: z.string().min(1, "Email is required").email("Invalid email address"), // Commented out - email not required
   password: z.string().min(1, "Password is required").min(6, "Password must be at least 6 characters"),
   financialAccess: z.boolean(),
 })
@@ -39,7 +39,7 @@ const createEmployeeSchema = z.object({
 const editEmployeeSchema = z.object({
   accountName: z.string().min(1, "Account name is required").min(2, "Account name must be at least 2 characters"),
   employeeName: z.string().min(1, "Employee name is required").min(2, "Employee name must be at least 2 characters"),
-  email: z.string().min(1, "Email is required").email("Invalid email address"),
+  // email: z.string().min(1, "Email is required").email("Invalid email address"), // Commented out - email not required
   password: z.string().optional(),
   financialAccess: z.boolean(),
 })
@@ -89,7 +89,7 @@ export default function AddUpdateEmployeeModal({
     defaultValues: {
       accountName: "",
       employeeName: "",
-      email: "",
+      // email: "", // Commented out - email not required
       password: "",
       financialAccess: false,
     }
@@ -165,7 +165,7 @@ export default function AddUpdateEmployeeModal({
         form.reset({
           accountName: empData.accountName || '',
           employeeName: empData.employeeName || '',
-          email: empData.email || '',
+          // email: empData.email || '', // Commented out - email not required
           password: '', // Don't populate password
           financialAccess: empData.financialAccess || false,
         })
@@ -178,7 +178,7 @@ export default function AddUpdateEmployeeModal({
         form.reset({
           accountName: employee.accountName || '',
           employeeName: employee.employeeName || '',
-          email: employee.email || '',
+          // email: employee.email || '', // Commented out - email not required
           password: '',
           financialAccess: employee.financialAccess || false,
         })
@@ -197,7 +197,7 @@ export default function AddUpdateEmployeeModal({
       form.reset({
         accountName: "",
         employeeName: "",
-        email: "",
+        // email: "", // Commented out - email not required
         password: "",
         financialAccess: false,
       })
@@ -217,7 +217,9 @@ export default function AddUpdateEmployeeModal({
   const handleAccountCreate = async (data: EmployeeFormData) => {
     setIsCreatingAccount(true)
     try {
-      const response = await create(data)
+      // Remove email from data before sending (email not required)
+      const { email, ...dataWithoutEmail } = data as any
+      const response = await create(dataWithoutEmail)
       const employeeId = response?.data?.id || response?.id
       
       if (employeeId) {
@@ -267,11 +269,13 @@ export default function AddUpdateEmployeeModal({
     try {
       if (!employee?.id) return
 
-      // Remove password if empty in edit mode
+      // Remove password if empty in edit mode, and remove email (not required)
       const updateData: any = { ...data }
       if (!updateData.password || updateData.password.trim() === '') {
         delete updateData.password
       }
+      // Remove email - not required
+      delete updateData.email
 
       await update(employee.id, updateData)
       toast.success('Mitarbeiter erfolgreich aktualisiert')
@@ -335,7 +339,8 @@ export default function AddUpdateEmployeeModal({
                   </FormItem>
                 )}
               />
-              <FormField
+              {/* Email field commented out - not required */}
+              {/* <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
@@ -347,7 +352,7 @@ export default function AddUpdateEmployeeModal({
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
               <FormField
                 control={form.control}
                 name="password"
@@ -498,7 +503,8 @@ export default function AddUpdateEmployeeModal({
                   </FormItem>
                 )}
               />
-              <FormField
+              {/* Email field commented out - not required */}
+              {/* <FormField
                 control={form.control}
                 name="email"
                 render={({ field }) => (
@@ -510,7 +516,7 @@ export default function AddUpdateEmployeeModal({
                     <FormMessage />
                   </FormItem>
                 )}
-              />
+              /> */}
               <FormField
                 control={form.control}
                 name="password"
