@@ -174,7 +174,6 @@ const LanguageSwitcher = ({
                             >
                                 <span className="text-base">{info.flag}</span>
                                 <span className="flex-1">{lang}</span>
-                                <span className="text-xs font-medium text-gray-400">{info.short}</span>
                             </button>
                         ))}
                     </div>

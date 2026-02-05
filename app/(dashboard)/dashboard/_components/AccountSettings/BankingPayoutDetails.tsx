@@ -4,9 +4,9 @@ import { CreditCard, Shield, Save } from 'lucide-react'
 
 export default function BankingPayoutDetails() {
   const [formData, setFormData] = useState({
-    accountHolderName: 'Wellness Studio GmbH',
-    iban: 'DE89 3704 0044 0532 0130 00',
-    bic: 'COBADEFFXXX'
+    accountHolderName: '',
+    iban: '',
+    bic: ''
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -28,21 +28,22 @@ export default function BankingPayoutDetails() {
           <CreditCard className="w-5 h-5 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">
-            <h2 className="text-base sm:text-lg font-semibold text-gray-900">Bank- & Auszahlungsdetails</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Wird für Auszahlungen und Abrechnungen von FeetFirst verwendet.</p>
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900">Bank- & Auszahlungsdetails</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Wird für Auszahlungen und Abrechnungen von FeetFirst verwendet.</p>
         </div>
       </div>
 
       <div className="space-y-3">
         <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Kontoinhaber
-            </label>
+          <label className="block text-xs font-medium text-gray-700 mb-1.5">
+            Kontoinhaber
+          </label>
           <input
             type="text"
             name="accountHolderName"
             value={formData.accountHolderName}
             onChange={handleChange}
+            placeholder='Mustermann GmbH'
             className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
           />
         </div>
@@ -54,6 +55,7 @@ export default function BankingPayoutDetails() {
           <input
             type="text"
             name="iban"
+            placeholder='DE00 0000 0000 0000 0000 00'
             value={formData.iban}
             onChange={handleChange}
             className="w-full px-3 py-2 text-sm font-mono bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -68,6 +70,7 @@ export default function BankingPayoutDetails() {
             type="text"
             name="bic"
             value={formData.bic}
+            placeholder='COBADEFFXXX'
             onChange={handleChange}
             className="w-full px-3 py-2 text-sm font-mono bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />

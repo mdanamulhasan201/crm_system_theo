@@ -114,7 +114,7 @@ export default function CompanyInformation() {
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
-        <div className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+        <div className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
           <Building2 className="w-5 h-5 text-blue-600" />
         </div>
         <div className="flex-1 min-w-0">
@@ -144,7 +144,7 @@ export default function CompanyInformation() {
               name="companyName"
               value={formData.companyName}
               onChange={handleChange}
-              placeholder="Wellness Studio GmbH"
+              placeholder=""
               className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
           </div>
@@ -157,7 +157,7 @@ export default function CompanyInformation() {
               name="vatNumber"
               value={formData.vatNumber}
               onChange={handleChange}
-              placeholder="DE123456789"
+              placeholder=""
               className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
             <p className="text-xs text-gray-500 mt-0.5">Erforderlich für Bestellungen und Abrechnung innerhalb der EU</p>
@@ -171,15 +171,16 @@ export default function CompanyInformation() {
             </label>
             <select
               name="vatCountry"
-              value={formData.vatCountry}
+              value={formData.vatCountry || ''}
               onChange={handleChange}
               className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             >
-              <option>Deutschland (DE)</option>
-              <option>Österreich (AT)</option>
-              <option>Schweiz (CH)</option>
-              <option>Frankreich (FR)</option>
-              <option>Niederlande (NL)</option>
+              <option value="Deutschland (DE)">Deutschland (DE)</option>
+              <option value="Österreich (AT)">Österreich (AT)</option>
+              <option value="Italien (IT)">Italien (IT)</option>
+              <option value="Schweiz (CH)">Schweiz (CH)</option>
+              <option value="Frankreich (FR)">Frankreich (FR)</option>
+              <option value="Niederlande (NL)">Niederlande (NL)</option>
             </select>
           </div>
           <div>
@@ -191,7 +192,7 @@ export default function CompanyInformation() {
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
-              placeholder="+49 30 1234567"
+              placeholder=""
               className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             />
           </div>
@@ -206,7 +207,7 @@ export default function CompanyInformation() {
             name="email"
             value={formData.email}
             readOnly
-            placeholder="info@wellness-studio.de"
+            placeholder=""
             className="w-full px-3 py-2 text-sm bg-gray-100 border border-gray-300 rounded-lg cursor-not-allowed"
           />
         </div>

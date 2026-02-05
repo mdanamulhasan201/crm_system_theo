@@ -30,8 +30,7 @@ export default function PermissionsList({
   onPermissionToggle,
   isLoading = false
 }: PermissionsListProps) {
-  // Show ALL features (including action: false) - don't filter by action
-  // Show only main routes, ignore nested items (don't show nested items)
+
   const allFeatures = features
 
   const renderIcon = (icon: IconType | StaticImageData, className?: string) => {

@@ -228,7 +228,7 @@ export default function Security() {
         </div>
 
         {/* Active Sessions */}
-        <div className="pt-4 border-t border-gray-200">
+        {/* <div className="pt-4 border-t border-gray-200">
           <h3 className="text-sm font-semibold text-gray-900 mb-3">Aktive Sitzungen</h3>
           <div className="space-y-2">
             {activeSessions.map((session, index) => (
@@ -264,7 +264,7 @@ export default function Security() {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   )
