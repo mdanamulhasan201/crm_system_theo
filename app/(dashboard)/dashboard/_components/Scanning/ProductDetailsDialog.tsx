@@ -64,7 +64,7 @@ export default function ProductDetailsDialog({ isOpen, onClose, product }: Produ
                     {/* Product Details */}
                     <div className="p-6">
                         {/* Product Name */}
-                        <h2 className="text-2xl font-bold mb-3">{product.name}</h2>
+                        <DialogPrimitive.Title className="text-2xl font-bold mb-3">{product.name}</DialogPrimitive.Title>
 
                         {/* Product Description */}
                         <p className="text-gray-600 text-sm mb-6 leading-relaxed">
