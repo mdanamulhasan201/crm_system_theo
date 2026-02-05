@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Loader2 } from 'lucide-react';
 import ImageWithShimmer from '@/components/CustomShafts/ImageWithShimmer';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -25,10 +26,27 @@ export default function CustomShafts() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isCustomOrderModalOpen, setIsCustomOrderModalOpen] = useState(false);
     const [loadingButtonId, setLoadingButtonId] = useState<string | null>(null);
+    
+    // Initialize showPrices from localStorage, default to true
+    const [showPrices, setShowPrices] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const saved = localStorage.getItem('customShafts_showPrices');
+            return saved !== null ? saved === 'true' : true;
+        }
+        return true;
+    });
+    
     const itemsPerPage = 8;
     const router = useRouter();
     const searchParams = useSearchParams();
     const orderId = searchParams.get('orderId');
+
+    // Save showPrices to localStorage whenever it changes
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('customShafts_showPrices', showPrices.toString());
+        }
+    }, [showPrices]);
 
     // Debounce search query to reduce API calls
     const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -201,6 +219,24 @@ export default function CustomShafts() {
                 onCustomOrderClick={() => setIsCustomOrderModalOpen(true)}
             />
 
+            {/* Price Visibility Toggle */}
+            <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div className="flex flex-col">
+                    <label htmlFor="price-toggle" className="text-sm font-medium text-gray-900 cursor-pointer">
+                        Preise anzeigen
+                    </label>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                        Schalten Sie die Preisanzeige ein oder aus, um interne Kosten während Beratungen zu verbergen
+                    </p>
+                </div>
+                <Switch
+                    id="price-toggle"
+                    checked={showPrices}
+                    onCheckedChange={setShowPrices}
+                    className="cursor-pointer"
+                />
+            </div>
+
             {/* Error State */}
             {error && (
                 <div className="flex flex-col items-center justify-center py-12">
@@ -230,7 +266,9 @@ export default function CustomShafts() {
                                     <div>
                                         <div className="font-semibold text-base mb-1 text-left">{item.name}</div>
                                         <div className="text-xs text-gray-500 mb-2 text-left">#{item.ide}</div>
-                                        <div className="font-bold text-lg mb-2 text-left">ab {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
+                                        {showPrices && (
+                                            <div className="font-bold text-lg mb-2 text-left">ab {item.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</div>
+                                        )}
                                     </div>
                                     <Button
                                         className="w-full cursor-pointer transition-all duration-300 mt-2 rounded-full bg-[#61A175] text-white hover:bg-[#61A175]/50 text-sm font-semibold py-6 disabled:opacity-50 disabled:cursor-not-allowed border-0"
