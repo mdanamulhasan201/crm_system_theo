@@ -14,6 +14,9 @@ const DashboardLayout = ({ children }: LayoutProps) => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
     useEffect(() => {
+        // SSR-safe: Only run on client-side
+        if (typeof window === 'undefined') return;
+
         const handleResize = () => {
             if (window.innerWidth < 768) {
                 setIsSidebarOpen(false);

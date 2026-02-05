@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { shouldUnoptimizeImage } from '@/lib/imageUtils';
 
@@ -25,26 +25,104 @@ const ImageWithShimmer: React.FC<ImageWithShimmerProps> = ({
 }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [useFallback, setUseFallback] = useState(false);
 
+  // Reset states when src changes
+  useEffect(() => {
+    if (src) {
+      setIsLoading(true);
+      setHasError(false);
+      setUseFallback(false);
+    }
+  }, [src]);
+
+  // Check if image is already loaded (cached) - SSR SAFE
+  useEffect(() => {
+    // Only run on client-side
+    if (!src || typeof window === 'undefined') return;
+
+    let isMounted = true;
+    let timeoutId: NodeJS.Timeout | null = null;
+
+    try {
+      const img = new window.Image();
+      
+      img.onload = () => {
+        // Image is already cached/loaded, reduce loading time
+        if (isMounted) {
+          timeoutId = setTimeout(() => {
+            if (isMounted) {
+              setIsLoading(false);
+            }
+          }, 100);
+        }
+      };
+      
+      img.onerror = () => {
+        // Don't set error here, let Next.js Image handle it first
+        // Just don't update loading state
+      };
+      
+      img.src = src;
+
+      // Cleanup function
+      return () => {
+        isMounted = false;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        // Safely remove event handlers
+        if (img) {
+          img.onload = null;
+          img.onerror = null;
+          img.src = ''; // Cancel image loading
+        }
+      };
+    } catch (error) {
+      // Silently fail if Image constructor is not available (SSR or browser compatibility)
+      // Don't break the component
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Image preload failed (non-critical):', error);
+      }
+    }
+  }, [src]);
+
+  // Fallback to regular img tag if Next.js Image fails
+  if (useFallback) {
+    return (
+      <div className="w-64 mx-auto h-full object-contain p-4 relative min-h-[256px] flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt}
+          className={className}
+          onLoad={() => setIsLoading(false)}
+          onError={() => {
+            setIsLoading(false);
+            setHasError(true);
+          }}
+        />
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-200 animate-pulse rounded z-20"></div>
+        )}
+      </div>
+    );
+  }
+
+  // Error state - show fallback img tag instead of error message
   if (hasError) {
     return (
-      <div className="w-64 mx-auto h-full object-contain p-4 flex items-center justify-center bg-gray-100">
-        <div className="text-center text-gray-400">
-          <svg
-            className="w-16 h-16 mx-auto mb-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-          <p className="text-xs">Image not available</p>
-        </div>
+      <div className="w-64 mx-auto h-full object-contain p-4 relative min-h-[256px] flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt}
+          className={className}
+          onError={(e) => {
+            // Final fallback - hide image if it still fails
+            e.currentTarget.style.display = 'none';
+          }}
+        />
       </div>
     );
   }
@@ -69,10 +147,14 @@ const ImageWithShimmer: React.FC<ImageWithShimmerProps> = ({
           quality={85}
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
           unoptimized={shouldUnoptimizeImage(src)}
-          onLoad={() => setIsLoading(false)}
-          onError={() => {
+          onLoad={() => {
             setIsLoading(false);
-            setHasError(true);
+            setHasError(false);
+          }}
+          onError={() => {
+            // Try fallback img tag instead of showing error immediately
+            setIsLoading(false);
+            setUseFallback(true);
           }}
         />
       </div>

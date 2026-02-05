@@ -12,6 +12,12 @@ const loadNextJSOptimizedImage = (
   options: ImageLoadingOptions
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
+    // SSR-safe check
+    if (typeof window === 'undefined') {
+      reject(new Error('Cannot load image on server-side'));
+      return;
+    }
+    
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
     
@@ -75,6 +81,12 @@ const reloadImageWithCORS = (
   options: ImageLoadingOptions
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
+    // SSR-safe check
+    if (typeof window === 'undefined') {
+      reject(new Error('Cannot load image on server-side'));
+      return;
+    }
+    
     const img = new window.Image();
     img.crossOrigin = 'anonymous';
     

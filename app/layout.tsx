@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CustomShaftDataProvider } from "@/contexts/CustomShaftDataContext";
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,31 +33,33 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div id="google_translate_element" style={{ display: "hidden" }}></div>
-        <Script id="google-translate-init" strategy="afterInteractive">
-          {`
-            function googleTranslateElementInit() {
-              new google.translate.TranslateElement({
-                pageLanguage: 'de',
-                includedLanguages: 'en,de',
-                autoDisplay: false
-              }, 'google_translate_element');
-            }
-          `}
-        </Script>
+        <ErrorBoundary>
+          <div id="google_translate_element" style={{ display: "hidden" }}></div>
+          <Script id="google-translate-init" strategy="afterInteractive">
+            {`
+              function googleTranslateElementInit() {
+                new google.translate.TranslateElement({
+                  pageLanguage: 'de',
+                  includedLanguages: 'en,de',
+                  autoDisplay: false
+                }, 'google_translate_element');
+              }
+            `}
+          </Script>
 
-        <Script
-          src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-          strategy="afterInteractive"
-        />
-        <LanguageProvider>
-          <AuthProvider>
-            <CustomShaftDataProvider>
-              {children}
-            </CustomShaftDataProvider>
-          </AuthProvider>
-        </LanguageProvider>
-        <Toaster />
+          <Script
+            src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+            strategy="afterInteractive"
+          />
+          <LanguageProvider>
+            <AuthProvider>
+              <CustomShaftDataProvider>
+                {children}
+              </CustomShaftDataProvider>
+            </AuthProvider>
+          </LanguageProvider>
+          <Toaster />
+        </ErrorBoundary>
       </body>
     </html>
   );

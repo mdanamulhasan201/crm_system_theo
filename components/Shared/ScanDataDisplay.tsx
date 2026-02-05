@@ -136,34 +136,41 @@ export default function ScanDataDisplay({
                 setLeftImageLoading(false);
             }, 3000);
             
-            // Check if image is already loaded/cached
-            const img = new window.Image();
-            let isLoaded = false;
-            img.onload = () => {
-                if (!isLoaded) {
-                    isLoaded = true;
-                    clearTimeout(timeout);
-                    setTimeout(() => setLeftImageLoading(false), 200);
-                }
-            };
-            img.onerror = () => {
-                if (!isLoaded) {
-                    isLoaded = true;
+            // Check if image is already loaded/cached - SSR SAFE
+            if (typeof window !== 'undefined') {
+                try {
+                    const img = new window.Image();
+                    let isLoaded = false;
+                    img.onload = () => {
+                        if (!isLoaded) {
+                            isLoaded = true;
+                            clearTimeout(timeout);
+                            setTimeout(() => setLeftImageLoading(false), 200);
+                        }
+                    };
+                    img.onerror = () => {
+                        if (!isLoaded) {
+                            isLoaded = true;
+                            clearTimeout(timeout);
+                            setLeftImageLoading(false);
+                        }
+                    };
+                    img.src = leftImage;
+                    
+                    // If image is already complete (cached), hide shimmer immediately
+                    if (img.complete) {
+                        clearTimeout(timeout);
+                        setTimeout(() => setLeftImageLoading(false), 100);
+                    }
+                } catch (error) {
+                    // Silently fail if Image constructor is not available
                     clearTimeout(timeout);
                     setLeftImageLoading(false);
                 }
-            };
-            img.src = leftImage;
-            
-            // If image is already complete (cached), hide shimmer immediately
-            if (img.complete) {
-                clearTimeout(timeout);
-                setTimeout(() => setLeftImageLoading(false), 100);
             }
             
             return () => {
                 clearTimeout(timeout);
-                isLoaded = true;
             };
         } else {
             setLeftImageLoading(false);
@@ -183,34 +190,41 @@ export default function ScanDataDisplay({
                 setRightImageLoading(false);
             }, 3000);
             
-            // Check if image is already loaded/cached
-            const img = new window.Image();
-            let isLoaded = false;
-            img.onload = () => {
-                if (!isLoaded) {
-                    isLoaded = true;
-                    clearTimeout(timeout);
-                    setTimeout(() => setRightImageLoading(false), 200);
-                }
-            };
-            img.onerror = () => {
-                if (!isLoaded) {
-                    isLoaded = true;
+            // Check if image is already loaded/cached - SSR SAFE
+            if (typeof window !== 'undefined') {
+                try {
+                    const img = new window.Image();
+                    let isLoaded = false;
+                    img.onload = () => {
+                        if (!isLoaded) {
+                            isLoaded = true;
+                            clearTimeout(timeout);
+                            setTimeout(() => setRightImageLoading(false), 200);
+                        }
+                    };
+                    img.onerror = () => {
+                        if (!isLoaded) {
+                            isLoaded = true;
+                            clearTimeout(timeout);
+                            setRightImageLoading(false);
+                        }
+                    };
+                    img.src = rightImage;
+                    
+                    // If image is already complete (cached), hide shimmer immediately
+                    if (img.complete) {
+                        clearTimeout(timeout);
+                        setTimeout(() => setRightImageLoading(false), 100);
+                    }
+                } catch (error) {
+                    // Silently fail if Image constructor is not available
                     clearTimeout(timeout);
                     setRightImageLoading(false);
                 }
-            };
-            img.src = rightImage;
-            
-            // If image is already complete (cached), hide shimmer immediately
-            if (img.complete) {
-                clearTimeout(timeout);
-                setTimeout(() => setRightImageLoading(false), 100);
             }
             
             return () => {
                 clearTimeout(timeout);
-                isLoaded = true;
             };
         } else {
             setRightImageLoading(false);

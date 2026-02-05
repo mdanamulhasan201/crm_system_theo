@@ -107,6 +107,9 @@ export default function Settingss() {
     //     router.push("/dashboard/account-settings");
     // };
 
+    // Get user image URL - already comes as full URL from auth context
+    const userImageUrl = user?.image || '/favicon.ico';
+
     return (
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Accountverwaltung</h1>
@@ -115,18 +118,19 @@ export default function Settingss() {
                 <div className="flex items-center border-2 border-gray-600 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors p-4">
                     <div className="border border-gray-300 rounded-md mr-4 p-2 w-40 h-40">
                         <Image
-                            src={
-                                user?.image
-                                    ? (user.image.startsWith('http')
-                                        ? user.image
-                                        : `https://${user.image}`)
-                                    : "/favicon.ico"
-                            }
+                            src={userImageUrl}
                             alt="user"
                             width={500}
                             height={500}
                             className="w-full h-full rounded-md object-contain"
-                            unoptimized={user?.image ? shouldUnoptimizeImage(user.image) : false}
+                            unoptimized={shouldUnoptimizeImage(userImageUrl)}
+                            onError={(e) => {
+                                // Fallback to favicon if user image fails
+                                const target = e.target as HTMLImageElement;
+                                if (target.src !== '/favicon.ico') {
+                                    target.src = '/favicon.ico';
+                                }
+                            }}
                         />
                     </div>
                     <div className='flex justify-between items-center w-full'>
