@@ -3,9 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from '@/contexts/AuthContext';
 import { Toaster } from "react-hot-toast";
-import Script from "next/script";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CustomShaftDataProvider } from "@/contexts/CustomShaftDataContext";
+import GoogleTranslateWrapper from "@/components/Shared/GoogleTranslateWrapper";
 // import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const geistSans = Geist({
@@ -33,24 +33,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      
-          <div id="google_translate_element" style={{ display: "hidden" }}></div>
-          <Script id="google-translate-init" strategy="afterInteractive">
-            {`
-              function googleTranslateElementInit() {
-                new google.translate.TranslateElement({
-                  pageLanguage: 'de',
-                  includedLanguages: 'en,de',
-                  autoDisplay: false
-                }, 'google_translate_element');
-              }
-            `}
-          </Script>
-
-          <Script
-            src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
-            strategy="afterInteractive"
-          />
+          <GoogleTranslateWrapper />
           <LanguageProvider>
             <AuthProvider>
               <CustomShaftDataProvider>

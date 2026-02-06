@@ -12,7 +12,8 @@ declare global {
                         pageLanguage: string;
                         includedLanguages: string;
                         autoDisplay: boolean;
-                    }
+                    },
+                    elementId: string
                 ) => void;
             };
         };
@@ -71,20 +72,24 @@ const LanguageSwitcher = ({
             if (!disableImmediateChange) {
                 setSelectedLang(langInfo.code);
 
-                // Initialize Google Translate
+                // Update Google Translate language selection
                 const waitForGoogleTranslate = setInterval(() => {
-                    if (typeof window.google !== 'undefined' && window.google.translate) {
-                        clearInterval(waitForGoogleTranslate);
+                    if (
+                        typeof window !== 'undefined' &&
+                        window.google &&
+                        window.google.translate &&
+                        typeof window.google.translate.TranslateElement === 'function'
+                    ) {
                         const selectElement = document.querySelector('.goog-te-combo') as HTMLSelectElement;
                         if (selectElement) {
-                            selectElement.value = langInfo.code;
-                            selectElement.dispatchEvent(new Event('change'));
+                            clearInterval(waitForGoogleTranslate);
+                            try {
+                                selectElement.value = langInfo.code;
+                                selectElement.dispatchEvent(new Event('change'));
+                            } catch (error) {
+                                console.error('Error updating Google Translate language:', error);
+                            }
                         }
-                        new window.google.translate.TranslateElement({
-                            pageLanguage: 'de',
-                            includedLanguages: 'en,de',
-                            autoDisplay: false
-                        });
                     }
                 }, 100);
 
@@ -179,7 +184,6 @@ const LanguageSwitcher = ({
                     </div>
                 )}
             </div>
-            <div id="google_translate_element" className="hidden" />
         </div>
     );
 };

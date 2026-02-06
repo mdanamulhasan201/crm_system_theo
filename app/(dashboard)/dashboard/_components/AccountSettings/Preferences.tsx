@@ -23,12 +23,21 @@ export default function Preferences() {
       
       // Initialize Google Translate with new language
       const waitForGoogleTranslate = setInterval(() => {
-        if (typeof window.google !== 'undefined' && window.google.translate) {
-          clearInterval(waitForGoogleTranslate)
+        if (
+          typeof window !== 'undefined' &&
+          window.google &&
+          window.google.translate &&
+          typeof window.google.translate.TranslateElement === 'function'
+        ) {
           const selectElement = document.querySelector('.goog-te-combo') as HTMLSelectElement
           if (selectElement) {
-            selectElement.value = pendingLanguage
-            selectElement.dispatchEvent(new Event('change'))
+            clearInterval(waitForGoogleTranslate)
+            try {
+              selectElement.value = pendingLanguage
+              selectElement.dispatchEvent(new Event('change'))
+            } catch (error) {
+              console.error('Error updating Google Translate language:', error)
+            }
           }
         }
       }, 100)
