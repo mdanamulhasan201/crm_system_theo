@@ -180,6 +180,10 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
 
         const canShow = (href: string, section?: any) => {
             if (section?.employeeOnly && user?.role !== 'EMPLOYEE') return false;
+            // Always allow employee profile for employees, even if all routes are false
+            if (href === '/dashboard/employee-profile' && user?.role === 'EMPLOYEE') {
+                return true;
+            }
             // Features are loaded from API, check if path is allowed
             return isPathAllowed(href);
         };

@@ -33,7 +33,7 @@ export default function ProtectedRoute({
   children, 
   unauthorizedRedirectPath = '/unauthorized' 
 }: ProtectedRouteProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isEmployeeMode } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
   const { loading: featureLoading, features } = useFeatureAccess();
@@ -59,16 +59,20 @@ export default function ProtectedRoute({
   // Check if current route is allowed
   const routeAllowed = useMemo(() => {
     if (!pathname || featureLoading || permissions.length === 0) {
+      // Allow employee-profile even while loading if user is in employee mode
+      if (pathname === '/dashboard/employee-profile' && isEmployeeMode) {
+        return true;
+      }
       return false;
     }
     return isRouteAllowed(pathname, permissionMap);
-  }, [pathname, featureLoading, permissionMap, permissions.length]);
-
-  // Find first allowed route for redirect
+  }, [pathname, featureLoading, permissionMap, permissions.length, isEmployeeMode]);
   const firstAllowedRoute = useMemo(() => {
-    if (permissions.length === 0) return '/dashboard';
-    return getFirstAllowedRoute(permissions);
-  }, [permissions]);
+    if (permissions.length === 0) {
+      return isEmployeeMode ? '/dashboard/employee-profile' : '/dashboard';
+    }
+    return getFirstAllowedRoute(permissions, isEmployeeMode);
+  }, [permissions, isEmployeeMode]);
 
   // Handle redirects
   useEffect(() => {
@@ -87,11 +91,10 @@ export default function ProtectedRoute({
     if (pathname && !routeAllowed && !hasRedirected) {
       setHasRedirected(true);
       
-      // Redirect to unauthorized page or first allowed route
+      // Always redirect to first allowed route (skip unauthorized page)
       // Use setTimeout to avoid React render cycle issues
-      const redirectPath = unauthorizedRedirectPath || firstAllowedRoute;
       setTimeout(() => {
-        router.replace(redirectPath);
+        router.replace(firstAllowedRoute);
       }, 0);
     }
   }, [

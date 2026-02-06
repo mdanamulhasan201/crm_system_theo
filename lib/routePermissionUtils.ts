@@ -99,6 +99,14 @@ export const isRouteAllowed = (path: string, permissionMap: PermissionMap): bool
   
   const normalizedPath = normalizePath(path);
   
+  // Always allow employee profile route for employees (even if all routes are false or parent is false)
+  // This check must be FIRST before any parent route checks
+  if (normalizedPath === '/dashboard/employee-profile') {
+    if (typeof window !== 'undefined' && localStorage.getItem('employeeToken')) {
+      return true;
+    }
+  }
+  
   // Step 1: Check exact match first
   if (permissionMap.has(normalizedPath)) {
     return permissionMap.get(normalizedPath) === true;
@@ -109,11 +117,13 @@ export const isRouteAllowed = (path: string, permissionMap: PermissionMap): bool
   
   // Step 3: Check if ANY parent has action: false
   // If any parent is false, block ALL child routes
+  // EXCEPT for employee-profile which is always allowed for employees
   for (const parentPath of parentRoutes) {
     const parentAction = permissionMap.get(parentPath);
     
     // If parent exists and has action: false, block access
-    if (parentAction === false) {
+    // BUT skip this check for employee-profile route
+    if (parentAction === false && normalizedPath !== '/dashboard/employee-profile') {
       return false;
     }
     
@@ -142,19 +152,45 @@ export const createRoutePermissionChecker = (permissions: RoutePermission[]) => 
 /**
  * Gets the first allowed route from permissions
  * Useful for redirecting users when they don't have access
+ * @param permissions - Array of route permissions
+ * @param isEmployeeMode - Optional: if true and no routes allowed, returns /dashboard/employee-profile
  */
-export const getFirstAllowedRoute = (permissions: RoutePermission[]): string => {
-  // Try to find dashboard first
-  const dashboard = permissions.find(p => 
-    normalizePath(p.path) === '/dashboard' && p.action === true
-  );
+export const getFirstAllowedRoute = (permissions: RoutePermission[], isEmployeeMode?: boolean): string => {
+  // Check if user is in employee mode (check localStorage if not provided)
+  const checkEmployeeMode = isEmployeeMode ?? (typeof window !== 'undefined' && !!localStorage.getItem('employeeToken'));
   
-  if (dashboard) return '/dashboard';
+  if (!permissions || permissions.length === 0) {
+    // If employee mode and no permissions, go to employee profile
+    if (checkEmployeeMode) {
+      return '/dashboard/employee-profile';
+    }
+    return '/dashboard'; // Fallback if no permissions
+  }
   
-  // Find first route with action: true
+  // Find first route with action: true (don't prioritize dashboard)
   const firstAllowed = permissions.find(p => p.action === true);
   
-  return firstAllowed ? normalizePath(firstAllowed.path) : '/dashboard';
+  if (firstAllowed) {
+    return normalizePath(firstAllowed.path);
+  }
+  
+  // If no route has action: true, check nested routes
+  for (const permission of permissions) {
+    if (permission.nested && permission.nested.length > 0) {
+      const firstNested = permission.nested.find(n => n.action === true);
+      if (firstNested) {
+        return normalizePath(firstNested.path);
+      }
+    }
+  }
+  
+  // If no routes are allowed and user is in employee mode, redirect to employee profile
+  if (checkEmployeeMode) {
+    return '/dashboard/employee-profile';
+  }
+  
+  // Last resort: return first route even if action is false (better than nothing)
+  return permissions.length > 0 ? normalizePath(permissions[0].path) : '/dashboard';
 };
 
 // ============================================================================

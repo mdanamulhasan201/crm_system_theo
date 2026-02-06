@@ -1,15 +1,60 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
+import { getAllDynamicRoutes } from '@/apis/dynamicApis';
+import { getFirstAllowedRoute, type RoutePermission } from '@/lib/routePermissionUtils';
 
 export default function UnauthorizedPage() {
   const [countdown, setCountdown] = useState(3);
   const redirectTriggered = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [redirectPath, setRedirectPath] = useState<string>('/dashboard');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Countdown and redirect logic - completely separated
+  // Fetch features and get first allowed route - redirect immediately when found
   useEffect(() => {
-    if (redirectTriggered.current) return;
+    const fetchFirstAllowedRoute = async () => {
+      try {
+        const featuresResponse = await getAllDynamicRoutes();
+        if (featuresResponse?.success && Array.isArray(featuresResponse.data)) {
+          const permissions: RoutePermission[] = featuresResponse.data.map((feature: any) => ({
+            path: feature.path,
+            action: feature.action,
+            nested: feature.nested?.map((n: any) => ({
+              path: n.path,
+              action: n.action,
+            })),
+          }));
+          
+          // Check if user is in employee mode
+          const isEmployeeMode = typeof window !== 'undefined' && !!localStorage.getItem('employeeToken');
+          const firstRoute = getFirstAllowedRoute(permissions, isEmployeeMode);
+          setRedirectPath(firstRoute);
+          setIsLoading(false);
+          
+          // Immediately redirect to first allowed route (skip countdown)
+          if (firstRoute && !redirectTriggered.current) {
+            redirectTriggered.current = true;
+            setTimeout(() => {
+              window.location.replace(firstRoute);
+            }, 100);
+          }
+        } else {
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch features for redirect:', error);
+        setIsLoading(false);
+        // Keep default '/dashboard' fallback
+      }
+    };
+
+    fetchFirstAllowedRoute();
+  }, []);
+
+  // Countdown and redirect logic - only if we haven't redirected yet
+  useEffect(() => {
+    if (redirectTriggered.current || isLoading) return;
 
     // Start countdown
     intervalRef.current = setInterval(() => {
@@ -25,7 +70,7 @@ export default function UnauthorizedPage() {
             redirectTriggered.current = true;
             // Use queueMicrotask to ensure this runs after React's render
             queueMicrotask(() => {
-              window.location.href = '/dashboard';
+              window.location.replace(redirectPath);
             });
           }
         }
@@ -38,7 +83,7 @@ export default function UnauthorizedPage() {
         clearInterval(intervalRef.current);
       }
     };
-  }, []);
+  }, [redirectPath, isLoading]);
 
   // Handle manual redirect button click
   const handleRedirect = (e: React.MouseEvent) => {
@@ -50,7 +95,7 @@ export default function UnauthorizedPage() {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
-      window.location.href = '/dashboard';
+      window.location.replace(redirectPath);
     }
   };
 

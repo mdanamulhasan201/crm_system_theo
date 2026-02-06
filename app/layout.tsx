@@ -6,7 +6,7 @@ import { Toaster } from "react-hot-toast";
 import Script from "next/script";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CustomShaftDataProvider } from "@/contexts/CustomShaftDataContext";
-import { ErrorBoundary } from '@/components/ErrorBoundary';
+// import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -7,6 +7,8 @@ import UpdateEmployeePermissionsModal from '@/components/DashboardSettings/Updat
 import { employeeLoginWithId } from '@/apis/authApis'
 import { useAuth } from '@/contexts/AuthContext'
 import toast from 'react-hot-toast'
+import { getAllDynamicRoutes } from '@/apis/dynamicApis'
+import { getFirstAllowedRoute, type RoutePermission } from '@/lib/routePermissionUtils'
 import DeleteEmployeeModal from './DeleteEmployeeModal'
 import SwitchAccountModal from './SwitchAccountModal'
 import { Settings } from 'lucide-react'
@@ -108,22 +110,58 @@ export default function EmployeeAccounts() {
         localStorage.setItem('employeeToken', response.token)
         localStorage.setItem('currentEmployeeId', employeeToSwitch.id)
         
-        toast.success(`Zu ${employeeToSwitch.accountName} gewechselt`, {
-          icon: '🔄',
-          duration: 3000,
-        })
-        
-        // Redirect to employee profile page
-        setTimeout(() => {
-          window.location.href = '/dashboard/employee-profile'
-        }, 500)
+        // Fetch features to get the first allowed route
+        try {
+          const featuresResponse = await getAllDynamicRoutes()
+          if (featuresResponse?.success && Array.isArray(featuresResponse.data)) {
+            // Convert to RoutePermission format
+            const permissions = featuresResponse.data.map((feature: any) => ({
+              path: feature.path,
+              action: feature.action,
+              nested: feature.nested?.map((n: any) => ({
+                path: n.path,
+                action: n.action,
+              })),
+            }))
+            
+            // Get first allowed route (pass true for isEmployeeMode since we're switching to employee)
+            const firstAllowedRoute = getFirstAllowedRoute(permissions, true)
+            
+            toast.success(`Zu ${employeeToSwitch.accountName} gewechselt`, {
+              icon: '🔄',
+              duration: 500,
+            })
+            
+            // Redirect to first allowed route (will be /dashboard/employee-profile if all routes are false)
+            setTimeout(() => {
+              window.location.replace(firstAllowedRoute)
+            }, 500)
+          } else {
+            // Fallback: reload page and let protected route handle redirect
+            toast.success(`Zu ${employeeToSwitch.accountName} gewechselt`, {
+              icon: '🔄',
+              duration: 500,
+            })
+            setTimeout(() => {
+              window.location.reload()
+            }, 500)
+          }
+        } catch (featuresError) {
+          // If features fetch fails, reload page and let protected route handle redirect
+          toast.success(`Zu ${employeeToSwitch.accountName} gewechselt`, {
+            icon: '🔄',
+            duration: 500,
+          })
+          setTimeout(() => {
+            window.location.reload()
+          }, 500)
+        }
       } else {
         throw new Error('Token nicht erhalten')
       }
     } catch (error: any) {
       const errorMessage = error?.response?.data?.message || error?.message || 'Fehler beim Wechseln des Accounts'
       toast.error(errorMessage)
-    } finally {
       setSwitchingAccountId(null)
       setEmployeeToSwitch(null)
     }
