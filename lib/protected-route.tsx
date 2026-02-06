@@ -1,65 +1,126 @@
+'use client';
+
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
+import { isRouteAllowed, flattenPermissions, getFirstAllowedRoute, normalizePath } from '@/lib/routePermissionUtils';
+import type { RoutePermission } from '@/lib/routePermissionUtils';
 
 interface ProtectedRouteProps {
-    children: React.ReactNode;
+  children: React.ReactNode;
+  unauthorizedRedirectPath?: string;
 }
 
-const normalizePath = (path: string): string => {
-    return path.split('?')[0].split('#')[0].replace(/\/+$/, '') || '/';
-};
+const LoadingSpinner = () => null;
 
-const LoadingSpinner = () => (
-    <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900" />
-    </div>
-);
+/**
+ * ProtectedRoute Component
+ * 
+ * Protects routes based on permission system.
+ * - Checks authentication first
+ * - Then checks route permissions
+ * - Redirects to unauthorized page or first allowed route if access denied
+ * 
+ * Usage:
+ * ```tsx
+ * <ProtectedRoute>
+ *   <YourPageContent />
+ * </ProtectedRoute>
+ * ```
+ */
+export default function ProtectedRoute({ 
+  children, 
+  unauthorizedRedirectPath = '/unauthorized' 
+}: ProtectedRouteProps) {
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+  const { loading: featureLoading, features } = useFeatureAccess();
+  const [hasRedirected, setHasRedirected] = useState(false);
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-    const { isAuthenticated } = useAuth();
-    const router = useRouter();
-    const pathname = usePathname();
-    const { loading: featureLoading, isPathAllowed, features } = useFeatureAccess();
-    const [hasRedirected, setHasRedirected] = useState(false);
+  // Convert features to RoutePermission format
+  const permissions: RoutePermission[] = useMemo(() => {
+    return features.map(feature => ({
+      path: feature.path,
+      action: feature.action,
+      nested: feature.nested?.map(n => ({
+        path: n.path,
+        action: n.action,
+      })),
+    }));
+  }, [features]);
 
-    // Wait for API to load features - don't check routes until API data is loaded
-    const hasFeatures = features && features.length > 0;
-    const routeAllowed = hasFeatures && pathname ? isPathAllowed(pathname) : false;
+  // Create permission map for fast lookups
+  const permissionMap = useMemo(() => {
+    return flattenPermissions(permissions);
+  }, [permissions]);
 
-    const findFirstAllowedRoute = useMemo(() => {
-        if (!hasFeatures) return '/dashboard';
+  // Check if current route is allowed
+  const routeAllowed = useMemo(() => {
+    if (!pathname || featureLoading || permissions.length === 0) {
+      return false;
+    }
+    return isRouteAllowed(pathname, permissionMap);
+  }, [pathname, featureLoading, permissionMap, permissions.length]);
 
-        const dashboardRoute = features.find(
-            (item) => item.action && normalizePath(item.path) === '/dashboard'
-        );
-        if (dashboardRoute) return '/dashboard';
+  // Find first allowed route for redirect
+  const firstAllowedRoute = useMemo(() => {
+    if (permissions.length === 0) return '/dashboard';
+    return getFirstAllowedRoute(permissions);
+  }, [permissions]);
 
-        const firstAllowed = features.find((item) => item.action);
-        return firstAllowed ? firstAllowed.path : '/dashboard';
-    }, [features, hasFeatures]);
+  // Handle redirects
+  useEffect(() => {
+    // Wait for authentication check
+    if (!isAuthenticated) {
+      router.push('/login');
+      return;
+    }
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            router.push('/login');
-            return;
-        }
+    // Wait for permissions to load
+    if (featureLoading || permissions.length === 0) {
+      return;
+    }
 
-        // Wait for API to finish loading features
-        if (featureLoading || !hasFeatures) return;
+    // Redirect if route is not allowed
+    if (pathname && !routeAllowed && !hasRedirected) {
+      setHasRedirected(true);
+      
+      // Redirect to unauthorized page or first allowed route
+      // Use setTimeout to avoid React render cycle issues
+      const redirectPath = unauthorizedRedirectPath || firstAllowedRoute;
+      setTimeout(() => {
+        router.replace(redirectPath);
+      }, 0);
+    }
+  }, [
+    isAuthenticated,
+    featureLoading,
+    routeAllowed,
+    pathname,
+    router,
+    firstAllowedRoute,
+    unauthorizedRedirectPath,
+    hasRedirected,
+    permissions.length,
+  ]);
 
-        if (pathname && !routeAllowed && !hasRedirected) {
-            setHasRedirected(true);
-            router.replace(findFirstAllowedRoute);
-        }
-    }, [isAuthenticated, featureLoading, routeAllowed, pathname, router, findFirstAllowedRoute, hasFeatures, hasRedirected]);
+  // Not authenticated - don't render anything
+  if (!isAuthenticated) {
+    return null;
+  }
 
-    if (!isAuthenticated) return null;
-    // Show loading while API is fetching features
-    if (featureLoading || !hasFeatures) return <LoadingSpinner />;
-    // Block route if not allowed
-    if (pathname && !routeAllowed) return <LoadingSpinner />;
+  // Loading permissions - don't show spinner, let default loading handle it
+  if (featureLoading || permissions.length === 0) {
+    return null;
+  }
 
-    return <>{children}</>;
+  // Route not allowed - redirect to unauthorized page (don't show anything here)
+  if (pathname && !routeAllowed) {
+    return null; // Redirect will happen in useEffect
+  }
+
+  // Route allowed - render children
+  return <>{children}</>;
 }

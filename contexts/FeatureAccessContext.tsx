@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getAllDynamicRoutes } from "@/apis/dynamicApis";
+import { isRouteAllowed, flattenPermissions, type RoutePermission } from "@/lib/routePermissionUtils";
 
 const COOKIE_NAME = "td_feature_access_config";
 
@@ -105,49 +106,26 @@ export const FeatureAccessProvider = ({ children }: { children: React.ReactNode 
     };
   }, []);
 
+  // Convert features to RoutePermission format
+  const permissions: RoutePermission[] = useMemo(() => {
+    return features.map(f => ({
+      path: f.path,
+      action: f.action,
+      nested: f.nested?.map(n => ({ path: n.path, action: n.action })),
+    }));
+  }, [features]);
+
+  // Create permission map for fast lookups
+  const permissionMap = useMemo(() => {
+    return flattenPermissions(permissions);
+  }, [permissions]);
+
+  // Create path checker function
   const isPathAllowed = useMemo(
-    () =>
-      (path: string) => {
-        if (!features || features.length === 0) return false;
-
-        const target = normalizePath(path);
-
-        // Check exact matches first (most important - blocks routes with action: false)
-        for (const item of features) {
-          const itemPath = normalizePath(item.path);
-          if (itemPath === target) return item.action;
-
-          if (item.nested?.length) {
-            for (const nested of item.nested) {
-              const nestedPath = normalizePath(nested.path);
-              if (nestedPath === target) {
-                return nested.action && item.action;
-              }
-            }
-          }
-        }
-
-        // Check parent routes only if no exact match found
-        for (const item of features) {
-          if (item.nested?.length) {
-            for (const nested of item.nested) {
-              const nestedPath = normalizePath(nested.path);
-              if (target.startsWith(nestedPath + '/') || target.startsWith(nestedPath + '?')) {
-                if (!nested.action || !item.action) return false;
-              }
-            }
-          }
-
-          const itemPath = normalizePath(item.path);
-          if (target.startsWith(itemPath + '/') || target.startsWith(itemPath + '?')) {
-            if (!item.action) return false;
-            return true;
-          }
-        }
-
-        return false;
-      },
-    [features]
+    () => (path: string) => {
+      return isRouteAllowed(path, permissionMap);
+    },
+    [permissionMap]
   );
 
   const getNestedForPath = useMemo(
