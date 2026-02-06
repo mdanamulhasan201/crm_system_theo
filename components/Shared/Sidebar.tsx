@@ -8,7 +8,7 @@ import {
     HiOutlineCube
 } from 'react-icons/hi';
 import { RxDashboard } from "react-icons/rx";
-import {  HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
+import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2";
 import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
@@ -53,6 +53,14 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
         () => {
             return [
                 {
+                    id: '6',
+                    label: 'Kundeninformationen',
+                    items: [
+                        { icon: BiNews, label: 'News & Aktuelles', href: '/dashboard/news' },
+                        { icon: BiPackage, label: 'Produktkatalog', href: '/dashboard/products' },
+                    ]
+                },
+                {
                     id: '0',
                     standalone: true,
                     icon: RxDashboard,
@@ -67,102 +75,98 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                 //     href: '/dashboard/teamchat'
                 // },
                 {
-                id: '1a',
-                standalone: true,
-                icon: IoSearchOutline,
-                label: 'Kundensuche',
-                href: '/dashboard/customers'
-            },
-            {
-                id: '1b',
-                standalone: true,
-                icon: FiUserPlus,
-                label: 'Neukundenerstellung',
-                href: '/dashboard/neukundenerstellung'
-            },
-            {
-                id: '1c',
-                standalone: true,
-                icon: Einlagenauftrag,
-                label: 'Einlagenaufträge',
-                href: '/dashboard/orders'
-            },
-            {
-                id: '1d',
-                standalone: true,
-                icon: Maßschuhaufträge,
-                label: 'Maßschuhaufträge',
-                href: '/dashboard/massschuhauftraege'
-            },
-            {
-                id: '1e',
-                standalone: true,
-                icon: Maßschäfte,
-                label: 'Maßschäfte',
-                href: '/dashboard/custom-shafts'
-            },
-            {
-                id: '2',
-                label: 'Aufträge & Produkte',
-                items: [
-                    { icon: HiOutlineCube, label: 'Produktverwaltung', href: '/dashboard/lager' },
-                    // { icon: GrCubes, label: 'Sammelbestellungen', href: '/dashboard/group-orders' }
-                ]
-            },
-            {
-                id: '3',
-                label: 'Kundenmanagement',
-                items: [
-                    { icon: Nachrichten, label: 'Nachrichten', href: '/dashboard/email/inbox' },
-                    { icon: HiOutlineChatBubbleLeftRight, label: 'Automatisierte Nachrichten', href: '/dashboard/automatisierte-nachrichten' },
-                    { icon: Terminkalender, label: 'Terminkalender', href: '/dashboard/calendar' }
-                ]
-            },
-            {
-                id: '4',
-                label: 'Finanzen',
-                items: [
-                    { icon: FiDollarSign, label: 'Kasse & Abholungen', href: '/dashboard/kasse' },
-                    { icon: BsCashStack, label: 'Finanzen & Kasse', href: '/dashboard/finanzen-kasse' },
-                    { icon: HiOutlineDocumentText, label: 'Einnahmen & Rechnungen', href: '/dashboard/einnahmen' },
-                    { icon: FiBarChart, label: 'Monatsstatistik', href: '/dashboard/monatsstatistik' },
-                    { icon: TbUsers, label: 'Mitarbeitercontrolling', href: '/dashboard/mitarbeitercontrolling' },
-                    { icon: TbActivityHeartbeat, label: 'Einlagencontrolling', href: '/dashboard/einlagencontrolling' },
-                ]
-            },
-            {
-                id: '5',
-                label: 'System & Einstellungen',
-                items: [
-                    { icon: Fußübungen, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
-                    // { icon: Musterzettel, label: 'Musterzettel', href: '/dashboard/musterzettel' },
-                    { icon: Einstellungen, label: 'Einstellungen', href: '/dashboard/settings' },
-                ]
-            },
-            {
-                id: '6',
-                label: 'Kundeninformationen',
-                items: [
-                    { icon: BiNews, label: 'News & Aktuelles', href: '/dashboard/news' },
-                    { icon: BiPackage, label: 'Produktkatalog', href: '/dashboard/products' },
-                ]
-            },
-            {
-                id: '7',
-                standalone: true,
-                icon: MdAccountBalanceWallet,
-                label: 'Balance',
-                href: '/dashboard/balance-dashboard'
-            },
-            // Employee Profile - Always at bottom, only for EMPLOYEE role
-            ...(user?.role === 'EMPLOYEE' ? [{
-                id: 'employee-profile',
-                standalone: true,
-                icon: TbUserCircle,
-                label: 'Mitarbeiterprofil',
-                href: '/dashboard/employee-profile',
-                employeeOnly: true
-            }] : [])
+                    id: '1a',
+                    standalone: true,
+                    icon: IoSearchOutline,
+                    label: 'Kundensuche',
+                    href: '/dashboard/customers'
+                },
+                {
+                    id: '1b',
+                    standalone: true,
+                    icon: FiUserPlus,
+                    label: 'Neukundenerstellung',
+                    href: '/dashboard/neukundenerstellung'
+                },
+                {
+                    id: '1c',
+                    standalone: true,
+                    icon: Einlagenauftrag,
+                    label: 'Einlagenaufträge',
+                    href: '/dashboard/orders'
+                },
+                {
+                    id: '1d',
+                    standalone: true,
+                    icon: Maßschuhaufträge,
+                    label: 'Maßschuhaufträge',
+                    href: '/dashboard/massschuhauftraege'
+                },
+                {
+                    id: '1e',
+                    standalone: true,
+                    icon: Maßschäfte,
+                    label: 'Maßschäfte',
+                    href: '/dashboard/custom-shafts'
+                },
+                {
+                    id: '2',
+                    label: 'Aufträge & Produkte',
+                    items: [
+                        { icon: HiOutlineCube, label: 'Produktverwaltung', href: '/dashboard/lager' },
+                        // { icon: GrCubes, label: 'Sammelbestellungen', href: '/dashboard/group-orders' }
+                    ]
+                },
+                {
+                    id: '3',
+                    label: 'Kundenmanagement',
+                    items: [
+                        { icon: Nachrichten, label: 'Nachrichten', href: '/dashboard/email/inbox' },
+                        { icon: HiOutlineChatBubbleLeftRight, label: 'Automatisierte Nachrichten', href: '/dashboard/automatisierte-nachrichten' },
+                        { icon: Terminkalender, label: 'Terminkalender', href: '/dashboard/calendar' }
+                    ]
+                },
+                {
+                    id: '4',
+                    label: 'Finanzen',
+                    items: [
+                        { icon: FiDollarSign, label: 'Kasse & Abholungen', href: '/dashboard/kasse' },
+                        { icon: BsCashStack, label: 'Finanzen & Kasse', href: '/dashboard/finanzen-kasse' },
+                        
+                        // { icon: HiOutlineDocumentText, label: 'Einnahmen & Rechnungen', href: '/dashboard/einnahmen' },
+
+                        { icon: FiBarChart, label: 'Monatsstatistik', href: '/dashboard/monatsstatistik' },
+                        { icon: TbUsers, label: 'Mitarbeitercontrolling', href: '/dashboard/mitarbeitercontrolling' },
+                        { icon: TbActivityHeartbeat, label: 'Einlagencontrolling', href: '/dashboard/einlagencontrolling' },
+                    ]
+                },
+                {
+                    id: '5',
+                    label: 'System & Einstellungen',
+                    items: [
+                        { icon: Fußübungen, label: 'Fußübungen', href: '/dashboard/foot-exercises' },
+                        // { icon: Musterzettel, label: 'Musterzettel', href: '/dashboard/musterzettel' },
+                        {
+                            id: '7',
+                            standalone: true,
+                            icon: MdAccountBalanceWallet,
+                            label: 'Transaktionen & Balance',
+                            href: '/dashboard/balance-dashboard'
+                        },
+                        { icon: Einstellungen, label: 'Einstellungen', href: '/dashboard/settings' },
+                    ]
+                },
+
+
+                // Employee Profile - Always at bottom, only for EMPLOYEE role
+                ...(user?.role === 'EMPLOYEE' ? [{
+                    id: 'employee-profile',
+                    standalone: true,
+                    icon: TbUserCircle,
+                    label: 'Mitarbeiterprofil',
+                    href: '/dashboard/employee-profile',
+                    employeeOnly: true
+                }] : [])
             ];
         },
         [user?.role]
@@ -212,7 +216,9 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
             if (items.length === 0) return [];
 
             const result: MenuItem[] = [];
-            if (index > 0) {
+            
+            // Handle section dividers - skip normal divider for section '4' as we handle it specially
+            if (index > 0 && section.id !== '4') {
                 const prevSection = menuSections[index - 1];
                 if (section.id === 'employee-profile') {
                     result.push({ type: 'divider', key: `divider-${section.id}` });
@@ -220,7 +226,35 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     result.push({ type: 'divider', key: `divider-${section.id}` });
                 }
             }
-            result.push(...items);
+            
+            // Add divider above "Kasse & Abholungen" and "Finanzen & Kasse" in Finanzen section
+            if (section.id === '4') {
+                const kasseItems = items.filter((item: any) => 
+                    item.href === '/dashboard/kasse' || item.href === '/dashboard/finanzen-kasse'
+                );
+                const otherItems = items.filter((item: any) => 
+                    item.href !== '/dashboard/kasse' && item.href !== '/dashboard/finanzen-kasse'
+                );
+                
+                // Add section divider (only one divider before the kasse items)
+                if (index > 0) {
+                    result.push({ type: 'divider', key: `divider-${section.id}` });
+                }
+                
+                // Add the two kasse items, then divider, then the rest
+                if (kasseItems.length > 0) {
+                    result.push(...kasseItems);
+                    if (otherItems.length > 0) {
+                        result.push({ type: 'divider', key: `divider-finanz-after-kasse` });
+                        result.push(...otherItems);
+                    }
+                } else {
+                    result.push(...items);
+                }
+            } else {
+                result.push(...items);
+            }
+            
             return result;
         });
     }, [menuSections, isPathAllowed, features, user, featureLoading]);
@@ -258,13 +292,13 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     )}
                 </div>
                 <div className="flex items-center gap-2 -mr-3">
-                    
+
                     <button
                         onClick={onCollapseToggle}
                         className="hidden md:flex border border-[#61A175] bg-gray-100 text-gray-600 cursor-pointer hover:text-gray-800 transition-all duration-300 p-1 rounded-s-lg hover:bg-gray-100"
                         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
                     >
-                    
+
                         <MdKeyboardArrowLeft
                             className={`text-xl transform transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`}
                         />
@@ -289,49 +323,49 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     </div>
                 ) : (
                     menuItems.map((item) => {
-                    if (item.type === 'divider') {
+                        if (item.type === 'divider') {
+                            return (
+                                <div
+                                    key={item.key}
+                                    className={`h-px bg-gray-200 ${isCollapsed ? 'my-4 mx-2' : 'mx-1'}`}
+                                />
+                            );
+                        }
+
+                        const Icon = item.icon;
+                        const isActive = pathname === item.href;
+
+                        // Check if icon is an image import (StaticImageData) or React Icon component
+                        const isImageIcon = typeof Icon !== 'function';
+
                         return (
-                            <div
+                            <Link
                                 key={item.key}
-                                className={`h-px bg-gray-200 ${isCollapsed ? 'my-4 mx-2' : 'mx-1'}`}
-                            />
-                        );
-                    }
-
-                    const Icon = item.icon;
-                    const isActive = pathname === item.href;
-                    
-                    // Check if icon is an image import (StaticImageData) or React Icon component
-                    const isImageIcon = typeof Icon !== 'function';
-
-                    return (
-                        <Link
-                            key={item.key}
-                            href={item.href}
-                            title={item.label}
-                            className="no-underline block"
-                            style={{ textDecoration: 'none' }}
-                        >
-                            <span
-                                className={`flex items-center ${showLabels ? 'px-5 justify-start' : 'justify-center p-2'} py-1 rounded-lg transition-colors duration-200 ${isActive ? 'bg-[var(--td-green,#61A175)] text-white' : 'text-gray-700 hover:bg-gray-100'
-                                    }`}
+                                href={item.href}
+                                title={item.label}
+                                className="no-underline block"
+                                style={{ textDecoration: 'none' }}
                             >
-                                {isImageIcon ? (
-                                    <Image 
-                                        src={Icon} 
-                                        alt={item.label}
-                                        width={20}
-                                        height={20}
-                                        className={`h-7 w-7 object-contain ${showLabels ? 'mr-3' : ''} ${isActive ? 'brightness-0 invert' : ''}`}
-                                    />
-                                ) : (
-                                    <Icon className={`h-5 w-5 ${showLabels ? 'mr-3' : ''}`} />
-                                )}
-                                {showLabels && item.label}
-                            </span>
-                        </Link>
-                    );
-                })
+                                <span
+                                    className={`flex items-center ${showLabels ? 'px-5 justify-start' : 'justify-center p-2'} py-1 rounded-lg transition-colors duration-200 ${isActive ? 'bg-[var(--td-green,#61A175)] text-white' : 'text-gray-700 hover:bg-gray-100'
+                                        }`}
+                                >
+                                    {isImageIcon ? (
+                                        <Image
+                                            src={Icon}
+                                            alt={item.label}
+                                            width={20}
+                                            height={20}
+                                            className={`h-7 w-7 object-contain ${showLabels ? 'mr-3' : ''} ${isActive ? 'brightness-0 invert' : ''}`}
+                                        />
+                                    ) : (
+                                        <Icon className={`h-5 w-5 ${showLabels ? 'mr-3' : ''}`} />
+                                    )}
+                                    {showLabels && item.label}
+                                </span>
+                            </Link>
+                        );
+                    })
                 )}
             </nav>
 

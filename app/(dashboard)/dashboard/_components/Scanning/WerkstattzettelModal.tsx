@@ -164,23 +164,19 @@ export default function WerkstattzettelModal({
   // Get completionDays for date calculations
   const completionDays = workshopNote?.completionDays
 
-  // Convert locations to string array for dropdown (use description or address)
-  const locationOptions = locations.map(loc => loc.description || loc.address)
+  // Pass location objects directly to dropdown (no conversion needed)
 
   // Set primary location as default when locations are first loaded (only once per modal open)
   useEffect(() => {
     if (locations.length > 0 && isOpen && !locationsLoading) {
-      // Only set default if geschaeftsstandort is empty or not set
+      // Only set default if geschaeftsstandort is not set
       const currentLocation = form.geschaeftsstandort
-      if (!currentLocation || currentLocation.trim() === '') {
+      if (!currentLocation) {
         const primaryLocation = locations.find(loc => loc.isPrimary)
-        if (primaryLocation) {
-          const locationValue = primaryLocation.description || primaryLocation.address
-          form.setGeschaeftsstandort(locationValue)
-        } else {
-          // If no primary, use first location
-          const locationValue = locations[0].description || locations[0].address
-          form.setGeschaeftsstandort(locationValue)
+        const locationToUse = primaryLocation || locations[0]
+        if (locationToUse) {
+          // Store the full location object
+          form.setGeschaeftsstandort(locationToUse)
         }
       }
     }
@@ -201,7 +197,7 @@ export default function WerkstattzettelModal({
     if (!form.datumAuftrag) {
       errors.datumAuftrag = 'Datum des Auftrags ist erforderlich'
     }
-    if (!form.geschaeftsstandort?.trim()) {
+    if (!form.geschaeftsstandort) {
       errors.geschaeftsstandort = 'Geschäftstandort ist erforderlich'
     }
     if (!form.fertigstellungBis) {
@@ -250,7 +246,7 @@ export default function WerkstattzettelModal({
       if (form.datumAuftrag && next.datumAuftrag) {
         delete next.datumAuftrag
       }
-      if (form.geschaeftsstandort?.trim() && next.geschaeftsstandort) {
+      if (form.geschaeftsstandort && next.geschaeftsstandort) {
         delete next.geschaeftsstandort
       }
       if (form.fertigstellungBis && next.fertigstellungBis) {
@@ -412,7 +408,7 @@ export default function WerkstattzettelModal({
                 isEmployeeDropdownOpen: form.isEmployeeDropdownOpen,
                 onEmployeeDropdownChange: form.handleEmployeeDropdownChange,
                 onEmployeeSearchChange: form.handleEmployeeSearchChange,
-                locations: locationOptions,
+                locations: locations,
                 isLocationDropdownOpen: form.isLocationDropdownOpen,
                 onLocationDropdownChange: form.handleLocationDropdownChange,
                 completionDays,
@@ -470,7 +466,10 @@ export default function WerkstattzettelModal({
                 <div className="flex flex-col">
                   <span className="text-xs font-medium text-gray-500">Abholung</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {form.geschaeftsstandort || '-'}
+                    {form.geschaeftsstandort 
+                      ? `${form.geschaeftsstandort.description || ''}${form.geschaeftsstandort.description && form.geschaeftsstandort.address ? ' - ' : ''}${form.geschaeftsstandort.address || ''}`
+                      : '-'
+                    }
                   </span>
                 </div>
               </div>

@@ -17,7 +17,7 @@ interface CustomerInfoSectionData {
   versorgung: string
   datumAuftrag: string
   telefonnummer: string
-  geschaeftsstandort: string
+  geschaeftsstandort: {id: string; address: string; description: string; isPrimary?: boolean} | null
   fertigstellungBis: string
   fertigstellungBisTime: string
   quantity: string
@@ -30,7 +30,7 @@ interface CustomerInfoSectionData {
   onVersorgungChange: (value: string) => void
   onDatumAuftragChange: (value: string) => void
   onTelefonnummerChange: (value: string) => void
-  onGeschaeftsstandortChange: (value: string) => void
+  onGeschaeftsstandortChange: (location: {id: string; address: string; description: string; isPrimary?: boolean} | null) => void
   onFertigstellungBisChange: (value: string) => void
   onFertigstellungBisTimeChange: (value: string) => void
   onQuantityChange: (value: string) => void
@@ -44,7 +44,7 @@ interface CustomerInfoSectionData {
   onEmployeeSearchChange: (value: string) => void
 
   // Location dropdown
-  locations: string[]
+  locations: Array<{id: string; address: string; description: string; isPrimary?: boolean}>
   isLocationDropdownOpen: boolean
   onLocationDropdownChange: (open: boolean) => void
   sameAsBusiness?: boolean
@@ -328,8 +328,25 @@ export default function CustomerInfoSection({ data }: CustomerInfoSectionProps) 
             <div className="space-y-2" onClick={() => makeEditable('geschaeftsstandort')}>
               <Input
                 placeholder="Geschäftstandort eingeben"
-                value={geschaeftsstandort}
-                onChange={(e) => onGeschaeftsstandortChange(e.target.value)}
+                value={geschaeftsstandort 
+                  ? `${geschaeftsstandort.description || ''}${geschaeftsstandort.description && geschaeftsstandort.address ? ' - ' : ''}${geschaeftsstandort.address || ''}`
+                  : ''
+                }
+                onChange={(e) => {
+                  // For manual input when sameAsBusiness is false, we'll create a simple object
+                  // This is a fallback case - normally dropdown is used
+                  const value = e.target.value
+                  if (value.trim()) {
+                    onGeschaeftsstandortChange({
+                      id: '',
+                      address: value,
+                      description: value,
+                      isPrimary: false
+                    })
+                  } else {
+                    onGeschaeftsstandortChange(null)
+                  }
+                }}
                 readOnly={!isEditable('geschaeftsstandort')}
                 className={cn(
                   !isEditable('geschaeftsstandort') && 'bg-gray-50 cursor-pointer',

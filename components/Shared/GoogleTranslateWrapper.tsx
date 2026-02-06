@@ -33,82 +33,8 @@ const getSavedLanguage = (): string => {
     return 'de';
 };
 
-// Patch DOM methods IMMEDIATELY when module loads (before React uses them)
-if (typeof window !== 'undefined') {
-    // Patch removeChild
-    const originalRemoveChild = Node.prototype.removeChild;
-    const removeChildProto: any = Node.prototype.removeChild;
-
-    if (!removeChildProto.__googleTranslatePatched) {
-        (Node.prototype as any).removeChild = function(child: Node) {
-            try {
-                // Always check if child is actually a child before removing
-                if (child.parentNode !== this) {
-                    // Child's parent is not this node - it was moved, return without error
-                    return child;
-                }
-                // Child is actually a child - proceed with normal removal
-                return originalRemoveChild.call(this, child);
-            } catch (error: unknown) {
-                // Catch any errors and return child silently
-                const err = error as { name?: string; code?: number; message?: string };
-                const errorMessage = err?.message || String(error) || '';
-                const errorName = err?.name || '';
-                const errorCode = err?.code;
-                
-                if (
-                    errorName === 'NotFoundError' ||
-                    errorCode === 8 ||
-                    errorMessage.includes('not a child') ||
-                    errorMessage.includes('removeChild')
-                ) {
-                    return child;
-                }
-                throw error;
-            }
-        };
-        removeChildProto.__googleTranslatePatched = true;
-    }
-
-    // Patch insertBefore
-    const originalInsertBefore = Node.prototype.insertBefore;
-    const insertBeforeProto: any = Node.prototype.insertBefore;
-
-    if (!insertBeforeProto.__googleTranslatePatched) {
-        (Node.prototype as any).insertBefore = function(newNode: Node, referenceNode: Node | null) {
-            try {
-                // Check if referenceNode is actually a child of this node (if provided)
-                if (referenceNode !== null && referenceNode.parentNode !== this) {
-                    // Reference node was moved - append instead
-                    return this.appendChild(newNode);
-                }
-                // Reference node is valid - proceed with normal insertion
-                return originalInsertBefore.call(this, newNode, referenceNode);
-            } catch (error: unknown) {
-                const err = error as { name?: string; code?: number; message?: string };
-                const errorMessage = err?.message || String(error) || '';
-                const errorName = err?.name || '';
-                const errorCode = err?.code;
-                
-                if (
-                    errorName === 'NotFoundError' ||
-                    errorCode === 8 ||
-                    errorMessage.includes('not a child') ||
-                    errorMessage.includes('insertBefore')
-                ) {
-                    // Fallback to appendChild
-                    try {
-                        return this.appendChild(newNode);
-                    } catch {
-                        return newNode;
-                    }
-                }
-                throw error;
-            }
-        };
-        insertBeforeProto.__googleTranslatePatched = true;
-    }
-}
+// DOM patch is now imported in app/layout.tsx before React loads
+// This ensures the patch is applied before React uses DOM methods
 
 const GoogleTranslateWrapper = memo(function GoogleTranslateWrapper() {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -182,8 +108,13 @@ const GoogleTranslateWrapper = memo(function GoogleTranslateWrapper() {
                             try {
                                 if (typeof window === 'undefined' || 
                                     !window.google || 
-                                    !window.google.translate || 
-                                    typeof window.google.translate.TranslateElement !== 'function') {
+                                    !window.google.translate) {
+                                    return false;
+                                }
+                                
+                                // More robust check for TranslateElement
+                                const TranslateElement = window.google.translate.TranslateElement;
+                                if (!TranslateElement || typeof TranslateElement !== 'function') {
                                     return false;
                                 }
                                 
@@ -199,23 +130,28 @@ const GoogleTranslateWrapper = memo(function GoogleTranslateWrapper() {
                                     return true;
                                 }
                                 
-                                // Initialize Google Translate
+                                // Initialize Google Translate - use try-catch around constructor
                                 try {
-                                    new window.google.translate.TranslateElement({
-                                        pageLanguage: 'de',
-                                        includedLanguages: 'en,de',
-                                        autoDisplay: false
-                                    }, 'google_translate_element');
-                                    
-                                    // Apply saved language preference after initialization
-                                    setTimeout(applySavedLanguage, 500);
-                                    return true;
+                                    // Double-check it's still a function before calling
+                                    if (typeof window.google.translate.TranslateElement === 'function') {
+                                        new window.google.translate.TranslateElement({
+                                            pageLanguage: 'de',
+                                            includedLanguages: 'en,de',
+                                            autoDisplay: false
+                                        }, 'google_translate_element');
+                                        
+                                        // Apply saved language preference after initialization
+                                        setTimeout(applySavedLanguage, 500);
+                                        return true;
+                                    } else {
+                                        return false;
+                                    }
                                 } catch (initError) {
-                                    console.error('Error initializing Google Translate:', initError);
+                                    // Silently fail - will retry on next interval
                                     return false;
                                 }
                             } catch (error) {
-                                console.error('Error in initTranslate:', error);
+                                // Silently fail - will retry on next interval
                                 return false;
                             }
                         }

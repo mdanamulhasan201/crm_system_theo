@@ -1,16 +1,22 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { ChevronDown, Check } from 'lucide-react'
 
+interface Location {
+  id: string
+  address: string
+  description: string
+  isPrimary?: boolean
+}
+
 interface LocationDropdownProps {
-  value: string
-  locations: string[]
+  value: Location | null
+  locations: Location[]
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  onChange: (value: string) => void
-  onSelect: (location: string) => void
+  onChange: (location: Location) => void
+  onSelect: (location: Location) => void
 }
 
 export default function LocationDropdown({
@@ -21,9 +27,30 @@ export default function LocationDropdown({
   onChange,
   onSelect,
 }: LocationDropdownProps) {
-  const handleSelect = (location: string) => {
+  // Helper function to check if a location matches the current value
+  const isLocationSelected = (location: Location) => {
+    if (!value) return false
+    return value.id === location.id
+  }
+
+  // Helper function to get display value for a location
+  const getLocationDisplayValue = (location: Location) => {
+    if (location.description && location.address) {
+      return `${location.description} - ${location.address}`
+    }
+    return location.description || location.address
+  }
+
+  const handleSelect = (location: Location) => {
     onSelect(location)
+    onChange(location)
     onOpenChange(false)
+  }
+
+  // Get display value for the selected location
+  const getSelectedDisplayValue = () => {
+    if (!value) return 'Standort wählen'
+    return getLocationDisplayValue(value)
   }
 
   return (
@@ -37,7 +64,7 @@ export default function LocationDropdown({
           onClick={() => onOpenChange(!isOpen)}
         >
           <span className="truncate">
-            {value || 'Standort wählen'}
+            {getSelectedDisplayValue()}
           </span>
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -48,28 +75,46 @@ export default function LocationDropdown({
       >
         <div className="py-1">
           {locations && locations.length > 0 ? (
-            locations.map((location: string, index: number) => (
-              <div
-                key={index}
-                className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150 ${
-                  value === location
-                    ? 'bg-blue-50 hover:bg-blue-100 border-l-2 border-blue-500'
-                    : 'hover:bg-gray-100'
-                }`}
-                onClick={() => handleSelect(location)}
-              >
-                <span
-                  className={`text-sm font-medium ${
-                    value === location ? 'text-blue-900' : 'text-gray-900'
+            locations.map((location: Location) => {
+              const isSelected = isLocationSelected(location)
+              const displayValue = getLocationDisplayValue(location)
+              
+              return (
+                <div
+                  key={location.id}
+                  className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150 ${
+                    isSelected
+                      ? 'bg-blue-50 hover:bg-blue-100 border-l-2 border-blue-500'
+                      : 'hover:bg-gray-100'
                   }`}
+                  onClick={() => handleSelect(location)}
                 >
-                  {location}
-                </span>
-                {value === location && (
-                  <Check className="h-4 w-4 text-blue-600" />
-                )}
-              </div>
-            ))
+                  <div className="flex flex-col flex-1 min-w-0">
+                    {location.description && (
+                      <span
+                        className={`text-sm font-medium truncate ${
+                          isSelected ? 'text-blue-900' : 'text-gray-900'
+                        }`}
+                      >
+                        {location.description}
+                      </span>
+                    )}
+                    {location.address && (
+                      <span
+                        className={`text-xs truncate ${
+                          isSelected ? 'text-blue-700' : 'text-gray-600'
+                        }`}
+                      >
+                        {location.address}
+                      </span>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <Check className="h-4 w-4 text-blue-600 ml-2 shrink-0" />
+                  )}
+                </div>
+              )
+            })
           ) : (
             <div className="p-3 text-center text-sm text-gray-500">
               Keine verfügbaren Standorte gefunden

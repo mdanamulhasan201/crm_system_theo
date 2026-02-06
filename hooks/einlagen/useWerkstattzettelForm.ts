@@ -35,7 +35,7 @@ export function useWerkstattzettelForm(
   const [mitarbeiter, setMitarbeiter] = useState('')
   const [versorgung, setVersorgung] = useState('')
   const [datumAuftrag, setDatumAuftrag] = useState('')
-  const [geschaeftsstandort, setGeschaeftsstandort] = useState('')
+  const [geschaeftsstandort, setGeschaeftsstandort] = useState<{id: string; address: string; description: string; isPrimary?: boolean} | null>(null)
   const [fertigstellungBis, setFertigstellungBis] = useState('')
   const [fertigstellungBisTime, setFertigstellungBisTime] = useState('')
   const [bezahlt, setBezahlt] = useState('')
@@ -76,7 +76,8 @@ export function useWerkstattzettelForm(
       setMitarbeiter(initialized.mitarbeiter)
       setVersorgung(initialized.versorgung)
       setDatumAuftrag(initialized.datumAuftrag)
-      setGeschaeftsstandort(initialized.geschaeftsstandort)
+      // Initialize geschaeftsstandort - keep as null for now, will be set from locations dropdown
+      setGeschaeftsstandort(null)
       setBezahlt(initialized.bezahlt)
       setFootAnalysisPrice(initialized.footAnalysisPrice)
       setInsoleSupplyPrice(initialized.insoleSupplyPrice)
@@ -124,8 +125,8 @@ export function useWerkstattzettelForm(
     setShowSuggestions(open)
   }
 
-  // Handle business location selection
-  const handleLocationSelect = (location: string) => {
+  // Handle business location selection - now accepts location object
+  const handleLocationSelect = (location: {id: string; address: string; description: string; isPrimary?: boolean} | null) => {
     setGeschaeftsstandort(location)
     setIsLocationDropdownOpen(false)
   }

@@ -17,22 +17,11 @@ export default function ImageUpload({
 }: ImageUploadProps) {
     const [imagePreview, setImagePreview] = useState<string | null>(initialImage);
     const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const dropZoneRef = useRef<HTMLDivElement>(null);
 
-    const sizeClasses = {
-        sm: "w-24 h-24",
-        md: "w-32 h-32",
-        lg: "w-40 h-40",
-    };
-
-    const iconSizes = {
-        sm: "w-8 h-8",
-        md: "w-12 h-12",
-        lg: "w-16 h-16",
-    };
-
-    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+    const processFile = (file: File) => {
         if (file && file.type.startsWith("image/")) {
             setImageFile(file);
             const reader = new FileReader();
@@ -44,6 +33,17 @@ export default function ImageUpload({
                 }
             };
             reader.readAsDataURL(file);
+        }
+    };
+
+    // Use imagePreview (internal state) if available, otherwise use initialImage prop
+    // This ensures uploaded images show immediately
+    const displayImage = imagePreview || initialImage;
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            processFile(file);
         }
     };
 
@@ -63,13 +63,45 @@ export default function ImageUpload({
         }
     };
 
+    // Drag and drop handlers
+    const handleDragEnter = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(true);
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+    };
+
+    const handleDrop = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsDragging(false);
+
+        const file = e.dataTransfer.files?.[0];
+        if (file) {
+            processFile(file);
+        }
+    };
+
     // Sync initialImage with state when it changes
     useEffect(() => {
         setImagePreview(initialImage);
+        if (initialImage === null) {
+            setImageFile(null);
+        }
     }, [initialImage]);
 
     return (
-        <div className={`flex-shrink-0 ${className}`}>
+        <div className={`shrink-0 ${className}`}>
             <input
                 ref={fileInputRef}
                 type="file"
@@ -78,43 +110,69 @@ export default function ImageUpload({
                 className="hidden"
             />
             <div
+                ref={dropZoneRef}
                 onClick={handleImageClick}
-                className={`${sizeClasses[size]} border border-gray-300 bg-gray-50 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors relative overflow-hidden rounded-[5px]`}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+                className={`w-full aspect-square border-2 border-dashed ${
+                    isDragging ? "border-green-500 bg-green-50" : "border-gray-300 bg-white"
+                } rounded-[5px] flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors relative overflow-hidden`}
             >
-                {imagePreview ? (
+                {displayImage ? (
                     <>
-                        <Image
-                            src={imagePreview}
-                            alt="Uploaded image"
-                            fill
-                            className="object-cover"
-                            unoptimized
-                        />
+                        <div className="relative w-full h-full aspect-square">
+                            <Image
+                                src={displayImage}
+                                alt="Uploaded image"
+                                fill
+                                className="object-contain"
+                                unoptimized
+                            />
+                        </div>
                         <button
                             onClick={handleRemoveImage}
-                            className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600 z-10"
+                            className="absolute top-2 right-2 bg-black/70 hover:bg-black text-white rounded-full w-8 h-8 flex items-center justify-center text-lg z-10 transition-colors"
                         >
                             ×
                         </button>
                     </>
                 ) : (
-                    <div className="flex flex-col items-center justify-center gap-2 p-2">
-                        <svg
-                            className={`${iconSizes[size]} text-gray-400`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                            />
-                        </svg>
-                        <span className="text-xs text-gray-500 font-medium text-center px-1">
-                            Bild hochladen
-                        </span>
+                    <div className="flex flex-col items-center justify-center gap-3 p-6 text-center">
+                        {/* Upload Icon - upward arrow in square */}
+                        <div className="relative w-16 h-16 flex items-center justify-center">
+                            {/* Square border */}
+                            <div className="absolute inset-0 border-2 border-gray-400 rounded-sm"></div>
+                            {/* Upward arrow icon */}
+                            <svg
+                                className="w-8 h-8 text-gray-400 relative z-10"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                />
+                            </svg>
+                        </div>
+                        
+                        <div className="flex flex-col gap-1">
+                            <span className="text-base font-medium text-gray-700">
+                                Bild hochladen
+                            </span>
+                            <span className="text-sm text-gray-500">
+                                Drag & Drop oder Klicken
+                            </span>
+                        </div>
+                        
+                        {/* Recommendation text */}
+                        <p className="text-xs text-gray-400 mt-2">
+                            Empfohlen: quadratisch, min. 800x800
+                        </p>
                     </div>
                 )}
             </div>

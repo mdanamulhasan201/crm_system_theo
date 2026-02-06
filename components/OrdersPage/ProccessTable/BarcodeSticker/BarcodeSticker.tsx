@@ -14,7 +14,7 @@ interface BarcodeStickerData {
     orderStatus: string;
     completedAt: string | null;
     barcodeCreatedAt?: string | null;
-    partnerAddress: string | { title?: string; description?: string };
+    partnerAddress: string | { address?: string; title?: string; description?: string };
 }
 
 interface BarcodeStickerProps {
@@ -102,13 +102,25 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                                 : (() => {
                                     const addr = data.partnerAddress;
                                     if (!addr || typeof addr !== 'object') return 'Address';
-                                    const parts = [];
-                                    if (addr.title && typeof addr.title === 'string') parts.push(addr.title);
-                                    // Show description only if it exists and has a value
-                                    if (addr.description && typeof addr.description === 'string' && addr.description.trim() !== '') {
-                                        parts.push(addr.description);
+                                    
+                                    // Get address and description
+                                    const addressText = addr.address || addr.title || '';
+                                    const descriptionText = addr.description || '';
+                                    
+                                    // Show description first (top), then address (bottom)
+                                    if (descriptionText && descriptionText.trim() !== '' && addressText && addressText.trim() !== '') {
+                                        return (
+                                            <>
+                                                <div>{descriptionText}</div>
+                                                <div style={{ marginTop: '2px' }}>{addressText}</div>
+                                            </>
+                                        );
+                                    } else if (descriptionText && descriptionText.trim() !== '') {
+                                        return descriptionText;
+                                    } else if (addressText && addressText.trim() !== '') {
+                                        return addressText;
                                     }
-                                    return parts.length > 0 ? parts.join(', ') : (addr.title || 'Address');
+                                    return 'Address';
                                 })()}
                         </div>
                     </div>

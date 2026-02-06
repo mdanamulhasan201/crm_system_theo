@@ -6,6 +6,7 @@ import { Toaster } from "react-hot-toast";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CustomShaftDataProvider } from "@/contexts/CustomShaftDataContext";
 import GoogleTranslateWrapper from "@/components/Shared/GoogleTranslateWrapper";
+import DomPatchLoader from "@/components/Shared/DomPatchLoader";
 // import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const geistSans = Geist({
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+          <DomPatchLoader />
           <GoogleTranslateWrapper />
           <LanguageProvider>
             <AuthProvider>

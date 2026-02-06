@@ -27,16 +27,13 @@ export default function BarcodeStickerModal({
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
 
-    // Helper to safely convert partnerAddress to string for display
-    const normalizePartnerAddress = (partnerAddress: any): string => {
+    // Keep partnerAddress as object to preserve address and description structure
+    // BarcodeSticker component will handle the display properly
+    const normalizePartnerAddress = (partnerAddress: any): any => {
         if (typeof partnerAddress === 'string') return partnerAddress;
         if (partnerAddress && typeof partnerAddress === 'object') {
-            const parts = [];
-            if (partnerAddress.title) parts.push(partnerAddress.title);
-            if (partnerAddress.description && partnerAddress.description.trim() !== '') {
-                parts.push(partnerAddress.description);
-            }
-            return parts.length > 0 ? parts.join(', ') : (partnerAddress.title || 'Address');
+            // Return the object as-is so BarcodeSticker can display both address and description
+            return partnerAddress;
         }
         return 'Address';
     };

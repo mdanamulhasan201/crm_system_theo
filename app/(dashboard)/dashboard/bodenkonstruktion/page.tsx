@@ -28,7 +28,8 @@ import { parseEuroFromText } from "../_components/Massschuhauftraeges/Details/He
 
 // APIs
 import { 
-    createCustomBodenkonstruktion 
+    createCustomBodenkonstruktion,
+    getCountDate
 } from "@/apis/MassschuheManagemantApis"
 
 export default function BodenkonstruktionPage() {
@@ -80,20 +81,42 @@ export default function BodenkonstruktionPage() {
     const [showAbsatzFormModal, setShowAbsatzFormModal] = useState(false)
     const [selectedAbsatzForm, setSelectedAbsatzForm] = useState<string | null>(null)
 
+    // Delivery days count from API
+    const [deliveryDaysCount, setDeliveryDaysCount] = useState<number>(14) // Default to 14 if API fails
+
     // Hooks
     const { soleOptions } = useSoleData()
 
-    // Calculate delivery date (14 days from today)
+    // Fetch delivery days count from API
+    React.useEffect(() => {
+        const fetchDeliveryDays = async () => {
+            try {
+                const response = await getCountDate()
+                // Assuming the API returns { count: number } or similar structure
+                // Adjust based on actual API response
+                const count = response?.count || response?.data?.count || response?.days || 14
+                if (typeof count === 'number' && count > 0) {
+                    setDeliveryDaysCount(count)
+                }
+            } catch (error) {
+                console.error("Error fetching delivery days count:", error)
+                // Keep default value of 14
+            }
+        }
+        fetchDeliveryDays()
+    }, [])
+
+    // Calculate delivery date based on count from API
     const deliveryDate = useMemo(() => {
         const today = new Date()
         const delivery = new Date(today)
-        delivery.setDate(today.getDate() + 14)
+        delivery.setDate(today.getDate() + deliveryDaysCount)
         return delivery.toLocaleDateString('de-DE', { 
             day: '2-digit', 
             month: '2-digit', 
             year: 'numeric' 
         })
-    }, [])
+    }, [deliveryDaysCount])
 
     // Prepare order data for PDF
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
@@ -374,9 +397,9 @@ export default function BodenkonstruktionPage() {
             formData.append('other_customer_name', customerName)
         }
 
-        // Add delivery date (ISO format)
+        // Add delivery date (ISO format) - use count from API
         const deliveryDateObj = new Date()
-        deliveryDateObj.setDate(deliveryDateObj.getDate() + 14)
+        deliveryDateObj.setDate(deliveryDateObj.getDate() + deliveryDaysCount)
         formData.append('deliveryDate', deliveryDateObj.toISOString())
 
         // Add total price

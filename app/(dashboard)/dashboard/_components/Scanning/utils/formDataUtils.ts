@@ -13,7 +13,7 @@ export interface WerkstattzettelFormData {
   mitarbeiter: string
   versorgung: string
   datumAuftrag: string
-  geschaeftsstandort: string
+  geschaeftsstandort: {id: string; address: string; description: string; isPrimary?: boolean} | null
   fertigstellungBis: string
   fertigstellungBisTime?: string
   bezahlt: string
@@ -59,7 +59,10 @@ export function createWerkstattzettelPayload(
     wohnort: formData.wohnort || undefined,
     telefon: formData.telefonnummer || undefined,
     email: formData.email || undefined,
-    geschaeftsstandort: formData.geschaeftsstandort || undefined,
+    geschaeftsstandort: formData.geschaeftsstandort ? {
+      address: formData.geschaeftsstandort.address,
+      description: formData.geschaeftsstandort.description
+    } : undefined,
     mitarbeiter: formData.mitarbeiter || undefined,
     employeeId: formData.employeeId || undefined, // This will be mapped to werkstattEmployeeId in order payload
     fertigstellungBis: fertigIso,

@@ -184,6 +184,41 @@ export default function ScanPictureModal({
                                         <p className="text-gray-500 text-center">Bitte wählen Sie einen Fuß aus</p>
                                     </div>
                                 )}
+
+                                {/* Foot Selection Buttons - Below Image */}
+                                <div className="mt-4">
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                                        Fuß Auswahl
+                                    </h3>
+                                    <div className="flex flex-col gap-2.5">
+                                        <Button
+                                            onClick={() => setSelectedFoot('left')}
+                                            variant={selectedFoot === 'left' ? 'default' : 'outline'}
+                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${
+                                                selectedFoot === 'left'
+                                                    ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
+                                                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
+                                            } ${!data?.picture_23 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            disabled={!data?.picture_23}
+                                        >
+                                            <span className="mr-2 text-lg">👣</span>
+                                            Linker Fuß
+                                        </Button>
+                                        <Button
+                                            onClick={() => setSelectedFoot('right')}
+                                            variant={selectedFoot === 'right' ? 'default' : 'outline'}
+                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${
+                                                selectedFoot === 'right'
+                                                    ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
+                                                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
+                                            } ${!data?.picture_24 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            disabled={!data?.picture_24}
+                                        >
+                                            <span className="mr-2 text-lg">👣</span>
+                                            Rechter Fuß
+                                        </Button>
+                                    </div>
+                                </div>
                             </div>
 
                             {/* Right: Meta information */}
@@ -291,40 +326,6 @@ export default function ScanPictureModal({
                                     </div>
                                 )}
 
-                                {/* Foot Selection Buttons */}
-                                <div className="pt-2">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                                        Fuß Auswahl
-                                    </h3>
-                                    <div className="flex flex-col gap-2.5">
-                                        <Button
-                                            onClick={() => setSelectedFoot('left')}
-                                            variant={selectedFoot === 'left' ? 'default' : 'outline'}
-                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${
-                                                selectedFoot === 'left'
-                                                    ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
-                                                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
-                                            } ${!data?.picture_23 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            disabled={!data?.picture_23}
-                                        >
-                                            <span className="mr-2 text-lg">👣</span>
-                                            Linker Fuß
-                                        </Button>
-                                        <Button
-                                            onClick={() => setSelectedFoot('right')}
-                                            variant={selectedFoot === 'right' ? 'default' : 'outline'}
-                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${
-                                                selectedFoot === 'right'
-                                                    ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
-                                                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
-                                            } ${!data?.picture_24 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                            disabled={!data?.picture_24}
-                                        >
-                                            <span className="mr-2 text-lg">👣</span>
-                                            Rechter Fuß
-                                        </Button>
-                                    </div>
-                                </div>
                                 </div>
                             </div>
                         </div>

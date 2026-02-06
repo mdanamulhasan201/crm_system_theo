@@ -311,3 +311,13 @@ export const createCustomBodenkonstruktion = async (formData: FormData | any) =>
         throw error;
     }
 }
+
+// get   {{TD_BASEURL}}custom_shafts/manage/damian-count
+export const getCountDate = async () => {
+    try {
+        const response = await axiosClient.get(`/custom_shafts/damian-count`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

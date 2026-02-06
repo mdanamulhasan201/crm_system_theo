@@ -18,7 +18,7 @@ interface BarcodeStickerData {
     orderStatus: string;
     completedAt: string | null;
     barcodeCreatedAt?: string | null;
-    partnerAddress: string | { title?: string; description?: string };
+    partnerAddress: string | { address?: string; title?: string; description?: string };
 }
 
 // Helper to format date in German format
@@ -145,21 +145,22 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     if (typeof data.partnerAddress === 'string') {
         ctx.fillText(data.partnerAddress, 255, addressY);
     } else if (data.partnerAddress) {
-        // Show title if it exists
-        if (data.partnerAddress.title) {
-            ctx.fillText(data.partnerAddress.title, 255, addressY);
-            // Only move to next line if description exists and has a value
-            if (data.partnerAddress.description && data.partnerAddress.description.trim() !== '') {
-                addressY += 12; // Move to next line for description
-                ctx.fillText(data.partnerAddress.description, 255, addressY);
-            }
-        } else {
-            // If no title, check description or show fallback
-            if (data.partnerAddress.description && data.partnerAddress.description.trim() !== '') {
-                ctx.fillText(data.partnerAddress.description, 255, addressY);
-            } else {
-                ctx.fillText('Address', 255, addressY);
-            }
+        // Get address and description
+        const addressText = data.partnerAddress.address || data.partnerAddress.title || '';
+        const descriptionText = data.partnerAddress.description || '';
+        
+        // Show description on first line (top) if it exists
+        if (descriptionText && descriptionText.trim() !== '') {
+            ctx.fillText(descriptionText, 255, addressY);
+            addressY += 12; // Move to next line for address
+        }
+        
+        // Show address on second line (bottom) if it exists
+        if (addressText && addressText.trim() !== '') {
+            ctx.fillText(addressText, 255, addressY);
+        } else if (!descriptionText || descriptionText.trim() === '') {
+            // If no description and no address, show fallback
+            ctx.fillText('Address', 255, addressY);
         }
     } else {
         ctx.fillText('Address', 255, addressY);

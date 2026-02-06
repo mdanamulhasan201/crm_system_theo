@@ -6,6 +6,7 @@ import { getAllOrderData, cancelOrder } from '@/apis/MassschuheManagemantApis'
 import toast from 'react-hot-toast'
 import ConfirmModal from '@/components/OrdersPage/ConfirmModal/ConfirmModal'
 
+
 export interface TransactionData {
     id: string;
     // ID of the custom shaft order (used for cancel)
@@ -120,7 +121,7 @@ export default function DataTables({
                     custom_shafts_order_status: item.custom_shafts?.order_status || null,
                     datum: formatDate(item.createdAt),
                     transaktionsnummer: item.custom_shafts?.orderNumber || item.orderNumber || '-',
-                    kundenname: item.customer 
+                    kundenname: item.customer
                         ? `${item.customer.vorname || ''} ${item.customer.nachname || ''}`.trim() || '--'
                         : (item.custom_shafts?.other_customer_name || '--'),
                     beschreibung: item.custom_shafts_catagoary || item.note || null,
@@ -149,13 +150,13 @@ export default function DataTables({
     const fetchData = async () => {
         try {
             setLoading(true);
-            const response = await getAllOrderData(10, '') as ApiResponse;
-            
+            const response = await getAllOrderData(5, '') as ApiResponse;
+
             if (response && response.success && Array.isArray(response.data)) {
                 const mappedData = mapApiDataToTransactionData(response.data);
                 setData(mappedData);
                 setHasMore(response.hasMore || false);
-                
+
                 // Set cursor to the last item's ID for next fetch
                 if (response.data.length > 0) {
                     const lastId = response.data[response.data.length - 1].id;
@@ -180,13 +181,13 @@ export default function DataTables({
 
         try {
             setLoadingMore(true);
-            const response = await getAllOrderData(10, cursor) as ApiResponse;
-            
+            const response = await getAllOrderData(5, cursor) as ApiResponse;
+
             if (response.success && Array.isArray(response.data)) {
                 const mappedData = mapApiDataToTransactionData(response.data);
                 setData(prevData => [...prevData, ...mappedData]);
                 setHasMore(response.hasMore);
-                
+
                 // Update cursor to the last item's ID
                 if (response.data.length > 0) {
                     setCursor(response.data[response.data.length - 1].id);
@@ -255,7 +256,7 @@ export default function DataTables({
         if (!status) return 'text-gray-600';
 
         const statusLower = status.toLowerCase();
-        
+
         if (statusLower === 'pending' || statusLower === 'panding') {
             return 'bg-yellow-100 text-yellow-700 border border-yellow-200';
         }
@@ -268,7 +269,7 @@ export default function DataTables({
         if (statusLower === 'neu') {
             return 'bg-purple-100 text-purple-700 border border-purple-200';
         }
-        
+
         return 'bg-gray-100 text-gray-700 border border-gray-200';
     };
 
@@ -396,7 +397,7 @@ export default function DataTables({
             </span>
         ),
         className: 'bg-gray-100 border border-gray-200 rounded-md px-3 py-1 cursor-default',
-        onClick: () => {},
+        onClick: () => { },
         show: (row) => row.custom_shafts_order_status === 'canceled',
     };
 
@@ -404,18 +405,17 @@ export default function DataTables({
     const allActions = (): TableAction<TransactionData>[] | undefined => {
         const baseActions = buildActions();
         const actions = baseActions ? [...baseActions] : [];
-        
+
         // Add cancel and canceled-status actions (they conditionally show based on status)
         actions.push(cancelAction);
         actions.push(canceledStatusAction);
-        
+
         return actions.length > 0 ? actions : undefined;
     };
 
     return (
         <div className="mt-8">
-            {/* Header */}
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Transaktionen</h2>
+           
 
             {/* Table */}
             <ReusableBalanceTable
