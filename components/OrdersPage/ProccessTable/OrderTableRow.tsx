@@ -40,6 +40,23 @@ export default function OrderTableRow({
     onBarcodeStickerClick,
     onStatusClickGenerateAndSend,
 }: OrderTableRowProps) {
+    // Helper function to safely get string value
+    const getSafeString = (value: any): string => {
+        if (value == null) return '';
+        if (typeof value === 'string') return value;
+        try {
+            return String(value);
+        } catch {
+            return '';
+        }
+    };
+
+    // Get safe geschaeftsstandort string
+    const geschaeftsstandortStr = getSafeString(order.geschaeftsstandort);
+    const geschaeftsstandortInitials = geschaeftsstandortStr.length >= 2 
+        ? geschaeftsstandortStr.substring(0, 2).toUpperCase() 
+        : geschaeftsstandortStr.toUpperCase();
+
     const getStatusBadgeColor = (status: string) => {
         const normalizedStatus = status.replace(/_/g, ' ');
         if (normalizedStatus === 'Warten auf Versorgungsstart') {
@@ -200,7 +217,7 @@ export default function OrderTableRow({
             <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
                 <div className="flex flex-row items-center justify-center gap-2">
                     <span>{order.fertiggestelltAm}</span>
-                    {order.geschaeftsstandort && (
+                    {geschaeftsstandortStr && geschaeftsstandortStr.trim() !== '' && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -209,13 +226,13 @@ export default function OrderTableRow({
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <div className="w-8 h-8 rounded-full bg-[#61A175] text-white flex items-center justify-center text-xs font-semibold hover:bg-[#61A175]/80 transition-colors">
-                                            {order.geschaeftsstandort.substring(0, 2).toUpperCase()}
+                                            {geschaeftsstandortInitials}
                                         </div>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg">
                                     <div className="flex flex-col gap-1">
-                                        <div className="font-semibold text-sm">Abholort: {order.geschaeftsstandort}</div>
+                                        <div className="font-semibold text-sm">Abholort: {geschaeftsstandortStr}</div>
                                     </div>
                                 </TooltipContent>
                             </Tooltip>
