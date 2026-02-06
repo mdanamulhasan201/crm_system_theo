@@ -18,7 +18,7 @@ interface BarcodeStickerData {
     orderStatus: string;
     completedAt: string | null;
     barcodeCreatedAt?: string | null;
-    partnerAddress: string;
+    partnerAddress: string | { title?: string; description?: string };
 }
 
 // Helper to format date in German format
@@ -140,7 +140,30 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     // Address (left-aligned within right section)
     ctx.font = '9px Arial';
     ctx.fillStyle = '#666666';
-    ctx.fillText(data.partnerAddress || 'Address', 255, currentY + 14);
+    let addressY = currentY + 14;
+    
+    if (typeof data.partnerAddress === 'string') {
+        ctx.fillText(data.partnerAddress, 255, addressY);
+    } else if (data.partnerAddress) {
+        // Show title if it exists
+        if (data.partnerAddress.title) {
+            ctx.fillText(data.partnerAddress.title, 255, addressY);
+            // Only move to next line if description exists and has a value
+            if (data.partnerAddress.description && data.partnerAddress.description.trim() !== '') {
+                addressY += 12; // Move to next line for description
+                ctx.fillText(data.partnerAddress.description, 255, addressY);
+            }
+        } else {
+            // If no title, check description or show fallback
+            if (data.partnerAddress.description && data.partnerAddress.description.trim() !== '') {
+                ctx.fillText(data.partnerAddress.description, 255, addressY);
+            } else {
+                ctx.fillText('Address', 255, addressY);
+            }
+        }
+    } else {
+        ctx.fillText('Address', 255, addressY);
+    }
     
     currentY += 55;
     

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { createAppoinment, deleteAppointment, getMyAppointments, getSingleAppointment, updateAppointment } from '@/apis/appoinmentApis';
 import toast from 'react-hot-toast';
+import { safeToastMessage } from '@/lib/toastUtils';
 
 interface Event {
     id: string;
@@ -183,7 +184,7 @@ export const useAppoinment = () => {
                 return true;
             } else {
                 toast.dismiss(loadingToastId);
-                toast.error(response.message || 'Failed to create appointment', {
+                toast.error(safeToastMessage(response.message) || 'Failed to create appointment', {
                     duration: 5000,
                 });
                 return false;
@@ -206,7 +207,7 @@ export const useAppoinment = () => {
             // Refresh from server to ensure consistency
             await fetchAppointments();
             setRefreshKey(prev => prev + 1);
-            toast.success(response.message || 'Appointment deleted successfully');
+            toast.success(safeToastMessage(response.message) || 'Appointment deleted successfully');
             return true;
         } catch (error: unknown) {
             // If deletion fails, refresh to restore the correct state
@@ -282,7 +283,7 @@ export const useAppoinment = () => {
                 toast.success('Appointment updated successfully');
                 return true;
             } else {
-                toast.error(response.message || 'Failed to update appointment', {
+                toast.error(safeToastMessage(response.message) || 'Failed to update appointment', {
                     duration: 5000,
                 });
                 return false;

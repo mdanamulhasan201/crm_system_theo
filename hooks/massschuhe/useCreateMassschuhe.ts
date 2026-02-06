@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createMassschuheAdded } from '@/apis/MassschuheAddedApis';
 import toast from 'react-hot-toast';
+import { safeToastMessage } from '@/lib/toastUtils';
 
 interface MassschuheData {
     customerId: string;

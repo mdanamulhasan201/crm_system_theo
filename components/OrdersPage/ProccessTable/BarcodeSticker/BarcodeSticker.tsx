@@ -14,7 +14,7 @@ interface BarcodeStickerData {
     orderStatus: string;
     completedAt: string | null;
     barcodeCreatedAt?: string | null;
-    partnerAddress: string;
+    partnerAddress: string | { title?: string; description?: string };
 }
 
 interface BarcodeStickerProps {
@@ -97,7 +97,19 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                             {data.partner?.name || 'Partner Name'}
                         </div>
                         <div style={{ fontSize: '9px', color: '#666' }}>
-                            {data.partnerAddress || 'Address'}
+                            {typeof data.partnerAddress === 'string' 
+                                ? data.partnerAddress 
+                                : (() => {
+                                    const addr = data.partnerAddress;
+                                    if (!addr || typeof addr !== 'object') return 'Address';
+                                    const parts = [];
+                                    if (addr.title && typeof addr.title === 'string') parts.push(addr.title);
+                                    // Show description only if it exists and has a value
+                                    if (addr.description && typeof addr.description === 'string' && addr.description.trim() !== '') {
+                                        parts.push(addr.description);
+                                    }
+                                    return parts.length > 0 ? parts.join(', ') : (addr.title || 'Address');
+                                })()}
                         </div>
                     </div>
                     <img 

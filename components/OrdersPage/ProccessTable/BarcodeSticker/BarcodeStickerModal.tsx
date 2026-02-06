@@ -23,15 +23,37 @@ export default function BarcodeStickerModal({
     autoGenerate = false,
 }: BarcodeStickerModalProps) {
     const [barcodeData, setBarcodeData] = useState<any>(null);
+    const [originalBarcodeData, setOriginalBarcodeData] = useState<any>(null); // Keep original for PDF
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
+
+    // Helper to safely convert partnerAddress to string for display
+    const normalizePartnerAddress = (partnerAddress: any): string => {
+        if (typeof partnerAddress === 'string') return partnerAddress;
+        if (partnerAddress && typeof partnerAddress === 'object') {
+            const parts = [];
+            if (partnerAddress.title) parts.push(partnerAddress.title);
+            if (partnerAddress.description && partnerAddress.description.trim() !== '') {
+                parts.push(partnerAddress.description);
+            }
+            return parts.length > 0 ? parts.join(', ') : (partnerAddress.title || 'Address');
+        }
+        return 'Address';
+    };
 
     const fetchBarcodeData = useCallback(async () => {
         setLoading(true);
         try {
             const response = await getBarCodeData(orderId);
             if (response.success && response.data) {
-                setBarcodeData(response.data);
+                // Store original data for PDF generation (needs object structure)
+                setOriginalBarcodeData(response.data);
+                // Normalize partnerAddress to string for React rendering
+                const normalizedData = {
+                    ...response.data,
+                    partnerAddress: normalizePartnerAddress(response.data.partnerAddress)
+                };
+                setBarcodeData(normalizedData);
             } else {
                 toast.error('Fehler beim Laden der Barcode-Daten');
             }
@@ -45,7 +67,7 @@ export default function BarcodeStickerModal({
 
     // Download PDF only (no API call) - for manual download button
     const downloadPdf = useCallback(async () => {
-        if (!barcodeData) {
+        if (!barcodeData || !originalBarcodeData) {
             toast.error('Bitte warten Sie, bis die Daten geladen sind');
             return;
         }
@@ -53,8 +75,8 @@ export default function BarcodeStickerModal({
         try {
             setGenerating(true);
             
-            // Generate PDF directly using canvas approach (no html2canvas dependency)
-            const pdfBlob = await generateBarcodeStickerPdfCanvas(barcodeData);
+            // Use original data for PDF to preserve object structure (title/description)
+            const pdfBlob = await generateBarcodeStickerPdfCanvas(originalBarcodeData);
             
             if (!pdfBlob || pdfBlob.size === 0) {
                 toast.error('PDF konnte nicht generiert werden');
@@ -87,11 +109,11 @@ export default function BarcodeStickerModal({
         } finally {
             setGenerating(false);
         }
-    }, [barcodeData, orderId, orderNumber]);
+    }, [barcodeData, originalBarcodeData, orderId, orderNumber]);
 
     // Generate PDF and send to customer (for auto-generate when status is clicked)
     const generatePdf = useCallback(async () => {
-        if (!barcodeData) {
+        if (!barcodeData || !originalBarcodeData) {
             toast.error('Bitte warten Sie, bis die Daten geladen sind');
             return;
         }
@@ -99,8 +121,8 @@ export default function BarcodeStickerModal({
         try {
             setGenerating(true);
             
-            // Generate PDF directly using canvas approach (no html2canvas dependency)
-            const pdfBlob = await generateBarcodeStickerPdfCanvas(barcodeData);
+            // Use original data for PDF to preserve object structure (title/description)
+            const pdfBlob = await generateBarcodeStickerPdfCanvas(originalBarcodeData);
             
             if (!pdfBlob || pdfBlob.size === 0) {
                 toast.error('PDF konnte nicht generiert werden');
@@ -148,13 +170,14 @@ export default function BarcodeStickerModal({
         } finally {
             setGenerating(false);
         }
-    }, [barcodeData, orderId, orderNumber]);
+    }, [barcodeData, originalBarcodeData, orderId, orderNumber]);
 
     useEffect(() => {
         if (isOpen && orderId) {
             fetchBarcodeData();
         } else {
             setBarcodeData(null);
+            setOriginalBarcodeData(null);
         }
     }, [isOpen, orderId, fetchBarcodeData]);
 

@@ -9,6 +9,7 @@ import CompletionPopUp from "./Completion-PopUp";
 import { useGetSingleMassschuheOrder } from "@/hooks/massschuhe/useGetSingleMassschuheOrder";
 import { sendMassschuheOrderToAdmin1 } from "@/apis/MassschuheManagemantApis";
 import toast from "react-hot-toast";
+import { safeToastMessage } from '@/lib/toastUtils';
 
 // Import components
 import TextField from "./ShoeDetails/components/TextField";
@@ -212,7 +213,7 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
       const response = await sendMassschuheOrderToAdmin1(orderId, formData);
 
       if (response && response.success === false && response.message) {
-        toast.error(response.message);
+        toast.error(safeToastMessage(response.message) || 'Fehler beim Senden der Bestellung');
         return;
       }
 

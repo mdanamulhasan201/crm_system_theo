@@ -12,6 +12,7 @@ import {
     InputOTPSlot,
 } from "@/components/ui/input-otp"
 import { forgotPassword, matchOTP, resetPassword } from '@/apis/authApis';
+import { safeToastMessage } from '@/lib/toastUtils';
 
 export default function SendEmailModal({ open, onOpenChange }: { open: boolean, onOpenChange: (open: boolean) => void }) {
     const [resetEmail, setResetEmail] = useState('');
@@ -52,7 +53,7 @@ export default function SendEmailModal({ open, onOpenChange }: { open: boolean, 
             setShowOTP(true);
         } else {
             setIsLoading(false);
-            toast.error(response.message);
+            toast.error(safeToastMessage(response.message) || 'Failed to send email');
         }
     };
 
@@ -71,7 +72,7 @@ export default function SendEmailModal({ open, onOpenChange }: { open: boolean, 
                 setShowOTP(false);
                 setShowPasswordReset(true);
             } else {
-                toast.error(response.message || 'Failed to verify OTP');
+                toast.error(safeToastMessage(response.message) || 'Failed to verify OTP');
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to verify OTP';
@@ -103,7 +104,7 @@ export default function SendEmailModal({ open, onOpenChange }: { open: boolean, 
                 toast.success('Password reset successfully');
                 handleOpenChange(false);
             } else {
-                toast.error(response.message || 'Failed to reset password');
+                toast.error(safeToastMessage(response.message) || 'Failed to reset password');
             }
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to reset password';

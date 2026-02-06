@@ -33,7 +33,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ErrorBoundary>
+      
           <div id="google_translate_element" style={{ display: "hidden" }}></div>
           <Script id="google-translate-init" strategy="afterInteractive">
             {`
@@ -59,7 +59,7 @@ export default function RootLayout({
             </AuthProvider>
           </LanguageProvider>
           <Toaster />
-        </ErrorBoundary>
+     
       </body>
     </html>
   );

@@ -44,6 +44,15 @@ export default function OrderTableRow({
     const getSafeString = (value: any): string => {
         if (value == null) return '';
         if (typeof value === 'string') return value;
+        // Handle object with title/description properties (e.g., geschaeftsstandort)
+        if (typeof value === 'object' && value !== null) {
+            if (value.title && typeof value.title === 'string') {
+                return value.title.trim() || (value.description && typeof value.description === 'string' ? value.description.trim() : '');
+            }
+            if (value.description && typeof value.description === 'string') {
+                return value.description.trim();
+            }
+        }
         try {
             return String(value);
         } catch {
@@ -53,9 +62,11 @@ export default function OrderTableRow({
 
     // Get safe geschaeftsstandort string
     const geschaeftsstandortStr = getSafeString(order.geschaeftsstandort);
-    const geschaeftsstandortInitials = geschaeftsstandortStr.length >= 2 
-        ? geschaeftsstandortStr.substring(0, 2).toUpperCase() 
-        : geschaeftsstandortStr.toUpperCase();
+    // Ensure it's a string before calling substring
+    const safeGeschaeftsstandortStr = typeof geschaeftsstandortStr === 'string' ? geschaeftsstandortStr : '';
+    const geschaeftsstandortInitials = safeGeschaeftsstandortStr.length >= 2 
+        ? safeGeschaeftsstandortStr.substring(0, 2).toUpperCase() 
+        : safeGeschaeftsstandortStr.toUpperCase();
 
     const getStatusBadgeColor = (status: string) => {
         const normalizedStatus = status.replace(/_/g, ' ');
@@ -217,7 +228,7 @@ export default function OrderTableRow({
             <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
                 <div className="flex flex-row items-center justify-center gap-2">
                     <span>{order.fertiggestelltAm}</span>
-                    {geschaeftsstandortStr && geschaeftsstandortStr.trim() !== '' && (
+                    {safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '' && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
@@ -232,7 +243,7 @@ export default function OrderTableRow({
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg">
                                     <div className="flex flex-col gap-1">
-                                        <div className="font-semibold text-sm">Abholort: {geschaeftsstandortStr}</div>
+                                        <div className="font-semibold text-sm">Abholort: {safeGeschaeftsstandortStr}</div>
                                     </div>
                                 </TooltipContent>
                             </Tooltip>
