@@ -162,11 +162,14 @@ export default function PreisverwaltungPage() {
     };
 
     // Settings handlers
-    const handleSaveSettings = async () => {
+    const handleSaveSettings = async (prices?: PriceItem[], covers?: string[]) => {
         try {
             setIsSaving(true);
             
-            await getCustomerSettings(priceList, coverList);
+            const pricesToSave = prices !== undefined ? prices : priceList;
+            const coversToSave = covers !== undefined ? covers : coverList;
+            
+            await getCustomerSettings(pricesToSave, coversToSave);
             
             toast.success("Einstellungen erfolgreich gespeichert!");
             await fetchSettings();
@@ -228,18 +231,12 @@ export default function PreisverwaltungPage() {
 
             <PriceManagement
                 priceList={priceList}
-                onPriceListChange={setPriceList}
+                onPriceListChange={(prices) => {
+                    setPriceList(prices);
+                    // Auto-save when price list changes
+                    handleSaveSettings(prices, coverList);
+                }}
             />
-
-            <div className="mt-12">
-                <Button
-                    onClick={handleSaveSettings}
-                    disabled={isSaving || (coverList.length === 0 && priceList.length === 0)}
-                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg px-6 py-2.5 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-md"
-                >
-                    {isSaving ? "Speichern..." : "Speichern"}
-                </Button>
-            </div>
         </div>
     );
 }

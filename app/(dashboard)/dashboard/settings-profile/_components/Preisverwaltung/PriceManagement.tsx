@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, Plus, Check } from "lucide-react";
+import { X, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 import { PriceItem } from "./types";
+import AddPriceModal from "./AddPriceModal";
 
 interface PriceManagementProps {
     priceList: PriceItem[];
@@ -13,15 +14,16 @@ interface PriceManagementProps {
 export default function PriceManagement({ priceList, onPriceListChange }: PriceManagementProps) {
     const [newPrice, setNewPrice] = useState("");
     const [newPriceName, setNewPriceName] = useState("");
+    const [modalOpen, setModalOpen] = useState(false);
 
     // Helper function to ensure "Standard" is always first
     const sortPricesWithStandardFirst = (prices: PriceItem[]): PriceItem[] => {
         const standardItem = prices.find((item) => item.name.toLowerCase() === "standard");
         const otherItems = prices.filter((item) => item.name.toLowerCase() !== "standard");
-        
+
         // Sort other items by price
         const sortedOthers = otherItems.sort((a, b) => a.price - b.price);
-        
+
         // Put Standard first, then others
         return standardItem ? [standardItem, ...sortedOthers] : sortedOthers;
     };
@@ -59,88 +61,114 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
         setNewPriceName("");
     };
 
+    // Calculate net price and VAT from gross price
+    const calculateNetAndVat = (grossPrice: number, taxRate: number = 20) => {
+        const net = grossPrice / (1 + taxRate / 100);
+        const vat = grossPrice - net;
+        return { net, vat };
+    };
+
     return (
         <div className="mt-12">
-            <h2 className="font-bold text-lg mb-4 text-black">
-                Fussanalyse Preis
-            </h2>
-
-            <div className="flex gap-3 items-center mb-4 flex-wrap">
-                <Input
-                    type="text"
-                    placeholder="Name eingeben..."
-                    value={newPriceName}
-                    onChange={(e) => setNewPriceName(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" && newPrice.trim()) {
-                            e.preventDefault();
-                            addPriceFromInput();
-                        }
-                    }}
-                    className="border-2 border-gray-300 rounded-lg bg-white max-w-xs h-12 px-4 text-black placeholder:text-gray-400 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-200 transition-all shadow-sm hover:border-gray-400"
-                />
-                <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Preis eingeben..."
-                    value={newPrice}
-                    onChange={(e) => setNewPrice(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === "Enter" && newPriceName.trim()) {
-                            e.preventDefault();
-                            addPriceFromInput();
-                        }
-                    }}
-                    className="border-2 border-gray-300 rounded-lg bg-white max-w-xs h-12 px-4 text-black placeholder:text-gray-400 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-200 transition-all shadow-sm hover:border-gray-400"
-                />
-                <Button
-                    onClick={addPriceFromInput}
-                    disabled={!newPrice.trim() || !newPriceName.trim()}
-                    className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white font-semibold rounded-lg px-6 py-2.5 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-md whitespace-nowrap flex items-center gap-2"
-                    type="button"
-                >
-                    <Plus className="w-4 h-4" />
-                    Hinzufügen
-                </Button>
-            </div>
-
+            {/* Alle entfernen link - outside card, top right */}
             {priceList.length > 0 && (
-                <div className="space-y-2">
-                    <div className="flex items-center justify-between mb-2">
-                        <p className="text-sm text-gray-600 font-medium flex items-center gap-1">
-                            <Check className="w-4 h-4 text-green-600" />
-                            {priceList.length} {priceList.length === 1 ? "Preis" : "Preise"} hinzugefügt
-                        </p>
-                        <button
-                            onClick={clearAllPrices}
-                            className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1"
-                            type="button"
-                        >
-                            <X className="w-4 h-4" />
-                            Alle entfernen
-                        </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {priceList.map((item, index) => (
-                            <div
-                                key={`${item.name}-${item.price}-${index}`}
-                                className="px-4 py-2 rounded-lg border-2 border-green-500 bg-gradient-to-r from-green-50 to-green-100 text-green-900 text-sm font-semibold flex items-center gap-2 hover:from-green-100 hover:to-green-200 transition-all shadow-sm group"
-                            >
-                                <span className="font-bold">{item.name}:</span>
-                                <span>{item.price.toFixed(2).replace(".", ",")}€</span>
-                                <button
-                                    onClick={() => removePrice(item)}
-                                    className="hover:bg-red-100 rounded-full p-0.5 cursor-pointer transition-colors opacity-70 group-hover:opacity-100 text-red-600 hover:text-red-700"
-                                    aria-label={`${item.name} entfernen`}
-                                    type="button"
-                                >
-                                    <X className="w-3 h-3" />
-                                </button>
-                            </div>
-                        ))}
-                    </div>
+                <div className="flex justify-end mb-2">
+                    <button
+                        onClick={clearAllPrices}
+                        className="text-sm text-red-600 hover:text-red-700 font-medium flex items-center gap-1 cursor-pointer"
+                        type="button"
+                    >
+                        <X className="w-4 h-4" />
+                        Alle entfernen
+                    </button>
                 </div>
             )}
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6">
+                {/* Header with title and button in same row */}
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-bold text-lg text-black">
+                        Fussanalyse Preise
+                    </h2>
+                    <Button
+                        onClick={() => setModalOpen(true)}
+                        className="bg-[#61A175]  cursor-pointer hover:bg-[#61A175]/80 text-white font-semibold rounded-lg px-6 py-2.5 flex items-center gap-2"
+                        type="button"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Preis hinzufügen
+                    </Button>
+                </div>
+
+                {/* Table */}
+                {priceList.length > 0 ? (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <table className="w-full">
+                            <thead className="bg-gray-50 border-b border-gray-200">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                                        Name
+                                    </th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                                        Brutto
+                                    </th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                                        Steuersatz
+                                    </th>
+                                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
+                                        Netto
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {priceList.map((item, index) => {
+                                    const { net } = calculateNetAndVat(item.price, 20);
+                                    return (
+                                        <tr
+                                            key={`${item.name}-${item.price}-${index}`}
+                                            className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <td className="px-4 py-3 text-sm text-gray-900 text-left">
+                                                {item.name}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-green-600 font-semibold text-right">
+                                                {item.price.toFixed(2).replace(".", ",")} €
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-700 text-center">
+                                                20%
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-700 text-right">
+                                                {net.toFixed(2).replace(".", ",")} €
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div className="text-center py-8 text-gray-500">
+                        <p className="text-sm">Noch keine Preise hinzugefügt</p>
+                    </div>
+                )}
+            </div>
+
+            {/* Add Price Modal */}
+            <AddPriceModal
+                open={modalOpen}
+                onOpenChange={setModalOpen}
+                onSave={(name, price) => {
+                    const nameExists = priceList.some((item) => item.name.toLowerCase() === name.toLowerCase());
+                    if (nameExists) {
+                        toast.error("Ein Preis mit diesem Namen existiert bereits.");
+                        return;
+                    }
+                    const updatedList = [...priceList, { name, price }];
+                    const sortedList = sortPricesWithStandardFirst(updatedList);
+                    onPriceListChange(sortedList);
+                    toast.success("Preis erfolgreich hinzugefügt!");
+                }}
+            />
         </div>
     );
 }
