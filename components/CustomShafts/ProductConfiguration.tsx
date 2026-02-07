@@ -77,6 +77,10 @@ interface ProductConfigurationProps {
   requireAbholenOrVersenden?: boolean; // If true, require at least one option to be selected
   isAbholenSelected?: boolean; // Whether Abholen is selected
   isVersendenSelected?: boolean; // Whether Versenden is selected
+  // Additional notes
+
+  additionalNotes?: string;
+  setAdditionalNotes?: (notes: string) => void;
 }
 
 export default function ProductConfiguration({
@@ -139,6 +143,8 @@ export default function ProductConfiguration({
   requireAbholenOrVersenden = false,
   isAbholenSelected = false,
   isVersendenSelected = false,
+  additionalNotes = '',
+  setAdditionalNotes,
 }: ProductConfigurationProps) {
   // Default value for allowCategoryEdit
   const isCategoryEditable = allowCategoryEdit ?? false;
@@ -792,6 +798,21 @@ export default function ProductConfiguration({
             </div>
           </div>
         )}
+
+        {/* Additional Notes */}
+        <div className="flex flex-col md:flex-row md:items-start gap-4 mt-6">
+          <Label className="font-medium text-base md:w-1/3">Sonstige Notizen:</Label>
+          <div className="w-full md:w-2/3">
+            <Textarea
+              placeholder="Zusätzliche Informationen, Sonderwünsche, Produktionshinweise, etc. (optional)"
+              className="w-full border-gray-300 min-h-[100px]"
+              value={additionalNotes}
+              onChange={(e) => setAdditionalNotes?.(e.target.value)}
+            />
+            <p className="text-xs text-gray-500 mt-1">Diese Notizen erscheinen in der Rechnung/PDF</p>
+          </div>
+        </div>
+
         {/* Submit Button */}
         <div className="flex justify-center mt-4">
           <Button

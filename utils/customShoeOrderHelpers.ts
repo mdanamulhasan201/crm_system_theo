@@ -60,6 +60,7 @@ interface CustomShaftData {
   isAbholung: boolean;
   versendenData?: VersendenData | null;
   totalPrice: number;
+  additionalNotes?: string | null;
 }
 
 /**
@@ -129,6 +130,7 @@ export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
       data.moechten_sie_einen_zusaetzlichen_reissverschluss_price || null,
     cadModeling: data.cadModeling || null,
     cadModeling_2x_price: data.cadModeling_2x_price || null,
+    sonstige_notizen: data.additionalNotes || null,
   };
 
   // Add business address if present
@@ -248,6 +250,11 @@ export const prepareStep1FormData = async (data: CustomShaftData): Promise<FormD
   // Versenden data (if Versenden/shipping option selected)
   if (data.versendenData) {
     formData.append('versenden', JSON.stringify(data.versendenData));
+  }
+
+  // Additional notes
+  if (data.additionalNotes && data.additionalNotes.trim()) {
+    formData.append('additionalNotes', data.additionalNotes.trim());
   }
 
   return formData;

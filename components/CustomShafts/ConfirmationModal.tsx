@@ -144,6 +144,7 @@ export default function ConfirmationModal({
             <p className="text-2xl font-bold text-green-800">
               {orderPrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
             </p>
+            <p className="text-[10px] text-gray-400 mt-0.5 leading-tight italic">exkl. Zustellung / Versand</p>
           </div>
 
           {/* Zusatzoptionen */}

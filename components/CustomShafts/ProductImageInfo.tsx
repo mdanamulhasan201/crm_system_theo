@@ -16,6 +16,11 @@ interface ProductImageInfoProps {
 export default function ProductImageInfo({ shaft }: ProductImageInfoProps) {
   const [useFallback, setUseFallback] = useState(false);
 
+  // Get price visibility from localStorage (same as main page)
+  const showPrices = typeof window !== 'undefined' 
+    ? localStorage.getItem('customShafts_showPrices') !== 'false'
+    : true;
+
   // Ensure image URL is valid
   const imageUrl = shaft?.image || '';
 
@@ -32,14 +37,19 @@ export default function ProductImageInfo({ shaft }: ProductImageInfoProps) {
           <h2 className="text-xl md:text-2xl font-bold mb-1">{shaft.name}</h2>
           <p className="text-gray-500 text-sm font-medium mb-4">#{shaft.ide}</p>
           <p className="text-base md:text-lg font-medium mb-6">{shaft.description}</p>
-          <div className="mt-2">
-            <span className="text-xs text-gray-500 block mb-1">
-              Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
-            </span>
-            <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
-              {shaft.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
-            </span>
-          </div>
+          {showPrices && (
+            <div className="mt-2">
+              <span className="text-xs text-gray-500 block mb-1">
+                Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
+              </span>
+              <div>
+                <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                  {shaft.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+                </span>
+                <div className="text-[10px] text-gray-400 mt-0.5 leading-tight italic">exkl. Zustellung / Versand</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -83,14 +93,19 @@ export default function ProductImageInfo({ shaft }: ProductImageInfoProps) {
         <h2 className="text-xl md:text-2xl font-bold mb-1">{shaft.name}</h2>
         <p className="text-gray-500 text-sm font-medium mb-4">#{shaft.ide}</p>
         <p className="text-base md:text-lg font-medium mb-6">{shaft.description}</p>
-        <div className="mt-2">
-          <span className="text-xs text-gray-500 block mb-1">
-            Preis <span className="text-[10px]">(wird automatisch aktualisiert)</span>
-          </span>
-          <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
-            {shaft.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
-          </span>
-        </div>
+        {showPrices && (
+          <div className="mt-2">
+            <span className="text-xs text-gray-500 block mb-1">
+              Preis
+            </span>
+            <div>
+              <span className="text-2xl md:text-3xl font-extrabold tracking-tight">
+                {shaft.price.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+              </span>
+              
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

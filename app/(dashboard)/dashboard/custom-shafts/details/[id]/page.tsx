@@ -103,6 +103,9 @@ export default function CollectionShaftDetailsPage() {
   const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
   const [customNahtfarbe, setCustomNahtfarbe] = useState('');
 
+  // Additional notes
+  const [additionalNotes, setAdditionalNotes] = useState('');
+
   // Closure type
   const [closureType, setClosureType] = useState<string>('');
 
@@ -300,6 +303,9 @@ export default function CollectionShaftDetailsPage() {
       isAbholung,
       versendenData,
 
+      // Additional notes
+      additionalNotes: additionalNotes.trim() || null,
+
       // Pricing
       totalPrice: orderPrice,
     };
@@ -380,6 +386,11 @@ export default function CollectionShaftDetailsPage() {
     // Versenden data (if Versenden/shipping option selected)
     if (data.versendenData) {
       formData.append('versenden', JSON.stringify(data.versendenData));
+    }
+
+    // Additional notes
+    if (data.additionalNotes && data.additionalNotes.trim()) {
+      formData.append('additionalNotes', data.additionalNotes.trim());
     }
 
     return formData;
@@ -585,6 +596,8 @@ export default function CollectionShaftDetailsPage() {
           requireAbholenOrVersenden={isAbholung}
           isAbholenSelected={!!(businessAddress && (businessAddress.companyName || businessAddress.address))}
           isVersendenSelected={!!versendenData}
+          additionalNotes={additionalNotes}
+          setAdditionalNotes={setAdditionalNotes}
         />
       </div>
 
@@ -644,11 +657,13 @@ export default function CollectionShaftDetailsPage() {
             verstarkungen,
             polsterungText,
             verstarkungenText,
-            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'Standard',
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+            nahtfarbeOption: nahtfarbeOption,
             closureType,
             passendenSchnursenkel,
             osenEinsetzen,
             zipperExtra,
+            additionalNotes,
           }}
         />
       )}
@@ -690,6 +705,31 @@ export default function CollectionShaftDetailsPage() {
           customerName={selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde'}
           value={orderPrice.toFixed(2)}
           isLoading={isCreatingOrder}
+          shaftConfiguration={{
+            customCategory,
+            cadModeling,
+            lederType,
+            lederfarbe,
+            numberOfLeatherColors,
+            leatherColors,
+            innenfutter,
+            schafthohe,
+            schafthoheLinks,
+            schafthoheRechts,
+            umfangmasseLinks,
+            umfangmasseRechts,
+            polsterung,
+            verstarkungen,
+            polsterungText,
+            verstarkungenText,
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+            nahtfarbeOption: nahtfarbeOption,
+            closureType,
+            passendenSchnursenkel,
+            osenEinsetzen,
+            zipperExtra,
+            additionalNotes,
+          }}
           onConfirm={() => {
             // Only "ohne-boden" flow uses completion popup now
             // Call function directly (no await - function handles async internally)

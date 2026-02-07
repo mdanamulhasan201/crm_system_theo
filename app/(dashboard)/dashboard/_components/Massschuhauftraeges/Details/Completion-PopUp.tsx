@@ -4,6 +4,32 @@ import { CloseIcon } from './Icons';
 import { useState, useEffect } from 'react';
 import { balanceMassschuheOrder } from '@/apis/MassschuheManagemantApis';
 
+interface ShaftConfiguration {
+  customCategory?: string;
+  cadModeling?: '1x' | '2x';
+  lederType?: string;
+  lederfarbe?: string;
+  numberOfLeatherColors?: string;
+  leatherColors?: string[];
+  innenfutter?: string;
+  schafthohe?: string;
+  schafthoheLinks?: string;
+  schafthoheRechts?: string;
+  umfangmasseLinks?: string;
+  umfangmasseRechts?: string;
+  polsterung?: string[];
+  verstarkungen?: string[];
+  polsterungText?: string;
+  verstarkungenText?: string;
+  nahtfarbe?: string;
+  nahtfarbeOption?: string;
+  closureType?: string;
+  passendenSchnursenkel?: boolean;
+  osenEinsetzen?: boolean;
+  zipperExtra?: boolean;
+  additionalNotes?: string;
+}
+
 interface CompletionPopUpProps {
   onClose: () => void;
   onConfirm: () => void;
@@ -11,9 +37,10 @@ interface CompletionPopUpProps {
   customerName?: string;
   value: string;
   isLoading?: boolean;
+  shaftConfiguration?: ShaftConfiguration;
 }
 
-const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value, isLoading }: CompletionPopUpProps) => {
+const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value, isLoading, shaftConfiguration }: CompletionPopUpProps) => {
   const value2 = value || null;
   const [availableBalance, setAvailableBalance] = useState<number | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);

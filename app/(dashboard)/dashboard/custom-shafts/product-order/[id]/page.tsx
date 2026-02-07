@@ -69,6 +69,9 @@ export default function CustomShoeOrderPage() {
   const [zipperImage, setZipperImage] = useState<string | null>(null);
   const [paintImage, setPaintImage] = useState<string | null>(null);
 
+  // Additional notes
+  const [additionalNotes, setAdditionalNotes] = useState<string>('');
+
   // Custom category and price
   const [customCategory, setCustomCategory] = useState<string>('');
   const [customCategoryPrice, setCustomCategoryPrice] = useState<number | null>(null);
@@ -232,6 +235,9 @@ export default function CustomShoeOrderPage() {
       businessAddress,
       isAbholung,
       versendenData,
+
+      // Additional notes
+      additionalNotes: additionalNotes.trim() || null,
 
       // Pricing
       totalPrice: orderPrice,
@@ -422,6 +428,8 @@ export default function CustomShoeOrderPage() {
           requireAbholenOrVersenden={isAbholung}
           isAbholenSelected={!!(businessAddress && (businessAddress.companyName || businessAddress.address))}
           isVersendenSelected={!!versendenData}
+          additionalNotes={additionalNotes}
+          setAdditionalNotes={setAdditionalNotes}
         />
       </div>
 
@@ -481,11 +489,13 @@ export default function CustomShoeOrderPage() {
             verstarkungen,
             polsterungText,
             verstarkungenText,
-            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'Standard',
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+            nahtfarbeOption: nahtfarbeOption,
             closureType,
             passendenSchnursenkel,
             osenEinsetzen,
             zipperExtra,
+            additionalNotes,
           }}
         />
       )}
@@ -526,6 +536,31 @@ export default function CustomShoeOrderPage() {
           customerName={selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde'}
           value={orderPrice.toFixed(2)}
           isLoading={isCreatingOrder}
+          shaftConfiguration={{
+            customCategory,
+            cadModeling,
+            lederType,
+            lederfarbe,
+            numberOfLeatherColors,
+            leatherColors,
+            innenfutter,
+            schafthohe,
+            schafthoheLinks,
+            schafthoheRechts,
+            umfangmasseLinks,
+            umfangmasseRechts,
+            polsterung,
+            verstarkungen,
+            polsterungText,
+            verstarkungenText,
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+            nahtfarbeOption: nahtfarbeOption,
+            closureType,
+            passendenSchnursenkel,
+            osenEinsetzen,
+            zipperExtra,
+            additionalNotes,
+          }}
           onConfirm={() => {
             // Only "ohne-boden" flow uses completion popup now
             // Call function directly (no await - function handles async internally)
