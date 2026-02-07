@@ -46,7 +46,10 @@ interface OrderFormData {
     statusBezahlt?: boolean;
     datumAuftrag: string;
     fertigstellungBis?: string;
-    filiale: string;
+    filiale: {
+        address: string;
+        description: string;
+    };
     paymentType: 'krankenkasse' | 'privat';
     fußanalyse?: number;
     einlagenversorgung?: number;
@@ -253,6 +256,23 @@ export default function MassschuheOrderModal({
 
         const qty = quantity || 1;
 
+        // Find the selected location object to get both address and description
+        const selectedLoc = locations.find(loc => 
+            (loc.description || loc.address) === selectedLocation ||
+            loc.description === selectedLocation ||
+            loc.address === selectedLocation ||
+            (loc.description || loc.address) === filiale
+        );
+
+        // Construct filiale object with address and description
+        const filialeObject = selectedLoc ? {
+            address: selectedLoc.address || '',
+            description: selectedLoc.description || ''
+        } : {
+            address: filiale || customer?.wohnort || '',
+            description: filiale || customer?.wohnort || ''
+        };
+
         const orderData: OrderFormData = {
             customerId: customer.id,
             employeeId: formData.selectedEmployeeId,
@@ -265,7 +285,7 @@ export default function MassschuheOrderModal({
             kostenvoranschlag: formData.kostenvoranschlag === true,
             datumAuftrag: orderDate,
             fertigstellungBis: fertigstellungDate || undefined,
-            filiale: filiale,
+            filiale: filialeObject,
             paymentType: paymentType,
             statusBezahlt: isPaid,
             fußanalyse: paymentType === 'privat' ? parseFloat(selectedFußanalyse) * qty : undefined,
@@ -335,7 +355,24 @@ export default function MassschuheOrderModal({
 
                             <div>
                                 <label className="text-xs font-medium text-gray-500 mb-1 block">Filiale</label>
-                                <p className="text-gray-900 text-sm">{filiale || customer?.wohnort || '-'}</p>
+                                {(() => {
+                                    const currentLocation = locations.find(loc => 
+                                        (loc.description || loc.address) === filiale || 
+                                        loc.description === filiale || 
+                                        loc.address === filiale
+                                    );
+                                    if (currentLocation) {
+                                        return (
+                                            <div className="flex flex-col">
+                                                <p className="text-gray-900 text-sm font-semibold">{currentLocation.description || currentLocation.address}</p>
+                                                {currentLocation.description && currentLocation.address && currentLocation.description !== currentLocation.address && (
+                                                    <p className="text-gray-600 text-xs mt-0.5">{currentLocation.address}</p>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+                                    return <p className="text-gray-900 text-sm">{filiale || customer?.wohnort || '-'}</p>;
+                                })()}
                             </div>
 
                             <div>
@@ -383,16 +420,40 @@ export default function MassschuheOrderModal({
                                     </button>
                                 </div>
                             </div>
+                        </div>
 
+                        {/* Standort auswählen + Menge */}
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                             {(locations.length > 0 || (user?.hauptstandort && user.hauptstandort.length > 0)) && (
                                 <div>
                                     <label className="text-sm font-medium text-gray-600 mb-1 block">Standort auswählen</label>
                                     <Select
                                         value={selectedLocation}
-                                        onValueChange={(value) => setSelectedLocation(value)}
+                                        onValueChange={(value) => {
+                                            setSelectedLocation(value);
+                                            // Also update filiale when location changes
+                                            const selectedLoc = locations.find(loc => 
+                                                (loc.description || loc.address) === value
+                                            );
+                                            if (selectedLoc) {
+                                                setFiliale(selectedLoc.description || selectedLoc.address);
+                                            } else {
+                                                setFiliale(value);
+                                            }
+                                        }}
                                     >
                                         <SelectTrigger className="w-full">
-                                            <SelectValue placeholder={locationsLoading ? "Lade Standorte..." : "Standort wählen"} />
+                                            <SelectValue placeholder={locationsLoading ? "Lade Standorte..." : "Standort wählen"}>
+                                                {selectedLocation && locations.length > 0 ? (() => {
+                                                    const selectedLoc = locations.find(loc => 
+                                                        (loc.description || loc.address) === selectedLocation
+                                                    );
+                                                    if (selectedLoc) {
+                                                        return selectedLoc.description || selectedLoc.address;
+                                                    }
+                                                    return selectedLocation;
+                                                })() : selectedLocation}
+                                            </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
                                             {locations.length > 0 ? (
@@ -401,10 +462,17 @@ export default function MassschuheOrderModal({
                                                         key={location.id} 
                                                         value={location.description || location.address}
                                                     >
-                                                        {location.description || location.address}
-                                                        {location.isPrimary && (
-                                                            <span className="ml-2 text-xs text-blue-600">(Primary)</span>
-                                                        )}
+                                                        <div className="flex flex-col items-start w-full">
+                                                            <div className="flex items-center gap-2">
+                                                                <span className="font-medium">{location.description || location.address}</span>
+                                                                {location.isPrimary && (
+                                                                    <span className="px-1.5 py-0.5 text-xs text-blue-600 bg-blue-50 rounded">Primary</span>
+                                                                )}
+                                                            </div>
+                                                            {location.description && location.address && (
+                                                                <span className="text-xs text-gray-500 mt-0.5">{location.address}</span>
+                                                            )}
+                                                        </div>
                                                     </SelectItem>
                                                 ))
                                             ) : user?.hauptstandort && user.hauptstandort.length > 0 ? (
@@ -422,16 +490,6 @@ export default function MassschuheOrderModal({
                                     </Select>
                                 </div>
                             )}
-                        </div>
-
-                        {/* Durchgeführt von + Menge */}
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Durchgeführt von</label>
-                                <p className="text-gray-900 font-medium">
-                                    {formData.selectedEmployee || 'Nicht ausgewählt'}
-                                </p>
-                            </div>
                             <div>
                                 <label className="text-sm font-medium text-gray-600 mb-1 block">Menge</label>
                                 <Select
@@ -563,9 +621,33 @@ export default function MassschuheOrderModal({
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-xs font-medium text-gray-500">Abholung</span>
-                                    <span className="text-sm font-semibold text-gray-900">
-                                        {filiale || customer?.wohnort || selectedLocation || '-'}
-                                    </span>
+                                    {(() => {
+                                        const currentLocation = locations.find(loc => 
+                                            (loc.description || loc.address) === filiale || 
+                                            loc.description === filiale || 
+                                            loc.address === filiale ||
+                                            (loc.description || loc.address) === selectedLocation
+                                        );
+                                        if (currentLocation) {
+                                            return (
+                                                <div className="flex flex-col">
+                                                    <span className="text-sm font-semibold text-gray-900">
+                                                        {currentLocation.description || currentLocation.address}
+                                                    </span>
+                                                    {currentLocation.description && currentLocation.address && currentLocation.description !== currentLocation.address && (
+                                                        <span className="text-xs text-gray-500 mt-0.5">
+                                                            {currentLocation.address}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+                                        return (
+                                            <span className="text-sm font-semibold text-gray-900">
+                                                {filiale || customer?.wohnort || selectedLocation || '-'}
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                             </div>
                             <div className="flex flex-wrap gap-3">

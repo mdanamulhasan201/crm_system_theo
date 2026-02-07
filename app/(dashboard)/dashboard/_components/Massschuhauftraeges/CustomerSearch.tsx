@@ -40,6 +40,7 @@ type SelectedOrderInfo = {
     usführliche_diagnose?: string;
     note?: string;
     express?: boolean;
+    createdAt?: string;
 };
 
 export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, selectedOrder, onSetExpressStatus, initialCustomerId }: { onCustomerSelect?: (customer: CustomerData | null) => void; onCustomerIdSelect?: (customerId: string | null) => void; selectedOrder?: SelectedOrderInfo | null; onSetExpressStatus?: (express: boolean) => Promise<void>; initialCustomerId?: string | null }) {
@@ -485,7 +486,7 @@ export default function CustomerSearch({ onCustomerSelect, onCustomerIdSelect, s
                                 <p className="text-sm text-slate-500">
                                     Beauftragt am{' '}
                                     <span className="font-semibold text-slate-700">
-                                        {formatDate(selectedCustomer.createdAt)}
+                                        {selectedOrder?.createdAt ? formatDate(selectedOrder.createdAt) : formatDate(selectedCustomer.createdAt)}
                                     </span>
                                 </p>
                                 <p className="text-sm text-slate-500">

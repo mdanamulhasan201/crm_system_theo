@@ -13,7 +13,7 @@ export interface MassschuheOrderData {
     kostenvoranschlag: boolean;
     delivery_date: string;
     telefon: string;
-    filiale: string;
+    filiale: string | { address?: string; description?: string } | null;
     kunde: string;
     email: string;
     button_text: string;

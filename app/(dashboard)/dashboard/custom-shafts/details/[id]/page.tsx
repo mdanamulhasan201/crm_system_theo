@@ -388,10 +388,7 @@ export default function CollectionShaftDetailsPage() {
       formData.append('versenden', JSON.stringify(data.versendenData));
     }
 
-    // Additional notes
-    if (data.additionalNotes && data.additionalNotes.trim()) {
-      formData.append('additionalNotes', data.additionalNotes.trim());
-    }
+    // Additional notes are now only in Massschafterstellung_json1, not as separate field
 
     return formData;
   };

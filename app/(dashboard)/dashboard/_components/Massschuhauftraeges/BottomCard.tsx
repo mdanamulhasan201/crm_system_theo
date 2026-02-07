@@ -143,10 +143,10 @@ export default function BottomCard() {
                         Reklamationsquote
                     </div>
                     <div className="mb-3">
-                        <div className="text-3xl font-semibold text-slate-900">2%</div>
+                        <div className="text-3xl font-semibold text-slate-900">-%</div>
                     </div>
                     <div className="text-sm font-medium text-emerald-500">
-                        Nur 2% der Aufträge mussten nachgebessert werden
+                        Nur -% der Aufträge mussten nachgebessert werden
                     </div>
                 </div>
             </div>

@@ -24,10 +24,10 @@ const defaultData: BalanceCardData = {
     gesamteinnahmen: null,
     gesamteinnahmenChange: '---',
     naechsteAuszahlung: null,
-    naechsteAuszahlungDatum: '01.05.2025',
+    naechsteAuszahlungDatum: '---',
     kuerzlicheAuszahlungen: [
-        { amount: null, date: '01.05.2025' },
-        { amount: null, date: '01.05.2025' },
+        { amount: null, date: '---' },
+        { amount: null, date: '---' },
     ],
     ruecklagebetrag: null,
     ruecklagebetragDatum: '--',

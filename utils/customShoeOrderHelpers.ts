@@ -130,7 +130,7 @@ export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
       data.moechten_sie_einen_zusaetzlichen_reissverschluss_price || null,
     cadModeling: data.cadModeling || null,
     cadModeling_2x_price: data.cadModeling_2x_price || null,
-    sonstige_notizen: data.additionalNotes || null,
+    additionalNotes: data.additionalNotes || null,
   };
 
   // Add business address if present
@@ -252,10 +252,7 @@ export const prepareStep1FormData = async (data: CustomShaftData): Promise<FormD
     formData.append('versenden', JSON.stringify(data.versendenData));
   }
 
-  // Additional notes
-  if (data.additionalNotes && data.additionalNotes.trim()) {
-    formData.append('additionalNotes', data.additionalNotes.trim());
-  }
+  // Additional notes are now only in Massschafterstellung_json1, not as separate field
 
   return formData;
 };

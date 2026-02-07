@@ -316,8 +316,34 @@ const ProductionView = ({ tabClicked, onOrderSelect, selectedOrderId, onTabChang
                   <td className="text-left py-4 px-2.5 sm:px-3 text-sm text-slate-600 whitespace-nowrap">
                     -
                   </td>
-                  <td className="text-left py-4 px-2.5 sm:px-3 text-sm text-slate-600 whitespace-nowrap">
-                    {order.filiale || "-"}
+                  <td className="text-left py-4 px-2.5 sm:px-3 text-sm text-slate-600">
+                    {(() => {
+                      if (!order.filiale) return "-";
+                      
+                      // Handle object format with address and description
+                      if (typeof order.filiale === 'object' && order.filiale !== null) {
+                        const filiale = order.filiale as { address?: string; description?: string };
+                        const description = filiale.description || '';
+                        const address = filiale.address || '';
+                        
+                        if (description && address && description !== address) {
+                          return (
+                            <div className="flex flex-col">
+                              <span className="font-medium capitalize">{description}</span>
+                              <span className="text-xs text-slate-500 mt-0.5">{address}</span>
+                            </div>
+                          );
+                        } else if (description) {
+                          return description;
+                        } else if (address) {
+                          return address;
+                        }
+                        return "-";
+                      }
+                      
+                      // Handle string format (backward compatibility)
+                      return order.filiale;
+                    })()}
                   </td>
                   <td className="text-left py-4 px-2.5 sm:px-3 text-sm text-slate-600 whitespace-nowrap">
                     {getFinishedDate(order)}

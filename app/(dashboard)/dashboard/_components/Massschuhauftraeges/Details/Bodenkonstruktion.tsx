@@ -343,6 +343,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             moechten_sie_einen_zusaetzlichen_reissverschluss_price: customShaftData.moechten_sie_einen_zusaetzlichen_reissverschluss_price || null,
             cadModeling: customShaftData.cadModeling || null,
             cadModeling_2x_price: customShaftData.cadModeling_2x_price || null,
+            additionalNotes: customShaftData.additionalNotes || null,
         }
 
         // Add business address (Leisten abholen) if present
