@@ -1,6 +1,6 @@
 'use client'
 import React, { useState, useEffect } from 'react'
-import { Percent, Plus, Edit2, Trash2, Save, AlertCircle } from 'lucide-react'
+import { Percent, Plus, Save, AlertCircle } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
 interface TaxRate {
@@ -127,16 +127,6 @@ export default function TaxSettings() {
     }
   }
 
-  const handleDeleteTaxRate = (id: string) => {
-    setTaxRates(taxRates.filter(rate => rate.id !== id))
-  }
-
-  const handleSetDefault = (id: string) => {
-    setTaxRates(taxRates.map(rate => ({
-      ...rate,
-      isDefault: rate.id === id
-    })))
-  }
 
   const handleSaveSettings = () => {
     console.log('Saving tax settings:', taxRates)
@@ -249,25 +239,6 @@ export default function TaxSettings() {
               <div className="flex items-center gap-3">
                 <div className="text-right">
                   <div className="text-lg font-bold text-blue-600">{rate.rate}%</div>
-                </div>
-                <div className="flex items-center gap-1">
-                  {!rate.isDefault && (
-                    <button
-                      onClick={() => handleSetDefault(rate.id)}
-                      className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                      title="Als Standard festlegen"
-                    >
-                      <Edit2 className="w-4 h-4 text-gray-500" />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => handleDeleteTaxRate(rate.id)}
-                    className="p-1.5 hover:bg-red-50 rounded-lg transition-colors"
-                    title="Löschen"
-                    disabled={rate.isDefault}
-                  >
-                    <Trash2 className={`w-4 h-4 ${rate.isDefault ? 'text-gray-300' : 'text-red-500'}`} />
-                  </button>
                 </div>
               </div>
             </div>
