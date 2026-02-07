@@ -31,6 +31,7 @@ import {
     createCustomBodenkonstruktion,
     getCountDate
 } from "@/apis/MassschuheManagemantApis"
+import Image from "next/image"
 
 export default function BodenkonstruktionPage() {
     const router = useRouter()
@@ -550,7 +551,9 @@ export default function BodenkonstruktionPage() {
                 <div className="bg-gray-100 rounded-2xl p-4">
                     <div className="flex justify-center items-center gap-6">
                         <div className="bg-white rounded-lg p-4 flex-shrink-0">
-                            <img
+                            <Image
+                                width={96}
+                                height={96}
                                 src={shoe2.imageUrl || "/placeholder.svg"}
                                 alt={shoe2.name}
                                 className="w-48 h-48 object-contain"

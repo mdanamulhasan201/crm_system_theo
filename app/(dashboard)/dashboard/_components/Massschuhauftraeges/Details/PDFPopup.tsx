@@ -4,6 +4,7 @@ import React, { useRef } from "react"
 
 import { CloseIcon, DownloadIcon, PrintIcon } from "./Icons"
 import type { GroupDef2 } from "./ShoeData"
+import { getVorderkappeMaterialLabel } from "./Bodenkonstruktion/FormFields"
 
 // Order data interface for dynamic PDF content
 export interface OrderDataForPDF {
@@ -44,7 +45,7 @@ interface PDFPopupProps {
   heelWidthAdjustment?: { left?: { op: "widen" | "narrow" | null; mm: number }; right?: { op: "widen" | "narrow" | null; mm: number }; medial?: { op: "widen" | "narrow" | null; mm: number }; lateral?: { op: "widen" | "narrow" | null; mm: number } } | null
   soleElevation?: { enabled: boolean; side: "links" | "rechts" | "beidseitig" | null; height_mm: number } | null
   // Orthopedic fields
-  vorderkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; leftMaterial?: "leicht" | "normal" | null; rightMaterial?: "leicht" | "normal" | null } | null
+  vorderkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; leftMaterial?: "leicht" | "normal" | "doppelt" | null; rightMaterial?: "leicht" | "normal" | "doppelt" | null } | null
   rahmen?: { type: "eva" | "gummi" | null; color?: string } | null
   sohlenhoeheDifferenziert?: { ferse?: number; ballen?: number; spitze?: number } | null
 }
@@ -589,10 +590,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       }
                       const parts: string[] = [`Seite: ${vorderkappeSide.side.charAt(0).toUpperCase() + vorderkappeSide.side.slice(1)}`]
                       if ((vorderkappeSide.side === "links" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.leftMaterial) {
-                        parts.push(`Material (Links): ${vorderkappeSide.leftMaterial.charAt(0).toUpperCase() + vorderkappeSide.leftMaterial.slice(1)}`)
+                        parts.push(`Material (Links): ${getVorderkappeMaterialLabel(vorderkappeSide.leftMaterial)}`)
                       }
                       if ((vorderkappeSide.side === "rechts" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.rightMaterial) {
-                        parts.push(`Material (Rechts): ${vorderkappeSide.rightMaterial.charAt(0).toUpperCase() + vorderkappeSide.rightMaterial.slice(1)}`)
+                        parts.push(`Material (Rechts): ${getVorderkappeMaterialLabel(vorderkappeSide.rightMaterial)}`)
                       }
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
@@ -917,10 +918,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   }
                   const parts: string[] = [`Seite: ${vorderkappeSide.side.charAt(0).toUpperCase() + vorderkappeSide.side.slice(1)}`]
                   if ((vorderkappeSide.side === "links" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.leftMaterial) {
-                    parts.push(`Material (Links): ${vorderkappeSide.leftMaterial.charAt(0).toUpperCase() + vorderkappeSide.leftMaterial.slice(1)}`)
+                    parts.push(`Material (Links): ${getVorderkappeMaterialLabel(vorderkappeSide.leftMaterial)}`)
                   }
                   if ((vorderkappeSide.side === "rechts" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.rightMaterial) {
-                    parts.push(`Material (Rechts): ${vorderkappeSide.rightMaterial.charAt(0).toUpperCase() + vorderkappeSide.rightMaterial.slice(1)}`)
+                    parts.push(`Material (Rechts): ${getVorderkappeMaterialLabel(vorderkappeSide.rightMaterial)}`)
                   }
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>

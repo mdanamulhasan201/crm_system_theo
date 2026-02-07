@@ -82,6 +82,8 @@ export function HeelWidthAdjustmentField({
 }) {
     const left = value?.left || { op: null, mm: 0 }
     const right = value?.right || { op: null, mm: 0 }
+    const medial = value?.medial || { op: null, mm: 0 }
+    const lateral = value?.lateral || { op: null, mm: 0 }
 
     const updateLeft = (updates: Partial<typeof left>) => {
         const newLeft = { ...left, ...updates }
@@ -93,9 +95,11 @@ export function HeelWidthAdjustmentField({
             ...value,
             left: newLeft.mm > 0 ? newLeft : undefined,
             right: value?.right,
+            medial: value?.medial,
+            lateral: value?.lateral,
         }
-        // Remove if both are empty
-        if (!newValue.left && !newValue.right) {
+        // Remove if all are empty
+        if (!newValue.left && !newValue.right && !newValue.medial && !newValue.lateral) {
             onChange(null)
         } else {
             onChange(newValue)
@@ -112,9 +116,53 @@ export function HeelWidthAdjustmentField({
             ...value,
             left: value?.left,
             right: newRight.mm > 0 ? newRight : undefined,
+            medial: value?.medial,
+            lateral: value?.lateral,
         }
-        // Remove if both are empty
-        if (!newValue.left && !newValue.right) {
+        // Remove if all are empty
+        if (!newValue.left && !newValue.right && !newValue.medial && !newValue.lateral) {
+            onChange(null)
+        } else {
+            onChange(newValue)
+        }
+    }
+
+    const updateMedial = (updates: Partial<typeof medial>) => {
+        const newMedial = { ...medial, ...updates }
+        // If mm is 0, set op to null
+        if (newMedial.mm === 0) {
+            newMedial.op = null
+        }
+        const newValue: HeelWidthAdjustmentData = {
+            ...value,
+            left: value?.left,
+            right: value?.right,
+            medial: newMedial.mm > 0 ? newMedial : undefined,
+            lateral: value?.lateral,
+        }
+        // Remove if all are empty
+        if (!newValue.left && !newValue.right && !newValue.medial && !newValue.lateral) {
+            onChange(null)
+        } else {
+            onChange(newValue)
+        }
+    }
+
+    const updateLateral = (updates: Partial<typeof lateral>) => {
+        const newLateral = { ...lateral, ...updates }
+        // If mm is 0, set op to null
+        if (newLateral.mm === 0) {
+            newLateral.op = null
+        }
+        const newValue: HeelWidthAdjustmentData = {
+            ...value,
+            left: value?.left,
+            right: value?.right,
+            medial: value?.medial,
+            lateral: newLateral.mm > 0 ? newLateral : undefined,
+        }
+        // Remove if all are empty
+        if (!newValue.left && !newValue.right && !newValue.medial && !newValue.lateral) {
             onChange(null)
         } else {
             onChange(newValue)
@@ -220,6 +268,110 @@ export function HeelWidthAdjustmentField({
                             const mm = parseInt(e.target.value)
                             // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
                             updateRight({ mm, op: mm === 0 ? null : (right.op || "widen") })
+                        }}
+                        className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                            <option key={val} value={val}>
+                                {val} mm
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* Innen (Medial) */}
+            <div className="mb-4">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Innen (Medial):</label>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (medial.mm === 0) return
+                            updateMedial({ op: medial.op === "widen" ? null : "widen" })
+                        }}
+                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                            medial.op === "widen"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${medial.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={medial.mm === 0}
+                    >
+                        +
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (medial.mm === 0) return
+                            updateMedial({ op: medial.op === "narrow" ? null : "narrow" })
+                        }}
+                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                            medial.op === "narrow"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${medial.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={medial.mm === 0}
+                    >
+                        −
+                    </button>
+                    <select
+                        value={medial.mm}
+                        onChange={(e) => {
+                            const mm = parseInt(e.target.value)
+                            // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
+                            updateMedial({ mm, op: mm === 0 ? null : (medial.op || "widen") })
+                        }}
+                        className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                            <option key={val} value={val}>
+                                {val} mm
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+
+            {/* Außen (Lateral) */}
+            <div className="mb-2">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Außen (Lateral):</label>
+                <div className="flex items-center gap-3">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (lateral.mm === 0) return
+                            updateLateral({ op: lateral.op === "widen" ? null : "widen" })
+                        }}
+                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                            lateral.op === "widen"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${lateral.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={lateral.mm === 0}
+                    >
+                        +
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (lateral.mm === 0) return
+                            updateLateral({ op: lateral.op === "narrow" ? null : "narrow" })
+                        }}
+                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
+                            lateral.op === "narrow"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${lateral.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={lateral.mm === 0}
+                    >
+                        −
+                    </button>
+                    <select
+                        value={lateral.mm}
+                        onChange={(e) => {
+                            const mm = parseInt(e.target.value)
+                            // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
+                            updateLateral({ mm, op: mm === 0 ? null : (lateral.op || "widen") })
                         }}
                         className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
@@ -837,7 +989,21 @@ export function OptionGroup({
 
 // Vorderkappe Field - Side selection + Material selection (separate for each side)
 export type VorderkappeSideSelection = "links" | "rechts" | "beidseitig" | null
-export type VorderkappeMatSel = "leicht" | "normal" | null
+export type VorderkappeMatSel = "leicht" | "normal" | "doppelt" | null
+
+// Helper function to get display label for material
+export const getVorderkappeMaterialLabel = (material: VorderkappeMatSel): string => {
+    switch (material) {
+        case "leicht":
+            return "Leicht 0,5-0,6mm"
+        case "normal":
+            return "Normal 1-1,1mm"
+        case "doppelt":
+            return "Doppelt 2-2,20mm"
+        default:
+            return ""
+    }
+}
 
 export type VorderkappeSideData = {
     side: VorderkappeSideSelection
@@ -940,7 +1106,7 @@ export function VorderkappeSideField({
                 <div className="mb-4">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Material (Links):</div>
                     <div className="flex flex-wrap items-center gap-4">
-                        {["leicht", "normal"].map((matOption) => {
+                        {["leicht", "normal", "doppelt"].map((matOption) => {
                             const isChecked = leftMaterial === matOption
                             const handleToggle = () => {
                                 // Toggle: if already checked, uncheck it; otherwise check it
@@ -971,8 +1137,8 @@ export function VorderkappeSideField({
                                             )}
                                         </div>
                                     </div>
-                                    <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={handleToggle}>
-                                        {matOption}
+                                    <span className="text-base text-gray-700 cursor-pointer" onClick={handleToggle}>
+                                        {getVorderkappeMaterialLabel(matOption as VorderkappeMatSel)}
                                     </span>
                                 </div>
                             )
@@ -985,7 +1151,7 @@ export function VorderkappeSideField({
                 <div className="mb-4">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Material (Rechts):</div>
                     <div className="flex flex-wrap items-center gap-4">
-                        {["leicht", "normal"].map((matOption) => {
+                        {["leicht", "normal", "doppelt"].map((matOption) => {
                             const isChecked = rightMaterial === matOption
                             const handleToggle = () => {
                                 // Toggle: if already checked, uncheck it; otherwise check it
@@ -1016,8 +1182,8 @@ export function VorderkappeSideField({
                                             )}
                                         </div>
                                     </div>
-                                    <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={handleToggle}>
-                                        {matOption}
+                                    <span className="text-base text-gray-700 cursor-pointer" onClick={handleToggle}>
+                                        {getVorderkappeMaterialLabel(matOption as VorderkappeMatSel)}
                                     </span>
                                 </div>
                             )
