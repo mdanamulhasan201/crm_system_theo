@@ -102,6 +102,19 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
     const totalPrice = fußanalysePrice + einlagenversorgungPrice;
     const partnerData = (order as any).partner || (order as any).user;
 
+    // Convert filiale to string or undefined
+    let filialeString: string | undefined;
+    if (!order.filiale) {
+      filialeString = undefined;
+    } else if (typeof order.filiale === 'object' && order.filiale !== null) {
+      const filiale = order.filiale as { address?: string; description?: string };
+      filialeString = filiale.description || filiale.address || undefined;
+    } else if (typeof order.filiale === 'string') {
+      filialeString = order.filiale;
+    } else {
+      filialeString = undefined;
+    }
+
     return {
       orderNumber: order.orderNumber
         ? `#${order.orderNumber}`
@@ -110,7 +123,7 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
       productName: "Halbprobenerstellung",
       deliveryDate: formattedDeliveryDate,
       status: order.status,
-      filiale: order.filiale,
+      filiale: filialeString,
       totalPrice: totalPrice > 0 ? totalPrice : undefined,
       footerPhone: partnerData?.phone || undefined,
       footerEmail: partnerData?.email || undefined,
