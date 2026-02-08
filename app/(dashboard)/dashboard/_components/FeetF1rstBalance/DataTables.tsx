@@ -20,6 +20,9 @@ export interface TransactionData {
     einnahmesumme: number;
     status: string | null;
     custom_shafts_status?: string | null;
+    // Invoice URLs
+    custom_shafts_invoice?: string | null;
+    custom_shafts_invoice2?: string | null;
 }
 
 interface ApiOrderData {
@@ -113,6 +116,12 @@ export default function DataTables({
 
         return apiData.map((item, index) => {
             try {
+                // Determine customer name: use customer if has valid data, otherwise use other_customer_name
+                const hasCustomerData = item.customer && (item.customer.vorname || item.customer.nachname);
+                const customerName = hasCustomerData
+                    ? `${item.customer?.vorname || ''} ${item.customer?.nachname || ''}`.trim()
+                    : (item.custom_shafts?.other_customer_name || '--');
+
                 return {
                     // Keep transition ID for table row key
                     id: item.id || `fallback-${index}`,
@@ -121,13 +130,13 @@ export default function DataTables({
                     custom_shafts_order_status: item.custom_shafts?.order_status || null,
                     datum: formatDate(item.createdAt),
                     transaktionsnummer: item.custom_shafts?.orderNumber || item.orderNumber || '-',
-                    kundenname: item.customer
-                        ? `${item.customer.vorname || ''} ${item.customer.nachname || ''}`.trim() || '--'
-                        : (item.custom_shafts?.other_customer_name || '--'),
+                    kundenname: customerName,
                     beschreibung: item.custom_shafts_catagoary || item.note || null,
                     einnahmesumme: item.price || 0,
                     status: item.status || null,
                     custom_shafts_status: item.custom_shafts?.status || null,
+                    custom_shafts_invoice: item.custom_shafts?.invoice || null,
+                    custom_shafts_invoice2: item.custom_shafts?.invoice2 || null,
                 };
             } catch (error) {
                 return {
@@ -141,6 +150,8 @@ export default function DataTables({
                     einnahmesumme: 0,
                     status: null,
                     custom_shafts_status: null,
+                    custom_shafts_invoice: null,
+                    custom_shafts_invoice2: null,
                 };
             }
         });
@@ -204,6 +215,16 @@ export default function DataTables({
     const handleCancelOrder = (row: TransactionData) => {
         setSelectedOrder(row);
         setShowCancelModal(true);
+    };
+
+    // Handle invoice download
+    const handleDownloadInvoice = (row: TransactionData) => {
+        // Priority: invoice first, then invoice2
+        const invoiceUrl = row.custom_shafts_invoice || row.custom_shafts_invoice2;
+        if (invoiceUrl) {
+            // Open in new tab to download
+            window.open(invoiceUrl, '_blank');
+        }
     };
 
     // Confirm and execute cancel order
@@ -351,11 +372,23 @@ export default function DataTables({
         {
             key: 'status',
             header: 'Status',
-            render: (value) => (
-                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(value)}`}>
-                    {value || '-'}
-                </span>
-            ),
+            render: (value, row) => {
+                // If order is canceled, show "Storniert"
+                let displayStatus = row.custom_shafts_order_status === 'canceled' 
+                    ? 'Storniert' 
+                    : (row.custom_shafts_status || value);
+                
+                // Normalize "panding" to "Pending" with capital P
+                if (displayStatus && displayStatus.toLowerCase() === 'panding') {
+                    displayStatus = 'Pending';
+                }
+                
+                return (
+                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(displayStatus)}`}>
+                        {displayStatus || '-'}
+                    </span>
+                );
+            },
         },
     ];
 
@@ -387,6 +420,20 @@ export default function DataTables({
         show: (row) => row.custom_shafts_order_status === 'active' && row.custom_shafts_status === 'Neu',
     };
 
+    // Download invoice action - show if invoice or invoice2 exists
+    const downloadInvoiceAction: TableAction<TransactionData> = {
+        type: 'custom',
+        label: 'Rechnung herunterladen',
+        icon: (
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+        ),
+        className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer border border-blue-200 rounded-md p-2',
+        onClick: (row) => handleDownloadInvoice(row),
+        show: (row) => !!(row.custom_shafts_invoice || row.custom_shafts_invoice2),
+    };
+
     // Show a non-clickable "Storniert" badge in the actions column when order is canceled
     const canceledStatusAction: TableAction<TransactionData> = {
         type: 'custom',
@@ -406,6 +453,9 @@ export default function DataTables({
         const baseActions = buildActions();
         const actions = baseActions ? [...baseActions] : [];
 
+        // Add download invoice action first (so it appears before cancel/canceled status)
+        actions.push(downloadInvoiceAction);
+        
         // Add cancel and canceled-status actions (they conditionally show based on status)
         actions.push(cancelAction);
         actions.push(canceledStatusAction);

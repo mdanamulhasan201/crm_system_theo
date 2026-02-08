@@ -92,12 +92,12 @@ export default function SettingsProfileLayout({
                     label: "Backup Einstellungen",
                     href: "/dashboard/settings-profile/backup"
                 },
-                {
-                    id: "communication",
-                    icon: MessageSquare,
-                    label: "Kundenkommunikation",
-                    href: "/dashboard/settings-profile/communication"
-                },
+                // {
+                //     id: "communication",
+                //     icon: MessageSquare,
+                //     label: "Kundenkommunikation",
+                //     href: "/dashboard/settings-profile/communication"
+                // },
                 {
                     id: "werkstattzettel",
                     icon: Warehouse,
