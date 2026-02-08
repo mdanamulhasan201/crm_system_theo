@@ -68,7 +68,8 @@ export default function SettingsProfileLayout({
                 !item.path.endsWith("/design") &&
                 !item.path.endsWith("/changes-password") &&
                 !item.path.endsWith("/sprache") &&
-                !item.path.endsWith("/notifications") 
+                !item.path.endsWith("/notifications") &&
+                !item.path.endsWith("/communication")
             )
             .map((item) => ({
                 id: mapIdFromPath(item.path),

@@ -94,6 +94,7 @@ export default function DataTables({
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<TransactionData | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Helper function to format date
     const formatDate = (dateString: string): string => {
@@ -158,10 +159,10 @@ export default function DataTables({
     };
 
     // Fetch initial data
-    const fetchData = async () => {
+    const fetchData = async (search: string = '') => {
         try {
             setLoading(true);
-            const response = await getAllOrderData(5, '') as ApiResponse;
+            const response = await getAllOrderData(5, '', search) as ApiResponse;
 
             if (response && response.success && Array.isArray(response.data)) {
                 const mappedData = mapApiDataToTransactionData(response.data);
@@ -192,7 +193,7 @@ export default function DataTables({
 
         try {
             setLoadingMore(true);
-            const response = await getAllOrderData(5, cursor) as ApiResponse;
+            const response = await getAllOrderData(5, cursor, searchQuery) as ApiResponse;
 
             if (response.success && Array.isArray(response.data)) {
                 const mappedData = mapApiDataToTransactionData(response.data);
@@ -252,6 +253,24 @@ export default function DataTables({
             setIsCancelling(false);
         }
     };
+
+    // Handle search input change with debounce
+    const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setSearchQuery(value);
+    };
+
+    // Search with debounce
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            if (!einnahmenData) {
+                fetchData(searchQuery);
+            }
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchQuery]);
 
     // Fetch data on component mount
     useEffect(() => {
@@ -466,8 +485,35 @@ export default function DataTables({
     return (
         <div className="mt-8">
 
-            {/* Header */}
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Transaktionen</h2>
+            {/* Header with Search */}
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-800">Transaktionen</h2>
+                
+                {/* Search Input */}
+                <div className="relative w-80">
+                    <input
+                        type="text"
+                        placeholder="Suchen nach Transaktionsnummer oder Kundenname..."
+                        value={searchQuery}
+                        onChange={handleSearchChange}
+                        className="w-full px-4 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <svg
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        />
+                    </svg>
+                </div>
+            </div>
+
             {/* Table */}
             <ReusableBalanceTable
                 columns={columns}

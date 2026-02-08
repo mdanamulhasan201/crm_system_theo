@@ -184,9 +184,13 @@ export const totalRadioMassschuheOrder = async () => {
 // GET /v2/admin-order-transitions/get-all-transitions?limit=10&cursor=
 // Returns: { success: boolean, message: string, data: Array<OrderData>, hasMore: boolean }
 // cursor: pass empty string '' for first page, then pass the last item's ID for next page
-export const getAllOrderData = async (limit: number, cursor: string) => {
+
+// v2/admin-order-
+// transitions/get-all-transitions?
+// limit=500&cursor=&search={{}}
+export const getAllOrderData = async (limit: number, cursor: string, search: string) => {
     try {
-        const response = await axiosClient.get(`/v2/admin-order-transitions/get-all-transitions?limit=${limit}&cursor=${cursor}`);
+        const response = await axiosClient.get(`/v2/admin-order-transitions/get-all-transitions?limit=${limit}&cursor=${cursor}&search=${search}`);
         return response.data;
     } catch (error) {
         throw error;
