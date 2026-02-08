@@ -62,10 +62,14 @@ export default function BalanceDashboard() {
 
                     <Button
                         variant="outline"
-                        onClick={() => setActiveTab('einnahmen')}
-                        className={`cursor-pointer border rounded-md px-4 py-2 font-semibold transition-all duration-200 ${activeTab === 'einnahmen'
-                                ? 'bg-[#61A175] text-white border-[#61A175] hover:bg-[#61A175] hover:text-white'
-                                : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-200'
+                        onClick={() => showEinnahmenButton && setActiveTab('einnahmen')}
+                        disabled={!showEinnahmenButton}
+                        className={`border rounded-md px-4 py-2 font-semibold transition-all duration-200 ${
+                            !showEinnahmenButton
+                                ? 'bg-gray-200 text-gray-400 border-gray-300 cursor-not-allowed opacity-60'
+                                : activeTab === 'einnahmen'
+                                ? 'bg-[#61A175] text-white border-[#61A175] hover:bg-[#61A175] hover:text-white cursor-pointer'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-800 border-gray-200 cursor-pointer'
                             }`}
                     >
                         Einnahmen
@@ -73,8 +77,8 @@ export default function BalanceDashboard() {
 
                 </div>
 
-                {activeTab === 'einnahmen' && <DataTables />}
-                {activeTab === 'ausgaben' && <Ausgaben />}
+                {activeTab === 'einnahmen' && <Ausgaben />}
+                {activeTab === 'ausgaben' && <DataTables />}
             </div>
         </div>
     );
