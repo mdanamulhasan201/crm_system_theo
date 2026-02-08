@@ -3,10 +3,10 @@
 import React from 'react';
 
 const data = [
-    { name: 'Passformproblem', value: 4 },
-    { name: 'Materialfehler', value: 2 },
-    { name: 'Lieferverzögerung', value: 1 },
-    { name: 'Sonstiges', value: 1 },
+    { name: 'Passformproblem', value: 0 },
+    { name: 'Materialfehler', value: 0 },
+    { name: 'Lieferverzögerung', value: 0 },
+    { name: 'Sonstiges', value: 0 },
 ];
 
 export default function GruendeReklamationen() {
@@ -19,27 +19,34 @@ export default function GruendeReklamationen() {
             </h3>
             <div className="flex-1 flex flex-col">
                 <div className="space-y-3 sm:space-y-4">
-                    {data.map((item, index) => (
-                        <div key={index} className="w-full">
-                            <div className="flex items-center justify-between mb-1 sm:mb-2">
-                                <span className="text-xs sm:text-sm text-gray-700 font-medium truncate pr-2">
-                                    {item.name}
-                                </span>
-                                <span className="text-xs sm:text-sm font-bold text-gray-900 flex-shrink-0">
-                                    {/* {item.value} */}
-                                    ---
-                                </span>
+                    {data.map((item, index) => {
+                        // If value is 0 or maxValue is 0, show full width gray bar
+                        const barWidth = maxValue === 0 || item.value === 0 
+                            ? 100 
+                            : (item.value / maxValue) * 100;
+
+                        return (
+                            <div key={index} className="w-full">
+                                <div className="flex items-center justify-between mb-1 sm:mb-2">
+                                    <span className="text-xs sm:text-sm text-gray-700 font-medium truncate pr-2">
+                                        {item.name}
+                                    </span>
+                                    <span className="text-xs sm:text-sm font-bold text-gray-900 shrink-0">
+                                        {/* {item.value} */}
+                                        ---
+                                    </span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-2 sm:h-3 overflow-hidden">
+                                    <div
+                                        className="bg-gray-200 h-full rounded-full transition-all duration-300"
+                                        style={{
+                                            width: `${barWidth}%`,
+                                        }}
+                                    />
+                                </div>
                             </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 sm:h-3 overflow-hidden">
-                                <div
-                                    className="bg-gray-400 h-full rounded-full transition-all duration-300"
-                                    style={{
-                                        width: `${(item.value / maxValue) * 100}%`,
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
             </div>
         </div>

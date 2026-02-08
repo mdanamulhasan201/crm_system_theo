@@ -2,7 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import Image from "next/image";
-import { Trash2, Edit } from "lucide-react";
+import { Trash2, Package } from "lucide-react";
 
 interface Insole {
     id: string;
@@ -84,85 +84,95 @@ export default function InsoleList({
                 </DialogContent>
             </Dialog>
 
+            {/* Section Title */}
+            <h2 className="text-xl font-bold text-gray-900 mb-6">Einlagen</h2>
+
             <div className="space-y-4 mb-12">
                 {isInitialLoading ? (
                     Array.from({ length: 3 }).map((_, index) => (
                         <div
                             key={`shimmer-${index}`}
-                            className="bg-gray-50 border border-gray-300 rounded-[5px] p-4 flex items-center gap-6 relative"
+                            className="bg-white border border-gray-300 rounded-lg p-4 flex items-center gap-6 shadow-sm"
                         >
                             <div className="shrink-0">
-                                <div className="w-16 h-16 rounded-sm bg-gray-200 animate-pulse" />
+                                <div className="w-16 h-16 rounded-md bg-gray-200 animate-pulse" />
                             </div>
-                            <div className="flex-1 flex flex-col justify-between min-h-[64px] pr-8">
+                            <div className="flex-1 flex items-center justify-between">
                                 <div className="space-y-2">
                                     <div className="h-5 bg-gray-200 animate-pulse rounded w-48" />
                                     <div className="h-4 bg-gray-200 animate-pulse rounded w-64" />
                                 </div>
-                                <div className="text-right mt-2">
-                                    <div className="h-5 bg-gray-200 animate-pulse rounded w-32 ml-auto" />
+                                <div className="flex items-center gap-4">
+                                    <div className="h-5 bg-gray-200 animate-pulse rounded w-32" />
+                                    <div className="h-5 w-5 bg-gray-200 animate-pulse rounded" />
                                 </div>
-                            </div>
-                            <div className="absolute top-4 right-4">
-                                <div className="h-5 w-5 bg-gray-200 animate-pulse rounded" />
                             </div>
                         </div>
                     ))
                 ) : (
-                    insoles.map((insole) => (
-                        <div
-                            key={insole.id}
-                            className="bg-gray-50 border border-gray-300 rounded-[5px] p-4 flex items-center gap-6 relative group hover:shadow-md transition-shadow"
-                        >
-                            <div className="absolute top-4 right-4 z-10">
-                                <Checkbox
-                                    checked={insole.selected}
-                                    onChange={() => onSelect(insole.id)}
-                                    className="h-5 w-5 border-black border"
-                                />
-                            </div>
-                            <div className="absolute top-4 right-12 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                <button
-                                    onClick={() => onEdit(insole)}
-                                    className="bg-blue-500 text-white rounded-[5px] px-3 py-1.5 flex items-center gap-1.5 text-xs font-medium hover:bg-blue-600 cursor-pointer"
-                                >
-                                    <Edit className="w-3 h-3" />
-                                    Bearbeiten
-                                </button>
-                            </div>
-                            <div className="shrink-0">
-                                {insole.image.startsWith('data:') || insole.image.startsWith('http') ? (
-                                    <div className="w-16 h-16 rounded-sm overflow-hidden relative">
-                                        <Image
-                                            src={insole.image}
-                                            alt={insole.name}
-                                            fill
-                                            className="object-cover"
-                                            unoptimized
-                                        />
-                                    </div>
-                                ) : (
-                                    <div
-                                        className="w-16 h-16 rounded-sm"
-                                        style={{ backgroundColor: insole.image }}
-                                    />
-                                )}
-                            </div>
-                            <div className="flex-1 flex flex-col justify-between min-h-[64px] pr-8">
-                                <div>
-                                    <h3 className="font-bold text-base uppercase mb-1 text-black">
+                    insoles.map((insole) => {
+                        // Calculate VAT (assuming 20% VAT rate)
+                        const vatRate = 20;
+                        const grossPrice = insole.price;
+                        const formattedPrice = grossPrice.toFixed(2).replace(".", ",");
+
+                        return (
+                            <div
+                                key={insole.id}
+                                onClick={() => onEdit(insole)}
+                                className="bg-white border border-gray-300 rounded-lg p-4 flex items-center gap-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                            >
+                                {/* Left: Icon */}
+                                <div className="shrink-0">
+                                    {insole.image.startsWith('data:') || insole.image.startsWith('http') ? (
+                                        <div className="w-16 h-16 rounded-md overflow-hidden relative bg-gray-100 flex items-center justify-center">
+                                            <Image
+                                                src={insole.image}
+                                                alt={insole.name}
+                                                fill
+                                                className="object-cover"
+                                                unoptimized
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="w-16 h-16 rounded-md bg-gray-100 flex items-center justify-center">
+                                            <Package className="w-8 h-8 text-gray-600" />
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Middle: Product Details */}
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-base uppercase mb-1 text-gray-900">
                                         {insole.name}
                                     </h3>
-                                    <p className="text-sm text-black">{insole.description}</p>
+                                    <p className="text-sm text-gray-700">{insole.description}</p>
                                 </div>
-                                <div className="text-right mt-2">
-                                    <span className="font-bold text-black">
-                                        Preis: {insole.price.toFixed(2).replace(".", ",")}€
-                                    </span>
+
+                                {/* Right: Price, VAT, Checkbox */}
+                                <div className="flex items-center gap-4 shrink-0">
+                                    <div className="text-right">
+                                        <div className="font-bold text-lg text-green-600 mb-1">
+                                            Brutto: {formattedPrice} €
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            MwSt. {vatRate}% enthalten
+                                        </div>
+                                    </div>
+                                    <div 
+                                        className="shrink-0"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <Checkbox
+                                            checked={insole.selected}
+                                            onChange={() => onSelect(insole.id)}
+                                            className="h-5 w-5 border-[#61A175] data-[state=checked]:bg-[#61A175] data-[state=checked]:border-[#61A175]"
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
         </>

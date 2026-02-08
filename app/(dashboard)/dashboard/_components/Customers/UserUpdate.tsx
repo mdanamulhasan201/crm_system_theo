@@ -161,7 +161,9 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
             {/* Customer Information */}
             <div className='mt-10'>
                 <div className='flex justify-between items-center'>
-                    <h3 className="text-lg font-semibold mb-3">Kundeninformation</h3>
+                    <h3 className="text-lg font-semibold mb-3"> Kundeninformation 
+                        <span className='text-sm font-normal'> {customer?.vorname} {customer?.nachname}</span>
+                    </h3>
                 </div>
 
 
@@ -202,7 +204,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                             )}
                         />
 
-                        <FormField
+                        {/* <FormField
                             control={form.control}
                             name="email"
                             render={({ field }) => (
@@ -214,9 +216,9 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                     <FormMessage />
                                 </FormItem>
                             )}
-                        />
+                        /> */}
 
-                        <FormField
+                        {/* <FormField
                             control={form.control}
                             name="telefonnummer"
                             render={({ field }) => (
@@ -228,9 +230,9 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                     <FormMessage />
                                 </FormItem>
                             )}
-                        />
+                        /> */}
 
-                        <FormField
+                        {/* <FormField
                             control={form.control}
                             name="wohnort"
                             render={({ field }) => (
@@ -242,7 +244,7 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
                                     <FormMessage />
                                 </FormItem>
                             )}
-                        />
+                        /> */}
                     </form>
                 </Form>
             </div>

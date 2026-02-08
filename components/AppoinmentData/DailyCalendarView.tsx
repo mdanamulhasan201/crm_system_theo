@@ -3,6 +3,8 @@ import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAssignedToColor } from '@/lib/appointmentColors';
+import { format } from 'date-fns';
+import { de } from 'date-fns/locale';
 
 interface Event {
     id: string;
@@ -34,6 +36,8 @@ interface DailyCalendarViewProps {
     onDateChange: (direction: number) => void;
     onEventClick?: (eventId: string) => void;
     onTimeSlotClick?: (time: string, date: Date) => void;
+    showHeader?: boolean;
+    businessName?: string | null;
 }
 
 // Using assignedTo-based color system from appointmentColors.ts
@@ -44,7 +48,9 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     dayNamesLong,
     onDateChange,
     onEventClick,
-    onTimeSlotClick
+    onTimeSlotClick,
+    showHeader = false,
+    businessName
 }) => {
     // Calendar configuration - Only show 5 AM to 9 PM (5-21)
     const calendarStartHour = 5;
@@ -60,6 +66,43 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     // Modal state
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [noteContent, setNoteContent] = useState<string>('');
+
+    // Check if selected date is today
+    const isToday = useMemo(() => {
+        const now = new Date();
+        return now.getFullYear() === selectedDate.getFullYear() &&
+            now.getMonth() === selectedDate.getMonth() &&
+            now.getDate() === selectedDate.getDate();
+    }, [selectedDate]);
+
+    // Get current time for checking past events
+    const getCurrentTime = (): { hour: number; minute: number; totalMinutes: number } => {
+        const now = new Date();
+        const hour = now.getHours();
+        const minute = now.getMinutes();
+        const totalMinutes = (hour - calendarStartHour) * 60 + minute;
+        return { hour, minute, totalMinutes };
+    };
+
+    // Check if an event is past (ended) - only for today
+    const isEventPast = (event: Event): boolean => {
+        if (!isToday) {
+            // For other dates, nothing is "past" in real-time sense
+            return false;
+        }
+
+        const currentTime = getCurrentTime();
+        const currentMinutes = currentTime.totalMinutes;
+        const eventStartMinutes = parseTimeToMinutes(event.time);
+        const eventDurationMinutes = Math.round((event.duration || 0.17) * 60);
+        const eventEndMinutes = eventStartMinutes + eventDurationMinutes;
+
+        // Event is past if it has already ended
+        return eventEndMinutes <= currentMinutes;
+    };
+
+    // Show all events (no filtering)
+    const filteredEvents = events;
 
     // Parse time to minutes from 5 AM (calendarStartHour)
     const parseTimeToMinutes = (timeStr: string): number => {
@@ -139,10 +182,10 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 
     // Calculate event layout
     const eventLayout = useMemo(() => {
-        if (events.length === 0) return [];
+        if (filteredEvents.length === 0) return [];
 
         // Sort events: first by time, then prioritize employee-assigned events
-        const sortedEvents = [...events].sort((a, b) => {
+        const sortedEvents = [...filteredEvents].sort((a, b) => {
             const timeDiff = parseTimeToMinutes(a.time) - parseTimeToMinutes(b.time);
             if (timeDiff !== 0) return timeDiff;
             
@@ -226,7 +269,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
         });
 
         return layout;
-    }, [events]);
+    }, [filteredEvents]);
 
     // Get color based on customer (customerId or customer_name)
     // This ensures the same customer always gets the same color
@@ -250,16 +293,18 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 
     return (
         <div className="bg-white border border-gray-200 rounded-xl p-3 sm:p-5 shadow-sm">
-            {/* Header */}
+            {/* Welcome Header - Only shown if showHeader is true */}
+            {showHeader && (
+                <div className='flex flex-col gap-3 mb-6 pb-4 border-b border-gray-200'>
+                    <h1 className='text-3xl font-bold uppercase'>Willkommen zurück <span className='capitalize'>{businessName || ''}</span></h1>
+                    <p className='text-lg text-gray-500'>{format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })}</p>
+                </div>
+            )}
+
+            {/* Calendar Header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-800">
-                    {(() => {
-                        const now = new Date();
-                        const isToday = now.getFullYear() === selectedDate.getFullYear() &&
-                            now.getMonth() === selectedDate.getMonth() &&
-                            now.getDate() === selectedDate.getDate();
-                        return isToday ? 'Heute' : dayNamesLong[selectedDate.getDay()];
-                    })()}
+                    {isToday ? 'Heute' : dayNamesLong[selectedDate.getDay()]}
                 </h2>
                 <div className="flex items-center gap-1 sm:gap-2 border border-gray-200 rounded-full p-1 shadow-sm">
                     <button
@@ -399,6 +444,23 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                 : (typeof event.assignedTo === 'string' ? event.assignedTo : '');
                             const color = getAssignedToColor(assignedToForColor, index);
                             
+                            // Check if event is past - event layout contains all event properties via spread
+                            const eventIsPast = isEventPast({
+                                id: event.id,
+                                date: event.date,
+                                time: event.time,
+                                title: event.title,
+                                subtitle: event.subtitle,
+                                type: event.type,
+                                assignedTo: event.assignedTo,
+                                reason: event.reason,
+                                details: event.details,
+                                duration: event.duration,
+                                customer_name: event.customer_name,
+                                customerId: event.customerId,
+                                user: event.user
+                            });
+                            
                             // Calculate exact pixel positions based on minutes
                             // Since heightPerSlot = 150px and each hour = 60 minutes, 1 minute = 150/60 = 2.5px
                             const pixelsPerMinute = heightPerSlot / 60; // 150px per 60 minutes = 2.5px per minute
@@ -418,7 +480,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                             return (
                                 <div
                                     key={event.id}
-                                    className={`absolute ${color.bg} rounded-md text-gray-800 ${onEventClick ? 'cursor-pointer hover:opacity-90' : ''} transition-opacity shadow-md overflow-visible z-10`}
+                                    className={`absolute ${eventIsPast ? 'bg-gray-300 opacity-60' : color.bg} rounded-md ${eventIsPast ? 'text-gray-600' : 'text-gray-800'} ${onEventClick ? 'cursor-pointer hover:opacity-90' : ''} transition-opacity shadow-md overflow-visible z-10`}
                                     style={{
                                         top: `${topPx}px`,
                                         left: `${event.left + 6}%`,
@@ -519,14 +581,20 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                                         {/* Time Indicators - Bottom Right */}
                                         <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1 flex-shrink-0">
                                             <div
-                                                className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-white whitespace-nowrap"
-                                                style={{ backgroundColor: color.border }}
+                                                className="px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap"
+                                                style={{ 
+                                                    backgroundColor: eventIsPast ? '#9CA3AF' : color.border,
+                                                    color: 'white'
+                                                }}
                                             >
                                                 {formatTime(event.time)}
                                             </div>
                                             <div
-                                                className="px-1.5 py-0.5 rounded text-[10px] font-semibold text-white whitespace-nowrap"
-                                                style={{ backgroundColor: color.border }}
+                                                className="px-1.5 py-0.5 rounded text-[10px] font-semibold whitespace-nowrap"
+                                                style={{ 
+                                                    backgroundColor: eventIsPast ? '#9CA3AF' : color.border,
+                                                    color: 'white'
+                                                }}
                                             >
                                                 {getEndTime(event)}
                                             </div>
@@ -539,11 +607,15 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
                     </div>
 
                     {/* No Events Message */}
-                    {events.length === 0 && (
+                    {filteredEvents.length === 0 && (
                         <div className="absolute inset-0 flex items-center justify-center">
                             <div className="text-center text-gray-500">
-                                <div className="text-base sm:text-lg font-medium mb-2">Keine Termine</div>
-                                <div className="text-xs sm:text-sm">Keine Termine für diesen Tag geplant</div>
+                                <div className="text-base sm:text-lg font-medium mb-2">
+                                    Keine Termine
+                                </div>
+                                <div className="text-xs sm:text-sm">
+                                    Keine Termine für diesen Tag geplant
+                                </div>
                             </div>
                         </div>
                     )}

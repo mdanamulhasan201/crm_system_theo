@@ -322,7 +322,7 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                         <Button
                             onClick={handleSubmit}
                             disabled={isLoading}
-                            className="bg-green-600 hover:bg-green-700 text-white cursor-pointer rounded-[5px] px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-[#61A175] hover:bg-[#61A175]/90 text-white cursor-pointer rounded-[5px] px-4 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? "Speichern..." : "Speichern"}
                         </Button>

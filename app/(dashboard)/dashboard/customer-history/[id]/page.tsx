@@ -510,8 +510,8 @@ export default function CustomerHistory() {
                     >
                         <Image src={userload} alt="Versorgung starten" width={70} height={70} />
                     </button>
-                    <span className="mt-2 text-center text-sm font-normal">Scan ansehen-</span>
-                    <span className="text-center text-sm font-normal"> Versorgung starten</span>
+                    <span className="mt-2 text-center text-sm font-normal">Scans & Versorgung</span>
+                    {/* <span className="text-center text-sm font-normal"> Versorgung starten</span> */}
                 </div>
                 {/* Kundendaten -historie */}
                 <div className="flex flex-col items-center">

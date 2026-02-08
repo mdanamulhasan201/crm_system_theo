@@ -104,83 +104,92 @@ export default function CoverManagement({ coverList, onCoverListChange }: CoverM
 
     return (
         <div className="mt-12">
-            <h2 className="font-bold text-lg mb-4 text-black">
+            <h2 className="text-xl font-bold text-gray-900 mb-6">
                 Überzüge Verwalten
             </h2>
 
-            <div className="flex gap-2 mb-4">
-                <div className="flex-1 relative">
-                    <div
-                        className="border border-gray-300 rounded-[5px] bg-white min-h-[44px] px-3 py-2 flex flex-wrap gap-2 items-center cursor-text focus-within:border-black focus-within:ring-2 focus-within:ring-black/20 transition-all hover:border-gray-400"
-                        onClick={() => {
-                            const input = document.getElementById(INPUT_ID) as HTMLInputElement;
-                            input?.focus();
-                        }}
-                    >
-                        {coverList.map((cover) => (
-                            <div
-                                key={cover}
-                                className="px-3 py-1.5 rounded-full border-2 border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-900 text-xs font-semibold flex items-center gap-2 hover:from-blue-100 hover:to-blue-200 transition-all shadow-sm group"
-                            >
-                                <span>{cover}</span>
+            {/* White container with shadow containing input and button */}
+            <div className="bg-white border border-gray-300 rounded-lg p-4 shadow-sm ">
+                <div className="flex items-center gap-3">
+                    {/* Input field */}
+                    <div className="flex-1 relative">
+                        <div
+                            className="border border-gray-300 rounded-md bg-white min-h-[44px] px-3 py-2 flex flex-wrap gap-2 items-center cursor-text focus-within:border-gray-400 transition-all"
+                            onClick={() => {
+                                const input = document.getElementById(INPUT_ID) as HTMLInputElement;
+                                input?.focus();
+                            }}
+                        >
+                            {coverList.map((cover) => (
+                                <div
+                                    key={cover}
+                                    className="px-3 py-1.5 rounded-full border-2 border-blue-500 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-900 text-xs font-semibold flex items-center gap-2 hover:from-blue-100 hover:to-blue-200 transition-all shadow-sm group"
+                                >
+                                    <span>{cover}</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            removeCover(cover);
+                                        }}
+                                        className="hover:bg-red-100 rounded-full p-0.5 cursor-pointer transition-colors opacity-70 group-hover:opacity-100 text-red-600 hover:text-red-700"
+                                        aria-label={`${cover} entfernen`}
+                                        type="button"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                            ))}
+
+                            <Input
+                                id={INPUT_ID}
+                                type="text"
+                                placeholder="Weiter eingeben..."
+                                value={newCover}
+                                onChange={handleCoverInputChange}
+                                onKeyDown={handleCoverInputKeyDown}
+                                onPaste={handleCoverInputPaste}
+                                onBlur={handleCoverInputBlur}
+                                className="border-0 p-0 h-auto flex-1 min-w-[120px] focus-visible:ring-0 focus-visible:border-0 bg-transparent text-black placeholder:text-gray-400 outline-none"
+                                autoComplete="off"
+                            />
+
+                            {coverList.length > 0 && (
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        removeCover(cover);
+                                        clearAllCovers();
                                     }}
-                                    className="hover:bg-red-100 rounded-full p-0.5 cursor-pointer transition-colors opacity-70 group-hover:opacity-100 text-red-600 hover:text-red-700"
-                                    aria-label={`${cover} entfernen`}
+                                    className="ml-auto text-gray-400 hover:text-black transition-colors p-1"
+                                    aria-label="Alle entfernen"
                                     type="button"
                                 >
-                                    <X className="w-3 h-3" />
+                                    <X className="w-4 h-4" />
                                 </button>
-                            </div>
-                        ))}
+                            )}
+                        </div>
 
-                        <Input
-                            id={INPUT_ID}
-                            type="text"
-                            placeholder={coverList.length === 0 ? "Neuen Überzug Eingeben (durch Komma getrennt für mehrere)....." : "Weiter eingeben..."}
-                            value={newCover}
-                            onChange={handleCoverInputChange}
-                            onKeyDown={handleCoverInputKeyDown}
-                            onPaste={handleCoverInputPaste}
-                            onBlur={handleCoverInputBlur}
-                            className="border-0 p-0 h-auto flex-1 min-w-[120px] focus-visible:ring-0 focus-visible:border-0 bg-transparent text-black placeholder:text-gray-400 outline-none"
-                            autoComplete="off"
-                        />
-
-                        {coverList.length > 0 && (
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    clearAllCovers();
-                                }}
-                                className="ml-auto text-gray-400 hover:text-black transition-colors p-1"
-                                aria-label="Alle entfernen"
-                                type="button"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                        )}
                     </div>
-                    {coverList.length > 0 && (
-                        <p className="text-xs text-gray-600 mt-2 ml-1 font-medium flex items-center gap-1">
-                            <Check className="w-3 h-3 text-green-600" />
-                            {coverList.length} {coverList.length === 1 ? "Überzug" : "Überzüge"} hinzugefügt
-                        </p>
-                    )}
+
+                    {/* Add Button */}
+                    <Button
+                        onClick={addCoversFromInput}
+                        disabled={!newCover.trim()}
+                        className="bg-[#61A175] hover:bg-[#61A175]/90 text-white font-bold rounded-md px-6 py-2.5 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap flex items-center gap-2"
+                        type="button"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Hinzufügen
+                    </Button>
                 </div>
-                <Button
-                    onClick={addCoversFromInput}
-                    disabled={!newCover.trim()}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold rounded-lg px-6 py-2.5 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none disabled:hover:shadow-md whitespace-nowrap flex items-center gap-2"
-                    type="button"
-                >
-                    <Plus className="w-4 h-4" />
-                    Hinzufügen
-                </Button>
+                {coverList.length > 0 && (
+                    <p className="text-xs text-gray-600 mt-2 ml-1 font-medium flex items-center gap-1">
+                        <Check className="w-3 h-3 text-green-600" />
+                        {coverList.length} {coverList.length === 1 ? "Überzug" : "Überzüge"} hinzugefügt
+                    </p>
+                )}
+
             </div>
+
         </div>
     );
 }

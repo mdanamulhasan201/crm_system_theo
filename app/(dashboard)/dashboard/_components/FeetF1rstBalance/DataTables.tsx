@@ -415,8 +415,9 @@ export default function DataTables({
 
     return (
         <div className="mt-8">
-           
 
+            {/* Header */}
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">Transaktionen</h2>
             {/* Table */}
             <ReusableBalanceTable
                 columns={columns}

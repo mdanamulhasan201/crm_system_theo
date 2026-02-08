@@ -159,8 +159,8 @@ export default function Ausgaben() {
     return (
         <div className="pt-4 bg-gray-50 min-h-screen">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold text-gray-900">Kassenmanagement</h1>
+            <div className="mb-2">
+                <h1 className="text-xl font-semibold text-gray-900">Kassenmanagement</h1>
             </div>
 
             {/* Filters */}

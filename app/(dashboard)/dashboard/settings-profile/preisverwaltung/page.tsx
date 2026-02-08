@@ -9,6 +9,7 @@ import { useEinlagen } from "@/hooks/einlagen/useEinlagen";
 import { getCustomerSettings, getSettingData } from "@/apis/einlagenApis";
 import toast from "react-hot-toast";
 import { PriceItem } from "../_components/Preisverwaltung/types";
+import { Plus } from "lucide-react";
 
 interface Insole {
     id: string;
@@ -192,8 +193,9 @@ export default function PreisverwaltungPage() {
                         setEditingInsole(null);
                         setModalOpen(true);
                     }}
-                    className="border cursor-pointer border-black rounded-[5px] px-4 py-2 font-bold uppercase text-sm tracking-wide bg-white hover:bg-gray-50 text-black"
+                    className="border cursor-pointer bg-[#61A175] text-white rounded-md px-4 py-2 font-bold uppercase text-sm tracking-wide hover:bg-[#61A175]/80 flex items-center gap-2"
                 >
+                         <Plus className="w-4 h-4" />
                     EINLAGE HINZUFÜGEN
                 </button>
             </div>

@@ -175,22 +175,22 @@ export default function SupplySection({
                                 return (
                                     <div className="space-y-2">
                                         {/* Versorgung at top */}
-                                        <p className='font-bold text-lg'>
-                                            Versorgung: <span className='font-normal text-xl'>{selectedItem.versorgung}</span>
+                                        <p className='font-bold text-sm'>
+                                            Versorgung: <span className='font-normal text-sm'>{selectedItem.versorgung}</span>
                                         </p>
                                         
                                         {/* Materials + Name */}
                                         <div className='flex flex-col gap-2'>
-                                            <p className='font-bold'>
+                                            <p className='font-bold text-sm'>
                                                 Materialien: 
-                                                <span className='font-normal ml-2'>
+                                                <span className='font-normal ml-2 text-sm'>
                                                     {Array.isArray(selectedItem.material) 
                                                         ? selectedItem.material.join(', ') 
                                                         : selectedItem.material}
                                                 </span>
                                             </p>
                                             {/* Name */}
-                                            <h2 className='text-xl xl:text-2xl font-bold'>{selectedItem.name}</h2>
+                                            <h2 className='text-sm font-bold'>{selectedItem.name}</h2>
                                             <p className='font-bold'>
                                                 Einlage: <span className='font-normal'>{selectedEinlage}</span>
                                             </p>

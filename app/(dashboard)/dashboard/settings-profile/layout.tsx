@@ -45,7 +45,7 @@ export default function SettingsProfileLayout({
         const iconForPath = (path: string) => {
             if (path === "/dashboard/settings-profile") return Settings;
             if (path.endsWith("/backup")) return Save;
-            if (path.endsWith("/communication")) return MessageSquare;
+            // if (path.endsWith("/communication")) return MessageSquare;
             if (path.endsWith("/werkstattzettel")) return Warehouse;
             if (path.endsWith("/benachrichtigungen")) return Bell;
             if (path.endsWith("/notifications")) return Store;
