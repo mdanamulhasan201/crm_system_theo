@@ -15,6 +15,18 @@ interface MassschuheData {
     kostenvoranschlag: boolean;
 }
 
+// Normalize backend error messages for better UX
+const normalizeErrorMessage = (message: string): string => {
+    if (!message) return message;
+
+    // If backend sends typo "usführliche_diagnose", show the corrected name
+    if (message.includes('usführliche_diagnose is required!')) {
+        return message.replace('usführliche_diagnose', 'ausführliche_diagnose');
+    }
+
+    return message;
+};
+
 export const useCreateMassschuhe = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -30,13 +42,15 @@ export const useCreateMassschuhe = () => {
                 toast.success(response.message || 'Massschuhe erfolgreich erstellt!');
                 return { success: true, data: response.data };
             } else {
-                const errorMsg = response.message || 'Fehler beim Erstellen der Massschuhe';
+                const rawMsg = response.message || 'Fehler beim Erstellen der Massschuhe';
+                const errorMsg = normalizeErrorMessage(rawMsg);
                 setError(errorMsg);
                 toast.error(errorMsg);
                 return { success: false, error: errorMsg };
             }
         } catch (err: any) {
-            const errorMessage = err.response?.data?.message || err.message || 'Ein Fehler ist aufgetreten';
+            const rawErrorMessage = err.response?.data?.message || err.message || 'Ein Fehler ist aufgetreten';
+            const errorMessage = normalizeErrorMessage(rawErrorMessage);
             setError(errorMessage);
             toast.error(errorMessage);
             return { success: false, error: errorMessage };
