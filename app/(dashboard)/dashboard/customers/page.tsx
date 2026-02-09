@@ -231,7 +231,7 @@ export default function Customers() {
         <CardContent className="p-6">
           {/* Customer Avatar and Name */}
           <div className="flex flex-col items-center mb-4">
-            <div className="w-20 h-20 rounded-full bg-blue-500 flex items-center justify-center text-white text-3xl font-semibold mb-3">
+            <div className="w-20 h-20 rounded-full bg-[#61A175] flex items-center justify-center text-white text-3xl font-semibold mb-3">
               {firstLetter}
             </div>
             <h2 className="text-xl font-bold text-gray-900">
@@ -257,7 +257,7 @@ export default function Customers() {
               <User className="w-4 h-4 text-gray-400" />
               <span>
                 Kunden-ID:{" "}
-                {selectedCustomer.id}
+                {selectedCustomer.customerNumber ?? selectedCustomer.id}
               </span>
             </div>
             {selectedCustomer.Geschäftstandort && (
@@ -276,7 +276,7 @@ export default function Customers() {
               className="flex-1 flex items-center justify-center gap-2 cursor-pointer border-gray-300 hover:bg-gray-50"
             >
               <Image src={scanner3D} alt="Scan" width={16} height={16} />
-              <span className="text-sm">Scan Ansehen</span>
+              <span className="text-sm">Scan & Versorgung</span>
             </Button>
             <Button
               onClick={() => handleCustomerInfo(selectedCustomer.id)}
@@ -325,7 +325,7 @@ export default function Customers() {
                   </label>
                   {renderSearchInput(
                     nameInputRef,
-                    "James Smith",
+                    "Name",
                     searchName,
                     handleNameChange,
                     () => setShowNameSuggestions(nameSuggestions.length > 0),
@@ -342,7 +342,7 @@ export default function Customers() {
                   </label>
                   {renderSearchInput(
                     emailInputRef,
-                    "james3424@gmail.com",
+                    "Email",
                     searchEmail,
                     handleEmailChange,
                     () => setShowEmailSuggestions(emailSuggestions.length > 0),
@@ -360,7 +360,7 @@ export default function Customers() {
                 </label>
                 {renderSearchInput(
                   phoneInputRef,
-                  "+379 658 63 045",
+                  "Telefon",
                   searchPhone,
                   handlePhoneChange,
                   () => setShowPhoneSuggestions(phoneSuggestions.length > 0),
@@ -377,7 +377,7 @@ export default function Customers() {
                 </label>
                 {renderSearchInput(
                   locationInputRef,
-                  "München",
+                  "ort",
                   searchLocation,
                   handleLocationChange,
                   () =>
@@ -439,6 +439,13 @@ export default function Customers() {
                 </>
               )}
             </Button>
+
+            {/* No results message */}
+            {notFound && !loading && (
+              <p className="mt-3 text-xs text-red-500">
+                Kein Kunde gefunden. Bitte Suchkriterien prüfen und erneut versuchen.
+              </p>
+            )}
           </CardContent>
         </Card>
 
@@ -466,9 +473,9 @@ export default function Customers() {
                   </svg>
                 </div>
                 <p className="text-gray-400 text-sm max-w-xs">
-                  Geben Sie Suchkriterien ein, um
-                  <br />
-                  Kunden zu finden
+                  {notFound
+                    ? 'Kein Kunde gefunden. Bitte Suchkriterien anpassen.'
+                    : 'Geben Sie Suchkriterien ein, um\nKunden zu finden'}
                 </p>
               </div>
             )}

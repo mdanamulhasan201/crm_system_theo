@@ -42,12 +42,26 @@ interface PDFPopupProps {
   showDetails?: boolean
   orderData?: OrderDataForPDF
   selectedSole?: { id: string; name: string; image: string; des?: string; description?: string } | null
-  heelWidthAdjustment?: { left?: { op: "widen" | "narrow" | null; mm: number }; right?: { op: "widen" | "narrow" | null; mm: number }; medial?: { op: "widen" | "narrow" | null; mm: number }; lateral?: { op: "widen" | "narrow" | null; mm: number } } | null
+  heelWidthAdjustment?: { 
+    leftMedial?: { op: "widen" | "narrow" | null; mm: number }
+    leftLateral?: { op: "widen" | "narrow" | null; mm: number }
+    rightMedial?: { op: "widen" | "narrow" | null; mm: number }
+    rightLateral?: { op: "widen" | "narrow" | null; mm: number }
+    // Backward compatibility
+    left?: { op: "widen" | "narrow" | null; mm: number }
+    right?: { op: "widen" | "narrow" | null; mm: number }
+    medial?: { op: "widen" | "narrow" | null; mm: number }
+    lateral?: { op: "widen" | "narrow" | null; mm: number }
+  } | null
   soleElevation?: { enabled: boolean; side: "links" | "rechts" | "beidseitig" | null; height_mm: number } | null
   // Orthopedic fields
   vorderkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; leftMaterial?: "leicht" | "normal" | "doppelt" | null; rightMaterial?: "leicht" | "normal" | "doppelt" | null } | null
   rahmen?: { type: "eva" | "gummi" | null; color?: string } | null
   sohlenhoeheDifferenziert?: { ferse?: number; ballen?: number; spitze?: number } | null
+  // Left/Right selection fields
+  hinterkappeMusterSide?: { side: "links" | "rechts" | "beidseitig" | null; leftValue?: "ja" | "nein" | null; rightValue?: "ja" | "nein" | null } | null
+  hinterkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; leftValue?: string | null; leftSubValue?: string | null; rightValue?: string | null; rightSubValue?: string | null } | null
+  brandsohleSide?: { side: "links" | "rechts" | "beidseitig" | null; leftValues?: string[] | null; rightValues?: string[] | null } | null
 }
 
 type OptionDef = { id: string; label: string }
@@ -123,6 +137,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   vorderkappeSide,
   rahmen,
   sohlenhoeheDifferenziert,
+  hinterkappeMusterSide,
+  hinterkappeSide,
+  brandsohleSide,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
@@ -338,7 +355,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     }
   }
 
-  // Render options with label content
+  // Render options with label content - Show ALL selected options clearly
   const renderModalOptions = (g: GroupDef2) => {
     const selectedOptionId = selected[g.id]
     
@@ -346,10 +363,33 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     const isMultiSelect = g.multiSelect === true
     const selectedArray = Array.isArray(selectedOptionId) ? selectedOptionId : (selectedOptionId ? [selectedOptionId] : [])
     
+    // If no selection, show nothing
+    if (!selectedOptionId || (Array.isArray(selectedOptionId) && selectedOptionId.length === 0)) {
+      return <span className="text-xs text-slate-400">Nicht ausgewählt</span>
+    }
+    
+    // For multi-select: show only selected options
+    if (isMultiSelect && Array.isArray(selectedOptionId) && selectedOptionId.length > 0) {
+      return selectedArray.map((selectedId: string) => {
+        const opt = g.options.find(o => o.id === selectedId)
+        if (!opt) return null
+        
+        const placeholderCount = (opt.label || "").replace(/_{3,}/g, "___").split("___").length - 1
+        const inputsForThisOpt = optionInputs[g.id]?.[opt.id] ?? Array.from({ length: placeholderCount }, () => "")
+        
+        const labelContent = placeholderCount > 0 ? (
+          <InlineLabelWithInputsModal option={opt} values={inputsForThisOpt} />
+        ) : (
+          opt.label
+        )
+        
+        return <ModalCheckbox key={opt.id} isSelected={true} label={labelContent} />
+      }).filter(Boolean)
+    }
+    
+    // For single-select: show all options with selected one checked
     return g.options.map((opt: OptionDef) => {
-      const isSelected = isMultiSelect 
-        ? selectedArray.includes(opt.id)
-        : selectedOptionId === opt.id
+      const isSelected = selectedOptionId === opt.id
       
       const placeholderCount = (opt.label || "").replace(/_{3,}/g, "___").split("___").length - 1
       const inputsForThisOpt = optionInputs[g.id]?.[opt.id] ?? Array.from({ length: placeholderCount }, () => "")
@@ -371,10 +411,33 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     const isMultiSelect = g.multiSelect === true
     const selectedArray = Array.isArray(selectedOptionId) ? selectedOptionId : (selectedOptionId ? [selectedOptionId] : [])
     
+    // If no selection, show nothing
+    if (!selectedOptionId || (Array.isArray(selectedOptionId) && selectedOptionId.length === 0)) {
+      return <span style={{ fontSize: '12px', color: '#94a3b8' }}>Nicht ausgewählt</span>
+    }
+    
+    // For multi-select: show only selected options
+    if (isMultiSelect && Array.isArray(selectedOptionId) && selectedOptionId.length > 0) {
+      return selectedArray.map((selectedId: string) => {
+        const opt = g.options.find(o => o.id === selectedId)
+        if (!opt) return null
+        
+        const placeholderCount = (opt.label || "").replace(/_{3,}/g, "___").split("___").length - 1
+        const inputsForThisOpt = optionInputs[g.id]?.[opt.id] ?? Array.from({ length: placeholderCount }, () => "")
+        
+        const labelContent = placeholderCount > 0 ? (
+          <InlineLabelWithInputsPDF option={opt} values={inputsForThisOpt} />
+        ) : (
+          opt.label
+        )
+        
+        return <PDFCheckbox key={opt.id} isSelected={true} label={labelContent} />
+      }).filter(Boolean)
+    }
+    
+    // For single-select: show all options with selected one checked
     return g.options.map((opt: OptionDef) => {
-      const isSelected = isMultiSelect 
-        ? selectedArray.includes(opt.id)
-        : selectedOptionId === opt.id
+      const isSelected = selectedOptionId === opt.id
       
       const placeholderCount = (opt.label || "").replace(/_{3,}/g, "___").split("___").length - 1
       const inputsForThisOpt = optionInputs[g.id]?.[opt.id] ?? Array.from({ length: placeholderCount }, () => "")
@@ -492,6 +555,11 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   )}
 
                   {allGroups.map((g: GroupDef2) => {
+                    // Skip section headers
+                    if (g.fieldType === "section") {
+                      return null
+                    }
+                    
                     const selectedOptionId = selected[g.id]
                     
                     // Handle text field type (generic handling for all text fields)
@@ -511,7 +579,134 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       )
                     }
                     
-                    // Handle select field type (e.g., hinterkappe)
+                    // Handle hinterkappeMusterSide field type
+                    if (g.fieldType === "hinterkappeMusterSide") {
+                      if (!hinterkappeMusterSide || !hinterkappeMusterSide.side) {
+                        return null
+                      }
+                      const parts: string[] = [`Seite: ${hinterkappeMusterSide.side.charAt(0).toUpperCase() + hinterkappeMusterSide.side.slice(1)}`]
+                      if ((hinterkappeMusterSide.side === "links" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.leftValue) {
+                        const leftOption = g.options.find(opt => opt.id === hinterkappeMusterSide.leftValue)
+                        if (leftOption) {
+                          parts.push(`Links: ${leftOption.label}`)
+                        }
+                      }
+                      if ((hinterkappeMusterSide.side === "rechts" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.rightValue) {
+                        const rightOption = g.options.find(opt => opt.id === hinterkappeMusterSide.rightValue)
+                        if (rightOption) {
+                          parts.push(`Rechts: ${rightOption.label}`)
+                        }
+                      }
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {parts.map((part, idx) => (
+                              <div key={idx} className="mb-1">
+                                <ModalCheckbox isSelected={true} label={part} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    // Handle hinterkappeSide field type
+                    if (g.fieldType === "hinterkappeSide") {
+                      if (!hinterkappeSide || !hinterkappeSide.side) {
+                        return null
+                      }
+                      const parts: string[] = []
+                      
+                      // Show side selection first
+                      const sideLabel = hinterkappeSide.side === "links" ? "Links" : hinterkappeSide.side === "rechts" ? "Rechts" : "Beidseitig"
+                      parts.push(`Seite: ${sideLabel}`)
+                      
+                      // Left side details - show ALL selected data
+                      if ((hinterkappeSide.side === "links" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.leftValue) {
+                        const leftOption = g.options.find(opt => opt.id === hinterkappeSide.leftValue)
+                        if (leftOption) {
+                          parts.push(`Links - Material: ${leftOption.label}`)
+                          // Show Leder sub-option if material is leder
+                          if (hinterkappeSide.leftValue === "leder" && hinterkappeSide.leftSubValue && g.subOptions?.leder) {
+                            const leftSubOption = g.subOptions.leder.find(opt => opt.id === hinterkappeSide.leftSubValue)
+                            if (leftSubOption) {
+                              parts.push(`Links - Leder-Auswahl: ${leftSubOption.label}`)
+                            }
+                          }
+                        }
+                      }
+                      
+                      // Right side details - show ALL selected data
+                      if ((hinterkappeSide.side === "rechts" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.rightValue) {
+                        const rightOption = g.options.find(opt => opt.id === hinterkappeSide.rightValue)
+                        if (rightOption) {
+                          parts.push(`Rechts - Material: ${rightOption.label}`)
+                          // Show Leder sub-option if material is leder
+                          if (hinterkappeSide.rightValue === "leder" && hinterkappeSide.rightSubValue && g.subOptions?.leder) {
+                            const rightSubOption = g.subOptions.leder.find(opt => opt.id === hinterkappeSide.rightSubValue)
+                            if (rightSubOption) {
+                              parts.push(`Rechts - Leder-Auswahl: ${rightSubOption.label}`)
+                            }
+                          }
+                        }
+                      }
+                      
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {parts.length > 0 ? (
+                              parts.map((part, idx) => (
+                                <div key={idx} className="mb-1">
+                                  <ModalCheckbox isSelected={true} label={part} />
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-xs text-slate-400">Nicht ausgewählt</span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    // Handle brandsohleSide field type
+                    if (g.fieldType === "brandsohleSide") {
+                      if (!brandsohleSide || !brandsohleSide.side) {
+                        return null
+                      }
+                      const parts: string[] = [`Seite: ${brandsohleSide.side.charAt(0).toUpperCase() + brandsohleSide.side.slice(1)}`]
+                      if ((brandsohleSide.side === "links" || brandsohleSide.side === "beidseitig") && brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
+                        brandsohleSide.leftValues.forEach(val => {
+                          const option = g.options.find(opt => opt.id === val)
+                          if (option) {
+                            parts.push(`Links: ${option.label}`)
+                          }
+                        })
+                      }
+                      if ((brandsohleSide.side === "rechts" || brandsohleSide.side === "beidseitig") && brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
+                        brandsohleSide.rightValues.forEach(val => {
+                          const option = g.options.find(opt => opt.id === val)
+                          if (option) {
+                            parts.push(`Rechts: ${option.label}`)
+                          }
+                        })
+                      }
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {parts.map((part, idx) => (
+                              <div key={idx} className="mb-1">
+                                <ModalCheckbox isSelected={true} label={part} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
+                    // Handle select field type (e.g., hinterkappe) - legacy format
                     if (g.fieldType === "select") {
                       const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
                       const selectedOption = g.options.find(opt => opt.id === selectedValue)
@@ -535,33 +730,65 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     
                     // Handle heelWidthAdjustment field type
                     if (g.fieldType === "heelWidthAdjustment") {
-                      if (!heelWidthAdjustment || (!heelWidthAdjustment.left?.mm && !heelWidthAdjustment.right?.mm && !heelWidthAdjustment.medial?.mm && !heelWidthAdjustment.lateral?.mm)) {
+                      if (!heelWidthAdjustment) {
                         return null
                       }
+                      
+                      // Check if any of the new structure fields have values
+                      const hasNewValues = heelWidthAdjustment.leftMedial?.mm || 
+                                         heelWidthAdjustment.leftLateral?.mm || 
+                                         heelWidthAdjustment.rightMedial?.mm || 
+                                         heelWidthAdjustment.rightLateral?.mm
+                      
+                      // Check if any of the old structure fields have values (backward compatibility)
+                      const hasOldValues = heelWidthAdjustment.left?.mm || 
+                                         heelWidthAdjustment.right?.mm || 
+                                         heelWidthAdjustment.medial?.mm || 
+                                         heelWidthAdjustment.lateral?.mm
+                      
+                      if (!hasNewValues && !hasOldValues) {
+                        return null
+                      }
+                      
+                      const parts: string[] = []
+                      
+                      // New structure (preferred)
+                      if (heelWidthAdjustment.leftMedial && heelWidthAdjustment.leftMedial.mm > 0) {
+                        parts.push(`Linker Schuh – innen (medial): ${heelWidthAdjustment.leftMedial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.leftMedial.mm} mm`)
+                      }
+                      if (heelWidthAdjustment.leftLateral && heelWidthAdjustment.leftLateral.mm > 0) {
+                        parts.push(`Linker Schuh – außen (lateral): ${heelWidthAdjustment.leftLateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.leftLateral.mm} mm`)
+                      }
+                      if (heelWidthAdjustment.rightMedial && heelWidthAdjustment.rightMedial.mm > 0) {
+                        parts.push(`Rechter Schuh – innen (medial): ${heelWidthAdjustment.rightMedial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.rightMedial.mm} mm`)
+                      }
+                      if (heelWidthAdjustment.rightLateral && heelWidthAdjustment.rightLateral.mm > 0) {
+                        parts.push(`Rechter Schuh – außen (lateral): ${heelWidthAdjustment.rightLateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.rightLateral.mm} mm`)
+                      }
+                      
+                      // Old structure (backward compatibility)
+                      if (heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0) {
+                        parts.push(`Linker Schuh: ${heelWidthAdjustment.left.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.left.mm} mm`)
+                      }
+                      if (heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0) {
+                        parts.push(`Rechter Schuh: ${heelWidthAdjustment.right.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.right.mm} mm`)
+                      }
+                      if (heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0) {
+                        parts.push(`Medial (innen): ${heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.medial.mm} mm`)
+                      }
+                      if (heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0) {
+                        parts.push(`Lateral (außen): ${heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.lateral.mm} mm`)
+                      }
+                      
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                           <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
                           <div className="flex-1 leading-loose">
-                            {heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0 && (
-                              <div className="mb-1">
-                                <ModalCheckbox isSelected={true} label={`Linker Schuh: ${heelWidthAdjustment.left.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.left.mm} mm`} />
+                            {parts.map((part, idx) => (
+                              <div key={idx} className="mb-1">
+                                <ModalCheckbox isSelected={true} label={part} />
                               </div>
-                            )}
-                            {heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0 && (
-                              <div className="mb-1">
-                                <ModalCheckbox isSelected={true} label={`Rechter Schuh: ${heelWidthAdjustment.right.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.right.mm} mm`} />
-                              </div>
-                            )}
-                            {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
-                              <div className="mb-1">
-                                <ModalCheckbox isSelected={true} label={`Medial (innen): ${heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.medial.mm} mm`} />
-                              </div>
-                            )}
-                            {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
-                              <div className="mb-1">
-                                <ModalCheckbox isSelected={true} label={`Lateral (außen): ${heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.lateral.mm} mm`} />
-                              </div>
-                            )}
+                            ))}
                           </div>
                         </div>
                       )
@@ -820,6 +1047,11 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
               )}
 
               {allGroups.map((g: GroupDef2) => {
+                // Skip section headers
+                if (g.fieldType === "section") {
+                  return null
+                }
+                
                 const selectedOptionId = selected[g.id]
                 
                 // Handle text field type (generic handling for all text fields)
@@ -839,7 +1071,134 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   )
                 }
                 
-                // Handle select field type (e.g., hinterkappe)
+                // Handle hinterkappeMusterSide field type
+                if (g.fieldType === "hinterkappeMusterSide") {
+                  if (!hinterkappeMusterSide || !hinterkappeMusterSide.side) {
+                    return null
+                  }
+                  const parts: string[] = [`Seite: ${hinterkappeMusterSide.side.charAt(0).toUpperCase() + hinterkappeMusterSide.side.slice(1)}`]
+                  if ((hinterkappeMusterSide.side === "links" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.leftValue) {
+                    const leftOption = g.options.find(opt => opt.id === hinterkappeMusterSide.leftValue)
+                    if (leftOption) {
+                      parts.push(`Links: ${leftOption.label}`)
+                    }
+                  }
+                  if ((hinterkappeMusterSide.side === "rechts" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.rightValue) {
+                    const rightOption = g.options.find(opt => opt.id === hinterkappeMusterSide.rightValue)
+                    if (rightOption) {
+                      parts.push(`Rechts: ${rightOption.label}`)
+                    }
+                  }
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {parts.map((part, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={part} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Handle hinterkappeSide field type
+                if (g.fieldType === "hinterkappeSide") {
+                  if (!hinterkappeSide || !hinterkappeSide.side) {
+                    return null
+                  }
+                  const parts: string[] = []
+                  
+                  // Show side selection first
+                  const sideLabel = hinterkappeSide.side === "links" ? "Links" : hinterkappeSide.side === "rechts" ? "Rechts" : "Beidseitig"
+                  parts.push(`Seite: ${sideLabel}`)
+                  
+                  // Left side details - show ALL selected data
+                  if ((hinterkappeSide.side === "links" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.leftValue) {
+                    const leftOption = g.options.find(opt => opt.id === hinterkappeSide.leftValue)
+                    if (leftOption) {
+                      parts.push(`Links - Material: ${leftOption.label}`)
+                      // Show Leder sub-option if material is leder
+                      if (hinterkappeSide.leftValue === "leder" && hinterkappeSide.leftSubValue && g.subOptions?.leder) {
+                        const leftSubOption = g.subOptions.leder.find(opt => opt.id === hinterkappeSide.leftSubValue)
+                        if (leftSubOption) {
+                          parts.push(`Links - Leder-Auswahl: ${leftSubOption.label}`)
+                        }
+                      }
+                    }
+                  }
+                  
+                  // Right side details - show ALL selected data
+                  if ((hinterkappeSide.side === "rechts" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.rightValue) {
+                    const rightOption = g.options.find(opt => opt.id === hinterkappeSide.rightValue)
+                    if (rightOption) {
+                      parts.push(`Rechts - Material: ${rightOption.label}`)
+                      // Show Leder sub-option if material is leder
+                      if (hinterkappeSide.rightValue === "leder" && hinterkappeSide.rightSubValue && g.subOptions?.leder) {
+                        const rightSubOption = g.subOptions.leder.find(opt => opt.id === hinterkappeSide.rightSubValue)
+                        if (rightSubOption) {
+                          parts.push(`Rechts - Leder-Auswahl: ${rightSubOption.label}`)
+                        }
+                      }
+                    }
+                  }
+                  
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {parts.length > 0 ? (
+                          parts.map((part, idx) => (
+                            <div key={idx} style={{ marginBottom: '4px' }}>
+                              <PDFCheckbox isSelected={true} label={part} />
+                            </div>
+                          ))
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#94a3b8' }}>Nicht ausgewählt</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Handle brandsohleSide field type
+                if (g.fieldType === "brandsohleSide") {
+                  if (!brandsohleSide || !brandsohleSide.side) {
+                    return null
+                  }
+                  const parts: string[] = [`Seite: ${brandsohleSide.side.charAt(0).toUpperCase() + brandsohleSide.side.slice(1)}`]
+                  if ((brandsohleSide.side === "links" || brandsohleSide.side === "beidseitig") && brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
+                    brandsohleSide.leftValues.forEach(val => {
+                      const option = g.options.find(opt => opt.id === val)
+                      if (option) {
+                        parts.push(`Links: ${option.label}`)
+                      }
+                    })
+                  }
+                  if ((brandsohleSide.side === "rechts" || brandsohleSide.side === "beidseitig") && brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
+                    brandsohleSide.rightValues.forEach(val => {
+                      const option = g.options.find(opt => opt.id === val)
+                      if (option) {
+                        parts.push(`Rechts: ${option.label}`)
+                      }
+                    })
+                  }
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {parts.map((part, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={part} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                
+                // Handle select field type (e.g., hinterkappe) - legacy format
                 if (g.fieldType === "select") {
                   const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
                   const selectedOption = g.options.find(opt => opt.id === selectedValue)
@@ -863,33 +1222,65 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 
                 // Handle heelWidthAdjustment field type
                 if (g.fieldType === "heelWidthAdjustment") {
-                  if (!heelWidthAdjustment || (!heelWidthAdjustment.left?.mm && !heelWidthAdjustment.right?.mm && !heelWidthAdjustment.medial?.mm && !heelWidthAdjustment.lateral?.mm)) {
+                  if (!heelWidthAdjustment) {
                     return null
                   }
+                  
+                  // Check if any of the new structure fields have values
+                  const hasNewValues = heelWidthAdjustment.leftMedial?.mm || 
+                                     heelWidthAdjustment.leftLateral?.mm || 
+                                     heelWidthAdjustment.rightMedial?.mm || 
+                                     heelWidthAdjustment.rightLateral?.mm
+                  
+                  // Check if any of the old structure fields have values (backward compatibility)
+                  const hasOldValues = heelWidthAdjustment.left?.mm || 
+                                     heelWidthAdjustment.right?.mm || 
+                                     heelWidthAdjustment.medial?.mm || 
+                                     heelWidthAdjustment.lateral?.mm
+                  
+                  if (!hasNewValues && !hasOldValues) {
+                    return null
+                  }
+                  
+                  const parts: string[] = []
+                  
+                  // New structure (preferred)
+                  if (heelWidthAdjustment.leftMedial && heelWidthAdjustment.leftMedial.mm > 0) {
+                    parts.push(`Linker Schuh – innen (medial): ${heelWidthAdjustment.leftMedial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.leftMedial.mm} mm`)
+                  }
+                  if (heelWidthAdjustment.leftLateral && heelWidthAdjustment.leftLateral.mm > 0) {
+                    parts.push(`Linker Schuh – außen (lateral): ${heelWidthAdjustment.leftLateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.leftLateral.mm} mm`)
+                  }
+                  if (heelWidthAdjustment.rightMedial && heelWidthAdjustment.rightMedial.mm > 0) {
+                    parts.push(`Rechter Schuh – innen (medial): ${heelWidthAdjustment.rightMedial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.rightMedial.mm} mm`)
+                  }
+                  if (heelWidthAdjustment.rightLateral && heelWidthAdjustment.rightLateral.mm > 0) {
+                    parts.push(`Rechter Schuh – außen (lateral): ${heelWidthAdjustment.rightLateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.rightLateral.mm} mm`)
+                  }
+                  
+                  // Old structure (backward compatibility)
+                  if (heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0) {
+                    parts.push(`Linker Schuh: ${heelWidthAdjustment.left.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.left.mm} mm`)
+                  }
+                  if (heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0) {
+                    parts.push(`Rechter Schuh: ${heelWidthAdjustment.right.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.right.mm} mm`)
+                  }
+                  if (heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0) {
+                    parts.push(`Medial (innen): ${heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.medial.mm} mm`)
+                  }
+                  if (heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0) {
+                    parts.push(`Lateral (außen): ${heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.lateral.mm} mm`)
+                  }
+                  
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
                       <div style={{ flex: 1, lineHeight: 1.8 }}>
-                        {heelWidthAdjustment.left && heelWidthAdjustment.left.mm > 0 && (
-                          <div style={{ marginBottom: '4px' }}>
-                            <PDFCheckbox isSelected={true} label={`Linker Schuh: ${heelWidthAdjustment.left.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.left.mm} mm`} />
+                        {parts.map((part, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={part} />
                           </div>
-                        )}
-                        {heelWidthAdjustment.right && heelWidthAdjustment.right.mm > 0 && (
-                          <div style={{ marginBottom: '4px' }}>
-                            <PDFCheckbox isSelected={true} label={`Rechter Schuh: ${heelWidthAdjustment.right.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.right.mm} mm`} />
-                          </div>
-                        )}
-                        {heelWidthAdjustment.medial && heelWidthAdjustment.medial.mm > 0 && (
-                          <div style={{ marginBottom: '4px' }}>
-                            <PDFCheckbox isSelected={true} label={`Medial (innen): ${heelWidthAdjustment.medial.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.medial.mm} mm`} />
-                          </div>
-                        )}
-                        {heelWidthAdjustment.lateral && heelWidthAdjustment.lateral.mm > 0 && (
-                          <div style={{ marginBottom: '4px' }}>
-                            <PDFCheckbox isSelected={true} label={`Lateral (außen): ${heelWidthAdjustment.lateral.op === "widen" ? "+" : "−"} ${heelWidthAdjustment.lateral.mm} mm`} />
-                          </div>
-                        )}
+                        ))}
                       </div>
                     </div>
                   )

@@ -12,6 +12,7 @@ interface CustomerData {
     createdAt: string;
     id: string;
     email: string;
+    customerNumber?: number | string;
 }
 
 interface SuggestionItem {
@@ -242,7 +243,8 @@ export const useSearchCustomer = () => {
                         email: customer.email || '',
                         Geburtsdatum: customer.Geburtsdatum || customer.geburtsdatum || '',
                         Geschäftstandort: customer.location || customer.Geschäftstandort || customer.wohnort || '',
-                        createdAt: customer.createdAt || new Date().toISOString()
+                        createdAt: customer.createdAt || new Date().toISOString(),
+                        customerNumber: customer.customerNumber || customer.kundennummer || undefined
                     };
                     setSelectedCustomer(foundCustomer);
                     setNotFound(false);
@@ -252,7 +254,8 @@ export const useSearchCustomer = () => {
                 setNotFound(true);
             }
         } catch (error) {
-            console.error('Error searching customers:', error);
+            // Network / API error: gracefully handle as "not found" without breaking UI
+            console.warn('Error searching customers:', error);
             setSelectedCustomer(null);
             setNotFound(true);
         } finally {
@@ -309,7 +312,8 @@ export const useSearchCustomer = () => {
                     email: customer.email || '',
                     Geburtsdatum: customer.Geburtsdatum || customer.geburtsdatum || '',
                     Geschäftstandort: customer.location || customer.Geschäftstandort || customer.wohnort || '',
-                    createdAt: customer.createdAt || new Date().toISOString()
+                    createdAt: customer.createdAt || new Date().toISOString(),
+                    customerNumber: customer.customerNumber || customer.kundennummer || undefined
                 };
                 setSelectedCustomer(foundCustomer);
                 setNotFound(false);

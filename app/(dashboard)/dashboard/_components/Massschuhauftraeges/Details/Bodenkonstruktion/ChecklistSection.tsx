@@ -1,6 +1,6 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, HinterkappeMusterSideField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -32,6 +32,13 @@ interface ChecklistSectionProps {
     rahmen?: RahmenData | null
     onSohlenhoeheDifferenziertChange?: (value: SohlenhoeheDifferenziertData | null) => void
     sohlenhoeheDifferenziert?: SohlenhoeheDifferenziertData | null
+    // Left/Right selection fields
+    onHinterkappeMusterChange?: (value: HinterkappeMusterSideData | null) => void
+    hinterkappeMusterSide?: HinterkappeMusterSideData | null
+    onHinterkappeChange?: (value: HinterkappeSideData | null) => void
+    hinterkappeSide?: HinterkappeSideData | null
+    onBrandsohleChange?: (value: BrandsohleSideData | null) => void
+    brandsohleSide?: BrandsohleSideData | null
 }
 
 export default function ChecklistSection({
@@ -61,6 +68,13 @@ export default function ChecklistSection({
     rahmen,
     onSohlenhoeheDifferenziertChange,
     sohlenhoeheDifferenziert,
+    // Left/Right selection fields
+    onHinterkappeMusterChange,
+    hinterkappeMusterSide,
+    onHinterkappeChange,
+    hinterkappeSide,
+    onBrandsohleChange,
+    brandsohleSide,
 }: ChecklistSectionProps) {
     // Orthopedic field IDs that should only show when showOrthopedicFields is true
     const orthopedicFieldIds = [
@@ -163,6 +177,24 @@ export default function ChecklistSection({
                                         ? "Lederstück zur Verbindung von Vorder- und Hinterkappe für zusätzliche Stabilität im Schaftbereich."
                                         : undefined
                                 )}
+                            />
+                        ) : g.fieldType === "hinterkappeMusterSide" && showOrthopedicFields ? (
+                            <HinterkappeMusterSideField
+                                def={g}
+                                value={hinterkappeMusterSide || null}
+                                onChange={onHinterkappeMusterChange || (() => {})}
+                            />
+                        ) : g.fieldType === "hinterkappeSide" && showOrthopedicFields ? (
+                            <HinterkappeSideField
+                                def={g}
+                                value={hinterkappeSide || null}
+                                onChange={onHinterkappeChange || (() => {})}
+                            />
+                        ) : g.fieldType === "brandsohleSide" ? (
+                            <BrandsohleSideField
+                                def={g}
+                                value={brandsohleSide || null}
+                                onChange={onBrandsohleChange || (() => {})}
                             />
                         ) : g.fieldType === "vorderkappeSide" && showOrthopedicFields ? (
                             <VorderkappeSideField

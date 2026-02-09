@@ -11,9 +11,14 @@ type GroupDef = {
 }
 
 export type HeelWidthAdjustmentData = {
+    // New structure: four specific fields for left/right and medial/lateral
+    leftMedial?: { op: "widen" | "narrow" | null; mm: number }      // Linker Schuh – innen (medial)
+    leftLateral?: { op: "widen" | "narrow" | null; mm: number }     // Linker Schuh – außen (lateral)
+    rightMedial?: { op: "widen" | "narrow" | null; mm: number }     // Rechter Schuh – innen (medial)
+    rightLateral?: { op: "widen" | "narrow" | null; mm: number }    // Rechter Schuh – außen (lateral)
+    // Keep old fields for backward compatibility
     left?: { op: "widen" | "narrow" | null; mm: number }
     right?: { op: "widen" | "narrow" | null; mm: number }
-    // Keep medial/lateral for backward compatibility if needed
     medial?: { op: "widen" | "narrow" | null; mm: number }
     lateral?: { op: "widen" | "narrow" | null; mm: number }
 }
@@ -80,93 +85,152 @@ export function HeelWidthAdjustmentField({
     value: HeelWidthAdjustmentData | null
     onChange: (value: HeelWidthAdjustmentData | null) => void
 }) {
+    // New structure: four specific fields
+    const leftMedial = value?.leftMedial || { op: null, mm: 0 }      // Linker Schuh – innen (medial)
+    const leftLateral = value?.leftLateral || { op: null, mm: 0 }     // Linker Schuh – außen (lateral)
+    const rightMedial = value?.rightMedial || { op: null, mm: 0 }     // Rechter Schuh – innen (medial)
+    const rightLateral = value?.rightLateral || { op: null, mm: 0 }   // Rechter Schuh – außen (lateral)
+    
+    // Keep old fields for backward compatibility
     const left = value?.left || { op: null, mm: 0 }
     const right = value?.right || { op: null, mm: 0 }
     const medial = value?.medial || { op: null, mm: 0 }
     const lateral = value?.lateral || { op: null, mm: 0 }
 
-    const updateLeft = (updates: Partial<typeof left>) => {
-        const newLeft = { ...left, ...updates }
-        // If mm is 0, set op to null
-        if (newLeft.mm === 0) {
-            newLeft.op = null
+    // Update functions for new structure
+    const updateLeftMedial = (updates: Partial<typeof leftMedial>) => {
+        const newLeftMedial = { ...leftMedial, ...updates }
+        if (newLeftMedial.mm === 0) {
+            newLeftMedial.op = null
         }
         const newValue: HeelWidthAdjustmentData = {
             ...value,
-            left: newLeft.mm > 0 ? newLeft : undefined,
-            right: value?.right,
-            medial: value?.medial,
-            lateral: value?.lateral,
+            leftMedial: newLeftMedial.mm > 0 ? newLeftMedial : undefined,
+            leftLateral: value?.leftLateral,
+            rightMedial: value?.rightMedial,
+            rightLateral: value?.rightLateral,
         }
-        // Remove if all are empty
-        if (!newValue.left && !newValue.right && !newValue.medial && !newValue.lateral) {
+        if (!newValue.leftMedial && !newValue.leftLateral && !newValue.rightMedial && !newValue.rightLateral) {
             onChange(null)
         } else {
             onChange(newValue)
         }
     }
 
-    const updateRight = (updates: Partial<typeof right>) => {
-        const newRight = { ...right, ...updates }
-        // If mm is 0, set op to null
-        if (newRight.mm === 0) {
-            newRight.op = null
+    const updateLeftLateral = (updates: Partial<typeof leftLateral>) => {
+        const newLeftLateral = { ...leftLateral, ...updates }
+        if (newLeftLateral.mm === 0) {
+            newLeftLateral.op = null
         }
         const newValue: HeelWidthAdjustmentData = {
             ...value,
-            left: value?.left,
-            right: newRight.mm > 0 ? newRight : undefined,
-            medial: value?.medial,
-            lateral: value?.lateral,
+            leftMedial: value?.leftMedial,
+            leftLateral: newLeftLateral.mm > 0 ? newLeftLateral : undefined,
+            rightMedial: value?.rightMedial,
+            rightLateral: value?.rightLateral,
         }
-        // Remove if all are empty
-        if (!newValue.left && !newValue.right && !newValue.medial && !newValue.lateral) {
+        if (!newValue.leftMedial && !newValue.leftLateral && !newValue.rightMedial && !newValue.rightLateral) {
             onChange(null)
         } else {
             onChange(newValue)
         }
     }
 
-    const updateMedial = (updates: Partial<typeof medial>) => {
-        const newMedial = { ...medial, ...updates }
-        // If mm is 0, set op to null
-        if (newMedial.mm === 0) {
-            newMedial.op = null
+    const updateRightMedial = (updates: Partial<typeof rightMedial>) => {
+        const newRightMedial = { ...rightMedial, ...updates }
+        if (newRightMedial.mm === 0) {
+            newRightMedial.op = null
         }
         const newValue: HeelWidthAdjustmentData = {
             ...value,
-            left: value?.left,
-            right: value?.right,
-            medial: newMedial.mm > 0 ? newMedial : undefined,
-            lateral: value?.lateral,
+            leftMedial: value?.leftMedial,
+            leftLateral: value?.leftLateral,
+            rightMedial: newRightMedial.mm > 0 ? newRightMedial : undefined,
+            rightLateral: value?.rightLateral,
         }
-        // Remove if all are empty
-        if (!newValue.left && !newValue.right && !newValue.medial && !newValue.lateral) {
+        if (!newValue.leftMedial && !newValue.leftLateral && !newValue.rightMedial && !newValue.rightLateral) {
             onChange(null)
         } else {
             onChange(newValue)
         }
     }
 
-    const updateLateral = (updates: Partial<typeof lateral>) => {
-        const newLateral = { ...lateral, ...updates }
-        // If mm is 0, set op to null
-        if (newLateral.mm === 0) {
-            newLateral.op = null
+    const updateRightLateral = (updates: Partial<typeof rightLateral>) => {
+        const newRightLateral = { ...rightLateral, ...updates }
+        if (newRightLateral.mm === 0) {
+            newRightLateral.op = null
         }
         const newValue: HeelWidthAdjustmentData = {
             ...value,
-            left: value?.left,
-            right: value?.right,
-            medial: value?.medial,
-            lateral: newLateral.mm > 0 ? newLateral : undefined,
+            leftMedial: value?.leftMedial,
+            leftLateral: value?.leftLateral,
+            rightMedial: value?.rightMedial,
+            rightLateral: newRightLateral.mm > 0 ? newRightLateral : undefined,
         }
-        // Remove if all are empty
-        if (!newValue.left && !newValue.right && !newValue.medial && !newValue.lateral) {
+        if (!newValue.leftMedial && !newValue.leftLateral && !newValue.rightMedial && !newValue.rightLateral) {
             onChange(null)
         } else {
             onChange(newValue)
         }
+    }
+    
+    // Helper function to render a single input field
+    const renderInputField = (
+        label: string,
+        currentValue: { op: "widen" | "narrow" | null; mm: number },
+        onUpdate: (updates: Partial<{ op: "widen" | "narrow" | null; mm: number }>) => void
+    ) => {
+        return (
+            <div className="flex flex-col">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
+                <div className="flex items-center gap-2">
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (currentValue.mm === 0) return
+                            onUpdate({ op: currentValue.op === "widen" ? null : "widen" })
+                        }}
+                        className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
+                            currentValue.op === "widen"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${currentValue.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={currentValue.mm === 0}
+                    >
+                        +
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (currentValue.mm === 0) return
+                            onUpdate({ op: currentValue.op === "narrow" ? null : "narrow" })
+                        }}
+                        className={`px-3 py-1.5 border rounded-md text-sm font-medium transition-colors ${
+                            currentValue.op === "narrow"
+                                ? 'bg-green-500 text-white border-green-500'
+                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
+                        } ${currentValue.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                        disabled={currentValue.mm === 0}
+                    >
+                        −
+                    </button>
+                    <select
+                        value={currentValue.mm}
+                        onChange={(e) => {
+                            const mm = parseInt(e.target.value)
+                            onUpdate({ mm, op: mm === 0 ? null : (currentValue.op || "widen") })
+                        }}
+                        className="px-3 py-1.5 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    >
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
+                            <option key={val} value={val}>
+                                {val} mm
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -176,212 +240,35 @@ export function HeelWidthAdjustmentField({
                 {def.id === "absatzbreite" && <span className="text-gray-500 font-normal text-sm ml-2">(Optional)</span>}
             </label>
             
-            {/* Linker Schuh */}
-            <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Linker Schuh:</label>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (left.mm === 0) return
-                            updateLeft({ op: left.op === "widen" ? null : "widen" })
-                        }}
-                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                            left.op === "widen"
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        } ${left.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        disabled={left.mm === 0}
-                    >
-                        +
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (left.mm === 0) return
-                            updateLeft({ op: left.op === "narrow" ? null : "narrow" })
-                        }}
-                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                            left.op === "narrow"
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        } ${left.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        disabled={left.mm === 0}
-                    >
-                        −
-                    </button>
-                    <select
-                        value={left.mm}
-                        onChange={(e) => {
-                            const mm = parseInt(e.target.value)
-                            // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
-                            updateLeft({ mm, op: mm === 0 ? null : (left.op || "widen") })
-                        }}
-                        className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
-                            <option key={val} value={val}>
-                                {val} mm
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Rechter Schuh */}
-            <div className="mb-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Rechter Schuh:</label>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (right.mm === 0) return
-                            updateRight({ op: right.op === "widen" ? null : "widen" })
-                        }}
-                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                            right.op === "widen"
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        } ${right.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        disabled={right.mm === 0}
-                    >
-                        +
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (right.mm === 0) return
-                            updateRight({ op: right.op === "narrow" ? null : "narrow" })
-                        }}
-                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                            right.op === "narrow"
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        } ${right.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        disabled={right.mm === 0}
-                    >
-                        −
-                    </button>
-                    <select
-                        value={right.mm}
-                        onChange={(e) => {
-                            const mm = parseInt(e.target.value)
-                            // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
-                            updateRight({ mm, op: mm === 0 ? null : (right.op || "widen") })
-                        }}
-                        className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
-                            <option key={val} value={val}>
-                                {val} mm
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Innen (Medial) */}
-            <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Innen (Medial):</label>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (medial.mm === 0) return
-                            updateMedial({ op: medial.op === "widen" ? null : "widen" })
-                        }}
-                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                            medial.op === "widen"
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        } ${medial.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        disabled={medial.mm === 0}
-                    >
-                        +
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (medial.mm === 0) return
-                            updateMedial({ op: medial.op === "narrow" ? null : "narrow" })
-                        }}
-                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                            medial.op === "narrow"
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        } ${medial.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        disabled={medial.mm === 0}
-                    >
-                        −
-                    </button>
-                    <select
-                        value={medial.mm}
-                        onChange={(e) => {
-                            const mm = parseInt(e.target.value)
-                            // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
-                            updateMedial({ mm, op: mm === 0 ? null : (medial.op || "widen") })
-                        }}
-                        className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
-                            <option key={val} value={val}>
-                                {val} mm
-                            </option>
-                        ))}
-                    </select>
-                </div>
-            </div>
-
-            {/* Außen (Lateral) */}
-            <div className="mb-2">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Außen (Lateral):</label>
-                <div className="flex items-center gap-3">
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (lateral.mm === 0) return
-                            updateLateral({ op: lateral.op === "widen" ? null : "widen" })
-                        }}
-                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                            lateral.op === "widen"
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        } ${lateral.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        disabled={lateral.mm === 0}
-                    >
-                        +
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            if (lateral.mm === 0) return
-                            updateLateral({ op: lateral.op === "narrow" ? null : "narrow" })
-                        }}
-                        className={`px-3 py-1 border rounded-md text-sm font-medium transition-colors ${
-                            lateral.op === "narrow"
-                                ? 'bg-green-500 text-white border-green-500'
-                                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                        } ${lateral.mm === 0 ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                        disabled={lateral.mm === 0}
-                    >
-                        −
-                    </button>
-                    <select
-                        value={lateral.mm}
-                        onChange={(e) => {
-                            const mm = parseInt(e.target.value)
-                            // If mm is 0, clear op. If mm > 0 and no op, default to "widen"
-                            updateLateral({ mm, op: mm === 0 ? null : (lateral.op || "widen") })
-                        }}
-                        className="px-3 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-green-500"
-                    >
-                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((val) => (
-                            <option key={val} value={val}>
-                                {val} mm
-                            </option>
-                        ))}
-                    </select>
-                </div>
+            {/* 2×2 Grid Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                {/* Linker Schuh – innen (medial) */}
+                {renderInputField(
+                    "Linker Schuh – innen (medial)",
+                    leftMedial,
+                    updateLeftMedial
+                )}
+                
+                {/* Linker Schuh – außen (lateral) */}
+                {renderInputField(
+                    "Linker Schuh – außen (lateral)",
+                    leftLateral,
+                    updateLeftLateral
+                )}
+                
+                {/* Rechter Schuh – innen (medial) */}
+                {renderInputField(
+                    "Rechter Schuh – innen (medial)",
+                    rightMedial,
+                    updateRightMedial
+                )}
+                
+                {/* Rechter Schuh – außen (lateral) */}
+                {renderInputField(
+                    "Rechter Schuh – außen (lateral)",
+                    rightLateral,
+                    updateRightLateral
+                )}
             </div>
 
             {/* Helper text */}
@@ -1391,6 +1278,582 @@ export function SohlenhoeheDifferenziertField({
                     />
                 </div>
             </div>
+        </div>
+    )
+}
+
+// ============================================
+// Left/Right Selection Fields
+// ============================================
+
+// Common type for side selection
+export type SideSelection = "links" | "rechts" | "beidseitig" | null
+
+// 1. Hinterkappe Muster Side Field
+export type HinterkappeMusterSideData = {
+    side: SideSelection
+    leftValue?: "ja" | "nein" | null
+    rightValue?: "ja" | "nein" | null
+}
+
+export function HinterkappeMusterSideField({
+    def,
+    value,
+    onChange,
+}: {
+    def: GroupDef2
+    value: HinterkappeMusterSideData | null
+    onChange: (value: HinterkappeMusterSideData | null) => void
+}) {
+    const side = value?.side || null
+    const leftValue = value?.leftValue || null
+    const rightValue = value?.rightValue || null
+
+    const updateSide = (newSide: SideSelection) => {
+        const newValue: HinterkappeMusterSideData = {
+            side: newSide,
+            leftValue: (newSide === "links" || newSide === "beidseitig") ? (leftValue || null) : undefined,
+            rightValue: (newSide === "rechts" || newSide === "beidseitig") ? (rightValue || null) : undefined,
+        }
+        onChange(newValue)
+    }
+
+    const updateLeftValue = (newValue: "ja" | "nein" | null) => {
+        if (!side) return
+        onChange({
+            side,
+            leftValue: newValue,
+            rightValue: rightValue,
+        })
+    }
+
+    const updateRightValue = (newValue: "ja" | "nein" | null) => {
+        if (!side) return
+        onChange({
+            side,
+            leftValue: leftValue,
+            rightValue: newValue,
+        })
+    }
+
+    return (
+        <div className="mb-6">
+            <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
+            <p className="text-sm text-gray-600 mb-3">Auswahl gilt separat für linken und rechten Schuh</p>
+            
+            {/* Side Selection */}
+            <div className="mb-4">
+                <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
+                <div className="flex flex-wrap items-center gap-4">
+                    {["links", "rechts", "beidseitig"].map((sideOption) => {
+                        const isChecked = side === sideOption
+                        return (
+                            <div key={sideOption} className="flex items-center gap-2">
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={isChecked}
+                                        onChange={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
+                                        aria-label={sideOption}
+                                    />
+                                    <div 
+                                        className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                            isChecked 
+                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                        }`}
+                                        onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
+                                    >
+                                        {isChecked && (
+                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                </div>
+                                <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}>
+                                    {sideOption}
+                                </span>
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+
+            {/* Left Value Selection */}
+            {side && (side === "links" || side === "beidseitig") && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (Links):</div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {def.options.map((opt) => {
+                            const isChecked = leftValue === opt.id
+                            return (
+                                <div key={opt.id} className="flex items-center gap-2">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={isChecked}
+                                            onChange={() => updateLeftValue(isChecked ? null : (opt.id as "ja" | "nein"))}
+                                            aria-label={`Links ${opt.label}`}
+                                        />
+                                        <div 
+                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                                isChecked 
+                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                            }`}
+                                            onClick={() => updateLeftValue(isChecked ? null : (opt.id as "ja" | "nein"))}
+                                        >
+                                            {isChecked && (
+                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateLeftValue(isChecked ? null : (opt.id as "ja" | "nein"))}>
+                                        {opt.label}
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Right Value Selection */}
+            {side && (side === "rechts" || side === "beidseitig") && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (Rechts):</div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {def.options.map((opt) => {
+                            const isChecked = rightValue === opt.id
+                            return (
+                                <div key={opt.id} className="flex items-center gap-2">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={isChecked}
+                                            onChange={() => updateRightValue(isChecked ? null : (opt.id as "ja" | "nein"))}
+                                            aria-label={`Rechts ${opt.label}`}
+                                        />
+                                        <div 
+                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                                isChecked 
+                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                            }`}
+                                            onClick={() => updateRightValue(isChecked ? null : (opt.id as "ja" | "nein"))}
+                                        >
+                                            {isChecked && (
+                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateRightValue(isChecked ? null : (opt.id as "ja" | "nein"))}>
+                                        {opt.label}
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}
+
+// 2. Hinterkappe Side Field (Material & Leder-Auswahl)
+export type HinterkappeSideData = {
+    side: SideSelection
+    leftValue?: string | null
+    leftSubValue?: string | null
+    rightValue?: string | null
+    rightSubValue?: string | null
+}
+
+export function HinterkappeSideField({
+    def,
+    value,
+    onChange,
+}: {
+    def: GroupDef2
+    value: HinterkappeSideData | null
+    onChange: (value: HinterkappeSideData | null) => void
+}) {
+    const side = value?.side || null
+    const leftValue = value?.leftValue || null
+    const leftSubValue = value?.leftSubValue || null
+    const rightValue = value?.rightValue || null
+    const rightSubValue = value?.rightSubValue || null
+
+    const updateSide = (newSide: SideSelection) => {
+        const newValue: HinterkappeSideData = {
+            side: newSide,
+            leftValue: (newSide === "links" || newSide === "beidseitig") ? (leftValue || null) : undefined,
+            leftSubValue: (newSide === "links" || newSide === "beidseitig") ? (leftSubValue || null) : undefined,
+            rightValue: (newSide === "rechts" || newSide === "beidseitig") ? (rightValue || null) : undefined,
+            rightSubValue: (newSide === "rechts" || newSide === "beidseitig") ? (rightSubValue || null) : undefined,
+        }
+        onChange(newValue)
+    }
+
+    const updateLeftValue = (newValue: string | null) => {
+        if (!side) return
+        onChange({
+            side,
+            leftValue: newValue,
+            leftSubValue: newValue === "leder" ? leftSubValue : undefined,
+            rightValue: rightValue,
+            rightSubValue: rightSubValue,
+        })
+    }
+
+    const updateLeftSubValue = (newValue: string | null) => {
+        if (!side) return
+        onChange({
+            side,
+            leftValue: leftValue,
+            leftSubValue: newValue,
+            rightValue: rightValue,
+            rightSubValue: rightSubValue,
+        })
+    }
+
+    const updateRightValue = (newValue: string | null) => {
+        if (!side) return
+        onChange({
+            side,
+            leftValue: leftValue,
+            leftSubValue: leftSubValue,
+            rightValue: newValue,
+            rightSubValue: newValue === "leder" ? rightSubValue : undefined,
+        })
+    }
+
+    const updateRightSubValue = (newValue: string | null) => {
+        if (!side) return
+        onChange({
+            side,
+            leftValue: leftValue,
+            leftSubValue: leftSubValue,
+            rightValue: rightValue,
+            rightSubValue: newValue,
+        })
+    }
+
+    return (
+        <div className="mb-6">
+            <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
+            <p className="text-sm text-gray-600 mb-3">Material und Leder können links und rechts unterschiedlich gewählt werden</p>
+            
+            {/* Side Selection */}
+            <div className="mb-4">
+                <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
+                <div className="flex flex-wrap items-center gap-4">
+                    {["links", "rechts", "beidseitig"].map((sideOption) => {
+                        const isChecked = side === sideOption
+                        return (
+                            <div key={sideOption} className="flex items-center gap-2">
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={isChecked}
+                                        onChange={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
+                                        aria-label={sideOption}
+                                    />
+                                    <div 
+                                        className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                            isChecked 
+                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                        }`}
+                                        onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
+                                    >
+                                        {isChecked && (
+                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                </div>
+                                <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}>
+                                    {sideOption}
+                                </span>
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+
+            {/* Left Value Selection */}
+            {side && (side === "links" || side === "beidseitig") && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Material (Links):</div>
+                    <select
+                        className="w-full px-3 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none mb-2"
+                        value={leftValue || ""}
+                        onChange={(e) => updateLeftValue(e.target.value || null)}
+                        aria-label="Material Links"
+                    >
+                        <option value="">Bitte wählen</option>
+                        {def.options.map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                                {opt.label}
+                            </option>
+                        ))}
+                    </select>
+                    {leftValue === "leder" && def.subOptions?.leder && (
+                        <div className="mt-2">
+                            <div className="text-sm font-semibold text-gray-700 mb-2">Leder Auswahl (Links):</div>
+                            <select
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none"
+                                value={leftSubValue || ""}
+                                onChange={(e) => updateLeftSubValue(e.target.value || null)}
+                                aria-label="Leder Auswahl Links"
+                            >
+                                <option value="">Bitte wählen</option>
+                                {def.subOptions.leder.map((opt: { id: string; label: string; price: number }) => (
+                                    <option key={opt.id} value={opt.id}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Right Value Selection */}
+            {side && (side === "rechts" || side === "beidseitig") && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Material (Rechts):</div>
+                    <select
+                        className="w-full px-3 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none mb-2"
+                        value={rightValue || ""}
+                        onChange={(e) => updateRightValue(e.target.value || null)}
+                        aria-label="Material Rechts"
+                    >
+                        <option value="">Bitte wählen</option>
+                        {def.options.map((opt) => (
+                            <option key={opt.id} value={opt.id}>
+                                {opt.label}
+                            </option>
+                        ))}
+                    </select>
+                    {rightValue === "leder" && def.subOptions?.leder && (
+                        <div className="mt-2">
+                            <div className="text-sm font-semibold text-gray-700 mb-2">Leder Auswahl (Rechts):</div>
+                            <select
+                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none"
+                                value={rightSubValue || ""}
+                                onChange={(e) => updateRightSubValue(e.target.value || null)}
+                                aria-label="Leder Auswahl Rechts"
+                            >
+                                <option value="">Bitte wählen</option>
+                                {def.subOptions.leder.map((opt: { id: string; label: string; price: number }) => (
+                                    <option key={opt.id} value={opt.id}>
+                                        {opt.label}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    )
+}
+
+// 3. Brandsohle Side Field
+export type BrandsohleSideData = {
+    side: SideSelection
+    leftValues?: string[] | null
+    rightValues?: string[] | null
+}
+
+export function BrandsohleSideField({
+    def,
+    value,
+    onChange,
+}: {
+    def: GroupDef2
+    value: BrandsohleSideData | null
+    onChange: (value: BrandsohleSideData | null) => void
+}) {
+    const side = value?.side || null
+    const leftValues = value?.leftValues || []
+    const rightValues = value?.rightValues || []
+
+    const updateSide = (newSide: SideSelection) => {
+        const newValue: BrandsohleSideData = {
+            side: newSide,
+            leftValues: (newSide === "links" || newSide === "beidseitig") ? (leftValues || []) : undefined,
+            rightValues: (newSide === "rechts" || newSide === "beidseitig") ? (rightValues || []) : undefined,
+        }
+        onChange(newValue)
+    }
+
+    const toggleLeftValue = (optionId: string) => {
+        if (!side) return
+        const currentArray = Array.isArray(leftValues) ? leftValues : []
+        const newArray = currentArray.includes(optionId)
+            ? currentArray.filter(id => id !== optionId)
+            : [...currentArray, optionId]
+        onChange({
+            side,
+            leftValues: newArray.length > 0 ? newArray : null,
+            rightValues: rightValues,
+        })
+    }
+
+    const toggleRightValue = (optionId: string) => {
+        if (!side) return
+        const currentArray = Array.isArray(rightValues) ? rightValues : []
+        const newArray = currentArray.includes(optionId)
+            ? currentArray.filter(id => id !== optionId)
+            : [...currentArray, optionId]
+        onChange({
+            side,
+            leftValues: leftValues,
+            rightValues: newArray.length > 0 ? newArray : null,
+        })
+    }
+
+    return (
+        <div className="mb-6">
+            <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
+            <p className="text-sm text-gray-600 mb-3">Brandsohle kann links und rechts unterschiedlich konfiguriert werden</p>
+            
+            {/* Side Selection */}
+            <div className="mb-4">
+                <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
+                <div className="flex flex-wrap items-center gap-4">
+                    {["links", "rechts", "beidseitig"].map((sideOption) => {
+                        const isChecked = side === sideOption
+                        return (
+                            <div key={sideOption} className="flex items-center gap-2">
+                                <div className="relative flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        className="sr-only"
+                                        checked={isChecked}
+                                        onChange={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
+                                        aria-label={sideOption}
+                                    />
+                                    <div 
+                                        className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                            isChecked 
+                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                        }`}
+                                        onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
+                                    >
+                                        {isChecked && (
+                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                </div>
+                                <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}>
+                                    {sideOption}
+                                </span>
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+
+            {/* Left Values Selection */}
+            {side && (side === "links" || side === "beidseitig") && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (Links):</div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {def.options.map((opt) => {
+                            const isChecked = Array.isArray(leftValues) && leftValues.includes(opt.id)
+                            return (
+                                <div key={opt.id} className="flex items-center gap-2">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={isChecked}
+                                            onChange={() => toggleLeftValue(opt.id)}
+                                            aria-label={`Links ${opt.label}`}
+                                        />
+                                        <div 
+                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                                isChecked 
+                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                            }`}
+                                            onClick={() => toggleLeftValue(opt.id)}
+                                        >
+                                            {isChecked && (
+                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => toggleLeftValue(opt.id)}>
+                                        {opt.label}
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Right Values Selection */}
+            {side && (side === "rechts" || side === "beidseitig") && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (Rechts):</div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {def.options.map((opt) => {
+                            const isChecked = Array.isArray(rightValues) && rightValues.includes(opt.id)
+                            return (
+                                <div key={opt.id} className="flex items-center gap-2">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={isChecked}
+                                            onChange={() => toggleRightValue(opt.id)}
+                                            aria-label={`Rechts ${opt.label}`}
+                                        />
+                                        <div 
+                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                                isChecked 
+                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                            }`}
+                                            onClick={() => toggleRightValue(opt.id)}
+                                        >
+                                            {isChecked && (
+                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => toggleRightValue(opt.id)}>
+                                        {opt.label}
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

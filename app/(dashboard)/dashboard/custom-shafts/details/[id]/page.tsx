@@ -195,6 +195,26 @@ export default function CollectionShaftDetailsPage() {
     }
   }, [isAbholung]);
 
+  // Determine delivery method for PDF display
+  const getDeliveryMethod = (): string => {
+    // Check if 3D Upload was selected (from URL source parameter or if 3D files exist)
+    if (isFrom3DUpload || linkerLeistenFile || rechterLeistenFile) {
+      return '3D-Upload';
+    }
+    // Check if Abholung (pickup) is selected
+    if (isAbholung && businessAddress && (businessAddress.companyName || businessAddress.address)) {
+      return 'Leisten abholen lassen';
+    }
+    // Check if Versenden (shipping) is selected
+    if (versendenData && (versendenData.company || versendenData.street || versendenData.city)) {
+      return 'Selber versenden';
+    }
+    // Default fallback
+    return '3D-Upload';
+  };
+
+  const deliveryMethod = getDeliveryMethod();
+
   // Calculate total price
   const calculateTotalPrice = () => {
     let total = (shaft?.price ?? customCategoryPrice) || 0;
@@ -661,6 +681,7 @@ export default function CollectionShaftDetailsPage() {
             osenEinsetzen,
             zipperExtra,
             additionalNotes,
+            deliveryMethod,
           }}
         />
       )}
@@ -726,6 +747,7 @@ export default function CollectionShaftDetailsPage() {
             osenEinsetzen,
             zipperExtra,
             additionalNotes,
+            deliveryMethod,
           }}
           onConfirm={() => {
             // Only "ohne-boden" flow uses completion popup now

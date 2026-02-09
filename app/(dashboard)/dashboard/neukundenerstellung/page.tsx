@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { IoClose } from 'react-icons/io5';
 import { CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 import toast from 'react-hot-toast';
 
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,7 @@ export default function Neukundenerstellung() {
     const [email, setEmail] = useState('');
     const [insuranceNumber, setInsuranceNumber] = useState('');
     const [birthDate, setBirthDate] = useState<Date | undefined>(undefined);
+    const [birthDateInput, setBirthDateInput] = useState('');
     const [billingType, setBillingType] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [requiredFields, setRequiredFields] = useState<RequiredFields>({
@@ -291,37 +292,79 @@ export default function Neukundenerstellung() {
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Geburtsdatum {requiredFields.geburtsdatum && <span className="text-red-500">*</span>}
                             </label>
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="outline"
-                                        className={cn(
-                                            'w-full justify-between px-3 py-2 text-sm font-normal',
-                                            !birthDate && 'text-gray-400',
-                                            fieldErrors.birthDate && 'border-red-500'
-                                        )}
-                                    >
-                                        {birthDate ? (
-                                            format(birthDate, 'dd.MM.yyyy')
-                                        ) : (
-                                            <span>Ex. 2/3/2002</span>
-                                        )}
-                                        <CalendarIcon className="ml-2 h-4 w-4 opacity-60" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        captionLayout="dropdown"
-                                        fromYear={1900}
-                                        toYear={new Date().getFullYear()}
-                                        defaultMonth={birthDate ?? new Date(1990, 0, 1)}
-                                        selected={birthDate}
-                                        onSelect={setBirthDate}
-                                        initialFocus
-                                    />
-                                </PopoverContent>
-                            </Popover>
+                            <div className="flex items-center gap-2">
+                                {/* Manuelle Eingabe */}
+                                <Input
+                                    type="text"
+                                    className={cn(
+                                        "w-full",
+                                        fieldErrors.birthDate && "border-red-500"
+                                    )}
+                                    placeholder="z.B. 02.03.2002"
+                                    value={birthDateInput}
+                                    onChange={(e) => {
+                                        const input = e.target.value;
+                                        // Nur Ziffern extrahieren
+                                        const digits = input.replace(/\D/g, '');
+
+                                        let formatted = digits;
+                                        if (digits.length > 2 && digits.length <= 4) {
+                                            // ddMM -> dd.MM
+                                            formatted = `${digits.slice(0, 2)}.${digits.slice(2)}`;
+                                        } else if (digits.length > 4) {
+                                            // ddMMyyyy -> dd.MM.yyyy (max 8 Ziffern)
+                                            const d = digits.slice(0, 2);
+                                            const m = digits.slice(2, 4);
+                                            const y = digits.slice(4, 8);
+                                            formatted = y ? `${d}.${m}.${y}` : `${d}.${m}`;
+                                        }
+
+                                        setBirthDateInput(formatted);
+
+                                        // Nur parsen, wenn wir ein komplettes Datum dd.MM.yyyy haben
+                                        if (formatted.length === 10) {
+                                            const parsed = parse(formatted, 'dd.MM.yyyy', new Date());
+                                            if (!isNaN(parsed.getTime())) {
+                                                setBirthDate(parsed);
+                                                return;
+                                            }
+                                        }
+                                        setBirthDate(undefined);
+                                    }}
+                                />
+
+                                {/* Kalender-Auswahl */}
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="px-2 py-2"
+                                        >
+                                            <CalendarIcon className="h-4 w-4 opacity-80" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                        <Calendar
+                                            mode="single"
+                                            captionLayout="dropdown"
+                                            fromYear={1900}
+                                            toYear={new Date().getFullYear()}
+                                            defaultMonth={birthDate ?? new Date(1990, 0, 1)}
+                                            selected={birthDate}
+                                            onSelect={(date) => {
+                                                setBirthDate(date);
+                                                if (date) {
+                                                    setBirthDateInput(format(date, 'dd.MM.yyyy'));
+                                                } else {
+                                                    setBirthDateInput('');
+                                                }
+                                            }}
+                                            initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                            </div>
                             {fieldErrors.birthDate && (
                                 <p className="text-red-500 text-xs mt-1">{fieldErrors.birthDate}</p>
                             )}

@@ -296,7 +296,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             {/* Welcome Header - Only shown if showHeader is true */}
             {showHeader && (
                 <div className='flex flex-col gap-3 mb-6 pb-4 border-b border-gray-200'>
-                    <h1 className='text-3xl font-bold uppercase'>Willkommen zurück <span className='capitalize'>{businessName || ''}</span></h1>
+                    <h1 className='text-3xl font-bold capitalize'>Willkommen zurück <span className='capitalize'>{businessName || ''}</span></h1>
                     <p className='text-lg text-gray-500'>{format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })}</p>
                 </div>
             )}

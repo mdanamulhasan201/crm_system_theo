@@ -45,6 +45,7 @@ interface ShaftPDFPopupProps {
     osenEinsetzen?: boolean
     zipperExtra?: boolean
     additionalNotes?: string
+    deliveryMethod?: string
   }
 }
 
@@ -437,6 +438,18 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
 
                 {/* Configuration Details with Checkboxes - Show ALL options */}
                 <div className="mt-4">
+                  {/* Liefermethode (Delivery Method) */}
+                  {shaftConfiguration.deliveryMethod && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Liefermethode
+                      </div>
+                      <div className="flex-1 leading-loose">
+                        <ModalCheckbox isSelected={true} label={shaftConfiguration.deliveryMethod} />
+                      </div>
+                    </div>
+                  )}
+                  
                   {/* Kategorie */}
                   {shaftConfiguration.customCategory && (
                     <div className="flex py-3 border-b border-gray-300 items-start">
@@ -795,6 +808,18 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
 
               {/* Configuration Details - PDF Version - Show ALL options */}
               <div style={{ marginTop: '16px' }}>
+                {/* Liefermethode (Delivery Method) */}
+                {shaftConfiguration.deliveryMethod && (
+                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Liefermethode
+                    </div>
+                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                      <PDFCheckbox isSelected={true} label={shaftConfiguration.deliveryMethod} />
+                    </div>
+                  </div>
+                )}
+                
                 {/* Kategorie */}
                 {shaftConfiguration.customCategory && (
                   <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>

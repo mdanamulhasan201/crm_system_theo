@@ -131,6 +131,26 @@ export default function CustomShoeOrderPage() {
   const CAD_MODELING_2X_PRICE = 6.99;
   const COURIER_PRICE_DEFAULT = 13.0;
 
+  // Determine delivery method for PDF display
+  const getDeliveryMethod = (): string => {
+    // Check if 3D Upload files exist
+    if (linkerLeistenFile || rechterLeistenFile) {
+      return '3D-Upload';
+    }
+    // Check if Abholung (pickup) is selected
+    if (isAbholung && businessAddress && (businessAddress.companyName || businessAddress.address)) {
+      return 'Leisten abholen lassen';
+    }
+    // Check if Versenden (shipping) is selected
+    if (versendenData && (versendenData.company || versendenData.street || versendenData.city)) {
+      return 'Selber versenden';
+    }
+    // Default fallback
+    return '3D-Upload';
+  };
+
+  const deliveryMethod = getDeliveryMethod();
+
   // Calculate total price
   const calculateTotalPrice = () => {
     let total = customCategoryPrice || 0;
@@ -496,6 +516,7 @@ export default function CustomShoeOrderPage() {
             osenEinsetzen,
             zipperExtra,
             additionalNotes,
+            deliveryMethod,
           }}
         />
       )}
@@ -560,6 +581,7 @@ export default function CustomShoeOrderPage() {
             osenEinsetzen,
             zipperExtra,
             additionalNotes,
+            deliveryMethod,
           }}
           onConfirm={() => {
             // Only "ohne-boden" flow uses completion popup now

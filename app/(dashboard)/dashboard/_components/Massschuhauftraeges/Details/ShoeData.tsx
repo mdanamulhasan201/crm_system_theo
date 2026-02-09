@@ -247,7 +247,7 @@ export const GROUPS2: GroupDef2[] = [
   {
     id: "hinterkappe_muster",
     question: "Hinterkappe - Muster wird bereitgestellt",
-    fieldType: "yesNo",
+    fieldType: "hinterkappeMusterSide",
     options: [
       { id: "ja", label: "Ja" },
       { id: "nein", label: "Nein (+4,99 €)" },
@@ -256,7 +256,7 @@ export const GROUPS2: GroupDef2[] = [
   {
     id: "hinterkappe",
     question: "Hinterkappe",
-    fieldType: "select",
+    fieldType: "hinterkappeSide",
     options: [
       { id: "kunststoff", label: "Kunststoff Standard (0 €)" },
       { id: "leder", label: "Leder" },
@@ -280,7 +280,7 @@ export const GROUPS2: GroupDef2[] = [
   {
     id: "brandsohle",
     question: "Brandsohle",
-    fieldType: "checkbox",
+    fieldType: "brandsohleSide",
     options: [
       { id: "standard", label: "Standard" },
       { id: "standard_kork", label: "Standard mit mitlaufendem Kork von 3mm (+4,99€)" },
