@@ -7,7 +7,7 @@ type GroupDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenhoeheDifferenziert" | "section"
+    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenhoeheDifferenziert" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
 }
 
 export type HeelWidthAdjustmentData = {
