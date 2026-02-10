@@ -12,6 +12,7 @@ import CustomShaftProductCardShimmer from '@/components/ShimmerEffect/Maßschäf
 import SchaftErstellungModal from '@/components/CustomShafts/SchaftErstellungModal';
 import BottomFooter from '@/components/CustomShafts/BottomFooter';
 import CustomShaftsHeader from '@/components/CustomShafts/CustomShaftsHeader';
+import LeistenDigitalGenerieren from '@/components/CustomShafts/LeistenDigitalGenerieren';
 
 export default function CustomShafts() {
     const [gender, setGender] = useState<'Herren' | 'Damen'>('Herren');
@@ -351,6 +352,7 @@ export default function CustomShafts() {
 
 
             {/* footer  logo*/}
+            <LeistenDigitalGenerieren />
 
             <BottomFooter />
         </div>
