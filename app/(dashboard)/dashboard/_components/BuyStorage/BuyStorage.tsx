@@ -57,6 +57,20 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
     const [productData, setProductData] = useState<AdminStoreProduct | null>(null)
     const [isLoading, setIsLoading] = useState(false)
 
+    // Normalize groessenMengen keys for milling_block type (convert "1", "2", "3" to "Size 1", "Size 2", "Size 3")
+    const normalizeGroessenMengen = (groessenMengen: any, type: string) => {
+        if (type === 'milling_block') {
+            const normalized: any = {}
+            Object.keys(groessenMengen).forEach(key => {
+                // Convert "1", "2", "3" to "Size 1", "Size 2", "Size 3"
+                const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
+                normalized[normalizedKey] = groessenMengen[key]
+            })
+            return normalized
+        }
+        return groessenMengen
+    }
+
     // Fetch single store data when modal opens
     useEffect(() => {
         const fetchProductData = async () => {
@@ -65,9 +79,15 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
                 try {
                     const response = await getSingleStore(selectedProduct.id)
                     if (response.success && response.data) {
-                        setProductData(response.data)
-                        // Initialize quantities based on type
+                        // Normalize groessenMengen keys for milling_block
                         const type = response.data.type || 'rady_insole'
+                        const normalizedData = {
+                            ...response.data,
+                            groessenMengen: normalizeGroessenMengen(response.data.groessenMengen, type)
+                        }
+                        setProductData(normalizedData)
+                        
+                        // Initialize quantities based on type
                         const sizeColumns = type === 'milling_block' ? millingBlockSizes : radyInsoleSizes
                         const initialQuantities: { [key: string]: number } = {}
                         

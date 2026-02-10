@@ -8,6 +8,8 @@ import { IoSearch } from 'react-icons/io5'
 import MillingBlocksTable from './MillingBlocksTable'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import useDebounce from '@/hooks/useDebounce'
+import { deleteStorage } from '@/apis/storeManagement'
+import toast from 'react-hot-toast'
 
 interface MillingBlock {
     id: string
@@ -79,13 +81,40 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
 
     // Delete product handler
     const handleDeleteProduct = async (product: MillingBlock) => {
-        // TODO: Implement API call to delete milling block
-        // For now, just remove from local state
-        setProducts(prev => prev.filter(p => p.id !== product.id));
+        try {
+            await deleteStorage(product.id);
+            toast.success(`"${product.Produktname}" wurde erfolgreich gelöscht!`);
+            
+            // Remove deleted product locally
+            setProducts(prev => prev.filter(p => p.id !== product.id));
+        } catch (err: any) {
+            const errorMessage = err.response?.data?.message || err.message || 'Failed to delete product';
+            toast.error(`Fehler beim Löschen: ${errorMessage}`);
+        }
+    }
+
+    // Normalize size keys for milling_block type (convert "1", "2", "3" to "Size 1", "Size 2", "Size 3")
+    const normalizeSizeKeys = (groessenMengen: any, productType: string) => {
+        if (productType === 'milling_block') {
+            const normalized: any = {}
+            Object.keys(groessenMengen).forEach(key => {
+                // Convert "1", "2", "3" to "Size 1", "Size 2", "Size 3"
+                const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
+                normalized[normalizedKey] = groessenMengen[key]
+            })
+            return normalized
+        }
+        return groessenMengen
     }
 
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): MillingBlock => {
+        // Normalize groessenMengen keys for milling_block type
+        const productType = apiProduct.type || type
+        const normalizedGroessenMengen = typeof apiProduct.groessenMengen === 'object' 
+            ? normalizeSizeKeys(apiProduct.groessenMengen, productType)
+            : apiProduct.groessenMengen || {}
+
         return {
             id: apiProduct.id,
             Produktname: apiProduct.produktname,
@@ -93,14 +122,12 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
             Hersteller: apiProduct.hersteller,
             Lagerort: apiProduct.lagerort,
             minStockLevel: apiProduct.mindestbestand,
-            sizeQuantities: typeof apiProduct.groessenMengen === 'object' 
-                ? Object.fromEntries(
-                    Object.entries(apiProduct.groessenMengen).map(([size, data]: [string, any]) => [
-                        size,
-                        typeof data === 'object' ? data.quantity : data
-                    ])
-                )
-                : apiProduct.groessenMengen || {},
+            sizeQuantities: Object.fromEntries(
+                Object.entries(normalizedGroessenMengen).map(([size, data]: [string, any]) => [
+                    size,
+                    typeof data === 'object' ? data.quantity : data
+                ])
+            ),
             Status: apiProduct.Status,
             image: apiProduct.image,
             purchase_price: apiProduct.purchase_price,

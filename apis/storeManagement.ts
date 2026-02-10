@@ -80,3 +80,14 @@ export const getSingleStorage = async (storageId: string) => {
     }
 };
 
+
+
+// delete storage
+export const deleteStorage = async (storageId: string) => {
+    try {
+        const response = await axiosClient.delete(`/store/delete/${storageId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

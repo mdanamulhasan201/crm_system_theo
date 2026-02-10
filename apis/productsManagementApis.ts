@@ -36,15 +36,6 @@ export const updateStorage = async (storageId: string, storageData: any) => {
     }
 };
 
-// delete storage
-export const deleteStorage = async (storageId: string) => {
-    try {
-        const response = await axiosClient.delete(`/store/delete/${storageId}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-};
 
 
 

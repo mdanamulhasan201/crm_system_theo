@@ -28,7 +28,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import InventoryHistory, { InventoryHistoryRef } from './InventoryHistory'
-import { deleteStorage } from '@/apis/productsManagementApis'
+import { deleteStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 import useDebounce from '@/hooks/useDebounce'

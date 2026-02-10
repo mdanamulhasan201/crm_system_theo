@@ -31,18 +31,86 @@ interface HistoryEntry {
     notes: string
 }
 
+// Extract size from reason field (e.g., "Order block 3" -> "Size 3")
+const extractSizeFromReason = (reason: string | null): string => {
+    if (!reason) return ''
+    // Match patterns like "block 3", "block 1", "block 2" or "Size 1", "Size 2", "Size 3"
+    const blockMatch = reason.match(/block\s*(\d+)/i)
+    const sizeMatch = reason.match(/size\s*(\d+)/i)
+    
+    if (blockMatch) {
+        return `Size ${blockMatch[1]}`
+    }
+    if (sizeMatch) {
+        return `Size ${sizeMatch[1]}`
+    }
+    return reason
+}
+
+// Map changeType to HistoryEntry type
+const mapChangeType = (changeType: string): 'delivery' | 'sale' | 'correction' | 'transfer' => {
+    switch (changeType?.toLowerCase()) {
+        case 'sales':
+        case 'sale':
+            return 'sale'
+        case 'delivery':
+        case 'deliveries':
+            return 'delivery'
+        case 'correction':
+        case 'corrections':
+            return 'correction'
+        case 'transfer':
+        case 'transfers':
+            return 'transfer'
+        default:
+            return 'transfer'
+    }
+}
+
 // Map API response to HistoryEntry
 const mapApiEntryToHistoryEntry = (apiEntry: any): HistoryEntry => {
+    // Extract size from reason field for milling_block
+    const size = apiEntry.size || extractSizeFromReason(apiEntry.reason) || ''
+    
+    // Map changeType to type
+    const type = mapChangeType(apiEntry.changeType || apiEntry.type)
+    
+    // Calculate previousStock from newStock and quantity based on changeType
+    const newStock = apiEntry.newStock ?? null
+    const quantity = apiEntry.quantity ?? null
+    let previousStock = apiEntry.previousStock ?? null
+    
+    // If previousStock is not provided, calculate it based on changeType
+    if (previousStock === null && newStock !== null && quantity !== null) {
+        const changeType = (apiEntry.changeType || apiEntry.type || '').toLowerCase()
+        if (changeType === 'sales' || changeType === 'sale') {
+            // For sales, stock decreased, so previousStock = newStock + quantity
+            previousStock = newStock + quantity
+        } else if (changeType === 'delivery' || changeType === 'deliveries') {
+            // For deliveries, stock increased, so previousStock = newStock - quantity
+            previousStock = Math.max(0, newStock - quantity)
+        } else {
+            // For other types, assume stock increased
+            previousStock = Math.max(0, newStock - quantity)
+        }
+    }
+    
+    // Extract user name
+    const userName = apiEntry.user?.name || apiEntry.userName || apiEntry.user || 'System'
+    
+    // Use reason as notes if available
+    const notes = apiEntry.notes || apiEntry.description || apiEntry.reason || ''
+    
     return {
         id: apiEntry.id || '',
         date: apiEntry.date || apiEntry.createdAt || new Date().toISOString(),
-        type: apiEntry.type || 'transfer',
-        quantity: apiEntry.quantity || null,
-        size: apiEntry.size || '',
-        previousStock: apiEntry.previousStock || null,
-        newStock: apiEntry.newStock || null,
-        user: apiEntry.user || apiEntry.userName || 'System',
-        notes: apiEntry.notes || apiEntry.description || ''
+        type: type,
+        quantity: quantity,
+        size: size,
+        previousStock: previousStock,
+        newStock: newStock,
+        user: userName,
+        notes: notes
     }
 }
 
