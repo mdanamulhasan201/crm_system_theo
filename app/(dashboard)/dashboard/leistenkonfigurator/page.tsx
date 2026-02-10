@@ -84,7 +84,7 @@ export default function LeistenKonfiguratorPage() {
           onClick={handleContinue}
           className="px-6 py-2 bg-[#61A178] hover:bg-[#61A178]/80 text-white"
         >
-          Weiter {totalPrice.toFixed(2).replace('.', ',')}€
+          Weiter {totalPrice.toFixed(2).replace('.', ',')}€ exkl. Lieferkosten
         </Button>
       </div>
     </div>

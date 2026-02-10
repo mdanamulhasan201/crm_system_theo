@@ -38,6 +38,24 @@ interface LocationItem {
   isPrimary?: boolean;
 }
 
+interface NominatimResult {
+  place_id: number;
+  display_name: string;
+  address?: {
+    city?: string;
+    town?: string;
+    village?: string;
+    state?: string;
+    county?: string;
+    municipality?: string;
+    postcode?: string;
+    country_code?: string;
+    country?: string;
+    road?: string;
+    house_number?: string;
+  };
+}
+
 interface BusinessAddressModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -70,6 +88,18 @@ export default function BusinessAddressModal({
   const addressTriggerRef = useRef<HTMLDivElement | null>(null);
   const [triggerWidth, setTriggerWidth] = useState<number | undefined>(undefined);
   const [emailError, setEmailError] = useState<string>('');
+  const hasSetPrimaryLocation = useRef<boolean>(false);
+  const [nominatimResults, setNominatimResults] = useState<NominatimResult[]>([]);
+  const [nominatimLoading, setNominatimLoading] = useState(false);
+  const [nominatimError, setNominatimError] = useState<string | null>(null);
+  const popoverContentRef = useRef<HTMLDivElement | null>(null);
+
+  // Reset primary location flag when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      hasSetPrimaryLocation.current = false;
+    }
+  }, [isOpen]);
 
   // Load saved address when modal opens, or prefill from auth user data
   useEffect(() => {
@@ -183,6 +213,33 @@ export default function BusinessAddressModal({
     fetchLocations();
   }, [isOpen]);
 
+  // Set primary location as default address when locations are loaded and no savedAddress exists
+  useEffect(() => {
+    if (!isOpen || savedAddress || locations.length === 0 || locationsLoading || hasSetPrimaryLocation.current) return;
+    
+    // Find the primary location (isPrimary: true)
+    const primaryLocation = locations.find((loc) => loc.isPrimary === true);
+    
+    if (primaryLocation) {
+      const title = primaryLocation.description || primaryLocation.companyName || '';
+      const addr = primaryLocation.address || '';
+      const combined = title && addr ? `${title} - ${addr}` : (title || addr);
+      
+      if (combined) {
+        setFormData((prev) => ({
+          ...prev,
+          address: combined,
+          addressPayload: {
+            address: addr,
+            description: title,
+          },
+        }));
+        hasSetPrimaryLocation.current = true;
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [locations, isOpen, savedAddress, locationsLoading]);
+
   const filteredLocations = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
     if (!term) return locations;
@@ -191,6 +248,48 @@ export default function BusinessAddressModal({
       return text.includes(term);
     });
   }, [locations, searchTerm]);
+
+  // Search Nominatim API when user types (similar to WohnortInput)
+  useEffect(() => {
+    const query = searchTerm.trim();
+    
+    // Don't search if dropdown is closed or query is too short
+    if (!isAddressDropdownOpen || !query || query.length < 2) {
+      setNominatimResults([]);
+      setNominatimError(null);
+      return;
+    }
+
+    const timeoutId = setTimeout(async () => {
+      try {
+        setNominatimLoading(true);
+        setNominatimError(null);
+
+        // Search Nominatim API (OpenStreetMap) for addresses in DE, IT, AT
+        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&namedetails=1&extratags=1&limit=10&countrycodes=de,it,at&q=${encodeURIComponent(query)}`;
+
+        const res = await fetch(url, {
+          headers: {
+            Accept: 'application/json',
+            'User-Agent': 'MyAppName/1.0 (myemail@example.com)', // policy-compliant
+          },
+        });
+
+        if (!res.ok) throw new Error('Failed to load addresses');
+
+        const data = (await res.json()) as NominatimResult[];
+        setNominatimResults(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.warn('Nominatim search failed', err);
+        setNominatimResults([]);
+        setNominatimError('Adressen konnten nicht geladen werden.');
+      } finally {
+        setNominatimLoading(false);
+      }
+    }, 400); // debounce 400ms
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm, isAddressDropdownOpen]);
 
   const handleInputChange = (field: keyof BusinessAddressData, value: string) => {
     setFormData(prev => ({
@@ -224,6 +323,18 @@ export default function BusinessAddressModal({
     setSearchTerm(combined || '');
   };
 
+  const handleSelectNominatimResult = (result: NominatimResult) => {
+    const fullAddress = result.display_name || '';
+    
+    setFormData((prev) => ({
+      ...prev,
+      address: fullAddress,
+      addressPayload: undefined, // Nominatim results don't have structured payload
+    }));
+    setIsAddressDropdownOpen(false);
+    setSearchTerm(fullAddress);
+  };
+
   // Keep popover width equal to trigger width
   useLayoutEffect(() => {
     if (isAddressDropdownOpen && addressTriggerRef.current) {
@@ -238,6 +349,32 @@ export default function BusinessAddressModal({
       setSearchTerm(formData.address || '');
     }
   }, [isAddressDropdownOpen, formData.address]);
+
+  // Close dropdown when clicking outside (both trigger and popover content)
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const isInsideTrigger = addressTriggerRef.current?.contains(target);
+      const isInsidePopover = popoverContentRef.current?.contains(target);
+      
+      // Only close if click is outside both trigger and popover content
+      if (!isInsideTrigger && !isInsidePopover) {
+        setIsAddressDropdownOpen(false);
+      }
+    };
+
+    if (isAddressDropdownOpen) {
+      // Use a small delay to avoid immediate closing
+      const timeoutId = setTimeout(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+      }, 100);
+
+      return () => {
+        clearTimeout(timeoutId);
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isAddressDropdownOpen]);
 
   const handleSave = () => {
     // Validate required fields
@@ -326,19 +463,35 @@ export default function BusinessAddressModal({
             {/* Address */}
             <div>
               <Label htmlFor="address">Address *</Label>
-              <Popover open={isAddressDropdownOpen} onOpenChange={setIsAddressDropdownOpen}>
+              <Popover 
+                open={isAddressDropdownOpen} 
+                onOpenChange={(open) => {
+                  // We control opening/closing manually
+                  // Only update state if it's different to prevent unnecessary re-renders
+                  if (open !== isAddressDropdownOpen) {
+                    setIsAddressDropdownOpen(open);
+                  }
+                }}
+                modal={false}
+              >
                 <PopoverTrigger asChild>
                   <div className="relative mt-1" ref={addressTriggerRef}>
                     <Input
                       id="address"
                       type="text"
-                      placeholder="Vollständige Adresse eingeben"
+                      placeholder="Vollständige Adresse eingeben oder suchen..."
                       value={formData.address}
                       onChange={(e) => {
                         handleInputChange('address', e.target.value);
                         setSearchTerm(e.target.value);
+                        setIsAddressDropdownOpen(true);
                       }}
-                      className="h-12 pr-10 cursor-pointer"
+                      onFocus={() => setIsAddressDropdownOpen(true)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsAddressDropdownOpen(true);
+                      }}
+                      className="h-12 pr-10"
                       autoComplete="off"
                     />
                     <button
@@ -356,50 +509,178 @@ export default function BusinessAddressModal({
                   </div>
                 </PopoverTrigger>
                 <PopoverContent
+                  ref={popoverContentRef}
                   className="p-0"
                   align="start"
                   sideOffset={8}
+                  onInteractOutside={(e) => {
+                    // Prevent closing when clicking on the trigger input or inside popover
+                    const target = e.target as Node;
+                    if (addressTriggerRef.current?.contains(target) || popoverContentRef.current?.contains(target)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  onEscapeKeyDown={(e) => {
+                    // Allow closing with Escape key
+                    setIsAddressDropdownOpen(false);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
                   style={{ width: triggerWidth ? `${triggerWidth}px` : undefined, minWidth: '260px' }}
                 >
-                  <div className="p-2 border-b border-gray-100">
+                  <div 
+                    className="p-2 border-b border-gray-100"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <Input
                       type="text"
                       placeholder="Standort suchen..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        setSearchTerm(e.target.value);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onFocus={(e) => e.stopPropagation()}
                       className="h-10"
                       autoFocus
                     />
                   </div>
-                  <div className="max-h-56 overflow-y-auto divide-y">
-                    {locationsLoading && (
+                  <div 
+                    className="max-h-56 overflow-y-auto divide-y"
+                    onClick={(e) => e.stopPropagation()}
+                    onPointerDown={(e) => e.stopPropagation()}
+                  >
+                    {/* Store Locations Section */}
+                    {locationsLoading && searchTerm.trim().length === 0 && (
                       <div className="px-3 py-2 text-sm text-gray-500">Lade Standorte...</div>
                     )}
-                    {!locationsLoading && filteredLocations.length === 0 && (
-                      <div className="px-3 py-2 text-sm text-gray-500">Keine Standorte gefunden</div>
+                    {!locationsLoading && filteredLocations.length > 0 && (
+                      <>
+                        <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                          <span className="text-xs font-semibold text-gray-700">Gespeicherte Standorte</span>
+                        </div>
+                        {filteredLocations.map((loc) => {
+                          const title = loc.description || loc.companyName || 'Ohne Beschreibung';
+                          const addr = loc.address || '';
+                          const isSelected =
+                            formData.companyName === (loc.description || loc.companyName || loc.address || '') &&
+                            formData.address === (loc.address || loc.description || '');
+                          return (
+                            <button
+                              key={`store-${loc.id || title}-${addr}`}
+                              type="button"
+                              className={`w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-green-50' : ''
+                                }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectLocation(loc);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-gray-800">{title}</span>
+                                {addr && <span className="text-xs text-gray-600">{addr}</span>}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </>
                     )}
-                    {!locationsLoading &&
-                      filteredLocations.map((loc) => {
-                        const title = loc.description || loc.companyName || 'Ohne Beschreibung';
-                        const addr = loc.address || '';
-                        const isSelected =
-                          formData.companyName === (loc.description || loc.companyName || loc.address || '') &&
-                          formData.address === (loc.address || loc.description || '');
-                        return (
-                          <button
-                            key={`${loc.id || title}-${addr}`}
-                            type="button"
-                            className={`w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-green-50' : ''
-                              }`}
-                            onClick={() => handleSelectLocation(loc)}
-                          >
-                            <div className="flex flex-col">
-                              <span className="text-sm font-semibold text-gray-800">{title}</span>
-                              {addr && <span className="text-xs text-gray-600">{addr}</span>}
+
+                    {/* Nominatim Search Results Section */}
+                    {searchTerm.trim().length >= 2 && (
+                      <>
+                        {nominatimLoading && (
+                          <div className="px-3 py-2 text-sm text-gray-500">Suche Adressen...</div>
+                        )}
+                        {!nominatimLoading && nominatimError && (
+                          <div className="px-3 py-2 text-xs text-red-500">{nominatimError}</div>
+                        )}
+                        {!nominatimLoading && !nominatimError && nominatimResults.length > 0 && (
+                          <>
+                            <div className="px-3 py-2 bg-blue-50 border-b border-gray-200 border-t border-gray-200">
+                              <span className="text-xs font-semibold text-blue-700">Suchergebnisse (OpenStreetMap)</span>
                             </div>
-                          </button>
-                        );
-                      })}
+                            {nominatimResults.map((result) => {
+                              const fullAddress = result.display_name || '';
+                              const address = result.address || {};
+                              const countryCode = (address.country_code || '').toUpperCase();
+                              const cityLabel =
+                                address.city ||
+                                address.town ||
+                                address.village ||
+                                address.municipality ||
+                                '';
+                              const stateLabel = address.state || address.county || '';
+                              const displayParts = [];
+                              if (cityLabel) displayParts.push(cityLabel);
+                              if (stateLabel) displayParts.push(stateLabel);
+                              if (countryCode) displayParts.push(countryCode);
+                              const displayLabel = displayParts.join(', ');
+
+                              return (
+                                <button
+                                  key={`nominatim-${result.place_id}`}
+                                  type="button"
+                                  className="w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSelectNominatimResult(result);
+                                  }}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-800">
+                                      {fullAddress}
+                                    </span>
+                                    {displayLabel && (
+                                      <span className="mt-0.5 text-xs text-gray-500">
+                                        {displayLabel}
+                                      </span>
+                                    )}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </>
+                        )}
+                        {!nominatimLoading && !nominatimError && nominatimResults.length === 0 && filteredLocations.length === 0 && searchTerm.trim().length >= 2 && (
+                          <div className="px-3 py-2 text-sm text-gray-500">Keine Ergebnisse gefunden</div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Show default locations when no search term */}
+                    {!locationsLoading && searchTerm.trim().length === 0 && filteredLocations.length === 0 && locations.length > 0 && (
+                      <>
+                        <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                          <span className="text-xs font-semibold text-gray-700">Gespeicherte Standorte</span>
+                        </div>
+                        {locations.map((loc) => {
+                          const title = loc.description || loc.companyName || 'Ohne Beschreibung';
+                          const addr = loc.address || '';
+                          const isSelected =
+                            formData.companyName === (loc.description || loc.companyName || loc.address || '') &&
+                            formData.address === (loc.address || loc.description || '');
+                          return (
+                            <button
+                              key={`store-default-${loc.id || title}-${addr}`}
+                              type="button"
+                              className={`w-full text-left px-3 py-2 hover:bg-gray-50 transition-colors ${isSelected ? 'bg-green-50' : ''
+                                }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectLocation(loc);
+                              }}
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-gray-800">{title}</span>
+                                {addr && <span className="text-xs text-gray-600">{addr}</span>}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </>
+                    )}
                   </div>
                   <div className="flex justify-end gap-2 p-2 border-t border-gray-100">
                     <Button
