@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
 import toast from 'react-hot-toast'
+import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 
 interface MillingBlock {
     id: string
@@ -41,6 +42,7 @@ export default function EditMillingBlock({
     onUpdated,
     sizeColumns
 }: EditMillingBlockProps) {
+    const { updateExistingProduct } = useStockManagementSlice()
     const [isLoading, setIsLoading] = useState(false)
     const [sizeQuantities, setSizeQuantities] = useState<{ [key: string]: SizeData }>({})
     const [produktname, setProduktname] = useState('')
@@ -116,29 +118,64 @@ export default function EditMillingBlock({
 
         setIsLoading(true)
         try {
-            // TODO: Implement API call to update milling block
-            // For now, just simulate success
-            await new Promise(resolve => setTimeout(resolve, 500))
+            // Prepare groessenMengen in the format expected by API
+            // For milling blocks, sizes are "Size 1", "Size 2", "Size 3"
+            const groessenMengen: { [key: string]: any } = {}
+            sizeColumns.forEach(size => {
+                const sizeData = sizeQuantities[size]
+                if (sizeData) {
+                    groessenMengen[size] = {
+                        quantity: sizeData.quantity || 0,
+                        ...(sizeData.mindestmenge !== undefined && { mindestmenge: sizeData.mindestmenge }),
+                        auto_order_limit: sizeData.autoOrderLimit !== undefined ? sizeData.autoOrderLimit : null,
+                        auto_order_quantity: sizeData.orderQuantity !== undefined ? sizeData.orderQuantity : null
+                    }
+                }
+            })
 
-            const updatedProduct: MillingBlock = {
-                ...product,
-                Produktname: produktname,
-                Hersteller: hersteller,
-                Produktkürzel: artikelnummer,
+            // Get minimum mindestmenge from all sizes
+            const minMindestmenge = Math.min(
+                ...sizeColumns.map(size => sizeQuantities[size]?.mindestmenge || product.minStockLevel)
+            )
+
+            // Prepare update payload
+            const updatePayload = {
+                produktname: produktname,
+                hersteller: hersteller,
+                artikelnummer: artikelnummer,
                 purchase_price: purchasePrice,
                 selling_price: sellingPrice,
-                sizeQuantities: Object.fromEntries(
-                    Object.entries(sizeQuantities).map(([size, data]) => [size, data.quantity])
-                ),
-                minStockLevel: sizeQuantities[sizeColumns[0]]?.mindestmenge || product.minStockLevel
+                groessenMengen: groessenMengen,
+                mindestbestand: minMindestmenge
             }
 
-            toast.success('Fräsblock erfolgreich aktualisiert')
-            onUpdated && onUpdated(updatedProduct)
-            onClose()
-        } catch (error) {
+            // Call API to update
+            const response = await updateExistingProduct(product.id, updatePayload)
+            
+            if (response.success) {
+                // Convert updated product back to local format
+                const updatedProduct: MillingBlock = {
+                    ...product,
+                    Produktname: produktname,
+                    Hersteller: hersteller,
+                    Produktkürzel: artikelnummer,
+                    purchase_price: purchasePrice,
+                    selling_price: sellingPrice,
+                    sizeQuantities: Object.fromEntries(
+                        Object.entries(sizeQuantities).map(([size, data]) => [size, data.quantity])
+                    ),
+                    minStockLevel: minMindestmenge
+                }
+
+                toast.success('Fräsblock erfolgreich aktualisiert')
+                onUpdated && onUpdated(updatedProduct)
+                onClose()
+            } else {
+                toast.error(response.message || 'Fehler beim Aktualisieren des Fräsblocks')
+            }
+        } catch (error: any) {
             console.error('Failed to update milling block:', error)
-            toast.error('Fehler beim Aktualisieren des Fräsblocks')
+            toast.error(error?.response?.data?.message || 'Fehler beim Aktualisieren des Fräsblocks')
         } finally {
             setIsLoading(false)
         }
@@ -161,7 +198,8 @@ export default function EditMillingBlock({
                                 value={produktname} 
                                 onChange={e => setProduktname(e.target.value)} 
                                 required 
-                                disabled={isLoading} 
+                                disabled={true}
+                                className="bg-gray-100 cursor-not-allowed"
                             />
                         </div>
                         <div>
@@ -170,7 +208,8 @@ export default function EditMillingBlock({
                                 value={hersteller} 
                                 onChange={e => setHersteller(e.target.value)} 
                                 required 
-                                disabled={isLoading} 
+                                disabled={true}
+                                className="bg-gray-100 cursor-not-allowed"
                             />
                         </div>
                     </div>
@@ -183,7 +222,8 @@ export default function EditMillingBlock({
                                 value={artikelnummer} 
                                 onChange={e => setArtikelnummer(e.target.value)} 
                                 required 
-                                disabled={isLoading} 
+                                disabled={true}
+                                className="bg-gray-100 cursor-not-allowed"
                             />
                         </div>
                     </div>

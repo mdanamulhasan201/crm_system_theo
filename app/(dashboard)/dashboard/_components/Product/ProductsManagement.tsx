@@ -77,7 +77,11 @@ const sizeColumns = [
     "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48"
 ];
 
-export default function ProductsManagement() {
+interface ProductsManagementProps {
+    type?: 'rady_insole' | 'milling_block'
+}
+
+export default function ProductsManagement({ type = 'rady_insole' }: ProductsManagementProps) {
     const router = useRouter()
     // Stock management hook
     const { products, pagination, getAllProducts, refreshProducts, isLoadingProducts, error, updateExistingProduct } = useStockManagementSlice();
@@ -102,9 +106,6 @@ export default function ProductsManagement() {
     const [productToDelete, setProductToDelete] = useState<Product | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
 
-    // Product type toggle state
-    const [selectedProductType, setSelectedProductType] = useState<'Einlagenrohlinge' | 'Fräsblock'>('Einlagenrohlinge')
-
 
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): Product => {
@@ -126,7 +127,7 @@ export default function ProductsManagement() {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch);
+                const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type);
                 const convertedProducts = apiProducts.map(convertApiProductToLocal);
                 setProductsData(convertedProducts);
             } catch (err) {
@@ -136,7 +137,7 @@ export default function ProductsManagement() {
 
         fetchProducts();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [currentPage, itemsPerPage, debouncedSearch]);
+    }, [currentPage, itemsPerPage, debouncedSearch, type]);
 
 
 
@@ -292,7 +293,7 @@ export default function ProductsManagement() {
                 </div>
                 {/* Buy Now Button */}
                 <Button
-                    onClick={() => router.push('/dashboard/buy-storage')}
+                    onClick={() => router.push(`/dashboard/buy-storage?type=${type}`)}
                     disabled={isLoadingProducts}
                     className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
                 >

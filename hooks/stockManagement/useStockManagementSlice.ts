@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { createProduct, getAllStorages, getSingleStorage, updateStorage } from '@/apis/productsManagementApis';
+import { createProduct, getAllStorages, updateStorage } from '@/apis/productsManagementApis';
+import { getSingleStorage } from '@/apis/storeManagement';
 
 interface SizeData {
     length: number;
@@ -147,12 +148,12 @@ export const useStockManagementSlice = () => {
         }
     };
 
-    const getAllProducts = async (page: number = 1, limit: number = 10, search: string = '') => {
+    const getAllProducts = async (page: number = 1, limit: number = 10, search: string = '', type?: string) => {
         setIsLoadingProducts(true);
         setError(null);
 
         try {
-            const response = await getAllStorages(page, limit, search);
+            const response = await getAllStorages(page, limit, search, type);
             // console.log('Fetched storages:', response);
 
             if (response.success && response.data) {
@@ -223,8 +224,8 @@ export const useStockManagementSlice = () => {
         }
     };
 
-    const refreshProducts = async (page: number = 1, limit: number = 10, search: string = '') => {
-        return await getAllProducts(page, limit, search);
+    const refreshProducts = async (page: number = 1, limit: number = 10, search: string = '', type?: string) => {
+        return await getAllProducts(page, limit, search, type);
     };
 
     return {

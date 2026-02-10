@@ -1,6 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 import { IoTime, IoArrowDown, IoDocumentText } from 'react-icons/io5'
+import { getProductHistory } from '@/apis/storeManagement'
+import toast from 'react-hot-toast'
 
 interface MillingBlock {
     id: string
@@ -28,24 +31,27 @@ interface HistoryEntry {
     notes: string
 }
 
+// Map API response to HistoryEntry
+const mapApiEntryToHistoryEntry = (apiEntry: any): HistoryEntry => {
+    return {
+        id: apiEntry.id || '',
+        date: apiEntry.date || apiEntry.createdAt || new Date().toISOString(),
+        type: apiEntry.type || 'transfer',
+        quantity: apiEntry.quantity || null,
+        size: apiEntry.size || '',
+        previousStock: apiEntry.previousStock || null,
+        newStock: apiEntry.newStock || null,
+        user: apiEntry.user || apiEntry.userName || 'System',
+        notes: apiEntry.notes || apiEntry.description || ''
+    }
+}
+
 interface MillingBlockHistoryProps {
     product: MillingBlock | null
     isOpen: boolean
     onClose: () => void
 }
 
-// Mock history entry for design demonstration
-const mockHistoryEntry: HistoryEntry = {
-    id: '1',
-    date: new Date().toISOString(),
-    type: 'sale',
-    quantity: 5,
-    size: 'Size 1',
-    previousStock: 15,
-    newStock: 10,
-    user: 'Admin User',
-    notes: 'Verkauf an Kunde'
-}
 
 const getTypeLabel = (type: string): string => {
     switch (type) {
@@ -72,6 +78,78 @@ export default function MillingBlockHistory({
     isOpen,
     onClose
 }: MillingBlockHistoryProps) {
+    const [historyEntries, setHistoryEntries] = useState<HistoryEntry[]>([])
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [hasNextPage, setHasNextPage] = useState(false)
+    const [pagination, setPagination] = useState<any>(null)
+
+    // Fetch history when modal opens
+    useEffect(() => {
+        const fetchHistory = async () => {
+            if (product && isOpen) {
+                setIsLoadingHistory(true)
+                setCurrentPage(1)
+                setHistoryEntries([])
+                setHasNextPage(false)
+
+                try {
+                    const response = await getProductHistory(product.id, 1, 10)
+                    if (response.success && response.data) {
+                        const mappedHistory: HistoryEntry[] = response.data.map(mapApiEntryToHistoryEntry)
+                        setHistoryEntries(mappedHistory)
+                        setPagination(response.pagination)
+                        setHasNextPage(response.pagination?.hasNextPage || false)
+                    } else {
+                        setHistoryEntries([])
+                        setHasNextPage(false)
+                        if (response.data && response.data.length === 0) {
+                            toast.error('Keine Historie gefunden')
+                        }
+                    }
+                } catch (error: any) {
+                    console.error('Failed to fetch history:', error)
+                    setHistoryEntries([])
+                    setHasNextPage(false)
+                    toast.error(error?.response?.data?.message || 'Fehler beim Laden der Historie')
+                } finally {
+                    setIsLoadingHistory(false)
+                }
+            }
+        }
+
+        if (product && isOpen) {
+            fetchHistory()
+        }
+    }, [product, isOpen])
+
+    // Load more history entries
+    const loadMoreHistory = async () => {
+        if (!product || isLoadingMore || !hasNextPage) return
+
+        setIsLoadingMore(true)
+        const nextPage = currentPage + 1
+
+        try {
+            const response = await getProductHistory(product.id, nextPage, 10)
+            if (response.success && response.data) {
+                const mappedHistory: HistoryEntry[] = response.data.map(mapApiEntryToHistoryEntry)
+                setHistoryEntries(prev => [...prev, ...mappedHistory])
+                setCurrentPage(nextPage)
+                setPagination(response.pagination)
+                setHasNextPage(response.pagination?.hasNextPage || false)
+            } else {
+                setHasNextPage(false)
+            }
+        } catch (error: any) {
+            console.error('Failed to load more history:', error)
+            toast.error(error?.response?.data?.message || 'Fehler beim Laden weiterer Einträge')
+        } finally {
+            setIsLoadingMore(false)
+        }
+    }
+
     if (!product) return null
 
     return (
@@ -103,73 +181,109 @@ export default function MillingBlockHistory({
                 </DialogHeader>
                 
                 <div className="flex-1 overflow-y-auto mt-4">
-                    <div className="space-y-4 pr-2">
-                        {/* History Entry Card */}
-                        <div className="relative bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
-                            <div className="p-5">
-                                <div className="flex gap-4">
-                                    {/* Icon */}
-                                    <div className="flex-shrink-0">
-                                        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-red-100">
-                                            <IoArrowDown className="w-6 h-6 text-red-600" />
-                                        </div>
-                                    </div>
-
-                                    {/* Main Content */}
-                                    <div className="flex-1 min-w-0">
-                                        {/* Header Row */}
-                                        <div className="flex items-start justify-between mb-3">
-                                            <div className="flex items-center gap-3 flex-wrap">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getTypeStyling(mockHistoryEntry.type)}`}>
-                                                    {getTypeLabel(mockHistoryEntry.type)}
-                                                </span>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="text-sm font-semibold text-gray-900">
-                                                        Größe {mockHistoryEntry.size}
-                                                    </span>
-                                                    {mockHistoryEntry.quantity !== null && (
-                                                        <span className="text-sm font-bold text-gray-700">
-                                                            {mockHistoryEntry.type === 'sale' ? '-' : '+'}{Math.abs(mockHistoryEntry.quantity)}
-                                                        </span>
-                                                    )}
+                    {isLoadingHistory ? (
+                        <div className="flex items-center justify-center py-8">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                        </div>
+                    ) : historyEntries.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-8">
+                            <IoDocumentText className="w-12 h-12 text-gray-400 mb-2" />
+                            <p className="text-gray-500">Keine Historie gefunden</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-4 pr-2">
+                            {historyEntries.map((entry) => (
+                                <div key={entry.id} className="relative bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden">
+                                    <div className="p-5">
+                                        <div className="flex gap-4">
+                                            {/* Icon */}
+                                            <div className="flex-shrink-0">
+                                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                                                    entry.type === 'sale' ? 'bg-red-100' :
+                                                    entry.type === 'delivery' ? 'bg-green-100' :
+                                                    entry.type === 'correction' ? 'bg-yellow-100' :
+                                                    'bg-blue-100'
+                                                }`}>
+                                                    <IoArrowDown className={`w-6 h-6 ${
+                                                        entry.type === 'sale' ? 'text-red-600' :
+                                                        entry.type === 'delivery' ? 'text-green-600' :
+                                                        entry.type === 'correction' ? 'text-yellow-600' :
+                                                        'text-blue-600'
+                                                    }`} />
                                                 </div>
-                                                {mockHistoryEntry.previousStock !== null && mockHistoryEntry.newStock !== null && (
-                                                    <div className="flex items-center gap-2 text-xs text-gray-500">
-                                                        <span className="px-2 py-0.5 bg-gray-100 rounded">
-                                                            {mockHistoryEntry.previousStock}
+                                            </div>
+
+                                            {/* Main Content */}
+                                            <div className="flex-1 min-w-0">
+                                                {/* Header Row */}
+                                                <div className="flex items-start justify-between mb-3">
+                                                    <div className="flex items-center gap-3 flex-wrap">
+                                                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getTypeStyling(entry.type)}`}>
+                                                            {getTypeLabel(entry.type)}
                                                         </span>
-                                                        <span className="text-gray-400">→</span>
-                                                        <span className="px-2 py-0.5 bg-gray-100 rounded font-semibold">
-                                                            {mockHistoryEntry.newStock}
-                                                        </span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm font-semibold text-gray-900">
+                                                                {entry.size.startsWith('Size ') ? entry.size : `Größe ${entry.size}`}
+                                                            </span>
+                                                            {entry.quantity !== null && (
+                                                                <span className="text-sm font-bold text-gray-700">
+                                                                    {entry.type === 'sale' ? '-' : '+'}{Math.abs(entry.quantity)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                        {entry.previousStock !== null && entry.newStock !== null && (
+                                                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                                                                <span className="px-2 py-0.5 bg-gray-100 rounded">
+                                                                    {entry.previousStock}
+                                                                </span>
+                                                                <span className="text-gray-400">→</span>
+                                                                <span className="px-2 py-0.5 bg-gray-100 rounded font-semibold">
+                                                                    {entry.newStock}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Date and User */}
+                                                    <div className="text-right flex-shrink-0 ml-4">
+                                                        <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
+                                                            <IoTime className="w-3 h-3" />
+                                                            <span>{new Date(entry.date).toLocaleDateString('de-DE')}</span>
+                                                            <span>{new Date(entry.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
+                                                        </div>
+                                                        <div className="text-xs text-gray-400">
+                                                            von {entry.user}
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Notes */}
+                                                {entry.notes && (
+                                                    <div className="mt-2 text-sm text-gray-600">
+                                                        {entry.notes}
                                                     </div>
                                                 )}
                                             </div>
-                                            
-                                            {/* Date and User */}
-                                            <div className="text-right flex-shrink-0 ml-4">
-                                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                                    <IoTime className="w-3 h-3" />
-                                                    <span>{new Date(mockHistoryEntry.date).toLocaleDateString('de-DE')}</span>
-                                                    <span>{new Date(mockHistoryEntry.date).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>
-                                                </div>
-                                                <div className="text-xs text-gray-400">
-                                                    von {mockHistoryEntry.user}
-                                                </div>
-                                            </div>
                                         </div>
-
-                                        {/* Notes */}
-                                        {mockHistoryEntry.notes && (
-                                            <div className="mt-2 text-sm text-gray-600">
-                                                {mockHistoryEntry.notes}
-                                            </div>
-                                        )}
                                     </div>
                                 </div>
-                            </div>
+                            ))}
+
+                            {/* Load More Button */}
+                            {hasNextPage && (
+                                <div className="flex justify-center pt-4">
+                                    <Button
+                                        onClick={loadMoreHistory}
+                                        disabled={isLoadingMore}
+                                        variant="outline"
+                                        className="w-full"
+                                    >
+                                        {isLoadingMore ? 'Laden...' : 'Mehr laden'}
+                                    </Button>
+                                </div>
+                            )}
                         </div>
-                    </div>
+                    )}
                 </div>
             </DialogContent>
         </Dialog>

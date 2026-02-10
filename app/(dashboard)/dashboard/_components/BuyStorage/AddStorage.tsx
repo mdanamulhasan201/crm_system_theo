@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from '@/components/ui/input'
-import { addStorage } from '@/apis/storeManagement'
+import { addStorage, getSingleStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 
@@ -25,13 +25,14 @@ interface AdminStoreProduct {
     eigenschaften: string
     groessenMengen: {
         [key: string]: {
-            length: number
+            length?: number
             quantity: number
         }
     }
+    type?: 'rady_insole' | 'milling_block'
     createdAt: string
     updatedAt: string
-    storesCount: number
+    storesCount?: number
 }
 
 interface AddStorageModalProps {
@@ -41,41 +42,74 @@ interface AddStorageModalProps {
     onAddSuccess?: () => void
 }
 
-const sizeColumns = [
+// Size columns for rady_insole (numeric sizes)
+const radyInsoleSizes = [
     "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48"
 ]
 
+// Size columns for milling_block (Size 1, Size 2, Size 3)
+const millingBlockSizes = ['Size 1', 'Size 2', 'Size 3']
+
 export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAddSuccess }: AddStorageModalProps) {
     const [addingId, setAddingId] = useState<string | null>(null)
+    const [productData, setProductData] = useState<AdminStoreProduct | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
+
+    // Fetch single store data when modal opens
+    useEffect(() => {
+        const fetchProductData = async () => {
+            if (selectedProduct?.id && isOpen) {
+                setIsLoading(true)
+                try {
+                    const response = await getSingleStore(selectedProduct.id)
+                    if (response.success && response.data) {
+                        setProductData(response.data)
+                    }
+                } catch (err: any) {
+                    toast.error(err?.response?.data?.message || 'Failed to fetch product data')
+                } finally {
+                    setIsLoading(false)
+                }
+            }
+        }
+
+        fetchProductData()
+    }, [selectedProduct?.id, isOpen])
 
     // Reset when modal closes
     useEffect(() => {
         if (!isOpen) {
             setAddingId(null)
+            setProductData(null)
         }
     }, [isOpen])
 
+    // Get the product to use (fetched data or selected product)
+    const product = productData || selectedProduct
+    const productType = product?.type || 'rady_insole'
+    const sizeColumns = productType === 'milling_block' ? millingBlockSizes : radyInsoleSizes
+
     // Calculate total quantity from product's existing quantities
     const calculateTotalQuantity = (): number => {
-        if (!selectedProduct) return 0
-        return Object.values(selectedProduct.groessenMengen).reduce((sum, item) => sum + (item.quantity || 0), 0)
+        if (!productData) return 0
+        return Object.values(productData.groessenMengen || {}).reduce((sum, item) => sum + (item.quantity || 0), 0)
     }
 
     // Calculate total price
     const calculateTotalPrice = (): number => {
-        if (!selectedProduct) return 0
+        if (!product) return 0
         const totalQuantity = calculateTotalQuantity()
-        return selectedProduct.price * totalQuantity
+        return product.price * totalQuantity
     }
 
     // Handle add storage
     const handleAddStorage = async () => {
-        if (!selectedProduct) return
+        if (!product) return
 
-        setAddingId(selectedProduct.id)
+        setAddingId(product.id)
         try {
             const response = await addStorage({ 
-                admin_store_id: selectedProduct.id
+                admin_store_id: product.id
             })
             if (response.success) {
                 toast.success(response.message || 'Storage added successfully!')
@@ -104,20 +138,26 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
                 <DialogHeader>
                     <DialogTitle>Lager hinzufügen</DialogTitle>
                     <DialogDescription>
-                        Geben Sie die gewünschten Mengen für jede Größe ein
+                        {productType === 'milling_block' 
+                            ? 'Alle verfügbaren Größen werden zum Lager hinzugefügt'
+                            : 'Alle verfügbaren Größen werden zum Lager hinzugefügt'}
                     </DialogDescription>
                 </DialogHeader>
 
-                {selectedProduct && (
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    </div>
+                ) : product && productData && (
                     <div className="space-y-6 py-4">
                         {/* Product Info */}
                         <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                            {selectedProduct.image ? (
+                            {product.image ? (
                                 <Image
                                     width={80}
                                     height={80}
-                                    src={selectedProduct.image}
-                                    alt={selectedProduct.productName}
+                                    src={product.image}
+                                    alt={product.productName}
                                     className="w-20 h-20 rounded border object-contain border-gray-200 shadow-sm"
                                 />
                             ) : (
@@ -128,24 +168,37 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
                                 </div>
                             )}
                             <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-gray-900">{selectedProduct.productName}</h3>
-                                <p className="text-sm text-gray-600">{selectedProduct.brand}</p>
-                                <p className="text-sm text-gray-600">Artikelnummer: {selectedProduct.artikelnummer}</p>
-                                <p className="text-lg font-semibold text-gray-900 mt-1">Preis: €{selectedProduct.price}</p>
+                                <h3 className="font-semibold text-lg text-gray-900">{product.productName}</h3>
+                                <p className="text-sm text-gray-600">{product.brand}</p>
+                                <p className="text-sm text-gray-600">Artikelnummer: {product.artikelnummer}</p>
+                                <p className="text-lg font-semibold text-gray-900 mt-1">Preis: €{product.price}</p>
                             </div>
                         </div>
 
                         {/* Quantity Inputs - Disabled */}
                         <div className="space-y-4 opacity-60">
                             <h4 className="font-medium text-gray-900">Mengen pro Größe:</h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
+                            <div className={`grid gap-4 ${
+                                productType === 'milling_block' 
+                                    ? 'grid-cols-1 sm:grid-cols-3' 
+                                    : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7'
+                            }`}>
                                 {sizeColumns.map(size => {
-                                    const existingData = selectedProduct.groessenMengen[size]
+                                    // Use size directly as key (API returns "Size 1", "Size 2", "Size 3" for milling_block)
+                                    // Use productData directly to ensure we have the latest data
+                                    const existingData = productData.groessenMengen?.[size]
                                     const quantity = existingData?.quantity || 0
+                                    const length = existingData?.length
+                                    
                                     return (
                                         <div key={size} className="space-y-2">
                                             <label className="text-sm font-medium text-gray-700">
-                                                Größe {size}
+                                                {size}
+                                                {productType === 'rady_insole' && length && (
+                                                    <span className="text-xs text-gray-500 ml-1">
+                                                        ({length}mm)
+                                                    </span>
+                                                )}
                                             </label>
                                             <Input
                                                 type="number"
@@ -191,10 +244,10 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
                     </Button>
                     <Button
                         onClick={handleAddStorage}
-                        disabled={addingId === selectedProduct?.id}
+                        disabled={addingId === product?.id || isLoading}
                         className="bg-[#61A178] hover:bg-[#61A178]/80 text-white disabled:opacity-50"
                     >
-                        {addingId === selectedProduct?.id ? 'Hinzufügen...' : 'Hinzufügen'}
+                        {addingId === product?.id ? 'Hinzufügen...' : 'Hinzufügen'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

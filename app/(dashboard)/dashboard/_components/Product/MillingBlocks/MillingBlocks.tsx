@@ -1,11 +1,13 @@
 'use client'
 
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from '@/components/ui/input'
 import { IoSearch } from 'react-icons/io5'
 import MillingBlocksTable from './MillingBlocksTable'
+import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
+import useDebounce from '@/hooks/useDebounce'
 
 interface MillingBlock {
     id: string
@@ -21,41 +23,21 @@ interface MillingBlock {
     selling_price?: number
 }
 
-// Mock data for design demonstration
-const mockMillingBlocks: MillingBlock[] = [
-    {
-        id: '1',
-        Produktname: 'Fräsblock Typ A',
-        Produktkürzel: 'FB-001',
-        Hersteller: 'Hersteller A',
-        Lagerort: 'Lager 1',
-        minStockLevel: 10,
-        sizeQuantities: { 'Size 1': 15, 'Size 2': 8, 'Size 3': 12 },
-        Status: 'Aktiv',
-        purchase_price: 25.50,
-        selling_price: 35.00,
-    },
-    {
-        id: '2',
-        Produktname: 'Fräsblock Typ B',
-        Produktkürzel: 'FB-002',
-        Hersteller: 'Hersteller B',
-        Lagerort: 'Lager 2',
-        minStockLevel: 10,
-        sizeQuantities: { 'Size 1': 5, 'Size 2': 12, 'Size 3': 20 },
-        Status: 'Aktiv',
-        purchase_price: 30.00,
-        selling_price: 40.00,
-    },
-]
-
 // Size columns - only 3 sizes
 const sizeColumns = ['Size 1', 'Size 2', 'Size 3']
 
-export default function MillingBlocks() {
+interface MillingBlocksProps {
+    type?: 'rady_insole' | 'milling_block'
+}
+
+export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksProps) {
     const router = useRouter()
-    const [products, setProducts] = useState<MillingBlock[]>(mockMillingBlocks)
+    const { getAllProducts, isLoadingProducts, refreshProducts } = useStockManagementSlice()
+    const [products, setProducts] = useState<MillingBlock[]>([])
     const [searchQuery, setSearchQuery] = useState('')
+    const debouncedSearch = useDebounce(searchQuery, 500)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [itemsPerPage, setItemsPerPage] = useState(10)
 
     // Helper to check if product has low stock
     const hasLowStock = (product: MillingBlock): boolean => {
@@ -71,17 +53,28 @@ export default function MillingBlocks() {
             .map(([size, quantity]) => ({ size, quantity }));
     }
 
-    // History handler
+    // History handler (used by MillingBlocksTable)
     const showHistory = (product: MillingBlock) => {
-        // TODO: Implement history functionality
+        // History is handled by MillingBlocksTable which opens MillingBlockHistory modal
+        // The modal fetches history using getProductHistory API
         console.log('Show history for:', product);
     }
 
-    // Update product handler
-    const handleUpdateProduct = (updatedProduct: MillingBlock) => {
+    // Update product handler - refresh data from API after update
+    const handleUpdateProduct = async (updatedProduct: MillingBlock) => {
+        // Optimistically update local state
         setProducts(prev =>
             prev.map(product => (product.id === updatedProduct.id ? updatedProduct : product))
         );
+        
+        // Refresh data from API to ensure consistency
+        try {
+            const apiProducts = await refreshProducts(currentPage, itemsPerPage, debouncedSearch, type)
+            const convertedProducts = apiProducts.map(convertApiProductToLocal)
+            setProducts(convertedProducts)
+        } catch (err) {
+            console.error('Failed to refresh products after update:', err)
+        }
     }
 
     // Delete product handler
@@ -91,24 +84,54 @@ export default function MillingBlocks() {
         setProducts(prev => prev.filter(p => p.id !== product.id));
     }
 
+    // Convert API product to local format
+    const convertApiProductToLocal = (apiProduct: any): MillingBlock => {
+        return {
+            id: apiProduct.id,
+            Produktname: apiProduct.produktname,
+            Produktkürzel: apiProduct.artikelnummer,
+            Hersteller: apiProduct.hersteller,
+            Lagerort: apiProduct.lagerort,
+            minStockLevel: apiProduct.mindestbestand,
+            sizeQuantities: typeof apiProduct.groessenMengen === 'object' 
+                ? Object.fromEntries(
+                    Object.entries(apiProduct.groessenMengen).map(([size, data]: [string, any]) => [
+                        size,
+                        typeof data === 'object' ? data.quantity : data
+                    ])
+                )
+                : apiProduct.groessenMengen || {},
+            Status: apiProduct.Status,
+            image: apiProduct.image,
+            purchase_price: apiProduct.purchase_price,
+            selling_price: apiProduct.selling_price,
+        }
+    }
+
+    // Fetch products on component mount and when pagination/search changes
+    useEffect(() => {
+        const fetchProducts = async () => {
+            try {
+                const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
+                const convertedProducts = apiProducts.map(convertApiProductToLocal)
+                setProducts(convertedProducts)
+            } catch (err) {
+                console.error('Failed to fetch milling blocks:', err)
+            }
+        }
+
+        fetchProducts()
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, itemsPerPage, debouncedSearch, type])
+
     // Search handler
     const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchQuery(e.target.value)
+        setCurrentPage(1)
     }
 
-    // Filter products based on search query
-    const filteredProducts = useMemo(() => {
-        if (!searchQuery.trim()) {
-            return products
-        }
-        const query = searchQuery.toLowerCase()
-        return products.filter(product =>
-            product.Produktname.toLowerCase().includes(query) ||
-            product.Produktkürzel.toLowerCase().includes(query) ||
-            product.Hersteller.toLowerCase().includes(query) ||
-            product.Lagerort.toLowerCase().includes(query)
-        )
-    }, [products, searchQuery])
+    // Filter products based on search query (now handled by API, but keeping for consistency)
+    const filteredProducts = products
 
     return (
         <div className="w-full px-5">
@@ -138,6 +161,8 @@ export default function MillingBlocks() {
                 </div>
                 {/* Buy Now Button */}
                 <Button
+                    onClick={() => router.push(`/dashboard/buy-storage?type=${type}`)}
+                    disabled={isLoadingProducts}
                     className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
                 >
                     Lagerplätze kaufen
@@ -152,7 +177,7 @@ export default function MillingBlocks() {
                 getLowStockSizes={getLowStockSizes}
                 onUpdateProduct={handleUpdateProduct}
                 onDeleteProduct={handleDeleteProduct}
-                isLoading={false}
+                isLoading={isLoadingProducts}
             />
         </div>
     )

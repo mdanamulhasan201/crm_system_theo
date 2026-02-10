@@ -22,6 +22,7 @@ import MillingBlockImageModal from './MillingBlockImageModal'
 import EditMillingBlock from './EditMillingBlock'
 import MillingBlockHistory from './MillingBlockHistory'
 import DeleteMillingBlockModal from './DeleteMillingBlockModal'
+import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
 
 interface MillingBlock {
     id: string
@@ -82,16 +83,7 @@ export default function MillingBlocksTable({
     }
 
     if (isLoading) {
-        return (
-            <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
-                <div className="animate-pulse space-y-4">
-                    <div className="h-12 bg-gray-200 rounded"></div>
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="h-20 bg-gray-200 rounded"></div>
-                    ))}
-                </div>
-            </div>
-        )
+        return <ProductManagementTableShimmer sizeColumns={sizeColumns} rows={5} />
     }
 
     return (
