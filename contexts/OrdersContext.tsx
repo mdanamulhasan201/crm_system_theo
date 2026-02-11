@@ -45,6 +45,7 @@ interface OrdersContextType {
     currentPage: number;
     selectedDays: number;
     selectedStatus: string | null;
+    selectedType: string | null;
     searchParams: {
         customerNumber: string;
         orderNumber: string;
@@ -54,6 +55,7 @@ interface OrdersContextType {
     setCurrentPage: (page: number) => void;
     setSelectedDays: (days: number) => void;
     setSelectedStatus: (status: string | null) => void;
+    setSelectedType: (type: string | null) => void;
     setSearchParams: (params: { customerNumber?: string; orderNumber?: string; customerName?: string }) => void;
     clearSearchParams: () => void;
     refetch: () => void;
@@ -72,7 +74,7 @@ interface OrdersContextType {
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
 
 // Helper function to map API data to OrderData
-const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
+const mapApiDataToOrderData = (apiOrder: ApiOrderData, selectedType?: string | null): OrderData => {
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return '—';
         const date = new Date(dateString);
@@ -88,7 +90,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData): OrderData => {
         bestellnummer: apiOrder.orderNumber.toString(),
         kundenname: `${apiOrder.customer.vorname} ${apiOrder.customer.nachname}`,
         status: apiOrder.orderStatus,
-        displayStatus: getLabelFromApiStatus(apiOrder.orderStatus),
+        displayStatus: getLabelFromApiStatus(apiOrder.orderStatus, selectedType),
         preis: apiOrder.totalPrice
             ? `${apiOrder.totalPrice.toFixed(2)} €`
             : (apiOrder.fußanalyse !== null && apiOrder.einlagenversorgung !== null)
@@ -119,6 +121,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedDays, setSelectedDays] = useState(30);
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+    const [selectedType, setSelectedType] = useState<string | null>('rady_insole');
     const [searchParams, setSearchParamsState] = useState({
         customerNumber: '',
         orderNumber: '',
@@ -143,13 +146,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         selectedStatus || undefined,
         searchParams.customerNumber || undefined,
         searchParams.orderNumber || undefined,
-        searchParams.customerName || undefined
+        searchParams.customerName || undefined,
+        selectedType || undefined
     );
 
 
     useEffect(() => {
         // Always update orders, even if empty array
-        const mappedOrders = apiOrders.map(mapApiDataToOrderData);
+        const mappedOrders = apiOrders.map(order => mapApiDataToOrderData(order, selectedType));
 
         // Update ref
         ordersRef.current = mappedOrders;
@@ -233,7 +237,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                     const response = await getSingleOrder(orderIdFromSearch);
                     if (response && response.success && response.data) {
                         const order = response.data;
-                        const mappedOrder = mapApiDataToOrderData(order);
+                        const mappedOrder = mapApiDataToOrderData(order, selectedType);
 
                         // Extract only orderNumber (Bestellnummer) for AuftragssuchePage
                         const orderNumber = order.orderNumber?.toString() || '';
@@ -271,6 +275,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             const urlOrderNumber = searchParamsFromUrl.get('orderNumber') || '';
             const urlCustomerName = searchParamsFromUrl.get('customerName') || '';
             const urlOrderId = searchParamsFromUrl.get('orderId') || '';
+            const urlType = searchParamsFromUrl.get('type') || '';
 
             if (urlOrderId) {
                 // If orderId is in URL, just set it - don't trigger search
@@ -284,30 +289,40 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                     customerName: urlCustomerName,
                 });
             }
+            
+            // Set type from URL if available, otherwise use default
+            if (urlType && (urlType === 'rady_insole' || urlType === 'milling_block')) {
+                setSelectedType(urlType);
+            }
+            
             setIsInitialized(true);
         }
     }, [searchParamsFromUrl, isInitialized]);
 
-    // Update URL when search params change - only show orderId
+    // Update URL when search params change - show orderId and type
     useEffect(() => {
         if (!isInitialized) return;
 
         const params = new URLSearchParams();
 
-        // Only keep orderId in URL, remove all other search params
-        // Show orderId in URL if available (this is what we want to show)
+        // Show orderId in URL if available
         if (orderIdFromSearch) {
             params.set('orderId', orderIdFromSearch);
+        }
+        
+        // Show type in URL if selected
+        if (selectedType) {
+            params.set('type', selectedType);
         }
 
         const queryString = params.toString();
         const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
         router.replace(newUrl, { scroll: false });
-    }, [orderIdFromSearch, isInitialized, router, pathname]);
+    }, [orderIdFromSearch, selectedType, isInitialized, router, pathname]);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [selectedDays, selectedStatus, searchParams]);
+    }, [selectedDays, selectedStatus, selectedType, searchParams]);
 
     const setSearchParams = useCallback((params: { customerNumber?: string; orderNumber?: string; customerName?: string }) => {
         setSearchParamsState(prev => {
@@ -407,7 +422,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                     ? {
                         ...order,
                         status: newStatus,
-                        displayStatus: getLabelFromApiStatus(newStatus)
+                        displayStatus: getLabelFromApiStatus(newStatus, selectedType)
                     }
                     : order
             )
@@ -459,7 +474,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         try {
             const response = await getSingleOrder(orderId);
             if (response.success) {
-                const updatedOrder = mapApiDataToOrderData(response.data);
+                const updatedOrder = mapApiDataToOrderData(response.data, selectedType);
                 setOrders(prevOrders =>
                     prevOrders.map(o => o.id === orderId ? updatedOrder : o)
                 );
@@ -480,10 +495,12 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             currentPage,
             selectedDays,
             selectedStatus,
+            selectedType,
             searchParams,
             setCurrentPage,
             setSelectedDays,
             setSelectedStatus,
+            setSelectedType,
             setSearchParams,
             clearSearchParams,
             refetch,

@@ -13,6 +13,7 @@ interface BarcodeStickerData {
     orderNumber: number;
     orderStatus: string;
     completedAt: string | null;
+    createdAt?: string | null;
     barcodeCreatedAt?: string | null;
     partnerAddress: string | { address?: string; title?: string; description?: string };
 }
@@ -139,7 +140,7 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                         {data.customer || 'Customer Name'}
                     </div>
                     <div style={{ fontSize: '11px', color: '#333' }}>
-                        Herstelldatum: {formatDate(data.completedAt || data.barcodeCreatedAt || '')}
+                        Herstelldatum: {formatDate(data.completedAt || data.createdAt || '')}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
                         <span style={{

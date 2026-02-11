@@ -106,14 +106,11 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
             isValid = false;
         }
 
-        // Validate Preis (price) - required and must be a valid positive number
-        if (!priceGross.trim()) {
-            setPriceError("Preis ist erforderlich");
-            isValid = false;
-        } else {
+        // Validate Preis (price) - optional, but if provided must be a valid number >= 0
+        if (priceGross.trim()) {
             const priceValue = parseFloat(priceGross);
-            if (isNaN(priceValue) || priceValue <= 0) {
-                setPriceError("Preis muss eine gültige positive Zahl sein");
+            if (isNaN(priceValue) || priceValue < 0) {
+                setPriceError("Preis muss eine gültige Zahl sein (0 oder größer)");
                 isValid = false;
             }
         }
@@ -134,12 +131,13 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
         
         if (onSubmit) {
             try {
-                // Use brutto price (which is the same as priceGross)
+                // Use brutto price (default to 0 if empty)
+                const finalPrice = priceGross.trim() ? prices.brutto : 0;
                 await onSubmit({
                     id: editingInsole?.id,
                     name: name.trim(),
                     description,
-                    price: prices.brutto,
+                    price: finalPrice,
                     image: imagePreview || editingInsole?.image || undefined,
                     imageFile: imageFile || undefined,
                 });
@@ -240,7 +238,7 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                                 {/* Preis (Brutto) */}
                                 <div>
                                     <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                        Preis (Brutto) <span className="text-red-500">*</span>
+                                        Preis (Brutto)
                                     </label>
                                     <div className="flex items-center gap-2">
                                         <Input

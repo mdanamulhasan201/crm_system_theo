@@ -58,10 +58,14 @@ export const getAllOrders = async (
     orderStatus?: string,
     customerNumber?: string,
     orderNumber?: string,
-    customerName?: string
+    customerName?: string,
+    type?: string
 ) => {
     try {
         let url = `/customer-orders?page=${page}&limit=${limit}&days=${days}`;
+        if (type) {
+            url += `&type=${type}`;
+        }
         if (orderStatus) {
             url += `&orderStatus=${orderStatus}`;
         }

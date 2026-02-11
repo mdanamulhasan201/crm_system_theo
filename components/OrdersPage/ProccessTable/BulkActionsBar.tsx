@@ -1,13 +1,14 @@
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trash2, CheckCircle2, XCircle } from "lucide-react";
-import { STATUS_OPTIONS } from "@/lib/orderStatusMappings";
+import { getStatusOptions } from "@/lib/orderStatusMappings";
 import { OrderData } from "@/contexts/OrdersContext";
 import { normalizePaymentStatus } from "@/lib/paymentStatusUtils";
 
 interface BulkActionsBarProps {
     selectedOrderIds: string[];
     selectedOrders: OrderData[];
+    selectedType: string | null;
     onClearSelection: () => void;
     onBulkDelete: (orderIds: string[]) => void;
     onBulkStatusChange: (orderIds: string[], status: string) => void;
@@ -22,6 +23,7 @@ interface BulkActionsBarProps {
 export default function BulkActionsBar({
     selectedOrderIds,
     selectedOrders,
+    selectedType,
     onClearSelection,
     onBulkDelete,
     onBulkStatusChange,
@@ -32,6 +34,7 @@ export default function BulkActionsBar({
     onBulkPaymentStatus,
     isUpdatingPaymentStatus = false,
 }: BulkActionsBarProps) {
+    const statusOptions = getStatusOptions(selectedType);
     const handleBulkDelete = () => {
         onBulkDelete(selectedOrderIds);
     };
@@ -212,7 +215,7 @@ export default function BulkActionsBar({
                             <SelectValue placeholder="Status ändern" />
                         </SelectTrigger>
                         <SelectContent>
-                            {STATUS_OPTIONS.map((status) => (
+                            {statusOptions.map((status) => (
                                 <SelectItem key={status.value} value={status.value} className="cursor-pointer">
                                     {status.label}
                                 </SelectItem>

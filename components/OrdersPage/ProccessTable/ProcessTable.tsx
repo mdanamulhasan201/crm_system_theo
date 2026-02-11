@@ -29,6 +29,7 @@ export default function ProcessTable() {
         currentPage,
         selectedDays,
         selectedStatus,
+        selectedType,
         setCurrentPage,
         setSelectedDays,
         setSelectedStatus,
@@ -318,277 +319,281 @@ export default function ProcessTable() {
     }
 
     return (
-        <div className="mt-6 sm:mt-10 max-w-full overflow-x-auto">
-            {selectedOrderIds.length === 0 ? (
-                <StatusFilterBar
-                    selectedDays={selectedDays}
-                    selectedStatus={selectedStatus}
-                    activeStep={-1}
-                    onDaysChange={setSelectedDays}
-                    onStatusFilter={handleStatusFilter}
-                    onClearFilter={() => setSelectedStatus(null)}
-                />
-            ) : (
-                <BulkActionsBar
-                    selectedOrderIds={selectedOrderIds}
-                    selectedOrders={memoizedOrders.filter(order => selectedOrderIds.includes(order.id))}
-                    onClearSelection={() => setSelectedOrderIds([])}
-                    onBulkDelete={handleBulkDelete}
-                    onBulkStatusChange={handleBulkStatusChange}
-                    statusValue={bulkStatusSelectValue}
-                    onStatusValueChange={setBulkStatusSelectValue}
-                    onBulkKrankenkasseStatus={handleBulkKrankenkasseStatus}
-                    isUpdatingKrankenkasseStatus={isUpdatingKrankenkasseStatus}
-                    onBulkPaymentStatus={handleBulkPaymentStatus}
-                    isUpdatingPaymentStatus={isUpdatingPaymentStatus}
-                />
-            )}
-
-            <Table className="w-full min-w-[1700px]">
-                <TableHeader>
-                    <OrderTableHeader
-                        isAllSelected={isAllSelected}
-                        isSomeSelected={isSomeSelected}
-                        onSelectAll={handleSelectAll}
+        <>
+            <div className="mt-6 sm:mt-10 max-w-full overflow-x-auto">
+                {selectedOrderIds.length === 0 ? (
+                    <StatusFilterBar
+                        selectedDays={selectedDays}
+                        selectedStatus={selectedStatus}
+                        selectedType={selectedType}
+                        activeStep={-1}
+                        onDaysChange={setSelectedDays}
+                        onStatusFilter={handleStatusFilter}
+                        onClearFilter={() => setSelectedStatus(null)}
                     />
-                </TableHeader>
-                <TableBody>
-                    {loading ? (
-                        <TableRow>
-                            <TableCell colSpan={12} className="text-center py-20">
-                                <div className="flex flex-col items-center justify-center">
-                                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                                    <p className="text-gray-600">Aufträge werden geladen...</p>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ) : memoizedOrders.length === 0 ? (
-                        <TableRow>
-                            <TableCell colSpan={12} className="text-center py-20">
-                                <div className="flex flex-col items-center justify-center">
-                                    <p className="text-gray-600 mb-4 text-lg">Keine Aufträge gefunden</p>
-                                    <Button onClick={refetch} variant="outline">
-                                        Aktualisieren
-                                    </Button>
-                                </div>
-                            </TableCell>
-                        </TableRow>
-                    ) : (
-                        memoizedOrders.map((order) => (
-                            <OrderTableRow
-                                key={order.id}
-                                order={order}
-                                isSelected={selectedOrderIds.includes(order.id)}
-                                isRowSelected={selectedOrderId === order.id}
-                                deleteLoading={deleteLoading}
-                                onRowClick={setSelectedOrderId}
-                                onCheckboxChange={handleSelectOrder}
-                                onDelete={(id) => handleDeleteOrder(id, (id: string | null) => setSelectedOrderId(id))}
-                                onInvoiceDownload={handleInvoiceDownload}
-                                onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
-                                    setBarcodeStickerOrderId(orderId);
-                                    setBarcodeStickerOrderNumber(orderNumber);
-                                    setAutoGenerateBarcode(autoGenerate || false);
-                                    setShowBarcodeStickerModal(true);
-                                }}
-                                onStatusClickGenerateAndSend={handleStatusClickGenerateAndSend}
-                                onPriorityClick={(orderData) => {
-                                    setPriorityModalOrder(orderData);
-                                    setPrioritySelection(orderData.priority || 'Normal');
-                                    setShowPriorityModal(true);
-                                }}
-                                onHistoryClick={(orderId, orderNumber) => {
-                                    setHistoryOrderId(orderId);
-                                    setHistoryOrderNumber(orderNumber);
-                                    setShowHistorySidebar(true);
-                                }}
-                                onScanClick={(orderId, orderNumber, customerName) => {
-                                    setScanOrderId(orderId);
-                                    setScanOrderNumber(orderNumber);
-                                    setScanCustomerName(customerName);
-                                    setShowScanModal(true);
-                                }}
-                                onVersorgungClick={(orderId, orderNumber, customerName) => {
-                                    setVersorgungOrderId(orderId);
-                                    setVersorgungOrderNumber(orderNumber);
-                                    setVersorgungCustomerName(customerName);
-                                    setShowVersorgungModal(true);
-                                }}
-                            />
-                        ))
-                    )}
-                </TableBody>
-            </Table>
+                ) : (
+                    <BulkActionsBar
+                        selectedOrderIds={selectedOrderIds}
+                        selectedOrders={memoizedOrders.filter(order => selectedOrderIds.includes(order.id))}
+                        selectedType={selectedType}
+                        onClearSelection={() => setSelectedOrderIds([])}
+                        onBulkDelete={handleBulkDelete}
+                        onBulkStatusChange={handleBulkStatusChange}
+                        statusValue={bulkStatusSelectValue}
+                        onStatusValueChange={setBulkStatusSelectValue}
+                        onBulkKrankenkasseStatus={handleBulkKrankenkasseStatus}
+                        isUpdatingKrankenkasseStatus={isUpdatingKrankenkasseStatus}
+                        onBulkPaymentStatus={handleBulkPaymentStatus}
+                        isUpdatingPaymentStatus={isUpdatingPaymentStatus}
+                    />
+                )}
 
-            <PaginationControls
-                pagination={pagination}
-                currentPage={currentPage}
-                ordersCount={memoizedOrders.length}
-                selectedStatus={selectedStatus}
-                onPageChange={handlePageChange}
-            />
+                <Table className="w-full min-w-[1700px]">
+                    <TableHeader>
+                        <OrderTableHeader
+                            isAllSelected={isAllSelected}
+                            isSomeSelected={isSomeSelected}
+                            onSelectAll={handleSelectAll}
+                        />
+                    </TableHeader>
+                    <TableBody>
+                        {loading ? (
+                            <TableRow>
+                                <TableCell colSpan={12} className="text-center py-20">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                        <p className="text-gray-600">Aufträge werden geladen...</p>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : memoizedOrders.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={12} className="text-center py-20">
+                                    <div className="flex flex-col items-center justify-center">
+                                        <p className="text-gray-600 mb-4 text-lg">Keine Aufträge gefunden</p>
+                                        <Button onClick={refetch} variant="outline">
+                                            Aktualisieren
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            memoizedOrders.map((order) => (
+                                <OrderTableRow
+                                    key={order.id}
+                                    order={order}
+                                    isSelected={selectedOrderIds.includes(order.id)}
+                                    isRowSelected={selectedOrderId === order.id}
+                                    deleteLoading={deleteLoading}
+                                    onRowClick={setSelectedOrderId}
+                                    onCheckboxChange={handleSelectOrder}
+                                    onDelete={(id) => handleDeleteOrder(id, (id: string | null) => setSelectedOrderId(id))}
+                                    onInvoiceDownload={handleInvoiceDownload}
+                                    onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
+                                        setBarcodeStickerOrderId(orderId);
+                                        setBarcodeStickerOrderNumber(orderNumber);
+                                        setAutoGenerateBarcode(autoGenerate || false);
+                                        setShowBarcodeStickerModal(true);
+                                    }}
+                                    onStatusClickGenerateAndSend={handleStatusClickGenerateAndSend}
+                                    onPriorityClick={(orderData) => {
+                                        setPriorityModalOrder(orderData);
+                                        setPrioritySelection(orderData.priority || 'Normal');
+                                        setShowPriorityModal(true);
+                                    }}
+                                    onHistoryClick={(orderId, orderNumber) => {
+                                        setHistoryOrderId(orderId);
+                                        setHistoryOrderNumber(orderNumber);
+                                        setShowHistorySidebar(true);
+                                    }}
+                                    onScanClick={(orderId, orderNumber, customerName) => {
+                                        setScanOrderId(orderId);
+                                        setScanOrderNumber(orderNumber);
+                                        setScanCustomerName(customerName);
+                                        setShowScanModal(true);
+                                    }}
+                                    onVersorgungClick={(orderId, orderNumber, customerName) => {
+                                        setVersorgungOrderId(orderId);
+                                        setVersorgungOrderNumber(orderNumber);
+                                        setVersorgungCustomerName(customerName);
+                                        setShowVersorgungModal(true);
+                                    }}
+                                />
+                            ))
+                        )}
+                    </TableBody>
+                </Table>
 
-            <ConfirmModal
-                open={showConfirmModal}
-                onOpenChange={setShowConfirmModal}
-                title="Auftrag löschen bestätigen"
-                description="Sind Sie sicher, dass Sie den Auftrag"
-                orderName={pendingAction?.orderName}
-                currentStatus={pendingAction?.currentStatus || ''}
-                newStatus={pendingAction?.newStatus || ''}
-                onConfirm={handleConfirm}
-                confirmText="Ja, löschen"
-                isDeleteAction={true}
-                isLoading={isDeleting}
-            />
+                <PaginationControls
+                    pagination={pagination}
+                    currentPage={currentPage}
+                    ordersCount={memoizedOrders.length}
+                    selectedStatus={selectedStatus}
+                    onPageChange={handlePageChange}
+                />
 
-            {/* Bulk Delete Confirmation Modal */}
-            <ConfirmModal
-                open={showBulkDeleteModal}
-                onOpenChange={setShowBulkDeleteModal}
-                title="Mehrere Aufträge löschen bestätigen"
-                description={`Sind Sie sicher, dass Sie ${selectedOrderIds.length} ${selectedOrderIds.length === 1 ? 'Auftrag' : 'Aufträge'} löschen möchten?`}
-                orderName={`${selectedOrderIds.length} ${selectedOrderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
-                currentStatus=""
-                newStatus=""
-                onConfirm={executeBulkDelete}
-                confirmText="Ja, alle löschen"
-                isDeleteAction={true}
-                isLoading={isBulkDeleting}
-            />
+                <ConfirmModal
+                    open={showConfirmModal}
+                    onOpenChange={setShowConfirmModal}
+                    title="Auftrag löschen bestätigen"
+                    description="Sind Sie sicher, dass Sie den Auftrag"
+                    orderName={pendingAction?.orderName}
+                    currentStatus={pendingAction?.currentStatus || ''}
+                    newStatus={pendingAction?.newStatus || ''}
+                    onConfirm={handleConfirm}
+                    confirmText="Ja, löschen"
+                    isDeleteAction={true}
+                    isLoading={isDeleting}
+                />
 
-            <ConfirmModal
-                open={showBulkStatusModal}
-                onOpenChange={(open) => {
-                    setShowBulkStatusModal(open);
+                {/* Bulk Delete Confirmation Modal */}
+                <ConfirmModal
+                    open={showBulkDeleteModal}
+                    onOpenChange={setShowBulkDeleteModal}
+                    title="Mehrere Aufträge löschen bestätigen"
+                    description={`Sind Sie sicher, dass Sie ${selectedOrderIds.length} ${selectedOrderIds.length === 1 ? 'Auftrag' : 'Aufträge'} löschen möchten?`}
+                    orderName={`${selectedOrderIds.length} ${selectedOrderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
+                    currentStatus=""
+                    newStatus=""
+                    onConfirm={executeBulkDelete}
+                    confirmText="Ja, alle löschen"
+                    isDeleteAction={true}
+                    isLoading={isBulkDeleting}
+                />
+
+                <ConfirmModal
+                    open={showBulkStatusModal}
+                    onOpenChange={(open) => {
+                        setShowBulkStatusModal(open);
+                        if (!open) {
+                            setIsBulkStatusUpdating(false);
+                            setPendingBulkStatus(null);
+                        }
+                    }}
+                    title="Status ändern bestätigen"
+                    description={`Sind Sie sicher, dass Sie den Status für ${pendingBulkStatus?.orderIds.length || 0} ${pendingBulkStatus && pendingBulkStatus.orderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
+                    orderName={`${pendingBulkStatus?.orderIds.length || 0} ${pendingBulkStatus && pendingBulkStatus.orderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
+                    currentStatus="Mehrere Statuswerte"
+                    newStatus={pendingBulkStatus ? getLabelFromApiStatus(pendingBulkStatus.newStatus) : ''}
+                    onConfirm={executeBulkStatusChange}
+                    confirmText="Bestätigen"
+                    isLoading={isBulkStatusUpdating}
+                />
+
+                <Dialog open={showPriorityModal} onOpenChange={(open) => {
+                    setShowPriorityModal(open);
                     if (!open) {
-                        setIsBulkStatusUpdating(false);
-                        setPendingBulkStatus(null);
+                        setPriorityModalOrder(null);
+                        setIsPriorityUpdating(false);
                     }
-                }}
-                title="Status ändern bestätigen"
-                description={`Sind Sie sicher, dass Sie den Status für ${pendingBulkStatus?.orderIds.length || 0} ${pendingBulkStatus && pendingBulkStatus.orderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
-                orderName={`${pendingBulkStatus?.orderIds.length || 0} ${pendingBulkStatus && pendingBulkStatus.orderIds.length === 1 ? 'Auftrag' : 'Aufträge'}`}
-                currentStatus="Mehrere Statuswerte"
-                newStatus={pendingBulkStatus ? getLabelFromApiStatus(pendingBulkStatus.newStatus) : ''}
-                onConfirm={executeBulkStatusChange}
-                confirmText="Bestätigen"
-                isLoading={isBulkStatusUpdating}
-            />
-
-            <Dialog open={showPriorityModal} onOpenChange={(open) => {
-                setShowPriorityModal(open);
-                if (!open) {
-                    setPriorityModalOrder(null);
-                    setIsPriorityUpdating(false);
-                }
-            }}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Priorität ändern</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <p className="text-sm text-gray-600">
-                            Wähle die gewünschte Priorität für <strong>{priorityModalOrder?.kundenname}</strong>
-                        </p>
-                        <div className="grid grid-cols-1 gap-2">
-                            {(['Dringend', 'Normal'] as ('Dringend' | 'Normal')[]).map(option => (
-                                <button
-                                    key={option}
-                                    className={`w-full border rounded-lg py-2 px-3 text-sm font-medium cursor-pointer transition ${prioritySelection === option
-                                        ? option === 'Dringend'
-                                            ? 'border-red-500 bg-red-50 text-red-600'
-                                            : 'border-gray-400 bg-gray-100 text-gray-700'
-                                        : 'border-gray-200 hover:border-gray-300 text-gray-600'
-                                        }`}
-                                    onClick={() => setPrioritySelection(option)}
-                                >
-                                    {option}
-                                </button>
-                            ))}
+                }}>
+                    <DialogContent className="sm:max-w-md">
+                        <DialogHeader>
+                            <DialogTitle>Priorität ändern</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-600">
+                                Wähle die gewünschte Priorität für <strong>{priorityModalOrder?.kundenname}</strong>
+                            </p>
+                            <div className="grid grid-cols-1 gap-2">
+                                {(['Dringend', 'Normal'] as ('Dringend' | 'Normal')[]).map(option => (
+                                    <button
+                                        key={option}
+                                        className={`w-full border rounded-lg py-2 px-3 text-sm font-medium cursor-pointer transition ${prioritySelection === option
+                                            ? option === 'Dringend'
+                                                ? 'border-red-500 bg-red-50 text-red-600'
+                                                : 'border-gray-400 bg-gray-100 text-gray-700'
+                                            : 'border-gray-200 hover:border-gray-300 text-gray-600'
+                                            }`}
+                                        onClick={() => setPrioritySelection(option)}
+                                    >
+                                        {option}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" className="cursor-pointer" onClick={() => setShowPriorityModal(false)} disabled={isPriorityUpdating}>
-                            Abbrechen
-                        </Button>
-                        <Button
-                            className="cursor-pointer"
-                            onClick={async () => {
-                                if (!priorityModalOrder) return;
-                                setIsPriorityUpdating(true);
-                                try {
-                                    await updateOrderPriority(priorityModalOrder.id, prioritySelection);
-                                    toast.success('Priorität aktualisiert');
-                                    setShowPriorityModal(false);
-                                } catch (error) {
-                                    console.error('Failed to update priority:', error);
-                                    toast.error('Fehler beim Aktualisieren der Priorität');
-                                } finally {
-                                    setIsPriorityUpdating(false);
-                                }
-                            }}
-                            disabled={isPriorityUpdating}
-                        >
-                            {isPriorityUpdating ? 'Aktualisiere...' : 'Speichern'}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        <DialogFooter>
+                            <Button variant="outline" className="cursor-pointer" onClick={() => setShowPriorityModal(false)} disabled={isPriorityUpdating}>
+                                Abbrechen
+                            </Button>
+                            <Button
+                                className="cursor-pointer"
+                                onClick={async () => {
+                                    if (!priorityModalOrder) return;
+                                    setIsPriorityUpdating(true);
+                                    try {
+                                        await updateOrderPriority(priorityModalOrder.id, prioritySelection);
+                                        toast.success('Priorität aktualisiert');
+                                        setShowPriorityModal(false);
+                                    } catch (error) {
+                                        console.error('Failed to update priority:', error);
+                                        toast.error('Fehler beim Aktualisieren der Priorität');
+                                    } finally {
+                                        setIsPriorityUpdating(false);
+                                    }
+                                }}
+                                disabled={isPriorityUpdating}
+                            >
+                                {isPriorityUpdating ? 'Aktualisiere...' : 'Speichern'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
-            {/* History Sidebar */}
-            <HistorySidebar
-                isOpen={showHistorySidebar}
-                onClose={() => {
-                    setShowHistorySidebar(false);
-                    setHistoryOrderId(null);
-                    setHistoryOrderNumber(null);
-                }}
-                orderId={historyOrderId}
-                orderNumber={historyOrderNumber || undefined}
-            />
+                {/* History Sidebar */}
+                <HistorySidebar
+                    isOpen={showHistorySidebar}
+                    onClose={() => {
+                        setShowHistorySidebar(false);
+                        setHistoryOrderId(null);
+                        setHistoryOrderNumber(null);
+                    }}
+                    orderId={historyOrderId}
+                    orderNumber={historyOrderNumber || undefined}
+                />
 
-            {/* Versorgung Modal */}
-            <VersorgungModal
-                isOpen={showVersorgungModal}
-                onClose={() => {
-                    setShowVersorgungModal(false);
-                    setVersorgungOrderId(null);
-                    setVersorgungOrderNumber(null);
-                    setVersorgungCustomerName(null);
-                }}
-                orderId={versorgungOrderId}
-                orderNumber={versorgungOrderNumber || undefined}
-                customerName={versorgungCustomerName || undefined}
-            />
+                {/* Versorgung Modal */}
+                <VersorgungModal
+                    isOpen={showVersorgungModal}
+                    onClose={() => {
+                        setShowVersorgungModal(false);
+                        setVersorgungOrderId(null);
+                        setVersorgungOrderNumber(null);
+                        setVersorgungCustomerName(null);
+                    }}
+                    orderId={versorgungOrderId}
+                    orderNumber={versorgungOrderNumber || undefined}
+                    customerName={versorgungCustomerName || undefined}
+                />
 
-            {/* Scan Picture Modal */}
-            <ScanPictureModal
-                isOpen={showScanModal}
-                onClose={() => {
-                    setShowScanModal(false);
-                    setScanOrderId(null);
-                    setScanOrderNumber(null);
-                    setScanCustomerName(null);
-                }}
-                orderId={scanOrderId}
-                orderNumber={scanOrderNumber || undefined}
-                customerName={scanCustomerName || undefined}
-            />
+                {/* Scan Picture Modal */}
+                <ScanPictureModal
+                    isOpen={showScanModal}
+                    onClose={() => {
+                        setShowScanModal(false);
+                        setScanOrderId(null);
+                        setScanOrderNumber(null);
+                        setScanCustomerName(null);
+                    }}
+                    orderId={scanOrderId}
+                    orderNumber={scanOrderNumber || undefined}
+                    customerName={scanCustomerName || undefined}
+                />
 
-            {/* Barcode Sticker Modal */}
-            <BarcodeStickerModal
-                isOpen={showBarcodeStickerModal}
-                onClose={() => {
-                    setShowBarcodeStickerModal(false);
-                    setBarcodeStickerOrderId(null);
-                    setBarcodeStickerOrderNumber(null);
-                    setAutoGenerateBarcode(false);
-                }}
-                orderId={barcodeStickerOrderId || ''}
-                orderNumber={barcodeStickerOrderNumber || undefined}
-                autoGenerate={autoGenerateBarcode}
-            />
-        </div>
+                {/* Barcode Sticker Modal */}
+                <BarcodeStickerModal
+                    isOpen={showBarcodeStickerModal}
+                    onClose={() => {
+                        setShowBarcodeStickerModal(false);
+                        setBarcodeStickerOrderId(null);
+                        setBarcodeStickerOrderNumber(null);
+                        setAutoGenerateBarcode(false);
+                    }}
+                    orderId={barcodeStickerOrderId || ''}
+                    orderNumber={barcodeStickerOrderNumber || undefined}
+                    autoGenerate={autoGenerateBarcode}
+                />
+            </div>
+        </>
     );
 }

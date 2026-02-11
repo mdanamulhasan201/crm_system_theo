@@ -55,7 +55,9 @@ export default function NoteCalendar() {
         formatDisplayDate,
         isToday,
         handleDeleteNote,
-        updateLocalNotes
+        updateLocalNotes,
+        loadMoreNotes,
+        pagination
     } = useCustomerNote();
 
     const [activeTab, setActiveTab] = useState<string>('Diagramm');
@@ -68,8 +70,11 @@ export default function NoteCalendar() {
     // Fetch notes when component mounts or customer changes
     useEffect(() => {
         if (scanData?.id) {
-            getNotes(scanData.id).then((apiNotes) => {
-                updateLocalNotes(apiNotes);
+            getNotes(scanData.id, 1, 5, '').then((result) => {
+                updateLocalNotes(result.notes);
+                setFirstLoaded(true);
+            }).catch((err) => {
+                console.error('Error loading notes:', err);
                 setFirstLoaded(true);
             });
         }
@@ -77,16 +82,17 @@ export default function NoteCalendar() {
 
     // Background refresh on tab change: keep table visible from cache, show small spinner on tab
     useEffect(() => {
-        if (!scanData?.id) return;
-        if (activeTab === 'Diagramm') return; // No category filter fetch needed
-
+        if (!scanData?.id || !firstLoaded) return; // Wait for initial load
+        
         setIsRefreshingTab(true);
-        getNotes(scanData.id, 1, 50, activeTab)
-            .then((apiNotes) => {
-                updateLocalNotes(apiNotes);
+        // For Diagramm tab, fetch all notes (empty category). For other tabs, fetch filtered by category
+        const category = activeTab === 'Diagramm' ? '' : activeTab;
+        getNotes(scanData.id, 1, 5, category)
+            .then((result) => {
+                updateLocalNotes(result.notes, false); // Replace data when switching tabs
             })
             .finally(() => setIsRefreshingTab(false));
-    }, [activeTab, scanData?.id, getNotes, updateLocalNotes]);
+    }, [activeTab, scanData?.id, getNotes, updateLocalNotes, firstLoaded]);
 
 
     return (
@@ -120,7 +126,7 @@ export default function NoteCalendar() {
                         <div className='border border-white rounded-full p-1 '>
                             <Plus size={20} />
                         </div>
-                        {loading ? 'Loading...' : 'Add Note'}
+                        {loading ? 'Loading...' : 'Notiz hinzufügen'}
                     </button>
                 </div>
             </div>
@@ -162,16 +168,7 @@ export default function NoteCalendar() {
                             </TableRow>
                         )}
 
-                        {isRefreshingTab && firstLoaded && (
-                            <TableRow>
-                                <TableCell colSpan={7} className="text-center py-2">
-                                    <div className="flex items-center justify-center space-x-2 text-gray-700 text-sm py-4">
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#62A17B]"></div>
-                                        <div>Loading...</div>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        )}
+                        {/* Removed refresh spinner - show cached data while refreshing */}
 
                         {notesError && !isLoadingNotes && (
                             <TableRow>
@@ -184,20 +181,29 @@ export default function NoteCalendar() {
                             </TableRow>
                         )}
 
-                        {!isLoadingNotes && !notesError && (activeTab === 'Diagramm' || localNotes[new Date().toISOString().split('T')[0]]?.some((note: any) => note.category === activeTab)) && (
+                        {!isLoadingNotes && !notesError && (() => {
+                            const todayDate = new Date().toISOString().split('T')[0];
+                            const todayNotes = localNotes[todayDate] || [];
+                            const hasTodayNotes = activeTab === 'Diagramm' 
+                                ? todayNotes.length > 0 
+                                : todayNotes.some((note: any) => note.category === activeTab);
+                            
+                            return hasTodayNotes && (
                             <TableRow className="bg-blue-50">
                                 <TableCell className="border border-gray-500">
                                     <div className="text-black px-2 py-1 rounded text-sm font-medium">
                                         Heute
                                     </div>
                                     <div className="text-xs text-gray-600 mt-1">
-                                        {formatDisplayDate(new Date().toISOString().split('T')[0])}
+                                        {formatDisplayDate(todayDate)}
                                     </div>
                                 </TableCell>
-                                {['Notizen', 'Bestellungen', 'Leistungen', 'Termin', 'Zahlungen', 'E-mails'].map((category) => (
+                                {['Notizen', 'Bestellungen', 'Leistungen', 'Termin', 'Zahlungen', 'E-mails'].map((category) => {
+                                    const notesForCategory = getNotesForCategory(todayDate, category);
+                                    return (
                                     <TableCell key={category} className="border min-h-[80px] border-gray-500 align-top overflow-hidden">
                                         {(activeTab === 'Diagramm' || activeTab === category) &&
-                                            getNotesForCategory(new Date().toISOString().split('T')[0], category).map((note: Note) => (
+                                            notesForCategory.map((note: Note) => (
                                                 <div
                                                     key={note.id}
                                                     className="relative group mb-2"
@@ -232,23 +238,53 @@ export default function NoteCalendar() {
                                             ))
                                         }
                                     </TableCell>
-                                ))}
+                                )})}
                             </TableRow>
-                        )}
+                            );
+                        })()}
 
-                        {!isLoadingNotes && !notesError && getFilteredDates(activeTab).filter(date => !isToday(date)).length === 0 &&
-                            !(activeTab === 'Diagramm' || localNotes[new Date().toISOString().split('T')[0]]?.some((note: any) => note.category === activeTab)) && (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="text-center py-8 text-gray-500 font-semibold">
-                                        Data not found
-                                    </TableCell>
-                                </TableRow>
-                            )}
+                        {!isLoadingNotes && !notesError && firstLoaded && (() => {
+                            // Get all dates that have notes (for the active tab)
+                            const allDatesForTab = getFilteredDates(activeTab);
+                            const todayDate = new Date().toISOString().split('T')[0];
+                            const todayNotes = localNotes[todayDate] || [];
+                            
+                            // Check if there are any notes at all for the active tab
+                            const hasTodayNotes = activeTab === 'Diagramm' 
+                                ? todayNotes.length > 0 
+                                : todayNotes.some((note: any) => note.category === activeTab);
+                            
+                            // Check if there are other dates (excluding today)
+                            const otherDates = allDatesForTab.filter(date => !isToday(date));
+                            const hasOtherDates = otherDates.length > 0;
+                            
+                            const hasAnyNotes = hasTodayNotes || hasOtherDates;
+                            
+                            // Show "Data not found" if:
+                            // 1. Data has been loaded (firstLoaded is true)
+                            // 2. No notes exist for the active tab (empty API response or no matching notes)
+                            if (!hasAnyNotes) {
+                                return (
+                                    <TableRow>
+                                        <TableCell colSpan={7} className="text-center py-8 text-gray-500 font-semibold">
+                                            Data not found
+                                        </TableCell>
+                                    </TableRow>
+                                );
+                            }
+                            
+                            return null; // Data exists, let other render blocks handle it
+                        })()}
 
 
                         {!isLoadingNotes && !notesError && (() => {
-                            const filteredDates = getFilteredDates(activeTab).filter(date => !isToday(date));
+                            const allDates = getFilteredDates(activeTab);
+                            const filteredDates = allDates.filter(date => !isToday(date));
 
+                            // Render date rows if we have dates
+                            if (filteredDates.length === 0) {
+                                return null;
+                            }
 
                             return filteredDates.map((date) => (
                                 <TableRow key={date}>
@@ -309,6 +345,24 @@ export default function NoteCalendar() {
                 <ScrollBar orientation="horizontal" />
             </ScrollArea>
 
+            {/* Load More Button */}
+            {!isLoadingNotes && !notesError && firstLoaded && pagination.hasNextPage && (
+                <div className="flex justify-center mt-4">
+                    <button
+                        onClick={() => {
+                            if (scanData?.id) {
+                                const category = activeTab === 'Diagramm' ? '' : activeTab;
+                                loadMoreNotes(scanData.id, category);
+                            }
+                        }}
+                        disabled={pagination.isLoadingMore}
+                        className="px-6 py-2 bg-[#62A17B] text-white rounded-lg hover:bg-[#528c68] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        {pagination.isLoadingMore ? 'Loading...' : 'See More'}
+                    </button>
+                </div>
+            )}
+
             {scanData && (
                 <AddNoteModal
                     isOpen={showAddForm}
@@ -318,8 +372,8 @@ export default function NoteCalendar() {
                     onSuccess={() => {
                         if (scanData?.id) {
                             // Single refresh for all tabs to keep cache warm
-                            getNotes(scanData.id).then((apiNotes) => {
-                                updateLocalNotes(apiNotes);
+                            getNotes(scanData.id, 1, 5, '').then((result) => {
+                                updateLocalNotes(result.notes);
                             });
                         }
                     }}

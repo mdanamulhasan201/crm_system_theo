@@ -4,10 +4,11 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // import HighPriorityCard from '@/components/OrdersPage/HighPriorityCard/HighPriorityCard';
 import ProcessTable from '@/components/OrdersPage/ProccessTable/ProcessTable';
-import { OrdersProvider } from '@/contexts/OrdersContext';
+import { OrdersProvider, useOrders } from '@/contexts/OrdersContext';
 import { useRevenueOverview } from '@/hooks/orders/useRevenueOverview';
 import OrdersHeaderShimmer from '@/components/ShimmerEffect/Orders/OrdersHeaderShimmer';
 import AuftragssuchePage from '@/components/OrdersPage/AuftragssuchePage/AuftragssuchePage';
+import { Button } from '@/components/ui/button';
 
 export default function Orders() {
     return (
@@ -166,7 +167,51 @@ function OrdersPageContent() {
             </div>
             {/* <HighPriorityCard /> */}
 
+            {/* Type Filter Buttons */}
+            <TypeFilterButtons />
+
             <ProcessTable />
+        </div>
+    );
+}
+
+function TypeFilterButtons() {
+    const ordersContext = useOrders();
+    const { selectedType, setSelectedType } = ordersContext;
+
+    if (!setSelectedType) {
+        console.error('setSelectedType is not available in OrdersContext');
+        return null;
+    }
+
+    return (
+        <div className="mt-6 mb-4 flex gap-3">
+            <Button
+                variant={selectedType === 'rady_insole' ? 'default' : 'outline'}
+                onClick={() => {
+                    if (selectedType === 'rady_insole') {
+                        setSelectedType(null);
+                    } else {
+                        setSelectedType('rady_insole');
+                    }
+                }}
+                className="cursor-pointer"
+            >
+                Rady Einlage
+            </Button>
+            <Button
+                variant={selectedType === 'milling_block' ? 'default' : 'outline'}
+                onClick={() => {
+                    if (selectedType === 'milling_block') {
+                        setSelectedType(null);
+                    } else {
+                        setSelectedType('milling_block');
+                    }
+                }}
+                className="cursor-pointer"
+            >
+                Fräsblock
+            </Button>
         </div>
     );
 }

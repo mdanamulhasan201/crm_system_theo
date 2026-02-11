@@ -573,7 +573,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     }).filter(item => item !== null);
                 };
 
-                const orderPayload = {
+                // Get bezahlt value - use paymentStatus if bezahlt is not available (for backward compatibility)
+                const bezahltValue = formDataForOrder.bezahlt || formDataForOrder.paymentStatus || '';
+                const paymentStatusValue = formDataForOrder.paymentStatus || formDataForOrder.bezahlt || undefined;
+
+                const orderPayload: any = {
                     customerId: customer.id,
                     versorgungId: resolvedId,
                     einlagentyp: formDataForOrder.einlagentyp || '',
@@ -593,7 +597,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     mitarbeiter: formDataForOrder.mitarbeiter || '',
                     fertigstellungBis: formDataForOrder.fertigstellungBis || '',
                     versorgung: formDataForOrder.versorgung || '',
-                    bezahlt: formDataForOrder.bezahlt || '',
+                    bezahlt: bezahltValue, // Required by API
                     fussanalysePreis: fussanalysePreis,
                     einlagenversorgungPreis: einlagenversorgungPreis,
                     fußanalyse: fussanalysePreis, 
@@ -606,6 +610,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     discountType: formDataForOrder.discountType || undefined,
                     insurances: buildInsurancesArray(),
                 };
+
+                // Add paymentStatus if it has a value
+                if (paymentStatusValue) {
+                    orderPayload.paymentStatus = paymentStatusValue;
+                }
 
                 const result = await createOrderAndGeneratePdf(
                     customer.id,

@@ -17,6 +17,7 @@ interface BarcodeStickerData {
     orderNumber: number;
     orderStatus: string;
     completedAt: string | null;
+    createdAt?: string | null;
     barcodeCreatedAt?: string | null;
     partnerAddress: string | { address?: string; title?: string; description?: string };
 }
@@ -192,8 +193,8 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     currentY += Math.max(22, customerLines.length * 18);
     ctx.textAlign = 'left';
     
-    // Production date - use barcodeCreatedAt if completedAt is not available
-    const productionDate = data.completedAt || data.barcodeCreatedAt || '';
+    // Production date - use createdAt if completedAt is not available
+    const productionDate = data.completedAt || data.createdAt || '';
     ctx.font = '11px Arial';
     ctx.fillStyle = '#333333';
     ctx.fillText(`Herstelldatum: ${formatDate(productionDate)}`, 12, currentY);

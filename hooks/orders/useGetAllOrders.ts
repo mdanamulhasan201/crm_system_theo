@@ -77,7 +77,8 @@ export const useGetAllOrders = (
     orderStatus?: string,
     customerNumber?: string,
     orderNumber?: string,
-    customerName?: string
+    customerName?: string,
+    type?: string
 ) => {
     const [orders, setOrders] = useState<ApiOrderData[]>([]);
     const [pagination, setPagination] = useState<PaginationData | null>(null);
@@ -91,13 +92,14 @@ export const useGetAllOrders = (
         status?: string,
         custNumber?: string,
         ordNumber?: string,
-        custName?: string
+        custName?: string,
+        orderType?: string
     ) => {
         try {
             setLoading(true);
             setError(null);
-            // console.log('useGetAllOrders: Fetching orders with params:', { pageNum, limitNum, daysNum, status, custNumber, ordNumber, custName });
-            const response: OrdersResponse = await getAllOrders(pageNum, limitNum, daysNum, status, custNumber, ordNumber, custName);
+            // console.log('useGetAllOrders: Fetching orders with params:', { pageNum, limitNum, daysNum, status, custNumber, ordNumber, custName, orderType });
+            const response: OrdersResponse = await getAllOrders(pageNum, limitNum, daysNum, status, custNumber, ordNumber, custName, orderType);
             // console.log('useGetAllOrders: API response:', response);
             
             if (response.success) {
@@ -115,11 +117,11 @@ export const useGetAllOrders = (
     };
 
     useEffect(() => {
-        fetchOrders(page, limit, days, orderStatus, customerNumber, orderNumber, customerName);
-    }, [page, limit, days, orderStatus, customerNumber, orderNumber, customerName]);
+        fetchOrders(page, limit, days, orderStatus, customerNumber, orderNumber, customerName, type);
+    }, [page, limit, days, orderStatus, customerNumber, orderNumber, customerName, type]);
 
     const refetch = () => {
-        fetchOrders(page, limit, days, orderStatus, customerNumber, orderNumber, customerName);
+        fetchOrders(page, limit, days, orderStatus, customerNumber, orderNumber, customerName, type);
     };
 
     return {

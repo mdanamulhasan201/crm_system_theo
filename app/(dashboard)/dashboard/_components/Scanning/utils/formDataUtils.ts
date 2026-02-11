@@ -53,6 +53,10 @@ export function createWerkstattzettelPayload(
     : undefined
   const validDiscount = parsedDiscount !== undefined && !isNaN(parsedDiscount) ? parsedDiscount : undefined
 
+  // Map bezahlt to paymentStatus - keep both for API compatibility
+  const bezahltValue = formData.bezahlt && formData.bezahlt.trim() !== '' ? formData.bezahlt : undefined
+  const paymentStatus = bezahltValue
+
   return {
     kundenName: `${formData.vorname} ${formData.nachname}`.trim(),
     auftragsDatum: auftragsIso,
@@ -67,7 +71,8 @@ export function createWerkstattzettelPayload(
     employeeId: formData.employeeId || undefined, // This will be mapped to werkstattEmployeeId in order payload
     fertigstellungBis: fertigIso,
     versorgung: formData.versorgung || undefined,
-    bezahlt: formData.bezahlt || undefined, // Now accepts string format like "Privat - Bezahlt"
+    bezahlt: bezahltValue, // Required by API
+    paymentStatus: paymentStatus, // New field
     fussanalysePreis: isNaN(parsedFoot) ? 0 : parsedFoot,
     einlagenversorgungPreis: isNaN(parsedInsole) ? 0 : parsedInsole,
     quantity: formData.quantity || undefined,

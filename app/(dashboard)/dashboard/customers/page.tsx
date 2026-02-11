@@ -377,7 +377,7 @@ export default function Customers() {
                 </label>
                 {renderSearchInput(
                   locationInputRef,
-                  "ort",
+                  "Ort",
                   searchLocation,
                   handleLocationChange,
                   () =>
