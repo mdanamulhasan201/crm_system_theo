@@ -5,11 +5,14 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import legs from '@/public/Kunden/leg.png'
 import { useRouter } from 'next/navigation'
+import toast from 'react-hot-toast'
 
 export default function LeistenDigitalGenerieren() {
     const router = useRouter()
     const handleGenerate = () => {
-        router.push('/dashboard/leistenkonfigurator')
+        toast.success('coming soon')
+
+        // router.push('/dashboard/leistenkonfigurator')
     }
 
     return (
@@ -58,17 +61,17 @@ export default function LeistenDigitalGenerieren() {
 
                 {/* Right Side - Foot Graphic */}
                 <div className="flex-shrink-0  w-full lg:w-auto lg:max-w-md">
-                <div className=" w-full h-auto">
-                                <div className=" z-10">
-                                    <Image
-                                        src={legs}
-                                        alt="3D Scan Foot"
-                                        className="w-full h-auto object-contain"
-                                        priority
-                                    />
-                                </div>
-                             
-                            </div>
+                    <div className=" w-full h-auto">
+                        <div className=" z-10">
+                            <Image
+                                src={legs}
+                                alt="3D Scan Foot"
+                                className="w-full h-auto object-contain"
+                                priority
+                            />
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </div>
