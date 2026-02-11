@@ -31,6 +31,7 @@ interface PriceSectionProps {
   bezahlt: string
   onBezahltChange: (value: string) => void
   paymentError?: string
+  disabledPaymentType?: 'Privat' | 'Krankenkasse'
 }
 
 // Helper function to format price in German format
@@ -75,6 +76,7 @@ export default function PriceSection({
   bezahlt,
   onBezahltChange,
   paymentError,
+  disabledPaymentType,
 }: PriceSectionProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -216,6 +218,7 @@ export default function PriceSection({
             value={bezahlt}
             onChange={onBezahltChange}
             error={paymentError}
+            disabledPaymentType={disabledPaymentType}
           />
         </div>
       </div>

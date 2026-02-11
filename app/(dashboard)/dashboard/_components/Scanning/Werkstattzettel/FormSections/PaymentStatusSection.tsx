@@ -7,6 +7,7 @@ interface PaymentStatusSectionProps {
     value: string
     onChange: (value: string) => void
     error?: string
+    disabledPaymentType?: 'Privat' | 'Krankenkasse'
 }
 
 type PaymentType = 'Privat' | 'Krankenkasse' | ''
@@ -17,6 +18,7 @@ export default function PaymentStatusSection({
     value,
     onChange,
     error,
+    disabledPaymentType,
 }: PaymentStatusSectionProps) {
     // Parse initial value
     const parseInitialValue = (val: string): { type: PaymentType; status: string } => {
@@ -100,11 +102,16 @@ export default function PaymentStatusSection({
             <div className="flex gap-3">
                 {/* Payment Type Dropdown */}
                 <div className="flex-1">
-                    <Select value={paymentType} onValueChange={handlePaymentTypeChange}>
+                    <Select 
+                        value={paymentType} 
+                        onValueChange={handlePaymentTypeChange}
+                        disabled={!!disabledPaymentType}
+                    >
                     <SelectTrigger
                         className={cn(
                             'w-full',
-                            error && 'border-red-500 focus-visible:ring-red-500'
+                            error && 'border-red-500 focus-visible:ring-red-500',
+                            disabledPaymentType && 'opacity-60 cursor-not-allowed'
                         )}
                     >
                             <SelectValue placeholder="Zahlungsart auswählen..." />

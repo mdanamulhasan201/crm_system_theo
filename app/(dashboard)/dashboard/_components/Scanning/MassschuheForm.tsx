@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -7,6 +7,9 @@ import { useCreateMassschuhe } from '@/hooks/massschuhe/useCreateMassschuhe';
 import { ChevronDown, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import MassschuheOrderModal from './MassschuheOrderModal';
+import PositionsnummerDropdown from './Einlagen/Dropdowns/PositionsnummerDropdown';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
 
 
 interface Customer {
@@ -29,6 +32,86 @@ interface MassschuheFormProps {
 }
 
 export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefresh }: MassschuheFormProps) {
+    // Get user data for vat_country check
+    const { user } = useAuth();
+    
+    // State for positionsnummer data
+    const [positionsnummerAustriaData, setPositionsnummerAustriaData] = useState<any[]>([]);
+    const [positionsnummerItalyData, setPositionsnummerItalyData] = useState<any[]>([]);
+    const [loadingPositionsnummer, setLoadingPositionsnummer] = useState(true);
+    
+    // Load positionsnummer data from public folder
+    useEffect(() => {
+        const loadPositionsnummerData = async () => {
+            try {
+                const [austriaResponse, italyResponse] = await Promise.all([
+                    fetch('/data/positionsnummer-austria.json'),
+                    fetch('/data/positionsnummer-italy.json')
+                ]);
+                
+                if (austriaResponse.ok) {
+                    const austriaData = await austriaResponse.json();
+                    setPositionsnummerAustriaData(austriaData);
+                }
+                
+                if (italyResponse.ok) {
+                    const italyData = await italyResponse.json();
+                    setPositionsnummerItalyData(italyData);
+                }
+            } catch (error) {
+                console.error('Failed to load positionsnummer data:', error);
+            } finally {
+                setLoadingPositionsnummer(false);
+            }
+        };
+        
+        loadPositionsnummerData();
+    }, []);
+    
+    // Filter positionsnummer data based on vat_country
+    const getFilteredPositionsnummerData = () => {
+        const vatCountry = user?.accountInfo?.vat_country;
+        
+        // If Österreich (AT), show Austrian data
+        if (vatCountry === 'Österreich (AT)') {
+            return positionsnummerAustriaData;
+        }
+        
+        // If Italien (IT), show Italian data
+        if (vatCountry === 'Italien (IT)') {
+            return positionsnummerItalyData;
+        }
+        
+        // For all other countries, show empty array
+        return [];
+    };
+    
+    const filteredPositionsnummerData = getFilteredPositionsnummerData();
+    
+    // Error message for positionsnummer when not available (only for countries other than AT and IT)
+    const getPositionsnummerError = () => {
+        if (billingType !== 'Krankenkassa') return undefined;
+        
+        const vatCountry = user?.accountInfo?.vat_country;
+        
+        // No error for Österreich (AT) - data available
+        if (vatCountry === 'Österreich (AT)') {
+            return undefined;
+        }
+        
+        // No error for Italien (IT) - data available
+        if (vatCountry === 'Italien (IT)') {
+            return undefined;
+        }
+        
+        // Error for all other countries
+        if (vatCountry) {
+            return 'Positionsnummer ist für Ihr Land nicht verfügbar';
+        }
+        
+        return undefined;
+    };
+    
     // Form state
     const [ärztlicheDiagnose, setÄrztlicheDiagnose] = useState<string>('');
     const [ausführlicheDiagnose, setAusführlicheDiagnose] = useState<string>('');
@@ -36,6 +119,18 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
     const [versorgungNote, setVersorgungNote] = useState<string>('');
     const [halbprobeGeplant, setHalbprobeGeplant] = useState<boolean | null>(null);
     const [kostenvoranschlag, setKostenvoranschlag] = useState<boolean | null>(null);
+    
+    // Billing type state (Krankenkassa/Privat)
+    const [billingType, setBillingType] = useState<'Krankenkassa' | 'Privat'>('Krankenkassa');
+    const [selectedPositionsnummer, setSelectedPositionsnummer] = useState<string[]>([]);
+    const [showPositionsnummerDropdown, setShowPositionsnummerDropdown] = useState(false);
+    
+    // Clear selectedPositionsnummer when billingType changes
+    useEffect(() => {
+        setSelectedPositionsnummer([]);
+    }, [billingType]);
+    
+    const positionsnummerError = getPositionsnummerError();
 
     // Employee search
     const {
@@ -93,10 +188,51 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
         setShowOrderModal(true);
     };
 
+    // Helper function to get positionsnummer from option
+    const getPositionsnummer = (option: any): string => {
+        if (option.positionsnummer) {
+            return option.positionsnummer;
+        }
+        if (typeof option.description === 'object' && option.description?.positionsnummer) {
+            return option.description.positionsnummer;
+        }
+        return '';
+    };
+
+    // Build insurances array from selected positionsnummer
+    const buildInsurancesArray = () => {
+        if (!selectedPositionsnummer || selectedPositionsnummer.length === 0) {
+            return [];
+        }
+        
+        const allData = [...positionsnummerAustriaData, ...positionsnummerItalyData];
+        
+        return selectedPositionsnummer.map(posNum => {
+            // Find the option in both Austrian and Italian data
+            const option = allData.find(opt => getPositionsnummer(opt) === posNum);
+            
+            if (option) {
+                return {
+                    price: option.price,
+                    description: typeof option.description === 'object' ? option.description : {}
+                };
+            }
+            
+            return null;
+        }).filter(item => item !== null);
+    };
+
     // Handle order submission from modal
     const handleOrderSubmit = async (orderData: any) => {
+        // Add insurances array to orderData
+        const insurances = buildInsurancesArray();
+        const orderDataWithInsurances = {
+            ...orderData,
+            insurances: insurances
+        };
+        
         // Submit to API
-        const result = await createMassschuhe(orderData);
+        const result = await createMassschuhe(orderDataWithInsurances);
 
         if (result.success) {
             // Close modal
@@ -122,6 +258,31 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
 
     return (
         <div>
+            {/* Abrechnung Section */}
+            <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Abrechnung:</label>
+                <Tabs 
+                    value={billingType} 
+                    onValueChange={(value) => setBillingType(value as 'Krankenkassa' | 'Privat')}
+                    className="w-fit"
+                >
+                    <TabsList className="bg-gray-200 rounded-full p-1">
+                        <TabsTrigger 
+                            value="Krankenkassa" 
+                            className="cursor-pointer data-[state=active]:bg-[#61A178] data-[state=active]:text-white rounded-full px-6 py-2 font-medium transition-all"
+                        >
+                            Krankenkassa
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="Privat"
+                            className="cursor-pointer data-[state=active]:bg-[#61A178] data-[state=active]:text-white rounded-full px-6 py-2 font-medium transition-all"
+                        >
+                            Privat
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
+
             <div className='mt-10'>
                 {/* Two text areas for diagnosis */}
                 <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
@@ -157,6 +318,24 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                         </div>
                     </div>
                 </div>
+
+                {/* Positionsnummer Field - Only show when Krankenkassa is selected */}
+                {billingType === 'Krankenkassa' && (
+                    <div className="mt-6 mb-6">
+                        <PositionsnummerDropdown
+                            label="Positionsnummer *"
+                            value={selectedPositionsnummer}
+                            placeholder="Positionsnummer oder Text suchen..."
+                            options={filteredPositionsnummerData}
+                            error={positionsnummerError}
+                            isOpen={showPositionsnummerDropdown}
+                            onToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
+                            onSelect={(values) => {
+                                setSelectedPositionsnummer(values);
+                            }}
+                        />
+                    </div>
+                )}
 
                 {/* Rezeptnummer and Durchgeführt von */}
                 <div className="flex flex-col xl:flex-row gap-6 lg:justify-between lg:items-center mb-10 w-full">
@@ -236,7 +415,7 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                                                             )}
                                                         </div>
                                                         {selectedEmployee === employee.employeeName && (
-                                                            <Check className="h-4 w-4 text-blue-600 ml-2 flex-shrink-0" />
+                                                            <Check className="h-4 w-4 text-blue-600 ml-2 shrink-0" />
                                                         )}
                                                     </div>
                                                 ))}
@@ -362,6 +541,10 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
                     kostenvoranschlag: kostenvoranschlag,
                     selectedEmployee: selectedEmployee,
                     selectedEmployeeId: selectedEmployeeId,
+                    selectedPositionsnummer: selectedPositionsnummer,
+                    positionsnummerAustriaData: positionsnummerAustriaData,
+                    positionsnummerItalyData: positionsnummerItalyData,
+                    billingType: billingType,
                 }}
                 onSubmit={handleOrderSubmit}
                 isLoading={isLoading}

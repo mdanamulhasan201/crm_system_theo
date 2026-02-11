@@ -27,6 +27,7 @@ interface FormData {
   employeeId?: string
   selectedVersorgungData?: any
   screenerId?: string | null
+  billingType?: 'Krankenkassa' | 'Privat'
 }
 
 interface UserInfoUpdateModalProps {
@@ -47,6 +48,20 @@ export default function WerkstattzettelModal({
 
   // Use custom hook for form state management
   const form = useWerkstattzettelForm(scanData, isOpen, formData)
+  
+  // Set default bezahlt value based on billingType from formData
+  useEffect(() => {
+    if (isOpen && formData?.billingType && !form.bezahlt) {
+      // Map billingType to bezahlt format
+      // "Krankenkassa" -> "Krankenkasse_Genehmigt" (note: "Krankenkassa" in billingType but "Krankenkasse" in bezahlt)
+      // "Privat" -> "Privat_Bezahlt"
+      const bezahltValue = formData.billingType === 'Krankenkassa' 
+        ? 'Krankenkasse_Genehmigt' 
+        : 'Privat_Bezahlt'
+      form.setBezahlt(bezahltValue)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, formData?.billingType])
 
   // Local validation error state
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
@@ -450,6 +465,7 @@ export default function WerkstattzettelModal({
               bezahlt={form.bezahlt}
               onBezahltChange={form.setBezahlt}
               paymentError={fieldErrors.bezahlt}
+              disabledPaymentType={formData?.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData?.billingType === 'Privat' ? 'Privat' : undefined}
             />
           </div>
 

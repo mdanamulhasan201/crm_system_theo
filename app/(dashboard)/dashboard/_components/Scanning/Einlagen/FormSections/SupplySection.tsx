@@ -191,18 +191,19 @@ export default function SupplySection({
                                             </p>
                                             {/* Name */}
                                             <h2 className='text-sm font-bold'>{selectedItem.name}</h2>
-                                            <p className='font-bold'>
-                                                Einlage: <span className='font-normal'>{selectedEinlage}</span>
+                                            {/* Einlage - smaller than Materialien */}
+                                            <p className='text-xs font-medium text-gray-600'>
+                                                Einlage: <span className='font-normal text-xs'>{selectedEinlage}</span>
                                             </p>
                                         </div>
                                         
-                                        {/* Diagnosis Status - at the bottom (if exists in data) */}
+                                        {/* Diagnosis Status - at the bottom (if exists in data) - smaller than Materialien */}
                                         {selectedItem.diagnosis_status && Array.isArray(selectedItem.diagnosis_status) && selectedItem.diagnosis_status.length > 0 && (
                                             <div className='flex flex-col gap-2'>
-                                                <p className='font-bold'>Diagnose:</p>
+                                                <p className='text-xs font-medium text-gray-600'>Diagnose:</p>
                                                 <div className='flex flex-wrap gap-2'>
                                                     {selectedItem.diagnosis_status.map((status: string, idx: number) => (
-                                                        <span key={idx} className='px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm'>
+                                                        <span key={idx} className='px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full text-xs'>
                                                             {status}
                                                         </span>
                                                     ))}

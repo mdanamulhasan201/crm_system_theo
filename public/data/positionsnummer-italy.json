@@ -1,0 +1,112 @@
+[
+  {
+    "id": "1",
+    "description": {
+      "positionsnummer": "06.12.03.024",
+      "title": "Einlage nach serienmäßiger Form maßgefertigt",
+      "subtitle": "plantare su misura costruito su forma di serie",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 84.10
+  },
+  {
+    "id": "2",
+    "description": {
+      "positionsnummer": "06.12.03.030",
+      "title": "Durch Abdruck modellierte Einlage mit umschließendem Fersenbett",
+      "subtitle": "plantare modellato per lievitazione, con talloniera avvolgente",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 104.00
+  },
+  {
+    "id": "3",
+    "description": {
+      "positionsnummer": "06.12.03.036",
+      "title": "Einlage, die durch Abtragung maßgefertigt modelliert wird",
+      "subtitle": "plantare modellato e scolpito su misura tramite lavorazione ad asporto",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 113.30
+  },
+  {
+    "id": "4",
+    "description": {
+      "positionsnummer": "06.12.03.042",
+      "title": "Maßeinlage auf Gipsmodell aus Leder, synthet. oder metall. Materialien",
+      "subtitle": "plantare modellato su calco di gesso o impronta dinamica o impronta su materiale espanso o CAD-CAM",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 138.40
+  },
+  {
+    "id": "5",
+    "description": {
+      "positionsnummer": "06.12.03.051",
+      "title": "Einlage modelliert aus hochwiderstandsfähigen Fasern",
+      "subtitle": "plantare modellato su calco di gesso di cuoio rinforzato, di fibra ad alta resistenza",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 145.60
+  },
+  {
+    "id": "6",
+    "description": {
+      "positionsnummer": "06.12.91.103",
+      "title": "Decksohle aus weichen und desinfizierbaren synthetischen Textilien",
+      "subtitle": "sottopiede in tessuto sintetico morbido e igienizzabile",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 1.00
+  },
+  {
+    "id": "7",
+    "description": {
+      "positionsnummer": "06.12.91.106",
+      "title": "Decksohle aus geschmeidigem, geschlossenzelligem und desinfizierbaren Elastomer",
+      "subtitle": "sottopiede in elastomero soffice a cellula chiusa e igienizzabile",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 13.50
+  },
+  {
+    "id": "8",
+    "description": {
+      "positionsnummer": "06.12.91.109",
+      "title": "Gepolsterter Ausgleich für hypometr. oder deformierten Fuß aus Kork od. Syntheti",
+      "subtitle": "compenso di riempimento per piede ipometrico o deforme in sughero o materiale sintetico",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 48.00
+  },
+  {
+    "id": "9",
+    "description": {
+      "positionsnummer": "06.12.91.112",
+      "title": "Beinverkürzungsausgleich im Fersenbereich bis 4cm",
+      "subtitle": "rialzo calcaneare fino a cm 4",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 36.00
+  },
+  {
+    "id": "10",
+    "description": {
+      "positionsnummer": "06.12.91.115",
+      "title": "erhöhte Fersenschale",
+      "subtitle": "conca talloniera",
+      "Quantità": "1,00",
+      "IVA": "4"
+    },
+    "price": 29.10
+  }
+]

@@ -1,0 +1,211 @@
+[
+  {
+    "id": "14110-00",
+
+    "description": {
+    "positionsnummer": "14110 00",
+    "title": "Zusatzposition: Rigidusfeder pro Stück"
+    },
+    "price": 21.99
+  },
+  {
+    "id": "14111-00",
+    
+    "description": {
+      "positionsnummer": "14111 00",
+      "title": " Fersenkeileinlage (Stück)"
+    },
+    "price": 29.57
+  },
+  {
+    "id": "14111-02",
+   
+    "description": {
+      "title": "Silikonfersenkissen (Stück)",
+      "positionsnummer": "14111 02"
+    },
+    "price": 12.83
+  },
+  {
+    "id": "14120-00",
+    
+    "description": {
+      "title": "Reparaturposition: Lederdecke/Paar",
+      "positionsnummer": "14120 00"
+    },
+    "price": 44.32
+  },
+  {
+    "id": "14121-00",
+    
+    "description": {
+      "positionsnummer": "14121 00",
+      "title": "Maßeinlagen (Paar) - langsohlig"
+    },
+    "price": 101.73
+  },
+  {
+    "id": "14141-00",
+    
+    "description": {
+      "positionsnummer": "14141 00",
+      "title": "Modelleinlagen (Paar) - langsohlig"
+    },
+    "price": 101.73
+  },
+  {
+    "id": "14151-00",
+    
+    "description": {
+      "positionsnummer": "14151 00",
+      "title": "Bettungseinlagen (Paar)"
+    },
+    "price": 181.52
+  },
+  {
+    "id": "14151-01",
+    
+    "description": {
+      "positionsnummer": "14151 01",
+      "title": "MINDERPREIS: ausschließlich bei Beis"
+    },
+    "price": 11.21
+  },
+  {
+    "id": "14151-02",
+    
+    "description": {
+      "positionsnummer": "14151 02",
+      "title": "Bettungseinlage pro Paar abzüglich des"
+    },
+    "price": 170.34
+  },
+  {
+    "id": "14155-01",
+    "description": {
+      "positionsnummer": "14155 01",
+      "title": "Absatzverlängerung"
+    },
+    "price": 30.57
+  },
+  {
+    "id": "14155-02",
+    "description": {
+      "positionsnummer": "14155 02",
+      "title": "Keilabsatz"
+    },
+    "price": 38.90
+  },
+  {
+    "id": "14155-03",
+    "description": {
+      "positionsnummer": "14155 03",
+      "title": "Zusätzlicher Absatzaufbau um je 1 cm"
+    },
+    "price": 15.35
+  },
+  {
+    "id": "14155-04",
+    "description": {
+      "positionsnummer": "14155 04",
+      "title": "Pufferabsatz"
+    },
+    "price": 29.92
+  },
+  {
+    "id": "14155-05",
+    "description": {
+      "positionsnummer": "14155 05",
+      "title": "Offene Rolle"
+    },
+    "price": 62.37
+  },
+  {
+    "id": "14155-06",
+    "description": {
+      "positionsnummer": "14155 06",
+      "title": "Gedeckte Rolle"
+    },
+    "price": 42.01
+  },
+  {
+    "id": "14155-07",
+    "description": {
+      "positionsnummer": "14155 07",
+      "title": "Zehenheber"
+    },
+    "price": 67.19
+  },
+  {
+    "id": "14155-08",
+    "description": {
+      "positionsnummer": "14155 08",
+      "title": "Herstellung und Einbau einer Maßeinlage"
+    },
+    "price": 67.19
+  },
+  {
+    "id": "14155-09",
+    "description": {
+      "positionsnummer": "14155 09",
+      "title": "Herstellung und Einbau einer Modelleinlage"
+    },
+    "price": 107.88
+  },
+  {
+    "id": "14155-10",
+    "description": {
+      "positionsnummer": "14155 10",
+      "title": "Absatzverbreiterung und -vorziehen"
+    },
+    "price": 54.84
+  },
+  {
+    "id": "14155-11",
+    "description": {
+      "positionsnummer": "14155 11",
+      "title": "Weiterer Absatzaufbau um je 1 cm"
+    },
+    "price": 20.38
+  },
+  {
+    "id": "14155-12",
+    "description": {
+      "positionsnummer": "14155 12",
+      "title": "Absatzerhöhung um 1 cm"
+    },
+    "price": 26.77
+  },
+  {
+    "id": "14155-13",
+    "description": {
+      "positionsnummer": "14155 13",
+      "title": "Offene Sohlenerhöhung"
+    },
+    "price": 57.35
+  },
+  {
+    "id": "14155-14",
+    "description": {
+      "positionsnummer": "14155 14",
+      "title": "Zusätzliche Offene Sohlenerhöhung"
+    },
+    "price": 29.28
+  },
+  {
+    "id": "14155-15",
+    "description": {
+      "positionsnummer": "14155 15",
+      "title": "Gedeckte Sohlenerhöhung"
+    },
+    "price": 91.69
+  },
+  {
+    "id": "14155-16",
+    "description": {
+      "positionsnummer": "14155 16",
+      "title": "Zusätzliche gedeckte Sohlenerhöhung"
+    },
+    "price": 34.46
+  }
+]
