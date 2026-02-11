@@ -1,17 +1,24 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import legs from '@/public/Kunden/leg.png'
 import { useRouter } from 'next/navigation'
-import toast from 'react-hot-toast'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+} from '@/components/ui/dialog'
 
 export default function LeistenDigitalGenerieren() {
     const router = useRouter()
-    const handleGenerate = () => {
-        toast.success('coming soon')
+    const [isDialogOpen, setIsDialogOpen] = useState(false)
 
+    const handleGenerate = () => {
+        setIsDialogOpen(true)
         // router.push('/dashboard/leistenkonfigurator')
     }
 
@@ -60,7 +67,7 @@ export default function LeistenDigitalGenerieren() {
                 </div>
 
                 {/* Right Side - Foot Graphic */}
-                <div className="flex-shrink-0  w-full lg:w-auto lg:max-w-md">
+                <div className="shrink-0  w-full lg:w-auto lg:max-w-md">
                     <div className=" w-full h-auto">
                         <div className=" z-10">
                             <Image
@@ -74,6 +81,18 @@ export default function LeistenDigitalGenerieren() {
                     </div>
                 </div>
             </div>
+
+            {/* Dialog Popup */}
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Bald verfügbar</DialogTitle>
+                        <DialogDescription>
+                            Die digitale Leistenerstellung befindet sich aktuell in Entwicklung und wird in Kürze verfügbar sein.
+                        </DialogDescription>
+                    </DialogHeader>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
