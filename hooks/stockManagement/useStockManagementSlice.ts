@@ -21,6 +21,8 @@ interface ProductFormData {
     purchase_price: number;
     selling_price: number;
     sizeQuantities: { [key: string]: SizeData };
+    image?: string;
+    imageFile?: File;
 }
 
 interface CreateProductPayload {
@@ -34,6 +36,7 @@ interface CreateProductPayload {
     purchase_price: number;
     selling_price: number;
     Status: string;
+    image?: string;
 }
 
 interface ApiProduct {
@@ -89,25 +92,43 @@ export const useStockManagementSlice = () => {
         return "In Stock";
     };
 
-    const formatProductData = (formData: ProductFormData): CreateProductPayload => {
+    const formatProductData = (formData: ProductFormData, type: string = 'rady_insole'): CreateProductPayload => {
         const minStockLevel = formData.minStockLevel || 0;
         const stockStatus = determineStockStatus(formData.sizeQuantities, minStockLevel);
 
-        // Transform sizeQuantities to convert camelCase to snake_case for backend
+        // Transform sizeQuantities based on type
         const transformedGroessenMengen: { [key: string]: any } = {};
-        Object.keys(formData.sizeQuantities).forEach(size => {
-            const sizeData = formData.sizeQuantities[size];
-            transformedGroessenMengen[size] = {
-                length: sizeData.length,
-                quantity: sizeData.quantity,
-                ...(sizeData.mindestmenge !== undefined && { mindestmenge: sizeData.mindestmenge }),
-                // Always include auto_order_limit and auto_order_quantity, even if undefined
-                auto_order_limit: sizeData.autoOrderLimit !== undefined ? sizeData.autoOrderLimit : null,
-                auto_order_quantity: sizeData.orderQuantity !== undefined ? sizeData.orderQuantity : null
-            };
-        });
+        
+        if (type === 'milling_block') {
+            // For milling_block: {"1": {"quantity": 5, "mindestmenge": 3}, "2": {...}, "3": {...}}
+            Object.keys(formData.sizeQuantities).forEach(size => {
+                const sizeData = formData.sizeQuantities[size];
+                // Extract numeric part from "Size 1", "Size 2", etc. or use as-is if already "1", "2", "3"
+                const sizeKey = size.replace(/^Size\s+/i, '');
+                transformedGroessenMengen[sizeKey] = {
+                    quantity: sizeData.quantity,
+                    ...(sizeData.mindestmenge !== undefined && { mindestmenge: sizeData.mindestmenge }),
+                    // Always include auto_order_limit and auto_order_quantity, even if undefined
+                    auto_order_limit: sizeData.autoOrderLimit !== undefined ? sizeData.autoOrderLimit : null,
+                    auto_order_quantity: sizeData.orderQuantity !== undefined ? sizeData.orderQuantity : null
+                };
+            });
+        } else {
+            // For rady_insole: include length field
+            Object.keys(formData.sizeQuantities).forEach(size => {
+                const sizeData = formData.sizeQuantities[size];
+                transformedGroessenMengen[size] = {
+                    length: sizeData.length,
+                    quantity: sizeData.quantity,
+                    ...(sizeData.mindestmenge !== undefined && { mindestmenge: sizeData.mindestmenge }),
+                    // Always include auto_order_limit and auto_order_quantity, even if undefined
+                    auto_order_limit: sizeData.autoOrderLimit !== undefined ? sizeData.autoOrderLimit : null,
+                    auto_order_quantity: sizeData.orderQuantity !== undefined ? sizeData.orderQuantity : null
+                };
+            });
+        }
 
-        return {
+        const payload: CreateProductPayload = {
             produktname: formData.Produktname,
             hersteller: formData.Hersteller,
             artikelnummer: formData.Produktkürzel,
@@ -119,29 +140,58 @@ export const useStockManagementSlice = () => {
             selling_price: formData.selling_price,
             Status: stockStatus
         };
+
+        // Add image if provided (base64 string - only if no imageFile)
+        if (!formData.imageFile && formData.image && formData.image.trim() !== '') {
+            payload.image = formData.image;
+        }
+
+        return payload;
     };
 
-    const createNewProduct = async (productData: ProductFormData) => {
+    const createNewProduct = async (productData: ProductFormData, type: string = 'rady_insole') => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const formattedData = formatProductData(productData);
-            // console.log('Creating product with data:', formattedData);
-
-            const response = await createProduct(formattedData);
-            // console.log('Product created successfully:', response);
-
-            // Return the complete response including success status and data
-            return {
-                success: response.success,
-                message: response.message || 'Product created successfully',
-                data: response.data
-            };
+            // If imageFile exists, use FormData, otherwise use JSON
+            if (productData.imageFile) {
+                const formData = new FormData();
+                const formattedData = formatProductData(productData, type);
+                
+                // Append all fields to FormData
+                Object.keys(formattedData).forEach(key => {
+                    if (key !== 'image' && formattedData[key as keyof typeof formattedData] !== undefined) {
+                        const value = formattedData[key as keyof typeof formattedData];
+                        if (typeof value === 'object' && value !== null) {
+                            formData.append(key, JSON.stringify(value));
+                        } else {
+                            formData.append(key, String(value));
+                        }
+                    }
+                });
+                
+                // Append image file
+                formData.append('image', productData.imageFile);
+                
+                const response = await createProduct(formData, type);
+                return {
+                    success: response.success,
+                    message: response.message || 'Product created successfully',
+                    data: response.data
+                };
+            } else {
+                const formattedData = formatProductData(productData, type);
+                const response = await createProduct(formattedData, type);
+                return {
+                    success: response.success,
+                    message: response.message || 'Product created successfully',
+                    data: response.data
+                };
+            }
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message || 'Failed to create product';
             setError(errorMessage);
-            // console.error('Error creating product:', err);
             throw err;
         } finally {
             setIsLoading(false);

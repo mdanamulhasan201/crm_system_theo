@@ -119,12 +119,14 @@ export default function EditMillingBlock({
         setIsLoading(true)
         try {
             // Prepare groessenMengen in the format expected by API
-            // For milling blocks, sizes are "Size 1", "Size 2", "Size 3"
+            // For milling blocks, convert "Size 1", "Size 2", "Size 3" to "1", "2", "3"
             const groessenMengen: { [key: string]: any } = {}
             sizeColumns.forEach(size => {
                 const sizeData = sizeQuantities[size]
                 if (sizeData) {
-                    groessenMengen[size] = {
+                    // Extract numeric part from "Size 1" -> "1" or use as-is if already "1"
+                    const sizeKey = size.replace(/^Size\s+/i, '')
+                    groessenMengen[sizeKey] = {
                         quantity: sizeData.quantity || 0,
                         ...(sizeData.mindestmenge !== undefined && { mindestmenge: sizeData.mindestmenge }),
                         auto_order_limit: sizeData.autoOrderLimit !== undefined ? sizeData.autoOrderLimit : null,

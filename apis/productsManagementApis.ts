@@ -1,9 +1,17 @@
 import axiosClient from "@/lib/axiosClient";
 
 // create product
-export const createProduct = async (productData: any) => {
+export const createProduct = async (productData: any, type: string) => {
     try {
-        const response = await axiosClient.post('/store/create', productData);
+        const config = productData instanceof FormData 
+            ? {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+            : {};
+        
+        const response = await axiosClient.post(`/store/create?type=${type}`, productData, config);
         return response.data;
     } catch (error) {
         throw error;

@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import LagerChart from '@/components/LagerChart/LagerChart'
 import ProductManagementTable from './ProductManagementTable'
 import DeleteConfirmModal from './DeleteConfirmModal'
+import AddProductTypeModal from './AddProductTypeModal'
 
 import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
@@ -105,6 +106,9 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
     const [deleteModalOpen, setDeleteModalOpen] = useState(false)
     const [productToDelete, setProductToDelete] = useState<Product | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
+
+    // Add product modal state
+    const [addProductModalOpen, setAddProductModalOpen] = useState(false)
 
 
     // Convert API product to local format
@@ -281,24 +285,34 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
             </div>
 
             {/* Section Title */}
-            <div className='flex items-center justify-between mb-4'>
+            <div className='flex flex-col lg:flex-row gap-4 items-center justify-between mb-4'>
 
                 <div>
-                 
+
                     {pagination && (
                         <p className="text-sm text-gray-600 mt-1">
                             {pagination.totalItems} Produkte gefunden
                         </p>
                     )}
                 </div>
-                {/* Buy Now Button */}
-                <Button
-                    onClick={() => router.push(`/dashboard/buy-storage?type=${type}`)}
-                    disabled={isLoadingProducts}
-                    className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
-                >
-                    Lagerplätze kaufen
-                </Button>
+
+                <div className='flex flex-col sm:flex-row items-center gap-4'>
+                    {/* add manual store */}
+                    <Button
+                        onClick={() => setAddProductModalOpen(true)}
+                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
+                    >
+                        Manuelles Lager hinzufügen
+                    </Button>
+                    {/* Buy Now Button */}
+                    <Button
+                        onClick={() => router.push(`/dashboard/buy-storage?type=${type}`)}
+                        disabled={isLoadingProducts}
+                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
+                    >
+                        FeetF1rst Sortiment
+                    </Button>
+                </div>
 
             </div>
 
@@ -369,7 +383,7 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
                                     {(() => {
                                         const pages: (number | string)[] = [];
                                         const maxVisiblePages = 5;
-                                        
+
                                         if (totalPages <= maxVisiblePages) {
                                             // Show all pages if total is less than max
                                             for (let i = 1; i <= totalPages; i++) {
@@ -378,29 +392,29 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
                                         } else {
                                             // Show first page
                                             pages.push(1);
-                                            
+
                                             if (currentPage > 3) {
                                                 pages.push('...');
                                             }
-                                            
+
                                             // Show pages around current page
                                             const start = Math.max(2, currentPage - 1);
                                             const end = Math.min(totalPages - 1, currentPage + 1);
-                                            
+
                                             for (let i = start; i <= end; i++) {
                                                 if (i !== 1 && i !== totalPages) {
                                                     pages.push(i);
                                                 }
                                             }
-                                            
+
                                             if (currentPage < totalPages - 2) {
                                                 pages.push('...');
                                             }
-                                            
+
                                             // Show last page
                                             pages.push(totalPages);
                                         }
-                                        
+
                                         return pages.map((page, index) => {
                                             if (page === '...') {
                                                 return (
@@ -472,6 +486,24 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
                     <PerformerData />
                 </div>
             </div>
+
+            {/* Add Product Modal */}
+            <AddProductTypeModal
+                isOpen={addProductModalOpen}
+                onClose={() => setAddProductModalOpen(false)}
+                onSuccess={async () => {
+                    setAddProductModalOpen(false)
+                    // Refresh products list
+                    try {
+                        const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
+                        const convertedProducts = apiProducts.map(convertApiProductToLocal)
+                        setProductsData(convertedProducts)
+                    } catch (err) {
+                        console.error('Failed to refresh products:', err)
+                    }
+                }}
+                type={type}
+            />
 
         </div>
     )

@@ -10,6 +10,7 @@ import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagem
 import useDebounce from '@/hooks/useDebounce'
 import { deleteStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
+import AddProductTypeModal from '../AddProductTypeModal'
 
 interface MillingBlock {
     id: string
@@ -40,6 +41,7 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
     const debouncedSearch = useDebounce(searchQuery, 500)
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
+    const [addProductModalOpen, setAddProductModalOpen] = useState(false)
 
     // Helper to check if product has low stock
     const hasLowStock = (product: MillingBlock): boolean => {
@@ -68,7 +70,7 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
         setProducts(prev =>
             prev.map(product => (product.id === updatedProduct.id ? updatedProduct : product))
         );
-        
+
         // Refresh data from API to ensure consistency
         try {
             const apiProducts = await refreshProducts(currentPage, itemsPerPage, debouncedSearch, type)
@@ -84,7 +86,7 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
         try {
             await deleteStorage(product.id);
             toast.success(`"${product.Produktname}" wurde erfolgreich gelöscht!`);
-            
+
             // Remove deleted product locally
             setProducts(prev => prev.filter(p => p.id !== product.id));
         } catch (err: any) {
@@ -111,7 +113,7 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
     const convertApiProductToLocal = (apiProduct: any): MillingBlock => {
         // Normalize groessenMengen keys for milling_block type
         const productType = apiProduct.type || type
-        const normalizedGroessenMengen = typeof apiProduct.groessenMengen === 'object' 
+        const normalizedGroessenMengen = typeof apiProduct.groessenMengen === 'object'
             ? normalizeSizeKeys(apiProduct.groessenMengen, productType)
             : apiProduct.groessenMengen || {}
 
@@ -180,20 +182,29 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
             </div>
 
             {/* Section Title */}
-            <div className='flex items-center justify-between mb-4'>
+            <div className='flex flex-col lg:flex-row gap-4 md:gap-0 items-center justify-between mb-4'>
                 <div>
                     <p className="text-sm text-gray-600 mt-1">
                         {filteredProducts.length} Produkte gefunden
                     </p>
                 </div>
-                {/* Buy Now Button */}
-                <Button
-                    onClick={() => router.push(`/dashboard/buy-storage?type=${type}`)}
-                    disabled={isLoadingProducts}
-                    className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
-                >
-                    Lagerplätze kaufen
-                </Button>
+                <div className='flex flex-col sm:flex-row items-center gap-4'>
+                    {/* add manual store */}
+                    <Button
+                        onClick={() => setAddProductModalOpen(true)}
+                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
+                    >
+                        Manuelles Lager hinzufügen
+                    </Button>
+                    {/* Buy Now Button */}
+                    <Button
+                        onClick={() => router.push(`/dashboard/buy-storage?type=${type}`)}
+                        disabled={isLoadingProducts}
+                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
+                    >
+                        FeetF1rst Sortiment
+                    </Button>
+                </div>
             </div>
 
             <MillingBlocksTable
@@ -205,6 +216,24 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
                 onUpdateProduct={handleUpdateProduct}
                 onDeleteProduct={handleDeleteProduct}
                 isLoading={isLoadingProducts}
+            />
+
+            {/* Add Product Modal */}
+            <AddProductTypeModal
+                isOpen={addProductModalOpen}
+                onClose={() => setAddProductModalOpen(false)}
+                onSuccess={async () => {
+                    setAddProductModalOpen(false)
+                    // Refresh products list
+                    try {
+                        const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
+                        const convertedProducts = apiProducts.map(convertApiProductToLocal)
+                        setProducts(convertedProducts)
+                    } catch (err) {
+                        console.error('Failed to refresh products:', err)
+                    }
+                }}
+                type={type}
             />
         </div>
     )
