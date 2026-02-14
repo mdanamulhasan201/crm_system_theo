@@ -21,6 +21,7 @@ interface EditableImageCanvasProps {
     brushColor: string
     isZoomMode?: boolean
     onImageDataReady?: (getImageData: () => Promise<Blob | null>) => void
+    onOpenCropModal?: () => void
 }
 
 export default function EditableImageCanvas({
@@ -33,7 +34,8 @@ export default function EditableImageCanvas({
     brushSize,
     brushColor,
     isZoomMode = false,
-    onImageDataReady
+    onImageDataReady,
+    onOpenCropModal
 }: EditableImageCanvasProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
     const imageContainerRef = useRef<HTMLDivElement>(null)
@@ -207,9 +209,9 @@ export default function EditableImageCanvas({
                             <span>Löschen</span>
                         </button>
                         <button
-                            onClick={downloadEditedImage}
+                            onClick={onOpenCropModal || downloadEditedImage}
                             className="px-4 py-2 cursor-pointer text-sm bg-[#4A8A5F] hover:bg-[#4A8A5F]/80 text-white rounded-lg transition-all flex items-center gap-2 shadow-sm hover:shadow-md"
-                            title="Bearbeitetes Bild herunterladen"
+                            title={onOpenCropModal ? "Bild zuschneiden und herunterladen" : "Bearbeitetes Bild herunterladen"}
                         >
                             <TfiDownload />
                             <span>Herunterladen</span>

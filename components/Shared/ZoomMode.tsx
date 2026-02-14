@@ -1,11 +1,13 @@
 'use client'
 import { useState, useRef } from 'react'
 import { FaSave, FaPrint } from 'react-icons/fa'
+import { TfiDownload } from 'react-icons/tfi'
 import { ScanData } from '@/types/scan'
 import { useAuth } from '@/contexts/AuthContext'
 import { generateFeetPdf } from '@/lib/FootPdfGenerate'
 import { updateSingleScannerFile } from '@/apis/customerApis'
 import { EditableImageCanvas, DrawingToolbar } from './Drawing'
+import ImageCropModal from './ImageCropModal'
 import toast from 'react-hot-toast'
 
 interface ZoomModeProps {
@@ -30,6 +32,14 @@ export default function ZoomMode({
     const { user } = useAuth()
     const [isDownloading, setIsDownloading] = useState(false)
     const [isSaving, setIsSaving] = useState(false)
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false)
+    const [cropModalLeftImage, setCropModalLeftImage] = useState<string | null>(null)
+    const [cropModalRightImage, setCropModalRightImage] = useState<string | null>(null)
+    const [singleImageCropModal, setSingleImageCropModal] = useState<{ isOpen: boolean; imageUrl: string | null; side: 'left' | 'right' | null }>({
+        isOpen: false,
+        imageUrl: null,
+        side: null
+    })
     const [drawingMode, setDrawingMode] = useState<'pen' | 'eraser'>('pen')
     const [brushSize, setBrushSize] = useState(3)
     const [brushColor, setBrushColor] = useState('#000000')
@@ -131,6 +141,125 @@ export default function ZoomMode({
             }
             reader.readAsDataURL(blob)
         })
+    }
+
+    // Open crop modal with edited images
+    const handleOpenCropModal = async () => {
+        try {
+            // Get edited images from both canvases
+            const rightFootBlob = rightFootImageDataRef.current
+                ? await rightFootImageDataRef.current()
+                : null
+            const leftFootBlob = leftFootImageDataRef.current
+                ? await leftFootImageDataRef.current()
+                : null
+
+            if (!rightFootBlob || !leftFootBlob) {
+                toast.error('Bearbeitete Bilder konnten nicht abgerufen werden. Bitte versuchen Sie es erneut.')
+                return
+            }
+
+            // Convert blobs to data URLs for crop modal
+            const rightImageDataUrl = await blobToDataUrl(rightFootBlob)
+            const leftImageDataUrl = await blobToDataUrl(leftFootBlob)
+
+            setCropModalLeftImage(leftImageDataUrl)
+            setCropModalRightImage(rightImageDataUrl)
+            setIsCropModalOpen(true)
+        } catch (error) {
+            console.error('Error opening crop modal:', error)
+            toast.error('Fehler beim Öffnen des Zuschnitt-Dialogs.')
+        }
+    }
+
+    // Open single image crop modal
+    const handleOpenSingleImageCropModal = async (side: 'left' | 'right') => {
+        try {
+            const imageDataRef = side === 'left' ? leftFootImageDataRef : rightFootImageDataRef
+            const blob = imageDataRef.current ? await imageDataRef.current() : null
+
+            if (!blob) {
+                toast.error('Bearbeitetes Bild konnte nicht abgerufen werden. Bitte versuchen Sie es erneut.')
+                return
+            }
+
+            // Convert blob to data URL for crop modal
+            const imageDataUrl = await blobToDataUrl(blob)
+
+            setSingleImageCropModal({
+                isOpen: true,
+                imageUrl: imageDataUrl,
+                side
+            })
+        } catch (error) {
+            console.error('Error opening single image crop modal:', error)
+            toast.error('Fehler beim Öffnen des Zuschnitt-Dialogs.')
+        }
+    }
+
+    // Handle download from crop modal
+    const handleCropModalDownload = async (leftCroppedBlob: Blob | null, rightCroppedBlob: Blob | null) => {
+        try {
+            if (!leftCroppedBlob && !rightCroppedBlob) {
+                toast.error('Keine Bilder zum Herunterladen verfügbar.')
+                return
+            }
+
+            // Download left image if available
+            if (leftCroppedBlob) {
+                const leftUrl = URL.createObjectURL(leftCroppedBlob)
+                const leftA = document.createElement('a')
+                leftA.href = leftUrl
+                leftA.download = `foot_scan_left_cropped_${(scanData as any)?.customerNumber || scanData.id}.png`
+                document.body.appendChild(leftA)
+                leftA.click()
+                document.body.removeChild(leftA)
+                URL.revokeObjectURL(leftUrl)
+            }
+
+            // Download right image if available
+            if (rightCroppedBlob) {
+                const rightUrl = URL.createObjectURL(rightCroppedBlob)
+                const rightA = document.createElement('a')
+                rightA.href = rightUrl
+                rightA.download = `foot_scan_right_cropped_${(scanData as any)?.customerNumber || scanData.id}.png`
+                document.body.appendChild(rightA)
+                rightA.click()
+                document.body.removeChild(rightA)
+                URL.revokeObjectURL(rightUrl)
+            }
+
+            toast.success('Zugeschnittene Bilder wurden heruntergeladen!')
+        } catch (error) {
+            console.error('Error downloading cropped images:', error)
+            toast.error('Fehler beim Herunterladen der Bilder.')
+        }
+    }
+
+    // Handle download from single image crop modal
+    const handleSingleImageCropModalDownload = async (leftCroppedBlob: Blob | null, rightCroppedBlob: Blob | null) => {
+        try {
+            const blob = singleImageCropModal.side === 'left' ? leftCroppedBlob : rightCroppedBlob
+            if (!blob) {
+                toast.error('Kein Bild zum Herunterladen verfügbar.')
+                return
+            }
+
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            const sideLabel = singleImageCropModal.side === 'left' ? 'left' : 'right'
+            a.download = `foot_scan_${sideLabel}_cropped_${(scanData as any)?.customerNumber || scanData.id}.png`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+
+            toast.success('Zugeschnittenes Bild wurde heruntergeladen!')
+        } catch (error) {
+            console.error('Error downloading cropped image:', error)
+            toast.error('Fehler beim Herunterladen des Bildes.')
+        }
     }
 
     // Print/Download PDF with edited images
@@ -267,12 +396,12 @@ export default function ZoomMode({
         <div className="relative w-full bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg border border-gray-200 shadow-lg my-4">
 
             {/* Modern Drawing Toolbar */}
-            <div className="sticky  z-10 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm rounded-t-lg">
+            <div className="sticky z-10 bg-white/95 backdrop-blur-md border-b border-gray-200/50 shadow-sm rounded-t-lg">
 
                 <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4 py-2 sm:py-3 lg:py-4">
-                        {/* Drawing Toolbar - Responsive */}
-                        <div className="w-full sm:w-auto flex items-center justify-center sm:justify-start">
+                    <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 py-2 sm:py-2.5 lg:py-3 overflow-x-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 #f1f5f9' }}>
+                        {/* Drawing Toolbar - All in one line */}
+                        <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
                             <DrawingToolbar
                                 drawingMode={drawingMode}
                                 setDrawingMode={setDrawingMode}
@@ -284,8 +413,24 @@ export default function ZoomMode({
                             />
                         </div>
                         
-                        {/* Action Buttons - Smart responsive layout */}
-                        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-center sm:justify-end">
+                        {/* Action Buttons - All in one line */}
+                        <div className="flex items-center gap-2 sm:gap-2.5 lg:gap-3 shrink-0">
+                            {/* Download with Crop Button */}
+                            <button
+                                onClick={handleOpenCropModal}
+                                disabled={!selectedScanData}
+                                className={`px-3 py-2 cursor-pointer rounded-lg transition-all flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm hover:shadow transform  ${
+                                    !selectedScanData
+                                        ? 'bg-gray-400 cursor-not-allowed opacity-60'
+                                        : 'border border-gray-300 bg-white hover:bg-gray-100 text-gray-700'
+                                }`}
+                                title="Bilder zuschneiden und herunterladen"
+                            >
+                                <TfiDownload className="text-sm sm:text-base shrink-0" />
+                                <span className="hidden sm:inline lg:hidden">Herunterladen</span>
+                                <span className="hidden lg:inline">Herunterladen</span>
+                            </button>
+                            
                             {/* Print/Download PDF Button */}
                             <button
                                 onClick={handlePrintEditedImages}
@@ -353,7 +498,7 @@ export default function ZoomMode({
                                     key={`zoom-left-${leftImage}-${selectedScanData?.updatedAt || scanData.updatedAt}-${imageRefreshKey}`}
                                     imageUrl={leftImage}
                                     alt="Left foot scan - Plantaransicht"
-                                    title=""
+                                    title="Linker Fuß"
                                     downloadFileName={`foot_scan_left_${(scanData as any)?.customerNumber || scanData.id}`}
                                     drawingMode={drawingMode}
                                     brushSize={brushSize}
@@ -362,6 +507,7 @@ export default function ZoomMode({
                                     onImageDataReady={(getImageData) => {
                                         leftFootImageDataRef.current = getImageData
                                     }}
+                                    onOpenCropModal={() => handleOpenSingleImageCropModal('left')}
                                 />
                             </div>
                         </div>
@@ -375,7 +521,7 @@ export default function ZoomMode({
                                     key={`zoom-right-${rightImage}-${selectedScanData?.updatedAt || scanData.updatedAt}-${imageRefreshKey}`}
                                     imageUrl={rightImage}
                                     alt="Right foot scan - Plantaransicht"
-                                    title=""
+                                    title="Rechter Fuß"
                                     downloadFileName={`foot_scan_right_${(scanData as any)?.customerNumber || scanData.id}`}
                                     drawingMode={drawingMode}
                                     brushSize={brushSize}
@@ -384,6 +530,7 @@ export default function ZoomMode({
                                     onImageDataReady={(getImageData) => {
                                         rightFootImageDataRef.current = getImageData
                                     }}
+                                    onOpenCropModal={() => handleOpenSingleImageCropModal('right')}
                                 />
                             </div>
                         </div>
@@ -391,6 +538,34 @@ export default function ZoomMode({
                 </div>
 
             </div>
+
+            {/* Image Crop Modal - Both Images */}
+            <ImageCropModal
+                isOpen={isCropModalOpen}
+                onClose={() => {
+                    setIsCropModalOpen(false)
+                    setCropModalLeftImage(null)
+                    setCropModalRightImage(null)
+                }}
+                leftImageUrl={cropModalLeftImage}
+                rightImageUrl={cropModalRightImage}
+                onDownload={handleCropModalDownload}
+                customerNumber={(scanData as any)?.customerNumber || scanData.id}
+            />
+
+            {/* Single Image Crop Modal */}
+            <ImageCropModal
+                isOpen={singleImageCropModal.isOpen}
+                onClose={() => {
+                    setSingleImageCropModal({ isOpen: false, imageUrl: null, side: null })
+                }}
+                leftImageUrl={singleImageCropModal.side === 'left' ? singleImageCropModal.imageUrl : null}
+                rightImageUrl={singleImageCropModal.side === 'right' ? singleImageCropModal.imageUrl : null}
+                onDownload={handleSingleImageCropModalDownload}
+                customerNumber={(scanData as any)?.customerNumber || scanData.id}
+                singleImageMode={singleImageCropModal.side}
+                singleImageLabel={singleImageCropModal.side === 'left' ? 'Linker Fuß' : 'Rechter Fuß'}
+            />
         </div>
     )
 }
