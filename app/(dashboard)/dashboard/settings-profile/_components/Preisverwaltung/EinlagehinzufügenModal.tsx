@@ -219,7 +219,7 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                             <div className="bg-gray-100 rounded-[5px] p-4 space-y-3">
                                 <div className="flex items-center gap-2">
                                     <label className="block font-bold text-sm text-black uppercase whitespace-nowrap">
-                                        Preisberechnung
+                                    MwSt.
                                     </label>
                                     <Select value={vatPercentage} onValueChange={setVatPercentage}>
                                         <SelectTrigger className="w-[100px] border-gray-300 rounded-[5px] bg-white">

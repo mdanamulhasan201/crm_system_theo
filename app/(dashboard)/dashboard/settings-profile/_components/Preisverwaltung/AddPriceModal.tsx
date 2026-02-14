@@ -44,7 +44,7 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
         }
 
         const price = parseFloat(grossPrice);
-        if (!price || price <= 0) {
+        if (isNaN(price) || price < 0) {
             toast.error("Bitte geben Sie einen gültigen Preis ein.");
             return;
         }
@@ -81,7 +81,7 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
                     {/* Price Calculation Section */}
                     <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
                         <div className="flex items-center gap-3">
-                            <Label className="text-sm font-medium">Preisberechnung</Label>
+                            <Label className="text-sm font-medium">MwSt.</Label>
                             <Select value={taxRate} onValueChange={setTaxRate}>
                                 <SelectTrigger className="w-24">
                                     <SelectValue />
