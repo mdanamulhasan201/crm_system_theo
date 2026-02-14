@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUpload from "./ImageUplaod";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface EinlagehinzufügenModalProps {
     open: boolean;
@@ -17,11 +18,103 @@ interface EinlagehinzufügenModalProps {
 
 const VAT_OPTIONS = ["0", "7", "10", "19", "20", "22"];
 
+interface TaxRate {
+    id: string;
+    name: string;
+    rate: number;
+    description: string;
+    isDefault: boolean;
+}
+
+// Tax rates configuration by country
+const getTaxRatesByCountry = (country: string | null | undefined): TaxRate[] | null => {
+    if (!country) return null;
+
+    // Germany (Deutschland)
+    if (country.includes('Deutschland') || country.includes('Germany') || country.includes('(DE)')) {
+        return [
+            {
+                id: '1',
+                name: 'Standard VAT',
+                rate: 19,
+                description: 'Standard German VAT rate',
+                isDefault: true
+            },
+            {
+                id: '2',
+                name: 'Reduced VAT',
+                rate: 7,
+                description: 'Reduced VAT rate for specific goods',
+                isDefault: false
+            },
+            {
+                id: '3',
+                name: 'Tax Free',
+                rate: 0,
+                description: 'No VAT applied',
+                isDefault: false
+            }
+        ];
+    }
+
+    // Austria (Österreich)
+    if (country.includes('Österreich') || country.includes('Austria') || country.includes('(AT)')) {
+        return [
+            {
+                id: '1',
+                name: 'Umsatzsteuer (USt)',
+                rate: 20,
+                description: 'Normalsteuersatz',
+                isDefault: true
+            }
+        ];
+    }
+
+    // Italy (Italien)
+    if (country.includes('Italien') || country.includes('Italy') || country.includes('(IT)')) {
+        return [
+            {
+                id: '1',
+                name: 'Mehrwertsteuer (IVA)',
+                rate: 22,
+                description: 'Standard',
+                isDefault: true
+            },
+            {
+                id: '2',
+                name: 'Ermäßigt',
+                rate: 10,
+                description: 'Ermäßigt',
+                isDefault: false
+            },
+            {
+                id: '3',
+                name: 'Stark ermäßigt',
+                rate: 4,
+                description: 'Stark ermäßigt',
+                isDefault: false
+            }
+        ];
+    }
+
+    // Country not configured
+    return null;
+};
+
 export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, editingInsole, isLoading = false }: EinlagehinzufügenModalProps) {
+    const { user } = useAuth();
+    const vatCountry = user?.accountInfo?.vat_country;
+    
+    // Get VAT rates based on country for bottom dropdown
+    const taxRates = getTaxRatesByCountry(vatCountry);
+    const countryWiseVatOptions = taxRates ? taxRates.map(rate => rate.rate.toString()) : VAT_OPTIONS;
+    const defaultCountryVat = taxRates?.find(rate => rate.isDefault)?.rate.toString() || "20";
+    
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     const [priceGross, setPriceGross] = useState("");
-    const [vatPercentage, setVatPercentage] = useState("20");
+    const [vatPercentageMain, setVatPercentageMain] = useState("20"); // Top dropdown
+    const [vatPercentageCountry, setVatPercentageCountry] = useState(defaultCountryVat); // Bottom dropdown (country-wise)
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [nameError, setNameError] = useState("");
@@ -48,7 +141,15 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
         };
     };
 
-    const prices = calculatePrices(priceGross, vatPercentage);
+    // Use country-wise VAT for calculation
+    const prices = calculatePrices(priceGross, vatPercentageCountry);
+
+    // Update country-wise VAT when country changes
+    useEffect(() => {
+        if (defaultCountryVat) {
+            setVatPercentageCountry(defaultCountryVat);
+        }
+    }, [defaultCountryVat]);
 
     // Update form when editingInsole changes
     useEffect(() => {
@@ -57,7 +158,8 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
             setName("");
             setDescription("");
             setPriceGross("");
-            setVatPercentage("20");
+            setVatPercentageMain("20");
+            setVatPercentageCountry(defaultCountryVat);
             setImagePreview(null);
             setImageFile(null);
             setNameError("");
@@ -69,7 +171,8 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
             setName(editingInsole.name);
             setDescription(editingInsole.description || "");
             setPriceGross(editingInsole.price.toString());
-            setVatPercentage("20"); // Default VAT when editing
+            setVatPercentageMain("20"); // Default VAT when editing
+            setVatPercentageCountry(defaultCountryVat);
             const imageUrl = editingInsole.image;
             if (imageUrl && (imageUrl.startsWith('data:') || imageUrl.startsWith('http') || imageUrl.startsWith('https'))) {
                 setImagePreview(imageUrl);
@@ -82,13 +185,14 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
             setName("");
             setDescription("");
             setPriceGross("");
-            setVatPercentage("20");
+            setVatPercentageMain("20");
+            setVatPercentageCountry(defaultCountryVat);
             setImagePreview(null);
             setImageFile(null);
             setNameError("");
             setPriceError("");
         }
-    }, [editingInsole, open]);
+    }, [editingInsole, open, defaultCountryVat]);
 
     const handleImageChange = (preview: string | null, file: File | null) => {
         setImagePreview(preview);
@@ -145,7 +249,8 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                 setName("");
                 setDescription("");
                 setPriceGross("");
-                setVatPercentage("20");
+                setVatPercentageMain("20");
+                setVatPercentageCountry(defaultCountryVat);
                 setImagePreview(null);
                 setImageFile(null);
                 setNameError("");
@@ -219,9 +324,9 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                             <div className="bg-gray-100 rounded-[5px] p-4 space-y-3">
                                 <div className="flex items-center gap-2">
                                     <label className="block font-bold text-sm text-black uppercase whitespace-nowrap">
-                                    MwSt.
+                                    MwSt. main
                                     </label>
-                                    <Select value={vatPercentage} onValueChange={setVatPercentage}>
+                                    <Select value={vatPercentageMain} onValueChange={setVatPercentageMain}>
                                         <SelectTrigger className="w-[100px] border-gray-300 rounded-[5px] bg-white">
                                             <SelectValue />
                                         </SelectTrigger>
@@ -275,11 +380,25 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                                     </div>
                                 </div>
 
-                                {/* MwSt. */}
+                                {/* MwSt. country wise */}
                                 <div>
-                                    <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                        MwSt. ({vatPercentage}%)
-                                    </label>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <label className="block font-bold text-sm text-black uppercase whitespace-nowrap">
+                                            MwSt.
+                                        </label>
+                                        <Select value={vatPercentageCountry} onValueChange={setVatPercentageCountry}>
+                                            <SelectTrigger className="w-[100px] border-gray-300 rounded-[5px] bg-white">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {countryWiseVatOptions.map((vat) => (
+                                                    <SelectItem key={vat} value={vat} className="cursor-pointer">
+                                                        {vat}%
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <Input
                                             type="text"
