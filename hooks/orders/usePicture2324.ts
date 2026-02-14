@@ -21,6 +21,8 @@ export interface Picture2324Data {
     versorgung?: string;
     versorgung_note?: string;
     uberzug?: string;
+    createdAt?: string;
+    ausführliche_diagnose?: string;
 }
 
 export interface Picture2324Response {

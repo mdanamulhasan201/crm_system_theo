@@ -24,6 +24,7 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
     const [stlUrl, setStlUrl] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
 
     // Use the existing hook for customer data management with date filtering
     const { customer: currentScanData, availableDates, updateCustomer, refreshCustomer, isUpdating, error } = useSingleCustomer(scanData.id, selectedDate);
@@ -161,6 +162,7 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
             const success = await updateCustomer(editableData);
             if (success) {
                 setOriginalData(editableData);
+                setIsEditing(false); // Exit edit mode after successful save
                 toast.success('Scan data updated successfully!');
             } else {
                 toast.error('Failed to save changes');
@@ -258,6 +260,8 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                         defaultSelectedDate={selectedDate || null}
                         onZoomChange={setIsZoomed}
                         onImageSave={handleImageSave}
+                        onEditStateChange={setIsEditing}
+                        externalIsEditing={isEditing}
                     >
                         {/* Additional content for the scan data section */}
                         {isChanged && (

@@ -29,9 +29,9 @@ export default function ScanPictureModal({
 
     const materials = data?.material
         ? data.material
-              .split(',')
-              .map((m) => m.trim())
-              .filter((m) => m.length > 0)
+            .split(',')
+            .map((m) => m.trim())
+            .filter((m) => m.length > 0)
         : [];
 
     const hasAnyImage = !!(data?.picture_23 || data?.picture_24);
@@ -58,13 +58,13 @@ export default function ScanPictureModal({
                 'November',
                 'Dezember',
             ];
-            
+
             const day = String(date.getDate()).padStart(2, '0');
             const month = months[date.getMonth()];
             const year = date.getFullYear();
             const hours = String(date.getHours()).padStart(2, '0');
             const minutes = String(date.getMinutes()).padStart(2, '0');
-            
+
             return `${day}. ${month} ${year}, ${hours}:${minutes}`;
         } catch {
             return dateString;
@@ -103,10 +103,12 @@ export default function ScanPictureModal({
             <DialogContent className="sm:max-w-6xl w-full max-w-[95vw] max-h-[95vh] overflow-hidden p-0 gap-0 shadow-2xl">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-200 bg-[#61A175] flex items-center justify-between">
-                    <DialogTitle className="text-lg font-semibold text-white">
-                        Versorgung{orderNumber ? ` – ${orderNumber}` : ''}
-                        {customerName ? ` – ${customerName}` : ''}
-                    </DialogTitle>
+                    <div className="flex flex-col">
+                        <DialogTitle className="text-lg font-semibold text-white">
+                            Versorgung{orderNumber ? ` – ${orderNumber}` : ''}
+                            {customerName ? ` – ${customerName}` : ''}
+                        </DialogTitle>
+                    </div>
                 </div>
 
                 {/* Content */}
@@ -146,7 +148,7 @@ export default function ScanPictureModal({
                                                 height={0}
                                                 sizes="100vw"
                                                 className="w-full max-w-[30vh] h-auto rounded-xl transition-transform duration-300"
-                                             
+
                                                 onError={(e) => {
                                                     console.error('Image failed to load:', currentImage);
                                                     const target = e.currentTarget;
@@ -194,11 +196,10 @@ export default function ScanPictureModal({
                                         <Button
                                             onClick={() => setSelectedFoot('left')}
                                             variant={selectedFoot === 'left' ? 'default' : 'outline'}
-                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${
-                                                selectedFoot === 'left'
-                                                    ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
-                                                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
-                                            } ${!data?.picture_23 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${selectedFoot === 'left'
+                                                ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
+                                                : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
+                                                } ${!data?.picture_23 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             disabled={!data?.picture_23}
                                         >
                                             <span className="mr-2 text-lg">👣</span>
@@ -207,11 +208,10 @@ export default function ScanPictureModal({
                                         <Button
                                             onClick={() => setSelectedFoot('right')}
                                             variant={selectedFoot === 'right' ? 'default' : 'outline'}
-                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${
-                                                selectedFoot === 'right'
-                                                    ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
-                                                    : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
-                                            } ${!data?.picture_24 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className={`cursor-pointer w-full transition-all duration-200 h-11 ${selectedFoot === 'right'
+                                                ? 'bg-[#61A175] hover:bg-[#4d8a5f] text-white shadow-md font-semibold'
+                                                : 'border-2 border-gray-300 text-gray-700 hover:bg-gray-50 hover:border-[#61A175] font-medium'
+                                                } ${!data?.picture_24 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                             disabled={!data?.picture_24}
                                         >
                                             <span className="mr-2 text-lg">👣</span>
@@ -224,107 +224,112 @@ export default function ScanPictureModal({
                             {/* Right: Meta information */}
                             <div className="w-full lg:w-[40%] shrink-0 bg-white rounded-xl p-6 border-2 border-gray-200 ">
                                 <div className="space-y-4">
-                                {data.fertigstellungBis && (
-                                    <div className="pb-4 border-b border-gray-100">
-                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                            Fertigstellung bis
-                                        </h3>
+                                    {data?.createdAt && (
                                         <p className="text-sm font-semibold text-gray-900">
-                                            {formatDate(data.fertigstellungBis)}
+                                         <span className='text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2'> Erstellt am:</span> {formatDate(data.createdAt)}
                                         </p>
-                                    </div>
-                                )}
-                                <div className="pb-4 border-b border-gray-100">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Kunde
-                                    </h3>
-                                    <p className="text-sm font-medium text-gray-900">{data.customerName || '—'}</p>
-                                </div>
-                                <div className="pb-4 border-b border-gray-100">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Diagnose
-                                    </h3>
-                                    {data.diagnosisStatus && Array.isArray(data.diagnosisStatus) && data.diagnosisStatus.length > 0 ? (
-                                        <div className="flex flex-wrap gap-2">
-                                            {data.diagnosisStatus.map((diagnosis, idx) => (
-                                                <span
-                                                    key={idx}
-                                                    className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 shadow-sm"
-                                                >
-                                                    {diagnosis}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-gray-500 italic">—</p>
                                     )}
-                                </div>
-                                <div className="pb-4 border-b border-gray-100">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Versorgung
-                                    </h3>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {data.versorgungName || '—'}
-                                    </p>
-                                </div>
-                                <div className="pb-4 border-b border-gray-100">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Materialien
-                                    </h3>
-                                    {materials.length > 0 ? (
-                                        <ul className="space-y-2">
-                                            {materials.map((m, idx) => (
-                                                <li key={idx} className="text-sm text-gray-900 flex items-center">
-                                                    <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
-                                                    <span className="font-medium">{m}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
-                                    )}
-                                </div>
-
-                                {/* Insole Stock Section */}
-                                {data.insoleStock && (
-                                    <div className="pb-4 border-b border-gray-100">
-                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                            Einlagenlager
-                                        </h3>
-                                        <div className="flex items-center">
-                                            <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
-                                            <span className="text-sm font-medium text-gray-900">
-                                                {data.insoleStock.produktname} - {data.insoleStock.size}
-                                            </span>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Versorgung Note Section */}
-                                {data.versorgung_note && (
-                                    <div className="pb-4 border-b border-gray-100">
-                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                            Notiz
-                                        </h3>
-                                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                            <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
-                                                {data.versorgung_note}
+                                    {data.fertigstellungBis && (
+                                        <div className="pb-4 border-b border-gray-100">
+                                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                                Fertigstellung bis
+                                            </h3>
+                                            <p className="text-sm font-semibold text-gray-900">
+                                                {formatDate(data.fertigstellungBis)}
                                             </p>
                                         </div>
-                                    </div>
-                                )}
-
-                                {/* Uberzug Section */}
-                                {data.uberzug && (
+                                    )}
                                     <div className="pb-4 border-b border-gray-100">
                                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                            Überzug
+                                            Kunde
+                                        </h3>
+                                        <p className="text-sm font-medium text-gray-900">{data.customerName || '—'}</p>
+                                    </div>
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Diagnose
+                                        </h3>
+                                        {data.diagnosisStatus && Array.isArray(data.diagnosisStatus) && data.diagnosisStatus.length > 0 ? (
+                                            <div className="flex flex-wrap gap-2">
+                                                {data.diagnosisStatus.map((diagnosis, idx) => (
+                                                    <span
+                                                        key={idx}
+                                                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 shadow-sm"
+                                                    >
+                                                        {diagnosis}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 italic">—</p>
+                                        )}
+                                    </div>
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Versorgung
                                         </h3>
                                         <p className="text-sm font-medium text-gray-900">
-                                            {data.uberzug}
+                                            {data.versorgungName || '—'}
                                         </p>
                                     </div>
-                                )}
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Materialien
+                                        </h3>
+                                        {materials.length > 0 ? (
+                                            <ul className="space-y-2">
+                                                {materials.map((m, idx) => (
+                                                    <li key={idx} className="text-sm text-gray-900 flex items-center">
+                                                        <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
+                                                        <span className="font-medium">{m}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
+                                        )}
+                                    </div>
+
+                                    {/* Insole Stock Section */}
+                                    {data.insoleStock && (
+                                        <div className="pb-4 border-b border-gray-100">
+                                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                                Einlagenlager
+                                            </h3>
+                                            <div className="flex items-center">
+                                                <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
+                                                <span className="text-sm font-medium text-gray-900">
+                                                    {data.insoleStock.produktname} - {data.insoleStock.size}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Versorgung Note Section */}
+                                    {data.versorgung_note && (
+                                        <div className="pb-4 border-b border-gray-100">
+                                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                                Notiz
+                                            </h3>
+                                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                                <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                                                    {data.versorgung_note}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Uberzug Section */}
+                                    {data.uberzug && (
+                                        <div className="pb-4 border-b border-gray-100">
+                                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                                Überzug
+                                            </h3>
+                                            <p className="text-sm font-medium text-gray-900">
+                                                {data.uberzug}
+                                            </p>
+                                        </div>
+                                    )}
 
                                 </div>
                             </div>
@@ -352,7 +357,7 @@ export default function ScanPictureModal({
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Diagnose
                                 </h3>
-                                {data.diagnosisStatus && Array.isArray(data.diagnosisStatus) && data.diagnosisStatus.length > 0 ? (
+                                {/* {data.diagnosisStatus && Array.isArray(data.diagnosisStatus) && data.diagnosisStatus.length > 0 ? (
                                     <div className="flex flex-wrap gap-2">
                                         {data.diagnosisStatus.map((diagnosis, idx) => (
                                             <span
@@ -362,6 +367,17 @@ export default function ScanPictureModal({
                                                 {diagnosis}
                                             </span>
                                         ))}
+                                    </div>
+                                ) : (
+                                    <p className="text-sm text-gray-500 italic">—</p>
+                                )} */}
+
+                                {/* ausführliche_diagnose eita show koro */}
+                                {data.ausführliche_diagnose ? (
+                                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                        <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                                            {data.ausführliche_diagnose}
+                                        </p>
                                     </div>
                                 ) : (
                                     <p className="text-sm text-gray-500 italic">—</p>
