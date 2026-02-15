@@ -7,10 +7,10 @@ import ScanningDataPage from '@/app/(dashboard)/dashboard/_components/ScanningDa
 
 import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
 import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
+// import { ArrowLeft } from 'lucide-react';
 import Einlagen from '@/app/(dashboard)/dashboard/_components/Scanning/Einlagen';
 import { getSingleOrder } from '@/apis/productsOrder';
-import userload from '@/public/images/scanning/userload.png'
+// import userload from '@/public/images/scanning/userload.png'
 import userImg from '@/public/images/scanning/user.png'
 import Image from 'next/image'
 import CustomerModal from '@/components/CustomerModal/CustomerModal'

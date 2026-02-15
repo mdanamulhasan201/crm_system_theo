@@ -750,7 +750,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                             value="Krankenkassa" 
                             className="cursor-pointer data-[state=active]:bg-[#61A178] data-[state=active]:text-white rounded-full px-6 py-2 font-medium transition-all"
                         >
-                            Krankenkassa
+                            Krankenkasse
                         </TabsTrigger>
                         <TabsTrigger 
                             value="Privat"

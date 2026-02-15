@@ -1,6 +1,6 @@
 import axiosClient from "@/lib/axiosClient";
 
-// create einlage (insole)
+// create einlage (insole) versorgungen/supply-status
 export const createEinlage = async (formData: FormData) => {
     try {
         const response = await axiosClient.post('/versorgungen/supply-status', formData, {

@@ -25,6 +25,12 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
     const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
     const [isZoomed, setIsZoomed] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
+    const [hasQuestions, setHasQuestions] = useState<boolean>(true); // Default to true to show loading state
+
+    // Reset hasQuestions when form type changes
+    useEffect(() => {
+        setHasQuestions(true); // Reset to show loading state when form changes
+    }, [selectedForm]);
 
     // Use the existing hook for customer data management with date filtering
     const { customer: currentScanData, availableDates, updateCustomer, refreshCustomer, isUpdating, error } = useSingleCustomer(scanData.id, selectedDate);
@@ -243,7 +249,7 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
             />
 
             <div className='flex flex-col xl:flex-row justify-between items-start mb-6 gap-4'>
-                <div className={isZoomed ? 'w-full' : 'w-full xl:w-8/12'}>
+                <div className={isZoomed ? 'w-full' : (hasQuestions ? 'w-full xl:w-8/12' : 'w-full')}>
                     <div className="flex items-center mb-4 md:mb-0">
                         <div className="font-bold text-xl capitalize">{displayData.vorname} {displayData.nachname}</div>
                     </div>
@@ -278,13 +284,19 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                         )}
                     </ScanDataDisplay>
                 </div>
-                {/* Hide questions section when zoomed */}
+                {/* Hide questions section when zoomed or when no questions are available */}
                 {!isZoomed && (
-                    <div className='w-full xl:w-4/12'>
+                    <div className={hasQuestions ? 'w-full xl:w-4/12' : 'hidden'}>
                         {selectedForm === 'einlagen' ? (
-                            <EinlagenQuestions customer={displayData} />
+                            <EinlagenQuestions 
+                                customer={displayData} 
+                                onQuestionsLoaded={setHasQuestions}
+                            />
                         ) : (
-                            <MassschuheQuestions customer={displayData} />
+                            <MassschuheQuestions 
+                                customer={displayData} 
+                                onQuestionsLoaded={setHasQuestions}
+                            />
                         )}
                     </div>
                 )}

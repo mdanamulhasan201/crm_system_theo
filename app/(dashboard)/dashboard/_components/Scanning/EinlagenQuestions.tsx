@@ -44,7 +44,12 @@ interface ApiResponse {
     data: SectionType[];
 }
 
-export default function EinlagenQuestions({ customer }: { customer: any }) {
+interface EinlagenQuestionsProps {
+    customer: any;
+    onQuestionsLoaded?: (hasQuestions: boolean) => void;
+}
+
+export default function EinlagenQuestions({ customer, onQuestionsLoaded }: EinlagenQuestionsProps) {
     const [sections, setSections] = useState<SectionType[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -57,11 +62,15 @@ export default function EinlagenQuestions({ customer }: { customer: any }) {
             const res: ApiResponse = await getEinlagenQuestionWithOption(customer.id);
             if (res?.success && Array.isArray(res.data)) {
                 setSections(res.data);
+                const hasQuestions = res.data.length > 0;
+                onQuestionsLoaded?.(hasQuestions);
             } else {
                 toast.error("Fragen konnten nicht geladen werden.");
+                onQuestionsLoaded?.(false);
             }
         } catch (error) {
             toast.error("Fehler beim Laden der Fragen.");
+            onQuestionsLoaded?.(false);
         } finally {
             setIsLoading(false);
         }

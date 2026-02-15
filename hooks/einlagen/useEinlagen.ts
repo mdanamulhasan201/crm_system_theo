@@ -23,6 +23,8 @@ interface EinlageFormData {
     name: string;
     description: string;
     price: number;
+    vatRate?: number;
+    profitPercentage?: number;
     image?: string;
     imageFile?: File;
 }
@@ -60,6 +62,14 @@ export const useEinlagen = () => {
 
             if (data.description) {
                 formData.append('description', data.description);
+            }
+
+            if (data.vatRate !== undefined && data.vatRate !== null) {
+                formData.append('vatRate', data.vatRate.toString());
+            }
+
+            if (data.profitPercentage !== undefined && data.profitPercentage !== null) {
+                formData.append('profitPercentage', data.profitPercentage.toString());
             }
 
             // Handle image - File or data URL (optional)
@@ -161,6 +171,14 @@ export const useEinlagen = () => {
 
             if (data.description) {
                 formData.append('description', data.description);
+            }
+
+            if (data.vatRate !== undefined && data.vatRate !== null) {
+                formData.append('vatRate', data.vatRate.toString());
+            }
+
+            if (data.profitPercentage !== undefined && data.profitPercentage !== null) {
+                formData.append('profitPercentage', data.profitPercentage.toString());
             }
 
             // Handle image - File or data URL

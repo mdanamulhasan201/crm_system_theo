@@ -110,6 +110,8 @@ export default function PreisverwaltungPage() {
         name: string; 
         description: string; 
         price: number; 
+        vatRate: number;
+        profitPercentage: number;
         image?: string; 
         imageFile?: File 
     }) => {
@@ -120,6 +122,8 @@ export default function PreisverwaltungPage() {
                     name: data.name,
                     description: data.description,
                     price: data.price,
+                    vatRate: data.vatRate,
+                    profitPercentage: data.profitPercentage,
                     image: data.image,
                     imageFile: data.imageFile,
                 });
@@ -128,6 +132,8 @@ export default function PreisverwaltungPage() {
                     name: data.name,
                     description: data.description,
                     price: data.price,
+                    vatRate: data.vatRate,
+                    profitPercentage: data.profitPercentage,
                     image: data.image,
                     imageFile: data.imageFile,
                 });
