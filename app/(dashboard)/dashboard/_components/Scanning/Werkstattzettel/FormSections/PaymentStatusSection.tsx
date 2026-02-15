@@ -90,7 +90,11 @@ export default function PaymentStatusSection({
         setStatus(newStatus)
         if (paymentType) {
             // Format: "Privat_Bezahlt" or "Privat_offen" (lowercase for "offen")
-            const formattedStatus = newStatus === 'Offen' ? 'offen' : newStatus
+            // For Krankenkasse: "Krankenkasse_Genehmigt" or "Krankenkasse_Ungenehmigt"
+            let formattedStatus = newStatus
+            if (newStatus === 'Offen') {
+                formattedStatus = 'offen'
+            }
             const newValue = `${paymentType}_${formattedStatus}`
             onChange(newValue)
         }
@@ -109,12 +113,12 @@ export default function PaymentStatusSection({
                     >
                     <SelectTrigger
                         className={cn(
-                            'w-full',
+                            'w-full h-11 border-gray-300',
                             error && 'border-red-500 focus-visible:ring-red-500',
                             disabledPaymentType && 'opacity-60 cursor-not-allowed'
                         )}
                     >
-                            <SelectValue placeholder="Zahlungsart auswählen..." />
+                            <SelectValue placeholder="Privat" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="Privat">Privat</SelectItem>
@@ -126,39 +130,33 @@ export default function PaymentStatusSection({
                 {/* Status Dropdown - Only show if payment type is selected */}
                 {paymentType && (
                     <div className="flex-1">
-                        {paymentType === 'Privat' && (
-                            <Select value={status} onValueChange={handleStatusChange}>
+                        <Select 
+                            key={`status-${paymentType}`} 
+                            value={status} 
+                            onValueChange={handleStatusChange}
+                        >
                             <SelectTrigger
                                 className={cn(
-                                    'w-full',
+                                    'w-full h-11 border-gray-300',
                                     error && 'border-red-500 focus-visible:ring-red-500'
                                 )}
                             >
-                                    <SelectValue placeholder="Status auswählen..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Bezahlt">Bezahlt</SelectItem>
-                                    <SelectItem value="Offen">Offen</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        )}
-
-                        {paymentType === 'Krankenkasse' && (
-                            <Select value={status} onValueChange={handleStatusChange}>
-                            <SelectTrigger
-                                className={cn(
-                                    'w-full',
-                                    error && 'border-red-500 focus-visible:ring-red-500'
+                                <SelectValue placeholder="Status auswählen..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {paymentType === 'Privat' ? (
+                                    <>
+                                        <SelectItem value="Bezahlt">Bezahlt</SelectItem>
+                                        <SelectItem value="Offen">Offen</SelectItem>
+                                    </>
+                                ) : (
+                                    <>
+                                        <SelectItem value="Genehmigt">Genehmigt</SelectItem>
+                                        <SelectItem value="Ungenehmigt">Ungenehmigt</SelectItem>
+                                    </>
                                 )}
-                            >
-                                    <SelectValue placeholder="Status auswählen..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Genehmigt">Genehmigt</SelectItem>
-                                    <SelectItem value="Ungenehmigt">Ungenehmigt</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        )}
+                            </SelectContent>
+                        </Select>
                     </div>
                 )}
             </div>

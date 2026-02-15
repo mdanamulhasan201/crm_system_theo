@@ -388,10 +388,7 @@ export default function WerkstattzettelModal({
 
         <div className="space-y-6 mt-6">
           {/* Customer Information Section - styled as overview card */}
-          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
-            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
-              AUFTRAGSÜBERSICHT
-            </h3>
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
             <CustomerInfoSection
               data={{
                 vorname: form.vorname,
@@ -438,11 +435,18 @@ export default function WerkstattzettelModal({
           </div>
 
           {/* Price Section - styled card */}
-          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
-            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
-              PREISE
-            </h3>
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
             <PriceSection
+              versorgung={form.versorgung}
+              onVersorgungChange={form.setVersorgung}
+              quantity={form.quantity}
+              onQuantityChange={form.setQuantity}
+              fertigstellungBis={form.fertigstellungBis}
+              onFertigstellungBisChange={form.handleDeliveryDateChange}
+              fertigstellungBisTime={form.fertigstellungBisTime}
+              onFertigstellungBisTimeChange={form.setFertigstellungBisTime}
+              versorgungError={fieldErrors.versorgung}
+              fertigstellungBisError={fieldErrors.fertigstellungBis}
               footAnalysisPrice={form.footAnalysisPrice}
               onFootAnalysisPriceChange={form.setFootAnalysisPrice}
               insoleSupplyPrice={form.insoleSupplyPrice}
@@ -466,17 +470,20 @@ export default function WerkstattzettelModal({
               onBezahltChange={form.setBezahlt}
               paymentError={fieldErrors.bezahlt}
               disabledPaymentType={formData?.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData?.billingType === 'Privat' ? 'Privat' : undefined}
+              datumAuftrag={form.datumAuftrag}
+              completionDays={completionDays}
             />
           </div>
 
           {/* KONTROLLE & AKTIONEN Section */}
-          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
-            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
-              KONTROLLE & AKTIONEN
-            </h3>
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+            <div className="flex items-center gap-3 mb-6">
+              {/* <MapPin className="w-5 h-5 text-[#50C878]" /> */}
+              <h3 className="text-sm font-bold text-[#50C878] uppercase tracking-wide">Kontrolle & Aktionen</h3>
+            </div>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#1E76FF]">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#50C878]">
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
@@ -490,14 +497,8 @@ export default function WerkstattzettelModal({
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
-                >
-                  <FileText className="w-4 h-4 text-gray-700" />
-                  <span>PDF anzeigen</span>
-                </Button>
+              
+               
                 <Button
                   type="button"
                   variant="outline"
@@ -512,7 +513,7 @@ export default function WerkstattzettelModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-3 mt-6">
+        <div className="flex justify-between space-x-3 mt-6">
           <Button
             type="button"
             className="cursor-pointer"
@@ -526,7 +527,7 @@ export default function WerkstattzettelModal({
             className="cursor-pointer"
             onClick={handleSave}
           >
-            Continue
+          Weiter
           </Button>
         </div>
       </DialogContent>
