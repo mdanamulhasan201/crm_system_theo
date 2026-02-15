@@ -21,7 +21,7 @@ export default function ProductSelector({
 }: ProductSelectorProps) {
     return (
         <div>
-            <label className="font-bold mb-1 block">Produkt aus Lager auswählen</label>
+            <label className="font-semibold mb-1 block"> Rohling / Fräsblock </label>
             <div className="relative">
                 <select
                     value={selectedProductId}

@@ -34,7 +34,10 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
     const vatCountry = user?.accountInfo?.vat_country;
     
     // Get tax rates based on country
-    const taxRates = getTaxRatesByCountry(vatCountry);
+    const taxRates = useMemo(() => {
+        return getTaxRatesByCountry(vatCountry) || [];
+    }, [vatCountry]);
+    
     const defaultTaxRate = useMemo(() => {
         return taxRates?.find(rate => rate.isDefault) || { rate: 22, name: 'Standard', description: 'Standard' };
     }, [taxRates]);
@@ -48,6 +51,11 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
     const [steuersatz, setSteuersatz] = useState<number>(defaultTaxRate.rate);
     const [isNetto, setIsNetto] = useState<boolean>(true); // true = Preis ist Netto, false = Preis ist Brutto
     const [leistungsnotiz, setLeistungsnotiz] = useState<string>('');
+    
+    // Get current selected tax rate details
+    const selectedTaxRate = useMemo(() => {
+        return taxRates?.find(rate => rate.rate === steuersatz) || defaultTaxRate;
+    }, [steuersatz, taxRates, defaultTaxRate]);
 
     // Employee search
     const {
@@ -163,8 +171,6 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
     };
 
     const handleOrderComplete = () => {
-        toast.success('Sonstige Leistung erfolgreich erfasst');
-        
         // Reset form
         setLeistungsname('');
         setKategorie('');
@@ -378,11 +384,29 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Steuersatz
                                 </label>
-                                <div className="p-3 bg-gray-50 border border-gray-200 rounded h-10 flex items-center">
-                                    <span className="text-sm text-gray-700">
-                                        {steuersatz}% ({defaultTaxRate.name})
-                                    </span>
-                                </div>
+                                <Select 
+                                    value={steuersatz.toString()} 
+                                    onValueChange={(value) => setSteuersatz(parseFloat(value))}
+                                >
+                                    <SelectTrigger className="w-full h-10">
+                                        <SelectValue>
+                                            {steuersatz}% - {selectedTaxRate.name}
+                                        </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {taxRates && taxRates.length > 0 ? (
+                                            taxRates.map((rate, index) => (
+                                                <SelectItem key={`${rate.rate}-${rate.name}-${index}`} value={rate.rate.toString()}>
+                                                    {rate.rate}% - {rate.name}
+                                                </SelectItem>
+                                            ))
+                                        ) : (
+                                            <SelectItem value={defaultTaxRate.rate.toString()}>
+                                                {defaultTaxRate.rate}% - {defaultTaxRate.name}
+                                            </SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         </div>
 

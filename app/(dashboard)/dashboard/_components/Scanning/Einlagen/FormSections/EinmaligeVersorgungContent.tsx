@@ -1,6 +1,87 @@
-import React from 'react';
+'use client'
+import React, { useState, useEffect, useCallback } from 'react';
+import { getAllStorages } from '@/apis/productsManagementApis';
+import ProductSelector from '@/components/VersorgungModal/ProductSelector';
+import MaterialienInput from '@/components/VersorgungModal/MaterialienInput';
+import toast from 'react-hot-toast';
+
+interface StorageProduct {
+    id: string
+    produktname: string
+    hersteller: string
+    artikelnummer: string
+    lagerort: string | null
+    mindestbestand: number | null
+    groessenMengen: { [key: string]: any }
+    purchase_price: number
+    selling_price: number
+    Status: string
+    userId: string
+    type?: 'milling_block' | 'rady_insole'
+    createdAt: string
+    updatedAt: string
+}
 
 export default function EinmaligeVersorgungContent() {
+    const [storageProducts, setStorageProducts] = useState<StorageProduct[]>([])
+    const [isLoadingProducts, setIsLoadingProducts] = useState(false)
+    const [selectedProduct, setSelectedProduct] = useState<StorageProduct | null>(null)
+    
+    // Materialien state
+    const [materialien, setMaterialien] = useState<string[]>([])
+    const [materialienInput, setMaterialienInput] = useState('')
+
+    // Fetch all storage products (without type filter)
+    const fetchStorageProducts = useCallback(async () => {
+        try {
+            setIsLoadingProducts(true)
+            const response = await getAllStorages(1, 1000, '', undefined)
+            if (response.success && response.data) {
+                setStorageProducts(response.data)
+            }
+        } catch (err: any) {
+            console.error('Failed to fetch storage products:', err)
+            toast.error('Failed to load products')
+        } finally {
+            setIsLoadingProducts(false)
+        }
+    }, [])
+
+    // Fetch products on component mount
+    useEffect(() => {
+        fetchStorageProducts()
+    }, [fetchStorageProducts])
+
+    // Handle product selection
+    const handleProductSelect = (productId: string) => {
+        const product = storageProducts.find(p => p.id === productId)
+        if (product) {
+            setSelectedProduct(product)
+            // You can emit this data to parent component or handle it here
+            console.log('Selected product:', product)
+        }
+    }
+
+    // Handle materialien tag input
+    const handleAddMaterialTag = () => {
+        const trimmedInput = materialienInput.trim()
+        if (trimmedInput && !materialien.includes(trimmedInput)) {
+            setMaterialien([...materialien, trimmedInput])
+            setMaterialienInput('')
+        }
+    }
+
+    const handleMaterialienKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault()
+            handleAddMaterialTag()
+        }
+    }
+
+    const handleRemoveMaterialTag = (indexToRemove: number) => {
+        setMaterialien(materialien.filter((_, index) => index !== indexToRemove))
+    }
+
     return (
         <div className="mb-6">
             <div className="mb-4">
@@ -12,15 +93,12 @@ export default function EinmaligeVersorgungContent() {
 
             {/* Rohling / Fräsblock Selection */}
             <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rohling / Fräsblock
-                </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent">
-                    <option value="">Auswählen...</option>
-                    <option value="rohling1">Rohling 1</option>
-                    <option value="rohling2">Rohling 2</option>
-                    <option value="rohling3">Rohling 3</option>
-                </select>
+                <ProductSelector
+                    products={storageProducts}
+                    isLoading={isLoadingProducts}
+                    selectedProductId={selectedProduct?.id || ''}
+                    onSelect={handleProductSelect}
+                />
             </div>
 
             {/* Versorgungsname */}
@@ -49,15 +127,14 @@ export default function EinmaligeVersorgungContent() {
 
             {/* Materialien */}
             <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Materialien
-                </label>
-                <input
-                    type="text"
-                    placeholder="Enter oder Komma zum Hinzufügen"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                <MaterialienInput
+                    materialien={materialien}
+                    inputValue={materialienInput}
+                    onInputChange={setMaterialienInput}
+                    onAdd={handleAddMaterialTag}
+                    onRemove={handleRemoveMaterialTag}
+                    onKeyDown={handleMaterialienKeyDown}
                 />
-                <p className="text-xs text-gray-500 mt-1">Drücken Sie Enter, um mehrere Materialien hinzuzufügen</p>
             </div>
         </div>
     );

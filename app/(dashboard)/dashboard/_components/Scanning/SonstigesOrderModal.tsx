@@ -12,6 +12,7 @@ import { getAllLocations } from '@/apis/setting/locationManagementApis';
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import { getSettingData } from '@/apis/einlagenApis';
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types';
+import { createSonstiges } from '@/apis/SonstigesApis';
 
 interface Customer {
     id: string;
@@ -298,29 +299,37 @@ export default function SonstigesOrderModal({
             const quantityMatch = menge.match(/^(\d+)\s*paar/i);
             const quantity = quantityMatch ? parseInt(quantityMatch[1], 10) : 1;
             
-            // TODO: Implement API call to save sonstiges order
-            console.log('Saving order:', {
-                ...formData,
-                vorname,
-                nachname,
-                wohnort,
-                email,
-                telefonnummer,
-                datumAuftrag,
-                geschaeftsstandort,
-                fertigstellungBis,
-                fertigstellungBisTime,
-                selectedEmployee,
-                selectedEmployeeId,
-                bezahlt,
-                menge: quantity,
+            // Prepare API payload according to the required structure
+            const apiPayload = {
+                service_name: formData.leistungsname,
+                sonstiges_category: formData.kategorie || '',
+                net_price: formData.nettoPreis,
+                vatRate: formData.steuersatz,
                 quantity: quantity,
-                footAnalysisPrice: parseFloat(footAnalysisPrice) || 0,
-                insoleSupplyPrice: parseFloat(insoleSupplyPrice) || 0,
-                totalPrice: (parseFloat(footAnalysisPrice) || 0) + (parseFloat(insoleSupplyPrice) || 0),
-            });
+                versorgung_note: formData.leistungsnotiz || '',
+                discount: formData.rabatt,
+                employeeId: selectedEmployeeId || formData.selectedEmployeeId,
+                total_price: formData.bruttoPreis,
+                customerId: customer.id,
+                wohnort: wohnort,
+                auftragsDatum: datumAuftrag,
+                geschaeftsstandort: geschaeftsstandort ? {
+                    title: geschaeftsstandort.description || geschaeftsstandort.address || '',
+                    description: geschaeftsstandort.address || geschaeftsstandort.description || ''
+                } : null,
+                fertigstellungBis: fertigstellungBis,
+                bezahlt: bezahlt,
+            };
 
-            toast.success('Sonstige Leistung erfolgreich gespeichert');
+            // Call API with JSON payload
+            const response = await createSonstiges(apiPayload);
+
+            // Show success message from API response
+            if (response?.success && response?.message) {
+                toast.success(response.message);
+            } else {
+                toast.success('Sonstige Leistung erfolgreich gespeichert');
+            }
             
             // Call onOrderComplete to close modal and refresh data
             onOrderComplete?.();
