@@ -16,8 +16,10 @@ interface Insole {
     name: string;
     description: string;
     price: number;
-    image: string;
+    image: string | null;
     selected: boolean;
+    vatRate?: number;
+    profitPercentage?: number;
 }
 
 export default function PreisverwaltungPage() {
@@ -41,8 +43,10 @@ export default function PreisverwaltungPage() {
                     name: item.name,
                     description: item.description || "",
                     price: item.price,
-                    image: item.image || "#CCCCCC",
+                    image: item.image || null,
                     selected: false,
+                    vatRate: item.vatRate || 0,
+                    profitPercentage: item.profitPercentage || 0,
                 }));
                 setInsoles(formattedInsoles);
             }
@@ -215,7 +219,13 @@ export default function PreisverwaltungPage() {
                     }
                 }}
                 onSubmit={handleAddInsole}
-                editingInsole={editingInsole}
+                editingInsole={editingInsole ? {
+                    id: editingInsole.id,
+                    name: editingInsole.name,
+                    description: editingInsole.description,
+                    price: editingInsole.price,
+                    image: editingInsole.image || undefined,
+                } : null}
                 isLoading={isLoading}
             />
 

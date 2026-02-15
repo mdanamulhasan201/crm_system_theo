@@ -363,21 +363,6 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                                         </SelectContent>
                                     </Select>
                                 </div>
-
-                                {/* Final Brutto */}
-                                <div>
-                                    <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                        Brutto
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            type="text"
-                                            value={`${prices.finalBrutto.toFixed(2).replace('.', ',')} €`}
-                                            readOnly
-                                            className="border-gray-300 rounded-[5px] bg-green-100 flex-1 cursor-not-allowed text-green-700 font-semibold"
-                                        />
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>

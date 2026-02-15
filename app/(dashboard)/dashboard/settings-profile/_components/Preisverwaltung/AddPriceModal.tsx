@@ -13,7 +13,16 @@ const VAT_OPTIONS = ["0", "7", "10", "19", "20", "22"];
 interface AddPriceModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (name: string, price: number) => void;
+    onSave: (priceData: {
+        name: string;
+        price: number;
+        basePrice: number;
+        commissionPercentage: number;
+        commissionAmount: number;
+        netBeforeVat: number;
+        vatPercentage: number;
+        vatAmount: number;
+    }) => void;
 }
 
 export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceModalProps) {
@@ -104,9 +113,19 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
             return;
         }
 
-        // Use final brutto price
-        const finalPrice = basePrice.trim() ? prices.finalBrutto : 0;
-        onSave(name.trim(), finalPrice);
+        // Pass all calculated data
+        const priceData = {
+            name: name.trim(),
+            price: prices.finalBrutto,
+            basePrice: prices.basePrice,
+            commissionPercentage: parseFloat(vatPercentageMain),
+            commissionAmount: prices.commissionAmount,
+            netBeforeVat: prices.netBeforeVat,
+            vatPercentage: parseFloat(vatPercentageCountry),
+            vatAmount: prices.vatAmount,
+        };
+        
+        onSave(priceData);
         onOpenChange(false);
     };
 
@@ -223,21 +242,6 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
                                     ))}
                                 </SelectContent>
                             </Select>
-                        </div>
-
-                        {/* Final Brutto */}
-                        <div>
-                            <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                Brutto
-                            </label>
-                            <div className="flex items-center gap-2">
-                                <Input
-                                    type="text"
-                                    value={`${prices.finalBrutto.toFixed(2).replace('.', ',')} €`}
-                                    readOnly
-                                    className="border-gray-300 rounded-[5px] bg-green-100 flex-1 cursor-not-allowed text-green-700 font-semibold"
-                                />
-                            </div>
                         </div>
                     </div>
                 </div>

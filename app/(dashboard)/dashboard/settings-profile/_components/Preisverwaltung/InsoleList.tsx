@@ -9,8 +9,10 @@ interface Insole {
     name: string;
     description: string;
     price: number;
-    image: string;
+    image: string | null;
     selected: boolean;
+    vatRate?: number;
+    profitPercentage?: number;
 }
 
 interface InsoleListProps {
@@ -109,12 +111,25 @@ export default function InsoleList({
                             </div>
                         </div>
                     ))
+                ) : insoles.length === 0 ? (
+                    <div className="bg-white border border-gray-300 rounded-lg p-8 text-center">
+                        <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                        <p className="text-gray-500 text-lg">Keine Einlagen vorhanden</p>
+                        <p className="text-gray-400 text-sm mt-2">Klicken Sie auf "Einlage hinzufügen", um zu beginnen</p>
+                    </div>
                 ) : (
                     insoles.map((insole) => {
-                        // Calculate VAT (assuming 20% VAT rate)
-                        const vatRate = 20;
-                        const grossPrice = insole.price;
-                        const formattedPrice = grossPrice.toFixed(2).replace(".", ",");
+                        // Use actual VAT rate from the insole or default to 0
+                        const vatRate = insole.vatRate ?? 0;
+                        const bruttoPrice = insole.price;
+                        
+                        // Calculate Netto price (Brutto / (1 + VAT rate / 100))
+                        const nettoPrice = vatRate > 0 ? bruttoPrice / (1 + vatRate / 100) : bruttoPrice;
+                        const mwstAmount = bruttoPrice - nettoPrice;
+                        
+                        const formattedBruttoPrice = bruttoPrice.toFixed(2).replace(".", ",");
+                        const formattedNettoPrice = nettoPrice.toFixed(2).replace(".", ",");
+                        const formattedMwst = mwstAmount.toFixed(2).replace(".", ",");
 
                         return (
                             <div
@@ -124,7 +139,7 @@ export default function InsoleList({
                             >
                                 {/* Left: Icon */}
                                 <div className="shrink-0">
-                                    {insole.image.startsWith('data:') || insole.image.startsWith('http') ? (
+                                    {insole.image && (insole.image.startsWith('data:') || insole.image.startsWith('http')) ? (
                                         <div className="w-16 h-16 rounded-md overflow-hidden relative bg-gray-100 flex items-center justify-center">
                                             <Image
                                                 src={insole.image}
@@ -146,18 +161,30 @@ export default function InsoleList({
                                     <h3 className="font-bold text-base uppercase mb-1 text-gray-900">
                                         {insole.name}
                                     </h3>
-                                    <p className="text-sm text-gray-700">{insole.description}</p>
+                                    <p className="text-sm text-gray-700 line-clamp-2">{insole.description}</p>
+                                    {insole.profitPercentage !== undefined && insole.profitPercentage > 0 && (
+                                        <p className="text-xs text-blue-600 mt-1">
+                                            Gewinnspanne: {insole.profitPercentage}%
+                                        </p>
+                                    )}
                                 </div>
 
                                 {/* Right: Price, VAT, Checkbox */}
                                 <div className="flex items-center gap-4 shrink-0">
                                     <div className="text-right">
                                         <div className="font-bold text-lg text-green-600 mb-1">
-                                            Brutto: {formattedPrice} €
+                                            Brutto: {formattedBruttoPrice} €
                                         </div>
-                                        <div className="text-xs text-gray-500">
-                                            MwSt. {vatRate}% enthalten
-                                        </div>
+                                        {vatRate > 0 ? (
+                                            <div className="text-xs text-gray-500 space-y-0.5">
+                                                <div>Netto: {formattedNettoPrice} €</div>
+                                                <div>MwSt. {vatRate}%: {formattedMwst} €</div>
+                                            </div>
+                                        ) : (
+                                            <div className="text-xs text-gray-500">
+                                                Keine MwSt.
+                                            </div>
+                                        )}
                                     </div>
                                     <div 
                                         className="shrink-0"

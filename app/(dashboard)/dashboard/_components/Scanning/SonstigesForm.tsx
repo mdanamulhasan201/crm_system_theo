@@ -4,12 +4,14 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import { ChevronDown, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTaxRatesByCountry } from '@/utils/taxRates';
+import SonstigesOrderModal from './SonstigesOrderModal';
 
 interface Customer {
     id: string;
@@ -58,6 +60,10 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
     const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState<string>('');
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
+
+    // Modal state
+    const [showOrderModal, setShowOrderModal] = useState(false);
+    const [formDataForModal, setFormDataForModal] = useState<any>(null);
 
     // Update tax rate when country changes
     useEffect(() => {
@@ -126,8 +132,8 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
             return;
         }
 
-        // TODO: Implement API call to save sonstiges service
-        console.log('Form Data:', {
+        // Prepare form data for modal
+        const formData = {
             customerId: customer.id,
             leistungsname: leistungsname.trim(),
             kategorie: kategorie.trim() || null,
@@ -141,8 +147,22 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
             leistungsnotiz: leistungsnotiz.trim() || null,
             selectedEmployee: selectedEmployee,
             selectedEmployeeId: selectedEmployeeId,
-        });
+            kundenName: `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
+            email: customer.email || '',
+            telefon: customer.telefon || customer.telefonnummer || '',
+            wohnort: customer.wohnort || '',
+        };
 
+        setFormDataForModal(formData);
+        setShowOrderModal(true);
+    };
+
+    const handleModalClose = () => {
+        setShowOrderModal(false);
+        setFormDataForModal(null);
+    };
+
+    const handleOrderComplete = () => {
         toast.success('Sonstige Leistung erfolgreich erfasst');
         
         // Reset form
@@ -154,6 +174,10 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
         setLeistungsnotiz('');
         setSelectedEmployee('');
         setSelectedEmployeeId('');
+
+        // Close modal
+        setShowOrderModal(false);
+        setFormDataForModal(null);
 
         // Refresh data if callback provided
         if (onDataRefresh) {
@@ -287,13 +311,23 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Menge
                             </label>
-                            <Input
-                                type="number"
-                                min="1"
-                                value={menge}
-                                onChange={(e) => setMenge(e.target.value)}
-                                className="w-full h-10"
-                            />
+                            <Select value={menge} onValueChange={setMenge}>
+                                <SelectTrigger className="w-full h-10">
+                                    <SelectValue placeholder="Menge wählen" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">1</SelectItem>
+                                    <SelectItem value="2">2</SelectItem>
+                                    <SelectItem value="3">3</SelectItem>
+                                    <SelectItem value="4">4</SelectItem>
+                                    <SelectItem value="5">5</SelectItem>
+                                    <SelectItem value="6">6</SelectItem>
+                                    <SelectItem value="7">7</SelectItem>
+                                    <SelectItem value="8">8</SelectItem>
+                                    <SelectItem value="9">9</SelectItem>
+                                    <SelectItem value="10">10</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
                 </div>
@@ -418,12 +452,21 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                     <Button
                         type="button"
                         onClick={handleSubmit}
-                        className="bg-[#62A17C] cursor-pointer hover:bg-[#4A8A5F] text-white px-12 py-3 rounded-lg font-semibold transition-colors cursor-pointer shadow-sm"
+                        className="bg-[#62A17C] cursor-pointer hover:bg-[#4A8A5F] text-white px-12 py-3 rounded-lg font-semibold transition-colors shadow-sm"
                     >
                         Abschliessen
                     </Button>
                 </div>
             </div>
+
+            {/* Sonstiges Order Modal */}
+            <SonstigesOrderModal
+                isOpen={showOrderModal}
+                onOpenChange={handleModalClose}
+                customer={customer}
+                formData={formDataForModal}
+                onOrderComplete={handleOrderComplete}
+            />
         </div>
     );
 }
