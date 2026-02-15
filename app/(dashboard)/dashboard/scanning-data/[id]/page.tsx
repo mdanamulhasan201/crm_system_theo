@@ -9,6 +9,7 @@ import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
 import { Button } from '@/components/ui/button';
 // import { ArrowLeft } from 'lucide-react';
 import Einlagen from '@/app/(dashboard)/dashboard/_components/Scanning/Einlagen';
+import SonstigesForm from '@/app/(dashboard)/dashboard/_components/Scanning/SonstigesForm';
 import { getSingleOrder } from '@/apis/productsOrder';
 // import userload from '@/public/images/scanning/userload.png'
 import userImg from '@/public/images/scanning/user.png'
@@ -23,7 +24,7 @@ export default function ScanningData() {
     const searchParams = useSearchParams();
     const orderId = searchParams.get('orderId');
     const { customer: scanData, loading, error, updateCustomer, refreshCustomer } = useSingleCustomer(String(params.id));
-    const [selectedForm, setSelectedForm] = useState<'einlagen' | 'massschuhe'>('einlagen');
+    const [selectedForm, setSelectedForm] = useState<'einlagen' | 'massschuhe' | 'sonstiges'>('einlagen');
     const [prefillOrderData, setPrefillOrderData] = useState<any | null>(null);
     const [orderPrefillError, setOrderPrefillError] = useState<string | null>(null);
     const [orderPrefillLoading, setOrderPrefillLoading] = useState(false);
@@ -201,6 +202,15 @@ export default function ScanningData() {
                 >
                     Massschuhe
                 </Button>
+                <Button
+                    onClick={() => setSelectedForm('sonstiges')}
+                    className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'sonstiges'
+                        ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
+                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                        }`}
+                >
+                    Sonstiges
+                </Button>
             </div>
 
             {/* Form section */}
@@ -216,8 +226,18 @@ export default function ScanningData() {
                         refreshCustomer();
                     }}
                 />
-            ) : (
+            ) : selectedForm === 'massschuhe' ? (
                 <MassschuheForm
+                    customer={scanData}
+                    onCustomerUpdate={(updatedCustomer) => {
+                        updateCustomer(updatedCustomer);
+                    }}
+                    onDataRefresh={() => {
+                        refreshCustomer();
+                    }}
+                />
+            ) : (
+                <SonstigesForm
                     customer={scanData}
                     onCustomerUpdate={(updatedCustomer) => {
                         updateCustomer(updatedCustomer);

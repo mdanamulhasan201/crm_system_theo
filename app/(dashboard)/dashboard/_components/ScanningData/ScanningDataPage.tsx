@@ -8,10 +8,11 @@ import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer';
 import ScanDataDisplay from '@/components/Shared/ScanDataDisplay';
 import EinlagenQuestions from '../Scanning/EinlagenQuestions';
 import MassschuheQuestions from '../Scanning/MassschuheQuestion';
+import SonstigesQuestion from '../Scanning/SonstigesQuestion';
 
 interface ScanningDataPageProps {
     scanData: ScanData;
-    selectedForm?: 'einlagen' | 'massschuhe';
+    selectedForm?: 'einlagen' | 'massschuhe' | 'sonstiges';
     onScreenerIdChange?: (screenerId: string | null) => void;
 }
 
@@ -29,7 +30,12 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
 
     // Reset hasQuestions when form type changes
     useEffect(() => {
-        setHasQuestions(true); // Reset to show loading state when form changes
+        if (selectedForm === 'sonstiges') {
+            // For Sonstiges, immediately hide questions section (no questions available)
+            setHasQuestions(false);
+        } else {
+            setHasQuestions(true); // Reset to show loading state when form changes
+        }
     }, [selectedForm]);
 
     // Use the existing hook for customer data management with date filtering
@@ -292,12 +298,17 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                                 customer={displayData} 
                                 onQuestionsLoaded={setHasQuestions}
                             />
-                        ) : (
+                        ) : selectedForm === 'massschuhe' ? (
                             <MassschuheQuestions 
                                 customer={displayData} 
                                 onQuestionsLoaded={setHasQuestions}
                             />
-                        )}
+                        ) : selectedForm === 'sonstiges' ? (
+                            <SonstigesQuestion 
+                                customer={displayData} 
+                                onQuestionsLoaded={setHasQuestions}
+                            />
+                        ) : null}
                     </div>
                 )}
             </div>
