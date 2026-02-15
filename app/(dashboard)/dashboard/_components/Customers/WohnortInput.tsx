@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { Input } from '@/components/ui/input';
+import { getLocation } from '@/apis/locationsApis';
 
 interface WohnortInputProps {
   value: string;
@@ -10,32 +11,20 @@ interface WohnortInputProps {
   placeholder?: string;
 }
 
-interface NominatimResult {
-  place_id: number;
-  display_name: string;
-  address?: {
-    city?: string;
-    town?: string;
-    village?: string;
-    state?: string;
-    county?: string;
-    municipality?: string;
-    postcode?: string;
-    country_code?: string;
-    country?: string;
-    road?: string;
-    house_number?: string;
-  };
+interface LocationResponse {
+  success: boolean;
+  message: string;
+  data: string[];
 }
 
 export default function WohnortInput({ value, onChange, hideLabel = false, placeholder = "Ex. Musterstraße 123, Berlin, DE" }: WohnortInputProps) {
-  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Load German, Italian & Austrian place suggestions for Wohnort (OpenStreetMap Nominatim, free & policy-compliant)
+  // Load German, Italian & Austrian place suggestions for Wohnort using backend API
   // Enhanced to show all Austrian states (Bundesländer) and addresses
   useEffect(() => {
     const query = value.trim();
@@ -50,23 +39,15 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
         setIsLoading(true);
         setError(null);
 
-        // Improved query for better Austrian address results
-        // Using namedetails=1 and extratags=1 for better address parsing
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&namedetails=1&extratags=1&limit=10&countrycodes=de,it,at&q=${encodeURIComponent(
-          query,
-        )}`;
-
-        const res = await fetch(url, {
-          headers: {
-            Accept: 'application/json',
-            'User-Agent': 'MyAppName/1.0 (myemail@example.com)', // policy-compliant
-          },
-        });
-
-        if (!res.ok) throw new Error('Failed to load locations');
-
-        const data = (await res.json()) as NominatimResult[];
-        setSuggestions(Array.isArray(data) ? data : []);
+        // Use backend API for location search
+        const response = await getLocation(query);
+        
+        // Handle the response structure: { success, message, data: string[] }
+        if (response.success && Array.isArray(response.data)) {
+          setSuggestions(response.data);
+        } else {
+          setSuggestions([]);
+        }
       } catch (err) {
         console.warn('Wohnort-Suche fehlgeschlagen', err);
         setSuggestions([]);
@@ -134,52 +115,21 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
                 Keine Orte gefunden.
               </div>
             ) : (
-              suggestions.map((s) => {
-                // Use full display_name which includes street, city, country
-                const fullAddress = s.display_name || '';
-                const address = s.address || {};
-                const countryCode = (address.country_code || '').toUpperCase();
-
-                // Extract city/town/village for display (prioritize city)
-                const cityLabel =
-                  address.city ||
-                  address.town ||
-                  address.village ||
-                  address.municipality ||
-                  '';
-
-                // Extract state/province (important for Austria - Bundesländer)
-                const stateLabel = address.state || address.county || '';
-
-                // Build a more informative display label
-                const displayParts = [];
-                if (cityLabel) displayParts.push(cityLabel);
-                if (stateLabel) displayParts.push(stateLabel);
-                if (countryCode) displayParts.push(countryCode);
-                const displayLabel = displayParts.join(', ');
-
-                return (
-                  <button
-                    key={s.place_id}
-                    type="button"
-                    className="flex w-full flex-col items-start px-3 py-2 text-left text-xs hover:bg-gray-50"
-                    onClick={() => {
-                      // Set the full address (includes street, city, state, country)
-                      onChange(fullAddress);
-                      setShowSuggestions(false);
-                    }}
-                  >
-                    <span className="font-medium text-gray-800">
-                      {fullAddress}
-                    </span>
-                    {displayLabel && (
-                      <span className="mt-0.5 line-clamp-1 text-[11px] text-gray-500">
-                        {displayLabel}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
+              suggestions.map((location, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  className="flex w-full items-start px-3 py-2 text-left text-xs hover:bg-gray-50"
+                  onClick={() => {
+                    onChange(location);
+                    setShowSuggestions(false);
+                  }}
+                >
+                  <span className="font-medium text-gray-800">
+                    {location}
+                  </span>
+                </button>
+              ))
             )}
           </div>
         )}

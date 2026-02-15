@@ -25,7 +25,13 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
     
     // Get VAT rates based on country for bottom dropdown
     const taxRates = getTaxRatesByCountry(vatCountry);
-    const countryWiseVatOptions = taxRates ? taxRates.map(rate => rate.rate.toString()) : VAT_OPTIONS;
+    const countryWiseVatOptions = taxRates || VAT_OPTIONS.map(vat => ({
+        id: vat,
+        name: `MwSt.`,
+        rate: parseFloat(vat),
+        description: '',
+        isDefault: vat === "20"
+    }));
     const defaultCountryVat = taxRates?.find(rate => rate.isDefault)?.rate.toString() || "20";
     
     const [name, setName] = useState("");
@@ -326,16 +332,32 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                                 {/* MwSt. country wise */}
                                 <div>
                                     <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                        MwSt. ({vatPercentageCountry}%)
+                                        {(() => {
+                                            const selectedRate = countryWiseVatOptions.find(
+                                                rate => rate.rate.toString() === vatPercentageCountry
+                                            );
+                                            return selectedRate 
+                                                ? `MwSt (${selectedRate.rate}%)`
+                                                : `MwSt. (${vatPercentageCountry}%)`;
+                                        })()}
                                     </label>
                                     <Select value={vatPercentageCountry} onValueChange={setVatPercentageCountry}>
                                         <SelectTrigger className="w-full border-gray-300 rounded-[5px] bg-white">
-                                            <SelectValue />
+                                            <SelectValue>
+                                                {(() => {
+                                                    const selectedRate = countryWiseVatOptions.find(
+                                                        rate => rate.rate.toString() === vatPercentageCountry
+                                                    );
+                                                    return selectedRate 
+                                                        ? `${selectedRate.name} (${selectedRate.rate}%)`
+                                                        : `${vatPercentageCountry}%`;
+                                                })()}
+                                            </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {countryWiseVatOptions.map((vat) => (
-                                                <SelectItem key={vat} value={vat} className="cursor-pointer">
-                                                    {vat}%
+                                            {countryWiseVatOptions.map((rate) => (
+                                                <SelectItem key={rate.id} value={rate.rate.toString()} className="cursor-pointer">
+                                                    {rate.name} ({rate.rate}%)
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>

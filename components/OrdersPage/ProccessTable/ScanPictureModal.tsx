@@ -226,7 +226,7 @@ export default function ScanPictureModal({
                                 <div className="space-y-4">
                                     {data?.createdAt && (
                                         <p className="text-sm font-semibold text-gray-900">
-                                         <span className='text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2'> Erstellt am:</span> {formatDate(data.createdAt)}
+                                            <span className='text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2'> Erstellt am:</span> {formatDate(data.createdAt)}
                                         </p>
                                     )}
                                     {data.fertigstellungBis && (
@@ -391,6 +391,19 @@ export default function ScanPictureModal({
                                     {data.versorgungName || '—'}
                                 </p>
                             </div>
+
+                            {/* Uberzug Section */}
+                            {data.uberzug && (
+                                <div className="pb-4 border-b border-gray-100">
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                        Überzug
+                                    </h3>
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {data.uberzug}
+                                    </p>
+                                </div>
+                            )}
+
                             <div className="pb-4 border-b border-gray-100">
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Materialien
@@ -438,17 +451,7 @@ export default function ScanPictureModal({
                                 </div>
                             )}
 
-                            {/* Uberzug Section */}
-                            {data.uberzug && (
-                                <div className="pb-4 border-b border-gray-100">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Überzug
-                                    </h3>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {data.uberzug}
-                                    </p>
-                                </div>
-                            )}
+
                         </div>
                     )}
                 </div>

@@ -197,7 +197,7 @@ function TypeFilterButtons() {
                 }}
                 className="cursor-pointer"
             >
-                Rady Einlage
+                Einlage
             </Button>
             <Button
                 variant={selectedType === 'milling_block' ? 'default' : 'outline'}
