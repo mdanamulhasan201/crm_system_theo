@@ -123,30 +123,30 @@ export default function PositionsnummerDropdown({
             </div>
             <div className="relative">
                 <div
-                    className={`p-3 sm:p-2 border rounded cursor-pointer flex justify-between items-center min-h-[44px] ${
+                    className={`px-3 py-2.5 border rounded-md cursor-pointer flex justify-between items-center ${
                         error ? 'border-red-500' : 'border-gray-300'
                     }`}
                     onClick={onToggle}
                 >
-                    <span className={`text-sm sm:text-base truncate pr-2 ${value.length > 0 ? '' : 'text-gray-400'}`}>
+                    <div className={`text-sm flex-1 overflow-hidden ${value.length > 0 ? '' : 'text-gray-400'}`}>
                         {selectedOptions.length > 0 ? (
-                            <span className="flex items-center gap-2 flex-wrap">
+                            <div className="flex items-center gap-2 overflow-hidden">
                                 {selectedOptions.length === 1 ? (
                                     <>
-                                        <span className="font-medium text-gray-900">{getPositionsnummer(selectedOptions[0])}</span>
-                                        <span className="text-gray-600">{getDescriptionText(selectedOptions[0])}</span>
-                                        <span className="text-green-600 font-semibold">€ {selectedOptions[0].price.toFixed(2).replace('.', ',')}</span>
+                                        <span className="font-medium text-gray-900 whitespace-nowrap">{getPositionsnummer(selectedOptions[0])}</span>
+                                        <span className="text-gray-600 truncate flex-1">{getDescriptionText(selectedOptions[0])}</span>
+                                        <span className="text-green-600 font-semibold whitespace-nowrap ml-auto">€ {selectedOptions[0].price.toFixed(2).replace('.', ',')}</span>
                                     </>
                                 ) : (
                                     <span className="text-gray-700 font-medium">
                                         {selectedOptions.length} ausgewählt
                                     </span>
                                 )}
-                            </span>
+                            </div>
                         ) : (
                             placeholder
                         )}
-                    </span>
+                    </div>
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
                         className="h-5 w-5 shrink-0"

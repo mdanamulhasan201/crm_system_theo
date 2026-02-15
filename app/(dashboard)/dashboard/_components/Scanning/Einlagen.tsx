@@ -13,15 +13,19 @@ import { ScanData } from '@/types/scan';
 import OrderConfirmationModal from './OrderConfirmationModal';
 import { useEinlagenForm } from '../../../../../hooks/einlagen/useEinlagenForm';
 import { createOrderData, collectFormData } from './utils/orderDataUtils';
-import TextAreaSection from './Einlagen/FormSections/TextAreaSection';
-import DiagnosisSection from './Einlagen/FormSections/DiagnosisSection';
-import ProductSelectionSection from './Einlagen/FormSections/ProductSelectionSection';
+// import TextAreaSection from './Einlagen/FormSections/TextAreaSection';
+// import DiagnosisSection from './Einlagen/FormSections/DiagnosisSection';
+// import ProductSelectionSection from './Einlagen/FormSections/ProductSelectionSection';
 import SupplySection from './Einlagen/FormSections/SupplySection';
-import AdditionalFieldsSection from './Einlagen/FormSections/AdditionalFieldsSection';
+import VersorgungKonfigurierenCard from './Einlagen/FormSections/VersorgungKonfigurierenCard';
+// import AdditionalFieldsSection from './Einlagen/FormSections/AdditionalFieldsSection';
+import RezeptAbrechnungCard from './Einlagen/FormSections/RezeptAbrechnungCard';
+import ProduktBasisdatenCard from './Einlagen/FormSections/ProduktBasisdatenCard';
+import VersorgungsnotizCard from './Einlagen/FormSections/VersorgungsnotizCard';
 import WerkstattzettelModal from './WerkstattzettelModal';
 import SpringerDialog from './SpringerDialog';
 import { getSettingData } from '@/apis/einlagenApis';
-import PositionsnummerDropdown from './Einlagen/Dropdowns/PositionsnummerDropdown';
+// import PositionsnummerDropdown from './Einlagen/Dropdowns/PositionsnummerDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -312,6 +316,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [billingType, setBillingType] = useState<'Krankenkassa' | 'Privat'>('Krankenkassa');
     const [selectedPositionsnummer, setSelectedPositionsnummer] = useState<string[]>([]);
     const [showPositionsnummerDropdown, setShowPositionsnummerDropdown] = useState(false);
+    const [lieferschein, setLieferschein] = useState<boolean | null>(null);
     
     // Clear selectedPositionsnummer when billingType changes
     useEffect(() => {
@@ -736,9 +741,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
     return (
         <div>
-
-            {/* Abrechnung Section */}
-            <div className="mb-6">
+            {/* Abrechnung Section - Outside Cards */}
+            <div className="mb-8">
                 <label className="block text-sm font-semibold text-gray-700 mb-3">Abrechnung:</label>
                 <Tabs 
                     value={billingType} 
@@ -762,117 +766,102 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 </Tabs>
             </div>
 
-            <div className="mt-10">
-                {/* Text Area Section */}
-                <TextAreaSection
-                    leftLabel="Ärztliche Diagnose/ Ausführliche Diagnose"
-                    leftValue={ausführliche_diagnose}
-                    leftPlaceholder="Geben Sie hier die ausführliche Diagnose ein..."
-                    leftOnChange={setAusführliche_diagnose}
-                    rightLabel="Versorgung laut Arzt"
-                    rightValue={versorgung_laut_arzt}
-                    rightPlaceholder="Versorgung laut Arzt eingeben..."
-                    rightOnChange={setVersorgung_laut_arzt}
-                    leftError={errors.ausführliche_diagnose?.message}
-                />
+            {/* CARD 1: REZEPT & ABRECHNUNG */}
+            <RezeptAbrechnungCard
+                ausführliche_diagnose={ausführliche_diagnose}
+                onAusführlicheDiagnoseChange={setAusführliche_diagnose}
+                ausführlicheDiagnoseError={errors.ausführliche_diagnose?.message}
+                versorgung_laut_arzt={versorgung_laut_arzt}
+                onVersorgungLautArztChange={setVersorgung_laut_arzt}
+                billingType={billingType}
+                selectedPositionsnummer={selectedPositionsnummer}
+                positionsnummerOptions={filteredPositionsnummerData}
+                positionsnummerError={positionsnummerError}
+                showPositionsnummerDropdown={showPositionsnummerDropdown}
+                onPositionsnummerToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
+                onPositionsnummerSelect={setSelectedPositionsnummer}
+                selectedDiagnosis={selectedDiagnosis}
+                diagnosisOptions={diagnosisOptions}
+                showDiagnosisDropdown={showDiagnosisDropdown}
+                onDiagnosisToggle={() => setShowDiagnosisDropdown(!showDiagnosisDropdown)}
+                onDiagnosisSelect={(value) => {
+                    handleDiagnosisSelect(value);
+                    setShowDiagnosisDropdown(false);
+                }}
+                selectedEmployee={selectedEmployee}
+                employeeSearchText={employeeSearchText}
+                isEmployeeDropdownOpen={isEmployeeDropdownOpen}
+                employeeSuggestions={employeeSuggestions}
+                employeeLoading={employeeLoading}
+                onEmployeeSearchChange={handleEmployeeSearchChange}
+                onEmployeeDropdownChange={handleEmployeeDropdownChange}
+                onEmployeeSelect={handleEmployeeSelect}
+                kostenvoranschlag={kostenvoranschlag}
+                onKostenvoranschlagChange={setKostenvoranschlag}
+                lieferschein={lieferschein}
+                onLieferscheinChange={setLieferschein}
+            />
 
-                {/* Positionsnummer Field - Only show when Krankenkassa is selected */}
-                {billingType === 'Krankenkassa' && (
-                    <div className="mt-6 mb-6">
-                        <PositionsnummerDropdown
-                            label="Positionsnummer *"
-                            value={selectedPositionsnummer}
-                            placeholder="Positionsnummer oder Text suchen..."
-                            options={filteredPositionsnummerData}
-                            error={positionsnummerError}
-                            isOpen={showPositionsnummerDropdown}
-                            onToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
-                            onSelect={(values) => {
-                                setSelectedPositionsnummer(values);
-                            }}
-                        />
-                    </div>
-                )}
+            {/* CARD 2: PRODUKT & BASISDATEN */}
+            <ProduktBasisdatenCard
+                einlagentyp={einlagentyp}
+                selectedEinlage={selectedEinlage as string}
+                einlageOptions={einlageOptions}
+                showEinlageDropdown={showEinlageDropdown}
+                onEinlageToggle={() => setShowEinlageDropdown(!showEinlageDropdown)}
+                onEinlageSelect={(value) => {
+                    handleEinlageSelect(value);
+                    setValue('einlagentyp', value);
+                    setShowEinlageDropdown(false);
+                }}
+                einlagentypError={errors.einlagentyp?.message}
+                überzug={überzug}
+                uberzugOptions={coverTypes}
+                showUberzugDropdown={showUberzugDropdown}
+                onUberzugToggle={() => setShowUberzugDropdown(!showUberzugDropdown)}
+                onUberzugSelect={(value) => {
+                    setÜberzug(value);
+                    setShowUberzugDropdown(false);
+                    setValue('überzug', value);
+                }}
+                überzugError={errors.überzug?.message}
+                menge={menge}
+                mengeOptions={MENGE_OPTIONS}
+                showMengeDropdown={showMengeDropdown}
+                onMengeToggle={() => setShowMengeDropdown(!showMengeDropdown)}
+                onMengeSelect={(value) => {
+                    setMenge(value);
+                    setShowMengeDropdown(false);
+                    setValue('menge', value);
+                }}
+                mengeError={errors.menge?.message}
+                schuhmodell_wählen={schuhmodell_wählen}
+                onSchuhmodellChange={setSchuhmodell_wählen}
+                onSpringerLogoClick={handleSpringerLogoClick}
+            />
 
-                {/* Diagnosis Section */}
-                <DiagnosisSection
-                    diagnosisOptions={diagnosisOptions}
-                    showDiagnosisDropdown={showDiagnosisDropdown}
-                    setShowDiagnosisDropdown={setShowDiagnosisDropdown}
-                    selectedDiagnosis={selectedDiagnosis}
-                    onDiagnosisSelect={handleDiagnosisSelect}
-                    onDiagnosisClear={clearDiagnosisAndReloadOptions}
-                    selectedEmployee={selectedEmployee}
-                    isEmployeeDropdownOpen={isEmployeeDropdownOpen}
-                    employeeSearchText={employeeSearchText}
-                    employeeSuggestions={employeeSuggestions}
-                    employeeLoading={employeeLoading}
-                    onEmployeeDropdownChange={handleEmployeeDropdownChange}
-                    onEmployeeSearchChange={handleEmployeeSearchChange}
-                    onEmployeeSelect={handleEmployeeSelect}
-                />
+            {/* Versorgung Konfigurieren Card */}
+            <VersorgungKonfigurierenCard
+                versorgungData={versorgungData}
+                loadingVersorgung={loadingVersorgung}
+                hasDataLoaded={hasDataLoaded}
+                selectedVersorgungId={selectedVersorgungId}
+                supply={supply}
+                onVersorgungCardSelect={handleVersorgungCardSelect}
+                versorgungError={errors.versorgung?.message}
+                showSupplyDropdown={showSupplyDropdown}
+                onSupplyDropdownToggle={handleSupplyDropdownToggle}
+                selectedDiagnosis={selectedDiagnosis}
+                selectedEinlage={selectedEinlage as string}
+            />
 
-                {/* Product Selection Section */}
-                <ProductSelectionSection
-                    einlagentyp={einlagentyp}
-                    selectedEinlage={selectedEinlage}
-                    einlageOptions={einlageOptions}
-                    showEinlageDropdown={showEinlageDropdown}
-                    onEinlageToggle={() => setShowEinlageDropdown(!showEinlageDropdown)}
-                    onEinlageSelect={(value) => {
-                        handleEinlageSelect(value);
-                        setValue('einlagentyp', value);
-                    }}
-                    einlagentypError={errors.einlagentyp?.message}
-                    überzug={überzug}
-                    uberzugOptions={coverTypes}
-                    showUberzugDropdown={showUberzugDropdown}
-                    onUberzugToggle={() => setShowUberzugDropdown(!showUberzugDropdown)}
-                    onUberzugSelect={(value) => {
-                        setÜberzug(value);
-                        setShowUberzugDropdown(false);
-                        setValue('überzug', value);
-                    }}
-                    überzugError={errors.überzug?.message}
-                    menge={menge}
-                    mengeOptions={MENGE_OPTIONS}
-                    showMengeDropdown={showMengeDropdown}
-                    onMengeToggle={() => setShowMengeDropdown(!showMengeDropdown)}
-                    onMengeSelect={(value) => {
-                        setMenge(value);
-                        setShowMengeDropdown(false);
-                        setValue('menge', value);
-                    }}
-                    mengeError={errors.menge?.message}
-                    onSpringerLogoClick={handleSpringerLogoClick}
-                />
+            {/* CARD 3: VERSORGUNGSNOTIZ */}
+            <VersorgungsnotizCard
+                versorgung_note={versorgung_note}
+                onVersorgungNoteChange={setVersorgung_note}
+            />
 
-                {/* Supply Section */}
-                <SupplySection
-                    versorgungNote={versorgung_note}
-                    onVersorgungNoteChange={setVersorgung_note}
-                    showSupplyDropdown={showSupplyDropdown}
-                    onSupplyDropdownToggle={handleSupplyDropdownToggle}
-                    selectedDiagnosis={selectedDiagnosis}
-                    selectedEinlage={selectedEinlage as string}
-                    versorgungData={versorgungData}
-                    loadingVersorgung={loadingVersorgung}
-                    hasDataLoaded={hasDataLoaded}
-                    selectedVersorgungId={selectedVersorgungId}
-                    supply={supply}
-                    onVersorgungCardSelect={handleVersorgungCardSelect}
-                    versorgungError={errors.versorgung?.message}
-                />
-
-                {/* Additional Fields Section */}
-                <AdditionalFieldsSection
-                    schuhmodell_wählen={schuhmodell_wählen}
-                    onSchuhmodellChange={setSchuhmodell_wählen}
-                    kostenvoranschlag={kostenvoranschlag}
-                    onKostenvoranschlagChange={setKostenvoranschlag}
-                />
-
-                {/* Save Button */}
+            {/* Save Button */}
                 <div className="flex justify-center my-10">
                     <Button
                         type="button"
@@ -882,7 +871,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     >
                         {isCreating ? 'Speichern...' : 'Speichern'}
                     </Button>
-                </div>
             </div>
 
             {/* Modals */}

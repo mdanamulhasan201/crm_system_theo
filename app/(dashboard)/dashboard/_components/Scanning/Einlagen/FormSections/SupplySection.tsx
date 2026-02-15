@@ -44,21 +44,7 @@ export default function SupplySection({
     versorgungError,
 }: SupplySectionProps) {
     return (
-        <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Versorgung note */}
-            <div className="relative">
-                <div className="mb-2">
-                    <h3 className="text-lg font-semibold">Versorgung Note</h3>
-                </div>
-                <textarea
-                    value={versorgungNote}
-                    onChange={(e) => onVersorgungNoteChange(e.target.value)}
-                    className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    rows={4}
-                    placeholder="Hast du sonstige Anmerkungen oder Notizen zur Versorgung..."
-                />
-            </div>
-
+        <div className="mb-8">
             {/* Versorgung */}
             <div className="relative">
                 <div className="flex items-center justify-between mb-2">
