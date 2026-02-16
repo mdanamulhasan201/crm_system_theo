@@ -31,7 +31,7 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
     
     // Get VAT rates based on country
     const taxRates = getTaxRatesByCountry(vatCountry);
-    const countryWiseVatOptions = taxRates || VAT_OPTIONS.map(vat => ({
+    const countryWiseVatOptions = taxRates || VAT_OPTIONS.map((vat: string) => ({
         id: vat,
         name: `MwSt.`,
         rate: parseFloat(vat),
@@ -42,47 +42,38 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
     
     const [name, setName] = useState("");
     const [basePrice, setBasePrice] = useState(""); // Base Service Price
-    const [vatPercentageMain, setVatPercentageMain] = useState("10"); // Top dropdown - Partner Commission %
-    const [vatPercentageCountry, setVatPercentageCountry] = useState(defaultCountryVat); // Bottom dropdown (country-wise) - VAT %
+    const [vatPercentageCountry, setVatPercentageCountry] = useState(defaultCountryVat); // VAT %
 
-    // Calculate prices: Base → Commission → VAT → Final Brutto
-    const calculatePrices = (base: string, commission: string, vat: string) => {
-        const baseValue = parseFloat(base) || 0;
-        const commissionValue = parseFloat(commission) || 0;
+    // Calculate prices: Brutto (input) → Netto (Brutto - VAT)
+    const calculatePrices = (brutto: string, vat: string) => {
+        const bruttoValue = parseFloat(brutto) || 0;
         const vatValue = parseFloat(vat) || 0;
         
-        if (baseValue === 0) {
+        if (bruttoValue === 0) {
             return { 
-                basePrice: 0,
+                bruttoPrice: 0,
                 commissionAmount: 0,
                 netBeforeVat: 0,
                 vatAmount: 0,
-                finalBrutto: 0
             };
         }
         
-        // Step 1: Calculate Partner Commission
-        const commissionAmount = baseValue * (commissionValue / 100);
+        // Reverse calculation: Brutto is input, calculate Netto
+        // Netto = Brutto / (1 + VAT/100)
+        const netBeforeVat = bruttoValue / (1 + vatValue / 100);
         
-        // Step 2: Net before VAT (Base + Commission)
-        const netBeforeVat = baseValue + commissionAmount;
-        
-        // Step 3: Calculate VAT on Net before VAT
-        const vatAmount = netBeforeVat * (vatValue / 100);
-        
-        // Step 4: Final Brutto (Net before VAT + VAT)
-        const finalBrutto = netBeforeVat + vatAmount;
+        // VAT Amount = Brutto - Netto
+        const vatAmount = bruttoValue - netBeforeVat;
         
         return {
-            basePrice: Math.round(baseValue * 100) / 100,
-            commissionAmount: Math.round(commissionAmount * 100) / 100,
+            bruttoPrice: Math.round(bruttoValue * 100) / 100,
+            commissionAmount: 0,
             netBeforeVat: Math.round(netBeforeVat * 100) / 100,
             vatAmount: Math.round(vatAmount * 100) / 100,
-            finalBrutto: Math.round(finalBrutto * 100) / 100,
         };
     };
 
-    const prices = calculatePrices(basePrice, vatPercentageMain, vatPercentageCountry);
+    const prices = calculatePrices(basePrice, vatPercentageCountry);
 
     // Update country-wise VAT when country changes
     useEffect(() => {
@@ -96,7 +87,6 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
         if (!open) {
             setName("");
             setBasePrice("");
-            setVatPercentageMain("10");
             setVatPercentageCountry(defaultCountryVat);
         }
     }, [open, defaultCountryVat]);
@@ -116,10 +106,10 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
         // Pass all calculated data
         const priceData = {
             name: name.trim(),
-            price: prices.finalBrutto,
-            basePrice: prices.basePrice,
-            commissionPercentage: parseFloat(vatPercentageMain),
-            commissionAmount: prices.commissionAmount,
+            price: prices.bruttoPrice,
+            basePrice: prices.bruttoPrice,
+            commissionPercentage: 0, // No commission anymore
+            commissionAmount: 0, // No commission anymore
             netBeforeVat: prices.netBeforeVat,
             vatPercentage: parseFloat(vatPercentageCountry),
             vatAmount: prices.vatAmount,
@@ -156,26 +146,42 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
 
                     {/* Price Calculation Section */}
                     <div className="bg-gray-100 rounded-[5px] p-4 space-y-3">
-                        {/* MwSt. main (Partner Commission) */}
+                        {/* MwSt. country wise */}
                         <div>
                             <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                MwSt.
+                                {(() => {
+                                    const selectedRate = countryWiseVatOptions.find(
+                                        (rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => rate.rate.toString() === vatPercentageCountry
+                                    );
+                                    return selectedRate 
+                                        ? `MwSt (${selectedRate.rate}%)`
+                                        : `MwSt. (${vatPercentageCountry}%)`;
+                                })()}
                             </label>
-                            <Select value={vatPercentageMain} onValueChange={setVatPercentageMain}>
+                            <Select value={vatPercentageCountry} onValueChange={setVatPercentageCountry}>
                                 <SelectTrigger className="w-full border-gray-300 rounded-[5px] bg-white">
-                                    <SelectValue />
+                                    <SelectValue>
+                                        {(() => {
+                                            const selectedRate = countryWiseVatOptions.find(
+                                                (rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => rate.rate.toString() === vatPercentageCountry
+                                            );
+                                            return selectedRate 
+                                                ? `${selectedRate.name} (${selectedRate.rate}%)`
+                                                : `${vatPercentageCountry}%`;
+                                        })()}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {VAT_OPTIONS.map((vat) => (
-                                        <SelectItem key={vat} value={vat} className="cursor-pointer">
-                                            {vat}%
+                                    {countryWiseVatOptions.map((rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => (
+                                        <SelectItem key={rate.id} value={rate.rate.toString()} className="cursor-pointer">
+                                            {rate.name} ({rate.rate}%)
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        {/* Base Service Price */}
+                        {/* Preis (Brutto) */}
                         <div>
                             <label className="block font-bold text-sm mb-2 text-black uppercase">
                                 Preis (Brutto)
@@ -194,7 +200,7 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
                             </div>
                         </div>
 
-                        {/* Net before VAT */}
+                        {/* Netto */}
                         <div>
                             <label className="block font-bold text-sm mb-2 text-black uppercase">
                                 Netto
@@ -208,40 +214,19 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
                                 />
                             </div>
                         </div>
-
-                        {/* MwSt. country wise */}
+                        {/* Brutto */}
                         <div>
                             <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                {(() => {
-                                    const selectedRate = countryWiseVatOptions.find(
-                                        rate => rate.rate.toString() === vatPercentageCountry
-                                    );
-                                    return selectedRate 
-                                        ? `MwSt (${selectedRate.rate}%)`
-                                        : `MwSt. (${vatPercentageCountry}%)`;
-                                })()}
+                                Brutto
                             </label>
-                            <Select value={vatPercentageCountry} onValueChange={setVatPercentageCountry}>
-                                <SelectTrigger className="w-full border-gray-300 rounded-[5px] bg-white">
-                                    <SelectValue>
-                                        {(() => {
-                                            const selectedRate = countryWiseVatOptions.find(
-                                                rate => rate.rate.toString() === vatPercentageCountry
-                                            );
-                                            return selectedRate 
-                                                ? `${selectedRate.name} (${selectedRate.rate}%)`
-                                                : `${vatPercentageCountry}%`;
-                                        })()}
-                                    </SelectValue>
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {countryWiseVatOptions.map((rate) => (
-                                        <SelectItem key={rate.id} value={rate.rate.toString()} className="cursor-pointer">
-                                            {rate.name} ({rate.rate}%)
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="text"
+                                    value={`${prices.bruttoPrice.toFixed(2).replace('.', ',')} €`}
+                                    readOnly
+                                    className="border-green-300 rounded-[5px] bg-green-50 flex-1 cursor-not-allowed"
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>

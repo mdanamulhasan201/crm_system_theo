@@ -70,12 +70,22 @@ export default function PreisverwaltungPage() {
                 
                 if (laser_print_prices && Array.isArray(laser_print_prices)) {
                     const formattedPrices: PriceItem[] = laser_print_prices
-                        .map((item: any) => {
+                        .map((item: any): PriceItem | null => {
                             if (typeof item === 'number') {
                                 return { name: `Preis ${item}`, price: item };
                             }
-                            if (item && typeof item === 'object' && item.name && item.price) {
-                                return { name: item.name, price: item.price };
+                            if (item && typeof item === 'object' && item.name && item.price !== undefined) {
+                                const priceItem: PriceItem = { 
+                                    name: item.name, 
+                                    price: item.price ?? 0
+                                };
+                                if (item.basePrice !== undefined) priceItem.basePrice = item.basePrice;
+                                if (item.commissionPercentage !== undefined) priceItem.commissionPercentage = item.commissionPercentage;
+                                if (item.commissionAmount !== undefined) priceItem.commissionAmount = item.commissionAmount;
+                                if (item.netBeforeVat !== undefined) priceItem.netBeforeVat = item.netBeforeVat;
+                                if (item.vatPercentage !== undefined) priceItem.vatPercentage = item.vatPercentage;
+                                if (item.vatAmount !== undefined) priceItem.vatAmount = item.vatAmount;
+                                return priceItem;
                             }
                             return null;
                         })

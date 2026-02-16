@@ -160,11 +160,11 @@ export default function UpdateUserData({ customerId, onCustomerUpdate }: UpdateU
         <div className="space-y-6">
             {/* Customer Information */}
             <div className='mt-10'>
-                <div className='flex justify-between items-center'>
-                    <h3 className="text-lg font-semibold mb-3"> Kundeninformation 
+                {/* <div className='flex justify-between items-center'>
+                    <h3 className="text-lg font-semibold mb-3">
                         <span className='text-sm font-normal'> {customer?.vorname} {customer?.nachname}</span>
                     </h3>
-                </div>
+                </div> */}
 
 
 

@@ -130,9 +130,6 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
                                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
                                         Basispreis
                                     </th>
-                                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
-                                        Provision
-                                    </th>
                                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
                                         Netto
                                     </th>
@@ -148,7 +145,6 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
                                 {priceList.map((item, index) => {
                                     // Use stored values or calculate from price for backward compatibility
                                     const basePrice = item.basePrice ?? item.price;
-                                    const commission = item.commissionPercentage ?? 10;
                                     const netto = item.netBeforeVat ?? calculateNetAndVat(item.price, item.vatPercentage ?? 20).net;
                                     const vatPercentage = item.vatPercentage ?? 20;
                                     const vatAmount = item.vatAmount ?? (item.price - netto);
@@ -163,9 +159,6 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-700 text-right">
                                                 {basePrice.toFixed(2).replace(".", ",")} €
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-blue-600 text-center">
-                                                {commission}%
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-700 text-right">
                                                 {netto.toFixed(2).replace(".", ",")} €
