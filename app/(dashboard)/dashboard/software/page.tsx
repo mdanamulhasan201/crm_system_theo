@@ -29,7 +29,7 @@ interface Product {
     Category: string;
     Sub_Category: string;
     price: number | null;
-    offer: number;
+    offer: string;
     availability: boolean;
     colors: Color[];
 }
