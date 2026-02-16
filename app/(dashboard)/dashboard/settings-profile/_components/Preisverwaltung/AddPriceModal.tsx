@@ -5,37 +5,91 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { getTaxRatesByCountry } from "@/utils/taxRates";
+
+const VAT_OPTIONS = ["0", "7", "10", "19", "20", "22"];
 
 interface AddPriceModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSave: (name: string, price: number) => void;
+    onSave: (priceData: {
+        name: string;
+        price: number;
+        basePrice: number;
+        commissionPercentage: number;
+        commissionAmount: number;
+        netBeforeVat: number;
+        vatPercentage: number;
+        vatAmount: number;
+    }) => void;
 }
 
 export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceModalProps) {
+    const { user } = useAuth();
+    const vatCountry = user?.accountInfo?.vat_country;
+    
+    // Get VAT rates based on country
+    const taxRates = getTaxRatesByCountry(vatCountry);
+    const countryWiseVatOptions = taxRates || VAT_OPTIONS.map((vat: string) => ({
+        id: vat,
+        name: `MwSt.`,
+        rate: parseFloat(vat),
+        description: '',
+        isDefault: vat === "20"
+    }));
+    const defaultCountryVat = taxRates?.find(rate => rate.isDefault)?.rate.toString() || "20";
+    
     const [name, setName] = useState("");
-    const [grossPrice, setGrossPrice] = useState("");
-    const [taxRate, setTaxRate] = useState("20");
+    const [basePrice, setBasePrice] = useState(""); // Base Service Price
+    const [vatPercentageCountry, setVatPercentageCountry] = useState(defaultCountryVat); // VAT %
 
-    // Calculate net and VAT
-    const calculateValues = () => {
-        const gross = parseFloat(grossPrice) || 0;
-        const rate = parseFloat(taxRate) || 20;
-        const net = gross / (1 + rate / 100);
-        const vat = gross - net;
-        return { net, vat, gross };
+    // Calculate prices: Brutto (input) → Netto (Brutto - VAT)
+    const calculatePrices = (brutto: string, vat: string) => {
+        const bruttoValue = parseFloat(brutto) || 0;
+        const vatValue = parseFloat(vat) || 0;
+        
+        if (bruttoValue === 0) {
+            return { 
+                bruttoPrice: 0,
+                commissionAmount: 0,
+                netBeforeVat: 0,
+                vatAmount: 0,
+            };
+        }
+        
+        // Reverse calculation: Brutto is input, calculate Netto
+        // Netto = Brutto / (1 + VAT/100)
+        const netBeforeVat = bruttoValue / (1 + vatValue / 100);
+        
+        // VAT Amount = Brutto - Netto
+        const vatAmount = bruttoValue - netBeforeVat;
+        
+        return {
+            bruttoPrice: Math.round(bruttoValue * 100) / 100,
+            commissionAmount: 0,
+            netBeforeVat: Math.round(netBeforeVat * 100) / 100,
+            vatAmount: Math.round(vatAmount * 100) / 100,
+        };
     };
 
-    const { net, vat, gross } = calculateValues();
+    const prices = calculatePrices(basePrice, vatPercentageCountry);
+
+    // Update country-wise VAT when country changes
+    useEffect(() => {
+        if (defaultCountryVat) {
+            setVatPercentageCountry(defaultCountryVat);
+        }
+    }, [defaultCountryVat]);
 
     // Reset form when modal closes
     useEffect(() => {
         if (!open) {
             setName("");
-            setGrossPrice("");
-            setTaxRate("20");
+            setBasePrice("");
+            setVatPercentageCountry(defaultCountryVat);
         }
-    }, [open]);
+    }, [open, defaultCountryVat]);
 
     const handleSave = () => {
         if (!name.trim()) {
@@ -43,21 +97,33 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
             return;
         }
 
-        const price = parseFloat(grossPrice);
-        if (!price || price <= 0) {
+        const price = parseFloat(basePrice);
+        if (isNaN(price) || price < 0) {
             toast.error("Bitte geben Sie einen gültigen Preis ein.");
             return;
         }
 
-        onSave(name.trim(), price);
+        // Pass all calculated data
+        const priceData = {
+            name: name.trim(),
+            price: prices.bruttoPrice,
+            basePrice: prices.bruttoPrice,
+            commissionPercentage: 0, // No commission anymore
+            commissionAmount: 0, // No commission anymore
+            netBeforeVat: prices.netBeforeVat,
+            vatPercentage: parseFloat(vatPercentageCountry),
+            vatAmount: prices.vatAmount,
+        };
+        
+        onSave(priceData);
         onOpenChange(false);
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className="sm:max-w-2xl bg-white max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-semibold">
+                    <DialogTitle className="text-center font-bold uppercase text-lg">
                         Fussanalyse Preis hinzufügen
                     </DialogTitle>
                 </DialogHeader>
@@ -65,7 +131,7 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
                 <div className="space-y-6 py-4">
                     {/* Name Input */}
                     <div className="space-y-2">
-                        <Label htmlFor="name" className="text-sm font-medium">
+                        <Label htmlFor="name" className="text-sm font-medium uppercase">
                             Name *
                         </Label>
                         <Input
@@ -74,86 +140,108 @@ export default function AddPriceModal({ open, onOpenChange, onSave }: AddPriceMo
                             placeholder="z.B. Standard, Premium..."
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="border-2 border-green-500 rounded-lg focus-visible:ring-2 focus-visible:ring-green-200"
+                            className="border-gray-300 rounded-[5px] bg-white"
                         />
                     </div>
 
                     {/* Price Calculation Section */}
-                    <div className="bg-white border border-gray-200 rounded-lg p-4 space-y-4">
-                        <div className="flex items-center gap-3">
-                            <Label className="text-sm font-medium">Preisberechnung</Label>
-                            <Select value={taxRate} onValueChange={setTaxRate}>
-                                <SelectTrigger className="w-24">
-                                    <SelectValue />
+                    <div className="bg-gray-100 rounded-[5px] p-4 space-y-3">
+                        {/* MwSt. country wise */}
+                        <div>
+                            <label className="block font-bold text-sm mb-2 text-black uppercase">
+                                {(() => {
+                                    const selectedRate = countryWiseVatOptions.find(
+                                        (rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => rate.rate.toString() === vatPercentageCountry
+                                    );
+                                    return selectedRate 
+                                        ? `MwSt (${selectedRate.rate}%)`
+                                        : `MwSt. (${vatPercentageCountry}%)`;
+                                })()}
+                            </label>
+                            <Select value={vatPercentageCountry} onValueChange={setVatPercentageCountry}>
+                                <SelectTrigger className="w-full border-gray-300 rounded-[5px] bg-white">
+                                    <SelectValue>
+                                        {(() => {
+                                            const selectedRate = countryWiseVatOptions.find(
+                                                (rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => rate.rate.toString() === vatPercentageCountry
+                                            );
+                                            return selectedRate 
+                                                ? `${selectedRate.name} (${selectedRate.rate}%)`
+                                                : `${vatPercentageCountry}%`;
+                                        })()}
+                                    </SelectValue>
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="20">20%</SelectItem>
-                                    <SelectItem value="19">19%</SelectItem>
-                                    <SelectItem value="7">7%</SelectItem>
+                                    {countryWiseVatOptions.map((rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => (
+                                        <SelectItem key={rate.id} value={rate.rate.toString()} className="cursor-pointer">
+                                            {rate.name} ({rate.rate}%)
+                                        </SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
 
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <Label className="text-sm font-medium min-w-[120px]">Preis (Brutto)</Label>
-                                <div className="flex items-center gap-2 flex-1">
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        placeholder="0,00"
-                                        value={grossPrice}
-                                        onChange={(e) => setGrossPrice(e.target.value)}
-                                        className="flex-1"
-                                    />
-                                    <span className="text-sm text-gray-600">EUR</span>
-                                </div>
+                        {/* Preis (Brutto) */}
+                        <div>
+                            <label className="block font-bold text-sm mb-2 text-black uppercase">
+                                Preis (Brutto)
+                            </label>
+                            <div className="flex items-center gap-2">
+                                <Input
+                                    type="number"
+                                    value={basePrice}
+                                    onChange={(e) => setBasePrice(e.target.value)}
+                                    className="border-gray-300 rounded-[5px] bg-white flex-1"
+                                    placeholder="0,00"
+                                    step="0.01"
+                                    min="0"
+                                />
+                                <span className="text-black font-medium">EUR</span>
                             </div>
+                        </div>
 
-                            <div className="flex items-center gap-3">
-                                <Label className="text-sm font-medium min-w-[120px]">Netto</Label>
+                        {/* Netto */}
+                        <div>
+                            <label className="block font-bold text-sm mb-2 text-black uppercase">
+                                Netto
+                            </label>
+                            <div className="flex items-center gap-2">
                                 <Input
                                     type="text"
-                                    value={net.toFixed(2).replace(".", ",")}
+                                    value={`${prices.netBeforeVat.toFixed(2).replace('.', ',')} €`}
                                     readOnly
-                                    className="flex-1 bg-gray-50"
+                                    className="border-gray-300 rounded-[5px] bg-gray-50 flex-1 cursor-not-allowed"
                                 />
                             </div>
-
-                            <div className="flex items-center gap-3">
-                                <Label className="text-sm font-medium min-w-[120px]">MwSt. ({taxRate}%)</Label>
+                        </div>
+                        {/* Brutto */}
+                        <div>
+                            <label className="block font-bold text-sm mb-2 text-black uppercase">
+                                Brutto
+                            </label>
+                            <div className="flex items-center gap-2">
                                 <Input
                                     type="text"
-                                    value={`${vat.toFixed(2).replace(".", ",")} €`}
+                                    value={`${prices.bruttoPrice.toFixed(2).replace('.', ',')} €`}
                                     readOnly
-                                    className="flex-1 bg-gray-50"
-                                />
-                            </div>
-
-                            <div className="flex items-center gap-3">
-                                <Label className="text-sm font-medium min-w-[120px]">Brutto</Label>
-                                <Input
-                                    type="text"
-                                    value={gross.toFixed(2).replace(".", ",")}
-                                    readOnly
-                                    className="flex-1 bg-gray-50 text-green-600 font-semibold"
+                                    className="border-green-300 rounded-[5px] bg-green-50 flex-1 cursor-not-allowed"
                                 />
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t">
+                <div className="flex justify-end gap-3 pt-4">
                     <Button
                         variant="outline"
                         onClick={() => onOpenChange(false)}
-                        className="px-6"
+                        className="border-gray-300 bg-white text-gray-700 cursor-pointer rounded-[5px] px-4 py-2 hover:bg-gray-50"
                     >
                         Abbrechen
                     </Button>
                     <Button
                         onClick={handleSave}
-                        className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6"
+                        className="bg-[#61A175] hover:bg-[#61A175]/90 text-white cursor-pointer rounded-[5px] px-4 py-2"
                     >
                         Speichern
                     </Button>

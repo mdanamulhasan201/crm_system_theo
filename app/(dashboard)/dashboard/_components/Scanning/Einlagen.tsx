@@ -13,14 +13,21 @@ import { ScanData } from '@/types/scan';
 import OrderConfirmationModal from './OrderConfirmationModal';
 import { useEinlagenForm } from '../../../../../hooks/einlagen/useEinlagenForm';
 import { createOrderData, collectFormData } from './utils/orderDataUtils';
-import TextAreaSection from './Einlagen/FormSections/TextAreaSection';
-import DiagnosisSection from './Einlagen/FormSections/DiagnosisSection';
-import ProductSelectionSection from './Einlagen/FormSections/ProductSelectionSection';
+// import TextAreaSection from './Einlagen/FormSections/TextAreaSection';
+// import DiagnosisSection from './Einlagen/FormSections/DiagnosisSection';
+// import ProductSelectionSection from './Einlagen/FormSections/ProductSelectionSection';
 import SupplySection from './Einlagen/FormSections/SupplySection';
-import AdditionalFieldsSection from './Einlagen/FormSections/AdditionalFieldsSection';
+import VersorgungKonfigurierenCard from './Einlagen/FormSections/VersorgungKonfigurierenCard';
+// import AdditionalFieldsSection from './Einlagen/FormSections/AdditionalFieldsSection';
+import RezeptAbrechnungCard from './Einlagen/FormSections/RezeptAbrechnungCard';
+import ProduktBasisdatenCard from './Einlagen/FormSections/ProduktBasisdatenCard';
+import VersorgungsnotizCard from './Einlagen/FormSections/VersorgungsnotizCard';
 import WerkstattzettelModal from './WerkstattzettelModal';
 import SpringerDialog from './SpringerDialog';
 import { getSettingData } from '@/apis/einlagenApis';
+// import PositionsnummerDropdown from './Einlagen/Dropdowns/PositionsnummerDropdown';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Customer {
     id: string;
@@ -101,7 +108,7 @@ const einlagenFormSchema = z.object({
     einlagentyp: z.string().min(1, 'Einlagentyp ist erforderlich'),
     überzug: z.string().min(1, 'Überzug ist erforderlich'),
     menge: z.string().min(1, 'Menge ist erforderlich'),
-    versorgung: z.string().min(1, 'Versorgung ist erforderlich'),
+    versorgung: z.string().optional(), // Made optional, will validate conditionally
     versorgung_note: z.string().optional(),
     schuhmodell_wählen: z.string().optional(),
     kostenvoranschlag: z.boolean().nullable().optional(),
@@ -144,6 +151,62 @@ const mapEinlageType = (value?: string | null, options: string[] | Array<{name: 
 };
 
 export default function Einlagen({ customer, prefillOrderData, screenerId, onCustomerUpdate, onDataRefresh }: ScanningFormProps) {
+    // Get user data for vat_country check
+    const { user } = useAuth();
+    
+    // State for positionsnummer data
+    const [positionsnummerAustriaData, setPositionsnummerAustriaData] = useState<any[]>([]);
+    const [positionsnummerItalyData, setPositionsnummerItalyData] = useState<any[]>([]);
+    const [loadingPositionsnummer, setLoadingPositionsnummer] = useState(true);
+    
+    // Load positionsnummer data from public folder
+    useEffect(() => {
+        const loadPositionsnummerData = async () => {
+            try {
+                const [austriaResponse, italyResponse] = await Promise.all([
+                    fetch('/data/positionsnummer-austria.json'),
+                    fetch('/data/positionsnummer-italy.json')
+                ]);
+                
+                if (austriaResponse.ok) {
+                    const austriaData = await austriaResponse.json();
+                    setPositionsnummerAustriaData(austriaData);
+                }
+                
+                if (italyResponse.ok) {
+                    const italyData = await italyResponse.json();
+                    setPositionsnummerItalyData(italyData);
+                }
+            } catch (error) {
+                console.error('Failed to load positionsnummer data:', error);
+            } finally {
+                setLoadingPositionsnummer(false);
+            }
+        };
+        
+        loadPositionsnummerData();
+    }, []);
+    
+    // Filter positionsnummer data based on vat_country
+    const getFilteredPositionsnummerData = () => {
+        const vatCountry = user?.accountInfo?.vat_country;
+        
+        // If Österreich (AT), show Austrian data
+        if (vatCountry === 'Österreich (AT)') {
+            return positionsnummerAustriaData;
+        }
+        
+        // If Italien (IT), show Italian data
+        if (vatCountry === 'Italien (IT)') {
+            return positionsnummerItalyData;
+        }
+        
+        // For all other countries, show empty array
+        return [];
+    };
+    
+    const filteredPositionsnummerData = getFilteredPositionsnummerData();
+    
     // React Hook Form setup
     const {
         register,
@@ -248,6 +311,64 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     // Settings data state
     const [coverTypes, setCoverTypes] = useState<string[]>([]);
     const [loadingSettings, setLoadingSettings] = useState(false);
+    
+    // Billing type state (Krankenkassa/Privat)
+    const [billingType, setBillingType] = useState<'Krankenkassa' | 'Privat'>('Krankenkassa');
+    const [selectedPositionsnummer, setSelectedPositionsnummer] = useState<string[]>([]);
+    const [showPositionsnummerDropdown, setShowPositionsnummerDropdown] = useState(false);
+    const [lieferschein, setLieferschein] = useState<boolean | null>(null);
+    
+    // Insole Standards state (Zusätze/Custom Fields) - Initialize with default fields
+    const [insoleStandards, setInsoleStandards] = useState<Array<{ name: string; left: number; right: number }>>([
+        { name: 'Verkürzungsausgleich', left: 0, right: 0 },
+        { name: 'Supination', left: 0, right: 0 },
+        { name: 'Pronation', left: 0, right: 0 },
+    ]);
+    
+    // Custom Versorgung ID for Einmalige Versorgung
+    const [customVersorgungId, setCustomVersorgungId] = useState<string | null>(null);
+    
+    // Track active tab to determine which versorgung to use
+    const [activeVersorgungTab, setActiveVersorgungTab] = useState<'standard' | 'einmalig' | 'springer' | 'manuell'>('standard');
+    
+    // Check localStorage for custom versorgung ID on mount
+    useEffect(() => {
+        const storedId = localStorage.getItem('key');
+        if (storedId) {
+            setCustomVersorgungId(storedId);
+        }
+    }, []);
+    
+    // Clear selectedPositionsnummer when billingType changes
+    useEffect(() => {
+        setSelectedPositionsnummer([]);
+    }, [billingType]);
+    
+    // Error message for positionsnummer when not available (only for countries other than AT and IT)
+    const getPositionsnummerError = () => {
+        if (billingType !== 'Krankenkassa') return undefined;
+        
+        const vatCountry = user?.accountInfo?.vat_country;
+        
+        // No error for Österreich (AT) - data available
+        if (vatCountry === 'Österreich (AT)') {
+            return undefined;
+        }
+        
+        // No error for Italien (IT) - data available
+        if (vatCountry === 'Italien (IT)') {
+            return undefined;
+        }
+        
+        // Error for all other countries
+        if (vatCountry) {
+            return 'Positionsnummer ist für Ihr Land nicht verfügbar';
+        }
+        
+        return undefined;
+    };
+    
+    const positionsnummerError = getPositionsnummerError();
 
     // Fetch settings data on mount
     useEffect(() => {
@@ -436,17 +557,64 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     };
 
     const handleConfirmOrder = async () => {
-        const resolvedId = resolveVersorgungIdFromText();
+        // Use custom versorgung ID if on einmalig tab and it exists, otherwise use resolved ID
+        let versorgungIdToUse: string | null = null;
+        
+        if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
+            versorgungIdToUse = customVersorgungId;
+        } else if (activeVersorgungTab === 'standard') {
+            versorgungIdToUse = resolveVersorgungIdFromText();
+        } else {
+            versorgungIdToUse = resolveVersorgungIdFromText();
+        }
 
-        if (customer?.id && resolvedId && formDataForOrder) {
+        if (customer?.id && versorgungIdToUse && formDataForOrder) {
             try {
                 const fussanalysePreis = Number(formDataForOrder.fussanalysePreis) || 0;
                 const einlagenversorgungPreis = Number(formDataForOrder.einlagenversorgungPreis) || 0;
                 setOrderPrices({ fussanalysePreis, einlagenversorgungPreis });
 
-                const orderPayload = {
+                // Helper function to get positionsnummer from option
+                const getPositionsnummer = (option: any): string => {
+                    if (option.positionsnummer) {
+                        return option.positionsnummer;
+                    }
+                    if (typeof option.description === 'object' && option.description?.positionsnummer) {
+                        return option.description.positionsnummer;
+                    }
+                    return '';
+                };
+
+                // Build insurances array from selected positionsnummer
+                const buildInsurancesArray = () => {
+                    if (!selectedPositionsnummer || selectedPositionsnummer.length === 0) {
+                        return [];
+                    }
+                    
+                    const allData = [...positionsnummerAustriaData, ...positionsnummerItalyData];
+                    
+                    return selectedPositionsnummer.map(posNum => {
+                        // Find the option in both Austrian and Italian data
+                        const option = allData.find(opt => getPositionsnummer(opt) === posNum);
+                        
+                        if (option) {
+                            return {
+                                price: option.price,
+                                description: typeof option.description === 'object' ? option.description : {}
+                            };
+                        }
+                        
+                        return null;
+                    }).filter(item => item !== null);
+                };
+
+                // Get bezahlt value - use paymentStatus if bezahlt is not available (for backward compatibility)
+                const bezahltValue = formDataForOrder.bezahlt || formDataForOrder.paymentStatus || '';
+                const paymentStatusValue = formDataForOrder.paymentStatus || formDataForOrder.bezahlt || undefined;
+
+                // Build base payload
+                const orderPayload: any = {
                     customerId: customer.id,
-                    versorgungId: resolvedId,
                     einlagentyp: formDataForOrder.einlagentyp || '',
                     überzug: formDataForOrder.überzug || '',
                     quantity: formDataForOrder.quantity || formDataForOrder.menge || 1,
@@ -464,7 +632,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     mitarbeiter: formDataForOrder.mitarbeiter || '',
                     fertigstellungBis: formDataForOrder.fertigstellungBis || '',
                     versorgung: formDataForOrder.versorgung || '',
-                    bezahlt: formDataForOrder.bezahlt || '',
+                    bezahlt: bezahltValue, // Required by API
                     fussanalysePreis: fussanalysePreis,
                     einlagenversorgungPreis: einlagenversorgungPreis,
                     fußanalyse: fussanalysePreis, 
@@ -475,11 +643,29 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         ? (typeof formDataForOrder.discount === 'number' ? formDataForOrder.discount : Number(formDataForOrder.discount))
                         : undefined,
                     discountType: formDataForOrder.discountType || undefined,
+                    insurances: buildInsurancesArray(),
+                    insoleStandards: formDataForOrder.insoleStandards || [],
                 };
 
+                // Add versorgungId OR key based on active tab
+                if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
+                    // For Einmalige Versorgung, use "key" field instead of "versorgungId"
+                    orderPayload.key = customVersorgungId;
+                } else {
+                    // For Standard-Vorlage and others, use "versorgungId"
+                    orderPayload.versorgungId = versorgungIdToUse;
+                }
+
+                // Add paymentStatus if it has a value
+                if (paymentStatusValue) {
+                    orderPayload.paymentStatus = paymentStatusValue;
+                }
+
+                // For createOrderAndGeneratePdf, we still pass versorgungIdToUse
+                // The actual field (versorgungId or key) is already set in orderPayload
                 const result = await createOrderAndGeneratePdf(
                     customer.id,
-                    resolvedId,
+                    versorgungIdToUse || customVersorgungId || '', // Fallback to customVersorgungId if needed
                     autoSendToCustomer,
                     orderPayload
                 );
@@ -489,6 +675,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setShowPdfModal(true);
                     // Close Werkstattzettel modal only after successful order creation
                     setShowUserInfoUpdateModal(false);
+                    
+                    // Clear customVersorgungId from localStorage after successful order
+                    if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
+                        localStorage.removeItem('key');
+                        setCustomVersorgungId(null);
+                    }
                 }
             } catch (error) {
                 console.error('Error while creating order:', error);
@@ -499,6 +691,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     };
 
     const handleSpeichernClick = async () => {
+        // Check if on einmalig tab and no custom versorgung created
+        if (activeVersorgungTab === 'einmalig' && !customVersorgungId) {
+            toast.error('Bitte erstellen Sie zuerst eine einmalige Versorgung, indem Sie auf "Add" klicken');
+            return;
+        }
+        
+        // Validate standard fields
         const isValid = await trigger();
         
         if (!isValid) {
@@ -508,6 +707,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             } else {
                 toast.error('Bitte füllen Sie alle erforderlichen Felder aus');
             }
+            return;
+        }
+
+        // Additional validation for standard tab: versorgung is required
+        if (activeVersorgungTab === 'standard' && !supply) {
+            toast.error('Versorgung ist erforderlich');
             return;
         }
 
@@ -527,8 +732,17 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             versorgungData,
             selectedVersorgungId,
             screenerId,
+            billingType,
+            insoleStandards,
         });
-        setFormDataForOrder(formData);
+        
+        // Add flag to indicate if using custom versorgung (Einmalige Versorgung)
+        const formDataWithFlag = {
+            ...formData,
+            isCustomVersorgung: activeVersorgungTab === 'einmalig',
+        };
+        
+        setFormDataForOrder(formDataWithFlag);
         setShowUserInfoUpdateModal(true);
     };
 
@@ -540,6 +754,21 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
     const handleSpringerLogoClick = () => {
         setShowSpringerDialog(true);
+    };
+
+    const handleCustomVersorgungCreated = (versorgungId: string) => {
+        setCustomVersorgungId(versorgungId);
+        // Toast is already shown in EinmaligeVersorgungContent component
+    };
+
+    const handleActiveTabChange = (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => {
+        setActiveVersorgungTab(tab);
+        
+        // Clear custom versorgung ID when switching away from einmalig tab
+        if (tab !== 'einmalig') {
+            setCustomVersorgungId(null);
+            localStorage.removeItem('key');
+        }
     };
 
     const orderData = createOrderData({
@@ -596,99 +825,134 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
     return (
         <div>
-            <div className="mt-10">
-                {/* Text Area Section */}
-                <TextAreaSection
-                    leftLabel="Ärztliche Diagnose/ Ausführliche Diagnose"
-                    leftValue={ausführliche_diagnose}
-                    leftPlaceholder="Geben Sie hier die ausführliche Diagnose ein..."
-                    leftOnChange={setAusführliche_diagnose}
-                    rightLabel="Versorgung laut Arzt"
-                    rightValue={versorgung_laut_arzt}
-                    rightPlaceholder="Versorgung laut Arzt eingeben..."
-                    rightOnChange={setVersorgung_laut_arzt}
-                    leftError={errors.ausführliche_diagnose?.message}
-                />
+            {/* Abrechnung Section - Outside Cards */}
+            <div className="mb-8">
+                <label className="block text-sm font-semibold text-gray-700 mb-3">Abrechnung:</label>
+                <Tabs 
+                    value={billingType} 
+                    onValueChange={(value) => setBillingType(value as 'Krankenkassa' | 'Privat')}
+                    className="w-fit"
+                >
+                    <TabsList className="bg-gray-200 rounded-full p-1">
+                        <TabsTrigger 
+                            value="Krankenkassa" 
+                            className="cursor-pointer data-[state=active]:bg-[#61A178] data-[state=active]:text-white rounded-full px-6 py-2 font-medium transition-all"
+                        >
+                            Krankenkasse
+                        </TabsTrigger>
+                        <TabsTrigger 
+                            value="Privat"
+                            className="cursor-pointer data-[state=active]:bg-[#61A178] data-[state=active]:text-white rounded-full px-6 py-2 font-medium transition-all"
+                        >
+                            Privat
+                        </TabsTrigger>
+                    </TabsList>
+                </Tabs>
+            </div>
 
-                {/* Diagnosis Section */}
-                <DiagnosisSection
-                    diagnosisOptions={diagnosisOptions}
-                    showDiagnosisDropdown={showDiagnosisDropdown}
-                    setShowDiagnosisDropdown={setShowDiagnosisDropdown}
-                    selectedDiagnosis={selectedDiagnosis}
-                    onDiagnosisSelect={handleDiagnosisSelect}
-                    onDiagnosisClear={clearDiagnosisAndReloadOptions}
-                    selectedEmployee={selectedEmployee}
-                    isEmployeeDropdownOpen={isEmployeeDropdownOpen}
-                    employeeSearchText={employeeSearchText}
-                    employeeSuggestions={employeeSuggestions}
-                    employeeLoading={employeeLoading}
-                    onEmployeeDropdownChange={handleEmployeeDropdownChange}
-                    onEmployeeSearchChange={handleEmployeeSearchChange}
-                    onEmployeeSelect={handleEmployeeSelect}
-                />
+            {/* CARD 1: REZEPT & ABRECHNUNG */}
+            <RezeptAbrechnungCard
+                ausführliche_diagnose={ausführliche_diagnose}
+                onAusführlicheDiagnoseChange={setAusführliche_diagnose}
+                ausführlicheDiagnoseError={errors.ausführliche_diagnose?.message}
+                versorgung_laut_arzt={versorgung_laut_arzt}
+                onVersorgungLautArztChange={setVersorgung_laut_arzt}
+                billingType={billingType}
+                selectedPositionsnummer={selectedPositionsnummer}
+                positionsnummerOptions={filteredPositionsnummerData}
+                positionsnummerError={positionsnummerError}
+                showPositionsnummerDropdown={showPositionsnummerDropdown}
+                onPositionsnummerToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
+                onPositionsnummerSelect={setSelectedPositionsnummer}
+                selectedDiagnosis={selectedDiagnosis}
+                diagnosisOptions={diagnosisOptions}
+                showDiagnosisDropdown={showDiagnosisDropdown}
+                onDiagnosisToggle={() => setShowDiagnosisDropdown(!showDiagnosisDropdown)}
+                onDiagnosisSelect={(value) => {
+                    handleDiagnosisSelect(value);
+                    setShowDiagnosisDropdown(false);
+                }}
+                selectedEmployee={selectedEmployee}
+                employeeSearchText={employeeSearchText}
+                isEmployeeDropdownOpen={isEmployeeDropdownOpen}
+                employeeSuggestions={employeeSuggestions}
+                employeeLoading={employeeLoading}
+                onEmployeeSearchChange={handleEmployeeSearchChange}
+                onEmployeeDropdownChange={handleEmployeeDropdownChange}
+                onEmployeeSelect={handleEmployeeSelect}
+                kostenvoranschlag={kostenvoranschlag}
+                onKostenvoranschlagChange={setKostenvoranschlag}
+                lieferschein={lieferschein}
+                onLieferscheinChange={setLieferschein}
+            />
 
-                {/* Product Selection Section */}
-                <ProductSelectionSection
-                    einlagentyp={einlagentyp}
-                    selectedEinlage={selectedEinlage}
-                    einlageOptions={einlageOptions}
-                    showEinlageDropdown={showEinlageDropdown}
-                    onEinlageToggle={() => setShowEinlageDropdown(!showEinlageDropdown)}
-                    onEinlageSelect={(value) => {
-                        handleEinlageSelect(value);
-                        setValue('einlagentyp', value);
-                    }}
-                    einlagentypError={errors.einlagentyp?.message}
-                    überzug={überzug}
-                    uberzugOptions={coverTypes}
-                    showUberzugDropdown={showUberzugDropdown}
-                    onUberzugToggle={() => setShowUberzugDropdown(!showUberzugDropdown)}
-                    onUberzugSelect={(value) => {
-                        setÜberzug(value);
-                        setShowUberzugDropdown(false);
-                        setValue('überzug', value);
-                    }}
-                    überzugError={errors.überzug?.message}
-                    menge={menge}
-                    mengeOptions={MENGE_OPTIONS}
-                    showMengeDropdown={showMengeDropdown}
-                    onMengeToggle={() => setShowMengeDropdown(!showMengeDropdown)}
-                    onMengeSelect={(value) => {
-                        setMenge(value);
-                        setShowMengeDropdown(false);
-                        setValue('menge', value);
-                    }}
-                    mengeError={errors.menge?.message}
-                    onSpringerLogoClick={handleSpringerLogoClick}
-                />
+            {/* CARD 2: PRODUKT & BASISDATEN */}
+            <ProduktBasisdatenCard
+                einlagentyp={einlagentyp}
+                selectedEinlage={selectedEinlage as string}
+                einlageOptions={einlageOptions}
+                showEinlageDropdown={showEinlageDropdown}
+                onEinlageToggle={() => setShowEinlageDropdown(!showEinlageDropdown)}
+                onEinlageSelect={(value) => {
+                    handleEinlageSelect(value);
+                    setValue('einlagentyp', value);
+                    setShowEinlageDropdown(false);
+                }}
+                einlagentypError={errors.einlagentyp?.message}
+                überzug={überzug}
+                uberzugOptions={coverTypes}
+                showUberzugDropdown={showUberzugDropdown}
+                onUberzugToggle={() => setShowUberzugDropdown(!showUberzugDropdown)}
+                onUberzugSelect={(value) => {
+                    setÜberzug(value);
+                    setShowUberzugDropdown(false);
+                    setValue('überzug', value);
+                }}
+                überzugError={errors.überzug?.message}
+                menge={menge}
+                mengeOptions={MENGE_OPTIONS}
+                showMengeDropdown={showMengeDropdown}
+                onMengeToggle={() => setShowMengeDropdown(!showMengeDropdown)}
+                onMengeSelect={(value) => {
+                    setMenge(value);
+                    setShowMengeDropdown(false);
+                    setValue('menge', value);
+                }}
+                mengeError={errors.menge?.message}
+                schuhmodell_wählen={schuhmodell_wählen}
+                onSchuhmodellChange={setSchuhmodell_wählen}
+                onSpringerLogoClick={handleSpringerLogoClick}
+            />
 
-                {/* Supply Section */}
-                <SupplySection
-                    versorgungNote={versorgung_note}
-                    onVersorgungNoteChange={setVersorgung_note}
-                    showSupplyDropdown={showSupplyDropdown}
-                    onSupplyDropdownToggle={handleSupplyDropdownToggle}
-                    selectedDiagnosis={selectedDiagnosis}
-                    selectedEinlage={selectedEinlage as string}
-                    versorgungData={versorgungData}
-                    loadingVersorgung={loadingVersorgung}
-                    hasDataLoaded={hasDataLoaded}
-                    selectedVersorgungId={selectedVersorgungId}
-                    supply={supply}
-                    onVersorgungCardSelect={handleVersorgungCardSelect}
-                    versorgungError={errors.versorgung?.message}
-                />
+            {/* Versorgung Konfigurieren Card */}
+            <VersorgungKonfigurierenCard
+                versorgungData={versorgungData}
+                loadingVersorgung={loadingVersorgung}
+                hasDataLoaded={hasDataLoaded}
+                selectedVersorgungId={selectedVersorgungId}
+                supply={supply}
+                onVersorgungCardSelect={handleVersorgungCardSelect}
+                versorgungError={activeVersorgungTab === 'standard' ? errors.versorgung?.message : undefined}
+                showSupplyDropdown={showSupplyDropdown}
+                onSupplyDropdownToggle={handleSupplyDropdownToggle}
+                selectedDiagnosis={selectedDiagnosis}
+                selectedEinlage={selectedEinlage as string}
+                insoleStandards={insoleStandards}
+                onInsoleStandardsChange={setInsoleStandards}
+                menge={menge}
+                customerId={customer?.id}
+                selectedEinlageId={einlageOptions.find(opt => opt.name === selectedEinlage)?.id}
+                onCustomVersorgungCreated={handleCustomVersorgungCreated}
+                onActiveTabChange={handleActiveTabChange}
+            />
 
-                {/* Additional Fields Section */}
-                <AdditionalFieldsSection
-                    schuhmodell_wählen={schuhmodell_wählen}
-                    onSchuhmodellChange={setSchuhmodell_wählen}
-                    kostenvoranschlag={kostenvoranschlag}
-                    onKostenvoranschlagChange={setKostenvoranschlag}
-                />
+            {/* CARD 3: VERSORGUNGSNOTIZ */}
+            <VersorgungsnotizCard
+                versorgung_note={versorgung_note}
+                onVersorgungNoteChange={setVersorgung_note}
+            />
 
-                {/* Save Button */}
+            {/* Save Button */}
                 <div className="flex justify-center my-10">
                     <Button
                         type="button"
@@ -698,7 +962,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     >
                         {isCreating ? 'Speichern...' : 'Speichern'}
                     </Button>
-                </div>
             </div>
 
             {/* Modals */}

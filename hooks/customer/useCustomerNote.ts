@@ -5,7 +5,7 @@ import { addCustomerNote, getCustomerNote, deleteCustomerNote, updateCustomerNot
 // Types and Interfaces
 interface CustomerNote {
     id: string;
-    customerId: string;
+    customerId?: string;
     category: string;
     date: string | null;
     url: string | null;
@@ -15,7 +15,7 @@ interface CustomerNote {
     note: string | null;
     system_note: string | null;
     createdAt: string;
-    updatedAt: string;
+    updatedAt?: string;
 }
 
 interface Note {
@@ -39,11 +39,17 @@ interface UseCustomerNoteReturn {
     isAdding: boolean;
     isLoadingNotes: boolean;
     error: string | null;
+    pagination: {
+        currentPage: number;
+        hasNextPage: boolean;
+        isLoadingMore: boolean;
+    };
 
     // Actions
     addNote: (customerId: string, note: string, category: string, date: string) => Promise<void>;
-    getNotes: (customerId: string, page?: number, limit?: number, category?: string) => Promise<CustomerNote[]>;
-    updateLocalNotes: (apiNotes: CustomerNote[]) => void;
+    getNotes: (customerId: string, page?: number, limit?: number, category?: string) => Promise<{ notes: CustomerNote[]; pagination: any }>;
+    updateLocalNotes: (apiNotes: CustomerNote[], append?: boolean) => void;
+    loadMoreNotes: (customerId: string, category: string) => Promise<void>;
     deleteNote: (id: string) => Promise<void>;
     updateNote: (id: string, note: string, category?: string, date?: string) => Promise<void>;
     getAllDates: () => string[];
@@ -67,13 +73,23 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
     const [error, setError] = useState<string | null>(null);
     const [notes, setNotes] = useState<CustomerNote[]>([]);
     const [localNotes, setLocalNotes] = useState<Notes>({});
+    const [pagination, setPagination] = useState({
+        currentPage: 1,
+        hasNextPage: false,
+        isLoadingMore: false
+    });
 
     const mapToApiCategory = useCallback((frontendCategory: string): string => {
         return CATEGORY_MAPPING[frontendCategory as keyof typeof CATEGORY_MAPPING] || frontendCategory;
     }, []);
 
     const mapToFrontendCategory = useCallback((apiCategory: string): string => {
+        // Map API categories to frontend categories
         if (apiCategory === 'Emails') return 'E-mails';
+        // Handle other category mappings if needed
+        // For now, return as-is if it matches frontend categories
+        // Valid frontend categories: Notizen, Bestellungen, Leistungen, Termin, Zahlungen, E-mails
+        // API may also return: Rechnungen (not displayed in frontend, but won't break)
         return apiCategory;
     }, []);
 
@@ -109,17 +125,44 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
         }
     }, [mapToApiCategory]);
 
-    const getNotes = useCallback(async (customerId: string, page: number = 1, limit: number = 50, category: string = '') => {
+    const getNotes = useCallback(async (customerId: string, page: number = 1, limit: number = 5, category: string = '') => {
         try {
             setIsLoadingNotes(true);
             setError(null);
 
             const apiCategory = mapToApiCategory(category);
             const response = await getCustomerNote(customerId, page, limit, apiCategory);
-            const fetchedNotes = response?.data || [];
+            // API response structure: { success, message, data: [...], pagination: {...} }
+            // getCustomerNote already returns response.data, so we access response.data directly
+            const apiNotes = response?.data || [];
+            const paginationInfo = response?.pagination || {};
+            
+            // Map new API response to CustomerNote interface format
+            // New API provides: id, category, system_note, note, createdAt
+            // Missing fields will be set to null/undefined
+            const fetchedNotes: CustomerNote[] = apiNotes.map((note: any) => ({
+                id: note.id,
+                customerId: customerId, // Add customerId from parameter
+                category: note.category,
+                date: null, // New API doesn't provide date, will use createdAt in getDateKey
+                url: note.url || null,
+                methord: note.methord || null,
+                paymentIs: note.paymentIs || null,
+                eventId: note.eventId || null,
+                note: note.note || null,
+                system_note: note.system_note || null,
+                createdAt: note.createdAt,
+                updatedAt: note.updatedAt || note.createdAt // Fallback to createdAt if updatedAt not provided
+            }));
 
             setNotes(fetchedNotes);
-            return fetchedNotes;
+            setPagination({
+                currentPage: paginationInfo.currentPage || page,
+                hasNextPage: paginationInfo.hasNextPage || false,
+                isLoadingMore: false
+            });
+            
+            return { notes: fetchedNotes, pagination: paginationInfo };
         } catch (err: any) {
             console.error('Error in getNotes:', err);
             setError('Failed to fetch notes');
@@ -165,7 +208,7 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
     // Helper functions
     const getAllDates = useCallback((): string[] => {
         const dates = Object.keys(localNotes).filter(date => localNotes[date].length > 0);
-        return dates.sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+        return dates.sort((a, b) => new Date(b).getTime() - new Date(a).getTime()); // Descending order (newest first)
     }, [localNotes]);
 
     const formatDisplayDate = useCallback((dateStr: string): string => {
@@ -188,11 +231,13 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
     }, [localNotes]);
 
     const getFilteredDates = useCallback((activeTab: string): string[] => {
+        const allDates = getAllDates();
+        
         if (activeTab === 'Diagramm') {
-            return getAllDates();
+            return allDates;
         }
 
-        return getAllDates().filter(date => {
+        return allDates.filter(date => {
             return localNotes[date] && localNotes[date].some(note => note.category === activeTab);
         });
     }, [localNotes, getAllDates]);
@@ -234,10 +279,71 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
         }
     }, [localNotes]);
 
-    const updateLocalNotes = useCallback((apiNotes: CustomerNote[]) => {
-        const transformedNotes = transformApiNotesToLocal(apiNotes);
-        setLocalNotes(transformedNotes);
+    const updateLocalNotes = useCallback((apiNotes: CustomerNote[], append: boolean = false) => {
+        if (append) {
+            // Append new notes to existing ones
+            setLocalNotes(prevNotes => {
+                const newTransformed = transformApiNotesToLocal(apiNotes);
+                const merged: Notes = { ...prevNotes };
+                
+                Object.keys(newTransformed).forEach(date => {
+                    if (merged[date]) {
+                        // Merge notes for the same date, avoiding duplicates
+                        const existingIds = new Set(merged[date].map(n => n.id));
+                        const newNotes = newTransformed[date].filter(n => !existingIds.has(n.id));
+                        merged[date] = [...merged[date], ...newNotes];
+                    } else {
+                        merged[date] = newTransformed[date];
+                    }
+                });
+                
+                return merged;
+            });
+        } else {
+            // Replace all notes
+            const transformedNotes = transformApiNotesToLocal(apiNotes);
+            setLocalNotes(transformedNotes);
+        }
     }, [transformApiNotesToLocal]);
+
+    const loadMoreNotes = useCallback(async (customerId: string, category: string) => {
+        if (pagination.isLoadingMore || !pagination.hasNextPage) return;
+        
+        try {
+            setPagination(prev => ({ ...prev, isLoadingMore: true }));
+            const nextPage = pagination.currentPage + 1;
+            const apiCategory = mapToApiCategory(category);
+            const response = await getCustomerNote(customerId, nextPage, 5, apiCategory);
+            const apiNotes = response?.data || [];
+            const paginationInfo = response?.pagination || {};
+            
+            const fetchedNotes: CustomerNote[] = apiNotes.map((note: any) => ({
+                id: note.id,
+                customerId: customerId,
+                category: note.category,
+                date: null,
+                url: note.url || null,
+                methord: note.methord || null,
+                paymentIs: note.paymentIs || null,
+                eventId: note.eventId || null,
+                note: note.note || null,
+                system_note: note.system_note || null,
+                createdAt: note.createdAt,
+                updatedAt: note.updatedAt || note.createdAt
+            }));
+
+            updateLocalNotes(fetchedNotes, true); // Append to existing
+            
+            setPagination({
+                currentPage: paginationInfo.currentPage || nextPage,
+                hasNextPage: paginationInfo.hasNextPage || false,
+                isLoadingMore: false
+            });
+        } catch (err: any) {
+            console.error('Error loading more notes:', err);
+            setPagination(prev => ({ ...prev, isLoadingMore: false }));
+        }
+    }, [pagination, mapToApiCategory, updateLocalNotes]);
 
     const deleteNote = useCallback(async (id: string) => {
         await deleteCustomerNote(id);
@@ -260,11 +366,13 @@ export const useCustomerNote = (): UseCustomerNoteReturn => {
         isAdding,
         isLoadingNotes,
         error,
+        pagination,
 
         // Actions
         addNote,
         getNotes,
         updateLocalNotes,
+        loadMoreNotes,
         deleteNote,
         updateNote,
         // Helper functions

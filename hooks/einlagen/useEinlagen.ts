@@ -23,6 +23,8 @@ interface EinlageFormData {
     name: string;
     description: string;
     price: number;
+    vatRate?: number;
+    profitPercentage?: number;
     image?: string;
     imageFile?: File;
 }
@@ -45,8 +47,10 @@ export const useEinlagen = () => {
                 throw new Error(errorMessage);
             }
 
-            if (!data.price || data.price <= 0) {
-                const errorMessage = 'Preis ist erforderlich und muss eine gültige positive Zahl sein';
+            // Price is optional, default to 0 if not provided or invalid
+            const price = data.price !== undefined && data.price !== null ? data.price : 0;
+            if (price < 0) {
+                const errorMessage = 'Preis muss eine gültige Zahl sein (0 oder größer)';
                 setError(errorMessage);
                 toast.error(errorMessage);
                 throw new Error(errorMessage);
@@ -54,10 +58,18 @@ export const useEinlagen = () => {
 
             const formData = new FormData();
             formData.append('name', data.name.trim());
-            formData.append('price', data.price.toString());
+            formData.append('price', price.toString());
 
             if (data.description) {
                 formData.append('description', data.description);
+            }
+
+            if (data.vatRate !== undefined && data.vatRate !== null) {
+                formData.append('vatRate', data.vatRate.toString());
+            }
+
+            if (data.profitPercentage !== undefined && data.profitPercentage !== null) {
+                formData.append('profitPercentage', data.profitPercentage.toString());
             }
 
             // Handle image - File or data URL (optional)
@@ -144,8 +156,10 @@ export const useEinlagen = () => {
                 throw new Error(errorMessage);
             }
 
-            if (!data.price || data.price <= 0) {
-                const errorMessage = 'Preis ist erforderlich und muss eine gültige positive Zahl sein';
+            // Price is optional, default to 0 if not provided or invalid
+            const price = data.price !== undefined && data.price !== null ? data.price : 0;
+            if (price < 0) {
+                const errorMessage = 'Preis muss eine gültige Zahl sein (0 oder größer)';
                 setError(errorMessage);
                 toast.error(errorMessage);
                 throw new Error(errorMessage);
@@ -153,10 +167,18 @@ export const useEinlagen = () => {
 
             const formData = new FormData();
             formData.append('name', data.name.trim());
-            formData.append('price', data.price.toString());
+            formData.append('price', price.toString());
 
             if (data.description) {
                 formData.append('description', data.description);
+            }
+
+            if (data.vatRate !== undefined && data.vatRate !== null) {
+                formData.append('vatRate', data.vatRate.toString());
+            }
+
+            if (data.profitPercentage !== undefined && data.profitPercentage !== null) {
+                formData.append('profitPercentage', data.profitPercentage.toString());
             }
 
             // Handle image - File or data URL

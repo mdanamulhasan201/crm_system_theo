@@ -15,6 +15,16 @@ export const createOrder = async (customerId: string, versorgungId: string, werk
         throw error;
     }
 }
+// create custom Versorgung privet-supply/shadow
+export const createCustomVersorgung = async (payload: Record<string, any>) => {
+    try {
+        const response = await axiosClient.post('/privet-supply/shadow', payload);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 
 // get single order 
 export const getSingleOrder = async (orderId: string) => {
@@ -58,10 +68,14 @@ export const getAllOrders = async (
     orderStatus?: string,
     customerNumber?: string,
     orderNumber?: string,
-    customerName?: string
+    customerName?: string,
+    type?: string
 ) => {
     try {
         let url = `/customer-orders?page=${page}&limit=${limit}&days=${days}`;
+        if (type) {
+            url += `&type=${type}`;
+        }
         if (orderStatus) {
             url += `&orderStatus=${orderStatus}`;
         }
@@ -219,13 +233,48 @@ export const getPaymentStatus = async (orderIds: string[], paymentStatus: string
 // Alias for Krankenkasse status updates (for backward compatibility)
 export const getKrankenKasseStatus = async (orderIds: string[], krankenkasseStatus: string) => {
     try {
-        const response = await axiosClient.patch('/customer-orders/manage/payment-status', { 
-            orderIds, 
+        const response = await axiosClient.patch('/customer-orders/manage/payment-status', {
+            orderIds,
             paymentStatus: krankenkasseStatus,
-            bezahlt: krankenkasseStatus 
+            bezahlt: krankenkasseStatus
         });
         return response.data;
     } catch (error) {
         throw error;
     }
 }
+
+
+
+// customer-orders/previous-orders/{{customer id}}?limit=1&cursor={{lest item id}}
+// 
+// last order
+export const getPreviousOrders = async (customerId: string, limit: number, cursor?: number) => {
+    try {
+        let url = `/customer-orders/previous-orders/${customerId}?limit=${limit}`;
+        if (cursor !== undefined && cursor !== null) {
+            url += `&cursor=${cursor}`;
+        }
+        const response = await axiosClient.get(url);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// customer-orders/previous-orders/f95ea2fe-adf3-47d3-b177-504fb678cf16?limit=10&cursor=&productType=shoes | insole
+
+export const getPreviousOrdersByProductType = async (customerId: string, limit: number, cursor: number | undefined, productType: string) => {
+    try {
+        let url = `/customer-orders/previous-orders/${customerId}?limit=${limit}&productType=${productType}`;
+        if (cursor !== undefined && cursor !== null) {
+            url += `&cursor=${cursor}`;
+        }
+        const response = await axiosClient.get(url);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+

@@ -27,6 +27,7 @@ import Image from 'next/image'
 import useDebounce from '@/hooks/useDebounce'
 import BuyStorageModal from '../_components/BuyStorage/BuyStorage'
 import AddStorageModal from '../_components/BuyStorage/AddStorage'
+import { useSearchParams } from 'next/navigation'
 
 interface AdminStoreProduct {
     id: string
@@ -38,7 +39,7 @@ interface AdminStoreProduct {
     eigenschaften: string
     groessenMengen: {
         [key: string]: {
-            length: number
+            length?: number
             quantity: number
         }
     }
@@ -47,20 +48,42 @@ interface AdminStoreProduct {
     storesCount: number
 }
 
-const sizeColumns = [
+// Type for modal components (requires length to be present)
+type ModalProduct = Omit<AdminStoreProduct, 'groessenMengen'> & {
+    groessenMengen: {
+        [key: string]: {
+            length: number
+            quantity: number
+        }
+    }
+}
+
+// Size columns for rady_insole (numeric sizes)
+const radyInsoleSizes = [
     "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48"
 ]
 
+// Size columns for milling_block (Size 1, Size 2, Size 3)
+const millingBlockSizes = ['Size 1', 'Size 2', 'Size 3']
+
 export default function BuyStoragePage() {
+    const searchParams = useSearchParams()
+    const typeFromQuery = searchParams.get('type') as 'rady_insole' | 'milling_block' | null
+    // Default to rady_insole if no type is provided
+    const apiType = typeFromQuery || 'rady_insole'
+    
+    // Get size columns based on type
+    const sizeColumns = apiType === 'milling_block' ? millingBlockSizes : radyInsoleSizes
+
     const [products, setProducts] = useState<AdminStoreProduct[]>([])
     const [pagination, setPagination] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [searchQuery, setSearchQuery] = useState('')
-    const [selectedProduct, setSelectedProduct] = useState<AdminStoreProduct | null>(null)
+    const [selectedProduct, setSelectedProduct] = useState<ModalProduct | null>(null)
     const [isModalOpen, setIsModalOpen] = useState(false)
-    const [selectedProductForAdd, setSelectedProductForAdd] = useState<AdminStoreProduct | null>(null)
+    const [selectedProductForAdd, setSelectedProductForAdd] = useState<ModalProduct | null>(null)
     const [isAddModalOpen, setIsAddModalOpen] = useState(false)
     const debouncedSearch = useDebounce(searchQuery, 500)
 
@@ -69,7 +92,7 @@ export default function BuyStoragePage() {
         const fetchStores = async () => {
             setIsLoading(true)
             try {
-                const response = await getAllStores(currentPage, itemsPerPage, debouncedSearch)
+                const response = await getAllStores(currentPage, itemsPerPage, debouncedSearch, apiType)
                 if (response.success && response.data) {
                     setProducts(response.data)
                     setPagination(response.pagination)
@@ -84,17 +107,33 @@ export default function BuyStoragePage() {
         }
 
         fetchStores()
-    }, [currentPage, itemsPerPage, debouncedSearch])
+    }, [currentPage, itemsPerPage, debouncedSearch, apiType])
+
+    // Normalize product data to ensure length is always present for modal compatibility
+    const normalizeProduct = (product: AdminStoreProduct): ModalProduct => {
+        const normalizedGroessenMengen: { [key: string]: { length: number; quantity: number } } = {}
+        Object.keys(product.groessenMengen).forEach(size => {
+            const sizeData = product.groessenMengen[size]
+            normalizedGroessenMengen[size] = {
+                length: sizeData.length ?? 0,
+                quantity: sizeData.quantity
+            }
+        })
+        return {
+            ...product,
+            groessenMengen: normalizedGroessenMengen
+        }
+    }
 
     // Handle open modal
     const handleOpenModal = (product: AdminStoreProduct) => {
-        setSelectedProduct(product)
+        setSelectedProduct(normalizeProduct(product))
         setIsModalOpen(true)
     }
 
     // Handle add storage
     const handleAddStorage = (product: AdminStoreProduct) => {
-        setSelectedProductForAdd(product)
+        setSelectedProductForAdd(normalizeProduct(product))
         setIsAddModalOpen(true)
     }
 
@@ -106,7 +145,7 @@ export default function BuyStoragePage() {
 
     // Refresh products list after successful add
     const handleAddSuccess = async () => {
-        const refreshResponse = await getAllStores(currentPage, itemsPerPage, debouncedSearch)
+        const refreshResponse = await getAllStores(currentPage, itemsPerPage, debouncedSearch, apiType)
         if (refreshResponse.success && refreshResponse.data) {
             setProducts(refreshResponse.data)
             setPagination(refreshResponse.pagination)
@@ -121,7 +160,7 @@ export default function BuyStoragePage() {
 
     // Refresh products list after successful purchase
     const handleBuySuccess = async () => {
-        const refreshResponse = await getAllStores(currentPage, itemsPerPage, debouncedSearch)
+        const refreshResponse = await getAllStores(currentPage, itemsPerPage, debouncedSearch, apiType)
         if (refreshResponse.success && refreshResponse.data) {
             setProducts(refreshResponse.data)
             setPagination(refreshResponse.pagination)
@@ -135,7 +174,9 @@ export default function BuyStoragePage() {
         <div className="w-full px-5">
             {/* Header */}
             <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between mb-10">
-                <h1 className='text-2xl font-semibold'>Einlagen zum Lager hinzufügen</h1>
+                <h1 className='text-2xl font-semibold'>
+                    {apiType === 'milling_block' ? 'Fräsblock zum Lager hinzufügen' : 'Einlagen zum Lager hinzufügen'}
+                </h1>
 
                 <div className="relative w-64">
                     <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg" />
@@ -154,11 +195,13 @@ export default function BuyStoragePage() {
             {/* Section Title */}
             <div className='flex items-center justify-between mb-4'>
                 <div>
-                    <h2 className="text-2xl font-semibold">Einlagen</h2>
+                    <h2 className="text-2xl font-semibold">
+                        {apiType === 'milling_block' ? 'Fräsblock' : 'Einlagen'}
+                    </h2>
 
                     {pagination && (
                         <p className="text-sm text-gray-600 mt-1">
-                            {pagination.totalItems} Einlage gefunden
+                            {pagination.totalItems} {apiType === 'milling_block' ? 'Fräsblock' : 'Einlage'} gefunden
                         </p>
                     )}
                 </div>
@@ -198,10 +241,16 @@ export default function BuyStoragePage() {
                             </TableRow>
                         ) : (
                             products.map((product) => {
-                                // Get available sizes
-                                const availableSizes = sizeColumns.filter(size => 
-                                    product.groessenMengen[size] && product.groessenMengen[size].quantity > 0
-                                )
+                                // Get available sizes from the actual product data
+                                // For milling blocks, use the keys from groessenMengen
+                                // For rady_insole, filter by sizeColumns
+                                const availableSizes = apiType === 'milling_block' 
+                                    ? Object.keys(product.groessenMengen).filter(size => 
+                                        product.groessenMengen[size] && product.groessenMengen[size].quantity > 0
+                                    )
+                                    : sizeColumns.filter(size => 
+                                        product.groessenMengen[size] && product.groessenMengen[size].quantity > 0
+                                    )
                                 
                                 return (
                                     <TableRow key={product.id} className="border-b bg-white hover:bg-gray-50 transition-colors">
@@ -257,7 +306,7 @@ export default function BuyStoragePage() {
                                                 onClick={() => handleOpenModal(product)}
                                                 className="bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer text-xs shadow-sm hover:shadow transition-all"
                                             >
-                                                Einlagen bestellen
+                                                {apiType === 'milling_block' ? 'Fräsblock bestellen' : 'Einlagen bestellen'}
                                             </Button>
                                             <Button
                                                 onClick={() => handleAddStorage(product)}

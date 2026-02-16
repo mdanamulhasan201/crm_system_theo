@@ -1,19 +1,28 @@
 import axiosClient from "@/lib/axiosClient";
 
 // create product
-export const createProduct = async (productData: any) => {
+export const createProduct = async (productData: any, type: string) => {
     try {
-        const response = await axiosClient.post('/store/create', productData);
+        const config = productData instanceof FormData 
+            ? {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+            : {};
+        
+        const response = await axiosClient.post(`/store/create?type=${type}`, productData, config);
         return response.data;
     } catch (error) {
         throw error;
     }
 };
 
-// get all storages /store/my/get?page=1&limit=10&search
-export const getAllStorages = async (page: number, limit: number, search: string) => {
+// get all storages /store/my/get?page=1&limit=10&search&type=milling_block or rady_insole
+export const getAllStorages = async (page: number, limit: number, search: string, type?: string) => {
     try {
-        const response = await axiosClient.get(`/store/my/get?page=${page}&limit=${limit}&search=${search}`);
+        const typeParam = type ? `&type=${type}` : '';
+        const response = await axiosClient.get(`/store/my/get?page=${page}&limit=${limit}&search=${search}${typeParam}`);
         return response.data;
     } catch (error) {
         throw error;
@@ -23,26 +32,6 @@ export const getAllStorages = async (page: number, limit: number, search: string
 
 
 
-
-// get product history 
-export const getProductHistory = async (productId: string, page: number = 1, limit: number = 10) => {
-    try {
-        const response = await axiosClient.get(`/store/history/${productId}?page=${page}&limit=${limit}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-};
-
-// get single storage
-export const getSingleStorage = async (storageId: string) => {
-    try {
-        const response = await axiosClient.get(`/store/get/${storageId}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-};
 
 // update storage /store/update/9082a642-7a88-4b5c-a34c-9ad08c062c82
 
@@ -55,15 +44,6 @@ export const updateStorage = async (storageId: string, storageData: any) => {
     }
 };
 
-// delete storage
-export const deleteStorage = async (storageId: string) => {
-    try {
-        const response = await axiosClient.delete(`/store/delete/${storageId}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-};
 
 
 

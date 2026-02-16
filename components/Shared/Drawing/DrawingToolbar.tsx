@@ -21,8 +21,8 @@ export default function DrawingToolbar({
     onExitZoom
 }: DrawingToolbarProps) {
     return (
-        <div className="py-4">
-            <div className="flex flex-wrap justify-center items-center gap-3 lg:gap-4">
+        <div className="py-0">
+            <div className="flex items-center gap-2 sm:gap-3 lg:gap-4 shrink-0">
                 {/* Exit Zoom Button */}
                 <button
                     onClick={onExitZoom}
@@ -90,20 +90,13 @@ export default function DrawingToolbar({
                         <div className="h-8 w-px bg-gray-300 hidden sm:block"></div>
                         <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-2 py-2 border border-gray-200">
                             <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Farbe:</label>
-                            <div className="flex items-center gap-2">
-                                <input
-                                    type="color"
-                                    value={brushColor}
-                                    onChange={(e) => setBrushColor(e.target.value)}
-                                    className="w-10 h-10 rounded-lg border-2 border-gray-300 cursor-pointer shadow-sm hover:shadow-md transition-shadow"
-                                    title="Pinselfarbe auswählen"
-                                />
-                                <div 
-                                    className="w-8 h-8 rounded border-2 border-gray-300 shadow-sm"
-                                    style={{ backgroundColor: brushColor }}
-                                    title={`Aktuelle Farbe: ${brushColor}`}
-                                />
-                            </div>
+                            <input
+                                type="color"
+                                value={brushColor}
+                                onChange={(e) => setBrushColor(e.target.value)}
+                                className="w-10 h-10 rounded-lg border-2 border-gray-300 cursor-pointer shadow-sm hover:shadow-md transition-shadow"
+                                title="Pinselfarbe auswählen"
+                            />
                         </div>
                     </>
                 )}

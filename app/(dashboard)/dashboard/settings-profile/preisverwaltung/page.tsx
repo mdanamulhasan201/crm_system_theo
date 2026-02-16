@@ -16,8 +16,10 @@ interface Insole {
     name: string;
     description: string;
     price: number;
-    image: string;
+    image: string | null;
     selected: boolean;
+    vatRate?: number;
+    profitPercentage?: number;
 }
 
 export default function PreisverwaltungPage() {
@@ -41,8 +43,10 @@ export default function PreisverwaltungPage() {
                     name: item.name,
                     description: item.description || "",
                     price: item.price,
-                    image: item.image || "#CCCCCC",
+                    image: item.image || null,
                     selected: false,
+                    vatRate: item.vatRate || 0,
+                    profitPercentage: item.profitPercentage || 0,
                 }));
                 setInsoles(formattedInsoles);
             }
@@ -66,12 +70,22 @@ export default function PreisverwaltungPage() {
                 
                 if (laser_print_prices && Array.isArray(laser_print_prices)) {
                     const formattedPrices: PriceItem[] = laser_print_prices
-                        .map((item: any) => {
+                        .map((item: any): PriceItem | null => {
                             if (typeof item === 'number') {
                                 return { name: `Preis ${item}`, price: item };
                             }
-                            if (item && typeof item === 'object' && item.name && item.price) {
-                                return { name: item.name, price: item.price };
+                            if (item && typeof item === 'object' && item.name && item.price !== undefined) {
+                                const priceItem: PriceItem = { 
+                                    name: item.name, 
+                                    price: item.price ?? 0
+                                };
+                                if (item.basePrice !== undefined) priceItem.basePrice = item.basePrice;
+                                if (item.commissionPercentage !== undefined) priceItem.commissionPercentage = item.commissionPercentage;
+                                if (item.commissionAmount !== undefined) priceItem.commissionAmount = item.commissionAmount;
+                                if (item.netBeforeVat !== undefined) priceItem.netBeforeVat = item.netBeforeVat;
+                                if (item.vatPercentage !== undefined) priceItem.vatPercentage = item.vatPercentage;
+                                if (item.vatAmount !== undefined) priceItem.vatAmount = item.vatAmount;
+                                return priceItem;
                             }
                             return null;
                         })
@@ -110,6 +124,8 @@ export default function PreisverwaltungPage() {
         name: string; 
         description: string; 
         price: number; 
+        vatRate: number;
+        profitPercentage: number;
         image?: string; 
         imageFile?: File 
     }) => {
@@ -120,6 +136,8 @@ export default function PreisverwaltungPage() {
                     name: data.name,
                     description: data.description,
                     price: data.price,
+                    vatRate: data.vatRate,
+                    profitPercentage: data.profitPercentage,
                     image: data.image,
                     imageFile: data.imageFile,
                 });
@@ -128,6 +146,8 @@ export default function PreisverwaltungPage() {
                     name: data.name,
                     description: data.description,
                     price: data.price,
+                    vatRate: data.vatRate,
+                    profitPercentage: data.profitPercentage,
                     image: data.image,
                     imageFile: data.imageFile,
                 });
@@ -209,7 +229,13 @@ export default function PreisverwaltungPage() {
                     }
                 }}
                 onSubmit={handleAddInsole}
-                editingInsole={editingInsole}
+                editingInsole={editingInsole ? {
+                    id: editingInsole.id,
+                    name: editingInsole.name,
+                    description: editingInsole.description,
+                    price: editingInsole.price,
+                    image: editingInsole.image || undefined,
+                } : null}
                 isLoading={isLoading}
             />
 

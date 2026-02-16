@@ -83,7 +83,7 @@ const DashboardLayout = ({ children }: LayoutProps) => {
                     )}
 
                     {/* Content Area */}
-                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-4">
+                    <main className="flex-1 overflow-x-hidden overflow-y-auto bg-white p-4 relative">
                         {children}
                     </main>
 

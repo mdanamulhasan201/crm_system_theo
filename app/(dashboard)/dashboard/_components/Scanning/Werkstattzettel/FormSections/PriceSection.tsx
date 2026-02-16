@@ -5,10 +5,24 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 import PaymentStatusSection from './PaymentStatusSection'
+import { FileText, Calendar, Users } from 'lucide-react'
 
 type EinlagenversorgungPriceItem = { name: string; price: number } | number
 
 interface PriceSectionProps {
+  // Versorgung, Menge, Fertigstellung bis
+  versorgung: string
+  onVersorgungChange: (value: string) => void
+  quantity: string
+  onQuantityChange: (value: string) => void
+  fertigstellungBis: string
+  onFertigstellungBisChange: (value: string) => void
+  fertigstellungBisTime: string
+  onFertigstellungBisTimeChange: (value: string) => void
+  versorgungError?: string
+  fertigstellungBisError?: string
+  
+  // Price fields
   footAnalysisPrice: string
   onFootAnalysisPriceChange: (value: string) => void
   insoleSupplyPrice: string
@@ -31,6 +45,11 @@ interface PriceSectionProps {
   bezahlt: string
   onBezahltChange: (value: string) => void
   paymentError?: string
+  disabledPaymentType?: 'Privat' | 'Krankenkasse'
+  
+  // Date utils
+  datumAuftrag?: string
+  completionDays?: string | number
 }
 
 // Helper function to format price in German format
@@ -53,6 +72,16 @@ const formatEinlagenversorgungText = (item: EinlagenversorgungPriceItem): string
 }
 
 export default function PriceSection({
+  versorgung,
+  onVersorgungChange,
+  quantity,
+  onQuantityChange,
+  fertigstellungBis,
+  onFertigstellungBisChange,
+  fertigstellungBisTime,
+  onFertigstellungBisTimeChange,
+  versorgungError,
+  fertigstellungBisError,
   footAnalysisPrice,
   onFootAnalysisPriceChange,
   insoleSupplyPrice,
@@ -75,150 +104,258 @@ export default function PriceSection({
   bezahlt,
   onBezahltChange,
   paymentError,
+  disabledPaymentType,
+  datumAuftrag,
+  completionDays,
 }: PriceSectionProps) {
+  
+  // Format date to DD.MM.YYYY
+  const formatDate = (dateString: string) => {
+    if (!dateString) return ''
+    const date = new Date(dateString)
+    const day = String(date.getDate()).padStart(2, '0')
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const year = date.getFullYear()
+    return `${day}.${month}.${year}`
+  }
+
+  // Calculate prices
+  const versorgungPrice = parseFloat(insoleSupplyPrice) || 0
+  const footPrice = parseFloat(footAnalysisPrice) || 0
+  const quantityNum = parseInt(quantity?.match(/\d+/)?.[0] || '1', 10)
+  
+  const subtotal = (versorgungPrice * quantityNum) + footPrice
+  const discountAmount = discountType === 'percentage' && discountValue 
+    ? (subtotal * parseFloat(discountValue)) / 100 
+    : 0
+  const total = subtotal - discountAmount
+
+  // Generate hours (05-21) for 24-hour format and minutes (00, 10, 20, 30, 40, 50)
+  const hours24 = Array.from({ length: 17 }, (_, i) => String(i + 5).padStart(2, '0'))
+  const minutes = ['00', '10', '20', '30', '40', '50']
+
+  // Parse 24-hour time format
+  const parseTime24Hour = (time24: string) => {
+    if (!time24 || time24.trim() === '') return { hour: '', minute: '' }
+    const [hour, minute] = time24.split(':')
+    return { hour: hour || '', minute: minute || '' }
+  }
+
+  // Convert hour and minute to 24-hour format string
+  const convertTo24Hour = (hour: string, minute: string) => {
+    if (!hour || !minute) return ''
+    return `${hour.padStart(2, '0')}:${minute}`
+  }
+
+  const { hour: currentHour, minute: currentMinute } = parseTime24Hour(fertigstellungBisTime || '')
+
+  const handleHourChange = (hour: string) => {
+    if (!hour || !currentMinute) {
+      onFertigstellungBisTimeChange('')
+      return
+    }
+    const newTime24 = convertTo24Hour(hour, currentMinute)
+    onFertigstellungBisTimeChange(newTime24)
+  }
+
+  const handleMinuteChange = (minute: string) => {
+    if (!currentHour || !minute) {
+      onFertigstellungBisTimeChange('')
+      return
+    }
+    const newTime24 = convertTo24Hour(currentHour, minute)
+    onFertigstellungBisTimeChange(newTime24)
+  }
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-3">
-          <Label className="text-base font-semibold">Fußanalyse</Label>
-          <Select value={footAnalysisPrice} onValueChange={onFootAnalysisPriceChange}>
-            <SelectTrigger
-              className={cn(
-                'w-full',
-                footAnalysisPriceError && 'border-red-500 focus-visible:ring-red-500'
-              )}
-            >
-              <SelectValue
-                placeholder={pricesLoading ? 'Lade Preise...' : laserPrintPrices.length > 0 ? 'Preis auswählen' : 'Kein Preis verfügbar'}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {laserPrintPrices.length > 0 ? (
-                laserPrintPrices.map((item, index) => (
-                  <SelectItem
-                    className="cursor-pointer"
-                    key={`foot-${item.name}-${item.price}-${index}`}
-                    value={String(item.price)}
-                  >
-                    {item.name} - {formatPrice(item.price)}
-                  </SelectItem>
-                ))
-              ) : (
-                <SelectItem value="no-price" disabled>
-                  Kein Preis verfügbar
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          {footAnalysisPrice === 'custom' && (
-            <Input
-              type="number"
-              placeholder="Preis eingeben"
-              value={customFootPrice}
-              onChange={(e) => onCustomFootPriceChange(e.target.value)}
-              className={cn(
-                'w-full mt-2',
-                customFootPriceError && 'border-red-500 focus-visible:ring-red-500'
-              )}
-            />
-          )}
-          {customFootPriceError && (
-            <p className="text-xs text-red-500 mt-1">{customFootPriceError}</p>
-          )}
-          {footAnalysisPriceError && (
-            <p className="text-xs text-red-500 mt-1">{footAnalysisPriceError}</p>
-          )}
-        </div>
+    <div className="space-y-0">
+      {/* Header with icon */}
+      <div className="flex items-center gap-2 mb-8">
+        <FileText className="w-5 h-5 text-gray-400" />
+        <h3 className="text-sm font-semibold text-green-600 uppercase tracking-wider">Auftragsdetails & Preise</h3>
+      </div>
 
-        <div className="space-y-3">
-          <Label className="text-base font-semibold">Einlagenversorgung</Label>
-          <Select value={insoleSupplyPrice} onValueChange={onInsoleSupplyPriceChange}>
-            <SelectTrigger
-              className={cn(
-                'w-full',
-                insoleSupplyPriceError && 'border-red-500 focus-visible:ring-red-500'
+      {/* Main Layout: Form on left, Summary on right */}
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Left Side: Form Fields */}
+        <div className="flex-1 space-y-4">
+          {/* Versorgung */}
+          <div className="flex items-start gap-3">
+            <FileText className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Versorgung</p>
+              <p className="text-[15px] font-semibold text-gray-700">
+                {versorgung || '-'}
+              </p>
+              {versorgungError && (
+                <p className="text-xs text-red-500 mt-1">{versorgungError}</p>
               )}
-            >
-              <SelectValue
-                placeholder={pricesLoading ? 'Lade Preise...' : einlagenversorgungPrices.length > 0 ? 'Preis auswählen' : 'Kein Preis verfügbar'}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {einlagenversorgungPrices.length > 0 ? (
-                einlagenversorgungPrices.map((item, index) => {
-                  const { price } = getPriceInfo(item)
-                  return (
-                    <SelectItem
-                      className="cursor-pointer"
-                      key={`insole-${index}`}
-                      value={String(price)}
-                    >
-                      {formatEinlagenversorgungText(item)}
-                    </SelectItem>
-                  )
-                })
-              ) : (
-                <SelectItem value="no-price" disabled>
-                  Kein Preis verfügbar
-                </SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          {insoleSupplyPrice === 'custom' && (
-            <Input
-              type="number"
-              placeholder="Preis eingeben"
-              value={customInsolePrice}
-              onChange={(e) => onCustomInsolePriceChange(e.target.value)}
-              className={cn(
-                'w-full mt-2',
-                customInsolePriceError && 'border-red-500 focus-visible:ring-red-500'
-              )}
-            />
-          )}
-          {customInsolePriceError && (
-            <p className="text-xs text-red-500 mt-1">{customInsolePriceError}</p>
-          )}
-          {insoleSupplyPriceError && (
-            <p className="text-xs text-red-500 mt-1">{insoleSupplyPriceError}</p>
-          )}
-        </div>
+            </div>
+          </div>
 
-        {/* Rabatt Section */}
-        <div className="space-y-3">
-          <Label className="text-base font-semibold">Rabatt</Label>
-          <div className="flex gap-2">
-            <Select value={discountType} onValueChange={onDiscountTypeChange}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Rabatttyp wählen" />
+          {/* Menge and Fertigstellung bis */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Menge - Dropdown */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Menge</Label>
+              <Select value={quantity} onValueChange={onQuantityChange}>
+                <SelectTrigger className="h-11 border-gray-300">
+                  <SelectValue placeholder="Menge wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1 paar">1 Paar</SelectItem>
+                  <SelectItem value="2 paar">2 Paare</SelectItem>
+                  <SelectItem value="3 paar">3 Paare</SelectItem>
+                  <SelectItem value="4 paar">4 Paare</SelectItem>
+                  <SelectItem value="5 paar">5 Paare</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Fertigstellung bis - Display Only */}
+            <div className="flex items-start gap-3">
+              <Calendar className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Fertigstellung bis</p>
+                <p className="text-[15px] font-semibold text-gray-700">
+                  {formatDate(fertigstellungBis) || '-'}
+                </p>
+                {fertigstellungBisError && (
+                  <p className="text-xs text-red-500 mt-1">{fertigstellungBisError}</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Fußanalyse */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700">Fußanalyse</Label>
+            <Select value={footAnalysisPrice} onValueChange={onFootAnalysisPriceChange}>
+              <SelectTrigger
+                className={cn(
+                  'h-11 border-gray-300',
+                  footAnalysisPriceError && 'border-red-500 focus-visible:ring-red-500'
+                )}
+              >
+                <SelectValue
+                  placeholder={pricesLoading ? 'Lade Preise...' : laserPrintPrices.length > 0 ? 'Preis auswählen' : 'Kein Preis verfügbar'}
+                />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="percentage">Prozent (%)</SelectItem>
+                {laserPrintPrices.length > 0 ? (
+                  laserPrintPrices.map((item, index) => (
+                    <SelectItem
+                      className="cursor-pointer"
+                      key={`foot-${item.name}-${item.price}-${index}`}
+                      value={String(item.price)}
+                    >
+                      {item.name} - {formatPrice(item.price)}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="no-price" disabled>
+                    Kein Preis verfügbar
+                  </SelectItem>
+                )}
               </SelectContent>
             </Select>
-            {discountType && (
+            {footAnalysisPrice === 'custom' && (
               <Input
                 type="number"
-                step="0.01"
-                min="0"
-                max="100"
-                placeholder="z.B. 10"
-                value={discountValue}
-                onChange={(e) => onDiscountValueChange(e.target.value)}
-                className="w-full"
+                placeholder="Preis eingeben"
+                value={customFootPrice}
+                onChange={(e) => onCustomFootPriceChange(e.target.value)}
+                className={cn(
+                  'h-11 border-gray-300 mt-2',
+                  customFootPriceError && 'border-red-500 focus-visible:ring-red-500'
+                )}
               />
             )}
+            {footAnalysisPriceError && (
+              <p className="text-xs text-red-500 mt-1">{footAnalysisPriceError}</p>
+            )}
+          </div>
+
+          {/* Rabatt and Kostenträger */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-20">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Rabatt</Label>
+              <Select value={discountType} onValueChange={onDiscountTypeChange}>
+                <SelectTrigger className="h-11 border-gray-300">
+                  <SelectValue placeholder="Kein Rabatt" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percentage">Prozent (%)</SelectItem>
+                </SelectContent>
+              </Select>
+              {discountType && (
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  max="100"
+                  placeholder="z.B. 10"
+                  value={discountValue}
+                  onChange={(e) => onDiscountValueChange(e.target.value)}
+                  className="h-11 border-gray-300 mt-2"
+                />
+              )}
+            </div>
+
+            <div className="space-y-2">
+              {/* <Label className="text-sm font-medium text-gray-700">Kostenträger</Label> */}
+              <PaymentStatusSection
+                value={bezahlt}
+                onChange={onBezahltChange}
+                error={paymentError}
+                disabledPaymentType={disabledPaymentType}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Kostenträger Section */}
-        <div className="space-y-3">
-          <PaymentStatusSection
-            value={bezahlt}
-            onChange={onBezahltChange}
-            error={paymentError}
-          />
+        {/* Right Side: Price Summary */}
+        <div className="lg:w-80 shrink-0">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-4">
+            <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Preisübersicht</h4>
+            
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Versorgung</span>
+                <span className="text-sm font-semibold text-gray-900">{formatPrice(versorgungPrice)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Menge</span>
+                <span className="text-sm font-semibold text-gray-900">× {quantityNum}</span>
+              </div>
+              
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Fußanalyse</span>
+                <span className="text-sm font-semibold text-gray-900">{formatPrice(footPrice)}</span>
+              </div>
+              
+              <div className="flex justify-between items-center pt-3 border-t border-gray-300">
+                <span className="text-sm text-gray-600">Zwischensumme</span>
+                <span className="text-sm font-semibold text-gray-900">{formatPrice(subtotal)}</span>
+              </div>
+              
+              {discountAmount > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Rabatt ({discountValue}%)</span>
+                  <span className="text-sm font-semibold text-red-600">-{formatPrice(discountAmount)}</span>
+                </div>
+              )}
+              
+              <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
+                <span className="text-base font-bold text-gray-900">Gesamt</span>
+                <span className="text-xl font-bold text-green-600">{formatPrice(total)}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+    </div>
   )
 }
 

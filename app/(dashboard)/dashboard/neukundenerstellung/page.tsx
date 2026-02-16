@@ -166,10 +166,10 @@ export default function Neukundenerstellung() {
     }, [firstName, lastName, birthDate, email, phone, address, insuranceNumber, billingType]);
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl mx-4 pb-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="bg-white rounded-2xl shadow-xl w-full max-w-4xl max-h-[90vh] flex flex-col">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
                     <div>
                         <h2 className="text-lg font-semibold text-gray-900">Neuer Kunde / Scanprozess</h2>
                         <p className="text-sm text-gray-500 mt-1">
@@ -186,7 +186,7 @@ export default function Neukundenerstellung() {
                 </div>
 
                 {/* Body – full form like design */}
-                <div className="px-6 py-5 space-y-6">
+                <div className="px-6 py-5 space-y-6 overflow-y-auto flex-1">
                     {/* Geschlecht */}
                     <div>
                         <p className="block text-sm font-medium text-gray-700 mb-2">Geschlecht</p>
@@ -427,7 +427,7 @@ export default function Neukundenerstellung() {
                 </div>
 
                 {/* Footer */}
-                <div className="flex justify-end gap-3 px-6 ">
+                <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 shrink-0">
                     <button
                         type="button"
                         onClick={() => history.back()}

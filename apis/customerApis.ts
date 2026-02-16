@@ -145,19 +145,15 @@ export const addCustomerNote = async (id: string, note: string, category: string
 // get customer note
 export const getCustomerNote = async (id: string, page: number, limit: number, category: string) => {
     try {
-        // Build query parameters dynamically
-        const params = new URLSearchParams();
-        params.append('customerId', id);
-        params.append('page', page.toString());
-        params.append('limit', limit.toString());
-
+        // Build URL with query parameters
+        let url = `/customers/history/${id}?page=${page}&limit=${limit}`;
+        
         // Only add category if it's not empty
         if (category && category.trim() !== '') {
-            params.append('category', category);
+            url += `&category=${category}`;
         }
 
-        const finalUrl = `customers-history?${params.toString()}`;
-        const response = await axiosClient.get(finalUrl);
+        const response = await axiosClient.get(url);
         return response.data;
     } catch (error) {
         console.error('API Error:', error);

@@ -1,7 +1,8 @@
 import { useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { X, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { PriceItem } from "./types";
 import AddPriceModal from "./AddPriceModal";
@@ -15,6 +16,8 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
     const [newPrice, setNewPrice] = useState("");
     const [newPriceName, setNewPriceName] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+    const [priceToDelete, setPriceToDelete] = useState<PriceItem | null>(null);
 
     // Helper function to ensure "Standard" is always first
     const sortPricesWithStandardFirst = (prices: PriceItem[]): PriceItem[] => {
@@ -47,12 +50,27 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
         }
     }, [newPrice, newPriceName, priceList, onPriceListChange]);
 
-    const removePrice = (priceToRemove: PriceItem) => {
+    const handleDeleteClick = (price: PriceItem) => {
+        setPriceToDelete(price);
+        setDeleteConfirmOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (!priceToDelete) return;
+        
         const filteredList = priceList.filter(
-            (item) => item.name !== priceToRemove.name || item.price !== priceToRemove.price
+            (item) => item.name !== priceToDelete.name || item.price !== priceToDelete.price
         );
         const sortedList = sortPricesWithStandardFirst(filteredList);
         onPriceListChange(sortedList);
+        
+        setDeleteConfirmOpen(false);
+        setPriceToDelete(null);
+    };
+
+    const handleCloseDeleteConfirm = () => {
+        setDeleteConfirmOpen(false);
+        setPriceToDelete(null);
     };
 
     const clearAllPrices = () => {
@@ -110,35 +128,53 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
                                         Name
                                     </th>
                                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
-                                        Brutto
-                                    </th>
-                                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
-                                        Steuersatz
+                                        Basispreis
                                     </th>
                                     <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
                                         Netto
+                                    </th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                                        MwSt.
+                                    </th>
+                                    <th className="px-4 py-3 text-center text-sm font-semibold text-gray-700">
+                                        Aktion
                                     </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {priceList.map((item, index) => {
-                                    const { net } = calculateNetAndVat(item.price, 20);
+                                    // Use stored values or calculate from price for backward compatibility
+                                    const basePrice = item.basePrice ?? item.price;
+                                    const netto = item.netBeforeVat ?? calculateNetAndVat(item.price, item.vatPercentage ?? 20).net;
+                                    const vatPercentage = item.vatPercentage ?? 20;
+                                    const vatAmount = item.vatAmount ?? (item.price - netto);
+                                    
                                     return (
                                         <tr
                                             key={`${item.name}-${item.price}-${index}`}
                                             className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors"
                                         >
-                                            <td className="px-4 py-3 text-sm text-gray-900 text-left">
+                                            <td className="px-4 py-3 text-sm text-gray-900 text-left font-medium">
                                                 {item.name}
                                             </td>
-                                            <td className="px-4 py-3 text-sm text-green-600 font-semibold text-right">
-                                                {item.price.toFixed(2).replace(".", ",")} €
-                                            </td>
-                                            <td className="px-4 py-3 text-sm text-gray-700 text-center">
-                                                20%
+                                            <td className="px-4 py-3 text-sm text-gray-700 text-right">
+                                                {basePrice.toFixed(2).replace(".", ",")} €
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-700 text-right">
-                                                {net.toFixed(2).replace(".", ",")} €
+                                                {netto.toFixed(2).replace(".", ",")} €
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-700 text-center">
+                                                {vatPercentage}%
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <button
+                                                    onClick={() => handleDeleteClick(item)}
+                                                    className="text-red-600 hover:text-red-700 cursor-pointer p-1 transition-colors"
+                                                    type="button"
+                                                    title="Löschen"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
                                             </td>
                                         </tr>
                                     );
@@ -153,17 +189,46 @@ export default function PriceManagement({ priceList, onPriceListChange }: PriceM
                 )}
             </div>
 
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteConfirmOpen} onOpenChange={handleCloseDeleteConfirm}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="text-red-600">
+                            Preis löschen bestätigen
+                        </DialogTitle>
+                        <DialogDescription>
+                            Sind Sie sicher, dass Sie den Preis "{priceToDelete?.name}" löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-3">
+                        <Button
+                            variant="outline"
+                            onClick={handleCloseDeleteConfirm}
+                            className="cursor-pointer"
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            onClick={handleDeleteConfirm}
+                            className="bg-red-600 cursor-pointer hover:bg-red-700 text-white"
+                        >
+                            Ja, löschen
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {/* Add Price Modal */}
             <AddPriceModal
                 open={modalOpen}
                 onOpenChange={setModalOpen}
-                onSave={(name, price) => {
-                    const nameExists = priceList.some((item) => item.name.toLowerCase() === name.toLowerCase());
+                onSave={(priceData) => {
+                    const nameExists = priceList.some((item) => item.name.toLowerCase() === priceData.name.toLowerCase());
                     if (nameExists) {
                         toast.error("Ein Preis mit diesem Namen existiert bereits.");
                         return;
                     }
-                    const updatedList = [...priceList, { name, price }];
+                    const updatedList = [...priceList, priceData];
                     const sortedList = sortPricesWithStandardFirst(updatedList);
                     onPriceListChange(sortedList);
                     toast.success("Preis erfolgreich hinzugefügt!");

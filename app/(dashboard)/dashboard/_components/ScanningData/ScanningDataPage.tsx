@@ -8,10 +8,11 @@ import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer';
 import ScanDataDisplay from '@/components/Shared/ScanDataDisplay';
 import EinlagenQuestions from '../Scanning/EinlagenQuestions';
 import MassschuheQuestions from '../Scanning/MassschuheQuestion';
+import SonstigesQuestion from '../Scanning/SonstigesQuestion';
 
 interface ScanningDataPageProps {
     scanData: ScanData;
-    selectedForm?: 'einlagen' | 'massschuhe';
+    selectedForm?: 'einlagen' | 'massschuhe' | 'sonstiges';
     onScreenerIdChange?: (screenerId: string | null) => void;
 }
 
@@ -24,6 +25,18 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
     const [stlUrl, setStlUrl] = useState<string | null>(null);
     const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
     const [isZoomed, setIsZoomed] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [hasQuestions, setHasQuestions] = useState<boolean>(true); // Default to true to show loading state
+
+    // Reset hasQuestions when form type changes
+    useEffect(() => {
+        if (selectedForm === 'sonstiges') {
+            // For Sonstiges, immediately hide questions section (no questions available)
+            setHasQuestions(false);
+        } else {
+            setHasQuestions(true); // Reset to show loading state when form changes
+        }
+    }, [selectedForm]);
 
     // Use the existing hook for customer data management with date filtering
     const { customer: currentScanData, availableDates, updateCustomer, refreshCustomer, isUpdating, error } = useSingleCustomer(scanData.id, selectedDate);
@@ -161,6 +174,7 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
             const success = await updateCustomer(editableData);
             if (success) {
                 setOriginalData(editableData);
+                setIsEditing(false); // Exit edit mode after successful save
                 toast.success('Scan data updated successfully!');
             } else {
                 toast.error('Failed to save changes');
@@ -241,7 +255,7 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
             />
 
             <div className='flex flex-col xl:flex-row justify-between items-start mb-6 gap-4'>
-                <div className={isZoomed ? 'w-full' : 'w-full xl:w-8/12'}>
+                <div className={isZoomed ? 'w-full' : (hasQuestions ? 'w-full xl:w-9/12' : 'w-full')}>
                     <div className="flex items-center mb-4 md:mb-0">
                         <div className="font-bold text-xl capitalize">{displayData.vorname} {displayData.nachname}</div>
                     </div>
@@ -258,6 +272,8 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                         defaultSelectedDate={selectedDate || null}
                         onZoomChange={setIsZoomed}
                         onImageSave={handleImageSave}
+                        onEditStateChange={setIsEditing}
+                        externalIsEditing={isEditing}
                     >
                         {/* Additional content for the scan data section */}
                         {isChanged && (
@@ -274,14 +290,25 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                         )}
                     </ScanDataDisplay>
                 </div>
-                {/* Hide questions section when zoomed */}
+                {/* Hide questions section when zoomed or when no questions are available */}
                 {!isZoomed && (
-                    <div className='w-full xl:w-4/12'>
+                    <div className={hasQuestions ? 'w-full xl:w-3/12' : 'hidden'}>
                         {selectedForm === 'einlagen' ? (
-                            <EinlagenQuestions customer={displayData} />
-                        ) : (
-                            <MassschuheQuestions customer={displayData} />
-                        )}
+                            <EinlagenQuestions 
+                                customer={displayData} 
+                                onQuestionsLoaded={setHasQuestions}
+                            />
+                        ) : selectedForm === 'massschuhe' ? (
+                            <MassschuheQuestions 
+                                customer={displayData} 
+                                onQuestionsLoaded={setHasQuestions}
+                            />
+                        ) : selectedForm === 'sonstiges' ? (
+                            <SonstigesQuestion 
+                                customer={displayData} 
+                                onQuestionsLoaded={setHasQuestions}
+                            />
+                        ) : null}
                     </div>
                 )}
             </div>

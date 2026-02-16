@@ -6,11 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUpload from "./ImageUplaod";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { getTaxRatesByCountry } from "@/utils/taxRates";
 
 interface EinlagehinzufügenModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
-    onSubmit?: (data: { id?: string; name: string; description: string; price: number; image?: string; imageFile?: File }) => Promise<void> | void;
+    onSubmit?: (data: { id?: string; name: string; description: string; price: number; vatRate: number; profitPercentage: number; image?: string; imageFile?: File }) => Promise<void> | void;
     editingInsole?: { id: string; name: string; description?: string; price: number; image?: string } | null;
     isLoading?: boolean;
 }
@@ -18,37 +20,65 @@ interface EinlagehinzufügenModalProps {
 const VAT_OPTIONS = ["0", "7", "10", "19", "20", "22"];
 
 export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, editingInsole, isLoading = false }: EinlagehinzufügenModalProps) {
+    const { user } = useAuth();
+    const vatCountry = user?.accountInfo?.vat_country;
+    
+    // Get VAT rates based on country
+    const taxRates = getTaxRatesByCountry(vatCountry);
+    const countryWiseVatOptions = taxRates || VAT_OPTIONS.map((vat: string) => ({
+        id: vat,
+        name: `MwSt.`,
+        rate: parseFloat(vat),
+        description: '',
+        isDefault: vat === "20"
+    }));
+    const defaultCountryVat = taxRates?.find(rate => rate.isDefault)?.rate.toString() || "20";
+    
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [priceGross, setPriceGross] = useState("");
-    const [vatPercentage, setVatPercentage] = useState("20");
+    const [basePrice, setBasePrice] = useState(""); // Base Service Price
+    const [vatPercentageCountry, setVatPercentageCountry] = useState(defaultCountryVat); // VAT %
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [nameError, setNameError] = useState("");
     const [priceError, setPriceError] = useState("");
 
-    // Calculate prices based on gross price and VAT
-    const calculatePrices = (gross: string, vat: string) => {
-        const grossValue = parseFloat(gross) || 0;
+    // Calculate prices: Brutto (input) → Netto (Brutto - VAT)
+    const calculatePrices = (brutto: string, vat: string) => {
+        const bruttoValue = parseFloat(brutto) || 0;
         const vatValue = parseFloat(vat) || 0;
         
-        if (grossValue === 0) {
-            return { netto: 0, vatAmount: 0, brutto: 0 };
+        if (bruttoValue === 0) {
+            return { 
+                bruttoPrice: 0,
+                netBeforeVat: 0,
+                vatAmount: 0,
+            };
         }
         
-        // Calculate netto from gross: netto = gross / (1 + vat/100)
-        const netto = grossValue / (1 + vatValue / 100);
-        const vatAmount = grossValue - netto;
-        const brutto = grossValue; // Brutto is the same as entered gross price
+        // Reverse calculation: Brutto is input, calculate Netto
+        // Netto = Brutto / (1 + VAT/100)
+        const netBeforeVat = bruttoValue / (1 + vatValue / 100);
+        
+        // VAT Amount = Brutto - Netto
+        const vatAmount = bruttoValue - netBeforeVat;
         
         return {
-            netto: Math.round(netto * 100) / 100,
+            bruttoPrice: Math.round(bruttoValue * 100) / 100,
+            netBeforeVat: Math.round(netBeforeVat * 100) / 100,
             vatAmount: Math.round(vatAmount * 100) / 100,
-            brutto: Math.round(brutto * 100) / 100,
         };
     };
 
-    const prices = calculatePrices(priceGross, vatPercentage);
+    // Calculate prices using base price and VAT
+    const prices = calculatePrices(basePrice, vatPercentageCountry);
+
+    // Update country-wise VAT when country changes
+    useEffect(() => {
+        if (defaultCountryVat) {
+            setVatPercentageCountry(defaultCountryVat);
+        }
+    }, [defaultCountryVat]);
 
     // Update form when editingInsole changes
     useEffect(() => {
@@ -56,8 +86,8 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
             // Reset form when modal closes
             setName("");
             setDescription("");
-            setPriceGross("");
-            setVatPercentage("20");
+            setBasePrice("");
+            setVatPercentageCountry(defaultCountryVat);
             setImagePreview(null);
             setImageFile(null);
             setNameError("");
@@ -68,8 +98,8 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
         if (editingInsole) {
             setName(editingInsole.name);
             setDescription(editingInsole.description || "");
-            setPriceGross(editingInsole.price.toString());
-            setVatPercentage("20"); // Default VAT when editing
+            setBasePrice(editingInsole.price.toString());
+            setVatPercentageCountry(defaultCountryVat);
             const imageUrl = editingInsole.image;
             if (imageUrl && (imageUrl.startsWith('data:') || imageUrl.startsWith('http') || imageUrl.startsWith('https'))) {
                 setImagePreview(imageUrl);
@@ -81,14 +111,14 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
             // Reset form when opening new modal
             setName("");
             setDescription("");
-            setPriceGross("");
-            setVatPercentage("20");
+            setBasePrice("");
+            setVatPercentageCountry(defaultCountryVat);
             setImagePreview(null);
             setImageFile(null);
             setNameError("");
             setPriceError("");
         }
-    }, [editingInsole, open]);
+    }, [editingInsole, open, defaultCountryVat]);
 
     const handleImageChange = (preview: string | null, file: File | null) => {
         setImagePreview(preview);
@@ -106,14 +136,11 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
             isValid = false;
         }
 
-        // Validate Preis (price) - required and must be a valid positive number
-        if (!priceGross.trim()) {
-            setPriceError("Preis ist erforderlich");
-            isValid = false;
-        } else {
-            const priceValue = parseFloat(priceGross);
-            if (isNaN(priceValue) || priceValue <= 0) {
-                setPriceError("Preis muss eine gültige positive Zahl sein");
+        // Validate Base Price - optional, but if provided must be a valid number >= 0
+        if (basePrice.trim()) {
+            const priceValue = parseFloat(basePrice);
+            if (isNaN(priceValue) || priceValue < 0) {
+                setPriceError("Preis muss eine gültige Zahl sein (0 oder größer)");
                 isValid = false;
             }
         }
@@ -134,20 +161,26 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
         
         if (onSubmit) {
             try {
-                // Use brutto price (which is the same as priceGross)
+                // Use brutto price as the main price (default to 0 if empty)
+                const finalPrice = basePrice.trim() ? prices.bruttoPrice : 0;
+                const vatRate = parseFloat(vatPercentageCountry) || 0;
+                const profitPercentage = 0; // No commission anymore
+                
                 await onSubmit({
                     id: editingInsole?.id,
                     name: name.trim(),
                     description,
-                    price: prices.brutto,
+                    price: finalPrice,
+                    vatRate: vatRate,
+                    profitPercentage: profitPercentage,
                     image: imagePreview || editingInsole?.image || undefined,
                     imageFile: imageFile || undefined,
                 });
                 // Reset form only if onSubmit succeeds
                 setName("");
                 setDescription("");
-                setPriceGross("");
-                setVatPercentage("20");
+                setBasePrice("");
+                setVatPercentageCountry(defaultCountryVat);
                 setImagePreview(null);
                 setImageFile(null);
                 setNameError("");
@@ -219,35 +252,52 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
 
                             {/* Preisberechnung Section */}
                             <div className="bg-gray-100 rounded-[5px] p-4 space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <label className="block font-bold text-sm text-black uppercase whitespace-nowrap">
-                                        Preisberechnung
+                                {/* MwSt. country wise */}
+                                <div>
+                                    <label className="block font-bold text-sm mb-2 text-black uppercase">
+                                        {(() => {
+                                            const selectedRate = countryWiseVatOptions.find(
+                                                (rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => rate.rate.toString() === vatPercentageCountry
+                                            );
+                                            return selectedRate 
+                                                ? `MwSt (${selectedRate.rate}%)`
+                                                : `MwSt. (${vatPercentageCountry}%)`;
+                                        })()}
                                     </label>
-                                    <Select value={vatPercentage} onValueChange={setVatPercentage}>
-                                        <SelectTrigger className="w-[100px] border-gray-300 rounded-[5px] bg-white">
-                                            <SelectValue />
+                                    <Select value={vatPercentageCountry} onValueChange={setVatPercentageCountry}>
+                                        <SelectTrigger className="w-full border-gray-300 rounded-[5px] bg-white">
+                                            <SelectValue>
+                                                {(() => {
+                                                    const selectedRate = countryWiseVatOptions.find(
+                                                        (rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => rate.rate.toString() === vatPercentageCountry
+                                                    );
+                                                    return selectedRate 
+                                                        ? `${selectedRate.name} (${selectedRate.rate}%)`
+                                                        : `${vatPercentageCountry}%`;
+                                                })()}
+                                            </SelectValue>
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {VAT_OPTIONS.map((vat) => (
-                                                <SelectItem key={vat} value={vat} className="cursor-pointer">
-                                                    {vat}%
+                                            {countryWiseVatOptions.map((rate: { id: string; name: string; rate: number; description: string; isDefault?: boolean }) => (
+                                                <SelectItem key={rate.id} value={rate.rate.toString()} className="cursor-pointer">
+                                                    {rate.name} ({rate.rate}%)
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
                                 </div>
 
-                                {/* Preis (Brutto) */}
-                                <div>
+                                  {/* Base Service Price */}
+                                  <div>
                                     <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                        Preis (Brutto) <span className="text-red-500">*</span>
+                                        Preis (Brutto)
                                     </label>
                                     <div className="flex items-center gap-2">
                                         <Input
                                             type="number"
-                                            value={priceGross}
+                                            value={basePrice}
                                             onChange={(e) => {
-                                                setPriceGross(e.target.value);
+                                                setBasePrice(e.target.value);
                                                 if (priceError) setPriceError("");
                                             }}
                                             className={`border-gray-300 rounded-[5px] bg-white flex-1 ${priceError ? "border-red-500" : ""}`}
@@ -262,7 +312,7 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                                     )}
                                 </div>
 
-                                {/* Netto */}
+                                {/* Net before VAT */}
                                 <div>
                                     <label className="block font-bold text-sm mb-2 text-black uppercase">
                                         Netto
@@ -270,22 +320,7 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                                     <div className="flex items-center gap-2">
                                         <Input
                                             type="text"
-                                            value={prices.netto.toFixed(2).replace('.', ',')}
-                                            readOnly
-                                            className="border-gray-300 rounded-[5px] bg-gray-50 flex-1 cursor-not-allowed"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* MwSt. */}
-                                <div>
-                                    <label className="block font-bold text-sm mb-2 text-black uppercase">
-                                        MwSt. ({vatPercentage}%)
-                                    </label>
-                                    <div className="flex items-center gap-2">
-                                        <Input
-                                            type="text"
-                                            value={`${prices.vatAmount.toFixed(2).replace('.', ',')} €`}
+                                            value={`${prices.netBeforeVat.toFixed(2).replace('.', ',')} €`}
                                             readOnly
                                             className="border-gray-300 rounded-[5px] bg-gray-50 flex-1 cursor-not-allowed"
                                         />
@@ -300,9 +335,9 @@ export default function EinlagehinzufügenModal({ open, onOpenChange, onSubmit, 
                                     <div className="flex items-center gap-2">
                                         <Input
                                             type="text"
-                                            value={prices.brutto.toFixed(2).replace('.', ',')}
+                                            value={`${prices.bruttoPrice.toFixed(2).replace('.', ',')} €`}
                                             readOnly
-                                            className="border-gray-300 rounded-[5px] bg-green-100 flex-1 cursor-not-allowed text-green-700 font-semibold"
+                                            className="border-green-300 rounded-[5px] bg-green-50 flex-1 cursor-not-allowed"
                                         />
                                     </div>
                                 </div>

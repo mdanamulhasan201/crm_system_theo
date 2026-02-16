@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from '@/components/ui/input'
-import { buyStore } from '@/apis/storeManagement'
+import { buyStore, getSingleStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 
@@ -25,13 +25,14 @@ interface AdminStoreProduct {
     eigenschaften: string
     groessenMengen: {
         [key: string]: {
-            length: number
+            length?: number
             quantity: number
         }
     }
+    type?: 'rady_insole' | 'milling_block'
     createdAt: string
     updatedAt: string
-    storesCount: number
+    storesCount?: number
 }
 
 interface BuyStorageModalProps {
@@ -41,25 +42,71 @@ interface BuyStorageModalProps {
     onBuySuccess?: () => void
 }
 
-const sizeColumns = [
+// Size columns for rady_insole (numeric sizes)
+const radyInsoleSizes = [
     "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48"
 ]
+
+// Size columns for milling_block (Size 1, Size 2, Size 3)
+const millingBlockSizes = ['Size 1', 'Size 2', 'Size 3']
 
 export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBuySuccess }: BuyStorageModalProps) {
     const [quantities, setQuantities] = useState<{ [key: string]: number }>({})
     const [buyingId, setBuyingId] = useState<string | null>(null)
     const [showConfirmation, setShowConfirmation] = useState(false)
+    const [productData, setProductData] = useState<AdminStoreProduct | null>(null)
+    const [isLoading, setIsLoading] = useState(false)
 
-    // Initialize quantities when product changes
-    useEffect(() => {
-        if (selectedProduct && isOpen) {
-            const initialQuantities: { [key: string]: number } = {}
-            sizeColumns.forEach(size => {
-                initialQuantities[size] = 0
+    // Normalize groessenMengen keys for milling_block type (convert "1", "2", "3" to "Size 1", "Size 2", "Size 3")
+    const normalizeGroessenMengen = (groessenMengen: any, type: string) => {
+        if (type === 'milling_block') {
+            const normalized: any = {}
+            Object.keys(groessenMengen).forEach(key => {
+                // Convert "1", "2", "3" to "Size 1", "Size 2", "Size 3"
+                const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
+                normalized[normalizedKey] = groessenMengen[key]
             })
-            setQuantities(initialQuantities)
+            return normalized
         }
-    }, [selectedProduct, isOpen])
+        return groessenMengen
+    }
+
+    // Fetch single store data when modal opens
+    useEffect(() => {
+        const fetchProductData = async () => {
+            if (selectedProduct?.id && isOpen) {
+                setIsLoading(true)
+                try {
+                    const response = await getSingleStore(selectedProduct.id)
+                    if (response.success && response.data) {
+                        // Normalize groessenMengen keys for milling_block
+                        const type = response.data.type || 'rady_insole'
+                        const normalizedData = {
+                            ...response.data,
+                            groessenMengen: normalizeGroessenMengen(response.data.groessenMengen, type)
+                        }
+                        setProductData(normalizedData)
+                        
+                        // Initialize quantities based on type
+                        const sizeColumns = type === 'milling_block' ? millingBlockSizes : radyInsoleSizes
+                        const initialQuantities: { [key: string]: number } = {}
+                        
+                        // Initialize quantities for all sizes
+                        sizeColumns.forEach(size => {
+                            initialQuantities[size] = 0
+                        })
+                        setQuantities(initialQuantities)
+                    }
+                } catch (err: any) {
+                    toast.error(err?.response?.data?.message || 'Failed to fetch product data')
+                } finally {
+                    setIsLoading(false)
+                }
+            }
+        }
+
+        fetchProductData()
+    }, [selectedProduct?.id, isOpen])
 
     // Reset quantities when modal closes
     useEffect(() => {
@@ -67,6 +114,7 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
             setQuantities({})
             setBuyingId(null)
             setShowConfirmation(false)
+            setProductData(null)
         }
     }, [isOpen])
 
@@ -79,16 +127,21 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
         }))
     }
 
+    // Get the product to use (fetched data or selected product)
+    const product = productData || selectedProduct
+    const productType = product?.type || 'rady_insole'
+    const sizeColumns = productType === 'milling_block' ? millingBlockSizes : radyInsoleSizes
+
     // Calculate total price
     const calculateTotalPrice = (): number => {
-        if (!selectedProduct) return 0
+        if (!product) return 0
         const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
-        return selectedProduct.price * totalQuantity
+        return product.price * totalQuantity
     }
 
     // Handle buy - show confirmation first
     const handleBuy = () => {
-        if (!selectedProduct) return
+        if (!product) return
         
         const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
         if (totalQuantity === 0) {
@@ -102,12 +155,12 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
 
     // Confirm and submit the order
     const confirmBuy = async () => {
-        if (!selectedProduct) return
+        if (!product) return
 
-        setBuyingId(selectedProduct.id)
+        setBuyingId(product.id)
         setShowConfirmation(false)
         try {
-            const response = await buyStore({ admin_store_id: selectedProduct.id })
+            const response = await buyStore({ admin_store_id: product.id })
             if (response.success) {
                 toast.success(response.message || 'Store purchased successfully!')
                 onClose()
@@ -135,7 +188,11 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
     const getSelectedQuantities = () => {
         return Object.entries(quantities)
             .filter(([_, qty]) => qty > 0)
-            .map(([size, qty]) => ({ size, quantity: qty }))
+            .map(([size, qty]) => ({ 
+                size, 
+                quantity: qty,
+                displaySize: size // Keep the display size (e.g., "Size 1")
+            }))
     }
 
     const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
@@ -145,22 +202,28 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
             <Dialog open={isOpen} onOpenChange={handleClose}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Einlagen bestellen</DialogTitle>
+                        <DialogTitle>
+                            {productType === 'milling_block' ? 'Fräsblock bestellen' : 'Einlagen bestellen'}
+                        </DialogTitle>
                         <DialogDescription>
                             Geben Sie die gewünschten Mengen für jede Größe ein
                         </DialogDescription>
                     </DialogHeader>
 
-                {selectedProduct && (
+                {isLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    </div>
+                ) : product && productData && (
                     <div className="space-y-6 py-4">
                         {/* Product Info */}
                         <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                            {selectedProduct.image ? (
+                            {product.image ? (
                                 <Image
                                     width={80}
                                     height={80}
-                                    src={selectedProduct.image}
-                                    alt={selectedProduct.productName}
+                                    src={product.image}
+                                    alt={product.productName}
                                     className="w-20 h-20 rounded border object-contain border-gray-200 shadow-sm"
                                 />
                             ) : (
@@ -171,32 +234,53 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
                                 </div>
                             )}
                             <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-gray-900">{selectedProduct.productName}</h3>
-                                <p className="text-sm text-gray-600">{selectedProduct.brand}</p>
-                                <p className="text-sm text-gray-600">Artikelnummer: {selectedProduct.artikelnummer}</p>
-                                <p className="text-lg font-semibold text-gray-900 mt-1">Preis: €{selectedProduct.price}</p>
+                                <h3 className="font-semibold text-lg text-gray-900">{product.productName}</h3>
+                                <p className="text-sm text-gray-600">{product.brand}</p>
+                                <p className="text-sm text-gray-600">Artikelnummer: {product.artikelnummer}</p>
+                                <p className="text-lg font-semibold text-gray-900 mt-1">Preis: €{product.price}</p>
                             </div>
                         </div>
 
                         {/* Quantity Inputs */}
                         <div className="space-y-4">
                             <h4 className="font-medium text-gray-900">Mengen pro Größe:</h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                                {sizeColumns.map(size => (
-                                    <div key={size} className="space-y-2">
-                                        <label className="text-sm font-medium text-gray-700">
-                                            Größe {size}
-                                        </label>
-                                        <Input
-                                            type="number"
-                                            min="0"
-                                            value={quantities[size] || 0}
-                                            onChange={(e) => handleQuantityChange(size, e.target.value)}
-                                            className="w-full"
-                                            placeholder="0"
-                                        />
-                                    </div>
-                                ))}
+                            <div className={`grid gap-4 ${
+                                productType === 'milling_block' 
+                                    ? 'grid-cols-1 sm:grid-cols-3' 
+                                    : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7'
+                            }`}>
+                                {sizeColumns.map(size => {
+                                    // Use size directly as key (API returns "Size 1", "Size 2", "Size 3" for milling_block)
+                                    // Use productData directly to ensure we have the latest data
+                                    const sizeData = productData.groessenMengen?.[size]
+                                    const availableQuantity = sizeData?.quantity || 0
+                                    const length = sizeData?.length
+                                    
+                                    return (
+                                        <div key={size} className="space-y-2">
+                                            <label className="text-sm font-medium text-gray-700">
+                                                {size}
+                                                {productType === 'rady_insole' && length && (
+                                                    <span className="text-xs text-gray-500 ml-1">
+                                                        ({length}mm)
+                                                    </span>
+                                                )}
+                                                <span className="text-xs text-gray-500 ml-1">
+                                                    (Verfügbar: {availableQuantity})
+                                                </span>
+                                            </label>
+                                            <Input
+                                                type="number"
+                                                min="0"
+                                                max={availableQuantity}
+                                                value={quantities[size] || 0}
+                                                onChange={(e) => handleQuantityChange(size, e.target.value)}
+                                                className="w-full"
+                                                placeholder="0"
+                                            />
+                                        </div>
+                                    )
+                                })}
                             </div>
                         </div>
 
@@ -229,10 +313,10 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
                     </Button>
                     <Button
                         onClick={handleBuy}
-                        disabled={buyingId === selectedProduct?.id || calculateTotalPrice() === 0}
+                        disabled={buyingId === product?.id || calculateTotalPrice() === 0 || isLoading}
                         className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
                     >
-                        {buyingId === selectedProduct?.id ? 'Bestellen...' : 'Bestellen'}
+                        {buyingId === product?.id ? 'Bestellen...' : 'Bestellen'}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -248,16 +332,16 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
                     </DialogDescription>
                 </DialogHeader>
 
-                {selectedProduct && (
+                {product && (
                     <div className="space-y-6 py-4">
                         {/* Product Info */}
                         <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                            {selectedProduct.image ? (
+                            {product.image ? (
                                 <Image
                                     width={80}
                                     height={80}
-                                    src={selectedProduct.image}
-                                    alt={selectedProduct.productName}
+                                    src={product.image}
+                                    alt={product.productName}
                                     className="w-20 h-20 rounded border object-contain border-gray-200 shadow-sm"
                                 />
                             ) : (
@@ -268,18 +352,22 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
                                 </div>
                             )}
                             <div className="flex-1">
-                                <h3 className="font-semibold text-lg text-gray-900">{selectedProduct.productName}</h3>
-                                <p className="text-sm text-gray-600">Artikelnummer: {selectedProduct.artikelnummer}</p>
+                                <h3 className="font-semibold text-lg text-gray-900">{product.productName}</h3>
+                                <p className="text-sm text-gray-600">Artikelnummer: {product.artikelnummer}</p>
                             </div>
                         </div>
 
                         {/* Selected Quantities */}
                         <div className="space-y-3">
                             <h4 className="font-medium text-gray-900">Ausgewählte Mengen:</h4>
-                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                            <div className={`grid gap-3 ${
+                                productType === 'milling_block' 
+                                    ? 'grid-cols-1 sm:grid-cols-3' 
+                                    : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'
+                            }`}>
                                 {getSelectedQuantities().map(({ size, quantity }) => (
                                     <div key={size} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                                        <span className="text-sm font-medium text-gray-700">Größe {size}</span>
+                                        <span className="text-sm font-medium text-gray-700">{size}</span>
                                         <span className="text-sm font-semibold text-gray-900">{quantity} Stück</span>
                                     </div>
                                 ))}
@@ -325,10 +413,10 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
                     </Button>
                     <Button
                         onClick={confirmBuy}
-                        disabled={buyingId === selectedProduct?.id}
+                        disabled={buyingId === product?.id}
                         className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
                     >
-                        {buyingId === selectedProduct?.id ? 'Bestellen...' : 'Bestellung bestätigen'}
+                        {buyingId === product?.id ? 'Bestellen...' : 'Bestellung bestätigen'}
                     </Button>
                 </DialogFooter>
             </DialogContent>

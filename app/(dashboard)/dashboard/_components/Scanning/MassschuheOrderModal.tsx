@@ -56,6 +56,10 @@ interface OrderFormData {
     quantity?: number;
     orderNote?: string;
     location?: string;
+    insurances?: Array<{
+        price: number;
+        description: any;
+    }>;
     // Additional fields for API
     delivery_date?: string;
     telefon?: string;
@@ -78,6 +82,10 @@ interface MassschuheOrderModalProps {
         kostenvoranschlag: boolean | null;
         selectedEmployee: string;
         selectedEmployeeId: string;
+        selectedPositionsnummer?: string[];
+        positionsnummerAustriaData?: any[];
+        positionsnummerItalyData?: any[];
+        billingType?: 'Krankenkassa' | 'Privat';
     };
     onSubmit: (orderData: OrderFormData) => Promise<void>;
     isLoading?: boolean;
@@ -214,14 +222,28 @@ export default function MassschuheOrderModal({
             const fallbackDelivery = initialOrder ? getRequiredDeliveryDate(initialOrder, completionDays) : today;
             setFertigstellungDate(deliveryFromApi || fallbackDelivery);
 
-            setPaymentType(null);
-            // Reset price selections
-            setSelectedFußanalyse('');
-            setSelectedEinlagenversorgung('');
+            // Set paymentType based on billingType from formData
+            if (formData.billingType === 'Krankenkassa') {
+                setPaymentType('krankenkasse');
+            } else if (formData.billingType === 'Privat') {
+                setPaymentType('privat');
+                // When Privat is selected, preselect first available laser print price if available
+                if (laserPrintPrices.length > 0) {
+                    setSelectedFußanalyse(String(laserPrintPrices[0].price));
+                }
+            } else {
+                setPaymentType(null);
+            }
+            
+            // Reset price selections only if not Privat
+            if (formData.billingType !== 'Privat') {
+                setSelectedFußanalyse('');
+                setSelectedEinlagenversorgung('');
+            }
             setOrderNote('');
             // Don't reset selectedLocation here - it will be set by the locations useEffect
         }
-    }, [isOpen, user?.hauptstandort, customer, completionDays]);
+    }, [isOpen, user?.hauptstandort, customer, completionDays, formData.billingType, laserPrintPrices]);
 
     const handleSubmit = async () => {
         if (!customer?.id) {
@@ -229,8 +251,9 @@ export default function MassschuheOrderModal({
             return;
         }
 
+        // PaymentType should already be set from billingType, but check just in case
         if (!paymentType) {
-            toast.error('Bitte wählen Sie eine Zahlungsart aus (Krankenkasse oder Privat)');
+            toast.error('Zahlungsart fehlt');
             return;
         }
 
@@ -273,6 +296,40 @@ export default function MassschuheOrderModal({
             description: filiale || customer?.wohnort || ''
         };
 
+        // Helper function to get positionsnummer from option
+        const getPositionsnummer = (option: any): string => {
+            if (option.positionsnummer) {
+                return option.positionsnummer;
+            }
+            if (typeof option.description === 'object' && option.description?.positionsnummer) {
+                return option.description.positionsnummer;
+            }
+            return '';
+        };
+
+        // Build insurances array from selected positionsnummer
+        const buildInsurancesArray = () => {
+            if (!formData.selectedPositionsnummer || formData.selectedPositionsnummer.length === 0) {
+                return [];
+            }
+            
+            const allData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
+            
+            return formData.selectedPositionsnummer.map(posNum => {
+                // Find the option in both Austrian and Italian data
+                const option = allData.find(opt => getPositionsnummer(opt) === posNum);
+                
+                if (option) {
+                    return {
+                        price: option.price,
+                        description: typeof option.description === 'object' ? option.description : {}
+                    };
+                }
+                
+                return null;
+            }).filter(item => item !== null) as Array<{ price: number; description: any }>;
+        };
+
         const orderData: OrderFormData = {
             customerId: customer.id,
             employeeId: formData.selectedEmployeeId,
@@ -293,6 +350,7 @@ export default function MassschuheOrderModal({
             quantity: paymentType === 'privat' ? qty : undefined,
             orderNote: orderNote,
             location: selectedLocation || undefined,
+            insurances: buildInsurancesArray(),
             // Additional fields
             delivery_date: fertigstellungDate || undefined,
             telefon: customerPhone,
@@ -511,47 +569,8 @@ export default function MassschuheOrderModal({
                         </div>
                     </div>
 
-                    {/* Payment Type Selection */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
-                        <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">ZAHLUNGSART</h3>
-                        <div className="flex gap-4">
-                            <Button
-                                type="button"
-                                variant={paymentType === 'krankenkasse' ? 'default' : 'outline'}
-                                onClick={() => {
-                                    setPaymentType('krankenkasse');
-                                    setSelectedFußanalyse('');
-                                    setSelectedEinlagenversorgung('');
-                                }}
-                                className={cn(
-                                    "flex-1",
-                                    paymentType === 'krankenkasse' && "bg-[#62A07C] hover:bg-[#4A8A5F] text-white"
-                                )}
-                            >
-                                Krankenkasse
-                            </Button>
-                            <Button
-                                type="button"
-                                variant={paymentType === 'privat' ? 'default' : 'outline'}
-                                onClick={() => {
-                                    setPaymentType('privat');
-                                    // When switching to Privat, preselect first available laser print price if not set
-                                    if (!selectedFußanalyse && laserPrintPrices.length > 0) {
-                                        setSelectedFußanalyse(String(laserPrintPrices[0].price));
-                                    }
-                                }}
-                                className={cn(
-                                    "flex-1",
-                                    paymentType === 'privat' && "bg-[#62A07C] hover:bg-[#4A8A5F] text-white"
-                                )}
-                            >
-                                Privat
-                            </Button>
-                        </div>
-                    </div>
-
-                    {/* PREISAUSWAHL Section - shown when Privat is selected (like screenshot) */}
-                    {paymentType === 'privat' && (
+                    {/* PREISAUSWAHL Section - shown only when Privat is selected from main form */}
+                    {formData.billingType === 'Privat' && (
                         <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
                             <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">PREISAUSWAHL</h3>
 

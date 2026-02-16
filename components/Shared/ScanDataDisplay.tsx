@@ -1,7 +1,7 @@
 'use client'
 import { useState, useMemo, useRef, useEffect } from 'react'
 import Image from 'next/image'
-import { MdZoomOutMap } from 'react-icons/md'
+import { MdZoomOutMap, MdEdit } from 'react-icons/md'
 import { TfiDownload } from 'react-icons/tfi'
 import { RiArrowDownSLine } from 'react-icons/ri'
 import { ScanData } from '@/types/scan'
@@ -23,6 +23,8 @@ interface ScanDataDisplayProps {
     availableDates?: string[]
     onZoomChange?: (isZoomed: boolean) => void
     onImageSave?: () => void | Promise<void>
+    onEditStateChange?: (isEditing: boolean) => void
+    externalIsEditing?: boolean
 }
 
 export default function ScanDataDisplay({
@@ -36,7 +38,9 @@ export default function ScanDataDisplay({
     onDateChange,
     availableDates: propAvailableDates,
     onZoomChange,
-    onImageSave
+    onImageSave,
+    onEditStateChange,
+    externalIsEditing
 }: ScanDataDisplayProps) {
     const { user } = useAuth();
     const [selectedScanDate, setSelectedScanDate] = useState<string>(defaultSelectedDate || '');
@@ -44,7 +48,18 @@ export default function ScanDataDisplay({
     const [isZoomed, setIsZoomed] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
     const [imageRefreshKey, setImageRefreshKey] = useState(0);
+    const [internalIsEditing, setInternalIsEditing] = useState(false);
     
+    // Use external state if provided, otherwise use internal state
+    const isEditing = externalIsEditing !== undefined ? externalIsEditing : internalIsEditing;
+    
+    const setIsEditing = (value: boolean) => {
+        if (externalIsEditing === undefined) {
+            setInternalIsEditing(value);
+        }
+        onEditStateChange?.(value);
+    };
+
     // Image loading states for shimmer effect
     const [leftImageLoading, setLeftImageLoading] = useState(true);
     const [rightImageLoading, setRightImageLoading] = useState(true);
@@ -128,14 +143,14 @@ export default function ScanDataDisplay({
         const leftImage = hasScreenerFile && selectedScanData
             ? ((selectedScanData as any).paint_23 || selectedScanData.picture_23)
             : ((scanData as any).paint_23 || scanData.picture_23);
-        
+
         if (leftImage) {
             setLeftImageLoading(true);
             // Fallback timeout: hide shimmer after 3 seconds if image doesn't load
             const timeout = setTimeout(() => {
                 setLeftImageLoading(false);
             }, 3000);
-            
+
             // Check if image is already loaded/cached - SSR SAFE
             if (typeof window !== 'undefined') {
                 try {
@@ -156,7 +171,7 @@ export default function ScanDataDisplay({
                         }
                     };
                     img.src = leftImage;
-                    
+
                     // If image is already complete (cached), hide shimmer immediately
                     if (img.complete) {
                         clearTimeout(timeout);
@@ -168,7 +183,7 @@ export default function ScanDataDisplay({
                     setLeftImageLoading(false);
                 }
             }
-            
+
             return () => {
                 clearTimeout(timeout);
             };
@@ -182,14 +197,14 @@ export default function ScanDataDisplay({
         const rightImage = hasScreenerFile && selectedScanData
             ? ((selectedScanData as any).paint_24 || selectedScanData.picture_24)
             : ((scanData as any).paint_24 || scanData.picture_24);
-        
+
         if (rightImage) {
             setRightImageLoading(true);
             // Fallback timeout: hide shimmer after 3 seconds if image doesn't load
             const timeout = setTimeout(() => {
                 setRightImageLoading(false);
             }, 3000);
-            
+
             // Check if image is already loaded/cached - SSR SAFE
             if (typeof window !== 'undefined') {
                 try {
@@ -210,7 +225,7 @@ export default function ScanDataDisplay({
                         }
                     };
                     img.src = rightImage;
-                    
+
                     // If image is already complete (cached), hide shimmer immediately
                     if (img.complete) {
                         clearTimeout(timeout);
@@ -222,7 +237,7 @@ export default function ScanDataDisplay({
                     setRightImageLoading(false);
                 }
             }
-            
+
             return () => {
                 clearTimeout(timeout);
             };
@@ -298,7 +313,8 @@ export default function ScanDataDisplay({
     };
 
     const renderField = (fieldName: string, label: string) => {
-        if (isEditable && onInputChange) {
+        // Only show input if isEditable is true AND isEditing is true
+        if (isEditable && isEditing && onInputChange) {
             const inputValue = editableData[fieldName] || '';
             return (
                 <div>
@@ -412,7 +428,7 @@ export default function ScanDataDisplay({
                     onClick={() => availableScanDates.length > 0 && setShowDateDropdown(!showDateDropdown)}
                 >
                     <span className="text-gray-600 text-sm">
-                        Scan Date: {getCurrentDisplayDate}
+                        Gescannt am: {getCurrentDisplayDate}
                     </span>
                     {availableScanDates.length > 0 && (
                         <RiArrowDownSLine className={`text-gray-900 text-xl transition-transform ${showDateDropdown ? 'rotate-180' : ''}`} />
@@ -435,8 +451,8 @@ export default function ScanDataDisplay({
                             ))
                         ) : (
                             <div className="px-4 py-2 text-gray-500 text-sm">
-                              
-                          
+
+
                                 Keine Scan-Daten verfügbar
                             </div>
                         )}
@@ -494,7 +510,7 @@ export default function ScanDataDisplay({
                                     </div>
                                 ) : (
                                     <div className="w-full h-[500px] bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
-                                       
+
                                         Keine Scan-Daten verfügbar
                                     </div>
                                 );
@@ -515,9 +531,23 @@ export default function ScanDataDisplay({
                             <div className={`border border-gray-500 rounded p-1 ${isDownloading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-100'} transition`} onClick={handleDownloadFeetPdf} title='Download Combined PDF (both feet)'>
                                 <TfiDownload className={`text-4xl ${isDownloading ? 'text-gray-400' : 'text-gray-600'}`} />
                             </div>
+                            {/* Show edit button only when NOT editing */}
+                            {isEditable && !isEditing && (
+                                <div
+                                    className="border border-gray-500 rounded p-1 cursor-pointer hover:bg-gray-100 transition"
+                                    onClick={() => {
+                                        const newEditingState = !isEditing;
+                                        setIsEditing(newEditingState);
+                                        onEditStateChange?.(newEditingState);
+                                    }}
+                                    title="Edit fields"
+                                >
+                                    <MdEdit className="text-4xl text-gray-600" />
+                                </div>
+                            )}
 
-                            {/* Additional content (like save button, etc.) */}
-                            {children}
+                            {/* Additional content (like save button, etc.) - Only show when editing */}
+                            {isEditing && children}
                         </div>
                         {/* scan data fields */}
                         <div className="grid grid-cols-2 gap-2 mx-2">
@@ -569,7 +599,7 @@ export default function ScanDataDisplay({
                                     </div>
                                 ) : (
                                     <div className="w-full h-[500px] bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-500">
-                              
+
                                         Keine Scan-Daten verfügbar
                                     </div>
                                 );

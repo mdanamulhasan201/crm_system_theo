@@ -27,13 +27,14 @@ interface StorageProduct {
     produktname: string
     hersteller: string
     artikelnummer: string
-    lagerort: string
-    mindestbestand: number
-    groessenMengen: { [key: string]: number }
+    lagerort: string | null
+    mindestbestand: number | null
+    groessenMengen: { [key: string]: any }
     purchase_price: number
     selling_price: number
     Status: string
     userId: string
+    type?: 'milling_block' | 'rady_insole'
     createdAt: string
     updatedAt: string
 }
@@ -94,6 +95,7 @@ export default function VersorgungModal({
     const [storageProducts, setStorageProducts] = useState<StorageProduct[]>([])
     const [isLoadingProducts, setIsLoadingProducts] = useState(false)
     const [selectedProduct, setSelectedProduct] = useState<StorageProduct | null>(null)
+    const [selectedProductType, setSelectedProductType] = useState<'milling_block' | 'rady_insole'>('milling_block')
 
     // Helper Functions
     const getCategoryTitle = () => CATEGORY_TITLES[category] || 'Versorgung'
@@ -114,10 +116,10 @@ export default function VersorgungModal({
     }
 
     // Fetch storage products
-    const fetchStorageProducts = async () => {
+    const fetchStorageProducts = useCallback(async (type?: 'milling_block' | 'rady_insole') => {
         try {
             setIsLoadingProducts(true)
-            const response = await getAllStorages(1, 100, '')
+            const response = await getAllStorages(1, 100, '', type)
             if (response.success && response.data) {
                 setStorageProducts(response.data)
             }
@@ -127,7 +129,7 @@ export default function VersorgungModal({
         } finally {
             setIsLoadingProducts(false)
         }
-    }
+    }, [])
 
     // Handle product selection
     const handleProductSelect = (product: StorageProduct) => {
@@ -148,6 +150,7 @@ export default function VersorgungModal({
         setSelectedProduct(null)
         setPendingStoreId(null)
         setMaterialienInput('')
+        setSelectedProductType('milling_block')
 
         if (editingCard?.diagnosis_status) {
             // Handle both string (old format) and array (new format)
@@ -316,11 +319,20 @@ export default function VersorgungModal({
         }
     }, [pendingStoreId, storageProducts])
 
+    // Fetch products when type changes
+    useEffect(() => {
+        if (selectedProductType) {
+            fetchStorageProducts(selectedProductType)
+            setSelectedProduct(null) // Reset selected product when type changes
+        }
+    }, [selectedProductType, fetchStorageProducts])
+
     // Effects
     useEffect(() => {
         if (open) {
             resetForm()
-            fetchStorageProducts()
+            // Fetch products with default type (milling_block)
+            fetchStorageProducts('milling_block')
             if (editingCard?.id) {
                 fetchSingleVersorgung(editingCard.id)
             }
@@ -330,8 +342,9 @@ export default function VersorgungModal({
             setIsLoading(false)
             setSelectedProduct(null)
             setSelectedDiagnosisState([])
+            setSelectedProductType('milling_block')
         }
-    }, [editingCard, open, resetForm, fetchSingleVersorgung])
+    }, [editingCard, open, resetForm, fetchSingleVersorgung, fetchStorageProducts])
 
     const renderSubmitButton = () => (
         <button
@@ -365,17 +378,46 @@ export default function VersorgungModal({
                 </DialogHeader>
 
                 <form onSubmit={handleFormSubmit} className="flex flex-col gap-4 overflow-hidden">
-                    <ProductSelector
-                        products={storageProducts}
-                        isLoading={isLoadingProducts}
-                        selectedProductId={selectedProduct?.id || ''}
-                        onSelect={(productId) => {
-                            const product = storageProducts.find(p => p.id === productId)
-                            if (product) {
-                                handleProductSelect(product)
-                            }
-                        }}
-                    />
+                    {/* Product Type Selection Buttons */}
+                    <div className="flex gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedProductType('milling_block')}
+                            className={`px-4 py-2 rounded-full font-medium transition-colors cursor-pointer ${
+                                selectedProductType === 'milling_block'
+                                    ? 'bg-[#61A178] text-white'
+                                    : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
+                            }`}
+                        >
+                            Fräsblock
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedProductType('rady_insole')}
+                            className={`px-4 py-2 rounded-full font-medium transition-colors cursor-pointer ${
+                                selectedProductType === 'rady_insole'
+                                    ? 'bg-[#61A178] text-white'
+                                    : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
+                            }`}
+                        >
+                            Einlagenrohlinge
+                        </button>
+                    </div>
+
+                    {/* Product Selector - only show if type is selected */}
+                    {selectedProductType && (
+                        <ProductSelector
+                            products={storageProducts}
+                            isLoading={isLoadingProducts}
+                            selectedProductId={selectedProduct?.id || ''}
+                            onSelect={(productId) => {
+                                const product = storageProducts.find(p => p.id === productId)
+                                if (product) {
+                                    handleProductSelect(product)
+                                }
+                            }}
+                        />
+                    )}
 
                     {/* Basic Information */}
                     {/* <input

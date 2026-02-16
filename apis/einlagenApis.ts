@@ -1,6 +1,6 @@
 import axiosClient from "@/lib/axiosClient";
 
-// create einlage (insole)
+// create einlage (insole) versorgungen/supply-status
 export const createEinlage = async (formData: FormData) => {
     try {
         const response = await axiosClient.post('/versorgungen/supply-status', formData, {
@@ -78,6 +78,16 @@ export const getCustomerSettings = async (laser_print_prices: any, cover_types: 
 export const getSettingData = async () => {
     try {
         const response = await axiosClient.get('/customer-settings/settings');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// create custom Versorgung privet-supply/shadow
+export const createCustomVersorgung = async (payload: Record<string, any>) => {
+    try {
+        const response = await axiosClient.post('/privet-supply/shadow', payload);
         return response.data;
     } catch (error) {
         throw error;

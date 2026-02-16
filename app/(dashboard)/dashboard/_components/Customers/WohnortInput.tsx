@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { getLocation } from '@/apis/locationsApis';
 
 interface WohnortInputProps {
   value: string;
@@ -10,32 +12,26 @@ interface WohnortInputProps {
   placeholder?: string;
 }
 
-interface NominatimResult {
-  place_id: number;
-  display_name: string;
-  address?: {
-    city?: string;
-    town?: string;
-    village?: string;
-    state?: string;
-    county?: string;
-    municipality?: string;
-    postcode?: string;
-    country_code?: string;
-    country?: string;
-    road?: string;
-    house_number?: string;
-  };
+interface LocationResponse {
+  success: boolean;
+  message: string;
+  data: string[];
 }
 
 export default function WohnortInput({ value, onChange, hideLabel = false, placeholder = "Ex. Musterstraße 123, Berlin, DE" }: WohnortInputProps) {
-  const [suggestions, setSuggestions] = useState<NominatimResult[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showManualInput, setShowManualInput] = useState(false);
+  const [manualCountry, setManualCountry] = useState('Deutschland');
+  const [manualPostalCode, setManualPostalCode] = useState('');
+  const [manualCity, setManualCity] = useState('');
+  const [manualStreet, setManualStreet] = useState('');
+  const [manualNumber, setManualNumber] = useState('');
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Load German, Italian & Austrian place suggestions for Wohnort (OpenStreetMap Nominatim, free & policy-compliant)
+  // Load German, Italian & Austrian place suggestions for Wohnort using backend API
   // Enhanced to show all Austrian states (Bundesländer) and addresses
   useEffect(() => {
     const query = value.trim();
@@ -50,23 +46,15 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
         setIsLoading(true);
         setError(null);
 
-        // Improved query for better Austrian address results
-        // Using namedetails=1 and extratags=1 for better address parsing
-        const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&namedetails=1&extratags=1&limit=10&countrycodes=de,it,at&q=${encodeURIComponent(
-          query,
-        )}`;
-
-        const res = await fetch(url, {
-          headers: {
-            Accept: 'application/json',
-            'User-Agent': 'MyAppName/1.0 (myemail@example.com)', // policy-compliant
-          },
-        });
-
-        if (!res.ok) throw new Error('Failed to load locations');
-
-        const data = (await res.json()) as NominatimResult[];
-        setSuggestions(Array.isArray(data) ? data : []);
+        // Use backend API for location search
+        const response = await getLocation(query);
+        
+        // Handle the response structure: { success, message, data: string[] }
+        if (response.success && Array.isArray(response.data)) {
+          setSuggestions(response.data);
+        } else {
+          setSuggestions([]);
+        }
       } catch (err) {
         console.warn('Wohnort-Suche fehlgeschlagen', err);
         setSuggestions([]);
@@ -96,6 +84,40 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
     };
   }, [showSuggestions]);
 
+  // Combine manual input fields into address string
+  const handleManualInputChange = useCallback(() => {
+    const parts: string[] = [];
+    
+    if (manualStreet.trim() || manualNumber.trim()) {
+      const streetPart = [manualStreet.trim(), manualNumber.trim()].filter(Boolean).join(' ');
+      if (streetPart) parts.push(streetPart);
+    }
+    
+    if (manualPostalCode.trim() || manualCity.trim()) {
+      const cityPart = [manualPostalCode.trim(), manualCity.trim()].filter(Boolean).join(' ');
+      if (cityPart) parts.push(cityPart);
+    }
+    
+    if (manualCountry.trim()) {
+      parts.push(manualCountry.trim());
+    }
+    
+    const combinedAddress = parts.join(', ');
+    onChange(combinedAddress);
+  }, [manualCountry, manualPostalCode, manualCity, manualStreet, manualNumber, onChange]);
+
+  // Update address when manual fields change
+  useEffect(() => {
+    if (showManualInput) {
+      handleManualInputChange();
+    }
+  }, [showManualInput, handleManualInputChange]);
+
+  const handleAddClick = () => {
+    setShowManualInput(true);
+    setShowSuggestions(false);
+  };
+
   return (
     <div className="grid grid-cols-1 text-sm">
       <div className="relative" ref={containerRef}>
@@ -104,83 +126,153 @@ export default function WohnortInput({ value, onChange, hideLabel = false, place
             Wohnort
           </label>
         )}
-        <Input
-          type="text"
-          className="w-full"
-          placeholder={placeholder}
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setShowSuggestions(true);
-          }}
-          onFocus={() => setShowSuggestions(true)}
-          autoComplete="off"
-        />
+        
+        {!showManualInput ? (
+          <>
+            <Input
+              type="text"
+              className="w-full"
+              placeholder={placeholder}
+              value={value}
+              onChange={(e) => {
+                onChange(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              autoComplete="off"
+            />
 
-        {isLoading && (
-          <span className={`absolute right-3 ${hideLabel ? 'top-2' : 'top-9'} h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500`} />
-        )}
-
-        {showSuggestions && (
-          <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg">
-            {isLoading ? (
-              <div className="px-3 py-2 text-xs text-gray-500">
-                Orte werden geladen...
-              </div>
-            ) : error ? (
-              <div className="px-3 py-2 text-xs text-red-500">{error}</div>
-            ) : suggestions.length === 0 && value.trim().length >= 2 ? (
-              <div className="px-3 py-2 text-xs text-gray-500">
-                Keine Orte gefunden.
-              </div>
-            ) : (
-              suggestions.map((s) => {
-                // Use full display_name which includes street, city, country
-                const fullAddress = s.display_name || '';
-                const address = s.address || {};
-                const countryCode = (address.country_code || '').toUpperCase();
-
-                // Extract city/town/village for display (prioritize city)
-                const cityLabel =
-                  address.city ||
-                  address.town ||
-                  address.village ||
-                  address.municipality ||
-                  '';
-
-                // Extract state/province (important for Austria - Bundesländer)
-                const stateLabel = address.state || address.county || '';
-
-                // Build a more informative display label
-                const displayParts = [];
-                if (cityLabel) displayParts.push(cityLabel);
-                if (stateLabel) displayParts.push(stateLabel);
-                if (countryCode) displayParts.push(countryCode);
-                const displayLabel = displayParts.join(', ');
-
-                return (
-                  <button
-                    key={s.place_id}
-                    type="button"
-                    className="flex w-full flex-col items-start px-3 py-2 text-left text-xs hover:bg-gray-50"
-                    onClick={() => {
-                      // Set the full address (includes street, city, state, country)
-                      onChange(fullAddress);
-                      setShowSuggestions(false);
-                    }}
-                  >
-                    <span className="font-medium text-gray-800">
-                      {fullAddress}
-                    </span>
-                    {displayLabel && (
-                      <span className="mt-0.5 line-clamp-1 text-[11px] text-gray-500">
-                        {displayLabel}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
+            {isLoading && (
+              <span className={`absolute right-3 ${hideLabel ? 'top-2' : 'top-9'} h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-500`} />
             )}
+
+            {showSuggestions && (
+              <div className="absolute z-50 mt-1 w-full max-h-56 overflow-y-auto rounded-md border border-gray-200 bg-white shadow-lg">
+                {isLoading ? (
+                  <div className="px-3 py-2 text-xs text-gray-500">
+                    Orte werden geladen...
+                  </div>
+                ) : error ? (
+                  <div className="px-3 py-2 text-xs text-red-500">{error}</div>
+                ) : suggestions.length === 0 && value.trim().length >= 2 ? (
+                  <div className="px-3 py-2 flex items-center justify-between">
+                    <span className="text-xs text-gray-500">Keine Orte gefunden.</span>
+                    <button
+                      type="button"
+                      onClick={handleAddClick}
+                      className="px-3 py-1 text-xs font-medium text-white bg-[#61A175] rounded-md hover:bg-[#4f8360] transition-colors"
+                    >
+                      Hinzufügen
+                    </button>
+                  </div>
+                ) : (
+                  suggestions.map((location, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className="flex w-full items-start px-3 py-2 text-left text-xs hover:bg-gray-50"
+                      onClick={() => {
+                        onChange(location);
+                        setShowSuggestions(false);
+                        setShowManualInput(false);
+                      }}
+                    >
+                      <span className="font-medium text-gray-800">
+                        {location}
+                      </span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-4 border border-gray-200 rounded-lg p-4 bg-white">
+            {/* Country */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Land
+              </label>
+              <Select value={manualCountry} onValueChange={setManualCountry}>
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Deutschland">Deutschland</SelectItem>
+                  <SelectItem value="Österreich">Österreich</SelectItem>
+                  <SelectItem value="Schweiz">Schweiz</SelectItem>
+                  <SelectItem value="Italien">Italien</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Postal Code | City */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  PLZ
+                </label>
+                <Input
+                  type="text"
+                  className="w-full"
+                  placeholder="PLZ"
+                  value={manualPostalCode}
+                  onChange={(e) => setManualPostalCode(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Stadt
+                </label>
+                <Input
+                  type="text"
+                  className="w-full"
+                  placeholder="Stadt"
+                  value={manualCity}
+                  onChange={(e) => setManualCity(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Street | Number */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Straße
+                </label>
+                <Input
+                  type="text"
+                  className="w-full"
+                  placeholder="Straße"
+                  value={manualStreet}
+                  onChange={(e) => setManualStreet(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nr.
+                </label>
+                <Input
+                  type="text"
+                  className="w-full"
+                  placeholder="Nr."
+                  value={manualNumber}
+                  onChange={(e) => setManualNumber(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Close manual input button */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowManualInput(false);
+                setShowSuggestions(false);
+              }}
+              className="w-full px-3 py-2 text-xs font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Zurück zur Suche
+            </button>
           </div>
         )}
       </div>

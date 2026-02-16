@@ -14,7 +14,7 @@ export default function CompanyInformation() {
     companyName: '',
     accountName: '',
     vatNumber: '',
-    vatCountry: 'Germany (DE)',
+    vatCountry: '',
     phoneNumber: '',
     email: '',
     absenderEmail: ''
@@ -175,6 +175,7 @@ export default function CompanyInformation() {
               onChange={handleChange}
               className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
             >
+              <option value="">Bitte wählen...</option>
               <option value="Deutschland (DE)">Deutschland (DE)</option>
               <option value="Österreich (AT)">Österreich (AT)</option>
               <option value="Italien (IT)">Italien (IT)</option>

@@ -1,11 +1,12 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { STATUS_OPTIONS } from "@/lib/orderStatusMappings";
+import { getStatusOptions } from "@/lib/orderStatusMappings";
 
 interface StatusFilterBarProps {
     selectedDays: number;
     selectedStatus: string | null;
+    selectedType: string | null;
     activeStep: number;
     onDaysChange: (days: number) => void;
     onStatusFilter: (status: string) => void;
@@ -15,16 +16,19 @@ interface StatusFilterBarProps {
 export default function StatusFilterBar({
     selectedDays,
     selectedStatus,
+    selectedType,
     activeStep,
     onDaysChange,
     onStatusFilter,
     onClearFilter,
 }: StatusFilterBarProps) {
+    const statusOptions = getStatusOptions(selectedType);
+    
     return (
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-4 sm:mb-6 gap-4 border-b-2 border-gray-400 pb-4">
             {/* Status Bar */}
             <div className="flex items-center w-full overflow-x-auto">
-                {STATUS_OPTIONS.map((status, idx) => {
+                {statusOptions.map((status, idx) => {
                     const isFilterActive = selectedStatus === status.value;
 
                     return (
@@ -42,7 +46,7 @@ export default function StatusFilterBar({
                                     {status.label}
                                 </span>
                             </div>
-                            {idx < STATUS_OPTIONS.length - 1 && (
+                            {idx < statusOptions.length - 1 && (
                                 <div className={`flex-1 h-px mx-1 sm:mx-2 ${isFilterActive ? 'bg-blue-300' : 'bg-gray-200'
                                     }`} />
                             )}

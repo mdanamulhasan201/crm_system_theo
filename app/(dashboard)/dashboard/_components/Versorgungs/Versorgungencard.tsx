@@ -7,9 +7,12 @@ import { Plus } from 'lucide-react';
 import VersorgungModal, { VersorgungCard } from '@/components/VersorgungModal/VersorgungModal';
 import { deleteVersorgung, getVersorgungenBySupplyStatusId } from '@/apis/versorgungApis';
 import { getAllEinlagen } from '@/apis/einlagenApis';
+import { getSingleStorage } from '@/apis/storeManagement';
 import toast from 'react-hot-toast';
 
-interface AlltagseinlagenCard extends VersorgungCard { }
+interface AlltagseinlagenCard extends VersorgungCard {
+    type?: 'milling_block' | 'rady_insole'
+}
 
 // Single Versorgungencard Section Component
 function VersorgungencardSection({ einlageName, einlageId }: { einlageName: string; einlageId: string }) {
@@ -63,17 +66,41 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
             const response = await getVersorgungenBySupplyStatusId(einlageName, 1, 1000);
 
             if (response.data && Array.isArray(response.data)) {
-                const transformedData = response.data.map((item: any) => ({
-                    id: item._id || item.id,
-                    name: item.name || 'Unnamed Versorgung',
-                    rohlingHersteller: item.rohlingHersteller || 'N/A',
-                    artikelHersteller: item.artikelHersteller || 'N/A',
-                    artNr: item.artNr || 'N/A',
-                    versorgung: item.versorgung || 'N/A',
-                    materialien: item.material || 'N/A',
-                    laenge: item.laenge || 'N/A',
-                    diagnosis_status: Array.isArray(item.diagnosis_status) ? item.diagnosis_status : [],
-                }));
+                // First, transform the basic data
+                const transformedData = await Promise.all(
+                    response.data.map(async (item: any) => {
+                        const baseData = {
+                            id: item._id || item.id,
+                            name: item.name || 'Unnamed Versorgung',
+                            rohlingHersteller: item.rohlingHersteller || 'N/A',
+                            artikelHersteller: item.artikelHersteller || 'N/A',
+                            artNr: item.artNr || 'N/A',
+                            versorgung: item.versorgung || 'N/A',
+                            materialien: item.material || 'N/A',
+                            laenge: item.laenge || 'N/A',
+                            diagnosis_status: Array.isArray(item.diagnosis_status) ? item.diagnosis_status : [],
+                        };
+
+                        // Fetch store data to get type if storeId exists
+                        let type: 'milling_block' | 'rady_insole' | undefined = undefined;
+                        if (item.storeId) {
+                            try {
+                                const storeResponse = await getSingleStorage(item.storeId);
+                                if (storeResponse.success && storeResponse.data) {
+                                    type = storeResponse.data.type;
+                                }
+                            } catch (storeErr) {
+                                console.error('Error fetching store type:', storeErr);
+                                // Continue without type if store fetch fails
+                            }
+                        }
+
+                        return {
+                            ...baseData,
+                            type,
+                        };
+                    })
+                );
                 setCards(transformedData);
             } else {
                 setCards([]);
@@ -157,6 +184,19 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                                 <div className='border border-gray-900 p-5 flex flex-col gap-3 rounded-xl h-[320px] w-full'>
                                     {/* Versorgung at top */}
                                     <p className='font-bold text-lg'>Versorgung: <span className='font-normal text-xl'>{card.versorgung}</span></p>
+
+                                    {/* Type Badge */}
+                                    {card.type && (
+                                        <div className='flex items-center gap-2'>
+                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                card.type === 'milling_block' 
+                                                    ? 'bg-blue-100 text-blue-800' 
+                                                    : 'bg-green-100 text-green-800'
+                                            }`}>
+                                                {card.type === 'milling_block' ? 'Fräsblock' : 'Einlagenrohlinge'}
+                                            </span>
+                                        </div>
+                                    )}
 
                                     {/* Materials + Einlage Name */}
                                     <div className='flex flex-col gap-2'>

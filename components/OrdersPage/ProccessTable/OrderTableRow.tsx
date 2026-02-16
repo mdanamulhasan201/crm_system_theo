@@ -1,5 +1,5 @@
 import { TableRow, TableCell } from "@/components/ui/table";
-import { OrderData } from "@/contexts/OrdersContext";
+import { OrderData, useOrders } from "@/contexts/OrdersContext";
 import OrderActions from "./OrderActions";
 import Link from "next/link";
 import { getPaymentStatusColor } from "@/lib/paymentStatusUtils";
@@ -40,6 +40,7 @@ export default function OrderTableRow({
     onBarcodeStickerClick,
     onStatusClickGenerateAndSend,
 }: OrderTableRowProps) {
+    const { selectedType } = useOrders();
     // Helper function to safely get string value
     const getSafeString = (value: any): string => {
         if (value == null) return '';
@@ -68,12 +69,22 @@ export default function OrderTableRow({
         ? safeGeschaeftsstandortStr.substring(0, 2).toUpperCase() 
         : safeGeschaeftsstandortStr.toUpperCase();
 
-    const getStatusBadgeColor = (status: string) => {
+    const getStatusBadgeColor = (status: string, type?: string | null) => {
         const normalizedStatus = status.replace(/_/g, ' ');
+        
+        // Status colors for both types
         if (normalizedStatus === 'Warten auf Versorgungsstart') {
             return 'bg-red-100 text-red-800';
         } else if (normalizedStatus === 'In Fertigung') {
             return 'bg-orange-100 text-orange-800';
+        } else if (normalizedStatus === 'In Modellierung') {
+            return 'bg-purple-100 text-purple-800';
+        } else if (normalizedStatus === 'Warten auf Fräsvorgang') {
+            return 'bg-yellow-100 text-yellow-800';
+        } else if (normalizedStatus === 'Fräsvorgang') {
+            return 'bg-indigo-100 text-indigo-800';
+        } else if (normalizedStatus === 'Feinschliff') {
+            return 'bg-cyan-100 text-cyan-800';
         } else if (normalizedStatus === 'Verpacken/Qualitätssicherung') {
             return 'bg-green-100 text-green-800';
         } else if (normalizedStatus === 'Abholbereit/Versandt') {
@@ -171,7 +182,7 @@ export default function OrderTableRow({
             <TableCell className="text-center text-xs sm:text-sm w-[240px] min-w-[240px] max-w-[240px] whitespace-normal break-words">
                 <div className="flex flex-row items-center justify-center gap-2 flex-wrap">
                     <span 
-                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium whitespace-normal break-words ${getStatusBadgeColor(order.displayStatus)} ${
+                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium whitespace-normal break-words ${getStatusBadgeColor(order.displayStatus, selectedType)} ${
                             order.displayStatus?.replace(/_/g, ' ') === 'Abholbereit/Versandt' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
                         }`}
                         onClick={(e) => {
@@ -284,7 +295,7 @@ export default function OrderTableRow({
                     >
                         <Scan className="h-4 w-4 text-green-600 group-hover:text-green-700 transition-colors" />
                     </Button>
-                    <Button
+                    {/* <Button
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 cursor-pointer rounded-md hover:bg-purple-50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
@@ -297,7 +308,7 @@ export default function OrderTableRow({
                         }}
                     >
                         <Package className="h-4 w-4 text-purple-600 group-hover:text-purple-700 transition-colors" />
-                    </Button>
+                    </Button> */}
                 </div>
             </TableCell>
             <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">

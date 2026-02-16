@@ -23,7 +23,7 @@ type SupplyStatusData = {
         id: string
         orderNumber: number
         createdAt: string
-        filiale: string
+        filiale: string | { address: string; description?: string }
         invoice?: string | null
     }
 }
@@ -50,7 +50,16 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
             setError(null)
             try {
                 const response = await getCustomersBySupplyStatusId(customerId, 1, 10)
-                setSupplyStatusData(response?.data ?? [])
+                // Normalize the data to ensure filiale is always handled correctly
+                const normalizedData = (response?.data ?? []).map((item: any) => ({
+                    ...item,
+                    order: {
+                        ...item.order,
+                        // Keep filiale as-is for now, we'll handle it in useMemo
+                        filiale: item.order?.filiale
+                    }
+                }))
+                setSupplyStatusData(normalizedData)
             } catch (err) {
                 setError('Fehler beim Laden der Versorgungen')
                 setSupplyStatusData([])
@@ -69,10 +78,20 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
             const formattedDate = item.order?.createdAt
                 ? new Date(item.order.createdAt).toLocaleDateString('de-DE')
                 : '-'
-            const storeLabel = item.order?.filiale || '–'
+            const filiale = item.order?.filiale
+            let storeLabel: string = '–'
+            if (typeof filiale === 'string') {
+                storeLabel = filiale
+            } else if (filiale && typeof filiale === 'object' && filiale !== null) {
+                storeLabel = String(filiale.address || filiale.description || '–')
+            }
 
             return {
-                order: item.order,
+                order: {
+                    ...item.order,
+                    // Remove filiale object to prevent rendering issues
+                    filiale: undefined
+                },
                 supplyStatus: item.supplyStatus,
                 title: item.supplyStatus?.name || 'Versorgung',
                 storeLabel,

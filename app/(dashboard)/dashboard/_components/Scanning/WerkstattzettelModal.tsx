@@ -27,6 +27,8 @@ interface FormData {
   employeeId?: string
   selectedVersorgungData?: any
   screenerId?: string | null
+  billingType?: 'Krankenkassa' | 'Privat'
+  isCustomVersorgung?: boolean // Flag to indicate if using custom versorgung (Einmalige Versorgung)
 }
 
 interface UserInfoUpdateModalProps {
@@ -47,10 +49,22 @@ export default function WerkstattzettelModal({
 
   // Use custom hook for form state management
   const form = useWerkstattzettelForm(scanData, isOpen, formData)
-
-  // Local validation error state
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   
+  // Set default bezahlt value based on billingType from formData
+  useEffect(() => {
+    if (isOpen && formData?.billingType && !form.bezahlt) {
+      // Map billingType to bezahlt format
+      // "Krankenkassa" -> "Krankenkasse_Genehmigt" (note: "Krankenkassa" in billingType but "Krankenkasse" in bezahlt)
+      // "Privat" -> "Privat_Bezahlt"
+      const bezahltValue = formData.billingType === 'Krankenkassa' 
+        ? 'Krankenkasse_Genehmigt' 
+        : 'Privat_Bezahlt'
+      form.setBezahlt(bezahltValue)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, formData?.billingType])
+
+  // ✅ Local validation removed - backend handles all validation
  
 
   // Settings data state
@@ -183,106 +197,7 @@ export default function WerkstattzettelModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locations, isOpen, locationsLoading])
 
-  // Basic validation for required fields
-  const validateForm = () => {
-    const errors: Record<string, string> = {}
-
-    const fullNameValid = !!(form.vorname?.trim() || form.nachname?.trim())
-    if (!fullNameValid) {
-      errors.name = 'Name ist erforderlich'
-    }
-    if (!form.versorgung?.trim()) {
-      errors.versorgung = 'Versorgung ist erforderlich'
-    }
-    if (!form.datumAuftrag) {
-      errors.datumAuftrag = 'Datum des Auftrags ist erforderlich'
-    }
-    if (!form.geschaeftsstandort) {
-      errors.geschaeftsstandort = 'Geschäftstandort ist erforderlich'
-    }
-    if (!form.fertigstellungBis) {
-      errors.fertigstellungBis = 'Fertigstellungsdatum ist erforderlich'
-    }
-    if (!form.footAnalysisPrice) {
-      errors.footAnalysisPrice = 'Preis für Fußanalyse ist erforderlich'
-    }
-    if (!form.insoleSupplyPrice) {
-      errors.insoleSupplyPrice = 'Preis für Einlagenversorgung ist erforderlich'
-    }
-    if (!form.bezahlt?.trim()) {
-      errors.bezahlt = 'Kostenträger ist erforderlich'
-    }
-
-    // If custom prices are selected, the custom value must not be empty
-    if (form.footAnalysisPrice === 'custom' && !form.customFootPrice?.trim()) {
-      errors.customFootPrice = 'Benutzerdefinierter Preis für Fußanalyse ist erforderlich'
-    }
-    if (form.insoleSupplyPrice === 'custom' && !form.customInsolePrice?.trim()) {
-      errors.customInsolePrice = 'Benutzerdefinierter Preis für Einlagenversorgung ist erforderlich'
-    }
-
-    setFieldErrors(errors)
-
-    if (Object.keys(errors).length > 0) {
-      toast.error('Bitte füllen Sie alle Pflichtfelder im Werkstattzettel aus.')
-      return false
-    }
-
-    return true
-  }
-
-  // Clear errors reactively when values become valid
-  useEffect(() => {
-    setFieldErrors((prev) => {
-      const next = { ...prev }
-
-      const fullNameValid = !!(form.vorname?.trim() || form.nachname?.trim())
-      if (fullNameValid && next.name) {
-        delete next.name
-      }
-      if (form.versorgung?.trim() && next.versorgung) {
-        delete next.versorgung
-      }
-      if (form.datumAuftrag && next.datumAuftrag) {
-        delete next.datumAuftrag
-      }
-      if (form.geschaeftsstandort && next.geschaeftsstandort) {
-        delete next.geschaeftsstandort
-      }
-      if (form.fertigstellungBis && next.fertigstellungBis) {
-        delete next.fertigstellungBis
-      }
-      if (form.footAnalysisPrice && next.footAnalysisPrice) {
-        delete next.footAnalysisPrice
-      }
-      if (form.insoleSupplyPrice && next.insoleSupplyPrice) {
-        delete next.insoleSupplyPrice
-      }
-      if (form.customFootPrice?.trim() && next.customFootPrice) {
-        delete next.customFootPrice
-      }
-      if (form.customInsolePrice?.trim() && next.customInsolePrice) {
-        delete next.customInsolePrice
-      }
-      if (form.bezahlt?.trim() && next.bezahlt) {
-        delete next.bezahlt
-      }
-
-      return next
-    })
-  }, [
-    form.vorname,
-    form.nachname,
-    form.versorgung,
-    form.datumAuftrag,
-    form.geschaeftsstandort,
-    form.fertigstellungBis,
-    form.footAnalysisPrice,
-    form.insoleSupplyPrice,
-    form.customFootPrice,
-    form.customInsolePrice,
-    form.bezahlt,
-  ])
+  // ✅ ALL VALIDATION REMOVED - Backend will handle everything
 
   const handleSave = async () => {
     if (!scanData?.id) {
@@ -290,12 +205,7 @@ export default function WerkstattzettelModal({
       return
     }
 
-    // Validate before saving
-    const isValid = validateForm()
-    if (!isValid) {
-      return
-    }
-
+    // ✅ No validation - proceed directly
     try {
       // Create payload using utility function
       const werkstattzettelPayload = createWerkstattzettelPayload(
@@ -373,10 +283,7 @@ export default function WerkstattzettelModal({
 
         <div className="space-y-6 mt-6">
           {/* Customer Information Section - styled as overview card */}
-          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
-            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
-              AUFTRAGSÜBERSICHT
-            </h3>
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
             <CustomerInfoSection
               data={{
                 vorname: form.vorname,
@@ -413,21 +320,28 @@ export default function WerkstattzettelModal({
                 onLocationDropdownChange: form.handleLocationDropdownChange,
                 completionDays,
                 sameAsBusiness,
-                nameError: fieldErrors.name,
-                versorgungError: fieldErrors.versorgung,
-                datumAuftragError: fieldErrors.datumAuftrag,
-                geschaeftsstandortError: fieldErrors.geschaeftsstandort,
-                fertigstellungBisError: fieldErrors.fertigstellungBis,
+                nameError: undefined, // ✅ All validation removed
+                versorgungError: undefined,
+                datumAuftragError: undefined,
+                geschaeftsstandortError: undefined,
+                fertigstellungBisError: undefined,
               }}
             />
           </div>
 
           {/* Price Section - styled card */}
-          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
-            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
-              PREISE
-            </h3>
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
             <PriceSection
+              versorgung={form.versorgung}
+              onVersorgungChange={form.setVersorgung}
+              quantity={form.quantity}
+              onQuantityChange={form.setQuantity}
+              fertigstellungBis={form.fertigstellungBis}
+              onFertigstellungBisChange={form.handleDeliveryDateChange}
+              fertigstellungBisTime={form.fertigstellungBisTime}
+              onFertigstellungBisTimeChange={form.setFertigstellungBisTime}
+              versorgungError={undefined} // ✅ All validation removed
+              fertigstellungBisError={undefined}
               footAnalysisPrice={form.footAnalysisPrice}
               onFootAnalysisPriceChange={form.setFootAnalysisPrice}
               insoleSupplyPrice={form.insoleSupplyPrice}
@@ -439,28 +353,32 @@ export default function WerkstattzettelModal({
               laserPrintPrices={laserPrintPrices}
               einlagenversorgungPrices={einlagenversorgungPrice}
               pricesLoading={pricesLoading}
-              footAnalysisPriceError={fieldErrors.footAnalysisPrice}
-              insoleSupplyPriceError={fieldErrors.insoleSupplyPrice}
-              customFootPriceError={fieldErrors.customFootPrice}
-              customInsolePriceError={fieldErrors.customInsolePrice}
+              footAnalysisPriceError={undefined}
+              insoleSupplyPriceError={undefined}
+              customFootPriceError={undefined}
+              customInsolePriceError={undefined}
               discountType={form.discountType}
               onDiscountTypeChange={form.setDiscountType}
               discountValue={form.discountValue}
               onDiscountValueChange={form.setDiscountValue}
               bezahlt={form.bezahlt}
               onBezahltChange={form.setBezahlt}
-              paymentError={fieldErrors.bezahlt}
+              paymentError={undefined}
+              disabledPaymentType={formData?.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData?.billingType === 'Privat' ? 'Privat' : undefined}
+              datumAuftrag={form.datumAuftrag}
+              completionDays={completionDays}
             />
           </div>
 
           {/* KONTROLLE & AKTIONEN Section */}
-          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
-            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
-              KONTROLLE & AKTIONEN
-            </h3>
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+            <div className="flex items-center gap-3 mb-6">
+              {/* <MapPin className="w-5 h-5 text-[#50C878]" /> */}
+              <h3 className="text-sm font-bold text-[#50C878] uppercase tracking-wide">Kontrolle & Aktionen</h3>
+            </div>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
               <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#1E76FF]">
+                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#50C878]">
                   <MapPin className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
@@ -474,14 +392,8 @@ export default function WerkstattzettelModal({
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
-                >
-                  <FileText className="w-4 h-4 text-gray-700" />
-                  <span>PDF anzeigen</span>
-                </Button>
+              
+               
                 <Button
                   type="button"
                   variant="outline"
@@ -496,7 +408,7 @@ export default function WerkstattzettelModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-end space-x-3 mt-6">
+        <div className="flex justify-between space-x-3 mt-6">
           <Button
             type="button"
             className="cursor-pointer"
@@ -510,7 +422,7 @@ export default function WerkstattzettelModal({
             className="cursor-pointer"
             onClick={handleSave}
           >
-            Continue
+          Weiter
           </Button>
         </div>
       </DialogContent>

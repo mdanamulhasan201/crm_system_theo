@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import LastScans, { LastScansRef } from "@/components/LastScans/LastScans";
-import AddCustomerModal from "@/components/CustomerModal/AddCustomerModal";
 import { useSearchCustomer } from "@/hooks/customer/useSearchCustomer";
 import legsImg from "@/public/Kunden/legs.png";
 import scanner3D from "@/public/Kunden/3d.png";
@@ -18,7 +17,6 @@ import LastScanTable from "@/components/LastScans/LastScanTable";
 
 export default function Customers() {
   const router = useRouter();
-  const [isAddCustomerModalOpen, setIsAddCustomerModalOpen] = useState(false);
   const lastScansRef = useRef<LastScansRef>(null);
 
   const {
@@ -75,18 +73,7 @@ export default function Customers() {
   };
 
   const handleAddCustomerClick = () => {
-    setIsAddCustomerModalOpen(true);
-  };
-
-  const handleCustomerSubmit = async (customerData: any) => {
-    try {
-      setIsAddCustomerModalOpen(false);
-      setTimeout(() => {
-        if (lastScansRef.current) {
-          lastScansRef.current.refreshData();
-        }
-      }, 1000);
-    } catch (error) {}
+    router.push('/dashboard/neukundenerstellung');
   };
 
   const handleCustomerDeleted = () => {
@@ -377,7 +364,7 @@ export default function Customers() {
                 </label>
                 {renderSearchInput(
                   locationInputRef,
-                  "ort",
+                  "Ort",
                   searchLocation,
                   handleLocationChange,
                   () =>
@@ -488,13 +475,6 @@ export default function Customers() {
 
       {/* ===== KUNDENAUFTRÄGE ÜBERSICHT SECTION ===== */}
       <LastScanTable onCustomerDeleted={handleCustomerDeleted} />
-
-      {/* ===== ADD CUSTOMER MODAL ===== */}
-      <AddCustomerModal
-        isOpen={isAddCustomerModalOpen}
-        onClose={() => setIsAddCustomerModalOpen(false)}
-        onSubmit={handleCustomerSubmit}
-      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useState, useImperativeHandle, forwardRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { getProductHistory } from '@/apis/productsManagementApis';
+import { getProductHistory } from '@/apis/storeManagement';
 import toast from 'react-hot-toast';
 import { IoDocumentText } from 'react-icons/io5';
 import { Product, HistoryEntry, InventoryHistoryProps, InventoryHistoryRef } from './types';
