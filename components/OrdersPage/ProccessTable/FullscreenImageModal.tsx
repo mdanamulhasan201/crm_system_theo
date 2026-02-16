@@ -86,11 +86,22 @@ export default function FullscreenImageModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="w-screen max-w-none h-screen max-h-screen p-0 gap-0 bg-white/95 border-0 m-0 rounded-none [&_[data-slot='dialog-close']]:hidden">
+            <DialogContent 
+                className="w-screen max-w-none h-screen max-h-screen p-0 gap-0 bg-white/95 border-0 m-0 rounded-none [&_[data-slot='dialog-close']]:hidden transition-transform duration-300"
+                style={{
+                    transform: `rotate(${rotation}deg)`,
+                }}
+            >
                 <DialogTitle className="sr-only">1:1 Bildansicht - {imageAlt}</DialogTitle>
                 <div className="relative w-full h-full flex flex-col overflow-hidden" ref={containerRef}>
-                    {/* Toolbar with controls */}
-                    <div className="absolute top-4 right-4 z-50 flex items-center gap-2 flex-wrap">
+                    {/* Toolbar with controls - Always fixed at top center of viewport, counter-rotated */}
+                    <div 
+                        className="fixed top-4 left-1/2 z-[100] flex items-center gap-2 flex-wrap transition-transform duration-300 pointer-events-auto"
+                        style={{
+                            transform: `translateX(-50%) translateY(0) rotate(-${rotation}deg)`,
+                            transformOrigin: 'center center',
+                        }}
+                    >
                         {/* Zoom Controls */}
                         <div className="flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-md p-1">
                             <Button
@@ -178,7 +189,7 @@ export default function FullscreenImageModal({
                                     objectFit: 'none',
                                     objectPosition: 'center',
                                     flexShrink: 0,
-                                    transform: `scale(${zoom}) rotate(${rotation}deg)`,
+                                    transform: `scale(${zoom})`,
                                     transition: 'transform 0.2s ease-in-out',
                                 }}
                                 onError={(e) => {

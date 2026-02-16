@@ -295,7 +295,7 @@ export default function OrderTableRow({
                     >
                         <Scan className="h-4 w-4 text-green-600 group-hover:text-green-700 transition-colors" />
                     </Button>
-                    <Button
+                    {/* <Button
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 cursor-pointer rounded-md hover:bg-purple-50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
@@ -308,7 +308,7 @@ export default function OrderTableRow({
                         }}
                     >
                         <Package className="h-4 w-4 text-purple-600 group-hover:text-purple-700 transition-colors" />
-                    </Button>
+                    </Button> */}
                 </div>
             </TableCell>
             <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">

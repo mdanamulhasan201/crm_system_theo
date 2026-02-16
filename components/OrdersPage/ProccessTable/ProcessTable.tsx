@@ -320,7 +320,7 @@ export default function ProcessTable() {
 
     return (
         <>
-            <div className="mt-6 sm:mt-10 max-w-full overflow-x-auto">
+            <div className="mt-6 sm:mt-10 max-w-full space-y-6">
                 {selectedOrderIds.length === 0 ? (
                     <StatusFilterBar
                         selectedDays={selectedDays}
@@ -348,81 +348,85 @@ export default function ProcessTable() {
                     />
                 )}
 
-                <Table className="w-full min-w-[1700px]">
-                    <TableHeader>
-                        <OrderTableHeader
-                            isAllSelected={isAllSelected}
-                            isSomeSelected={isSomeSelected}
-                            onSelectAll={handleSelectAll}
-                        />
-                    </TableHeader>
-                    <TableBody>
-                        {loading ? (
-                            <TableRow>
-                                <TableCell colSpan={12} className="text-center py-20">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                                        <p className="text-gray-600">Aufträge werden geladen...</p>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : memoizedOrders.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={12} className="text-center py-20">
-                                    <div className="flex flex-col items-center justify-center">
-                                        <p className="text-gray-600 mb-4 text-lg">Keine Aufträge gefunden</p>
-                                        <Button onClick={refetch} variant="outline">
-                                            Aktualisieren
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            memoizedOrders.map((order) => (
-                                <OrderTableRow
-                                    key={order.id}
-                                    order={order}
-                                    isSelected={selectedOrderIds.includes(order.id)}
-                                    isRowSelected={selectedOrderId === order.id}
-                                    deleteLoading={deleteLoading}
-                                    onRowClick={setSelectedOrderId}
-                                    onCheckboxChange={handleSelectOrder}
-                                    onDelete={(id) => handleDeleteOrder(id, (id: string | null) => setSelectedOrderId(id))}
-                                    onInvoiceDownload={handleInvoiceDownload}
-                                    onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
-                                        setBarcodeStickerOrderId(orderId);
-                                        setBarcodeStickerOrderNumber(orderNumber);
-                                        setAutoGenerateBarcode(autoGenerate || false);
-                                        setShowBarcodeStickerModal(true);
-                                    }}
-                                    onStatusClickGenerateAndSend={handleStatusClickGenerateAndSend}
-                                    onPriorityClick={(orderData) => {
-                                        setPriorityModalOrder(orderData);
-                                        setPrioritySelection(orderData.priority || 'Normal');
-                                        setShowPriorityModal(true);
-                                    }}
-                                    onHistoryClick={(orderId, orderNumber) => {
-                                        setHistoryOrderId(orderId);
-                                        setHistoryOrderNumber(orderNumber);
-                                        setShowHistorySidebar(true);
-                                    }}
-                                    onScanClick={(orderId, orderNumber, customerName) => {
-                                        setScanOrderId(orderId);
-                                        setScanOrderNumber(orderNumber);
-                                        setScanCustomerName(customerName);
-                                        setShowScanModal(true);
-                                    }}
-                                    onVersorgungClick={(orderId, orderNumber, customerName) => {
-                                        setVersorgungOrderId(orderId);
-                                        setVersorgungOrderNumber(orderNumber);
-                                        setVersorgungCustomerName(customerName);
-                                        setShowVersorgungModal(true);
-                                    }}
+                <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                    <div className="overflow-x-auto">
+                        <Table className="w-full min-w-[1700px]">
+                            <TableHeader>
+                                <OrderTableHeader
+                                    isAllSelected={isAllSelected}
+                                    isSomeSelected={isSomeSelected}
+                                    onSelectAll={handleSelectAll}
                                 />
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {loading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={12} className="text-center py-20">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                                                <p className="text-gray-600">Aufträge werden geladen...</p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : memoizedOrders.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={12} className="text-center py-20">
+                                            <div className="flex flex-col items-center justify-center">
+                                                <p className="text-gray-600 mb-4 text-lg">Keine Aufträge gefunden</p>
+                                                <Button onClick={refetch} variant="outline">
+                                                    Aktualisieren
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    memoizedOrders.map((order) => (
+                                        <OrderTableRow
+                                            key={order.id}
+                                            order={order}
+                                            isSelected={selectedOrderIds.includes(order.id)}
+                                            isRowSelected={selectedOrderId === order.id}
+                                            deleteLoading={deleteLoading}
+                                            onRowClick={setSelectedOrderId}
+                                            onCheckboxChange={handleSelectOrder}
+                                            onDelete={(id) => handleDeleteOrder(id, (id: string | null) => setSelectedOrderId(id))}
+                                            onInvoiceDownload={handleInvoiceDownload}
+                                            onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
+                                                setBarcodeStickerOrderId(orderId);
+                                                setBarcodeStickerOrderNumber(orderNumber);
+                                                setAutoGenerateBarcode(autoGenerate || false);
+                                                setShowBarcodeStickerModal(true);
+                                            }}
+                                            onStatusClickGenerateAndSend={handleStatusClickGenerateAndSend}
+                                            onPriorityClick={(orderData) => {
+                                                setPriorityModalOrder(orderData);
+                                                setPrioritySelection(orderData.priority || 'Normal');
+                                                setShowPriorityModal(true);
+                                            }}
+                                            onHistoryClick={(orderId, orderNumber) => {
+                                                setHistoryOrderId(orderId);
+                                                setHistoryOrderNumber(orderNumber);
+                                                setShowHistorySidebar(true);
+                                            }}
+                                            onScanClick={(orderId, orderNumber, customerName) => {
+                                                setScanOrderId(orderId);
+                                                setScanOrderNumber(orderNumber);
+                                                setScanCustomerName(customerName);
+                                                setShowScanModal(true);
+                                            }}
+                                            onVersorgungClick={(orderId, orderNumber, customerName) => {
+                                                setVersorgungOrderId(orderId);
+                                                setVersorgungOrderNumber(orderNumber);
+                                                setVersorgungCustomerName(customerName);
+                                                setShowVersorgungModal(true);
+                                            }}
+                                        />
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </div>
 
                 <PaginationControls
                     pagination={pagination}
