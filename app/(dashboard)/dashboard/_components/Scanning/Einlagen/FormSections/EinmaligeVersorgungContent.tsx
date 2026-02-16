@@ -5,6 +5,7 @@ import ProductSelector from '@/components/VersorgungModal/ProductSelector';
 import MaterialienInput from '@/components/VersorgungModal/MaterialienInput';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
+import { createCustomVersorgung } from '@/apis/einlagenApis';
 
 interface StorageProduct {
     id: string
@@ -27,12 +28,18 @@ interface EinmaligeVersorgungContentProps {
     insoleStandards: Array<{ name: string; left: number; right: number }>;
     onInsoleStandardsChange: (standards: Array<{ name: string; left: number; right: number }>) => void;
     menge?: string;
+    customerId?: string;
+    selectedEinlageId?: string;
+    onCustomVersorgungCreated?: (versorgungId: string) => void;
 }
 
 export default function EinmaligeVersorgungContent({
     insoleStandards,
     onInsoleStandardsChange,
-    menge
+    menge,
+    customerId,
+    selectedEinlageId,
+    onCustomVersorgungCreated
 }: EinmaligeVersorgungContentProps) {
     const [storageProducts, setStorageProducts] = useState<StorageProduct[]>([])
     const [isLoadingProducts, setIsLoadingProducts] = useState(false)
@@ -44,6 +51,12 @@ export default function EinmaligeVersorgungContent({
 
     // Local menge state, initialized from prop
     const [localMenge, setLocalMenge] = useState<string>('1')
+
+    // Versorgungsname state
+    const [versorgungsname, setVersorgungsname] = useState<string>('')
+
+    // Loading state for API call
+    const [isCreating, setIsCreating] = useState(false)
 
     // Update local menge when prop changes
     useEffect(() => {
@@ -105,6 +118,87 @@ export default function EinmaligeVersorgungContent({
         setMaterialien(materialien.filter((_, index) => index !== indexToRemove))
     }
 
+    // Handle Add button - create custom versorgung
+    const handleCreateCustomVersorgung = async () => {
+        // Validation
+        if (!customerId) {
+            toast.error('Kunde ID fehlt');
+            return;
+        }
+
+        if (!selectedEinlageId) {
+            toast.error('Bitte wählen Sie zuerst einen Einlagetyp aus');
+            return;
+        }
+
+        if (!selectedProduct) {
+            toast.error('Bitte wählen Sie einen Rohling/Fräsblock aus');
+            return;
+        }
+
+        if (!versorgungsname.trim()) {
+            toast.error('Bitte geben Sie einen Versorgungsnamen ein');
+            return;
+        }
+
+        if (materialien.length === 0) {
+            toast.error('Bitte fügen Sie mindestens ein Material hinzu');
+            return;
+        }
+
+        try {
+            setIsCreating(true);
+
+            const payload = {
+                name: versorgungsname.trim(),
+                versorgung: versorgungsname.trim(), // Using same as name
+                material: materialien,
+                supplyStatusId: selectedEinlageId,
+                storeId: selectedProduct.id,
+                customerId: customerId,
+            };
+
+            const response = await createCustomVersorgung(payload);
+
+            // Get the key from response
+            const versorgungKey = response?.data?.key || response?.key;
+            const successMessage = response?.message || 'Einmalige Versorgung erfolgreich erstellt!';
+
+            if (versorgungKey) {
+                // Store in localStorage with key name "key"
+                localStorage.setItem('key', versorgungKey);
+
+                // Notify parent component
+                if (onCustomVersorgungCreated) {
+                    onCustomVersorgungCreated(versorgungKey);
+                }
+
+                // Show success message from API response
+                toast.success(successMessage);
+
+                // Reset all form fields
+                setVersorgungsname('');
+                setMaterialien([]);
+                setMaterialienInput('');
+                setSelectedProduct(null);
+                // Reset menge to default or keep it if it should persist
+                if (menge) {
+                    const mengeNumber = menge.split(' ')[0];
+                    setLocalMenge(mengeNumber);
+                } else {
+                    setLocalMenge('1');
+                }
+            } else {
+                toast.error('Keine ID in der Antwort erhalten');
+            }
+        } catch (error: any) {
+            console.error('Error creating custom versorgung:', error);
+            toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Versorgung');
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
     return (
         <div className="mb-6">
             <div className="mb-4">
@@ -115,29 +209,36 @@ export default function EinmaligeVersorgungContent({
             </div>
 
             {/* Rohling / Fräsblock Selection */}
-            <div className="mb-4">
-                <ProductSelector
-                    products={storageProducts}
-                    isLoading={isLoadingProducts}
-                    selectedProductId={selectedProduct?.id || ''}
-                    onSelect={handleProductSelect}
-                />
+            <div className="mb-4 flex flex-col md:flex-row gap-4 w-full">
+                <div className="w-full md:w-1/2">
+                    <ProductSelector
+                        products={storageProducts}
+                        isLoading={isLoadingProducts}
+                        selectedProductId={selectedProduct?.id || ''}
+                        onSelect={handleProductSelect}
+                    />
+                </div>
+
+
+                {/* Versorgungsname */}
+                <div className="mb-4 w-full md:w-1/2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Versorgungsname <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        value={versorgungsname}
+                        onChange={(e) => setVersorgungsname(e.target.value)}
+                        placeholder="z.B. Sonderanfertigung für..."
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                    />
+                </div>
             </div>
 
-            {/* Versorgungsname */}
-            <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Versorgungsname
-                </label>
-                <input
-                    type="text"
-                    placeholder="z.B. Sonderanfertigung für..."
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                />
-            </div>
+
 
             {/* Menge */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                     Menge
                 </label>
@@ -152,7 +253,7 @@ export default function EinmaligeVersorgungContent({
                     <option value="4">4 Paar</option>
                     <option value="5">5 Paar</option>
                 </select>
-            </div>
+            </div> */}
 
             {/* Materialien */}
             <div className="mb-4">
@@ -171,10 +272,11 @@ export default function EinmaligeVersorgungContent({
                 {/* button */}
                 <Button
                     type="button"
-                    className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px]"
-                // onClick={handleSave}
+                    onClick={handleCreateCustomVersorgung}
+                    disabled={isCreating}
+                    className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Add
+                    {isCreating ? 'Wird erstellt...' : 'Add'}
                 </Button>
             </div>
         </div>

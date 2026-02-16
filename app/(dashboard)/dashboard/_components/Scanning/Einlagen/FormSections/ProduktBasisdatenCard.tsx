@@ -4,7 +4,7 @@ import type { EinlageType } from '@/hooks/customer/useScanningFormData';
 interface ProduktBasisdatenCardProps {
     einlagentyp: string;
     selectedEinlage: EinlageType | string;
-    einlageOptions: Array<{ name: string; price?: number }>;
+    einlageOptions: Array<{ id?: string; name: string; price?: number }>;
     showEinlageDropdown: boolean;
     onEinlageToggle: () => void;
     onEinlageSelect: (value: string) => void;

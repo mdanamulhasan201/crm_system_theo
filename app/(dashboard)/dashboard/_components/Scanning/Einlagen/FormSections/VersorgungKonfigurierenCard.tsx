@@ -31,6 +31,10 @@ interface VersorgungKonfigurierenCardProps {
     insoleStandards: Array<{ name: string; left: number; right: number }>;
     onInsoleStandardsChange: (standards: Array<{ name: string; left: number; right: number }>) => void;
     menge?: string;
+    customerId?: string;
+    selectedEinlageId?: string;
+    onCustomVersorgungCreated?: (versorgungId: string) => void;
+    onActiveTabChange?: (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => void;
 }
 
 export default function VersorgungKonfigurierenCard({
@@ -48,6 +52,10 @@ export default function VersorgungKonfigurierenCard({
     insoleStandards,
     onInsoleStandardsChange,
     menge,
+    customerId,
+    selectedEinlageId,
+    onCustomVersorgungCreated,
+    onActiveTabChange,
 }: VersorgungKonfigurierenCardProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -73,6 +81,11 @@ export default function VersorgungKonfigurierenCard({
     // Function to update tab and URL
     const handleTabChange = (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => {
         setActiveTab(tab);
+        
+        // Notify parent component about tab change
+        if (onActiveTabChange) {
+            onActiveTabChange(tab);
+        }
         
         // Update URL with new tab
         const currentUrl = new URL(window.location.href);
@@ -327,6 +340,9 @@ export default function VersorgungKonfigurierenCard({
                         insoleStandards={insoleStandards}
                         onInsoleStandardsChange={onInsoleStandardsChange}
                         menge={menge}
+                        customerId={customerId}
+                        selectedEinlageId={selectedEinlageId}
+                        onCustomVersorgungCreated={onCustomVersorgungCreated}
                     />
                     
                     {/* Zusätze Section */}

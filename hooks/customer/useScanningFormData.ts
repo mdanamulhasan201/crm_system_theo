@@ -73,7 +73,7 @@ export const useScanningFormData = (
     const [loadingVersorgung, setLoadingVersorgung] = useState(false);
     const [hasDataLoaded, setHasDataLoaded] = useState(false);
     const [selectedVersorgungId, setSelectedVersorgungId] = useState<string | null>(null);
-    const [einlageOptions, setEinlageOptions] = useState<Array<{name: string, price?: number}>>([]); // Dynamic Einlagentyp options from API with prices
+    const [einlageOptions, setEinlageOptions] = useState<Array<{id?: string, name: string, price?: number}>>([]); // Dynamic Einlagentyp options from API with prices and IDs
 
     // Editable fields
     const [diagnosis, setDiagnosis] = useState('');
@@ -206,11 +206,12 @@ export const useScanningFormData = (
             // Get full data with prices from response.data
             const dataItems = response.data || [];
             
-            // Map status names to objects with prices
+            // Map status names to objects with prices and IDs
             const optionsWithPrices = statusNames.map((statusName: string) => {
                 // Find matching data item by name
                 const dataItem = dataItems.find((item: any) => item.name === statusName);
                 return {
+                    id: dataItem?.id,
                     name: statusName,
                     price: dataItem?.price !== undefined ? dataItem.price : undefined
                 };

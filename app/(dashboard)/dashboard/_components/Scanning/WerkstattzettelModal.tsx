@@ -28,6 +28,7 @@ interface FormData {
   selectedVersorgungData?: any
   screenerId?: string | null
   billingType?: 'Krankenkassa' | 'Privat'
+  isCustomVersorgung?: boolean // Flag to indicate if using custom versorgung (Einmalige Versorgung)
 }
 
 interface UserInfoUpdateModalProps {
@@ -63,9 +64,7 @@ export default function WerkstattzettelModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, formData?.billingType])
 
-  // Local validation error state
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
-  
+  // ✅ Local validation removed - backend handles all validation
  
 
   // Settings data state
@@ -198,106 +197,7 @@ export default function WerkstattzettelModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locations, isOpen, locationsLoading])
 
-  // Basic validation for required fields
-  const validateForm = () => {
-    const errors: Record<string, string> = {}
-
-    const fullNameValid = !!(form.vorname?.trim() || form.nachname?.trim())
-    if (!fullNameValid) {
-      errors.name = 'Name ist erforderlich'
-    }
-    if (!form.versorgung?.trim()) {
-      errors.versorgung = 'Versorgung ist erforderlich'
-    }
-    if (!form.datumAuftrag) {
-      errors.datumAuftrag = 'Datum des Auftrags ist erforderlich'
-    }
-    if (!form.geschaeftsstandort) {
-      errors.geschaeftsstandort = 'Geschäftstandort ist erforderlich'
-    }
-    if (!form.fertigstellungBis) {
-      errors.fertigstellungBis = 'Fertigstellungsdatum ist erforderlich'
-    }
-    if (!form.footAnalysisPrice) {
-      errors.footAnalysisPrice = 'Preis für Fußanalyse ist erforderlich'
-    }
-    if (!form.insoleSupplyPrice) {
-      errors.insoleSupplyPrice = 'Preis für Einlagenversorgung ist erforderlich'
-    }
-    if (!form.bezahlt?.trim()) {
-      errors.bezahlt = 'Kostenträger ist erforderlich'
-    }
-
-    // If custom prices are selected, the custom value must not be empty
-    if (form.footAnalysisPrice === 'custom' && !form.customFootPrice?.trim()) {
-      errors.customFootPrice = 'Benutzerdefinierter Preis für Fußanalyse ist erforderlich'
-    }
-    if (form.insoleSupplyPrice === 'custom' && !form.customInsolePrice?.trim()) {
-      errors.customInsolePrice = 'Benutzerdefinierter Preis für Einlagenversorgung ist erforderlich'
-    }
-
-    setFieldErrors(errors)
-
-    if (Object.keys(errors).length > 0) {
-      toast.error('Bitte füllen Sie alle Pflichtfelder im Werkstattzettel aus.')
-      return false
-    }
-
-    return true
-  }
-
-  // Clear errors reactively when values become valid
-  useEffect(() => {
-    setFieldErrors((prev) => {
-      const next = { ...prev }
-
-      const fullNameValid = !!(form.vorname?.trim() || form.nachname?.trim())
-      if (fullNameValid && next.name) {
-        delete next.name
-      }
-      if (form.versorgung?.trim() && next.versorgung) {
-        delete next.versorgung
-      }
-      if (form.datumAuftrag && next.datumAuftrag) {
-        delete next.datumAuftrag
-      }
-      if (form.geschaeftsstandort && next.geschaeftsstandort) {
-        delete next.geschaeftsstandort
-      }
-      if (form.fertigstellungBis && next.fertigstellungBis) {
-        delete next.fertigstellungBis
-      }
-      if (form.footAnalysisPrice && next.footAnalysisPrice) {
-        delete next.footAnalysisPrice
-      }
-      if (form.insoleSupplyPrice && next.insoleSupplyPrice) {
-        delete next.insoleSupplyPrice
-      }
-      if (form.customFootPrice?.trim() && next.customFootPrice) {
-        delete next.customFootPrice
-      }
-      if (form.customInsolePrice?.trim() && next.customInsolePrice) {
-        delete next.customInsolePrice
-      }
-      if (form.bezahlt?.trim() && next.bezahlt) {
-        delete next.bezahlt
-      }
-
-      return next
-    })
-  }, [
-    form.vorname,
-    form.nachname,
-    form.versorgung,
-    form.datumAuftrag,
-    form.geschaeftsstandort,
-    form.fertigstellungBis,
-    form.footAnalysisPrice,
-    form.insoleSupplyPrice,
-    form.customFootPrice,
-    form.customInsolePrice,
-    form.bezahlt,
-  ])
+  // ✅ ALL VALIDATION REMOVED - Backend will handle everything
 
   const handleSave = async () => {
     if (!scanData?.id) {
@@ -305,12 +205,7 @@ export default function WerkstattzettelModal({
       return
     }
 
-    // Validate before saving
-    const isValid = validateForm()
-    if (!isValid) {
-      return
-    }
-
+    // ✅ No validation - proceed directly
     try {
       // Create payload using utility function
       const werkstattzettelPayload = createWerkstattzettelPayload(
@@ -425,11 +320,11 @@ export default function WerkstattzettelModal({
                 onLocationDropdownChange: form.handleLocationDropdownChange,
                 completionDays,
                 sameAsBusiness,
-                nameError: fieldErrors.name,
-                versorgungError: fieldErrors.versorgung,
-                datumAuftragError: fieldErrors.datumAuftrag,
-                geschaeftsstandortError: fieldErrors.geschaeftsstandort,
-                fertigstellungBisError: fieldErrors.fertigstellungBis,
+                nameError: undefined, // ✅ All validation removed
+                versorgungError: undefined,
+                datumAuftragError: undefined,
+                geschaeftsstandortError: undefined,
+                fertigstellungBisError: undefined,
               }}
             />
           </div>
@@ -445,8 +340,8 @@ export default function WerkstattzettelModal({
               onFertigstellungBisChange={form.handleDeliveryDateChange}
               fertigstellungBisTime={form.fertigstellungBisTime}
               onFertigstellungBisTimeChange={form.setFertigstellungBisTime}
-              versorgungError={fieldErrors.versorgung}
-              fertigstellungBisError={fieldErrors.fertigstellungBis}
+              versorgungError={undefined} // ✅ All validation removed
+              fertigstellungBisError={undefined}
               footAnalysisPrice={form.footAnalysisPrice}
               onFootAnalysisPriceChange={form.setFootAnalysisPrice}
               insoleSupplyPrice={form.insoleSupplyPrice}
@@ -458,17 +353,17 @@ export default function WerkstattzettelModal({
               laserPrintPrices={laserPrintPrices}
               einlagenversorgungPrices={einlagenversorgungPrice}
               pricesLoading={pricesLoading}
-              footAnalysisPriceError={fieldErrors.footAnalysisPrice}
-              insoleSupplyPriceError={fieldErrors.insoleSupplyPrice}
-              customFootPriceError={fieldErrors.customFootPrice}
-              customInsolePriceError={fieldErrors.customInsolePrice}
+              footAnalysisPriceError={undefined}
+              insoleSupplyPriceError={undefined}
+              customFootPriceError={undefined}
+              customInsolePriceError={undefined}
               discountType={form.discountType}
               onDiscountTypeChange={form.setDiscountType}
               discountValue={form.discountValue}
               onDiscountValueChange={form.setDiscountValue}
               bezahlt={form.bezahlt}
               onBezahltChange={form.setBezahlt}
-              paymentError={fieldErrors.bezahlt}
+              paymentError={undefined}
               disabledPaymentType={formData?.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData?.billingType === 'Privat' ? 'Privat' : undefined}
               datumAuftrag={form.datumAuftrag}
               completionDays={completionDays}

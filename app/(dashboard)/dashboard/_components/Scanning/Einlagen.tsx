@@ -108,7 +108,7 @@ const einlagenFormSchema = z.object({
     einlagentyp: z.string().min(1, 'Einlagentyp ist erforderlich'),
     überzug: z.string().min(1, 'Überzug ist erforderlich'),
     menge: z.string().min(1, 'Menge ist erforderlich'),
-    versorgung: z.string().min(1, 'Versorgung ist erforderlich'),
+    versorgung: z.string().optional(), // Made optional, will validate conditionally
     versorgung_note: z.string().optional(),
     schuhmodell_wählen: z.string().optional(),
     kostenvoranschlag: z.boolean().nullable().optional(),
@@ -324,6 +324,20 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         { name: 'Supination', left: 0, right: 0 },
         { name: 'Pronation', left: 0, right: 0 },
     ]);
+    
+    // Custom Versorgung ID for Einmalige Versorgung
+    const [customVersorgungId, setCustomVersorgungId] = useState<string | null>(null);
+    
+    // Track active tab to determine which versorgung to use
+    const [activeVersorgungTab, setActiveVersorgungTab] = useState<'standard' | 'einmalig' | 'springer' | 'manuell'>('standard');
+    
+    // Check localStorage for custom versorgung ID on mount
+    useEffect(() => {
+        const storedId = localStorage.getItem('key');
+        if (storedId) {
+            setCustomVersorgungId(storedId);
+        }
+    }, []);
     
     // Clear selectedPositionsnummer when billingType changes
     useEffect(() => {
@@ -543,9 +557,18 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     };
 
     const handleConfirmOrder = async () => {
-        const resolvedId = resolveVersorgungIdFromText();
+        // Use custom versorgung ID if on einmalig tab and it exists, otherwise use resolved ID
+        let versorgungIdToUse: string | null = null;
+        
+        if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
+            versorgungIdToUse = customVersorgungId;
+        } else if (activeVersorgungTab === 'standard') {
+            versorgungIdToUse = resolveVersorgungIdFromText();
+        } else {
+            versorgungIdToUse = resolveVersorgungIdFromText();
+        }
 
-        if (customer?.id && resolvedId && formDataForOrder) {
+        if (customer?.id && versorgungIdToUse && formDataForOrder) {
             try {
                 const fussanalysePreis = Number(formDataForOrder.fussanalysePreis) || 0;
                 const einlagenversorgungPreis = Number(formDataForOrder.einlagenversorgungPreis) || 0;
@@ -589,9 +612,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 const bezahltValue = formDataForOrder.bezahlt || formDataForOrder.paymentStatus || '';
                 const paymentStatusValue = formDataForOrder.paymentStatus || formDataForOrder.bezahlt || undefined;
 
+                // Build base payload
                 const orderPayload: any = {
                     customerId: customer.id,
-                    versorgungId: resolvedId,
                     einlagentyp: formDataForOrder.einlagentyp || '',
                     überzug: formDataForOrder.überzug || '',
                     quantity: formDataForOrder.quantity || formDataForOrder.menge || 1,
@@ -624,14 +647,25 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     insoleStandards: formDataForOrder.insoleStandards || [],
                 };
 
+                // Add versorgungId OR key based on active tab
+                if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
+                    // For Einmalige Versorgung, use "key" field instead of "versorgungId"
+                    orderPayload.key = customVersorgungId;
+                } else {
+                    // For Standard-Vorlage and others, use "versorgungId"
+                    orderPayload.versorgungId = versorgungIdToUse;
+                }
+
                 // Add paymentStatus if it has a value
                 if (paymentStatusValue) {
                     orderPayload.paymentStatus = paymentStatusValue;
                 }
 
+                // For createOrderAndGeneratePdf, we still pass versorgungIdToUse
+                // The actual field (versorgungId or key) is already set in orderPayload
                 const result = await createOrderAndGeneratePdf(
                     customer.id,
-                    resolvedId,
+                    versorgungIdToUse || customVersorgungId || '', // Fallback to customVersorgungId if needed
                     autoSendToCustomer,
                     orderPayload
                 );
@@ -641,6 +675,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setShowPdfModal(true);
                     // Close Werkstattzettel modal only after successful order creation
                     setShowUserInfoUpdateModal(false);
+                    
+                    // Clear customVersorgungId from localStorage after successful order
+                    if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
+                        localStorage.removeItem('key');
+                        setCustomVersorgungId(null);
+                    }
                 }
             } catch (error) {
                 console.error('Error while creating order:', error);
@@ -651,6 +691,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     };
 
     const handleSpeichernClick = async () => {
+        // Check if on einmalig tab and no custom versorgung created
+        if (activeVersorgungTab === 'einmalig' && !customVersorgungId) {
+            toast.error('Bitte erstellen Sie zuerst eine einmalige Versorgung, indem Sie auf "Add" klicken');
+            return;
+        }
+        
+        // Validate standard fields
         const isValid = await trigger();
         
         if (!isValid) {
@@ -660,6 +707,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             } else {
                 toast.error('Bitte füllen Sie alle erforderlichen Felder aus');
             }
+            return;
+        }
+
+        // Additional validation for standard tab: versorgung is required
+        if (activeVersorgungTab === 'standard' && !supply) {
+            toast.error('Versorgung ist erforderlich');
             return;
         }
 
@@ -682,7 +735,14 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             billingType,
             insoleStandards,
         });
-        setFormDataForOrder(formData);
+        
+        // Add flag to indicate if using custom versorgung (Einmalige Versorgung)
+        const formDataWithFlag = {
+            ...formData,
+            isCustomVersorgung: activeVersorgungTab === 'einmalig',
+        };
+        
+        setFormDataForOrder(formDataWithFlag);
         setShowUserInfoUpdateModal(true);
     };
 
@@ -694,6 +754,21 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
     const handleSpringerLogoClick = () => {
         setShowSpringerDialog(true);
+    };
+
+    const handleCustomVersorgungCreated = (versorgungId: string) => {
+        setCustomVersorgungId(versorgungId);
+        // Toast is already shown in EinmaligeVersorgungContent component
+    };
+
+    const handleActiveTabChange = (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => {
+        setActiveVersorgungTab(tab);
+        
+        // Clear custom versorgung ID when switching away from einmalig tab
+        if (tab !== 'einmalig') {
+            setCustomVersorgungId(null);
+            localStorage.removeItem('key');
+        }
     };
 
     const orderData = createOrderData({
@@ -857,7 +932,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 selectedVersorgungId={selectedVersorgungId}
                 supply={supply}
                 onVersorgungCardSelect={handleVersorgungCardSelect}
-                versorgungError={errors.versorgung?.message}
+                versorgungError={activeVersorgungTab === 'standard' ? errors.versorgung?.message : undefined}
                 showSupplyDropdown={showSupplyDropdown}
                 onSupplyDropdownToggle={handleSupplyDropdownToggle}
                 selectedDiagnosis={selectedDiagnosis}
@@ -865,6 +940,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 insoleStandards={insoleStandards}
                 onInsoleStandardsChange={setInsoleStandards}
                 menge={menge}
+                customerId={customer?.id}
+                selectedEinlageId={einlageOptions.find(opt => opt.name === selectedEinlage)?.id}
+                onCustomVersorgungCreated={handleCustomVersorgungCreated}
+                onActiveTabChange={handleActiveTabChange}
             />
 
             {/* CARD 3: VERSORGUNGSNOTIZ */}

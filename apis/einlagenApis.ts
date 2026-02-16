@@ -84,3 +84,13 @@ export const getSettingData = async () => {
     }
 }
 
+// create custom Versorgung privet-supply/shadow
+export const createCustomVersorgung = async (payload: Record<string, any>) => {
+    try {
+        const response = await axiosClient.post('/privet-supply/shadow', payload);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
