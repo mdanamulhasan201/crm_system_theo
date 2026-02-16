@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/button';
 // import { ArrowLeft } from 'lucide-react';
 import Einlagen from '@/app/(dashboard)/dashboard/_components/Scanning/Einlagen';
 import SonstigesForm from '@/app/(dashboard)/dashboard/_components/Scanning/SonstigesForm';
-import { getSingleOrder } from '@/apis/productsOrder';
+import { getPreviousOrders, getSingleOrder } from '@/apis/productsOrder';
 // import userload from '@/public/images/scanning/userload.png'
 import userImg from '@/public/images/scanning/user.png'
 import Image from 'next/image'
 import CustomerModal from '@/components/CustomerModal/CustomerModal'
 import Loading from '@/components/Shared/Loading'
+import PreviousOrdersModal from '@/components/PreviousOrdersModal/PreviousOrdersModal'
 
 
 export default function ScanningData() {
@@ -32,6 +33,8 @@ export default function ScanningData() {
     const [isVersorgungLoading, setIsVersorgungLoading] = useState(false);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [addScanningModalOpen, setAddScanningModalOpen] = useState(false);
+    const [previousOrdersModalOpen, setPreviousOrdersModalOpen] = useState(false);
+    const [previousOrdersFetchType, setPreviousOrdersFetchType] = useState<'all' | 'customer'>('all');
     useEffect(() => {
         let isMounted = true;
         if (!orderId) {
@@ -122,6 +125,14 @@ export default function ScanningData() {
                 }}
             />
 
+            {/* Previous Orders Modal */}
+            <PreviousOrdersModal
+                isOpen={previousOrdersModalOpen}
+                onClose={() => setPreviousOrdersModalOpen(false)}
+                customerId={scanData?.id || ''}
+                fetchType={previousOrdersFetchType}
+            />
+
             {/* backbutton */}
             <div className='mb-6'>
                 <div className='flex justify-between items-center gap-4'>
@@ -182,35 +193,59 @@ export default function ScanningData() {
                 <div className="text-sm text-red-500 mb-4">{orderPrefillError}</div>
             )}
 
-            {/* Form Type Selection Buttons */}
-            <div className="flex gap-4 mb-10">
-                <Button
-                    onClick={() => setSelectedForm('einlagen')}
-                    className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'einlagen'
-                        ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        }`}
-                >
-                    Einlagen
-                </Button>
-                <Button
-                    onClick={() => setSelectedForm('massschuhe')}
-                    className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'massschuhe'
-                        ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        }`}
-                >
-                    Massschuhe
-                </Button>
-                <Button
-                    onClick={() => setSelectedForm('sonstiges')}
-                    className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'sonstiges'
-                        ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
-                        : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-                        }`}
-                >
-                    Sonstiges
-                </Button>
+            <div className='flex flex-col xl:flex-row justify-between items-center gap-4'>
+                {/* Form Type Selection Buttons */}
+                <div className="flex gap-4 mb-10">
+                    <Button
+                        onClick={() => setSelectedForm('einlagen')}
+                        className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'einlagen'
+                            ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                            }`}
+                    >
+                        Einlagen
+                    </Button>
+                    <Button
+                        onClick={() => setSelectedForm('massschuhe')}
+                        className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'massschuhe'
+                            ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                            }`}
+                    >
+                        Massschuhe
+                    </Button>
+                    <Button
+                        onClick={() => setSelectedForm('sonstiges')}
+                        className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'sonstiges'
+                            ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
+                            : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                            }`}
+                    >
+                        Sonstiges
+                    </Button>
+                </div>
+
+                {/* Previous Orders Buttons */}
+                <div className="flex gap-4 mb-6">
+                    <Button
+                        onClick={() => {
+                            setPreviousOrdersFetchType('all');
+                            setPreviousOrdersModalOpen(true);
+                        }}
+                        className="px-6 py-3 cursor-pointer rounded-lg font-semibold text-sm transition-colors bg-[#62A17C] text-white hover:bg-[#4A8A5F]"
+                    >
+                        Letzte Versorgung
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setPreviousOrdersFetchType('customer');
+                            setPreviousOrdersModalOpen(true);
+                        }}
+                        className="px-6 py-3 cursor-pointer rounded-lg font-semibold text-sm transition-colors bg-[#62A17C] text-white hover:bg-[#4A8A5F]"
+                    >
+                        Vorherige Bestellungen
+                    </Button>
+                </div>
             </div>
 
             {/* Form section */}
