@@ -255,7 +255,7 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
             />
 
             <div className='flex flex-col xl:flex-row justify-between items-start mb-6 gap-4'>
-                <div className={isZoomed ? 'w-full' : (hasQuestions ? 'w-full xl:w-8/12' : 'w-full')}>
+                <div className={isZoomed ? 'w-full' : (hasQuestions ? 'w-full xl:w-9/12' : 'w-full')}>
                     <div className="flex items-center mb-4 md:mb-0">
                         <div className="font-bold text-xl capitalize">{displayData.vorname} {displayData.nachname}</div>
                     </div>
@@ -292,7 +292,7 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                 </div>
                 {/* Hide questions section when zoomed or when no questions are available */}
                 {!isZoomed && (
-                    <div className={hasQuestions ? 'w-full xl:w-4/12' : 'hidden'}>
+                    <div className={hasQuestions ? 'w-full xl:w-3/12' : 'hidden'}>
                         {selectedForm === 'einlagen' ? (
                             <EinlagenQuestions 
                                 customer={displayData} 
