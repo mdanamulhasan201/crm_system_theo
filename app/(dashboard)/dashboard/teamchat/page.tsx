@@ -1,20 +1,140 @@
-import React from 'react'
-import { HiOutlineChatBubbleLeftRight } from 'react-icons/hi2';
+'use client';
 
-export default function TeamChat() {
-    return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-[#E9F5EF] mb-6 shadow-sm">
-                <HiOutlineChatBubbleLeftRight className="w-12 h-12 text-[#61A175]" />
-            </div>
-            <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-800">Teamchat – Coming Soon!</h1>
-            <p className="text-gray-600 mb-6 max-w-md">
-                Wir arbeiten gerade daran, den Teamchat für euch bereitzustellen.<br />
-                Schon bald könnt ihr hier miteinander kommunizieren und zusammenarbeiten!
-            </p>
-            <span className="inline-block px-4 py-1 text-sm bg-[#e0e8df] text-[#61A175] rounded-full font-semibold">
-                In Entwicklung
-            </span>
-        </div>
-    );
+import React, { useState, useEffect } from 'react';
+import ChatMainbody from '../_components/Chat/Mainbody/ChatMainbody';
+import ChatSidebar from '../_components/Chat/Sidebar/ChatSidebar';
+import ChatHeader from '../_components/Chat/Header/ChatHeader';
+import ChatFooter from '../_components/Chat/FooterPart/ChatFooter';
+import { ChatData, Group, IndividualChat, Message } from '../_components/Chat/types';
+
+export default function TeamChatPage() {
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  const [selectedChatType, setSelectedChatType] = useState<'group' | 'individual' | null>(null);
+  const [chatData, setChatData] = useState<ChatData | null>(null);
+  const [selectedChat, setSelectedChat] = useState<Group | IndividualChat | null>(null);
+
+  useEffect(() => {
+    const fetchChatData = async () => {
+      try {
+        const response = await fetch('/data/chatData.json');
+        const data = await response.json();
+        setChatData(data);
+      } catch (error) {
+        console.error('Error fetching chat data:', error);
+      }
+    };
+
+    fetchChatData();
+  }, []);
+
+  useEffect(() => {
+    if (!chatData || !selectedChatId || !selectedChatType) {
+      setSelectedChat(null);
+      return;
+    }
+
+    if (selectedChatType === 'group') {
+      const group = chatData.groups.find(g => g.groupId === selectedChatId);
+      setSelectedChat(group || null);
+    } else {
+      const individualChat = chatData.individualChats.find(c => c.chatId === selectedChatId);
+      setSelectedChat(individualChat || null);
+    }
+  }, [chatData, selectedChatId, selectedChatType]);
+
+  const handleChatSelect = (chatId: string, type: 'group' | 'individual') => {
+    setSelectedChatId(chatId);
+    setSelectedChatType(type);
+  };
+
+  const handleSendMessage = (messageContent: string) => {
+    if (!selectedChat || !chatData || !messageContent.trim()) return;
+
+    const newMessage: Message = {
+      messageId: `msg-${Date.now()}`,
+      chatType: 'normal',
+      senderId: 'user-1',
+      senderName: 'John Doe',
+      senderAvatar: '/avatars/user-1.png',
+      content: messageContent,
+      timestamp: new Date().toISOString(),
+      type: 'text',
+      isRead: false,
+    };
+
+    // Update the chat data with the new message
+    if (selectedChatType === 'group') {
+      const updatedGroups = chatData.groups.map((group) => {
+        if (group.groupId === selectedChatId) {
+          const updatedGroup = {
+            ...group,
+            messages: [...group.messages, newMessage],
+            lastMessage: {
+              messageId: newMessage.messageId,
+              content: newMessage.content,
+              timestamp: newMessage.timestamp,
+              senderName: newMessage.senderName || 'You',
+            },
+          };
+          // Update selectedChat immediately
+          setSelectedChat(updatedGroup);
+          return updatedGroup;
+        }
+        return group;
+      });
+      setChatData({ ...chatData, groups: updatedGroups });
+    } else {
+      const updatedIndividualChats = chatData.individualChats.map((chat) => {
+        if (chat.chatId === selectedChatId) {
+          const updatedChat = {
+            ...chat,
+            messages: [...chat.messages, newMessage],
+            lastMessage: {
+              messageId: newMessage.messageId,
+              content: newMessage.content,
+              timestamp: newMessage.timestamp,
+              senderName: newMessage.senderName || 'You',
+            },
+          };
+          // Update selectedChat immediately
+          setSelectedChat(updatedChat);
+          return updatedChat;
+        }
+        return chat;
+      });
+      setChatData({ ...chatData, individualChats: updatedIndividualChats });
+    }
+  };
+
+  return (
+    <div className="absolute inset-0 flex overflow-hidden -m-4">
+      {/* Chat Sidebar */}
+      <div className="shrink-0">
+        <ChatSidebar
+          selectedChatId={selectedChatId || undefined}
+          selectedChatType={selectedChatType || undefined}
+          onChatSelect={handleChatSelect}
+        />
+      </div>
+
+      {/* Chat Main Body */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <ChatHeader
+          chat={selectedChat}
+          chatType={selectedChatType}
+        />
+        <ChatMainbody
+          chat={selectedChat}
+          chatType={selectedChatType}
+          currentUserId="user-1"
+        />
+        {selectedChat && (
+          <ChatFooter
+            onSendMessage={handleSendMessage}
+            disabled={!selectedChat}
+          />
+        )}
+      </div>
+    </div>
+  );
 }

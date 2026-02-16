@@ -1,0 +1,578 @@
+{
+  "groups": [
+    {
+      "groupId": "group-1",
+      "groupName": "Development Team",
+      "groupDescription": "Main development team chat",
+      "groupAvatar": "/avatars/group-dev.png",
+      "createdAt": "2024-01-15T10:00:00Z",
+      "members": [
+        {
+          "userId": "user-1",
+          "userName": "John Doe",
+          "userEmail": "john.doe@example.com",
+          "userAvatar": "/avatars/user-1.png",
+          "role": "admin",
+          "joinedAt": "2024-01-15T10:00:00Z"
+        },
+        {
+          "userId": "user-2",
+          "userName": "Jane Smith",
+          "userEmail": "jane.smith@example.com",
+          "userAvatar": "/avatars/user-2.png",
+          "role": "member",
+          "joinedAt": "2024-01-15T10:05:00Z"
+        },
+        {
+          "userId": "user-3",
+          "userName": "Mike Johnson",
+          "userEmail": "mike.johnson@example.com",
+          "userAvatar": "/avatars/user-3.png",
+          "role": "member",
+          "joinedAt": "2024-01-16T09:00:00Z"
+        }
+      ],
+      "messages": [
+        {
+          "messageId": "msg-1",
+          "chatType": "normal",
+          "senderId": "user-1",
+          "senderName": "John Doe",
+          "senderAvatar": "/avatars/user-1.png",
+          "content": "Welcome to the development team chat!",
+          "timestamp": "2024-01-15T10:00:00Z",
+          "type": "text",
+          "isRead": true,
+          "readBy": ["user-1", "user-2", "user-3"]
+        },
+        {
+          "messageId": "msg-2",
+          "chatType": "normal",
+          "senderId": "user-2",
+          "senderName": "Jane Smith",
+          "senderAvatar": "/avatars/user-2.png",
+          "content": "Thanks! Looking forward to working with everyone.",
+          "timestamp": "2024-01-15T10:02:00Z",
+          "type": "text",
+          "isRead": true,
+          "readBy": ["user-1", "user-2", "user-3"]
+        },
+        {
+          "messageId": "sys-msg-1",
+          "chatType": "system",
+          "content": "Jane Smith changed the group name to \"Development Team\"",
+          "timestamp": "2024-01-15T10:30:00Z",
+          "systemAction": "group_name_changed",
+          "actionBy": {
+            "userId": "user-2",
+            "userName": "Jane Smith",
+            "userAvatar": "/avatars/user-2.png"
+          },
+          "oldValue": "Team Chat",
+          "newValue": "Development Team"
+        },
+        {
+          "messageId": "sys-msg-2",
+          "chatType": "system",
+          "content": "John Doe changed their profile picture",
+          "timestamp": "2024-01-15T11:00:00Z",
+          "systemAction": "profile_picture_changed",
+          "actionBy": {
+            "userId": "user-1",
+            "userName": "John Doe",
+            "userAvatar": "/avatars/user-1-new.png"
+          },
+          "oldValue": "/avatars/user-1.png",
+          "newValue": "/avatars/user-1-new.png"
+        },
+        {
+          "messageId": "msg-3",
+          "chatType": "normal",
+          "senderId": "user-1",
+          "senderName": "John Doe",
+          "senderAvatar": "/avatars/user-1-new.png",
+          "content": "Let's discuss the new feature implementation.",
+          "timestamp": "2024-01-15T14:30:00Z",
+          "type": "text",
+          "isRead": true,
+          "readBy": ["user-1", "user-2", "user-3"]
+        }
+      ],
+      "lastMessage": {
+        "messageId": "msg-3",
+        "content": "Let's discuss the new feature implementation.",
+        "timestamp": "2024-01-15T14:30:00Z",
+        "senderName": "John Doe"
+      },
+      "unreadCount": 0,
+      "isMuted": false
+    },
+    {
+      "groupId": "group-2",
+      "groupName": "Design Team",
+      "groupDescription": "Design and UI/UX discussions",
+      "groupAvatar": "/avatars/group-design.png",
+      "createdAt": "2024-01-10T09:00:00Z",
+      "members": [
+        {
+          "userId": "user-2",
+          "userName": "Jane Smith",
+          "userEmail": "jane.smith@example.com",
+          "userAvatar": "/avatars/user-2.png",
+          "role": "admin",
+          "joinedAt": "2024-01-10T09:00:00Z"
+        },
+        {
+          "userId": "user-4",
+          "userName": "Sarah Williams",
+          "userEmail": "sarah.williams@example.com",
+          "userAvatar": "/avatars/user-4.png",
+          "role": "member",
+          "joinedAt": "2024-01-10T09:05:00Z"
+        },
+        {
+          "userId": "user-5",
+          "userName": "David Brown",
+          "userEmail": "david.brown@example.com",
+          "userAvatar": "/avatars/user-5.png",
+          "role": "member",
+          "joinedAt": "2024-01-11T10:00:00Z"
+        }
+      ],
+      "messages": [
+        {
+          "messageId": "sys-msg-3",
+          "chatType": "system",
+          "content": "Sarah Williams changed their profile picture",
+          "timestamp": "2024-01-16T10:30:00Z",
+          "systemAction": "profile_picture_changed",
+          "actionBy": {
+            "userId": "user-4",
+            "userName": "Sarah Williams",
+            "userAvatar": "/avatars/user-4-new.png"
+          },
+          "oldValue": "/avatars/user-4.png",
+          "newValue": "/avatars/user-4-new.png"
+        },
+        {
+          "messageId": "msg-4",
+          "chatType": "normal",
+          "senderId": "user-2",
+          "senderName": "Jane Smith",
+          "senderAvatar": "/avatars/user-2.png",
+          "content": "Let's review the new design mockups.",
+          "timestamp": "2024-01-16T11:00:00Z",
+          "type": "text",
+          "isRead": true,
+          "readBy": ["user-2", "user-4", "user-5"]
+        },
+        {
+          "messageId": "msg-5",
+          "chatType": "normal",
+          "senderId": "user-4",
+          "senderName": "Sarah Williams",
+          "senderAvatar": "/avatars/user-4-new.png",
+          "content": "I've uploaded the latest designs. Please check them out.",
+          "timestamp": "2024-01-16T11:15:00Z",
+          "type": "text",
+          "isRead": true,
+          "readBy": ["user-2", "user-4", "user-5"]
+        },
+        {
+          "messageId": "sys-msg-4",
+          "chatType": "system",
+          "content": "Jane Smith changed the group name to \"Design Team\"",
+          "timestamp": "2024-01-16T11:20:00Z",
+          "systemAction": "group_name_changed",
+          "actionBy": {
+            "userId": "user-2",
+            "userName": "Jane Smith",
+            "userAvatar": "/avatars/user-2.png"
+          },
+          "oldValue": "Design Chat",
+          "newValue": "Design Team"
+        }
+      ],
+      "lastMessage": {
+        "messageId": "msg-5",
+        "content": "I've uploaded the latest designs. Please check them out.",
+        "timestamp": "2024-01-16T11:15:00Z",
+        "senderName": "Sarah Williams"
+      },
+      "unreadCount": 0,
+      "isMuted": false
+    },
+    {
+      "groupId": "group-3",
+      "groupName": "Marketing Team",
+      "groupDescription": "Marketing campaigns and strategies",
+      "groupAvatar": "/avatars/group-marketing.png",
+      "createdAt": "2024-01-12T08:00:00Z",
+      "members": [
+        {
+          "userId": "user-6",
+          "userName": "Emily Davis",
+          "userEmail": "emily.davis@example.com",
+          "userAvatar": "/avatars/user-6.png",
+          "role": "admin",
+          "joinedAt": "2024-01-12T08:00:00Z"
+        },
+        {
+          "userId": "user-7",
+          "userName": "Robert Taylor",
+          "userEmail": "robert.taylor@example.com",
+          "userAvatar": "/avatars/user-7.png",
+          "role": "member",
+          "joinedAt": "2024-01-12T08:10:00Z"
+        },
+        {
+          "userId": "user-1",
+          "userName": "John Doe",
+          "userEmail": "john.doe@example.com",
+          "userAvatar": "/avatars/user-1.png",
+          "role": "member",
+          "joinedAt": "2024-01-13T09:00:00Z"
+        }
+      ],
+      "messages": [
+        {
+          "messageId": "sys-msg-5",
+          "chatType": "system",
+          "content": "Emily Davis changed the group name to \"Marketing Team\"",
+          "timestamp": "2024-01-17T09:30:00Z",
+          "systemAction": "group_name_changed",
+          "actionBy": {
+            "userId": "user-6",
+            "userName": "Emily Davis",
+            "userAvatar": "/avatars/user-6.png"
+          },
+          "oldValue": "Marketing Chat",
+          "newValue": "Marketing Team"
+        },
+        {
+          "messageId": "msg-6",
+          "chatType": "normal",
+          "senderId": "user-6",
+          "senderName": "Emily Davis",
+          "senderAvatar": "/avatars/user-6.png",
+          "content": "The new campaign is ready for review.",
+          "timestamp": "2024-01-17T10:00:00Z",
+          "type": "text",
+          "isRead": true,
+          "readBy": ["user-6", "user-7", "user-1"]
+        },
+        {
+          "messageId": "sys-msg-6",
+          "chatType": "system",
+          "content": "Robert Taylor changed their profile picture",
+          "timestamp": "2024-01-17T10:15:00Z",
+          "systemAction": "profile_picture_changed",
+          "actionBy": {
+            "userId": "user-7",
+            "userName": "Robert Taylor",
+            "userAvatar": "/avatars/user-7-new.png"
+          },
+          "oldValue": "/avatars/user-7.png",
+          "newValue": "/avatars/user-7-new.png"
+        }
+      ],
+      "lastMessage": {
+        "messageId": "msg-6",
+        "content": "The new campaign is ready for review.",
+        "timestamp": "2024-01-17T10:00:00Z",
+        "senderName": "Emily Davis"
+      },
+      "unreadCount": 0,
+      "isMuted": false
+    }
+  ],
+  "individualChats": [
+    {
+      "chatId": "chat-1",
+      "participants": [
+        {
+          "userId": "user-1",
+          "userName": "John Doe",
+          "userEmail": "john.doe@example.com",
+          "userAvatar": "/avatars/user-1.png",
+          "phone": "+1234567890",
+          "status": "online",
+          "lastSeen": "2024-01-17T12:00:00Z"
+        },
+        {
+          "userId": "user-2",
+          "userName": "Jane Smith",
+          "userEmail": "jane.smith@example.com",
+          "userAvatar": "/avatars/user-2.png",
+          "phone": "+1234567891",
+          "status": "offline",
+          "lastSeen": "2024-01-17T11:30:00Z"
+        }
+      ],
+      "messages": [
+        {
+          "messageId": "msg-7",
+          "chatType": "normal",
+          "senderId": "user-1",
+          "senderName": "John Doe",
+          "senderAvatar": "/avatars/user-1-new.png",
+          "content": "Hi Jane, how are you doing?",
+          "timestamp": "2024-01-17T09:00:00Z",
+          "type": "text",
+          "isRead": true,
+          "deliveredAt": "2024-01-17T09:00:05Z",
+          "readAt": "2024-01-17T09:02:00Z"
+        },
+        {
+          "messageId": "msg-8",
+          "chatType": "normal",
+          "senderId": "user-2",
+          "senderName": "Jane Smith",
+          "senderAvatar": "/avatars/user-2.png",
+          "content": "I'm doing great! Thanks for asking. How about you?",
+          "timestamp": "2024-01-17T09:05:00Z",
+          "type": "text",
+          "isRead": true,
+          "deliveredAt": "2024-01-17T09:05:02Z",
+          "readAt": "2024-01-17T09:06:00Z"
+        },
+        {
+          "messageId": "msg-9",
+          "chatType": "normal",
+          "senderId": "user-1",
+          "senderName": "John Doe",
+          "senderAvatar": "/avatars/user-1-new.png",
+          "content": "I'm good too! Let's catch up soon.",
+          "timestamp": "2024-01-17T09:10:00Z",
+          "type": "text",
+          "isRead": true,
+          "deliveredAt": "2024-01-17T09:10:03Z",
+          "readAt": "2024-01-17T09:12:00Z"
+        }
+      ],
+      "lastMessage": {
+        "messageId": "msg-9",
+        "content": "I'm good too! Let's catch up soon.",
+        "timestamp": "2024-01-17T09:10:00Z",
+        "senderName": "John Doe"
+      },
+      "unreadCount": 0,
+      "createdAt": "2024-01-15T08:00:00Z",
+      "isPinned": false,
+      "isMuted": false
+    },
+    {
+      "chatId": "chat-2",
+      "participants": [
+        {
+          "userId": "user-1",
+          "userName": "John Doe",
+          "userEmail": "john.doe@example.com",
+          "userAvatar": "/avatars/user-1.png",
+          "phone": "+1234567890",
+          "status": "online",
+          "lastSeen": "2024-01-17T12:00:00Z"
+        },
+        {
+          "userId": "user-3",
+          "userName": "Mike Johnson",
+          "userEmail": "mike.johnson@example.com",
+          "userAvatar": "/avatars/user-3.png",
+          "phone": "+1234567892",
+          "status": "online",
+          "lastSeen": "2024-01-17T12:00:00Z"
+        }
+      ],
+      "messages": [
+        {
+          "messageId": "msg-10",
+          "chatType": "normal",
+          "senderId": "user-3",
+          "senderName": "Mike Johnson",
+          "senderAvatar": "/avatars/user-3.png",
+          "content": "Hey John, can we schedule a meeting?",
+          "timestamp": "2024-01-17T10:00:00Z",
+          "type": "text",
+          "isRead": true,
+          "deliveredAt": "2024-01-17T10:00:02Z",
+          "readAt": "2024-01-17T10:01:00Z"
+        },
+        {
+          "messageId": "msg-11",
+          "chatType": "normal",
+          "senderId": "user-1",
+          "senderName": "John Doe",
+          "senderAvatar": "/avatars/user-1-new.png",
+          "content": "Sure! How about tomorrow at 2 PM?",
+          "timestamp": "2024-01-17T10:05:00Z",
+          "type": "text",
+          "isRead": true,
+          "deliveredAt": "2024-01-17T10:05:03Z",
+          "readAt": "2024-01-17T10:06:00Z"
+        }
+      ],
+      "lastMessage": {
+        "messageId": "msg-11",
+        "content": "Sure! How about tomorrow at 2 PM?",
+        "timestamp": "2024-01-17T10:05:00Z",
+        "senderName": "John Doe"
+      },
+      "unreadCount": 0,
+      "createdAt": "2024-01-16T08:00:00Z",
+      "isPinned": false,
+      "isMuted": false
+    },
+    {
+      "chatId": "chat-3",
+      "participants": [
+        {
+          "userId": "user-2",
+          "userName": "Jane Smith",
+          "userEmail": "jane.smith@example.com",
+          "userAvatar": "/avatars/user-2.png",
+          "phone": "+1234567891",
+          "status": "offline",
+          "lastSeen": "2024-01-17T11:30:00Z"
+        },
+        {
+          "userId": "user-4",
+          "userName": "Sarah Williams",
+          "userEmail": "sarah.williams@example.com",
+          "userAvatar": "/avatars/user-4.png",
+          "phone": "+1234567893",
+          "status": "online",
+          "lastSeen": "2024-01-17T12:00:00Z"
+        }
+      ],
+      "messages": [
+        {
+          "messageId": "msg-12",
+          "chatType": "normal",
+          "senderId": "user-4",
+          "senderName": "Sarah Williams",
+          "senderAvatar": "/avatars/user-4-new.png",
+          "content": "Hi Jane! Are you available for a quick call?",
+          "timestamp": "2024-01-17T11:00:00Z",
+          "type": "text",
+          "isRead": false,
+          "deliveredAt": "2024-01-17T11:00:02Z"
+        }
+      ],
+      "lastMessage": {
+        "messageId": "msg-12",
+        "content": "Hi Jane! Are you available for a quick call?",
+        "timestamp": "2024-01-17T11:00:00Z",
+        "senderName": "Sarah Williams"
+      },
+      "unreadCount": 1,
+      "createdAt": "2024-01-14T08:00:00Z",
+      "isPinned": false,
+      "isMuted": false
+    }
+  ],
+  "users": [
+    {
+      "userId": "user-1",
+      "userName": "John Doe",
+      "userEmail": "john.doe@example.com",
+      "userAvatar": "/avatars/user-1.png",
+      "phone": "+1234567890",
+      "status": "online",
+      "lastSeen": "2024-01-17T12:00:00Z",
+      "bio": "Software Developer",
+      "department": "Development",
+      "role": "admin"
+    },
+    {
+      "userId": "user-2",
+      "userName": "Jane Smith",
+      "userEmail": "jane.smith@example.com",
+      "userAvatar": "/avatars/user-2.png",
+      "phone": "+1234567891",
+      "status": "offline",
+      "lastSeen": "2024-01-17T11:30:00Z",
+      "bio": "UI/UX Designer",
+      "department": "Design",
+      "role": "member"
+    },
+    {
+      "userId": "user-3",
+      "userName": "Mike Johnson",
+      "userEmail": "mike.johnson@example.com",
+      "userAvatar": "/avatars/user-3.png",
+      "phone": "+1234567892",
+      "status": "online",
+      "lastSeen": "2024-01-17T12:00:00Z",
+      "bio": "Full Stack Developer",
+      "department": "Development",
+      "role": "member"
+    },
+    {
+      "userId": "user-4",
+      "userName": "Sarah Williams",
+      "userEmail": "sarah.williams@example.com",
+      "userAvatar": "/avatars/user-4.png",
+      "phone": "+1234567893",
+      "status": "online",
+      "lastSeen": "2024-01-17T12:00:00Z",
+      "bio": "Graphic Designer",
+      "department": "Design",
+      "role": "member"
+    },
+    {
+      "userId": "user-5",
+      "userName": "David Brown",
+      "userEmail": "david.brown@example.com",
+      "userAvatar": "/avatars/user-5.png",
+      "phone": "+1234567894",
+      "status": "away",
+      "lastSeen": "2024-01-17T11:00:00Z",
+      "bio": "Product Designer",
+      "department": "Design",
+      "role": "member"
+    },
+    {
+      "userId": "user-6",
+      "userName": "Emily Davis",
+      "userEmail": "emily.davis@example.com",
+      "userAvatar": "/avatars/user-6.png",
+      "phone": "+1234567895",
+      "status": "online",
+      "lastSeen": "2024-01-17T12:00:00Z",
+      "bio": "Marketing Manager",
+      "department": "Marketing",
+      "role": "admin"
+    },
+    {
+      "userId": "user-7",
+      "userName": "Robert Taylor",
+      "userEmail": "robert.taylor@example.com",
+      "userAvatar": "/avatars/user-7.png",
+      "phone": "+1234567896",
+      "status": "offline",
+      "lastSeen": "2024-01-17T10:00:00Z",
+      "bio": "Marketing Specialist",
+      "department": "Marketing",
+      "role": "member"
+    }
+  ],
+  "settings": {
+    "notifications": {
+      "enabled": true,
+      "sound": true,
+      "desktop": true,
+      "mobile": true
+    },
+    "privacy": {
+      "lastSeen": "everyone",
+      "profilePhoto": "everyone",
+      "status": "everyone"
+    },
+    "chat": {
+      "theme": "light",
+      "fontSize": "medium",
+      "enterToSend": true
+    }
+  }
+}
+
