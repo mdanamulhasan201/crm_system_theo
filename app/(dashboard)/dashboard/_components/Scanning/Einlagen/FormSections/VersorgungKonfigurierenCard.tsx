@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ImSpinner2 } from 'react-icons/im';
 import { TiArrowSortedDown } from 'react-icons/ti';
 import ZusatzeSection from './ZusatzeSection';
@@ -27,13 +28,9 @@ interface VersorgungKonfigurierenCardProps {
     onSupplyDropdownToggle: () => void;
     selectedDiagnosis: string;
     selectedEinlage: string;
-}
-
-interface CustomField {
-    id: string;
-    name: string;
-    linksValue: number;
-    rechtsValue: number;
+    insoleStandards: Array<{ name: string; left: number; right: number }>;
+    onInsoleStandardsChange: (standards: Array<{ name: string; left: number; right: number }>) => void;
+    menge?: string;
 }
 
 export default function VersorgungKonfigurierenCard({
@@ -48,38 +45,78 @@ export default function VersorgungKonfigurierenCard({
     onSupplyDropdownToggle,
     selectedDiagnosis,
     selectedEinlage,
+    insoleStandards,
+    onInsoleStandardsChange,
+    menge,
 }: VersorgungKonfigurierenCardProps) {
-    const [activeTab, setActiveTab] = useState<'standard' | 'einmalig' | 'springer' | 'manuell'>('standard');
-    const [customFields, setCustomFields] = useState<CustomField[]>([]);
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    
+    // Initialize activeTab from URL query parameter or default to 'standard'
+    const [activeTab, setActiveTab] = useState<'standard' | 'einmalig' | 'springer' | 'manuell'>(() => {
+        const tabFromUrl = searchParams.get('versorgungTab') as 'standard' | 'einmalig' | 'springer' | 'manuell' | null;
+        return tabFromUrl && ['standard', 'einmalig', 'springer', 'manuell'].includes(tabFromUrl) ? tabFromUrl : 'standard';
+    });
+    
     const [showAddModal, setShowAddModal] = useState(false);
     const [newFieldName, setNewFieldName] = useState('');
     const [showCustomFields, setShowCustomFields] = useState(false);
 
+    // Sync activeTab with URL query parameter
+    useEffect(() => {
+        const tabFromUrl = searchParams.get('versorgungTab') as 'standard' | 'einmalig' | 'springer' | 'manuell' | null;
+        if (tabFromUrl && ['standard', 'einmalig', 'springer', 'manuell'].includes(tabFromUrl) && tabFromUrl !== activeTab) {
+            setActiveTab(tabFromUrl);
+        }
+    }, [searchParams, activeTab]);
+
+    // Function to update tab and URL
+    const handleTabChange = (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => {
+        setActiveTab(tab);
+        
+        // Update URL with new tab
+        const currentUrl = new URL(window.location.href);
+        currentUrl.searchParams.set('versorgungTab', tab);
+        router.push(currentUrl.pathname + currentUrl.search, { scroll: false });
+    };
+
     const handleAddCustomField = () => {
         if (newFieldName.trim()) {
-            const newField: CustomField = {
-                id: Date.now().toString(),
+            const newField = {
                 name: newFieldName.trim(),
-                linksValue: 0.0,
-                rechtsValue: 0.0,
+                left: 0,
+                right: 0,
             };
-            setCustomFields([...customFields, newField]);
+            onInsoleStandardsChange([...insoleStandards, newField]);
             setNewFieldName('');
             setShowAddModal(false);
             setShowCustomFields(true); // Auto-expand to show the new field
         }
     };
 
-    const handleDeleteCustomField = (id: string) => {
-        setCustomFields(customFields.filter(field => field.id !== id));
+    const handleDeleteCustomField = (name: string) => {
+        onInsoleStandardsChange(insoleStandards.filter(field => field.name !== name));
     };
 
-    const handleCustomFieldChange = (id: string, side: 'links' | 'rechts', value: number) => {
-        setCustomFields(customFields.map(field => 
-            field.id === id 
-                ? { ...field, [side === 'links' ? 'linksValue' : 'rechtsValue']: value }
-                : field
-        ));
+    const handleCustomFieldChange = (name: string, side: 'left' | 'right', value: number) => {
+        const existingField = insoleStandards.find(field => field.name === name);
+        
+        if (existingField) {
+            // Update existing field
+            onInsoleStandardsChange(insoleStandards.map(field => 
+                field.name === name 
+                    ? { ...field, [side]: value }
+                    : field
+            ));
+        } else {
+            // Add new field if it doesn't exist
+            const newField = {
+                name,
+                left: side === 'left' ? value : 0,
+                right: side === 'right' ? value : 0,
+            };
+            onInsoleStandardsChange([...insoleStandards, newField]);
+        }
     };
 
     return (
@@ -92,7 +129,7 @@ export default function VersorgungKonfigurierenCard({
                 <div className="flex flex-wrap gap-2">
                     <button
                         type="button"
-                        onClick={() => setActiveTab('standard')}
+                        onClick={() => handleTabChange('standard')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${activeTab === 'standard'
                             ? 'bg-[#61A178] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -102,7 +139,7 @@ export default function VersorgungKonfigurierenCard({
                     </button>
                     <button
                         type="button"
-                        onClick={() => setActiveTab('einmalig')}
+                        onClick={() => handleTabChange('einmalig')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${activeTab === 'einmalig'
                             ? 'bg-[#61A178] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -112,7 +149,7 @@ export default function VersorgungKonfigurierenCard({
                     </button>
                     <button
                         type="button"
-                        onClick={() => setActiveTab('springer')}
+                        onClick={() => handleTabChange('springer')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${activeTab === 'springer'
                             ? 'bg-[#61A178] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -122,7 +159,7 @@ export default function VersorgungKonfigurierenCard({
                     </button>
                     <button
                         type="button"
-                        onClick={() => setActiveTab('manuell')}
+                        onClick={() => handleTabChange('manuell')}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${activeTab === 'manuell'
                             ? 'bg-[#61A178] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -273,7 +310,7 @@ export default function VersorgungKonfigurierenCard({
 
                     {/* Zusätze Section */}
                     <ZusatzeSection
-                        customFields={customFields}
+                        customFields={insoleStandards}
                         showCustomFields={showCustomFields}
                         onToggleCustomFields={() => setShowCustomFields(!showCustomFields)}
                         onAddField={() => setShowAddModal(true)}
@@ -286,11 +323,15 @@ export default function VersorgungKonfigurierenCard({
             {/* Einmalige Versorgung Tab */}
             {activeTab === 'einmalig' && (
                 <>
-                    <EinmaligeVersorgungContent />
+                    <EinmaligeVersorgungContent 
+                        insoleStandards={insoleStandards}
+                        onInsoleStandardsChange={onInsoleStandardsChange}
+                        menge={menge}
+                    />
                     
                     {/* Zusätze Section */}
                     <ZusatzeSection
-                        customFields={customFields}
+                        customFields={insoleStandards}
                         showCustomFields={showCustomFields}
                         onToggleCustomFields={() => setShowCustomFields(!showCustomFields)}
                         onAddField={() => setShowAddModal(true)}

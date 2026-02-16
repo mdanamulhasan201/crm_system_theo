@@ -318,6 +318,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [showPositionsnummerDropdown, setShowPositionsnummerDropdown] = useState(false);
     const [lieferschein, setLieferschein] = useState<boolean | null>(null);
     
+    // Insole Standards state (Zusätze/Custom Fields) - Initialize with default fields
+    const [insoleStandards, setInsoleStandards] = useState<Array<{ name: string; left: number; right: number }>>([
+        { name: 'Verkürzungsausgleich', left: 0, right: 0 },
+        { name: 'Supination', left: 0, right: 0 },
+        { name: 'Pronation', left: 0, right: 0 },
+    ]);
+    
     // Clear selectedPositionsnummer when billingType changes
     useEffect(() => {
         setSelectedPositionsnummer([]);
@@ -614,6 +621,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         : undefined,
                     discountType: formDataForOrder.discountType || undefined,
                     insurances: buildInsurancesArray(),
+                    insoleStandards: formDataForOrder.insoleStandards || [],
                 };
 
                 // Add paymentStatus if it has a value
@@ -672,6 +680,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             selectedVersorgungId,
             screenerId,
             billingType,
+            insoleStandards,
         });
         setFormDataForOrder(formData);
         setShowUserInfoUpdateModal(true);
@@ -853,6 +862,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 onSupplyDropdownToggle={handleSupplyDropdownToggle}
                 selectedDiagnosis={selectedDiagnosis}
                 selectedEinlage={selectedEinlage as string}
+                insoleStandards={insoleStandards}
+                onInsoleStandardsChange={setInsoleStandards}
+                menge={menge}
             />
 
             {/* CARD 3: VERSORGUNGSNOTIZ */}

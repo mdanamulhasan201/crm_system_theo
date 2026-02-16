@@ -94,6 +94,7 @@ export function collectFormData({
     selectedVersorgungId,
     screenerId,
     billingType,
+    insoleStandards,
 }: {
     ausführliche_diagnose: string;
     versorgung_laut_arzt: string;
@@ -111,6 +112,7 @@ export function collectFormData({
     selectedVersorgungId: string | null;
     screenerId?: string | null;
     billingType?: 'Krankenkassa' | 'Privat';
+    insoleStandards?: Array<{ name: string; left: number; right: number }>;
 }) {
     const mengeNumber = menge ? parseInt(menge.split(' ')[0]) || 1 : 1;
     const selectedVersorgungItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
@@ -130,6 +132,7 @@ export function collectFormData({
         selectedVersorgungData: selectedVersorgungItem || null,
         screenerId: screenerId || null,
         billingType: billingType || undefined,
+        insoleStandards: insoleStandards || [],
     };
 }
 

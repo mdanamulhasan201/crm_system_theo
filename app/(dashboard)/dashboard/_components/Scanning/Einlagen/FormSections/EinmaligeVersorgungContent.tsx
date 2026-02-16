@@ -4,6 +4,7 @@ import { getAllStorages } from '@/apis/productsManagementApis';
 import ProductSelector from '@/components/VersorgungModal/ProductSelector';
 import MaterialienInput from '@/components/VersorgungModal/MaterialienInput';
 import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
 
 interface StorageProduct {
     id: string
@@ -22,14 +23,36 @@ interface StorageProduct {
     updatedAt: string
 }
 
-export default function EinmaligeVersorgungContent() {
+interface EinmaligeVersorgungContentProps {
+    insoleStandards: Array<{ name: string; left: number; right: number }>;
+    onInsoleStandardsChange: (standards: Array<{ name: string; left: number; right: number }>) => void;
+    menge?: string;
+}
+
+export default function EinmaligeVersorgungContent({
+    insoleStandards,
+    onInsoleStandardsChange,
+    menge
+}: EinmaligeVersorgungContentProps) {
     const [storageProducts, setStorageProducts] = useState<StorageProduct[]>([])
     const [isLoadingProducts, setIsLoadingProducts] = useState(false)
     const [selectedProduct, setSelectedProduct] = useState<StorageProduct | null>(null)
-    
+
     // Materialien state
     const [materialien, setMaterialien] = useState<string[]>([])
     const [materialienInput, setMaterialienInput] = useState('')
+
+    // Local menge state, initialized from prop
+    const [localMenge, setLocalMenge] = useState<string>('1')
+
+    // Update local menge when prop changes
+    useEffect(() => {
+        if (menge) {
+            // Extract number from menge string like "2 paar" -> "2"
+            const mengeNumber = menge.split(' ')[0];
+            setLocalMenge(mengeNumber);
+        }
+    }, [menge])
 
     // Fetch all storage products (without type filter)
     const fetchStorageProducts = useCallback(async () => {
@@ -118,10 +141,16 @@ export default function EinmaligeVersorgungContent() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                     Menge
                 </label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent">
+                <select
+                    value={localMenge}
+                    onChange={(e) => setLocalMenge(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                >
                     <option value="1">1 Paar</option>
                     <option value="2">2 Paar</option>
                     <option value="3">3 Paar</option>
+                    <option value="4">4 Paar</option>
+                    <option value="5">5 Paar</option>
                 </select>
             </div>
 
@@ -135,6 +164,18 @@ export default function EinmaligeVersorgungContent() {
                     onRemove={handleRemoveMaterialTag}
                     onKeyDown={handleMaterialienKeyDown}
                 />
+            </div>
+
+
+            <div className='flex justify-end'>
+                {/* button */}
+                <Button
+                    type="button"
+                    className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px]"
+                // onClick={handleSave}
+                >
+                    Add
+                </Button>
             </div>
         </div>
     );
