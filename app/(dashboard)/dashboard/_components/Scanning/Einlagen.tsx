@@ -62,6 +62,16 @@ interface PrefillOrderData {
     versorgung_note?: string | null;
     schuhmodell_wählen?: string | null;
     kostenvoranschlag?: boolean | null;
+    // Fields that can come directly from previous order APIs
+    mitarbeiter?: string | null;
+    employeeId?: string | null;
+    bezahlt?: string | null;
+    insoleStandards?: Array<{
+        name: string;
+        left: number;
+        right: number;
+        isFavorite?: boolean;
+    }>;
     werkstattzettel?: {
         versorgung?: string | null;
         mitarbeiter?: string | null;
@@ -507,11 +517,36 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         if (prefillOrderData.versorgungId) {
             setSelectedVersorgungId(prefillOrderData.versorgungId);
         }
+        // Prefill employee (supports both werkstattzettel.* and root fields from previous orders APIs)
         if (prefillOrderData.werkstattzettel?.mitarbeiter) {
             handleEmployeeSelect({
                 employeeName: prefillOrderData.werkstattzettel.mitarbeiter,
                 id: prefillOrderData.werkstattzettel.employeeId || '',
             });
+        } else if (prefillOrderData.mitarbeiter || prefillOrderData.employeeId) {
+            handleEmployeeSelect({
+                employeeName: prefillOrderData.mitarbeiter || '',
+                id: prefillOrderData.employeeId || '',
+            });
+        }
+
+        // Prefill insole standards (Zusätze)
+        if (Array.isArray(prefillOrderData.insoleStandards)) {
+            setInsoleStandards(
+                prefillOrderData.insoleStandards.map((s: any) => ({
+                    name: s?.name ?? '',
+                    left: Number(s?.left ?? 0),
+                    right: Number(s?.right ?? 0),
+                    isFavorite: typeof s?.isFavorite === 'boolean' ? s.isFavorite : undefined,
+                })).filter((s: any) => s.name)
+            );
+        }
+
+        // Prefill billing type from bezahlt (optional)
+        if (typeof prefillOrderData.bezahlt === 'string') {
+            const bz = prefillOrderData.bezahlt.toLowerCase();
+            if (bz.startsWith('privat')) setBillingType('Privat');
+            if (bz.startsWith('krankenkasse')) setBillingType('Krankenkassa');
         }
     }, [
         prefillOrderData,
@@ -529,6 +564,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setSelectedDiagnosis,
         setSupply,
         setSelectedVersorgungId,
+        setInsoleStandards,
+        setBillingType,
         einlageOptions,
     ]);
 

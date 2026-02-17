@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -27,9 +27,10 @@ interface SonstigesFormProps {
     customer?: Customer;
     onCustomerUpdate?: (updatedCustomer: Customer) => void;
     onDataRefresh?: () => void;
+    prefillOrderData?: any;
 }
 
-export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefresh }: SonstigesFormProps) {
+export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefresh, prefillOrderData }: SonstigesFormProps) {
     const { user } = useAuth();
     const vatCountry = user?.accountInfo?.vat_country;
     
@@ -72,6 +73,37 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
     // Modal state
     const [showOrderModal, setShowOrderModal] = useState(false);
     const [formDataForModal, setFormDataForModal] = useState<any>(null);
+
+    const prefillHandledRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!prefillOrderData) return;
+        const prefillId = String(prefillOrderData?.id ?? '');
+        if (prefillId && prefillHandledRef.current === prefillId) return;
+        if (prefillId) prefillHandledRef.current = prefillId;
+
+        setLeistungsname(prefillOrderData?.service_name ?? '');
+        setKategorie(prefillOrderData?.sonstiges_category ?? '');
+        if (prefillOrderData?.quantity !== undefined && prefillOrderData?.quantity !== null) {
+            setMenge(String(prefillOrderData.quantity));
+        }
+        if (prefillOrderData?.net_price !== undefined && prefillOrderData?.net_price !== null) {
+            const np = Number(prefillOrderData.net_price);
+            setNettoPreis(Number.isFinite(np) ? np.toFixed(2) : String(prefillOrderData.net_price));
+            setIsNetto(true);
+        }
+        if (prefillOrderData?.discount !== undefined && prefillOrderData?.discount !== null) {
+            setRabatt(String(prefillOrderData.discount));
+        }
+        if (prefillOrderData?.vatRate !== undefined && prefillOrderData?.vatRate !== null) {
+            const vr = Number(prefillOrderData.vatRate);
+            if (Number.isFinite(vr)) setSteuersatz(vr);
+        }
+        setLeistungsnotiz(prefillOrderData?.versorgung_note ?? '');
+        if (typeof prefillOrderData?.employeeId === 'string') {
+            setSelectedEmployeeId(prefillOrderData.employeeId);
+        }
+    }, [prefillOrderData]);
 
     // Update tax rate when country changes
     useEffect(() => {

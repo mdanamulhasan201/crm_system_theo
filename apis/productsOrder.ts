@@ -259,7 +259,7 @@ export const getPreviousOrders = async (
     productType?: 'insole' | 'shoes' | 'sonstiges'
 ) => {
     try {
-        let url = `/customer-orders/previous-orders/${customerId}?limit=${limit}`;
+        let url = `/customer-orders/previous-orders/get-latest/${customerId}?limit=${limit}`;
         if (productType) {
             url += `&productType=${productType}`;
         }
@@ -274,12 +274,17 @@ export const getPreviousOrders = async (
 }
 
 
+
+
 // customer-orders/previous-orders/get-all/f95ea2fe-adf3-47d3-b177-504fb678cf16?limit=10&cursor=&productType=insole
 
 // Quary:
 // productType=insole
 // productType=shoes
 // productType=sonstiges
+
+
+// customer-orders/previous-orders/get-all/f95ea2fe-adf3-47d3-b177-504fb678cf16?
 
 export const getPreviousOrdersByProductType = async (
     customerId: string,
@@ -288,9 +293,35 @@ export const getPreviousOrdersByProductType = async (
     productType: 'insole' | 'shoes' | 'sonstiges'
 ) => {
     try {
-        let url = `/customer-orders/previous-orders/${customerId}?limit=${limit}&productType=${productType}`;
+        let url = `/customer-orders/previous-orders/get-all/${customerId}?limit=${limit}&productType=${productType}`;
         if (cursor !== undefined && cursor !== null) {
             url += `&cursor=${cursor}`;
+        }
+        const response = await axiosClient.get(url);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
+
+// GET Single
+//customer-orders/previous-orders/get-single/{{COSTOMER ID}}/{{Order Id}}
+// customer-orders/previous-orders/get-single/f95ea2fe-adf3-47d3-b177-504fb678cf16/e712dda9-e6c1-435c-8fbc-3241526a745d
+
+// {{TD_BASEURL}}customer-orders/previous-orders/get-single/{{COSTOMER ID}}/{{Order Id}}
+
+export const getPreviousOrderSingle = async (
+    customerId: string,
+    orderId: string,
+    productType?: 'insole' | 'shoes' | 'sonstiges'
+) => {
+    try {
+        let url = `/customer-orders/previous-orders/get-single/${customerId}/${orderId}`;
+        if (productType) {
+            url += `?productType=${productType}`;
         }
         const response = await axiosClient.get(url);
         return response.data;

@@ -35,9 +35,40 @@ export default function ScanningData() {
     const [addScanningModalOpen, setAddScanningModalOpen] = useState(false);
     const [previousOrdersModalOpen, setPreviousOrdersModalOpen] = useState(false);
     const [previousOrdersFetchType, setPreviousOrdersFetchType] = useState<'all' | 'customer'>('all');
+    const [previousPrefillEinlagen, setPreviousPrefillEinlagen] = useState<any | null>(null);
+    const [previousPrefillMassschuhe, setPreviousPrefillMassschuhe] = useState<any | null>(null);
+    const [previousPrefillSonstiges, setPreviousPrefillSonstiges] = useState<any | null>(null);
+    const [formKeys, setFormKeys] = useState<Record<'einlagen' | 'massschuhe' | 'sonstiges', number>>({
+        einlagen: 0,
+        massschuhe: 0,
+        sonstiges: 0,
+    });
 
     const selectedProductType: 'insole' | 'shoes' | 'sonstiges' =
         selectedForm === 'einlagen' ? 'insole' : selectedForm === 'massschuhe' ? 'shoes' : 'sonstiges';
+
+    const normalizeEinlagenPrefill = (order: any) => {
+        if (!order) return order;
+        return {
+            ...order,
+            // Einlagen component expects `menge` for quantity display
+            menge: order.menge ?? order.quantity ?? null,
+        };
+    };
+
+    const resetAndSwitchForm = (next: 'einlagen' | 'massschuhe' | 'sonstiges') => {
+        // Clear any "previous order" prefills when switching tabs
+        setPreviousPrefillEinlagen(null);
+        setPreviousPrefillMassschuhe(null);
+        setPreviousPrefillSonstiges(null);
+
+        // Optional: screener selection is also "previous-order related", clear it on tab switch
+        setSelectedScreenerId(null);
+
+        // Force remount the form so ALL local states reset/clear
+        setFormKeys((prev) => ({ ...prev, [next]: (prev[next] ?? 0) + 1 }));
+        setSelectedForm(next);
+    };
     useEffect(() => {
         let isMounted = true;
         if (!orderId) {
@@ -132,9 +163,24 @@ export default function ScanningData() {
             <PreviousOrdersModal
                 isOpen={previousOrdersModalOpen}
                 onClose={() => setPreviousOrdersModalOpen(false)}
-                customerId={scanData?.id || ''}
+                customerId={((scanData as any)?.customerId ?? scanData?.id) || ''}
                 fetchType={previousOrdersFetchType}
                 productType={selectedProductType}
+                onSelectOrder={(order) => {
+                    // Close modal + prefill current tab form
+                    setPreviousOrdersModalOpen(false);
+                    if ((order as any)?.screenerId) {
+                        setSelectedScreenerId((order as any).screenerId);
+                    }
+
+                    if (selectedForm === 'einlagen') {
+                        setPreviousPrefillEinlagen(normalizeEinlagenPrefill(order));
+                    } else if (selectedForm === 'massschuhe') {
+                        setPreviousPrefillMassschuhe(order);
+                    } else {
+                        setPreviousPrefillSonstiges(order);
+                    }
+                }}
             />
 
             {/* backbutton */}
@@ -201,7 +247,7 @@ export default function ScanningData() {
                 {/* Form Type Selection Buttons */}
                 <div className="flex gap-4 mb-10">
                     <Button
-                        onClick={() => setSelectedForm('einlagen')}
+                        onClick={() => resetAndSwitchForm('einlagen')}
                         className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'einlagen'
                             ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
                             : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -210,7 +256,7 @@ export default function ScanningData() {
                         Einlagen
                     </Button>
                     <Button
-                        onClick={() => setSelectedForm('massschuhe')}
+                        onClick={() => resetAndSwitchForm('massschuhe')}
                         className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'massschuhe'
                             ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
                             : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -219,7 +265,7 @@ export default function ScanningData() {
                         Massschuhe
                     </Button>
                     <Button
-                        onClick={() => setSelectedForm('sonstiges')}
+                        onClick={() => resetAndSwitchForm('sonstiges')}
                         className={`px-8 py-5 cursor-pointer rounded-lg font-semibold transition-colors ${selectedForm === 'sonstiges'
                             ? 'bg-[#62A17C] text-white hover:bg-[#4A8A5F]'
                             : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
@@ -255,8 +301,9 @@ export default function ScanningData() {
             {/* Form section */}
             {selectedForm === 'einlagen' ? (
                 <Einlagen
+                    key={`einlagen-${formKeys.einlagen}`}
                     customer={scanData}
-                    prefillOrderData={prefillOrderData}
+                    prefillOrderData={previousPrefillEinlagen ?? prefillOrderData}
                     screenerId={selectedScreenerId}
                     onCustomerUpdate={(updatedCustomer) => {
                         updateCustomer(updatedCustomer);
@@ -267,7 +314,9 @@ export default function ScanningData() {
                 />
             ) : selectedForm === 'massschuhe' ? (
                 <MassschuheForm
+                    key={`massschuhe-${formKeys.massschuhe}`}
                     customer={scanData}
+                    prefillOrderData={previousPrefillMassschuhe}
                     onCustomerUpdate={(updatedCustomer) => {
                         updateCustomer(updatedCustomer);
                     }}
@@ -277,7 +326,9 @@ export default function ScanningData() {
                 />
             ) : (
                 <SonstigesForm
+                    key={`sonstiges-${formKeys.sonstiges}`}
                     customer={scanData}
+                    prefillOrderData={previousPrefillSonstiges}
                     onCustomerUpdate={(updatedCustomer) => {
                         updateCustomer(updatedCustomer);
                     }}

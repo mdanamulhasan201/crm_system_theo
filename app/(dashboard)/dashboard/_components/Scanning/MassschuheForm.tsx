@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -29,9 +29,10 @@ interface MassschuheFormProps {
     customer?: Customer;
     onCustomerUpdate?: (updatedCustomer: Customer) => void;
     onDataRefresh?: () => void;
+    prefillOrderData?: any;
 }
 
-export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefresh }: MassschuheFormProps) {
+export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefresh, prefillOrderData }: MassschuheFormProps) {
     // Get user data for vat_country check
     const { user } = useAuth();
     
@@ -149,6 +150,41 @@ export default function MassschuheForm({ customer, onCustomerUpdate, onDataRefre
 
     // Order creation modal state
     const [showOrderModal, setShowOrderModal] = useState(false);
+
+    const prefillHandledRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (!prefillOrderData) return;
+        const prefillId = String(prefillOrderData?.id ?? '');
+        if (prefillId && prefillHandledRef.current === prefillId) return;
+        if (prefillId) prefillHandledRef.current = prefillId;
+
+        setÄrztlicheDiagnose(prefillOrderData?.arztliche_diagnose ?? '');
+        setAusführlicheDiagnose(
+            prefillOrderData?.usführliche_diagnose ??
+            prefillOrderData?.ausführliche_diagnose ??
+            ''
+        );
+        setRezeptnummer(prefillOrderData?.rezeptnummer ?? '');
+        setVersorgungNote(prefillOrderData?.note ?? prefillOrderData?.customer_note ?? '');
+
+        if (typeof prefillOrderData?.halbprobe_geplant === 'boolean') {
+            setHalbprobeGeplant(prefillOrderData.halbprobe_geplant);
+        }
+        if (typeof prefillOrderData?.kostenvoranschlag === 'boolean') {
+            setKostenvoranschlag(prefillOrderData.kostenvoranschlag);
+        }
+        if (typeof prefillOrderData?.paymentType === 'string') {
+            const pt = prefillOrderData.paymentType.toLowerCase();
+            setBillingType(pt === 'privat' ? 'Privat' : 'Krankenkassa');
+        }
+        if (typeof prefillOrderData?.durchgeführt_von === 'string') {
+            setSelectedEmployee(prefillOrderData.durchgeführt_von);
+        }
+        if (typeof prefillOrderData?.employeeId === 'string') {
+            setSelectedEmployeeId(prefillOrderData.employeeId);
+        }
+    }, [prefillOrderData]);
 
 
 

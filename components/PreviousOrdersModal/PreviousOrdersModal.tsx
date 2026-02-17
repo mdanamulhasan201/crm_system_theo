@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { getPreviousOrders } from '@/apis/productsOrder'
+import { getPreviousOrders, getPreviousOrdersByProductType, getPreviousOrderSingle } from '@/apis/productsOrder'
 // import Loading from '@/components/Shared/Loading'
 
 interface PreviousOrdersModalProps {
@@ -11,6 +11,7 @@ interface PreviousOrdersModalProps {
     customerId: string
     fetchType: 'all' | 'customer' // 'all' for all supplies, 'customer' for customer-specific
     productType?: 'insole' | 'shoes' | 'sonstiges'
+    onSelectOrder?: (order: OrderData) => void
 }
 
 interface OrderData {
@@ -90,12 +91,14 @@ export default function PreviousOrdersModal({
     onClose,
     customerId,
     fetchType,
-    productType = 'insole'
+    productType = 'insole',
+    onSelectOrder
 }: PreviousOrdersModalProps) {
     const [orders, setOrders] = useState<OrderData[]>([])
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [cursor, setCursor] = useState<number | undefined>(undefined)
+    const [selectingOrderId, setSelectingOrderId] = useState<string | null>(null)
 
     useEffect(() => {
         if (isOpen && customerId) {
@@ -113,13 +116,13 @@ export default function PreviousOrdersModal({
         setError(null)
         try {
             const limit = fetchType === 'all' ? 1 : 10
-            const response = await getPreviousOrders(customerId, limit, cursor, productType)
+            const response =
+                fetchType === 'customer'
+                    ? await getPreviousOrdersByProductType(customerId, limit, cursor, productType)
+                    : await getPreviousOrders(customerId, limit, cursor, productType)
+
             const responseData = (response as any)?.data
-            const ordersArray = Array.isArray(responseData)
-                ? responseData
-                : responseData
-                    ? [responseData]
-                    : []
+            const ordersArray = Array.isArray(responseData) ? responseData : responseData ? [responseData] : []
 
             setOrders(ordersArray)
             
@@ -144,6 +147,29 @@ export default function PreviousOrdersModal({
             })
         } catch {
             return dateString
+        }
+    }
+
+    const handleSelect = async (order: OrderData) => {
+        try {
+            setSelectingOrderId(order.id)
+
+            // Only for "Vorherige Bestellungen" we fetch single full data on click
+            if (fetchType === 'customer') {
+                const customerIdForFetch = order.customerId || customerId
+                const response = await getPreviousOrderSingle(customerIdForFetch, order.id, productType)
+                const payload = (response as any)?.data ?? response
+                const fullOrder = (payload as any)?.data ?? payload
+                onSelectOrder?.(fullOrder as OrderData)
+            } else {
+                onSelectOrder?.(order)
+            }
+
+            onClose()
+        } catch (err: any) {
+            setError(err.response?.data?.message || 'Fehler beim Laden der Bestellung.')
+        } finally {
+            setSelectingOrderId(null)
         }
     }
 
@@ -186,7 +212,20 @@ export default function PreviousOrdersModal({
                         {orders.map((order) => (
                             <div
                                 key={order.id}
-                                className="border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm"
+                                role="button"
+                                tabIndex={0}
+                                className={`border border-gray-200 rounded-xl bg-white overflow-hidden shadow-sm transition ${
+                                    selectingOrderId ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer hover:shadow-md hover:border-gray-300'
+                                }`}
+                                onClick={() => {
+                                    if (!selectingOrderId) void handleSelect(order)
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault()
+                                        if (!selectingOrderId) void handleSelect(order)
+                                    }
+                                }}
                             >
                                 <div className="w-full h-40 bg-gray-100">
                                     {order.Versorgungen?.supplyStatus?.image ? (
@@ -206,6 +245,10 @@ export default function PreviousOrdersModal({
                                     <div className="text-sm text-gray-500">
                                         {order.createdAt ? formatDate(order.createdAt) : ''}
                                     </div>
+
+                                    {selectingOrderId === order.id && (
+                                        <div className="text-xs text-gray-500">Lade Details...</div>
+                                    )}
 
                                     <div className="font-semibold text-gray-900 line-clamp-2">
                                         {order.Versorgungen?.supplyStatus?.name ||
