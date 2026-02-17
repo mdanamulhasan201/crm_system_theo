@@ -212,6 +212,19 @@ function TypeFilterButtons() {
             >
                 Fräsblock
             </Button>
+            <Button
+                variant={selectedType === 'sonstiges' ? 'default' : 'outline'}
+                onClick={() => {
+                    if (selectedType === 'sonstiges') {
+                        setSelectedType(null);
+                    } else {
+                        setSelectedType('sonstiges');
+                    }
+                }}
+                className="cursor-pointer"
+            >
+                Sonstiges
+            </Button>
         </div>
     );
 }

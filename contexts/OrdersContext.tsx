@@ -82,6 +82,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData, selectedType?: string | n
     };
 
     const werkstattzettel = apiOrder.werkstattzettel;
+    const product = apiOrder.product || ({} as any);
 
     const priority = (apiOrder.priority as 'Dringend' | 'Normal') || 'Normal';
     return {
@@ -98,12 +99,12 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData, selectedType?: string | n
                 : '—',
         zahlung: formatPaymentStatus(apiOrder.bezahlt),
         bezahlt: apiOrder.bezahlt || werkstattzettel?.bezahlt || null, // Store raw payment status
-        beschreibung: werkstattzettel?.versorgung || apiOrder.product.versorgung || apiOrder.product.status,
+        beschreibung: werkstattzettel?.versorgung || product?.versorgung || product?.status || '—',
         abholort: "Abholung Innsbruck oder Wird mit Post versandt",
         fertigstellung: new Date(apiOrder.statusUpdate || apiOrder.createdAt).toLocaleDateString('de-DE'),
         erstelltAm: formatDate(werkstattzettel?.auftragsDatum || apiOrder.createdAt),
         fertiggestelltAm: formatDate(apiOrder.fertigstellungBis || werkstattzettel?.fertigstellungBis || apiOrder.statusUpdate || apiOrder.updatedAt),
-        productName: apiOrder.product.status || apiOrder.product.name,
+        productName: product?.status || product?.name || '—',
         deliveryDate: new Date(apiOrder.updatedAt).toLocaleDateString('de-DE'),
         invoice: apiOrder.invoice,
         priority,
@@ -291,7 +292,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             }
             
             // Set type from URL if available, otherwise use default
-            if (urlType && (urlType === 'rady_insole' || urlType === 'milling_block')) {
+            if (urlType && (urlType === 'rady_insole' || urlType === 'milling_block' || urlType === 'sonstiges')) {
                 setSelectedType(urlType);
             }
             
