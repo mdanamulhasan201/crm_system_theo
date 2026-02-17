@@ -46,7 +46,7 @@ export default function SettingsProfileLayout({
             if (path === "/dashboard/settings-profile") return Settings;
             if (path.endsWith("/backup")) return Save;
             // if (path.endsWith("/communication")) return MessageSquare;
-            if (path.endsWith("/werkstattzettel")) return Warehouse;
+            // if (path.endsWith("/werkstattzettel")) return Warehouse;
             if (path.endsWith("/benachrichtigungen")) return Bell;
             if (path.endsWith("/notifications")) return Store;
             if (path.endsWith("/preisverwaltung")) return Scan;
@@ -69,7 +69,8 @@ export default function SettingsProfileLayout({
                 !item.path.endsWith("/changes-password") &&
                 !item.path.endsWith("/sprache") &&
                 !item.path.endsWith("/notifications") &&
-                !item.path.endsWith("/communication")
+                !item.path.endsWith("/communication") &&
+                !item.path.endsWith("/werkstattzettel")
             )
             .map((item) => ({
                 id: mapIdFromPath(item.path),
@@ -99,12 +100,12 @@ export default function SettingsProfileLayout({
                 //     label: "Kundenkommunikation",
                 //     href: "/dashboard/settings-profile/communication"
                 // },
-                {
-                    id: "werkstattzettel",
-                    icon: Warehouse,
-                    label: "Werkstattzettel",
-                    href: "/dashboard/settings-profile/werkstattzettel"
-                },
+                // {
+                //     id: "werkstattzettel",
+                //     icon: Warehouse,
+                //     label: "Werkstattzettel",
+                //     href: "/dashboard/settings-profile/werkstattzettel"
+                // },
                 {
                     id: "benachrichtigungen",
                     icon: Bell,
