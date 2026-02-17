@@ -587,6 +587,18 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     return '';
                 };
 
+                // Get VAT rate based on country
+                const getVatRate = (): number => {
+                    const vatCountry = user?.accountInfo?.vat_country;
+                    if (vatCountry === 'Italien (IT)') {
+                        return 4; // 4% VAT for Italy
+                    }
+                    if (vatCountry === 'Österreich (AT)') {
+                        return 20; // 20% VAT for Austria
+                    }
+                    return 0; // No VAT for other countries
+                };
+
                 // Build insurances array from selected positionsnummer
                 const buildInsurancesArray = () => {
                     if (!selectedPositionsnummer || selectedPositionsnummer.length === 0) {
@@ -605,14 +617,44 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                             // Double the price if BDS (Both Sides) is selected
                             const finalPrice = side === 'BDS' ? option.price * 2 : option.price;
                             
+                            // Build description object
+                            const description: any = {};
+                            
+                            // Always include positionsnummer
+                            description.positionsnummer = posNum;
+                            
+                            if (typeof option.description === 'object') {
+                                // Copy existing description properties
+                                if (option.description.title) {
+                                    description.title = option.description.title;
+                                }
+                                if (option.description.subtitle) {
+                                    description.subtitle = option.description.subtitle;
+                                }
+                            } else if (typeof option.description === 'string') {
+                                // If description is a string, use it as title
+                                description.title = option.description;
+                            }
+                            
+                            // Add Seite (side) to description
+                            description.Seite = side;
+                            
                             return {
                                 price: finalPrice,
-                                description: typeof option.description === 'object' ? option.description : {}
+                                description: description
                             };
                         }
                         
                         return null;
                     }).filter(item => item !== null);
+                };
+
+                // Calculate insurance total price with VAT
+                const calculateInsuranceTotalPrice = (insurances: Array<{ price: number }>): number => {
+                    const totalWithoutVat = insurances.reduce((sum, item) => sum + item.price, 0);
+                    const vatRate = getVatRate();
+                    const vatAmount = (totalWithoutVat * vatRate) / 100;
+                    return totalWithoutVat + vatAmount;
                 };
 
                 // Get bezahlt value - use paymentStatus if bezahlt is not available (for backward compatibility)
@@ -651,6 +693,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         : undefined,
                     discountType: formDataForOrder.discountType || undefined,
                     insurances: buildInsurancesArray(),
+                    insuranceTotalPrice: calculateInsuranceTotalPrice(buildInsurancesArray()),
                     insoleStandards: formDataForOrder.insoleStandards || [],
                 };
 
@@ -874,6 +917,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         [posNum]: side
                     }));
                 }}
+                vatCountry={user?.accountInfo?.vat_country || undefined}
                 selectedDiagnosis={selectedDiagnosis}
                 diagnosisOptions={diagnosisOptions}
                 showDiagnosisDropdown={showDiagnosisDropdown}

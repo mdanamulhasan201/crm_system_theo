@@ -30,6 +30,7 @@ interface PositionsnummerDropdownProps {
     // Per-item side selection: Map of positionsnummer -> side
     itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
     onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
+    vatCountry?: string;
 }
 
 export default function PositionsnummerDropdown({
@@ -43,6 +44,7 @@ export default function PositionsnummerDropdown({
     error,
     itemSides: propItemSides,
     onItemSideChange,
+    vatCountry,
 }: PositionsnummerDropdownProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -118,6 +120,25 @@ export default function PositionsnummerDropdown({
         return Array.isArray(value) && value.includes(posNum);
     });
 
+    // Calculate total of all selected items (with BDS doubling)
+    const calculateSelectedTotal = (): number => {
+        return selectedOptions.reduce((sum, opt) => {
+            const posNum = getPositionsnummer(opt);
+            return sum + calculatePrice(opt.price, posNum);
+        }, 0);
+    };
+
+    // Get VAT rate based on country
+    const getVatRate = (): number => {
+        if (vatCountry === 'Italien (IT)') {
+            return 4; // 4% VAT for Italy
+        }
+        if (vatCountry === 'Österreich (AT)') {
+            return 20; // 20% VAT for Austria
+        }
+        return 0; // No VAT for other countries
+    };
+
     // Helper function to calculate price based on selected side for a specific item
     const calculatePrice = (price: number, posNum: string): number => {
         const side = getItemSide(posNum);
@@ -125,6 +146,18 @@ export default function PositionsnummerDropdown({
             return price * 2;
         }
         return price;
+    };
+
+    // Calculate VAT amount for a price
+    const calculateVatAmount = (price: number): number => {
+        const vatRate = getVatRate();
+        return (price * vatRate) / 100;
+    };
+
+    // Calculate total with VAT (for total sum)
+    const calculateTotalWithVat = (totalPrice: number): number => {
+        const vatAmount = calculateVatAmount(totalPrice);
+        return totalPrice + vatAmount;
     };
 
     // Focus search input when modal opens
@@ -218,7 +251,14 @@ export default function PositionsnummerDropdown({
                             onClick={(e) => e.stopPropagation()}
                             onMouseDown={(e) => e.stopPropagation()}
                         >
-                            <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Positionen hinzufügen</h2>
+                            <div className="flex items-center gap-3">
+                                <h2 className="text-lg sm:text-xl font-semibold text-gray-900">Positionen hinzufügen</h2>
+                                {getVatRate() > 0 && (
+                                    <span className="text-sm text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
+                                        +{getVatRate()}% VAT
+                                    </span>
+                                )}
+                            </div>
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
@@ -362,6 +402,48 @@ export default function PositionsnummerDropdown({
                                 </div>
                             )}
                         </div>
+
+                        {/* Total Section with VAT */}
+                        {value.length > 0 && (
+                            <div 
+                                className="border-t border-gray-200 p-4 sm:p-6 bg-gray-50"
+                                onClick={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => e.stopPropagation()}
+                            >
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium text-gray-700">Zwischensumme:</span>
+                                        <span className="text-sm font-semibold text-gray-900">
+                                            € {calculateSelectedTotal().toFixed(2).replace('.', ',')}
+                                        </span>
+                                    </div>
+                                    {getVatRate() > 0 && (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">+{getVatRate()}% VAT:</span>
+                                                <span className="text-sm font-semibold text-gray-700">
+                                                    € {calculateVatAmount(calculateSelectedTotal()).toFixed(2).replace('.', ',')}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-2 border-t border-gray-300">
+                                                <span className="text-base font-bold text-gray-900">Gesamt:</span>
+                                                <span className="text-base font-bold text-green-600">
+                                                    € {calculateTotalWithVat(calculateSelectedTotal()).toFixed(2).replace('.', ',')}
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
+                                    {getVatRate() === 0 && (
+                                        <div className="flex justify-between items-center pt-2 border-t border-gray-300">
+                                            <span className="text-base font-bold text-gray-900">Gesamt:</span>
+                                            <span className="text-base font-bold text-green-600">
+                                                € {calculateSelectedTotal().toFixed(2).replace('.', ',')}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
