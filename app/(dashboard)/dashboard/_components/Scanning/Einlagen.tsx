@@ -941,7 +941,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 onInsoleStandardsChange={setInsoleStandards}
                 menge={menge}
                 customerId={customer?.id}
-                selectedEinlageId={einlageOptions.find(opt => opt.name === selectedEinlage)?.id}
+                selectedEinlageId={(einlageOptions.find(opt => opt.name === selectedEinlage) as { id?: string; name: string; price?: number } | undefined)?.id}
                 onCustomVersorgungCreated={handleCustomVersorgungCreated}
                 onActiveTabChange={handleActiveTabChange}
             />

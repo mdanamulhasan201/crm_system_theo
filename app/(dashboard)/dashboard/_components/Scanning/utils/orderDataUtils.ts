@@ -77,6 +77,26 @@ export function createOrderData({
     };
 }
 
+export interface CollectFormDataParams {
+    ausführliche_diagnose: string;
+    versorgung_laut_arzt: string;
+    einlagentyp: string;
+    selectedEinlage: string;
+    überzug: string;
+    menge: string;
+    supply: string;
+    versorgung_note: string;
+    schuhmodell_wählen: string;
+    kostenvoranschlag: boolean | null;
+    selectedEmployee: string;
+    selectedEmployeeId: string;
+    versorgungData: any[];
+    selectedVersorgungId: string | null;
+    screenerId?: string | null;
+    billingType?: 'Krankenkassa' | 'Privat';
+    insoleStandards?: Array<{ name: string; left: number; right: number }>;
+}
+
 export function collectFormData({
     ausführliche_diagnose,
     versorgung_laut_arzt,
@@ -95,25 +115,7 @@ export function collectFormData({
     screenerId,
     billingType,
     insoleStandards,
-}: {
-    ausführliche_diagnose: string;
-    versorgung_laut_arzt: string;
-    einlagentyp: string;
-    selectedEinlage: string;
-    überzug: string;
-    menge: string;
-    supply: string;
-    versorgung_note: string;
-    schuhmodell_wählen: string;
-    kostenvoranschlag: boolean | null;
-    selectedEmployee: string;
-    selectedEmployeeId: string;
-    versorgungData: any[];
-    selectedVersorgungId: string | null;
-    screenerId?: string | null;
-    billingType?: 'Krankenkassa' | 'Privat';
-    insoleStandards?: Array<{ name: string; left: number; right: number }>;
-}) {
+}: CollectFormDataParams) {
     const mengeNumber = menge ? parseInt(menge.split(' ')[0]) || 1 : 1;
     const selectedVersorgungItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
 
