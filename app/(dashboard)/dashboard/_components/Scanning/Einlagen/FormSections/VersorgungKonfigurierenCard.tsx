@@ -215,16 +215,7 @@ export default function VersorgungKonfigurierenCard({
                     >
                         🛒 Springer
                     </button>
-                    <button
-                        type="button"
-                        onClick={() => handleTabChange('manuell')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${activeTab === 'manuell'
-                            ? 'bg-[#61A178] text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        ✏️ Manuell
-                    </button>
+               
                 </div>
             </div>
 

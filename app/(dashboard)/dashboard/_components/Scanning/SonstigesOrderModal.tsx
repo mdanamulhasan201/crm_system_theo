@@ -3,16 +3,15 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ChevronDown, Check } from 'lucide-react';
+import { MapPin, StickyNote } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import { getSettingData } from '@/apis/einlagenApis';
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types';
 import { createSonstiges } from '@/apis/SonstigesApis';
+import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSection';
+import PriceSection from './Werkstattzettel/FormSections/PriceSection';
 
 interface Customer {
     id: string;
@@ -98,11 +97,12 @@ export default function SonstigesOrderModal({
     // Price dropdowns state
     const [footAnalysisPrice, setFootAnalysisPrice] = useState<string>('');
     const [insoleSupplyPrice, setInsoleSupplyPrice] = useState<string>('');
+    const [customFootPrice, setCustomFootPrice] = useState<string>('');
+    const [customInsolePrice, setCustomInsolePrice] = useState<string>('');
+    const [discountType, setDiscountType] = useState<string>(''); // default: Kein Rabatt
+    const [discountValue, setDiscountValue] = useState<string>('');
     const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
-    
-    // Field errors
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
     // Initialize form with customer data when modal opens
     useEffect(() => {
@@ -132,6 +132,15 @@ export default function SonstigesOrderModal({
             // Set Einlagenversorgung price from formData
             if (formData?.bruttoPreis) {
                 setInsoleSupplyPrice(String(formData.bruttoPreis));
+            }
+            
+            // Set discount from formData if available
+            if (typeof formData?.rabatt === 'number' && formData.rabatt > 0) {
+                setDiscountType('percentage');
+                setDiscountValue(String(formData.rabatt));
+            } else {
+                setDiscountType('');
+                setDiscountValue('');
             }
             
             // Parse payment status
@@ -232,6 +241,12 @@ export default function SonstigesOrderModal({
         setShowSuggestions(open);
     };
 
+    const handleMitarbeiterChange = (employeeName: string) => {
+        setSelectedEmployee(employeeName);
+        const found = employeeSuggestions.find((e: any) => e.employeeName === employeeName);
+        setSelectedEmployeeId(found?.id || '');
+    };
+
     // Handle name change
     const handleNameChange = (newVorname: string, newNachname: string) => {
         setVorname(newVorname);
@@ -282,6 +297,7 @@ export default function SonstigesOrderModal({
     };
 
 
+    // Handle save and complete order
     // Handle save and complete order
     const handleSave = async () => {
         if (!customer?.id || !formData) {
@@ -347,409 +363,140 @@ export default function SonstigesOrderModal({
                 </DialogHeader>
 
                 <div className="space-y-6 mt-6">
-                    {/* AUFTRAGSÜBERSICHT Section */}
+                    {/* KUNDEN- & AUFTRAGSINFO Section (same as Werkstattzettel) */}
                     <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-6">Auftragsübersicht</h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Name Kunde */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Name Kunde
-                                </label>
-                                <Input
-                                    placeholder="Name eingeben..."
-                                    value={`${vorname} ${nachname}`.trim()}
-                                    onChange={(e) => {
-                                        const parts = e.target.value.split(' ');
-                                        setVorname(parts[0] || '');
-                                        setNachname(parts.slice(1).join(' ') || '');
-                                    }}
-                                    className={fieldErrors.name ? 'border-red-500' : ''}
-                                />
-                                {fieldErrors.name && (
-                                    <p className="text-red-500 text-xs mt-1">{fieldErrors.name}</p>
-                                )}
-                            </div>
+                        <CustomerInfoSection
+                            data={{
+                                vorname,
+                                nachname,
+                                wohnort,
+                                email,
+                                mitarbeiter: selectedEmployee,
+                                versorgung: formData?.leistungsname || '',
+                                datumAuftrag,
+                                telefonnummer,
+                                geschaeftsstandort,
+                                fertigstellungBis,
+                                fertigstellungBisTime,
+                                quantity: menge,
+                                onNameChange: (v, n) => {
+                                    setVorname(v);
+                                    setNachname(n);
+                                },
+                                onWohnortChange: setWohnort,
+                                onEmailChange: setEmail,
+                                onMitarbeiterChange: handleMitarbeiterChange,
+                                onVersorgungChange: () => {},
+                                onDatumAuftragChange: setDatumAuftrag,
+                                onTelefonnummerChange: setTelefonnummer,
+                                onGeschaeftsstandortChange: setGeschaeftsstandort,
+                                onFertigstellungBisChange: setFertigstellungBis,
+                                onFertigstellungBisTimeChange: setFertigstellungBisTime,
+                                onQuantityChange: setMenge,
+                                employeeSearchText,
+                                employeeSuggestions,
+                                employeeLoading,
+                                isEmployeeDropdownOpen,
+                                onEmployeeDropdownChange: handleEmployeeDropdownChange,
+                                onEmployeeSearchChange: handleEmployeeSearchChange,
+                                locations,
+                                isLocationDropdownOpen,
+                                onLocationDropdownChange: setIsLocationDropdownOpen,
+                                completionDays: undefined,
+                                sameAsBusiness: true,
+                                nameError: undefined,
+                                versorgungError: undefined,
+                                datumAuftragError: undefined,
+                                geschaeftsstandortError: undefined,
+                                fertigstellungBisError: undefined,
+                            }}
+                        />
+                    </div>
 
-                            {/* Datum des Auftrags */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Datum des Auftrags
-                                </label>
-                                <Input
-                                    type="date"
-                                    value={datumAuftrag}
-                                    onChange={(e) => setDatumAuftrag(e.target.value)}
-                                    className={fieldErrors.datumAuftrag ? 'border-red-500' : ''}
-                                />
-                                {fieldErrors.datumAuftrag && (
-                                    <p className="text-red-500 text-xs mt-1">{fieldErrors.datumAuftrag}</p>
-                                )}
-                            </div>
+                    {/* AUFTRAGSDETAILS & PREISE Section (same as Werkstattzettel) */}
+                    <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+                        <PriceSection
+                            versorgung={formData?.leistungsname || ''}
+                            onVersorgungChange={() => {}}
+                            quantity={menge}
+                            onQuantityChange={setMenge}
+                            fertigstellungBis={fertigstellungBis}
+                            onFertigstellungBisChange={setFertigstellungBis}
+                            fertigstellungBisTime={fertigstellungBisTime}
+                            onFertigstellungBisTimeChange={setFertigstellungBisTime}
+                            versorgungError={undefined}
+                            fertigstellungBisError={undefined}
+                            footAnalysisPrice={footAnalysisPrice}
+                            onFootAnalysisPriceChange={setFootAnalysisPrice}
+                            insoleSupplyPrice={insoleSupplyPrice}
+                            onInsoleSupplyPriceChange={setInsoleSupplyPrice}
+                            customFootPrice={customFootPrice}
+                            onCustomFootPriceChange={setCustomFootPrice}
+                            customInsolePrice={customInsolePrice}
+                            onCustomInsolePriceChange={setCustomInsolePrice}
+                            laserPrintPrices={laserPrintPrices}
+                            einlagenversorgungPrices={
+                                formData
+                                    ? [{ name: formData.leistungsname, price: formData.bruttoPreis }]
+                                    : []
+                            }
+                            pricesLoading={pricesLoading}
+                            footAnalysisPriceError={undefined}
+                            insoleSupplyPriceError={undefined}
+                            customFootPriceError={undefined}
+                            customInsolePriceError={undefined}
+                            discountType={discountType}
+                            onDiscountTypeChange={setDiscountType}
+                            discountValue={discountValue}
+                            onDiscountValueChange={setDiscountValue}
+                            bezahlt={bezahlt}
+                            onBezahltChange={setBezahlt}
+                            paymentError={undefined}
+                            disabledPaymentType={undefined}
+                            datumAuftrag={datumAuftrag}
+                            completionDays={undefined}
+                        />
+                    </div>
 
-                            {/* Wohnort */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Wohnort
-                                </label>
-                                <Input
-                                    placeholder="Wohnort eingeben..."
-                                    value={wohnort}
-                                    onChange={(e) => setWohnort(e.target.value)}
-                                />
-                            </div>
-
-                            {/* Telefon */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Telefon
-                                </label>
-                                <Input
-                                    placeholder="Telefonnummer eingeben..."
-                                    value={telefonnummer}
-                                    onChange={(e) => setTelefonnummer(e.target.value)}
-                                />
-                            </div>
-
-                            {/* E-Mail */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    E-Mail
-                                </label>
-                                <Input
-                                    placeholder="E-Mail eingeben..."
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                />
-                            </div>
-
-                            {/* Geschäftstandort */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Geschäftstandort
-                                </label>
-                                <Input
-                                    placeholder="Geschäftstandort eingeben"
-                                    value={geschaeftsstandort ? `${geschaeftsstandort.description || ''}${geschaeftsstandort.description && geschaeftsstandort.address ? ' - ' : ''}${geschaeftsstandort.address || ''}` : ''}
-                                    readOnly
-                                    className={`cursor-pointer ${fieldErrors.geschaeftsstandort ? 'border-red-500' : ''}`}
-                                    onClick={() => setIsLocationDropdownOpen(true)}
-                                />
-                                {isLocationDropdownOpen && (
-                                    <Popover open={isLocationDropdownOpen} onOpenChange={setIsLocationDropdownOpen}>
-                                        <PopoverTrigger asChild>
-                                            <div />
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-[400px] p-0" align="start">
-                                            <div className="max-h-60 overflow-y-auto">
-                                                {locationsLoading ? (
-                                                    <div className="p-4 text-center text-sm text-gray-500">
-                                                        Lade Standorte...
-                                                    </div>
-                                                ) : locations.length > 0 ? (
-                                                    <div className="py-1">
-                                                        {locations.map((location) => (
-                                                            <div
-                                                                key={location.id}
-                                                                className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${
-                                                                    geschaeftsstandort?.id === location.id
-                                                                        ? 'bg-blue-50 hover:bg-blue-100 border-l-2 border-blue-500'
-                                                                        : 'hover:bg-gray-100'
-                                                                }`}
-                                                                onClick={() => {
-                                                                    setGeschaeftsstandort(location);
-                                                                    setIsLocationDropdownOpen(false);
-                                                                }}
-                                                            >
-                                                                <div className="flex flex-col min-w-0 flex-1">
-                                                                    <span className="text-sm font-medium text-gray-900">
-                                                                        {location.description || location.address}
-                                                                    </span>
-                                                                    {location.description && location.address && (
-                                                                        <span className="text-xs text-gray-500">
-                                                                            {location.address}
-                                                                        </span>
-                                                                    )}
-                                                                </div>
-                                                                {geschaeftsstandort?.id === location.id && (
-                                                                    <Check className="h-4 w-4 text-blue-600 ml-2 shrink-0" />
-                                                                )}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                ) : (
-                                                    <div className="p-4 text-center text-sm text-gray-500">
-                                                        Keine Standorte verfügbar
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </PopoverContent>
-                                    </Popover>
-                                )}
-                                {fieldErrors.geschaeftsstandort && (
-                                    <p className="text-red-500 text-xs mt-1">{fieldErrors.geschaeftsstandort}</p>
-                                )}
-                            </div>
-
-                            {/* Mitarbeiter */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Mitarbeiter
-                                </label>
-                                <Popover open={isEmployeeDropdownOpen} onOpenChange={handleEmployeeDropdownChange}>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            role="combobox"
-                                            className="w-full cursor-pointer justify-between font-normal"
-                                        >
-                                            <span className={`truncate ${selectedEmployee ? 'text-gray-900' : 'text-gray-400'}`}>
-                                                {selectedEmployee || 'Mitarbeiter wählen'}
-                                            </span>
-                                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                                        <div className="p-2">
-                                            <Input
-                                                placeholder="Mitarbeiter suchen..."
-                                                value={employeeSearchText}
-                                                onChange={(e) => handleEmployeeSearchChange(e.target.value)}
-                                                className="w-full"
-                                                autoFocus
-                                            />
-                                        </div>
-                                        <div className="max-h-60 overflow-y-auto">
-                                            {employeeLoading ? (
-                                                <div className="p-4 text-center text-sm text-gray-500">
-                                                    Lade Mitarbeiter...
-                                                </div>
-                                            ) : employeeSuggestions.length > 0 ? (
-                                                <div className="py-1">
-                                                    {employeeSuggestions.map((employee) => (
-                                                        <div
-                                                            key={employee.id}
-                                                            className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors ${
-                                                                selectedEmployee === employee.employeeName
-                                                                    ? 'bg-blue-50 hover:bg-blue-100 border-l-2 border-blue-500'
-                                                                    : 'hover:bg-gray-100'
-                                                            }`}
-                                                            onClick={() => handleEmployeeSelect({ 
-                                                                employeeName: employee.employeeName, 
-                                                                id: employee.id 
-                                                            })}
-                                                        >
-                                                            <div className="flex flex-col min-w-0 flex-1">
-                                                                <span className="text-sm font-medium text-gray-900">
-                                                                    {employee.employeeName}
-                                                                </span>
-                                                                {employee.email && (
-                                                                    <span className="text-xs text-gray-500">
-                                                                        {employee.email}
-                                                                    </span>
-                                                                )}
-                                                            </div>
-                                                            {selectedEmployee === employee.employeeName && (
-                                                                <Check className="h-4 w-4 text-blue-600 ml-2 shrink-0" />
-                                                            )}
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="p-4 text-center text-sm text-gray-500">
-                                                    Keine Mitarbeiter gefunden
-                                                </div>
-                                            )}
-                                        </div>
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-
-                            {/* Versorgung */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Versorgung
-                                </label>
-                                <Input
-                                    placeholder="Versorgung eingeben..."
-                                    value={formData?.leistungsname || ''}
-                                    readOnly
-                                    className="bg-gray-50"
-                                />
-                            </div>
-
-                            {/* Menge */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Menge
-                                </label>
-                                <Select value={menge} onValueChange={setMenge}>
-                                    <SelectTrigger className="h-11 border-gray-300">
-                                        <SelectValue placeholder="Menge wählen" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="1 paar">1 Paar</SelectItem>
-                                        <SelectItem value="2 paar">2 Paare</SelectItem>
-                                        <SelectItem value="3 paar">3 Paare</SelectItem>
-                                        <SelectItem value="4 paar">4 Paare</SelectItem>
-                                        <SelectItem value="5 paar">5 Paare</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Fertigstellung bis */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Fertigstellung bis
-                                </label>
-                                <div className="flex gap-2">
-                                    <Input
-                                        type="date"
-                                        value={fertigstellungBis}
-                                        onChange={(e) => setFertigstellungBis(e.target.value)}
-                                        className={`flex-1 ${fieldErrors.fertigstellungBis ? 'border-red-500' : ''}`}
-                                    />
-                                    <Input
-                                        type="time"
-                                        value={fertigstellungBisTime}
-                                        onChange={(e) => setFertigstellungBisTime(e.target.value)}
-                                        className="w-32"
-                                    />
+                    {/* KONTROLLE & AKTIONEN Section - match Werkstattzettel design */}
+                    <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+                        <div className="flex items-center gap-3 mb-6">
+                            <h3 className="text-sm font-bold text-[#50C878] uppercase tracking-wide">Kontrolle & Aktionen</h3>
+                        </div>
+                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#50C878]">
+                                    <MapPin className="w-4 h-4" />
                                 </div>
-                                {fieldErrors.fertigstellungBis && (
-                                    <p className="text-red-500 text-xs mt-1">{fieldErrors.fertigstellungBis}</p>
-                                )}
-                            </div>
-
-                            {/* Kostenträger */}
-                            <div className="col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Kostenträger
-                                </label>
-                                <div className="flex gap-3">
-                                    {/* Payment Type Dropdown */}
-                                    <div className="flex-1">
-                                        <Select 
-                                            value={paymentType} 
-                                            onValueChange={handlePaymentTypeChange}
-                                        >
-                                            <SelectTrigger className={`w-full h-11 border-gray-300 ${fieldErrors.bezahlt ? 'border-red-500' : ''}`}>
-                                                <SelectValue placeholder="Privat" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="Privat">Privat</SelectItem>
-                                                <SelectItem value="Krankenkasse">Krankenkasse</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {/* Status Dropdown */}
-                                    {paymentType && (
-                                        <div className="flex-1">
-                                            <Select 
-                                                key={`status-${paymentType}`}
-                                                value={paymentStatus} 
-                                                onValueChange={handlePaymentStatusChange}
-                                            >
-                                                <SelectTrigger className={`w-full h-11 border-gray-300 ${fieldErrors.bezahlt ? 'border-red-500' : ''}`}>
-                                                    <SelectValue placeholder="Status auswählen..." />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    {paymentType === 'Privat' ? (
-                                                        <>
-                                                            <SelectItem value="Bezahlt">Bezahlt</SelectItem>
-                                                            <SelectItem value="Offen">Offen</SelectItem>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <SelectItem value="Genehmigt">Genehmigt</SelectItem>
-                                                            <SelectItem value="Ungenehmigt">Ungenehmigt</SelectItem>
-                                                        </>
-                                                    )}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    )}
+                                <div className="flex flex-col">
+                                    <span className="text-xs font-medium text-gray-500">Abholung</span>
+                                    <span className="text-sm font-semibold text-gray-900">
+                                        {geschaeftsstandort 
+                                            ? `${geschaeftsstandort.description || ''}${geschaeftsstandort.description && geschaeftsstandort.address ? ' - ' : ''}${geschaeftsstandort.address || ''}`
+                                            : '-'
+                                        }
+                                    </span>
                                 </div>
-                                {fieldErrors.bezahlt && (
-                                    <p className="text-red-500 text-xs mt-1">{fieldErrors.bezahlt}</p>
-                                )}
+                            </div>
+                            <div className="flex flex-wrap gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
+                                >
+                                    <StickyNote className="w-4 h-4 text-gray-700" />
+                                    <span>Notiz hinzufügen</span>
+                                </Button>
                             </div>
                         </div>
                     </div>
-
-                    {/* PREISE Section */}
-                    <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wide mb-6">Preise</h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Fußanalyse */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Fußanalyse
-                                </label>
-                                <Select value={footAnalysisPrice} onValueChange={setFootAnalysisPrice}>
-                                    <SelectTrigger className="h-11 border-gray-300">
-                                        <SelectValue
-                                            placeholder={pricesLoading ? 'Lade Preise...' : laserPrintPrices.length > 0 ? 'Preis auswählen' : 'Kein Preis verfügbar'}
-                                        />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {laserPrintPrices.length > 0 ? (
-                                            laserPrintPrices.map((item, index) => (
-                                                <SelectItem
-                                                    className="cursor-pointer"
-                                                    key={`foot-${item.name}-${item.price}-${index}`}
-                                                    value={String(item.price)}
-                                                >
-                                                    {item.name} - {item.price.toFixed(2)}€
-                                                </SelectItem>
-                                            ))
-                                        ) : (
-                                            <SelectItem value="no-price" disabled>
-                                                Kein Preis verfügbar
-                                            </SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Einlagenversorgung */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    Einlagenversorgung
-                                </label>
-                                <Select value={insoleSupplyPrice} onValueChange={setInsoleSupplyPrice}>
-                                    <SelectTrigger className="h-11 border-gray-300">
-                                        <SelectValue placeholder="Preis auswählen" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {formData ? (
-                                            <SelectItem
-                                                className="cursor-pointer"
-                                                value={String(formData.bruttoPreis)}
-                                            >
-                                                {formData.leistungsname} - {formData.bruttoPreis.toFixed(2)}€
-                                            </SelectItem>
-                                        ) : (
-                                            <SelectItem value="no-price" disabled>
-                                                Kein Preis verfügbar
-                                            </SelectItem>
-                                        )}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex justify-end space-x-3 mt-6">
+                <div className="flex justify-between space-x-3 mt-6">
                     <Button
                         type="button"
-                        className="cursor-pointer px-8"
+                        className="cursor-pointer"
                         variant="outline"
                         onClick={() => onOpenChange(false)}
                     >
@@ -757,13 +504,13 @@ export default function SonstigesOrderModal({
                     </Button>
                     <Button
                         type="button"
-                        className="cursor-pointer bg-black hover:bg-gray-800 text-white px-8"
+                        className="cursor-pointer"
                         onClick={handleSave}
                     >
-                        Continue
+                        Weiter
                     </Button>
                 </div>
             </DialogContent>
         </Dialog>
-    );
+    )
 }

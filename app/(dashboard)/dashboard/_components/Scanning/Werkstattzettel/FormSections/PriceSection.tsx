@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -108,6 +108,34 @@ export default function PriceSection({
   datumAuftrag,
   completionDays,
 }: PriceSectionProps) {
+  // Build unique option keys so only ONE item can ever appear selected,
+  // even if multiple items share the same numeric price.
+  const footOptions = useMemo(() => {
+    return laserPrintPrices.map((item, index) => ({
+      key: `price:${item.price}:${index}`,
+      price: item.price,
+      label: `${item.name} - ${formatPrice(item.price)}`,
+    }))
+  }, [laserPrintPrices])
+
+  // Keep a separate UI selection key so selecting a different option with the same price
+  // still updates the highlighted item (external state stores only numeric price).
+  const [footSelectedKey, setFootSelectedKey] = useState<string>('')
+
+  useEffect(() => {
+    if (footOptions.length === 0) return
+
+    // If we already have a selected key that exists, keep it (even if price is duplicated)
+    if (footSelectedKey && footOptions.some((o) => o.key === footSelectedKey)) {
+      return
+    }
+
+    // Otherwise derive from current numeric value (fallback to first matching)
+    const numericSelected = parseFloat(footAnalysisPrice)
+    const derived = footOptions.find((o) => o.price === numericSelected)?.key || ''
+    setFootSelectedKey(derived)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [footAnalysisPrice, footOptions])
   
   // Format date to DD.MM.YYYY
   const formatDate = (dateString: string) => {
@@ -121,7 +149,10 @@ export default function PriceSection({
 
   // Calculate prices
   const versorgungPrice = parseFloat(insoleSupplyPrice) || 0
-  const footPrice = parseFloat(footAnalysisPrice) || 0
+  const footPrice =
+    footAnalysisPrice === 'custom'
+      ? (parseFloat(customFootPrice) || 0)
+      : (parseFloat(footAnalysisPrice) || 0)
   const quantityNum = parseInt(quantity?.match(/\d+/)?.[0] || '1', 10)
   
   const subtotal = (versorgungPrice * quantityNum) + footPrice
@@ -230,7 +261,17 @@ export default function PriceSection({
           {/* Fußanalyse */}
           <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">Fußanalyse</Label>
-            <Select value={footAnalysisPrice} onValueChange={onFootAnalysisPriceChange}>
+            {(() => {
+              const handleChange = (key: string) => {
+                setFootSelectedKey(key)
+                const found = footOptions.find((o) => o.key === key)
+                if (found) {
+                  onFootAnalysisPriceChange(String(found.price))
+                }
+              }
+
+              return (
+                <Select value={footSelectedKey} onValueChange={handleChange}>
               <SelectTrigger
                 className={cn(
                   'h-11 border-gray-300',
@@ -243,15 +284,17 @@ export default function PriceSection({
               </SelectTrigger>
               <SelectContent>
                 {laserPrintPrices.length > 0 ? (
-                  laserPrintPrices.map((item, index) => (
+                  <>
+                    {footOptions.map((item) => (
                     <SelectItem
                       className="cursor-pointer"
-                      key={`foot-${item.name}-${item.price}-${index}`}
-                      value={String(item.price)}
+                      key={item.key}
+                      value={item.key}
                     >
-                      {item.name} - {formatPrice(item.price)}
+                      {item.label}
                     </SelectItem>
-                  ))
+                    ))}
+                  </>
                 ) : (
                   <SelectItem value="no-price" disabled>
                     Kein Preis verfügbar
@@ -259,6 +302,8 @@ export default function PriceSection({
                 )}
               </SelectContent>
             </Select>
+              )
+            })()}
             {footAnalysisPrice === 'custom' && (
               <Input
                 type="number"
@@ -277,18 +322,22 @@ export default function PriceSection({
           </div>
 
           {/* Rabatt and Kostenträger */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-20">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 items-end">
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700">Rabatt</Label>
-              <Select value={discountType} onValueChange={onDiscountTypeChange}>
+              <Select
+                value={discountType || 'none'}
+                onValueChange={(value) => onDiscountTypeChange(value === 'none' ? '' : value)}
+              >
                 <SelectTrigger className="h-11 border-gray-300">
                   <SelectValue placeholder="Kein Rabatt" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">Kein Rabatt</SelectItem>
                   <SelectItem value="percentage">Prozent (%)</SelectItem>
                 </SelectContent>
               </Select>
-              {discountType && (
+              {discountType === 'percentage' && (
                 <Input
                   type="number"
                   step="0.01"
