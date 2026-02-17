@@ -27,6 +27,9 @@ interface PositionsnummerDropdownProps {
     onToggle: () => void;
     onSelect: (values: string[]) => void;
     error?: string;
+    // Per-item side selection: Map of positionsnummer -> side
+    itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
+    onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
 }
 
 export default function PositionsnummerDropdown({
@@ -38,9 +41,31 @@ export default function PositionsnummerDropdown({
     onToggle,
     onSelect,
     error,
+    itemSides: propItemSides,
+    onItemSideChange,
 }: PositionsnummerDropdownProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const searchInputRef = useRef<HTMLInputElement>(null);
+    const [internalItemSides, setInternalItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
+    
+    // Use prop if provided, otherwise use internal state
+    const itemSides = propItemSides !== undefined ? propItemSides : internalItemSides;
+    
+    const handleItemSideChange = (posNum: string, side: 'L' | 'R' | 'BDS') => {
+        if (onItemSideChange) {
+            onItemSideChange(posNum, side);
+        } else {
+            setInternalItemSides(prev => ({
+                ...prev,
+                [posNum]: side
+            }));
+        }
+    };
+    
+    // Get side for a specific item, default to 'R'
+    const getItemSide = (posNum: string): 'L' | 'R' | 'BDS' => {
+        return itemSides[posNum] || 'R';
+    };
 
     // Helper function to get positionsnummer
     const getPositionsnummer = (option: PositionsnummerItem): string => {
@@ -93,6 +118,15 @@ export default function PositionsnummerDropdown({
         return Array.isArray(value) && value.includes(posNum);
     });
 
+    // Helper function to calculate price based on selected side for a specific item
+    const calculatePrice = (price: number, posNum: string): number => {
+        const side = getItemSide(posNum);
+        if (side === 'BDS') {
+            return price * 2;
+        }
+        return price;
+    };
+
     // Focus search input when modal opens
     useEffect(() => {
         if (isOpen) {
@@ -125,7 +159,7 @@ export default function PositionsnummerDropdown({
                                         <>
                                             <span className="font-medium text-gray-900 whitespace-nowrap">{getPositionsnummer(selectedOptions[0])}</span>
                                             <span className="text-gray-600 truncate flex-1">{getDescriptionText(selectedOptions[0])}</span>
-                                            <span className="text-green-600 font-semibold whitespace-nowrap ml-auto">€ {selectedOptions[0].price.toFixed(2).replace('.', ',')}</span>
+                                            <span className="text-green-600 font-semibold whitespace-nowrap ml-auto">€ {calculatePrice(selectedOptions[0].price, getPositionsnummer(selectedOptions[0])).toFixed(2).replace('.', ',')}</span>
                                         </>
                                     ) : (
                                         <span className="text-gray-700 font-medium">
@@ -238,19 +272,11 @@ export default function PositionsnummerDropdown({
                                         return (
                                             <div
                                                 key={option.id}
-                                                className={`p-4 hover:bg-gray-50 cursor-pointer transition-colors ${
+                                                className={`p-4 hover:bg-gray-50 transition-colors ${
                                                     isSelected ? 'bg-green-50' : ''
                                                 }`}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    e.preventDefault();
-                                                    handleToggle(posNum);
-                                                }}
-                                                onMouseDown={(e) => {
-                                                    e.stopPropagation();
-                                                }}
                                             >
-                                                <div className="flex items-center justify-between gap-4">
+                                                <div className="flex items-center justify-between gap-4 mb-3">
                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
                                                         <Checkbox
                                                             checked={isSelected}
@@ -276,8 +302,59 @@ export default function PositionsnummerDropdown({
                                                         </div>
                                                     </div>
                                                     <span className="text-green-600 font-semibold text-base shrink-0">
-                                                        € {option.price.toFixed(2).replace('.', ',')}
+                                                        € {calculatePrice(option.price, posNum).toFixed(2).replace('.', ',')}
                                                     </span>
+                                                </div>
+                                                {/* Side Selection Buttons - Per Item */}
+                                                <div className="flex items-center gap-2 ml-8">
+                                                    <span className="text-xs text-gray-600">Seite:</span>
+                                                    <div className="flex gap-1.5">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                handleItemSideChange(posNum, 'L');
+                                                            }}
+                                                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                                                                getItemSide(posNum) === 'L'
+                                                                    ? 'bg-[#61A178] text-white'
+                                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            L
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                handleItemSideChange(posNum, 'R');
+                                                            }}
+                                                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                                                                getItemSide(posNum) === 'R'
+                                                                    ? 'bg-[#61A178] text-white'
+                                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            R
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                e.preventDefault();
+                                                                handleItemSideChange(posNum, 'BDS');
+                                                            }}
+                                                            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                                                                getItemSide(posNum) === 'BDS'
+                                                                    ? 'bg-[#61A178] text-white'
+                                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                                            }`}
+                                                        >
+                                                            BDS
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         );

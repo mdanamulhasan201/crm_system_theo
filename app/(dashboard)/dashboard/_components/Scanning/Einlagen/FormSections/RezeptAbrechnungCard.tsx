@@ -17,6 +17,8 @@ interface RezeptAbrechnungCardProps {
     showPositionsnummerDropdown: boolean;
     onPositionsnummerToggle: () => void;
     onPositionsnummerSelect: (values: string[]) => void;
+    itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
+    onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
     
     // Diagnose
     selectedDiagnosis: string;
@@ -55,6 +57,8 @@ export default function RezeptAbrechnungCard({
     showPositionsnummerDropdown,
     onPositionsnummerToggle,
     onPositionsnummerSelect,
+    itemSides,
+    onItemSideChange,
     selectedDiagnosis,
     diagnosisOptions,
     showDiagnosisDropdown,
@@ -122,6 +126,8 @@ export default function RezeptAbrechnungCard({
                             isOpen={showPositionsnummerDropdown}
                             onToggle={onPositionsnummerToggle}
                             onSelect={onPositionsnummerSelect}
+                            itemSides={itemSides}
+                            onItemSideChange={onItemSideChange}
                         />
                     </div>
                 )}

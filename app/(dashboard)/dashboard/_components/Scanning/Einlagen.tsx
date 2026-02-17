@@ -317,6 +317,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [selectedPositionsnummer, setSelectedPositionsnummer] = useState<string[]>([]);
     const [showPositionsnummerDropdown, setShowPositionsnummerDropdown] = useState(false);
     const [lieferschein, setLieferschein] = useState<boolean | null>(null);
+    const [itemSides, setItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
     
     // Insole Standards state (Zusätze/Custom Fields) - Initialize with default fields
     const [insoleStandards, setInsoleStandards] = useState<Array<{ name: string; left: number; right: number; isFavorite?: boolean }>>([
@@ -339,9 +340,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         }
     }, []);
     
-    // Clear selectedPositionsnummer when billingType changes
+    // Clear selectedPositionsnummer and itemSides when billingType changes
     useEffect(() => {
         setSelectedPositionsnummer([]);
+        setItemSides({});
     }, [billingType]);
     
     // Error message for positionsnummer when not available (only for countries other than AT and IT)
@@ -598,8 +600,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         const option = allData.find(opt => getPositionsnummer(opt) === posNum);
                         
                         if (option) {
+                            // Get the side for this specific item, default to 'R'
+                            const side = itemSides[posNum] || 'R';
+                            // Double the price if BDS (Both Sides) is selected
+                            const finalPrice = side === 'BDS' ? option.price * 2 : option.price;
+                            
                             return {
-                                price: option.price,
+                                price: finalPrice,
                                 description: typeof option.description === 'object' ? option.description : {}
                             };
                         }
@@ -860,6 +867,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 showPositionsnummerDropdown={showPositionsnummerDropdown}
                 onPositionsnummerToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
                 onPositionsnummerSelect={setSelectedPositionsnummer}
+                itemSides={itemSides}
+                onItemSideChange={(posNum, side) => {
+                    setItemSides(prev => ({
+                        ...prev,
+                        [posNum]: side
+                    }));
+                }}
                 selectedDiagnosis={selectedDiagnosis}
                 diagnosisOptions={diagnosisOptions}
                 showDiagnosisDropdown={showDiagnosisDropdown}
