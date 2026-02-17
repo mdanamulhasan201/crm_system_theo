@@ -246,12 +246,23 @@ export const getKrankenKasseStatus = async (orderIds: string[], krankenkasseStat
 
 
 
-// customer-orders/previous-orders/{{customer id}}?limit=1&cursor={{lest item id}}
-// 
+// }customer-orders/previous-orders/get-latest/f95ea2fe-adf3-47d3-b177-504fb678cf16?productType=insole
+// // Quary:
+// productType=insole
+// productType=shoes
+// productType=sonstiges
 // last order
-export const getPreviousOrders = async (customerId: string, limit: number, cursor?: number) => {
+export const getPreviousOrders = async (
+    customerId: string,
+    limit: number,
+    cursor?: number,
+    productType?: 'insole' | 'shoes' | 'sonstiges'
+) => {
     try {
         let url = `/customer-orders/previous-orders/${customerId}?limit=${limit}`;
+        if (productType) {
+            url += `&productType=${productType}`;
+        }
         if (cursor !== undefined && cursor !== null) {
             url += `&cursor=${cursor}`;
         }
@@ -263,9 +274,19 @@ export const getPreviousOrders = async (customerId: string, limit: number, curso
 }
 
 
-// customer-orders/previous-orders/f95ea2fe-adf3-47d3-b177-504fb678cf16?limit=10&cursor=&productType=shoes | insole
+// customer-orders/previous-orders/get-all/f95ea2fe-adf3-47d3-b177-504fb678cf16?limit=10&cursor=&productType=insole
 
-export const getPreviousOrdersByProductType = async (customerId: string, limit: number, cursor: number | undefined, productType: string) => {
+// Quary:
+// productType=insole
+// productType=shoes
+// productType=sonstiges
+
+export const getPreviousOrdersByProductType = async (
+    customerId: string,
+    limit: number,
+    cursor: number | undefined,
+    productType: 'insole' | 'shoes' | 'sonstiges'
+) => {
     try {
         let url = `/customer-orders/previous-orders/${customerId}?limit=${limit}&productType=${productType}`;
         if (cursor !== undefined && cursor !== null) {

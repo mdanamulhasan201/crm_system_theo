@@ -35,6 +35,9 @@ export default function ScanningData() {
     const [addScanningModalOpen, setAddScanningModalOpen] = useState(false);
     const [previousOrdersModalOpen, setPreviousOrdersModalOpen] = useState(false);
     const [previousOrdersFetchType, setPreviousOrdersFetchType] = useState<'all' | 'customer'>('all');
+
+    const selectedProductType: 'insole' | 'shoes' | 'sonstiges' =
+        selectedForm === 'einlagen' ? 'insole' : selectedForm === 'massschuhe' ? 'shoes' : 'sonstiges';
     useEffect(() => {
         let isMounted = true;
         if (!orderId) {
@@ -131,6 +134,7 @@ export default function ScanningData() {
                 onClose={() => setPreviousOrdersModalOpen(false)}
                 customerId={scanData?.id || ''}
                 fetchType={previousOrdersFetchType}
+                productType={selectedProductType}
             />
 
             {/* backbutton */}
