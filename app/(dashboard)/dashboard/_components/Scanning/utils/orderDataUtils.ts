@@ -94,7 +94,7 @@ export interface CollectFormDataParams {
     selectedVersorgungId: string | null;
     screenerId?: string | null;
     billingType?: 'Krankenkassa' | 'Privat';
-    insoleStandards?: Array<{ name: string; left: number; right: number }>;
+    insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>;
 }
 
 export function collectFormData({

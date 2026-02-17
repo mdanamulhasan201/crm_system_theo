@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface CustomField {
     name: string;
     left: number;
     right: number;
+    isFavorite?: boolean;
 }
 
 interface ZusatzeSectionProps {
@@ -12,7 +13,8 @@ interface ZusatzeSectionProps {
     onToggleCustomFields: () => void;
     onAddField: () => void;
     onDeleteField: (name: string) => void;
-    onFieldChange: (name: string, side: 'left' | 'right', value: number) => void;
+    onFieldChange: (name: string, side: 'left' | 'right', value: number, syncBothSides?: boolean) => void;
+    onToggleFavorite?: (name: string) => void;
 }
 
 // Default fields that are always shown
@@ -29,10 +31,15 @@ export default function ZusatzeSection({
     onAddField,
     onDeleteField,
     onFieldChange,
+    onToggleFavorite,
 }: ZusatzeSectionProps) {
+    // Toggle states for view mode and value mode
+    const [viewMode, setViewMode] = useState<'kompakt' | 'detail'>('kompakt');
+    const [valueMode, setValueMode] = useState<'gleich' | 'lr'>('gleich');
+
     // Get or create default field values from customFields
     const getFieldValue = (fieldName: string) => {
-        return customFields.find(f => f.name === fieldName) || { name: fieldName, left: 0, right: 0 };
+        return customFields.find(f => f.name === fieldName) || { name: fieldName, left: 0, right: 0, isFavorite: true };
     };
 
     // Get additional custom fields (not default ones)
@@ -41,6 +48,17 @@ export default function ZusatzeSection({
     );
 
     const activeCount = customFields.filter(f => f.left !== 0 || f.right !== 0).length;
+
+    // Handle field value change with sync logic for "Gleich" mode
+    const handleFieldValueChange = (fieldName: string, side: 'left' | 'right', value: number) => {
+        if (valueMode === 'gleich') {
+            // In "Gleich" mode, update both sides with the same value in a single operation
+            onFieldChange(fieldName, side, value, true);
+        } else {
+            // In "L/R" mode, update only the selected side
+            onFieldChange(fieldName, side, value, false);
+        }
+    };
 
     return (
         <div className="border-t pt-6 mt-6">
@@ -51,6 +69,61 @@ export default function ZusatzeSection({
                             {activeCount > 0 ? `${activeCount} aktiv` : 'Keine aktiv'}
                         </span>
                     </h3>
+                    
+                    {/* Toggle Buttons */}
+                    <div className="flex items-center gap-2">
+                        {/* Kompakt/Detail Toggle */}
+                        <div className="relative bg-gray-200 rounded-full p-0.5 flex items-center">
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('kompakt')}
+                                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                    viewMode === 'kompakt'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                Kompakt
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setViewMode('detail')}
+                                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                    viewMode === 'detail'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                Detail
+                            </button>
+                        </div>
+
+                        {/* Gleich/L/R Toggle */}
+                        <div className="relative bg-gray-200 rounded-full p-0.5 flex items-center">
+                            <button
+                                type="button"
+                                onClick={() => setValueMode('gleich')}
+                                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                    valueMode === 'gleich'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                Gleich
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setValueMode('lr')}
+                                className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all duration-200 ${
+                                    valueMode === 'lr'
+                                        ? 'bg-white text-gray-900 shadow-sm'
+                                        : 'text-gray-600 hover:text-gray-900'
+                                }`}
+                            >
+                                L/R
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Bezeichnung Label */}
@@ -75,13 +148,20 @@ export default function ZusatzeSection({
                     {/* Default Fields */}
                     {DEFAULT_FIELDS.map((defaultField) => {
                         const fieldValue = getFieldValue(defaultField.name);
+                        const isFavorite = fieldValue.isFavorite !== false; // Default to true for default fields
                         return (
                             <div key={defaultField.name} className="flex items-center gap-3">
                                 <button
                                     type="button"
-                                    className="text-orange-500 hover:text-orange-600 cursor-pointer text-lg shrink-0 w-8"
+                                    onClick={() => onToggleFavorite?.(defaultField.name)}
+                                    className={`cursor-pointer text-lg shrink-0 w-8 transition-colors ${
+                                        isFavorite 
+                                            ? 'text-orange-500 hover:text-orange-600' 
+                                            : 'text-gray-300 hover:text-gray-400'
+                                    }`}
+                                    title={isFavorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
                                 >
-                                    ★
+                                    {isFavorite ? '★' : '☆'}
                                 </button>
                                 <div className="flex items-center gap-2 w-48">
                                     <span className="text-sm font-medium text-gray-700">{defaultField.name}</span>
@@ -91,14 +171,14 @@ export default function ZusatzeSection({
                                         type="number"
                                         step="0.1"
                                         value={fieldValue.left}
-                                        onChange={(e) => onFieldChange(defaultField.name, 'left', parseFloat(e.target.value) || 0)}
+                                        onChange={(e) => handleFieldValueChange(defaultField.name, 'left', parseFloat(e.target.value) || 0)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
                                     <input
                                         type="number"
                                         step="0.1"
                                         value={fieldValue.right}
-                                        onChange={(e) => onFieldChange(defaultField.name, 'right', parseFloat(e.target.value) || 0)}
+                                        onChange={(e) => handleFieldValueChange(defaultField.name, 'right', parseFloat(e.target.value) || 0)}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
                                 </div>
@@ -125,8 +205,22 @@ export default function ZusatzeSection({
                         {additionalFields.length === 0 ? (
                             <p className="text-sm text-gray-500 italic">Keine weiteren Zusätze vorhanden</p>
                         ) : (
-                            additionalFields.map((field) => (
+                            additionalFields.map((field) => {
+                                const isFavorite = field.isFavorite === true;
+                                return (
                                 <div key={field.name} className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => onToggleFavorite?.(field.name)}
+                                        className={`cursor-pointer text-lg shrink-0 w-8 transition-colors ${
+                                            isFavorite 
+                                                ? 'text-orange-500 hover:text-orange-600' 
+                                                : 'text-gray-300 hover:text-gray-400'
+                                        }`}
+                                        title={isFavorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
+                                    >
+                                        {isFavorite ? '★' : '☆'}
+                                    </button>
                                     <button
                                         type="button"
                                         onClick={() => onDeleteField(field.name)}
@@ -143,19 +237,20 @@ export default function ZusatzeSection({
                                             type="number"
                                             step="0.1"
                                             value={field.left}
-                                            onChange={(e) => onFieldChange(field.name, 'left', parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => handleFieldValueChange(field.name, 'left', parseFloat(e.target.value) || 0)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                         />
                                         <input
                                             type="number"
                                             step="0.1"
                                             value={field.right}
-                                            onChange={(e) => onFieldChange(field.name, 'right', parseFloat(e.target.value) || 0)}
+                                            onChange={(e) => handleFieldValueChange(field.name, 'right', parseFloat(e.target.value) || 0)}
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                         />
                                     </div>
                                 </div>
-                            ))
+                            );
+                            })
                         )}
                     </div>
                 )}

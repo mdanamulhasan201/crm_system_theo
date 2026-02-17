@@ -319,10 +319,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [lieferschein, setLieferschein] = useState<boolean | null>(null);
     
     // Insole Standards state (Zusätze/Custom Fields) - Initialize with default fields
-    const [insoleStandards, setInsoleStandards] = useState<Array<{ name: string; left: number; right: number }>>([
-        { name: 'Verkürzungsausgleich', left: 0, right: 0 },
-        { name: 'Supination', left: 0, right: 0 },
-        { name: 'Pronation', left: 0, right: 0 },
+    const [insoleStandards, setInsoleStandards] = useState<Array<{ name: string; left: number; right: number; isFavorite?: boolean }>>([
+        { name: 'Verkürzungsausgleich', left: 0, right: 0, isFavorite: true },
+        { name: 'Supination', left: 0, right: 0, isFavorite: true },
+        { name: 'Pronation', left: 0, right: 0, isFavorite: true },
     ]);
     
     // Custom Versorgung ID for Einmalige Versorgung

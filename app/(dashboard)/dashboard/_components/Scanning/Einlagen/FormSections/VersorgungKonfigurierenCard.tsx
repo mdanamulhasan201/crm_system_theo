@@ -28,8 +28,8 @@ interface VersorgungKonfigurierenCardProps {
     onSupplyDropdownToggle: () => void;
     selectedDiagnosis: string;
     selectedEinlage: string;
-    insoleStandards: Array<{ name: string; left: number; right: number }>;
-    onInsoleStandardsChange: (standards: Array<{ name: string; left: number; right: number }>) => void;
+    insoleStandards: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>;
+    onInsoleStandardsChange: (standards: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>) => void;
     menge?: string;
     customerId?: string;
     selectedEinlageId?: string;
@@ -101,6 +101,7 @@ export default function VersorgungKonfigurierenCard({
                 name: newFieldName.trim(),
                 left: 0,
                 right: 0,
+                isFavorite: false, // New custom fields default to false
             };
             onInsoleStandardsChange([...insoleStandards, newField]);
             setNewFieldName('');
@@ -113,24 +114,62 @@ export default function VersorgungKonfigurierenCard({
         onInsoleStandardsChange(insoleStandards.filter(field => field.name !== name));
     };
 
-    const handleCustomFieldChange = (name: string, side: 'left' | 'right', value: number) => {
+    const handleCustomFieldChange = (name: string, side: 'left' | 'right', value: number, syncBothSides: boolean = false) => {
         const existingField = insoleStandards.find(field => field.name === name);
         
         if (existingField) {
             // Update existing field
             onInsoleStandardsChange(insoleStandards.map(field => 
                 field.name === name 
-                    ? { ...field, [side]: value }
+                    ? { 
+                        ...field, 
+                        [side]: value,
+                        // If syncing, update both sides with the same value
+                        ...(syncBothSides ? { left: value, right: value } : {})
+                    }
                     : field
             ));
         } else {
             // Add new field if it doesn't exist
             const newField = {
                 name,
-                left: side === 'left' ? value : 0,
-                right: side === 'right' ? value : 0,
+                left: syncBothSides ? value : (side === 'left' ? value : 0),
+                right: syncBothSides ? value : (side === 'right' ? value : 0),
+                isFavorite: false, // New fields default to false
             };
             onInsoleStandardsChange([...insoleStandards, newField]);
+        }
+    };
+
+    const handleToggleFavorite = (name: string) => {
+        const existingField = insoleStandards.find(field => field.name === name);
+        
+        if (existingField) {
+            // Toggle isFavorite for existing field
+            // If true -> false, if false/undefined -> true
+            const currentValue = existingField.isFavorite;
+            const newValue = currentValue === true ? false : true;
+            
+            onInsoleStandardsChange(insoleStandards.map(field => 
+                field.name === name 
+                    ? { 
+                        ...field, 
+                        isFavorite: newValue
+                    }
+                    : field
+            ));
+        } else {
+            // For default fields that don't exist yet, add them with isFavorite: true
+            const defaultFieldNames = ['Verkürzungsausgleich', 'Supination', 'Pronation'];
+            if (defaultFieldNames.includes(name)) {
+                const newField = {
+                    name,
+                    left: 0,
+                    right: 0,
+                    isFavorite: true,
+                };
+                onInsoleStandardsChange([...insoleStandards, newField]);
+            }
         }
     };
 
@@ -335,6 +374,7 @@ export default function VersorgungKonfigurierenCard({
                         onAddField={() => setShowAddModal(true)}
                         onDeleteField={handleDeleteCustomField}
                         onFieldChange={handleCustomFieldChange}
+                        onToggleFavorite={handleToggleFavorite}
                     />
                 </>
             )}
@@ -359,6 +399,7 @@ export default function VersorgungKonfigurierenCard({
                         onAddField={() => setShowAddModal(true)}
                         onDeleteField={handleDeleteCustomField}
                         onFieldChange={handleCustomFieldChange}
+                        onToggleFavorite={handleToggleFavorite}
                     />
                 </>
             )}
