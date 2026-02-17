@@ -752,10 +752,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setShowEinlageDropdown(false);
     };
 
-    const handleSpringerLogoClick = () => {
-        setShowSpringerDialog(true);
-    };
-
     const handleCustomVersorgungCreated = (versorgungId: string) => {
         setCustomVersorgungId(versorgungId);
         // Toast is already shown in EinmaligeVersorgungContent component
@@ -921,7 +917,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 mengeError={errors.menge?.message}
                 schuhmodell_wählen={schuhmodell_wählen}
                 onSchuhmodellChange={setSchuhmodell_wählen}
-                onSpringerLogoClick={handleSpringerLogoClick}
             />
 
             {/* Versorgung Konfigurieren Card */}
@@ -944,6 +939,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 selectedEinlageId={(einlageOptions.find(opt => opt.name === selectedEinlage) as { id?: string; name: string; price?: number } | undefined)?.id}
                 onCustomVersorgungCreated={handleCustomVersorgungCreated}
                 onActiveTabChange={handleActiveTabChange}
+                onSpringerClick={() => setShowSpringerDialog(true)}
             />
 
             {/* CARD 3: VERSORGUNGSNOTIZ */}

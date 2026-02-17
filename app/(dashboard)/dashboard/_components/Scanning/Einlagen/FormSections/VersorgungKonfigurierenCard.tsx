@@ -35,6 +35,7 @@ interface VersorgungKonfigurierenCardProps {
     selectedEinlageId?: string;
     onCustomVersorgungCreated?: (versorgungId: string) => void;
     onActiveTabChange?: (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => void;
+    onSpringerClick?: () => void;
 }
 
 export default function VersorgungKonfigurierenCard({
@@ -56,6 +57,7 @@ export default function VersorgungKonfigurierenCard({
     selectedEinlageId,
     onCustomVersorgungCreated,
     onActiveTabChange,
+    onSpringerClick,
 }: VersorgungKonfigurierenCardProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -162,7 +164,11 @@ export default function VersorgungKonfigurierenCard({
                     </button>
                     <button
                         type="button"
-                        onClick={() => handleTabChange('springer')}
+                        onClick={() => {
+                            if (onSpringerClick) {
+                                onSpringerClick();
+                            }
+                        }}
                         className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${activeTab === 'springer'
                             ? 'bg-[#61A178] text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'

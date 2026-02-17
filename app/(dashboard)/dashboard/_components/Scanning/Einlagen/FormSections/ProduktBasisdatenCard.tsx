@@ -23,7 +23,6 @@ interface ProduktBasisdatenCardProps {
     mengeError?: string;
     schuhmodell_wählen: string;
     onSchuhmodellChange: (value: string) => void;
-    onSpringerLogoClick?: () => void;
 }
 
 export default function ProduktBasisdatenCard({
@@ -48,7 +47,6 @@ export default function ProduktBasisdatenCard({
     mengeError,
     schuhmodell_wählen,
     onSchuhmodellChange,
-    onSpringerLogoClick,
 }: ProduktBasisdatenCardProps) {
     return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
@@ -184,19 +182,6 @@ export default function ProduktBasisdatenCard({
                     />
                 </div>
             </div>
-
-            {/* Springer Logo - if applicable */}
-            {einlagentyp && (
-                <div className="mt-6 flex justify-end">
-                    <button
-                        type="button"
-                        onClick={onSpringerLogoClick}
-                        className="text-sm text-[#61A178] hover:underline cursor-pointer"
-                    >
-                        Springer Informationen
-                    </button>
-                </div>
-            )}
         </div>
     );
 }
