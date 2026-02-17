@@ -110,18 +110,15 @@ export default function ScanDataDisplay({
     const selectedScanData = useMemo(() => {
         if (!hasScreenerFile || !scanData.screenerFile || scanData.screenerFile.length === 0) return null;
 
-        // If a specific date is selected, try to find it
+        // Only return screenerFile data if a specific date is explicitly selected
+        // If no date is selected, return null to show main customer data
         if (selectedScanDate && selectedScanDate.trim() !== '') {
             const found = scanData.screenerFile.find(file => file.updatedAt === selectedScanDate);
             if (found) return found;
         }
 
-        // Return latest file by date (fallback or when no date selected)
-        return scanData.screenerFile.reduce((latest, item) => {
-            const latestDate = new Date(latest.updatedAt);
-            const currentDate = new Date(item.updatedAt);
-            return currentDate > latestDate ? item : latest;
-        });
+        // Return null when no date is selected - this will make getFieldValue use main customer data
+        return null;
     }, [hasScreenerFile, scanData.screenerFile, selectedScanDate]);
 
     const getLatestData = (fieldName: keyof Pick<ScanData, 'picture_10' | 'picture_23' | 'picture_11' | 'picture_24' | 'threed_model_left' | 'threed_model_right' | 'picture_17' | 'picture_16'>) => {
@@ -250,11 +247,11 @@ export default function ScanDataDisplay({
     useEffect(() => {
         if (defaultSelectedDate) {
             setSelectedScanDate(defaultSelectedDate);
-        } else if (availableScanDates.length > 0) {
-            // Set to latest date if not already set or if current selection is empty/invalid
-            const latestDate = availableScanDates[0].date;
-            if (!selectedScanDate || selectedScanDate.trim() === '' || !availableScanDates.find(d => d.date === selectedScanDate)) {
-                setSelectedScanDate(latestDate);
+        } else {
+            // Don't auto-select latest date - keep empty to show main customer data
+            // Only set if current selection is invalid
+            if (selectedScanDate && selectedScanDate.trim() !== '' && !availableScanDates.find(d => d.date === selectedScanDate)) {
+                setSelectedScanDate('');
             }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -282,9 +279,9 @@ export default function ScanDataDisplay({
     useEffect(() => {
         if (!onDataChange) return;
 
-        const currentData = hasScreenerFile && scanData.screenerFile
-            ? (selectedScanData || scanData.screenerFile[0] || null)
-            : scanData;
+        // Only use screenerFile data if a specific date is selected
+        // Otherwise, use main customer data
+        const currentData = selectedScanData || scanData;
 
         const dataId = currentData?.id || currentData?.updatedAt || JSON.stringify({
             id: currentData?.id,
@@ -295,7 +292,7 @@ export default function ScanDataDisplay({
             previousDataRef.current = dataId;
             onDataChange(currentData);
         }
-    }, [onDataChange, hasScreenerFile, selectedScanData, scanData]);
+    }, [onDataChange, selectedScanData, scanData]);
 
     // Helper function to format display value
     const formatDisplayValue = (value: any): string => {
@@ -306,8 +303,10 @@ export default function ScanDataDisplay({
 
     // Helper function to get field value
     const getFieldValue = (fieldName: string): any => {
-        if (hasScreenerFile) {
-            return selectedScanData ? (selectedScanData as any)[fieldName] : null;
+        // Only use screenerFile data if a specific date is selected
+        // Otherwise, use main customer data
+        if (hasScreenerFile && selectedScanData) {
+            return (selectedScanData as any)[fieldName];
         }
         return scanData[fieldName as keyof ScanData];
     };
@@ -319,13 +318,14 @@ export default function ScanDataDisplay({
             return (
                 <div>
                     <div className="text-center text-gray-600 text-sm">{label}</div>
-                    <div className="border border-gray-300 text-center py-1 bg-gray-50">
+                    <div className="border-2 border-green-400 text-center py-1 bg-green-50 transition-colors">
                         <input
                             type="text"
                             value={inputValue}
                             placeholder="-"
                             onChange={(e) => onInputChange(fieldName, e.target.value)}
-                            className="w-full text-center border-none outline-none bg-transparent"
+                            className="w-full text-center border-none outline-none bg-transparent cursor-text focus:ring-0"
+                            autoFocus={false}
                         />
                     </div>
                 </div>
@@ -438,6 +438,13 @@ export default function ScanDataDisplay({
                 {/* Date Dropdown */}
                 {showDateDropdown && (
                     <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-48">
+                        {/* Main Customer Data Option */}
+                        <div
+                            className={`px-4 py-2 cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-200 ${!selectedScanDate || selectedScanDate.trim() === '' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
+                            onClick={() => handleDateSelect('')}
+                        >
+                            Hauptdaten (Main Customer Data)
+                        </div>
                         {availableScanDates.length > 0 ? (
                             availableScanDates.map((scanDate) => (
                                 <div
@@ -451,8 +458,6 @@ export default function ScanDataDisplay({
                             ))
                         ) : (
                             <div className="px-4 py-2 text-gray-500 text-sm">
-
-
                                 Keine Scan-Daten verfügbar
                             </div>
                         )}

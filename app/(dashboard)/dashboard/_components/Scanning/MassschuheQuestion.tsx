@@ -37,7 +37,7 @@ interface ApiResponse {
     data: SectionType[];
 }
 
-interface MassschuheQuestionsProps {
+export interface MassschuheQuestionsProps {
     customer: any;
     onQuestionsLoaded?: (hasQuestions: boolean) => void;
 }

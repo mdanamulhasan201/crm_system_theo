@@ -9,10 +9,13 @@ import ScanDataDisplay from '@/components/Shared/ScanDataDisplay';
 import EinlagenQuestions from '../Scanning/EinlagenQuestions';
 import MassschuheQuestions from '../Scanning/MassschuheQuestion';
 import SonstigesQuestion from '../Scanning/SonstigesQuestion';
+import { updateSingleScannerFile } from '@/apis/customerApis';
+
+type FormType = 'einlagen' | 'massschuhe' | 'sonstiges';
 
 interface ScanningDataPageProps {
     scanData: ScanData;
-    selectedForm?: 'einlagen' | 'massschuhe' | 'sonstiges';
+    selectedForm?: FormType;
     onScreenerIdChange?: (screenerId: string | null) => void;
 }
 
@@ -27,6 +30,7 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
     const [isZoomed, setIsZoomed] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [hasQuestions, setHasQuestions] = useState<boolean>(true); // Default to true to show loading state
+    const [currentScreenerId, setCurrentScreenerId] = useState<string | null>(null);
 
     // Reset hasQuestions when form type changes
     useEffect(() => {
@@ -41,31 +45,38 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
     // Use the existing hook for customer data management with date filtering
     const { customer: currentScanData, availableDates, updateCustomer, refreshCustomer, isUpdating, error } = useSingleCustomer(scanData.id, selectedDate);
 
-    // State for editable scan data
-    const [editableData, setEditableData] = useState({
-        fusslange1: scanData.fusslange1 ?? '',
-        fusslange2: scanData.fusslange2 ?? '',
-        fussbreite1: scanData.fussbreite1 ?? '',
-        fussbreite2: scanData.fussbreite2 ?? '',
-        kugelumfang1: scanData.kugelumfang1 ?? '',
-        kugelumfang2: scanData.kugelumfang2 ?? '',
-        rist1: scanData.rist1 ?? '',
-        rist2: scanData.rist2 ?? '',
-        zehentyp1: scanData.zehentyp1 ?? '',
-        zehentyp2: scanData.zehentyp2 ?? '',
-        archIndex1: scanData.archIndex1 ?? '',
-        archIndex2: scanData.archIndex2 ?? '',
-    });
+    // Helper to get initial data - use main customer data by default
+    const getInitialData = useCallback((data: ScanData) => {
+        // Always use main customer data as default
+        // ScreenerFile data will be used only when a specific date is selected
+        return {
+            fusslange1: data.fusslange1 ?? '',
+            fusslange2: data.fusslange2 ?? '',
+            fussbreite1: data.fussbreite1 ?? '',
+            fussbreite2: data.fussbreite2 ?? '',
+            kugelumfang1: data.kugelumfang1 ?? '',
+            kugelumfang2: data.kugelumfang2 ?? '',
+            rist1: data.rist1 ?? '',
+            rist2: data.rist2 ?? '',
+            zehentyp1: data.zehentyp1 ?? '',
+            zehentyp2: data.zehentyp2 ?? '',
+            archIndex1: data.archIndex1 ?? '',
+            archIndex2: data.archIndex2 ?? '',
+        };
+    }, []);
+
+    // State for editable scan data - initialize with correct data source
+    const [editableData, setEditableData] = useState(() => getInitialData(scanData));
 
     // Sync editableData when scanData prop or currentScanData changes
-    // But only if there's no screenerFile (screenerFile থাকলে main data থেকে sync হবে না)
+    // Only sync from main customer data when no date is selected
+    // If a date is selected, data will come from handleDataChange callback (screenerFile data)
     useEffect(() => {
         const dataToSync = currentScanData || scanData;
-        const hasScreenerFile = dataToSync?.screenerFile && Array.isArray(dataToSync.screenerFile) && dataToSync.screenerFile.length > 0;
         
-        // Only sync from main data if no screenerFile exists
-        // If screenerFile exists, data will come from handleDataChange callback
-        if (!hasScreenerFile && !selectedDate) {
+        // Only sync from main customer data if no date is selected
+        // If a date is selected, handleDataChange will provide screenerFile data
+        if (!selectedDate) {
             setEditableData({
                 fusslange1: dataToSync.fusslange1 ?? '',
                 fusslange2: dataToSync.fusslange2 ?? '',
@@ -88,6 +99,16 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
     const isChanged = Object.keys(editableData).some(
         (key) => editableData[key as keyof typeof editableData] !== originalData[key as keyof typeof originalData]
     );
+
+    // Save originalData when entering edit mode
+    const previousIsEditingRef = useRef(isEditing);
+    useEffect(() => {
+        // Only save originalData when transitioning from false to true (entering edit mode)
+        if (isEditing && !previousIsEditingRef.current) {
+            setOriginalData({ ...editableData });
+        }
+        previousIsEditingRef.current = isEditing;
+    }, [isEditing, editableData]);
 
     // Track previous filtered data to prevent unnecessary updates
     const previousFilteredDataRef = useRef<string | null>(null);
@@ -116,19 +137,12 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                 file => file.updatedAt === date
             );
             const screenerId = selectedScreenerFile?.id || null;
+            setCurrentScreenerId(screenerId);
             onScreenerIdChange?.(screenerId);
         } else {
-            // If no date selected, use the latest screenerFile ID
-            if (currentData?.screenerFile && Array.isArray(currentData.screenerFile) && currentData.screenerFile.length > 0) {
-                const latestScreenerFile = currentData.screenerFile.reduce((latest, item) => {
-                    const latestDate = new Date(latest.updatedAt);
-                    const currentDate = new Date(item.updatedAt);
-                    return currentDate > latestDate ? item : latest;
-                });
-                onScreenerIdChange?.(latestScreenerFile.id);
-            } else {
-                onScreenerIdChange?.(null);
-            }
+            // If no date selected, clear screenerId to use main customer data
+            setCurrentScreenerId(null);
+            onScreenerIdChange?.(null);
         }
     }, [currentScanData, scanData, onScreenerIdChange]);
 
@@ -171,17 +185,37 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
 
     const handleSaveChanges = async () => {
         try {
-            const success = await updateCustomer(editableData);
+            let success = false;
+            
+            // If there's a screenerFile selected, update the screenerFile, otherwise update main customer
+            if (currentScreenerId && scanData.id) {
+                // Update screenerFile data
+                const response = await updateSingleScannerFile(scanData.id, currentScreenerId, editableData);
+                success = response?.success || false;
+            } else {
+                // Update main customer data
+                success = await updateCustomer(editableData);
+            }
+            
             if (success) {
                 setOriginalData(editableData);
                 setIsEditing(false); // Exit edit mode after successful save
                 toast.success('Scan data updated successfully!');
+                // Refresh customer data with selected date to maintain screenerFile selection
+                await refreshCustomer(selectedDate);
             } else {
                 toast.error('Failed to save changes');
             }
         } catch (err: any) {
+            console.error('Save error:', err);
             toast.error('Failed to save changes');
         }
+    };
+
+    const handleCancelEdit = () => {
+        // Revert to original data
+        setEditableData(originalData);
+        setIsEditing(false); // Exit edit mode
     };
 
     // Handle image save from Zoom Mode
@@ -221,19 +255,23 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
 
     // Initialize screenerId on mount or when displayData changes
     useEffect(() => {
-        if (displayData?.screenerFile && Array.isArray(displayData.screenerFile) && displayData.screenerFile.length > 0) {
-            if (selectedDate) {
-                const selectedScreenerFile = displayData.screenerFile.find(
-                    file => file.updatedAt === selectedDate
-                );
-                if (selectedScreenerFile) {
-                    onScreenerIdChange?.(selectedScreenerFile.id);
-                }
-            } else if (latestScreener) {
-                onScreenerIdChange?.(latestScreener.id);
+        if (selectedDate && displayData?.screenerFile && Array.isArray(displayData.screenerFile) && displayData.screenerFile.length > 0) {
+            const selectedScreenerFile = displayData.screenerFile.find(
+                file => file.updatedAt === selectedDate
+            );
+            if (selectedScreenerFile) {
+                setCurrentScreenerId(selectedScreenerFile.id);
+                onScreenerIdChange?.(selectedScreenerFile.id);
+            } else {
+                setCurrentScreenerId(null);
+                onScreenerIdChange?.(null);
             }
+        } else {
+            // No date selected - use main customer data
+            setCurrentScreenerId(null);
+            onScreenerIdChange?.(null);
         }
-    }, [displayData, selectedDate, latestScreener, onScreenerIdChange]);
+    }, [displayData, selectedDate, onScreenerIdChange]);
 
     const getLatestData = (fieldName: keyof Pick<ScanData, 'picture_10' | 'picture_23' | 'picture_11' | 'picture_24' | 'threed_model_left' | 'threed_model_right' | 'picture_17' | 'picture_16'>) => {
         if (latestScreener && latestScreener[fieldName]) {
@@ -275,15 +313,35 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                         onEditStateChange={setIsEditing}
                         externalIsEditing={isEditing}
                     >
-                        {/* Additional content for the scan data section */}
-                        {isChanged && (
-                            <button
-                                onClick={handleSaveChanges}
-                                className='bg-[#4A8A6A] cursor-pointer text-white px-2 py-1 rounded hover:bg-[#4A8A6A]/80 transition text-sm'
-                                disabled={isUpdating}
-                            >
-                                {isUpdating ? 'Saving...' : 'Save'}
-                            </button>
+                        {/* Additional content for the scan data section - Show Save & Cancel when editing */}
+                        {isEditing && (
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleSaveChanges}
+                                    className='bg-[#4A8A6A] cursor-pointer text-white px-4 py-2 rounded hover:bg-[#4A8A6A]/80 transition text-sm font-medium flex items-center gap-1'
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? (
+                                        <>
+                                            <span className="inline-block h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                           
+                                            Save
+                                        </>
+                                    )}
+                                </button>
+                                <button
+                                    onClick={handleCancelEdit}
+                                    className='bg-gray-500 cursor-pointer text-white px-4 py-2 rounded hover:bg-gray-600 transition text-sm font-medium flex items-center gap-1'
+                                    disabled={isUpdating}
+                                >
+                                    <span>❌</span>
+                                    Cancel
+                                </button>
+                            </div>
                         )}
                         {error && (
                             <span className='ml-2 text-red-600 text-xs'>{error}</span>
@@ -296,17 +354,17 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                         {selectedForm === 'einlagen' ? (
                             <EinlagenQuestions 
                                 customer={displayData} 
-                                onQuestionsLoaded={setHasQuestions}
+                                onQuestionsLoaded={(hasQuestions: boolean) => setHasQuestions(hasQuestions)}
                             />
                         ) : selectedForm === 'massschuhe' ? (
                             <MassschuheQuestions 
                                 customer={displayData} 
-                                onQuestionsLoaded={setHasQuestions}
+                                onQuestionsLoaded={(hasQuestions: boolean) => setHasQuestions(hasQuestions)}
                             />
                         ) : selectedForm === 'sonstiges' ? (
                             <SonstigesQuestion 
                                 customer={displayData} 
-                                onQuestionsLoaded={setHasQuestions}
+                                onQuestionsLoaded={(hasQuestions: boolean) => setHasQuestions(hasQuestions)}
                             />
                         ) : null}
                     </div>

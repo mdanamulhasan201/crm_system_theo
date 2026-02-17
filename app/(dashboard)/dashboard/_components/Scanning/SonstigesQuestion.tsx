@@ -2,7 +2,7 @@
 
 import React, { useEffect } from "react";
 
-interface SonstigesQuestionProps {
+export interface SonstigesQuestionProps {
     customer: any;
     onQuestionsLoaded?: (hasQuestions: boolean) => void;
 }

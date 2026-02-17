@@ -44,7 +44,7 @@ interface ApiResponse {
     data: SectionType[];
 }
 
-interface EinlagenQuestionsProps {
+export interface EinlagenQuestionsProps {
     customer: any;
     onQuestionsLoaded?: (hasQuestions: boolean) => void;
 }

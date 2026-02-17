@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 // import { ArrowLeft } from 'lucide-react';
 import Einlagen from '@/app/(dashboard)/dashboard/_components/Scanning/Einlagen';
 import SonstigesForm from '@/app/(dashboard)/dashboard/_components/Scanning/SonstigesForm';
-import { getPreviousOrders, getSingleOrder } from '@/apis/productsOrder';
+import { getSingleOrder } from '@/apis/productsOrder';
 // import userload from '@/public/images/scanning/userload.png'
 import userImg from '@/public/images/scanning/user.png'
 import Image from 'next/image'
