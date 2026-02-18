@@ -110,7 +110,7 @@ export default function CardStatistik({ onRefetchReady }: { onRefetchReady?: (re
             id: 'active',
             title: 'Aktive Masschuhaufträge',
             count: statsData.waitingToStart.current,
-            trendLabel: `${Math.abs(statsData.waitingToStart.changePercent)}%`,
+            trendLabel: `${Math.abs(statsData.waitingToStart.changePercent).toFixed(2)}%`,
             // current > previous = high (green/up), current < previous = low (red/down)
             trendColor: statsData.waitingToStart.current > statsData.waitingToStart.previous ? 'text-emerald-500' : 'text-rose-500',
             isUp: statsData.waitingToStart.current > statsData.waitingToStart.previous,
@@ -121,7 +121,7 @@ export default function CardStatistik({ onRefetchReady }: { onRefetchReady?: (re
             id: 'waiting',
             title: 'Aufträge warten auf Versorgungstart',
             count: statsData.active.current,
-            trendLabel: `${Math.abs(statsData.active.changePercent)}%`,
+            trendLabel: `${Math.abs(statsData.active.changePercent).toFixed(2)}%`,
             trendColor: statsData.active.current > statsData.active.previous ? 'text-emerald-500' : 'text-rose-500',
             isUp: statsData.active.current > statsData.active.previous,
             data: statsData.active.current > statsData.active.previous ? staticGreenData : staticRedData,
@@ -131,7 +131,7 @@ export default function CardStatistik({ onRefetchReady }: { onRefetchReady?: (re
             id: 'completed',
             title: 'Abgeschlossene Aufträge',
             count: statsData.completed.current,
-            trendLabel: `${Math.abs(statsData.completed.changePercent)}%`,
+            trendLabel: `${Math.abs(statsData.completed.changePercent).toFixed(2)}%`,
             trendColor: statsData.completed.current > statsData.completed.previous ? 'text-emerald-500' : 'text-rose-500',
             isUp: statsData.completed.current > statsData.completed.previous,
             data: statsData.completed.current > statsData.completed.previous ? staticGreenData : staticRedData,
@@ -171,12 +171,12 @@ export default function CardStatistik({ onRefetchReady }: { onRefetchReady?: (re
                             key={card.id}
                             className="flex flex-col justify-between rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
                         >
-                            <div className="mb-6 text-base  lg:text-lg font-medium text-slate-600">
+                            <div className="mb-6 text-sm font-medium text-slate-600">
                                 {card.title}
                             </div>
                             <div className="flex items-end justify-between gap-4">
                                 <div>
-                                    <div className="mb-3 text-3xl font-semibold text-slate-900">
+                                    <div className="mb-3 text-2xl font-semibold text-slate-900">
                                         {card.count}
                                     </div>
                                     <div className="flex items-center gap-2 text-xs">
