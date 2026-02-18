@@ -1,5 +1,6 @@
 import React from 'react';
 import PositionsnummerDropdown from '../Dropdowns/PositionsnummerDropdown';
+import EmployeeDropdown from '../../Common/EmployeeDropdown';
 
 interface RezeptAbrechnungCardProps {
     // Diagnosis fields
@@ -173,76 +174,17 @@ export default function RezeptAbrechnungCard({
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Durchgeführt von
                     </label>
-                    <div className="relative">
-                        <input
-                            type="text"
-                            value={selectedEmployee || employeeSearchText}
-                            onChange={(e) => {
-                                const newValue = e.target.value;
-                                // Clear selected employee when user starts typing
-                                if (selectedEmployee && newValue !== selectedEmployee) {
-                                    onEmployeeSelect({ employeeName: '', id: '' });
-                                }
-                                onEmployeeSearchChange(newValue);
-                                if (!isEmployeeDropdownOpen) {
-                                    onEmployeeDropdownChange(true);
-                                }
-                            }}
-                            onFocus={() => onEmployeeDropdownChange(true)}
-                            onBlur={() => {
-                                // Delay to allow click on dropdown item
-                                setTimeout(() => onEmployeeDropdownChange(false), 200);
-                            }}
-                            placeholder="Mitarbeiter..."
-                            className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                        />
-                        {selectedEmployee && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    onEmployeeSelect({ employeeName: '', id: '' });
-                                    onEmployeeSearchChange('');
-                                }}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        )}
-                        {isEmployeeDropdownOpen && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                                {employeeLoading ? (
-                                    <div className="px-3 py-2 text-sm text-gray-500">Laden...</div>
-                                ) : employeeSuggestions.length > 0 ? (
-                                    employeeSuggestions.map((emp: any) => {
-                                        const hasEmail = emp.email && emp.email !== 'null' && emp.email.trim() !== '';
-                                        
-                                        return (
-                                            <div
-                                                key={emp.id}
-                                                onMouseDown={(e) => {
-                                                    e.preventDefault(); // Prevent blur from firing before click
-                                                    onEmployeeSelect({ employeeName: emp.employeeName, id: emp.id });
-                                                    onEmployeeDropdownChange(false);
-                                                }}
-                                                className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                            >
-                                                <div className="flex flex-col">
-                                                    <span className="font-medium text-gray-900">{emp.employeeName}</span>
-                                                    {hasEmail && (
-                                                        <span className="text-xs text-gray-500">{emp.email}</span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="px-3 py-2 text-sm text-gray-500">Keine Mitarbeiter gefunden</div>
-                                )}
-                            </div>
-                        )}
-                    </div>
+                    <EmployeeDropdown
+                        selectedEmployee={selectedEmployee}
+                        employeeSearchText={employeeSearchText}
+                        isEmployeeDropdownOpen={isEmployeeDropdownOpen}
+                        employeeSuggestions={employeeSuggestions}
+                        employeeLoading={employeeLoading}
+                        onEmployeeSearchChange={onEmployeeSearchChange}
+                        onEmployeeDropdownChange={onEmployeeDropdownChange}
+                        onEmployeeSelect={onEmployeeSelect}
+                        placeholder="Mitarbeiter..."
+                    />
                 </div>
 
                 {/* KVA & Lieferschein - Two separate button groups */}

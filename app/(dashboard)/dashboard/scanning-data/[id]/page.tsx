@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useRouter, useSearchParams } from 'next/navigation'
 
-import MassschuheForm from '@/app/(dashboard)/dashboard/_components/Scanning/MassschuheForm';
+// import MassschuheForm from '@/app/(dashboard)/dashboard/_components/Scanning/_MassschuheForm';
 import ScanningDataPage from '@/app/(dashboard)/dashboard/_components/ScanningData/ScanningDataPage';
 
 import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
@@ -17,6 +17,7 @@ import Image from 'next/image'
 import CustomerModal from '@/components/CustomerModal/CustomerModal'
 import Loading from '@/components/Shared/Loading'
 import PreviousOrdersModal from '@/components/PreviousOrdersModal/PreviousOrdersModal'
+import MassschuheFormNew from '../../_components/Scanning/MassschuheFormNew';
 
 
 export default function ScanningData() {
@@ -313,7 +314,18 @@ export default function ScanningData() {
                     }}
                 />
             ) : selectedForm === 'massschuhe' ? (
-                <MassschuheForm
+                // <MassschuheForm
+                //     key={`massschuhe-${formKeys.massschuhe}`}
+                //     customer={scanData}
+                //     prefillOrderData={previousPrefillMassschuhe}
+                //     onCustomerUpdate={(updatedCustomer) => {
+                //         updateCustomer(updatedCustomer);
+                //     }}
+                //     onDataRefresh={() => {
+                //         refreshCustomer();
+                //     }}
+                // />
+                <MassschuheFormNew
                     key={`massschuhe-${formKeys.massschuhe}`}
                     customer={scanData}
                     prefillOrderData={previousPrefillMassschuhe}

@@ -3,12 +3,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
-import { ChevronDown, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
+import EmployeeDropdown from './Common/EmployeeDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { getTaxRatesByCountry } from '@/utils/taxRates';
 import SonstigesOrderModal from './SonstigesOrderModal';
@@ -265,84 +264,18 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Durchgeführt von
                             </label>
-                        <Popover open={isEmployeeDropdownOpen} onOpenChange={handleEmployeeDropdownChange}>
-                            <PopoverTrigger asChild>
-                                <Button
-                                    variant="outline"
-                                    role="combobox"
-                                    aria-expanded={isEmployeeDropdownOpen}
-                                    className="w-full cursor-pointer justify-between font-normal h-10 bg-white border-gray-300"
-                                >
-                                    <span className={`truncate ${selectedEmployee ? 'text-gray-900' : 'text-gray-400'}`}>
-                                        {selectedEmployee || "Mitarbeiter..."}
-                                    </span>
-                                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                                <div className="p-2">
-                                    <Input
-                                        placeholder="Mitarbeiter suchen..."
-                                        value={searchText}
-                                        onChange={(e) => handleEmployeeSearchChange(e.target.value)}
-                                        className="w-full"
-                                        autoFocus
-                                    />
-                                </div>
-                                <div className="max-h-60 overflow-y-auto">
-                                    {employeeLoading ? (
-                                        <div className="p-4 text-center text-sm text-gray-500">
-                                            Lade Mitarbeiter...
-                                        </div>
-                                    ) : employeeSuggestions.length > 0 ? (
-                                        <div className="py-1">
-                                            {employeeSuggestions.map((employee) => (
-                                                <div
-                                                    key={employee.id}
-                                                    className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150 ${
-                                                        selectedEmployee === employee.employeeName
-                                                            ? 'bg-blue-50 hover:bg-blue-100 border-l-2 border-blue-500'
-                                                            : 'hover:bg-gray-100'
-                                                    }`}
-                                                    onClick={() => handleEmployeeSelect({ employeeName: employee.employeeName, id: employee.id })}
-                                                >
-                                                    <div className="flex flex-col min-w-0 flex-1">
-                                                        <span
-                                                            className={`text-sm font-medium truncate ${
-                                                                selectedEmployee === employee.employeeName
-                                                                    ? 'text-blue-900'
-                                                                    : 'text-gray-900'
-                                                            }`}
-                                                        >
-                                                            {employee.employeeName}
-                                                        </span>
-                                                        {employee.email && (
-                                                            <span
-                                                                className={`text-xs truncate ${
-                                                                    selectedEmployee === employee.employeeName
-                                                                        ? 'text-blue-600'
-                                                                        : 'text-gray-500'
-                                                                }`}
-                                                            >
-                                                                {employee.email}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                    {selectedEmployee === employee.employeeName && (
-                                                        <Check className="h-4 w-4 text-blue-600 ml-2 shrink-0" />
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : (
-                                        <div className="p-4 text-center text-sm text-gray-500">
-                                            Keine Mitarbeiter gefunden
-                                        </div>
-                                    )}
-                                </div>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
+                            <EmployeeDropdown
+                                selectedEmployee={selectedEmployee}
+                                employeeSearchText={searchText}
+                                isEmployeeDropdownOpen={isEmployeeDropdownOpen}
+                                employeeSuggestions={employeeSuggestions}
+                                employeeLoading={employeeLoading}
+                                onEmployeeSearchChange={handleEmployeeSearchChange}
+                                onEmployeeDropdownChange={handleEmployeeDropdownChange}
+                                onEmployeeSelect={handleEmployeeSelect}
+                                placeholder="Mitarbeiter..."
+                            />
+                        </div>
 
                         {/* Menge */}
                         <div>

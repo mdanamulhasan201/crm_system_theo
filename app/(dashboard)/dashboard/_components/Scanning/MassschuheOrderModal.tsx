@@ -86,6 +86,8 @@ interface MassschuheOrderModalProps {
         positionsnummerAustriaData?: any[];
         positionsnummerItalyData?: any[];
         billingType?: 'Krankenkassa' | 'Privat';
+        price?: string;
+        tax?: string;
     };
     onSubmit: (orderData: OrderFormData) => Promise<void>;
     isLoading?: boolean;
