@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText } from 'lucide-react';
+import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText, X } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import { Button } from '@/components/ui/button';
 import { SHOE_STEPS, demoData, ProgressData } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuProgressTable';
@@ -49,14 +49,14 @@ const getOrderData = (id: string) => {
     return {
         ...order,
         fertigungsweisung: {
-            leisten: 'Breiter Fuß, Weite K',
-            bettung: 'Diabetikerbettung, druckverteilend',
-            schaft: 'Interner Schaft - weich gepolstert',
-            boden: 'Flachabsatz, Sohle rutschfest',
-            sonderanpassungen: 'Medialer Knöchel entlasten',
-            halbprobe: 'Ergebnis: pressure Intern Boden: Flachabsatz',
-            checkliste: 'Druckstelle medialer Knöchel entlasten',
-            anmerkungen: order.notes || 'Leichter Druck medial - Korrektur am Schaft nötig'
+            leisten: '',
+            bettung: '',
+            schaft: '',
+            boden: '',
+            sonderanpassungen: '',
+            halbprobe: '',
+            checkliste: '',
+            anmerkungen: order.notes || ''
         },
         zeitverlauf
     };
@@ -121,12 +121,30 @@ export default function MassschuhauftraegePage() {
     const id = params?.id as string;
     const orderData = useMemo(() => getOrderData(id || '1'), [id]);
     const [notes, setNotes] = useState('');
+    const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const [isDragging, setIsDragging] = useState(false);
 
     useEffect(() => {
         if (orderData?.notes) {
             setNotes(orderData.notes);
         }
     }, [orderData]);
+
+    const handleFileUpload = (files: File[]) => {
+        setUploadedFiles((prev) => [...prev, ...files]);
+    };
+
+    const handleRemoveFile = (index: number) => {
+        setUploadedFiles((prev) => {
+            const newFiles = [...prev];
+            const removedFile = newFiles[index];
+            if (removedFile && removedFile.type.startsWith('image/')) {
+                URL.revokeObjectURL(URL.createObjectURL(removedFile));
+            }
+            newFiles.splice(index, 1);
+            return newFiles;
+        });
+    };
 
     if (!orderData) {
         return (
@@ -196,10 +214,87 @@ export default function MassschuhauftraegePage() {
                                 <Camera className="w-5 h-5 text-gray-600" />
                                 <h3 className="text-lg font-semibold text-gray-900">Bilder</h3>
                             </div>
-                            <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 flex flex-col items-center justify-center hover:border-emerald-400 transition-colors cursor-pointer">
-                                <Camera className="w-12 h-12 text-gray-400 mb-3" />
+                            
+                            {/* File Upload Area */}
+                            <div
+                                className={`border-2 border-dashed rounded-lg p-12 flex flex-col items-center justify-center transition-colors cursor-pointer ${
+                                    isDragging 
+                                        ? 'border-emerald-500 bg-emerald-50' 
+                                        : 'border-gray-300 hover:border-emerald-400'
+                                }`}
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setIsDragging(true);
+                                }}
+                                onDragLeave={() => setIsDragging(false)}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    setIsDragging(false);
+                                    const files = Array.from(e.dataTransfer.files);
+                                    handleFileUpload(files);
+                                }}
+                                onClick={() => document.getElementById('file-upload')?.click()}
+                            >
+                                <input
+                                    id="file-upload"
+                                    type="file"
+                                    multiple
+                                    accept="image/*,.pdf,.doc,.docx"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        if (e.target.files) {
+                                            handleFileUpload(Array.from(e.target.files));
+                                        }
+                                    }}
+                                />
+                                <Camera className="w-10 h-10 text-gray-400 mb-3" />
                                 <p className="text-gray-600 font-medium">Bilder hochladen</p>
+                                <p className="text-xs text-gray-500 mt-1">Klicken Sie hier oder ziehen Sie Dateien hierher</p>
                             </div>
+
+                            {/* Uploaded Files Preview */}
+                            {uploadedFiles.length > 0 && (
+                                <div className="mt-4 grid grid-cols-3 gap-4">
+                                    {uploadedFiles.map((file, index) => (
+                                        <div key={index} className="relative group">
+                                            {file.type.startsWith('image/') ? (
+                                                <div className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
+                                                    <img
+                                                        src={URL.createObjectURL(file)}
+                                                        alt={file.name}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveFile(index);
+                                                        }}
+                                                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <div className="relative aspect-square rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-2">
+                                                    <FileText className="w-8 h-8 text-gray-400 mb-1" />
+                                                    <p className="text-xs text-gray-600 text-center truncate w-full">
+                                                        {file.name}
+                                                    </p>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleRemoveFile(index);
+                                                        }}
+                                                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                                    >
+                                                        <X className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Notiz Section */}
@@ -215,7 +310,7 @@ export default function MassschuhauftraegePage() {
 
                         {/* Complete Button */}
                         <Button
-                            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-6 text-base font-medium flex items-center justify-center gap-2"
+                            className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2"
                         >
                             <CheckCircle2 className="w-5 h-5" />
                             Schritt abschließen & weiterleiten
@@ -227,42 +322,42 @@ export default function MassschuhauftraegePage() {
                 {/* Right Side - Sidebar */}
                 <div className="w-96 space-y-6">
                     {/* Fertigungsweisung */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
+                    <div className="bg-white rounded-lg border border-green-200 p-6">
+                        <div className="flex items-center justify-between border-b pb-4 mb-4">
+                            <div className="flex items-center gap-2 ">
                                 <div className="w-6 h-6 bg-emerald-600 rounded flex items-center justify-center">
                                     <FileText className="w-4 h-4 text-white" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-gray-900">Fertigungsweisung</h3>
+                                <h3 className="text-sm font-semibold text-gray-900">Fertigungsweisung</h3>
                             </div>
-                            <button className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900">
+                            <button className="flex cursor-pointer  gap-1 text-xs text-gray-600 hover:text-gray-900">
                                 <FileText className="w-4 h-4" />
                                 PDF
                             </button>
                         </div>
-                        <div className="space-y-3 text-sm">
+                        <div className="space-y-3 text-xs">
                             <div>
-                                <div className="font-bold text-gray-900 mb-1">LEISTEN:</div>
+                                <div className="font-semibold  text-gray-600 mb-1">LEISTEN:</div>
                                 <div className="text-gray-700">{orderData.fertigungsweisung.leisten}</div>
                             </div>
                             <div>
-                                <div className="font-bold text-gray-900 mb-1">BETTUNG:</div>
+                                <div className="font-semibold text-gray-600 mb-1">BETTUNG:</div>
                                 <div className="text-gray-700">{orderData.fertigungsweisung.bettung}</div>
                             </div>
                             <div>
-                                <div className="font-bold text-gray-900 mb-1">SCHAFT:</div>
+                                <div className="font-semibold text-gray-600 mb-1">SCHAFT:</div>
                                 <div className="text-gray-700">{orderData.fertigungsweisung.schaft}</div>
                             </div>
                             <div>
-                                <div className="font-bold text-gray-900 mb-1">BODEN:</div>
+                                <div className="font-semibold text-gray-600 mb-1">BODEN:</div>
                                 <div className="text-gray-700">{orderData.fertigungsweisung.boden}</div>
                             </div>
                             <div>
-                                <div className="font-bold text-gray-900 mb-1">SONDERANPASSUNGEN:</div>
+                                <div className="font-semibold text-gray-600 mb-1">SONDERANPASSUNGEN:</div>
                                 <div className="text-gray-700">{orderData.fertigungsweisung.sonderanpassungen}</div>
                             </div>
                             <div>
-                                <div className="font-bold text-gray-900 mb-1">HALBPROBE:</div>
+                                <div className="font-semibold text-gray-600 mb-1">HALBPROBE:</div>
                                 <div className="text-gray-700">{orderData.fertigungsweisung.halbprobe}</div>
                             </div>
                             <div>
@@ -271,7 +366,7 @@ export default function MassschuhauftraegePage() {
                                 </button>
                             </div>
                             <div>
-                                <div className="font-bold text-gray-900 mb-1">ANMERKUNGEN:</div>
+                                <div className="font-semibold text-gray-600 mb-1">ANMERKUNGEN:</div>
                                 <div className="text-gray-700">{orderData.fertigungsweisung.anmerkungen}</div>
                             </div>
                         </div>
@@ -279,7 +374,7 @@ export default function MassschuhauftraegePage() {
 
                     {/* ZEITVERLAUF */}
                     <div className="bg-white rounded-lg border border-gray-200 p-6">
-                        <h3 className="text-lg font-bold text-gray-900 mb-4">ZEITVERLAUF</h3>
+                        <h3 className="text-sm font-semibold text-gray-500 mb-4">ZEITVERLAUF</h3>
                         <div className="space-y-2">
                             {orderData.zeitverlauf
                                 .filter((item) => item.completed || item.isCurrent) // Only show completed and current steps
@@ -305,12 +400,12 @@ export default function MassschuhauftraegePage() {
                                                 
                                                 {/* Icon - Immediately right of duration */}
                                                 {item.completed ? (
-                                                    <div className="w-6 h-6 bg-emerald-600 rounded-full flex items-center justify-center shrink-0">
-                                                        <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                                                    <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center shrink-0">
+                                                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
                                                     </div>
                                                 ) : item.isCurrent ? (
-                                                    <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
-                                                        <Clock className="w-4 h-4 text-gray-600" />
+                                                    <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
+                                                        <Clock className="w-3 h-3 text-gray-600" />
                                                     </div>
                                                 ) : null}
                                             </div>
