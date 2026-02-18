@@ -80,7 +80,7 @@ function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
                                 <BsDash className='text-4xl'/>
                             </span>
                         )}
-                        <div className="flex flex-col items-center shrink-0 min-w-[80px]">
+                        <div className="flex flex-col items-center shrink-0">
                             <div
                                 title={step}
                                 className={`
@@ -161,14 +161,14 @@ export default function MassschuhauftraegePage() {
            
 
             {/* Progress Bar */}
-            <div className="bg-white border border-gray-200 px-6 py-4">
+            <div className="bg-white border border-gray-200 px-4 py-4">
                 <div className="overflow-x-auto">
                     <ProgressIndicator currentStepIndex={orderData.currentStepIndex} />
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="flex gap-6 p-6">
+            <div className="flex gap-6 mt-5">
                 {/* Left Side - Main Content */}
                 <div className="flex-1">
                     <div className="bg-white rounded-lg border border-red-200 p-6">
