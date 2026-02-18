@@ -6,7 +6,7 @@ import Autoplay from 'embla-carousel-autoplay'
 import shoes from '@/public/images/products/shoes.png'
 import Image from 'next/image'
 import ContactPage from '@/components/Contact/ContactPage'
-import { getCategoriesProducts } from '@/apis/productsApis'
+import { getAllProducts } from '@/apis/productsApis'
 import FAQ from '../_components/Software/FAQ'
 import VersionPage from '../_components/Software/Version'
 import RelesHistory from '../_components/Software/RelesHistory'
@@ -29,7 +29,7 @@ interface Product {
     Category: string;
     Sub_Category: string;
     price: number | null;
-    offer: number;
+    offer: string;
     availability: boolean;
     colors: Color[];
 }
@@ -210,8 +210,28 @@ export default function Software() {
     useEffect(() => {
         const fetchProducts = async () => {
             try {
-                const data = await getCategoriesProducts();
-                setCategories(data.data);
+                const data = await getAllProducts({ limit: 100 });
+                // Group products by category
+                const categorizedData: CategoryData[] = [];
+                const categoryMap = new Map<string, Product[]>();
+
+                data.products.forEach((product: Product) => {
+                    const categoryName = product.Category || 'Uncategorized';
+                    if (!categoryMap.has(categoryName)) {
+                        categoryMap.set(categoryName, []);
+                    }
+                    categoryMap.get(categoryName)?.push(product);
+                });
+
+                categoryMap.forEach((products, categoryName) => {
+                    categorizedData.push({
+                        name: categoryName,
+                        totalProducts: products.length,
+                        products: products
+                    });
+                });
+
+                setCategories(categorizedData);
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching products:', error);

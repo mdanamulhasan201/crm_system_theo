@@ -14,13 +14,13 @@ import ScansPromoted from '@/components/CustomerHistory/ScansPromoted/ScansPromo
 import Reviews from '@/components/CustomerHistory/Reviews/Reviews';
 import userload from '@/public/images/scanning/userload.png'
 import scanImg from '@/public/images/history/scan.png'
-import AdvancedFeaturesModal from '@/app/(dashboard)/dashboard/_components/Customers/AdvancedFeaturesModal'
 import KostenvoranschlagDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KostenvoranschlagDialog'
 import RechnungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/RechnungDialog'
 import RechnungErstellenDialog from '@/app/(dashboard)/dashboard/_components/Receipts/RechnungErstellenDialog'
 import DatenschutzDialog from '@/app/(dashboard)/dashboard/_components/Receipts/DatenschutzDialog'
 import GebrauchsanweisungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/GebrauchsanweisungDialog'
 import KonformitatDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KonformitatDialog'
+import MehrkostenVereinbarungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/MehrkostenVereinbarungDialog'
 import { Edit, X, Loader2, Trash, AlertTriangle, ArrowLeft, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -37,6 +37,7 @@ export default function CustomerHistory() {
     const { customer: scanData, loading, error, updateCustomer, isUpdating, deleteCustomer, isDeleting } = useSingleCustomer(String(params.id));
     const [activeTab, setActiveTab] = useState<'scans' | 'shoes' | 'versorgungen' | 'reviews'>('scans');
     const [isEditing, setIsEditing] = useState(false);
+    const [showAdvancedSection, setShowAdvancedSection] = useState(false);
     const [editFormData, setEditFormData] = useState({
         gender: '',
         geburtsdatum: '',
@@ -46,7 +47,14 @@ export default function CustomerHistory() {
         telefon: '',
         telefonnummer: '',
         wohnort: '',
-        billingType: ''
+        billingType: '',
+        // Company billing data fields
+        firmenname: '',
+        firmenStrasse: '',
+        firmenPLZ: '',
+        firmenOrt: '',
+        firmenLand: '',
+        firmenUID: ''
     });
     const [isPopUpOpen, setIsPopUpOpen] = useState(false);
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -59,6 +67,7 @@ export default function CustomerHistory() {
     const [isDatenschutzOpen, setIsDatenschutzOpen] = useState(false);
     const [isGebrauchsanweisungOpen, setIsGebrauchsanweisungOpen] = useState(false);
     const [isKonformitatOpen, setIsKonformitatOpen] = useState(false);
+    const [isMehrkostenOpen, setIsMehrkostenOpen] = useState(false);
 
 
     // Show shimmer while the real data is loading
@@ -102,7 +111,14 @@ export default function CustomerHistory() {
             telefon: scanData.telefon || '',
             telefonnummer: scanData.telefonnummer || '',
             wohnort: scanData.wohnort || '',
-            billingType: scanData.billingType || ''
+            billingType: scanData.billingType || '',
+            // Company billing data fields
+            firmenname: (scanData as any).firmenname || '',
+            firmenStrasse: (scanData as any).firmenStrasse || '',
+            firmenPLZ: (scanData as any).firmenPLZ || '',
+            firmenOrt: (scanData as any).firmenOrt || '',
+            firmenLand: (scanData as any).firmenLand || '',
+            firmenUID: (scanData as any).firmenUID || ''
         });
         setIsEditing(true);
     }
@@ -139,6 +155,14 @@ export default function CustomerHistory() {
                 }
             }
 
+            // Add company billing data fields
+            updateData.firmenname = editFormData.firmenname || '';
+            updateData.firmenStrasse = editFormData.firmenStrasse || '';
+            updateData.firmenPLZ = editFormData.firmenPLZ || '';
+            updateData.firmenOrt = editFormData.firmenOrt || '';
+            updateData.firmenLand = editFormData.firmenLand || '';
+            updateData.firmenUID = editFormData.firmenUID || '';
+
             // console.log('Sending update data:', updateData);
             const success = await updateCustomer(updateData);
             if (success) {
@@ -163,7 +187,14 @@ export default function CustomerHistory() {
             telefon: scanData.telefon || '',
             telefonnummer: scanData.telefonnummer || '',
             wohnort: scanData.wohnort || '',
-            billingType: scanData.billingType || ''
+            billingType: scanData.billingType || '',
+            // Company billing data fields
+            firmenname: (scanData as any).firmenname || '',
+            firmenStrasse: (scanData as any).firmenStrasse || '',
+            firmenPLZ: (scanData as any).firmenPLZ || '',
+            firmenOrt: (scanData as any).firmenOrt || '',
+            firmenLand: (scanData as any).firmenLand || '',
+            firmenUID: (scanData as any).firmenUID || ''
         });
     }
 
@@ -201,6 +232,9 @@ export default function CustomerHistory() {
                 break;
             case 'Konformitätserklärung':
                 setIsKonformitatOpen(true);
+                break;
+            case 'Mehrkosten-Vereinbarung':
+                setIsMehrkostenOpen(true);
                 break;
             default:
                 toast.error('Dokument nicht gefunden');
@@ -310,15 +344,13 @@ export default function CustomerHistory() {
                     Stammdaten
                 </button>
 
-                {/* Erweitert Button with Modal */}
-                <AdvancedFeaturesModal
-                    scanData={scanData}
-                    trigger={
-                        <button className="bg-gray-300 cursor-pointer text-black px-6 py-2 rounded hover:bg-gray-400 transition">
-                            Erweitert
-                        </button>
-                    }
-                />
+                {/* Erweitert Button - now toggles inline section */}
+                <button
+                    onClick={() => setShowAdvancedSection(!showAdvancedSection)}
+                    className="bg-gray-300 cursor-pointer text-black px-6 py-2 rounded hover:bg-gray-400 transition"
+                >
+                    Erweitert
+                </button>
             </div>
 
             {/* Basic Customer Info*/}
@@ -499,6 +531,91 @@ export default function CustomerHistory() {
                         />
                     </div>
                 </div>
+
+                {/* Firmendaten (für Rechnungen) Section - shown when Erweitert is clicked */}
+                {showAdvancedSection && (
+                    <div className="mt-6 pt-6 border-t border-gray-200">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">Firmendaten (für Rechnungen)</h3>
+
+                        {/* Firmenname */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-teal-600 mb-1">Firmenname</label>
+                            <input
+                                type="text"
+                                className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
+                                value={isEditing ? editFormData.firmenname : ((scanData as any).firmenname || '')}
+                                placeholder="Firmenname"
+                                onChange={isEditing ? (e) => handleInputChange('firmenname', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                            />
+                        </div>
+
+                        {/* Straße + Hausnummer */}
+                        <div className="mb-4">
+                            <label className="block text-sm font-medium text-teal-600 mb-1">Straße + Hausnummer</label>
+                            <input
+                                type="text"
+                                className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
+                                value={isEditing ? editFormData.firmenStrasse : ((scanData as any).firmenStrasse || '')}
+                                placeholder="Straße und Hausnummer"
+                                onChange={isEditing ? (e) => handleInputChange('firmenStrasse', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                            />
+                        </div>
+
+                        {/* PLZ and Ort */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+                            <div>
+                                <label className="block text-sm font-medium text-teal-600 mb-1">PLZ</label>
+                                <input
+                                    type="text"
+                                    className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
+                                    value={isEditing ? editFormData.firmenPLZ : ((scanData as any).firmenPLZ || '')}
+                                    placeholder="PLZ"
+                                    onChange={isEditing ? (e) => handleInputChange('firmenPLZ', e.target.value) : undefined}
+                                    readOnly={!isEditing}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-teal-600 mb-1">Ort</label>
+                                <input
+                                    type="text"
+                                    className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
+                                    value={isEditing ? editFormData.firmenOrt : ((scanData as any).firmenOrt || '')}
+                                    placeholder="Ort"
+                                    onChange={isEditing ? (e) => handleInputChange('firmenOrt', e.target.value) : undefined}
+                                    readOnly={!isEditing}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Land and UID / Steuernummer */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-teal-600 mb-1">Land</label>
+                                <input
+                                    type="text"
+                                    className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
+                                    value={isEditing ? editFormData.firmenLand : ((scanData as any).firmenLand || '')}
+                                    placeholder="Land"
+                                    onChange={isEditing ? (e) => handleInputChange('firmenLand', e.target.value) : undefined}
+                                    readOnly={!isEditing}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-teal-600 mb-1">UID / Steuernummer</label>
+                                <input
+                                    type="text"
+                                    className={`w-full p-2 border rounded-md ${isEditing ? 'border-gray-300 bg-white' : 'border-gray-300 bg-gray-50'}`}
+                                    value={isEditing ? editFormData.firmenUID : ((scanData as any).firmenUID || '')}
+                                    placeholder="UID / Steuernummer"
+                                    onChange={isEditing ? (e) => handleInputChange('firmenUID', e.target.value) : undefined}
+                                    readOnly={!isEditing}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="flex  items-center gap-10 my-10 flex-wrap">
@@ -581,9 +698,15 @@ export default function CustomerHistory() {
                                 </button>
                                 <button
                                     onClick={() => handleDocumentClick('Konformitätserklärung')}
-                                    className="px-4 py-3 text-left text-gray-600 hover:bg-gray-50 transition-colors text-sm"
+                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
                                 >
                                     Konformitätserklärung
+                                </button>
+                                <button
+                                    onClick={() => handleDocumentClick('Mehrkosten-Vereinbarung')}
+                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
+                                >
+                                    Mehrkosten-Vereinbarung
                                 </button>
                             </div>
                         </PopoverContent>
@@ -743,6 +866,12 @@ export default function CustomerHistory() {
             <KonformitatDialog
                 open={isKonformitatOpen}
                 onOpenChange={setIsKonformitatOpen}
+                customerData={scanData}
+            />
+
+            <MehrkostenVereinbarungDialog
+                open={isMehrkostenOpen}
+                onOpenChange={setIsMehrkostenOpen}
                 customerData={scanData}
             />
 
