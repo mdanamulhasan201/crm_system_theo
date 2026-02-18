@@ -13,7 +13,7 @@ import Image from 'next/image';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
 import { shouldUnoptimizeImage } from '@/lib/imageUtils';
-import { TbActivityHeartbeat, TbUsers, TbUserCircle } from 'react-icons/tb';
+import { TbActivityHeartbeat, TbUsers, TbUserCircle, TbChartBar } from 'react-icons/tb';
 
 
 import type { IconType } from 'react-icons';
@@ -156,7 +156,13 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                         { icon: Einstellungen, label: 'Einstellungen', href: '/dashboard/settings' },
                     ]
                 },
-
+                {
+                    id: '8',
+                    standalone: true,
+                    icon: TbChartBar,
+                    label: 'Statistiken',
+                    href: '/dashboard/statistiken'
+                },
 
                 // Employee Profile - Always at bottom, only for EMPLOYEE role
                 ...(user?.role === 'EMPLOYEE' ? [{
