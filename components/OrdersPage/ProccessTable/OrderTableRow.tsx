@@ -1,11 +1,31 @@
 import { TableRow, TableCell } from "@/components/ui/table";
 import { OrderData, useOrders } from "@/contexts/OrdersContext";
-import OrderActions from "./OrderActions";
 import Link from "next/link";
 import { getPaymentStatusColor } from "@/lib/paymentStatusUtils";
-import { History, Scan, Package, FileText } from "lucide-react";
+import {
+    AlertTriangle,
+    ClipboardEdit,
+    FileText,
+    History,
+    MoreVertical,
+    QrCode,
+    Scan,
+    Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Custom Checkbox Component with emerald/green border
 function CustomCheckbox({
@@ -168,44 +188,22 @@ export default function OrderTableRow({
         );
     };
 
-    const renderPriorityBadge = () => {
-        if (order.priority === 'Dringend') {
-            return (
-                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-red-600 text-white">
-
-                    Dringend
-                </span>
-            );
-        }
-
-        return (
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-300 text-gray-800">
-                Normal
-            </span>
-        );
-    };
-
-    const getEmployeeInitials = (employeeName: string): string => {
-        const names = employeeName.trim().split(' ');
-        if (names.length >= 2) {
-            return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
-        }
-        return employeeName.charAt(0).toUpperCase();
-    };
-
-
     const handleRowClick = (e: React.MouseEvent) => {
         // Don't trigger row click if clicking on checkbox, note button, or action buttons
         if ((e.target as HTMLElement).closest('[type="checkbox"]') ||
             (e.target as HTMLElement).closest('.checkbox-container') ||
             (e.target as HTMLElement).closest('button[title="Notizen anzeigen"]') ||
-            (e.target as HTMLElement).closest('button[title="Historie"]') ||
-            (e.target as HTMLElement).closest('button[title="Scan"]') ||
             (e.target as HTMLElement).closest('.order-actions')) {
             return;
         }
         onRowClick(order.id);
     };
+
+    const normalizedStatus = order.displayStatus?.replace(/_/g, " ") || "";
+    const isAbholbereit = normalizedStatus === "Abholbereit/Versandt";
+    const isAusgefuehrt = normalizedStatus === "Ausgeführt";
+    const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
+    const hasInvoice = !!order.invoice;
 
     return (
         <TableRow
@@ -242,26 +240,31 @@ export default function OrderTableRow({
                     )}
                 </div>
             </TableCell>
-            <TableCell className="py-4 px-6 text-center">
-                {renderPriorityBadge()}
-            </TableCell>
-
-            <TableCell className="py-4 px-6 font-medium text-sm whitespace-nowrap">
-                {order.bestellnummer}
-            </TableCell>
-
-            <TableCell className="py-4 px-6 text-sm">
-                {order.customerId ? (
-                    <Link
-                        href={`/dashboard/customer-history/${order.customerId}`}
-                        className="text-[#2F7D5C] hover:underline underline-offset-2"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {order.kundenname}
-                    </Link>
-                ) : (
-                    <span className="text-gray-900">{order.kundenname}</span>
-                )}
+            <TableCell className="py-4 px-6">
+                <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-2">
+                        {order.priority === "Dringend" && (
+                            <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-600 text-[11px] font-semibold border border-red-200 shrink-0">
+                                Dringend
+                            </span>
+                        )}
+                        {order.customerId ? (
+                            <Link
+                                href={`/dashboard/customer-history/${order.customerId}`}
+                                className="text-gray-900 hover:underline underline-offset-2"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {order.kundenname}
+                            </Link>
+                        ) : (
+                            <span className="font-semibold text-gray-900 text-sm">
+                                {order.kundenname}
+                            </span>
+                        )}
+                    </div>
+                    <span className="text-gray-500 text-xs">#{order.bestellnummer}</span>
+                    <span className="text-gray-400 text-xs">{order.productName}</span>
+                </div>
             </TableCell>
             <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-2 flex-wrap">
@@ -346,47 +349,103 @@ export default function OrderTableRow({
             <TableCell className="py-4 px-6 text-sm whitespace-nowrap">
                 {order.beschreibung}
             </TableCell>
-            <TableCell className="py-4 px-6">
-                <div className="flex gap-2 sm:gap-3 justify-center items-center">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 cursor-pointer rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
-                        title="Historie"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onHistoryClick) {
-                                onHistoryClick(order.id, order.bestellnummer);
-                            }
-                        }}
-                    >
-                        <History className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 cursor-pointer rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
-                        title="Scan"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onScanClick) {
-                                onScanClick(order.id, order.bestellnummer, order.kundenname);
-                            }
-                        }}
-                    >
-                        <Scan className="h-4 w-4" />
-                    </Button>
-                </div>
-            </TableCell>
             <TableCell className="py-4 px-6 order-actions">
-                <OrderActions
-                    order={order}
-                    deleteLoading={deleteLoading}
-                    onDelete={onDelete}
-                    onInvoiceDownload={onInvoiceDownload}
-                    onPriorityClick={onPriorityClick}
-                    onBarcodeStickerClick={onBarcodeStickerClick}
-                />
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 p-0 cursor-pointer rounded-full hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+                            onClick={(e) => e.stopPropagation()}
+                            aria-label="Aktionen"
+                        >
+                            <MoreVertical className="h-4 w-4" />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                        align="end"
+                        className="w-52"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {onHistoryClick && (
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onHistoryClick(order.id, order.bestellnummer);
+                                }}
+                            >
+                                <History className="h-4 w-4" />
+                                <span>Historie</span>
+                            </DropdownMenuItem>
+                        )}
+                        {onScanClick && (
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onScanClick(order.id, order.bestellnummer, order.kundenname);
+                                }}
+                            >
+                                <Scan className="h-4 w-4" />
+                                <span>Scan-Daten</span>
+                            </DropdownMenuItem>
+                        )}
+                        {showBarcodeAction && (
+                            <>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (onBarcodeStickerClick) {
+                                            onBarcodeStickerClick(order.id, order.bestellnummer);
+                                        }
+                                    }}
+                                >
+                                    <QrCode className="h-4 w-4 text-green-600" />
+                                    <span>Barcode-Sticker</span>
+                                </DropdownMenuItem>
+                            </>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            className={`cursor-pointer ${!hasInvoice ? "opacity-50 cursor-not-allowed" : ""}`}
+                            disabled={!hasInvoice}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (hasInvoice) {
+                                    onInvoiceDownload(order.id);
+                                }
+                            }}
+                        >
+                            <ClipboardEdit className={`h-4 w-4 ${hasInvoice ? "text-blue-600" : "text-gray-400"}`} />
+                            <span>Dokumente</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onPriorityClick(order);
+                            }}
+                        >
+                            <AlertTriangle className="h-4 w-4 text-amber-500" />
+                            <span>Priorität ändern</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            variant="destructive"
+                            className="cursor-pointer"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(order.id);
+                            }}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                            <span>Löschen</span>
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
             </TableCell>
         </TableRow>
     );

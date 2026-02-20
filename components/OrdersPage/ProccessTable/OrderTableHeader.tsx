@@ -81,16 +81,15 @@ export default function OrderTableHeader({
                     indeterminate={isSomeSelected && !isAllSelected}
                 />
             </TableHead>
-            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Priorität</TableHead>
-            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Bestellnummer</TableHead>
-            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Kundenname</TableHead>
+            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-left">
+                Auftrag
+            </TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Status</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Preis</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Zahlung</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Erstellt am</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Geplantes Fertigstelldatum</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Beschreibung</TableHead>
-            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Historie</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Aktionen</TableHead>
         </TableRow>
     );
