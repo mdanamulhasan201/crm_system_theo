@@ -2,46 +2,15 @@
 
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import toast from 'react-hot-toast';
-import { getAllVersorgungen } from '@/apis/versorgungApis';
+import { getAllVersorgungen, getAllDiagnoses } from '@/apis/versorgungApis';
 import { getAllEinlagen } from '@/apis/einlagenApis';
 import { addCustomerVersorgung, getSingleCustomer, updateSingleCustomer } from '@/apis/customerApis';
 
 export type EinlageType = string; // Now dynamic from API
 
-const diagnosisOptions = [
-    'Plantarfasziitis',
-    'Fersensporn',
-    'Spreizfuß',
-    'Senkfuß',
-    'Plattfuß',
-    'Hohlfuß',
-    'Knickfuß',
-    'Knick-Senkfuß',
-    'Hallux valgus',
-    'Hallux rigidus',
-    'Hammerzehen / Krallenzehen',
-    'Morton-Neurom',
-    'Fußarthrose',
-    'Stressfrakturen im Fußbereich',
-    'Diabetisches Fußsyndrom',
-] as const;
-
-const diagnosisMapping: { [key: string]: string } = {
-    Plantarfasziitis: 'PLANTARFASZIITIS',
-    Fersensporn: 'FERSENSPORN',
-    Spreizfuß: 'SPREIZFUSS',
-    Senkfuß: 'SENKFUSS',
-    Plattfuß: 'PLATTFUSS',
-    Hohlfuß: 'HOHLFUSS',
-    Knickfuß: 'KNICKFUSS',
-    'Knick-Senkfuß': 'KNICK_SENKFUSS',
-    'Hallux valgus': 'HALLUX_VALGUS',
-    'Hallux rigidus': 'HALLUX_RIGIDUS',
-    'Hammerzehen / Krallenzehen': 'HAMMERZEHEN_KRALLENZEHEN',
-    'Morton-Neurom': 'MORTON_NEUROM',
-    Fußarthrose: 'FUSSARTHROSE',
-    'Stressfrakturen im Fußbereich': 'STRESSFRAKTUREN_IM_FUSS',
-    'Diabetisches Fußsyndrom': 'DIABETISCHES_FUSSSYNDROM',
+type DiagnosisOption = {
+    id: string;
+    name: string;
 };
 
 export interface ManualEntryData {
@@ -74,6 +43,8 @@ export const useScanningFormData = (
     const [hasDataLoaded, setHasDataLoaded] = useState(false);
     const [selectedVersorgungId, setSelectedVersorgungId] = useState<string | null>(null);
     const [einlageOptions, setEinlageOptions] = useState<Array<{id?: string, name: string, price?: number}>>([]); // Dynamic Einlagentyp options from API with prices and IDs
+    const [diagnosisOptions, setDiagnosisOptions] = useState<DiagnosisOption[]>([]); // Dynamic diagnosis options from API
+    const [loadingDiagnoses, setLoadingDiagnoses] = useState(false);
 
     // Editable fields
     const [diagnosis, setDiagnosis] = useState('');
@@ -116,6 +87,7 @@ export const useScanningFormData = (
     const isFetchingVersorgungen = useRef(false);
     const lastFetchedStatus = useRef<string | null>(null);
     const lastFetchedDiagnosis = useRef<string | null | undefined>(null);
+    const hasFetchedDiagnoses = useRef(false);
 
     // Refresh customer
     const refreshCustomerData = async () => {
@@ -232,6 +204,33 @@ export const useScanningFormData = (
         }
     }, [selectedEinlage, fetchVersorgungenByStatus]);
 
+    // Fetch diagnoses from API
+    const fetchDiagnoses = useCallback(async (search: string = '') => {
+        if (hasFetchedDiagnoses.current && !search) {
+            return; // Already fetched, skip unless searching
+        }
+        
+        try {
+            setLoadingDiagnoses(true);
+            const response = await getAllDiagnoses(search);
+            const diagnoses = response?.data || response || [];
+            setDiagnosisOptions(diagnoses);
+            if (!search) {
+                hasFetchedDiagnoses.current = true;
+            }
+        } catch (error) {
+            console.error('Error fetching diagnoses:', error);
+            toast.error('Failed to load diagnoses');
+        } finally {
+            setLoadingDiagnoses(false);
+        }
+    }, []);
+
+    // Initial fetch diagnoses (only once on mount)
+    useEffect(() => {
+        void fetchDiagnoses();
+    }, [fetchDiagnoses]);
+
     // Initial fetch supply statuses for Einlagentyp dropdown (only once on mount)
     useEffect(() => {
         void fetchSupplyStatuses();
@@ -281,7 +280,8 @@ export const useScanningFormData = (
     // Update supply when inputs change
     useEffect(() => {
         if (customer?.versorgungen && selectedEinlage) {
-            const currentDiagnosisStatus = selectedDiagnosis ? diagnosisMapping[selectedDiagnosis] : undefined;
+            // selectedDiagnosis is now the diagnosis ID, use it directly
+            const currentDiagnosisStatus = selectedDiagnosis || undefined;
             const matchingVersorgung = findMatchingVersorgung(selectedEinlage, currentDiagnosisStatus);
             if (matchingVersorgung) {
                 setSupply(matchingVersorgung.versorgung || matchingVersorgung.name || '');
@@ -314,12 +314,12 @@ export const useScanningFormData = (
 
     // Handlers (memoized to prevent re-renders)
     const handleDiagnosisSelect = useCallback(async (value: string) => {
+        // value is now the diagnosis ID
         setSelectedDiagnosis(value);
         setShowDiagnosisDropdown(false);
 
         if (customer?.versorgungen) {
-            const diagnosisStatus = diagnosisMapping[value];
-            const matchingVersorgung = findMatchingVersorgung(selectedEinlage, diagnosisStatus);
+            const matchingVersorgung = findMatchingVersorgung(selectedEinlage, value);
             if (matchingVersorgung) {
                 setSupply(matchingVersorgung.versorgung || matchingVersorgung.name || '');
                 setSelectedVersorgungId(matchingVersorgung.id);
@@ -329,8 +329,8 @@ export const useScanningFormData = (
             }
         }
 
-        if (value && diagnosisMapping[value] && selectedEinlage) {
-            await fetchVersorgungenByStatus(selectedEinlage, diagnosisMapping[value]);
+        if (value && selectedEinlage) {
+            await fetchVersorgungenByStatus(selectedEinlage, value);
         }
     }, [customer?.versorgungen, selectedEinlage, findMatchingVersorgung, fetchVersorgungenByStatus]);
 
@@ -344,12 +344,12 @@ export const useScanningFormData = (
         setSelectedEinlage(einlageType);
         
         // Fetch versorgungen for the selected status
-        const diagnosisStatus = selectedDiagnosis ? diagnosisMapping[selectedDiagnosis] : null;
+        // selectedDiagnosis is now the diagnosis ID, use it directly
+        const diagnosisStatus = selectedDiagnosis || null;
         await fetchVersorgungenByStatus(einlageType, diagnosisStatus);
         
         if (customer?.versorgungen) {
-            const currentDiagnosisStatus = selectedDiagnosis ? diagnosisMapping[selectedDiagnosis] : undefined;
-            const matchingVersorgung = findMatchingVersorgung(einlageType, currentDiagnosisStatus);
+            const matchingVersorgung = findMatchingVersorgung(einlageType, selectedDiagnosis || undefined);
             if (matchingVersorgung) {
                 setSupply(matchingVersorgung.versorgung || matchingVersorgung.name || '');
                 setSelectedVersorgungId(matchingVersorgung.id);
@@ -467,8 +467,22 @@ export const useScanningFormData = (
         }
     }, [selectedEinlage, fetchVersorgungenByStatus]);
 
+    // Convert diagnosis options to array of names for display
+    const diagnosisOptionsNames = useMemo(() => {
+        return diagnosisOptions.map(d => d.name);
+    }, [diagnosisOptions]);
+
+    // Helper to get diagnosis name by ID
+    const getDiagnosisNameById = useCallback((id: string) => {
+        return diagnosisOptions.find(d => d.id === id)?.name || '';
+    }, [diagnosisOptions]);
+
     return {
-        diagnosisOptions,
+        diagnosisOptions: diagnosisOptionsNames, // Return names for backward compatibility
+        diagnosisOptionsFull: diagnosisOptions, // Return full objects with id and name
+        getDiagnosisNameById,
+        loadingDiagnoses,
+        fetchDiagnoses,
         // dropdowns
         showDiagnosisDropdown,
         setShowDiagnosisDropdown,

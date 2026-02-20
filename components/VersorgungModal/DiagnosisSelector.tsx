@@ -1,29 +1,19 @@
 'use client'
-import React, { useState, useMemo } from 'react'
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { ChevronDownIcon, X, Search } from 'lucide-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ChevronDownIcon, X, Search, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getAllDiagnoses, createDiagnosis } from '@/apis/versorgungApis'
+import toast from 'react-hot-toast'
 
-const diagnosisOptions = [
-    { value: 'PLANTARFASZIITIS', label: 'Plantarfasziitis' },
-    { value: 'FERSENSPORN', label: 'Fersensporn' },
-    { value: 'SPREIZFUSS', label: 'Spreizfuß' },
-    { value: 'SENKFUSS', label: 'Senkfuß' },
-    { value: 'PLATTFUSS', label: 'Plattfuß' },
-    { value: 'HOHLFUSS', label: 'Hohlfuß' },
-    { value: 'KNICKFUSS', label: 'Knickfuß' },
-    { value: 'KNICK_SENKFUSS', label: 'Knick-Senkfuß' },
-    { value: 'HALLUX_VALGUS', label: 'Hallux valgus' },
-    { value: 'HALLUX_RIGIDUS', label: 'Hallux rigidus' },
-    { value: 'HAMMERZEHEN_KRALLENZEHEN', label: 'Hammerzehen / Krallenzehen' },
-    { value: 'MORTON_NEUROM', label: 'Morton-Neurom' },
-    { value: 'FUSSARTHROSE', label: 'Fußarthrose' },
-    { value: 'STRESSFRAKTUREN_IM_FUSS', label: 'Stressfrakturen im Fußbereich' },
-    { value: 'DIABETISCHES_FUSSSYNDROM', label: 'Diabetisches Fußsyndrom' },
-]
+type DiagnosisOption = {
+    id: string
+    name: string
+}
 
 type DiagnosisSelectorProps = {
     value: string[]
@@ -33,30 +23,108 @@ type DiagnosisSelectorProps = {
 export default function DiagnosisSelector({ value, onChange }: DiagnosisSelectorProps) {
     const [open, setOpen] = useState(false)
     const [searchQuery, setSearchQuery] = useState('')
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+    const [diagnosisOptions, setDiagnosisOptions] = useState<DiagnosisOption[]>([])
+    const [isLoadingDiagnoses, setIsLoadingDiagnoses] = useState(false)
+    const [createModalOpen, setCreateModalOpen] = useState(false)
+    const [newDiagnosisName, setNewDiagnosisName] = useState('')
+    const [isCreating, setIsCreating] = useState(false)
+    const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
 
-    const filteredOptions = useMemo(() => {
-        if (!searchQuery.trim()) return diagnosisOptions
-        const query = searchQuery.toLowerCase()
-        return diagnosisOptions.filter(option =>
-            option.label.toLowerCase().includes(query)
-        )
+    // Fetch diagnoses from API
+    const fetchDiagnoses = useCallback(async (search: string = '') => {
+        try {
+            setIsLoadingDiagnoses(true)
+            const response = await getAllDiagnoses(search)
+            // Handle different response structures
+            const diagnoses = response?.data || response || []
+            setDiagnosisOptions(diagnoses)
+        } catch (error: any) {
+            console.error('Failed to fetch diagnoses:', error)
+            toast.error('Failed to load diagnoses')
+        } finally {
+            setIsLoadingDiagnoses(false)
+        }
+    }, [])
+
+    // Debounce search query - update debouncedSearchQuery after 500ms of no typing
+    useEffect(() => {
+        // Clear previous timer
+        if (debounceTimerRef.current) {
+            clearTimeout(debounceTimerRef.current)
+        }
+
+        // Set new timer
+        debounceTimerRef.current = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery)
+        }, 500) // 500ms debounce delay
+
+        // Cleanup function
+        return () => {
+            if (debounceTimerRef.current) {
+                clearTimeout(debounceTimerRef.current)
+            }
+        }
     }, [searchQuery])
 
-    const handleToggle = (diagnosisValue: string) => {
-        const newValue = value.includes(diagnosisValue)
-            ? value.filter(v => v !== diagnosisValue)
-            : [...value, diagnosisValue]
+    // Fetch diagnoses when popover opens or debounced search changes
+    useEffect(() => {
+        if (open) {
+            fetchDiagnoses(debouncedSearchQuery)
+        }
+    }, [open, debouncedSearchQuery, fetchDiagnoses])
+
+    // Reset search when popover closes
+    useEffect(() => {
+        if (!open) {
+            setSearchQuery('')
+            setDebouncedSearchQuery('')
+        }
+    }, [open])
+
+    // Use API results directly since API handles search filtering
+    const filteredOptions = useMemo(() => {
+        return diagnosisOptions
+    }, [diagnosisOptions])
+
+    // Handle creating new diagnosis
+    const handleCreateDiagnosis = async () => {
+        if (!newDiagnosisName.trim()) {
+            toast.error('Please enter a diagnosis name')
+            return
+        }
+
+        try {
+            setIsCreating(true)
+            await createDiagnosis({ name: newDiagnosisName.trim() })
+            toast.success('Diagnosis created successfully')
+            setCreateModalOpen(false)
+            setNewDiagnosisName('')
+            // Refresh the diagnoses list
+            await fetchDiagnoses(debouncedSearchQuery)
+        } catch (error: any) {
+            console.error('Failed to create diagnosis:', error)
+            toast.error(error.response?.data?.message || 'Failed to create diagnosis')
+        } finally {
+            setIsCreating(false)
+        }
+    }
+
+    const handleToggle = (diagnosisId: string) => {
+        const newValue = value.includes(diagnosisId)
+            ? value.filter(v => v !== diagnosisId)
+            : [...value, diagnosisId]
         onChange(newValue)
     }
 
-    const handleRemove = (diagnosisValue: string, e: React.MouseEvent) => {
+    const handleRemove = (diagnosisId: string, e: React.MouseEvent) => {
         e.stopPropagation()
-        onChange(value.filter(v => v !== diagnosisValue))
+        onChange(value.filter(v => v !== diagnosisId))
     }
 
     const getSelectedLabels = () => {
         return value
-            .map(v => diagnosisOptions.find(opt => opt.value === v)?.label)
+            .map(v => diagnosisOptions.find(opt => opt.id === v)?.name)
             .filter(Boolean) as string[]
     }
 
@@ -64,7 +132,19 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
 
     return (
         <div className="w-full">
-            <label className="font-bold mb-2 block text-sm text-gray-700">Diagnose (Optional)</label>
+            <div className="flex items-center justify-between mb-2">
+                <label className="font-bold text-sm text-gray-700">Diagnose (Optional)</label>
+                <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setCreateModalOpen(true)}
+                    className="h-8 px-3 text-xs hover:bg-gray-100"
+                >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add
+                </Button>
+            </div>
             <Popover open={open} onOpenChange={setOpen}>
                 <PopoverTrigger asChild>
                     <Button
@@ -78,21 +158,21 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
                         <div className="flex flex-wrap gap-1.5 flex-1 min-h-[20px] items-center ">
                             {selectedLabels.length > 0 ? (
                                 selectedLabels.map((label) => {
-                                    const diagnosisValue = diagnosisOptions.find(opt => opt.label === label)?.value || ''
+                                    const diagnosisId = diagnosisOptions.find(opt => opt.name === label)?.id || ''
                                     return (
                                         <span
-                                            key={diagnosisValue}
+                                            key={diagnosisId}
                                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-medium border border-blue-200"
                                         >
                                             <span className="max-w-[200px] truncate">{label}</span>
                                             <span
                                                 role="button"
                                                 tabIndex={0}
-                                                onClick={(e) => handleRemove(diagnosisValue, e)}
+                                                onClick={(e) => handleRemove(diagnosisId, e)}
                                                 onKeyDown={(e) => {
                                                     if (e.key === 'Enter' || e.key === ' ') {
                                                         e.preventDefault()
-                                                        handleRemove(diagnosisValue, e as any)
+                                                        handleRemove(diagnosisId, e as any)
                                                     }
                                                 }}
                                                 className="hover:bg-blue-100 rounded-full p-0.5 transition-colors flex-shrink-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-1"
@@ -148,29 +228,33 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
                         }}
                     >
                         <div className="py-1">
-                            {filteredOptions.length > 0 ? (
+                            {isLoadingDiagnoses ? (
+                                <div className="px-4 py-8 text-center text-sm text-gray-500">
+                                    Loading...
+                                </div>
+                            ) : filteredOptions.length > 0 ? (
                                 filteredOptions.map((option) => (
                                     <label
-                                        key={option.value}
+                                        key={option.id}
                                         className={cn(
                                             "flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-gray-100 last:border-b-0",
-                                            value.includes(option.value)
+                                            value.includes(option.id)
                                                 ? "bg-blue-50 hover:bg-blue-100"
                                                 : "hover:bg-gray-50"
                                         )}
                                     >
                                         <Checkbox
-                                            checked={value.includes(option.value)}
-                                            onChange={() => handleToggle(option.value)}
+                                            checked={value.includes(option.id)}
+                                            onChange={() => handleToggle(option.id)}
                                             className="flex-shrink-0"
                                         />
                                         <span className={cn(
                                             "text-sm flex-1 select-none",
-                                            value.includes(option.value) && "font-medium text-blue-900"
+                                            value.includes(option.id) && "font-medium text-blue-900"
                                         )}>
-                                            {option.label}
+                                            {option.name}
                                         </span>
-                                        {value.includes(option.value) && (
+                                        {value.includes(option.id) && (
                                             <div className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0"></div>
                                         )}
                                     </label>
@@ -205,6 +289,63 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
                     {value.length} {value.length === 1 ? 'Diagnose' : 'Diagnosen'} ausgewählt
                 </div>
             )}
+
+            {/* Create Diagnosis Modal */}
+            <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create New Diagnosis</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-4 py-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Diagnosis Name
+                            </label>
+                            <Input
+                                type="text"
+                                placeholder="Enter diagnosis name"
+                                value={newDiagnosisName}
+                                onChange={(e) => setNewDiagnosisName(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        e.preventDefault()
+                                        handleCreateDiagnosis()
+                                    }
+                                }}
+                                className="w-full"
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => {
+                                setCreateModalOpen(false)
+                                setNewDiagnosisName('')
+                            }}
+                            disabled={isCreating}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={handleCreateDiagnosis}
+                            disabled={isCreating || !newDiagnosisName.trim()}
+                            className="bg-black text-white hover:bg-gray-800"
+                        >
+                            {isCreating ? (
+                                <div className="flex items-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                    Creating...
+                                </div>
+                            ) : (
+                                'Save'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

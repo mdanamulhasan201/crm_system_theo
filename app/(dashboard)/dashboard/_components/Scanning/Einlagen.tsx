@@ -93,23 +93,6 @@ interface ScanningFormProps {
 
 // Constants
 const MENGE_OPTIONS = ['1 paar', '2 paar', '3 paar', '4 paar', '5 paar'];
-const DIAGNOSIS_CODE_TO_LABEL: Record<string, string> = {
-    PLANTARFASZIITIS: 'Plantarfasziitis',
-    FERSENSPORN: 'Fersensporn',
-    SPREIZFUSS: 'Spreizfuß',
-    SENKFUSS: 'Senkfuß',
-    PLATTFUSS: 'Plattfuß',
-    HOHLFUSS: 'Hohlfuß',
-    KNICKFUSS: 'Knickfuß',
-    KNICK_SENKFUSS: 'Knick-Senkfuß',
-    HALLUX_VALGUS: 'Hallux valgus',
-    HALLUX_RIGIDUS: 'Hallux rigidus',
-    HAMMERZEHEN_KRALLENZEHEN: 'Hammerzehen / Krallenzehen',
-    MORTON_NEUROM: 'Morton-Neurom',
-    FUSSARTHROSE: 'Fußarthrose',
-    STRESSFRAKTUREN_IM_FUSS: 'Stressfrakturen im Fußbereich',
-    DIABETISCHES_FUSSSYNDROM: 'Diabetisches Fußsyndrom',
-};
 
 // Validation Schema
 const einlagenFormSchema = z.object({
@@ -244,6 +227,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     // Scanning form data hook
     const {
         diagnosisOptions,
+        diagnosisOptionsFull,
+        getDiagnosisNameById,
+        loadingDiagnoses,
+        fetchDiagnoses,
         showDiagnosisDropdown,
         setShowDiagnosisDropdown,
         selectedDiagnosis,
@@ -507,9 +494,23 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         if (typeof prefillOrderData.kostenvoranschlag !== 'undefined') {
             setKostenvoranschlag(parseBooleanValue(prefillOrderData.kostenvoranschlag));
         }
-        const diagnosisLabel = DIAGNOSIS_CODE_TO_LABEL[prefillOrderData.product?.diagnosis_status ?? ''];
-        if (diagnosisLabel) {
-            setSelectedDiagnosis(diagnosisLabel);
+        // Handle diagnosis prefill - support both ID and name
+        const diagnosisStatus = prefillOrderData.product?.diagnosis_status;
+        if (diagnosisStatus) {
+            // Check if it's an ID (UUID format) or a name
+            const isId = typeof diagnosisStatus === 'string' && diagnosisStatus.includes('-');
+            if (isId) {
+                // It's an ID, use it directly
+                setSelectedDiagnosis(diagnosisStatus);
+            } else {
+                // It's a name or old code format, find matching diagnosis
+                const matchingDiagnosis = diagnosisOptionsFull?.find(
+                    d => d.name === diagnosisStatus || d.id === diagnosisStatus
+                );
+                if (matchingDiagnosis) {
+                    setSelectedDiagnosis(matchingDiagnosis.id);
+                }
+            }
         }
         const supplyValue =
             prefillOrderData.werkstattzettel?.versorgung ||
@@ -572,6 +573,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setInsoleStandards,
         setBillingType,
         einlageOptions,
+        diagnosisOptionsFull,
     ]);
 
     // Listen for order data updates
@@ -963,12 +965,16 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     }));
                 }}
                 vatCountry={user?.accountInfo?.vat_country || undefined}
-                selectedDiagnosis={selectedDiagnosis}
+                selectedDiagnosis={selectedDiagnosis ? getDiagnosisNameById(selectedDiagnosis) : ''}
                 diagnosisOptions={diagnosisOptions}
                 showDiagnosisDropdown={showDiagnosisDropdown}
                 onDiagnosisToggle={() => setShowDiagnosisDropdown(!showDiagnosisDropdown)}
                 onDiagnosisSelect={(value) => {
-                    handleDiagnosisSelect(value);
+                    // Find diagnosis ID from name
+                    const selectedDiagnosisObj = diagnosisOptionsFull?.find(d => d.name === value);
+                    if (selectedDiagnosisObj) {
+                        handleDiagnosisSelect(selectedDiagnosisObj.id);
+                    }
                     setShowDiagnosisDropdown(false);
                 }}
                 selectedEmployee={selectedEmployee}
@@ -1049,7 +1055,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 versorgungError={activeVersorgungTab === 'standard' ? errors.versorgung?.message : undefined}
                 showSupplyDropdown={showSupplyDropdown}
                 onSupplyDropdownToggle={handleSupplyDropdownToggle}
-                selectedDiagnosis={selectedDiagnosis}
+                selectedDiagnosis={selectedDiagnosis ? getDiagnosisNameById(selectedDiagnosis) : ''}
                 selectedEinlage={selectedEinlage as string}
                 insoleStandards={insoleStandards}
                 onInsoleStandardsChange={setInsoleStandards}
