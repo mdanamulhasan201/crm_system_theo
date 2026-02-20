@@ -337,40 +337,40 @@ export default function Settingss() {
             </div>
 
             {/* Support & Hilfe Footer Section */}
-            <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200">
-                <div className="mb-4 sm:mb-6">
-                    <h2 className="text-lg  font-semibold text-gray-900 mb-2">
-                        Support & Hilfe
-                    </h2>
-                    <p className="text-xs sm:text-sm text-gray-500">
-                        Unser Team unterstützt Sie gerne persönlich.
-                    </p>
-                </div>
-                
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 lg:gap-8">
+            {/* <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200"> */}
+                {/* <div className="mb-4 sm:mb-6"> */}
+                    {/* <h2 className="text-lg  font-semibold text-gray-900 mb-2"> */}
+                        {/* Support & Hilfe */}
+                    {/* </h2> */}
+                    {/* <p className="text-xs sm:text-sm text-gray-500"> */}
+                        {/* Unser Team unterstützt Sie gerne persönlich. */}
+                    {/* </p> */}
+                {/* </div> */}
+{/*                  */}
+                {/* <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 lg:gap-8"> */}
                     {/* Phone */}
-                    <div className="flex items-center gap-2 text-base text-gray-500">
-                        <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
-                        <a href="tel:+390471123456" className="text-gray-500">
-                            +39 0471 123 456
-                        </a>
-                    </div>
-                    
+                    {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
+                        {/* <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
+                        {/* <a href="tel:+390471123456" className="text-gray-500"> */}
+                            {/* +39 0471 123 456 */}
+                        {/* </a> */}
+                    {/* </div> */}
+{/*                      */}
                     {/* Email */}
-                    <div className="flex items-center gap-2 text-base text-gray-500">
-                        <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
-                        <a href="mailto:support@example.com" className="text-gray-500">
-                            support@example.com
-                        </a>
-                    </div>
-                    
+                    {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
+                        {/* <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
+                        {/* <a href="mailto:support@example.com" className="text-gray-500"> */}
+                            {/* support@example.com */}
+                        {/* </a> */}
+                    {/* </div> */}
+{/*                      */}
                     {/* Response Time */}
-                    <div className="flex items-center gap-2 text-base text-gray-500">
-                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
-                        <span>Antwortzeit: innerhalb 24h</span>
-                    </div>
-                </div>
-            </div>
+                    {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
+                        {/* <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
+                        {/* <span>Antwortzeit: innerhalb 24h</span> */}
+                    {/* </div> */}
+                {/* </div> */}
+            {/* </div> */}
 
             {/* Notfall-Support Section - Bottom */}
             <div className="mt-5  py-5 border-b border-t border-gray-200">
