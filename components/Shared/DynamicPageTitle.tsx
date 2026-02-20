@@ -55,7 +55,7 @@ const ROUTE_TITLES: Record<string, string> = {
   '/dashboard/leistenkonfigurator': 'Leistenkonfigurator',
   '/dashboard/einnahmen': 'Einnahmen',
   '/dashboard/account-settings': 'Kontoeinstellungen',
-  '/dashboard/kasse': 'Kasse',
+  // '/dashboard/kasse': 'Kasse',
   '/dashboard/finance': 'Finanzen',
   '/dashboard/versorgungs': 'Versorgungen',
   '/dashboard/musterzettel': 'Musterzettel',
