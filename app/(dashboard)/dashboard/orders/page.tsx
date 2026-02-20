@@ -186,8 +186,7 @@ function TypeFilterButtons() {
 
     return (
         <div className="mt-6 mb-4 flex gap-3">
-            <Button
-                variant={selectedType === 'rady_insole' ? 'default' : 'outline'}
+            <button
                 onClick={() => {
                     if (selectedType === 'rady_insole') {
                         setSelectedType(null);
@@ -195,12 +194,17 @@ function TypeFilterButtons() {
                         setSelectedType('rady_insole');
                     }
                 }}
-                className="cursor-pointer"
+                className={`
+                    cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
+                    ${selectedType === 'rady_insole'
+                        ? 'bg-[#20232A] text-white'
+                        : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
+                    }
+                `}
             >
                 Einlage
-            </Button>
-            <Button
-                variant={selectedType === 'milling_block' ? 'default' : 'outline'}
+            </button>
+            <button
                 onClick={() => {
                     if (selectedType === 'milling_block') {
                         setSelectedType(null);
@@ -208,12 +212,17 @@ function TypeFilterButtons() {
                         setSelectedType('milling_block');
                     }
                 }}
-                className="cursor-pointer"
+                className={`
+                    cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
+                    ${selectedType === 'milling_block'
+                        ? 'bg-[#20232A] text-white'
+                        : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
+                    }
+                `}
             >
                 Fräsblock
-            </Button>
-            <Button
-                variant={selectedType === 'sonstiges' ? 'default' : 'outline'}
+            </button>
+            <button
                 onClick={() => {
                     if (selectedType === 'sonstiges') {
                         setSelectedType(null);
@@ -221,10 +230,16 @@ function TypeFilterButtons() {
                         setSelectedType('sonstiges');
                     }
                 }}
-                className="cursor-pointer"
+                className={`
+                    cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
+                    ${selectedType === 'sonstiges'
+                        ? 'bg-[#20232A] text-white'
+                        : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
+                    }
+                `}
             >
                 Sonstiges
-            </Button>
+            </button>
         </div>
     );
 }

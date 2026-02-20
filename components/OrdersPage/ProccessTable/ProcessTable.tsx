@@ -13,6 +13,7 @@ import HistorySidebar from "./HistorySidebar";
 import VersorgungModal from "./VersorgungModal";
 import ScanPictureModal from "./ScanPictureModal";
 import BarcodeStickerModal from "./BarcodeSticker/BarcodeStickerModal";
+import OrderNoteModal from "./OrderNoteModal";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
@@ -82,6 +83,7 @@ export default function ProcessTable() {
     const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
     const [isUpdatingKrankenkasseStatus, setIsUpdatingKrankenkasseStatus] = useState(false);
     const [isUpdatingPaymentStatus, setIsUpdatingPaymentStatus] = useState(false);
+    const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
 
     // Direct generate and send PDF when status is clicked
     const handleStatusClickGenerateAndSend = async (orderId: string, orderNumber: string) => {
@@ -348,7 +350,7 @@ export default function ProcessTable() {
                     />
                 )}
 
-                <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white shadow-sm">
+                <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="overflow-x-auto">
                         <Table className="w-full min-w-[1700px]">
                             <TableHeader>
@@ -419,6 +421,9 @@ export default function ProcessTable() {
                                                 setVersorgungOrderNumber(orderNumber);
                                                 setVersorgungCustomerName(customerName);
                                                 setShowVersorgungModal(true);
+                                            }}
+                                            onNoteClick={(orderId) => {
+                                                setOpenNoteModalId(orderId);
                                             }}
                                         />
                                     ))
@@ -597,6 +602,23 @@ export default function ProcessTable() {
                     orderNumber={barcodeStickerOrderNumber || undefined}
                     autoGenerate={autoGenerateBarcode}
                 />
+
+                {/* Note Modal */}
+                {openNoteModalId && (() => {
+                    const selectedOrder = memoizedOrders.find(order => order.id === openNoteModalId);
+                    return (
+                        <OrderNoteModal
+                            isOpen={!!openNoteModalId}
+                            onClose={() => setOpenNoteModalId(null)}
+                            orderData={selectedOrder ? {
+                                name: selectedOrder.kundenname,
+                                orderNumber: selectedOrder.bestellnummer,
+                                product: selectedOrder.productName
+                            } : undefined}
+                            notes={undefined} // Add notes field to OrderData if available
+                        />
+                    );
+                })()}
             </div>
         </>
     );

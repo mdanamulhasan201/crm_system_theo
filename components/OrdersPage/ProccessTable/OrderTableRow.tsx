@@ -3,9 +3,59 @@ import { OrderData, useOrders } from "@/contexts/OrdersContext";
 import OrderActions from "./OrderActions";
 import Link from "next/link";
 import { getPaymentStatusColor } from "@/lib/paymentStatusUtils";
-import { History, Scan, Package } from "lucide-react";
+import { History, Scan, Package, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Custom Checkbox Component with emerald/green border
+function CustomCheckbox({
+    checked,
+    onChange,
+    id,
+}: {
+    checked: boolean;
+    onChange: (checked: boolean) => void;
+    id?: string;
+}) {
+    return (
+        <div className="relative flex items-center justify-center">
+            <input
+                type="checkbox"
+                id={id}
+                className="sr-only"
+                checked={checked}
+                onChange={(e) => onChange(e.target.checked)}
+            />
+            <div
+                className={`
+                    w-4 h-4 rounded border-2 cursor-pointer transition-all
+                    flex items-center justify-center
+                    ${checked
+                        ? 'bg-emerald-500 border-emerald-500'
+                        : 'bg-white border-emerald-300 hover:border-emerald-400'
+                    }
+                `}
+                onClick={() => onChange(!checked)}
+            >
+                {checked && (
+                    <svg
+                        className="w-3 h-3 text-white"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={3}
+                            d="M5 13l4 4L19 7"
+                        />
+                    </svg>
+                )}
+            </div>
+        </div>
+    );
+}
 
 interface OrderTableRowProps {
     order: OrderData;
@@ -22,6 +72,7 @@ interface OrderTableRowProps {
     onVersorgungClick?: (orderId: string, orderNumber: string, customerName: string) => void;
     onBarcodeStickerClick?: (orderId: string, orderNumber: string, autoGenerate?: boolean) => void;
     onStatusClickGenerateAndSend?: (orderId: string, orderNumber: string) => void;
+    onNoteClick?: (orderId: string) => void;
 }
 
 export default function OrderTableRow({
@@ -39,6 +90,7 @@ export default function OrderTableRow({
     onVersorgungClick,
     onBarcodeStickerClick,
     onStatusClickGenerateAndSend,
+    onNoteClick,
 }: OrderTableRowProps) {
     const { selectedType } = useOrders();
     // Helper function to safely get string value
@@ -142,44 +194,76 @@ export default function OrderTableRow({
     };
 
 
+    const handleRowClick = (e: React.MouseEvent) => {
+        // Don't trigger row click if clicking on checkbox, note button, or action buttons
+        if ((e.target as HTMLElement).closest('[type="checkbox"]') ||
+            (e.target as HTMLElement).closest('.checkbox-container') ||
+            (e.target as HTMLElement).closest('button[title="Notizen anzeigen"]') ||
+            (e.target as HTMLElement).closest('button[title="Historie"]') ||
+            (e.target as HTMLElement).closest('button[title="Scan"]') ||
+            (e.target as HTMLElement).closest('.order-actions')) {
+            return;
+        }
+        onRowClick(order.id);
+    };
+
     return (
         <TableRow
-            className={`hover:bg-gray-50 transition-colors cursor-pointer ${isSelected ? 'bg-blue-50' :
-                isRowSelected ? 'bg-gray-50' : ''
-                }`}
-            onClick={() => onRowClick(order.id)}
+            className={`border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${isRowSelected ? 'bg-gray-50' : ''}`}
+            onClick={handleRowClick}
         >
-            <TableCell className="p-2 w-[36px] min-w-[36px] max-w-[36px] text-center">
-                <input
-                    type="checkbox"
-                    checked={isSelected}
-                    onChange={(e) => onCheckboxChange(order.id, e as any)}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-4 h-4 cursor-pointer"
-                />
+            <TableCell className="py-4 px-4">
+                <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <div className="checkbox-container">
+                        <CustomCheckbox
+                            checked={isSelected}
+                            onChange={(checked) => {
+                                // Create a synthetic event for the handler
+                                const syntheticEvent = {
+                                    stopPropagation: () => {},
+                                    preventDefault: () => {},
+                                } as unknown as React.MouseEvent;
+                                onCheckboxChange(order.id, syntheticEvent);
+                            }}
+                            id={`checkbox-${order.id}`}
+                        />
+                    </div>
+                    {onNoteClick && (
+                        <button
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onNoteClick(order.id);
+                            }}
+                            className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-gray-500 hover:text-gray-700"
+                            title="Notizen anzeigen"
+                        >
+                            <FileText className="w-4 h-4" />
+                        </button>
+                    )}
+                </div>
             </TableCell>
-            <TableCell className="text-center w-[120px] min-w-[120px] max-w-[120px] pr-2">
+            <TableCell className="py-4 px-6 text-center">
                 {renderPriorityBadge()}
             </TableCell>
 
-            <TableCell className="font-medium text-center text-xs sm:text-sm w-[110px] min-w-[110px] max-w-[110px] whitespace-normal break-words overflow-hidden">
+            <TableCell className="py-4 px-6 font-medium text-sm whitespace-nowrap">
                 {order.bestellnummer}
             </TableCell>
 
-            <TableCell className="text-center text-xs sm:text-sm w-[130px] min-w-[130px] max-w-[130px] whitespace-normal break-words overflow-hidden">
+            <TableCell className="py-4 px-6 text-sm">
                 {order.customerId ? (
                     <Link
                         href={`/dashboard/customer-history/${order.customerId}`}
-                        className="text-[#2F7D5C] hover:underline underline-offset-2 "
+                        className="text-[#2F7D5C] hover:underline underline-offset-2"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {order.kundenname}
                     </Link>
                 ) : (
-                    order.kundenname
+                    <span className="text-gray-900">{order.kundenname}</span>
                 )}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[240px] min-w-[240px] max-w-[240px] whitespace-normal break-words">
+            <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-2 flex-wrap">
                     <span 
                         className={`px-1 sm:px-2 py-1 rounded text-xs font-medium whitespace-normal break-words ${getStatusBadgeColor(order.displayStatus, selectedType)} ${
@@ -206,9 +290,6 @@ export default function OrderTableRow({
                                         <div className="w-8 h-8 rounded-full bg-[#61A175] text-white flex items-center justify-center text-xs font-semibold hover:bg-[#61A175]/80 transition-colors">
                                             {order.employee.employeeName.charAt(0).toUpperCase()}
                                         </div>
-                                        {/* <span className="text-xs text-gray-600 max-w-[100px] truncate">
-                                            {order.employee.employeeName.split(' ')[0]}
-                                        </span> */}
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg">
@@ -225,20 +306,20 @@ export default function OrderTableRow({
                     )}
                 </div>
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[90px] min-w-[90px] max-w-[90px] whitespace-normal break-words overflow-hidden">
+            <TableCell className="py-4 px-6 text-sm whitespace-nowrap">
                 {order.preis}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[200px] min-w-[200px] max-w-[200px] break-words">
+            <TableCell className="py-4 px-6">
                 <div className="flex flex-col items-center gap-1.5 py-1 px-1">
                     {renderPaymentStatus()}
                 </div>
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[120px] min-w-[120px] max-w-[120px] whitespace-normal break-words overflow-hidden">
+            <TableCell className="py-4 px-6 text-sm whitespace-nowrap">
                 {order.erstelltAm}
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[140px] min-w-[140px] max-w-[140px] whitespace-normal break-words overflow-hidden">
+            <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-2">
-                    <span>{order.fertiggestelltAm}</span>
+                    <span className="text-sm">{order.fertiggestelltAm}</span>
                     {safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '' && (
                         <TooltipProvider>
                             <Tooltip>
@@ -262,15 +343,15 @@ export default function OrderTableRow({
                     )}
                 </div>
             </TableCell>
-            <TableCell className="text-center text-xs sm:text-sm w-[150px] min-w-[150px] max-w-[150px] whitespace-normal break-words overflow-hidden">
+            <TableCell className="py-4 px-6 text-sm whitespace-nowrap">
                 {order.beschreibung}
             </TableCell>
-            <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">
+            <TableCell className="py-4 px-6">
                 <div className="flex gap-2 sm:gap-3 justify-center items-center">
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 cursor-pointer rounded-md hover:bg-blue-50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
+                        className="h-8 w-8 p-0 cursor-pointer rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
                         title="Historie"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -279,12 +360,12 @@ export default function OrderTableRow({
                             }
                         }}
                     >
-                        <History className="h-4 w-4 text-blue-600 group-hover:text-blue-700 transition-colors" />
+                        <History className="h-4 w-4" />
                     </Button>
                     <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 cursor-pointer rounded-md hover:bg-green-50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
+                        className="h-8 w-8 p-0 cursor-pointer rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
                         title="Scan"
                         onClick={(e) => {
                             e.stopPropagation();
@@ -293,25 +374,11 @@ export default function OrderTableRow({
                             }
                         }}
                     >
-                        <Scan className="h-4 w-4 text-green-600 group-hover:text-green-700 transition-colors" />
+                        <Scan className="h-4 w-4" />
                     </Button>
-                    {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 cursor-pointer rounded-md hover:bg-purple-50 hover:scale-110 active:scale-95 transition-all duration-200 flex items-center justify-center group"
-                        title="Versorgung"
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            if (onVersorgungClick) {
-                                onVersorgungClick(order.id, order.bestellnummer, order.kundenname);
-                            }
-                        }}
-                    >
-                        <Package className="h-4 w-4 text-purple-600 group-hover:text-purple-700 transition-colors" />
-                    </Button> */}
                 </div>
             </TableCell>
-            <TableCell className="p-2 w-[160px] min-w-[160px] max-w-[160px] text-center">
+            <TableCell className="py-4 px-6 order-actions">
                 <OrderActions
                     order={order}
                     deleteLoading={deleteLoading}
