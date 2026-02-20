@@ -324,12 +324,12 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                                     {isUpdating ? (
                                         <>
                                             <span className="inline-block h-3 w-3 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                                            Saving...
+                                            Speichern...
                                         </>
                                     ) : (
                                         <>
                                            
-                                            Save
+                                           Speichern
                                         </>
                                     )}
                                 </button>
@@ -338,8 +338,8 @@ export default function ScanningDataPage({ scanData, selectedForm = 'einlagen', 
                                     className='bg-gray-500 cursor-pointer text-white px-4 py-2 rounded hover:bg-gray-600 transition text-sm font-medium flex items-center gap-1'
                                     disabled={isUpdating}
                                 >
-                                    <span>❌</span>
-                                    Cancel
+                                    {/* <span></span> */}
+                                    Abbrechen
                                 </button>
                             </div>
                         )}

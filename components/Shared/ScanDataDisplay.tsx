@@ -110,15 +110,17 @@ export default function ScanDataDisplay({
     const selectedScanData = useMemo(() => {
         if (!hasScreenerFile || !scanData.screenerFile || scanData.screenerFile.length === 0) return null;
 
-        // Only return screenerFile data if a specific date is explicitly selected
-        // If no date is selected, return null to show main customer data
+        // If a specific date is selected, use that file
         if (selectedScanDate && selectedScanDate.trim() !== '') {
             const found = scanData.screenerFile.find(file => file.updatedAt === selectedScanDate);
             if (found) return found;
         }
 
-        // Return null when no date is selected - this will make getFieldValue use main customer data
-        return null;
+        // Always use the newest scan (no Hauptdaten option)
+        const sorted = [...scanData.screenerFile]
+            .filter(file => file && file.updatedAt)
+            .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+        return sorted[0] || null;
     }, [hasScreenerFile, scanData.screenerFile, selectedScanDate]);
 
     const getLatestData = (fieldName: keyof Pick<ScanData, 'picture_10' | 'picture_23' | 'picture_11' | 'picture_24' | 'threed_model_left' | 'threed_model_right' | 'picture_17' | 'picture_16'>) => {
@@ -248,9 +250,13 @@ export default function ScanDataDisplay({
         if (defaultSelectedDate) {
             setSelectedScanDate(defaultSelectedDate);
         } else {
-            // Don't auto-select latest date - keep empty to show main customer data
-            // Only set if current selection is invalid
-            if (selectedScanDate && selectedScanDate.trim() !== '' && !availableScanDates.find(d => d.date === selectedScanDate)) {
+            // Always use newest: default to latest scan date when available
+            if (availableScanDates.length > 0) {
+                const newestDate = availableScanDates[0].date;
+                if (!selectedScanDate || selectedScanDate.trim() === '' || !availableScanDates.find(d => d.date === selectedScanDate)) {
+                    setSelectedScanDate(newestDate);
+                }
+            } else if (selectedScanDate && selectedScanDate.trim() !== '') {
                 setSelectedScanDate('');
             }
         }
@@ -421,7 +427,7 @@ export default function ScanDataDisplay({
             )}
             <div className="mt-2 relative mb-4">
                 <div
-                    className={`flex w-fit items-center gap-2 p-2 rounded transition-colors ${availableScanDates.length > 0
+                    className={`flex w-fit border items-center gap-2 p-2 rounded transition-colors ${availableScanDates.length > 0
                         ? 'cursor-pointer hover:bg-gray-100'
                         : 'cursor-not-allowed opacity-50'
                         }`}
@@ -438,13 +444,6 @@ export default function ScanDataDisplay({
                 {/* Date Dropdown */}
                 {showDateDropdown && (
                     <div className="absolute top-full left-0 mt-1 bg-white border border-gray-300 rounded-md shadow-lg z-10 min-w-48">
-                        {/* Main Customer Data Option */}
-                        <div
-                            className={`px-4 py-2 cursor-pointer hover:bg-gray-100 transition-colors border-b border-gray-200 ${!selectedScanDate || selectedScanDate.trim() === '' ? 'bg-blue-50 text-blue-600 font-medium' : ''}`}
-                            onClick={() => handleDateSelect('')}
-                        >
-                            Hauptdaten (Main Customer Data)
-                        </div>
                         {availableScanDates.length > 0 ? (
                             availableScanDates.map((scanDate) => (
                                 <div
