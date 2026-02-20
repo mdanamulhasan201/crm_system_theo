@@ -12,6 +12,7 @@ type EinlagenversorgungPriceItem = { name: string; price: number } | number
 interface PriceSectionProps {
   // Versorgung, Menge, Fertigstellung bis
   versorgung: string
+  versorgungsname?: string
   onVersorgungChange: (value: string) => void
   quantity: string
   onQuantityChange: (value: string) => void
@@ -73,6 +74,7 @@ const formatEinlagenversorgungText = (item: EinlagenversorgungPriceItem): string
 
 export default function PriceSection({
   versorgung,
+  versorgungsname,
   onVersorgungChange,
   quantity,
   onQuantityChange,
@@ -210,7 +212,7 @@ export default function PriceSection({
       <div className="flex flex-col lg:flex-row gap-8">
         {/* Left Side: Form Fields */}
         <div className="flex-1 space-y-4">
-          {/* Versorgung */}
+          {/* Versorgung & Versorgungsname */}
           <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
             <div className="flex-1 min-w-0">
@@ -218,6 +220,11 @@ export default function PriceSection({
               <p className="text-[15px] font-semibold text-gray-700">
                 {versorgung || '-'}
               </p>
+              {versorgungsname ? (
+                <p className="text-xs text-gray-500 mt-1">
+                  <span className="font-medium text-gray-600">Versorgungsname:</span> {versorgungsname}
+                </p>
+              ) : null}
               {versorgungError && (
                 <p className="text-xs text-red-500 mt-1">{versorgungError}</p>
               )}

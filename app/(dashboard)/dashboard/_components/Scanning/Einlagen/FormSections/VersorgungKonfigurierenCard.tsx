@@ -33,7 +33,7 @@ interface VersorgungKonfigurierenCardProps {
     menge?: string;
     customerId?: string;
     selectedEinlageId?: string;
-    onCustomVersorgungCreated?: (versorgungId: string) => void;
+    onCustomVersorgungCreated?: (versorgungId: string, versorgungsname?: string) => void;
     onActiveTabChange?: (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => void;
     onSpringerClick?: () => void;
 }

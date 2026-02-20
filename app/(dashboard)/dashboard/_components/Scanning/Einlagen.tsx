@@ -337,9 +337,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         { name: 'Pronation', left: 0, right: 0, isFavorite: true },
     ]);
     
-    // Custom Versorgung ID for Einmalige Versorgung
+    // Custom Versorgung ID and name for Einmalige Versorgung
     const [customVersorgungId, setCustomVersorgungId] = useState<string | null>(null);
-    
+    const [customVersorgungsname, setCustomVersorgungsname] = useState<string | null>(null);
+
     // Track active tab to determine which versorgung to use
     const [activeVersorgungTab, setActiveVersorgungTab] = useState<'standard' | 'einmalig' | 'springer' | 'manuell'>('standard');
     
@@ -825,6 +826,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             screenerId,
             billingType,
             insoleStandards,
+            versorgungsname: activeVersorgungTab === 'einmalig' ? (customVersorgungsname ?? undefined) : undefined,
         });
         
         // Add flag to indicate if using custom versorgung (Einmalige Versorgung)
@@ -843,17 +845,19 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setShowEinlageDropdown(false);
     };
 
-    const handleCustomVersorgungCreated = (versorgungId: string) => {
+    const handleCustomVersorgungCreated = (versorgungId: string, versorgungsname?: string) => {
         setCustomVersorgungId(versorgungId);
+        setCustomVersorgungsname(versorgungsname ?? null);
         // Toast is already shown in EinmaligeVersorgungContent component
     };
 
     const handleActiveTabChange = (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => {
         setActiveVersorgungTab(tab);
-        
-        // Clear custom versorgung ID when switching away from einmalig tab
+
+        // Clear custom versorgung ID and name when switching away from einmalig tab
         if (tab !== 'einmalig') {
             setCustomVersorgungId(null);
+            setCustomVersorgungsname(null);
             localStorage.removeItem('key');
         }
     };

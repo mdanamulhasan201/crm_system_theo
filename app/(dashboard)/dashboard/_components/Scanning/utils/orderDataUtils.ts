@@ -95,6 +95,7 @@ export interface CollectFormDataParams {
     screenerId?: string | null;
     billingType?: 'Krankenkassa' | 'Privat';
     insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>;
+    versorgungsname?: string;
 }
 
 export function collectFormData({
@@ -115,9 +116,11 @@ export function collectFormData({
     screenerId,
     billingType,
     insoleStandards,
+    versorgungsname,
 }: CollectFormDataParams) {
     const mengeNumber = menge ? parseInt(menge.split(' ')[0]) || 1 : 1;
     const selectedVersorgungItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
+    const versorgungDisplay = versorgungsname ?? supply ?? '';
 
     return {
         ausführliche_diagnose: ausführliche_diagnose || '',
@@ -125,7 +128,8 @@ export function collectFormData({
         einlagentyp: einlagentyp || selectedEinlage || '',
         überzug: überzug || '',
         menge: mengeNumber,
-        versorgung: supply || '',
+        versorgung: versorgungDisplay,
+        versorgungsname: versorgungsname || '',
         versorgung_note: versorgung_note || '',
         schuhmodell_wählen: schuhmodell_wählen || '',
         kostenvoranschlag: kostenvoranschlag === true,

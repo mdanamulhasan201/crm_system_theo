@@ -29,6 +29,7 @@ interface FormData {
   screenerId?: string | null
   billingType?: 'Krankenkassa' | 'Privat'
   isCustomVersorgung?: boolean // Flag to indicate if using custom versorgung (Einmalige Versorgung)
+  versorgungsname?: string
 }
 
 interface UserInfoUpdateModalProps {
@@ -333,6 +334,7 @@ export default function WerkstattzettelModal({
           <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
             <PriceSection
               versorgung={form.versorgung}
+              versorgungsname={formData?.versorgungsname}
               onVersorgungChange={form.setVersorgung}
               quantity={form.quantity}
               onQuantityChange={form.setQuantity}

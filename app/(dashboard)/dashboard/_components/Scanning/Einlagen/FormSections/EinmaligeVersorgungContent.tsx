@@ -30,7 +30,7 @@ interface EinmaligeVersorgungContentProps {
     menge?: string;
     customerId?: string;
     selectedEinlageId?: string;
-    onCustomVersorgungCreated?: (versorgungId: string) => void;
+    onCustomVersorgungCreated?: (versorgungId: string, versorgungsname?: string) => void;
 }
 
 export default function EinmaligeVersorgungContent({
@@ -157,7 +157,7 @@ export default function EinmaligeVersorgungContent({
             if (versorgungKey) {
                 localStorage.setItem('key', versorgungKey);
                 if (onCustomVersorgungCreated) {
-                    onCustomVersorgungCreated(versorgungKey);
+                    onCustomVersorgungCreated(versorgungKey, versorgungsname.trim() || undefined);
                 }
             }
 
