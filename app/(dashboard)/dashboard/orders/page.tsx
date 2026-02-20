@@ -197,7 +197,7 @@ function TypeFilterButtons() {
                 className={`
                     cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
                     ${selectedType === 'rady_insole'
-                        ? 'bg-[#20232A] text-white'
+                        ? 'bg-[#62A07C] text-white'
                         : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
                     }
                 `}
@@ -215,7 +215,7 @@ function TypeFilterButtons() {
                 className={`
                     cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
                     ${selectedType === 'milling_block'
-                        ? 'bg-[#20232A] text-white'
+                        ? 'bg-[#62A07C] text-white'
                         : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
                     }
                 `}
@@ -233,7 +233,7 @@ function TypeFilterButtons() {
                 className={`
                     cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
                     ${selectedType === 'sonstiges'
-                        ? 'bg-[#20232A] text-white'
+                        ? 'bg-[#62A07C] text-white'
                         : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
                     }
                 `}
