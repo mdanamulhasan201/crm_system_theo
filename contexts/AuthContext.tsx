@@ -5,6 +5,7 @@ import { userCheckAuth } from '@/apis/authApis';
 
 interface User {
   id: string;
+  partnerId?: string | null;
   name: string | null;
   email: string;
   image: string | null;

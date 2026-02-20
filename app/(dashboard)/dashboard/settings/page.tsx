@@ -1,28 +1,33 @@
 "use client"
 import React from 'react'
 import Link from 'next/link'
-import { BiCube } from 'react-icons/bi'
-import { BiMessageDetail } from 'react-icons/bi'
 import { FiSettings } from 'react-icons/fi'
 import { TbBrandFeedly } from 'react-icons/tb'
-import { BiSupport } from 'react-icons/bi'
-import { BiGlobe } from 'react-icons/bi'
 import { BiLogOut } from 'react-icons/bi'
 import { RiArrowRightLine } from 'react-icons/ri'
 import { useAuth } from '@/contexts/AuthContext'
-import LanguageSwitcher from '@/components/Shared/LanguageSwitcher'
 import Image from 'next/image'
 import { MdProductionQuantityLimits } from 'react-icons/md'
 import { shouldUnoptimizeImage } from '@/lib/imageUtils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Phone, Mail, Clock } from 'lucide-react'
+import { getAllLocations } from '@/apis/setting/locationManagementApis'
+
+type StoreLocation = {
+    id: string;
+    address: string;
+    description?: string;
+    isPrimary: boolean;
+    createdAt: string;
+};
 
 export default function Settingss() {
     const [showLanguageDropdown, setShowLanguageDropdown] = React.useState(false);
     const { logout, user } = useAuth();
     const [isLogoutOpen, setIsLogoutOpen] = React.useState(false);
     const [imageError, setImageError] = React.useState(false);
+    const [locations, setLocations] = React.useState<StoreLocation[]>([]);
 
     const handleLanguageClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -106,6 +111,20 @@ export default function Settingss() {
         setImageError(false);
     }, [userImageUrl]);
 
+    // Fetch store locations from API
+    React.useEffect(() => {
+        const fetchLocations = async () => {
+            try {
+                const res = await getAllLocations(1, 100);
+                const list = res?.data ?? [];
+                setLocations(Array.isArray(list) ? list : []);
+            } catch {
+                setLocations([]);
+            }
+        };
+        fetchLocations();
+    }, []);
+
     return (
         <div className="p-6">
             <h1 className="text-2xl font-bold mb-6">Accountverwaltung</h1>
@@ -150,7 +169,7 @@ export default function Settingss() {
                                     {/* Customer Number */}
                                     <div>
                                         <span className="text-sm font-semibold">
-                                            Kd.-Nr. {user?.accountInfo?.barcodeLabel || (user?.id ? `K-${new Date().getFullYear()}-${user.id.slice(-4)}` : '-')}
+                                            Kd.-Nr. {user?.partnerId ?? '001004'}
                                         </span>
                                     </div>
 
@@ -169,17 +188,19 @@ export default function Settingss() {
                                     </div>
                                 </div>
                             </div>
-                            {/* Location */}
-                            {user?.defaultHauptstandort && (
+                            {/* Location - primary store location from API */}
+                            {(() => {
+                                const primary = locations.find((loc) => loc.isPrimary);
+                                if (!primary) return null;
+                                return (
                                     <div>
-                                        <span className="text-sm  text-gray-500">{user.defaultHauptstandort}</span>
+                                        <p className="text-sm text-gray-500">{primary.address}</p>
+                                        {primary.description && (
+                                            <span className="text-sm text-gray-500">{primary.description}</span>
+                                        )}
                                     </div>
-                                )}
-                                {!user?.defaultHauptstandort && user?.hauptstandort && user.hauptstandort.length > 0 && (
-                                    <div>
-                                        <span className="text-sm text-gray-500">{user.hauptstandort[0]}</span>
-                                    </div>
-                                )}
+                                );
+                            })()}
                         </div>
                     </div>
 
