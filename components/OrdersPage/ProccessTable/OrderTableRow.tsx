@@ -226,24 +226,24 @@ export default function OrderTableRow({
         const diffMs = startOfPlanned.getTime() - startOfToday.getTime();
         const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
-        if (diffDays === 0) return 'Due today';
-        if (diffDays === 1) return 'Due tomorrow';
-        if (diffDays > 1) return `Due in ${diffDays} days`;
+        if (diffDays === 0) return 'Heute fällig';
+        if (diffDays === 1) return 'Morgen fällig';
+        if (diffDays > 1) return `In ${diffDays} Tagen fällig`;
 
         const overdueDays = Math.abs(diffDays);
-        return `${overdueDays}d overdue`;
+        return `${overdueDays}d überfällig`;
     };
 
     const plannedDate = parseGermanDateString(order.fertiggestelltAm);
     const createdDate = parseGermanDateString(order.erstelltAm);
     const dueLabel = getDueStatusLabel(plannedDate);
     const createdLabel = createdDate
-        ? `Created ${createdDate.toLocaleDateString('de-DE', {
+        ? `Erstellt ${createdDate.toLocaleDateString('de-DE', {
             day: '2-digit',
             month: 'short',
         })}`
         : order.erstelltAm && order.erstelltAm !== '—'
-            ? `Created ${order.erstelltAm}`
+            ? `Erstellt ${order.erstelltAm}`
             : null;
 
     return (
@@ -367,9 +367,11 @@ export default function OrderTableRow({
                         {dueLabel && (
                             <span
                                 className={`text-sm font-medium ${
-                                    dueLabel.includes('overdue') || dueLabel === 'Due today'
-                                        ? 'text-red-600'
-                                        : 'text-orange-500'
+                                    dueLabel.includes('überfällig') || dueLabel === 'Heute fällig'
+                                        ? dueLabel.includes('überfällig')
+                                            ? 'text-red-600'
+                                            : 'text-orange-500'
+                                        : 'text-gray-700'
                                 }`}
                             >
                                 {dueLabel}
