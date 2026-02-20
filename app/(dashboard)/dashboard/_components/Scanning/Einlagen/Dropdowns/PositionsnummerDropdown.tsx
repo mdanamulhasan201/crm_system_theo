@@ -312,24 +312,32 @@ export default function PositionsnummerDropdown({
                                         return (
                                             <div
                                                 key={option.id}
-                                                className={`p-4 hover:bg-gray-50 transition-colors ${
+                                                role="button"
+                                                tabIndex={0}
+                                                className={`p-4 hover:bg-gray-50 transition-colors cursor-pointer ${
                                                     isSelected ? 'bg-green-50' : ''
                                                 }`}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleToggle(posNum);
+                                                }}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter' || e.key === ' ') {
+                                                        e.preventDefault();
+                                                        e.stopPropagation();
+                                                        handleToggle(posNum);
+                                                    }
+                                                }}
                                             >
                                                 <div className="flex items-center justify-between gap-4 mb-3">
                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
                                                         <Checkbox
                                                             checked={isSelected}
-                                                            onChange={(checked) => {
+                                                            onChange={(e) => {
+                                                                e.stopPropagation();
                                                                 handleToggle(posNum);
                                                             }}
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                e.preventDefault();
-                                                            }}
-                                                            onMouseDown={(e) => {
-                                                                e.stopPropagation();
-                                                            }}
+                                                            onClick={(e) => e.stopPropagation()}
                                                             className="shrink-0"
                                                         />
                                                         <div className="flex flex-col min-w-0 flex-1">
