@@ -7,6 +7,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { CustomShaftDataProvider } from "@/contexts/CustomShaftDataContext";
 import GoogleTranslateWrapper from "@/components/Shared/GoogleTranslateWrapper";
 import DomPatchLoader from "@/components/Shared/DomPatchLoader";
+import DynamicPageTitle from "@/components/Shared/DynamicPageTitle";
 // import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 const geistSans = Geist({
@@ -22,6 +23,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Dashboard",
   description: "Dashboard",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -31,9 +35,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de">
+   
+      
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+          <DynamicPageTitle />
           <DomPatchLoader />
           <GoogleTranslateWrapper />
           <LanguageProvider>

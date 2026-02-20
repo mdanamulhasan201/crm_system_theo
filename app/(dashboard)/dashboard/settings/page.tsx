@@ -261,30 +261,40 @@ export default function Settingss() {
                 </div>
             </div>
 
-
 {/* settings options */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full">
                 {settingsOptions.map((option, index) => {
+                    const isLogout = option.label === "Abmelden";
                     const CardContent = (
-                        <div className="flex items-center gap-4 p-4 sm:p-5 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all duration-200 cursor-pointer group">
+                        <div className={`flex items-center gap-4 p-4 sm:p-5 rounded-lg border transition-all duration-200 cursor-pointer group ${
+                            isLogout 
+                                ? "bg-gray-50 border-gray-300 hover:bg-gray-100 hover:border-gray-400" 
+                                : "bg-white border-gray-200 hover:shadow-md"
+                        }`}>
                             {/* Icon */}
                             <div className="flex-shrink-0">
-                                <option.icon className="w-6 h-6 sm:w-7 sm:h-7 text-gray-600 group-hover:text-gray-900 transition-colors" />
+                                <option.icon className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${
+                                    isLogout ? "text-gray-500 group-hover:text-gray-600" : "text-gray-600 group-hover:text-gray-900"
+                                }`} />
                             </div>
                             
                             {/* Text Content */}
                             <div className="flex-1 min-w-0">
-                                <h3 className="font-bold text-gray-900 text-sm sm:text-base mb-0.5">
+                                <h3 className={`font-bold text-sm sm:text-base mb-0.5 ${
+                                    isLogout ? "text-gray-600 group-hover:text-gray-700" : "text-gray-900"
+                                }`}>
                                     {option.label}
                                 </h3>
-                                <p className="text-xs sm:text-sm text-gray-500 truncate">
+                                <p className="text-xs sm:text-sm truncate text-gray-500">
                                     {option.subtitle || ''}
                                 </p>
                             </div>
                             
                             {/* Chevron Icon */}
                             <div className="flex-shrink-0">
-                                <RiArrowRightLine className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                                <RiArrowRightLine className={`w-5 h-5 transition-colors ${
+                                    isLogout ? "text-gray-400 group-hover:text-gray-500" : "text-gray-400 group-hover:text-gray-600"
+                                }`} />
                             </div>
                         </div>
                     );
@@ -337,6 +347,32 @@ export default function Settingss() {
                     <div className="flex items-center gap-2 text-base text-gray-500">
                         <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" />
                         <span>Antwortzeit: innerhalb 24h</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Notfall-Support Section - Bottom */}
+            <div className="mt-5  py-5 border-b border-t border-gray-200">
+                <div className="bg-white rounded-lg  border-gray-200 ">
+                    <div className="mb-4 sm:mb-6">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
+                            Notfall-Support
+                        </h3>
+                        <p className="text-xs sm:text-sm text-gray-500">
+                            Bei kritischen Systemausfällen außerhalb der Geschäftszeiten.
+                        </p>
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                        <div className="flex-1 min-h-[48px] border border-gray-200 rounded-lg bg-white px-4 py-3 flex items-center text-gray-500 text-sm">
+                        0039 366 508 7742
+                        </div>
+                        <a
+                            href="tel:+00393665087742"
+                            className="flex items-center justify-center gap-2 px-4 py-3 border border-[#61A07B] text-[#61A07B] rounded-lg hover:bg-green-50 transition-colors font-medium text-sm whitespace-nowrap"
+                        >
+                            <Phone className="w-4 h-4 flex-shrink-0" />
+                            Notfall anrufen
+                        </a>
                     </div>
                 </div>
             </div>

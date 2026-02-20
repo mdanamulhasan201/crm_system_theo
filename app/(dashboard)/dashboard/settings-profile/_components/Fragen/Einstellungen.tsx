@@ -2,6 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import toast from "react-hot-toast";
 import { getAuftragszettel, createAuftragszettel } from '@/apis/auftragszettelApis';
 
@@ -13,12 +21,6 @@ interface SettingOption {
 }
 
 const DEFAULT_SETTINGS: SettingOption[] = [
-    {
-        id: "pelottenposition",
-        title: "Pelottenposition automatisch berechnen",
-        description: "Berechnet beim Erstellen automatisch die Pelottenposition",
-        enabled: false,
-    },
     {
         id: "fertigung-senden",
         title: "Auftrag nach Erstellung direkt in die Fertigung senden",
@@ -51,9 +53,8 @@ const DEFAULT_SETTINGS: SettingOption[] = [
     },
 ];
 
-// Map setting IDs to API field names
+// Map setting IDs to API field names (pelottenposition handled separately with number+unit)
 const SETTING_TO_API_FIELD: Record<string, string> = {
-    "pelottenposition": "autoCalcPelottePos",
     "fertigung-senden": "autoSendToProd",
     "fußscans-drucken": "printFootScans",
     "messpunkte-drucken": "showMeasPoints10_11",
@@ -62,7 +63,6 @@ const SETTING_TO_API_FIELD: Record<string, string> = {
 
 // Map API field names to setting IDs
 const API_FIELD_TO_SETTING: Record<string, string> = {
-    "autoCalcPelottePos": "pelottenposition",
     "autoSendToProd": "fertigung-senden",
     "printFootScans": "fußscans-drucken",
     "showMeasPoints10_11": "messpunkte-drucken",
@@ -76,6 +76,10 @@ export default function Einstellungen() {
     const [isLoading, setIsLoading] = useState(true);
     const [pendingId, setPendingId] = useState<string | null>(null);
 
+    // Pelottenposition automatisch berechnen
+    const [pelottenpositionValue, setPelottenpositionValue] = useState<number | undefined>(5);
+    const [pelottenpositionUnit, setPelottenpositionUnit] = useState<"tag">("tag");
+
     // Fetch settings on mount
     useEffect(() => {
         const fetchSettings = async () => {
@@ -84,18 +88,22 @@ export default function Einstellungen() {
                 const response = await getAuftragszettel();
                 
                 if (response?.success && response?.data) {
-                    const apiData = response.data;
+                    const apiData = response.data as Record<string, unknown>;
                     
                     // Update settings based on API response
                     setSettings(prevSettings => 
                         prevSettings.map(setting => {
                             const apiField = SETTING_TO_API_FIELD[setting.id];
                             if (apiField && apiData.hasOwnProperty(apiField)) {
-                                return { ...setting, enabled: apiData[apiField] };
+                                return { ...setting, enabled: Boolean(apiData[apiField]) };
                             }
                             return setting;
                         })
                     );
+
+                    // Pelottenposition value + unit
+                    if (typeof apiData.pelottenpositionValue === "number") setPelottenpositionValue(apiData.pelottenpositionValue);
+                    if (apiData.pelottenpositionUnit === "tag") setPelottenpositionUnit("tag");
                 }
             } catch (error) {
                 console.error('Failed to fetch settings:', error);
@@ -163,6 +171,27 @@ export default function Einstellungen() {
         }
     };
 
+    const handlePelottenpositionChange = async (value?: number, unit?: "tag") => {
+        const newValue = value ?? pelottenpositionValue;
+        const newUnit = unit ?? pelottenpositionUnit;
+        setPelottenpositionValue(newValue);
+        setPelottenpositionUnit(newUnit);
+        try {
+            const requestBody: Record<string, unknown> = {};
+            settings.forEach(setting => {
+                const field = SETTING_TO_API_FIELD[setting.id];
+                if (field) requestBody[field] = setting.enabled;
+            });
+            requestBody.pelottenpositionValue = newValue;
+            requestBody.pelottenpositionUnit = newUnit;
+            const res = await createAuftragszettel(requestBody);
+            if (res?.success) toast.success("Pelottenposition-Einstellung aktualisiert.");
+            else throw new Error();
+        } catch {
+            toast.error("Fehler beim Aktualisieren.");
+        }
+    };
+
     return (
         <div className="w-full font-sans">
             <div className="mb-6">
@@ -175,7 +204,48 @@ export default function Einstellungen() {
             </div>
 
             <div className="bg-white border rounded-lg shadow-sm">
-                <div className="p-4 sm:p-5 md:p-6">
+
+
+                {/* Pelottenposition automatisch berechnen - 1st position */}
+                <div className="p-4 sm:p-5 md:p-6 pb-0">
+                    <label className="font-semibold block mb-2 text-gray-900">
+                        Pelottenposition automatisch berechnen
+                    </label>
+               
+                        <div className="flex gap-4 items-center">
+                            <Input
+                                type="number"
+                                min="1"
+                                placeholder="Anzahl eingeben"
+                                value={pelottenpositionValue?.toString() ?? ""}
+                                onChange={(e) => {
+                                    const v = e.target.value === "" ? undefined : parseInt(e.target.value);
+                                    setPelottenpositionValue(v);
+                                }}
+                                onBlur={() => {
+                                    if (pelottenpositionValue != null) void handlePelottenpositionChange();
+                                }}
+                                className="border border-gray-600 w-32"
+                            />
+                            <Select
+                                value={pelottenpositionUnit}
+                                onValueChange={(value: "tag") => {
+                                    setPelottenpositionUnit(value);
+                                    void handlePelottenpositionChange(pelottenpositionValue, value);
+                                }}
+                            >
+                                <SelectTrigger className="w-40 border-gray-600">
+                                    <SelectValue placeholder="Einheit auswählen" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="tag">Tag</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    
+                </div>
+
+                <div className="p-4 sm:p-5 md:p-6 pt-4">
                     {isLoading ? (
                         <div className="flex justify-center items-center py-8">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>

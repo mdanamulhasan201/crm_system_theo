@@ -135,7 +135,8 @@ export default function FragenPage() {
 
     return (
         <>
-            {/*  */}
+          
+
             <Einstellungen />
 
             <div className=" mt-10 font-sans">
