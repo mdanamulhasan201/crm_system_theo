@@ -322,7 +322,7 @@ export default function ProcessTable() {
 
     return (
         <>
-            <div className="mt-6 sm:mt-10 max-w-full space-y-6">
+            <div className="mt-5 max-w-full space-y-6">
                 {selectedOrderIds.length === 0 ? (
                     <StatusFilterBar
                         selectedDays={selectedDays}

@@ -185,7 +185,7 @@ function TypeFilterButtons() {
     }
 
     return (
-        <div className="mt-6 mb-4 flex gap-3">
+        <div className="mt-10 flex gap-3">
             <button
                 onClick={() => {
                     if (selectedType === 'rady_insole') {
