@@ -136,23 +136,13 @@ export default function EinmaligeVersorgungContent({
             return;
         }
 
-        if (!versorgungsname.trim()) {
-            toast.error('Bitte geben Sie einen Versorgungsnamen ein');
-            return;
-        }
-
-        if (materialien.length === 0) {
-            toast.error('Bitte fügen Sie mindestens ein Material hinzu');
-            return;
-        }
-
         try {
             setIsCreating(true);
 
             const payload = {
-                name: versorgungsname.trim(),
-                versorgung: versorgungsname.trim(), // Using same as name
-                material: materialien,
+                name: versorgungsname.trim() || '',
+                versorgung: versorgungsname.trim() || '',
+                material: materialien ?? [],
                 supplyStatusId: selectedEinlageId,
                 storeId: selectedProduct.id,
                 customerId: customerId,
@@ -162,35 +152,18 @@ export default function EinmaligeVersorgungContent({
 
             // Get the key from response
             const versorgungKey = response?.data?.key || response?.key;
-            const successMessage = response?.message || 'Einmalige Versorgung erfolgreich erstellt!';
+            const successMessage = response?.message || response?.data?.message || 'Einmalige Versorgung erfolgreich erstellt!';
 
             if (versorgungKey) {
-                // Store in localStorage with key name "key"
                 localStorage.setItem('key', versorgungKey);
-
-                // Notify parent component
                 if (onCustomVersorgungCreated) {
                     onCustomVersorgungCreated(versorgungKey);
                 }
-
-                // Show success message from API response
-                toast.success(successMessage);
-
-                // Reset all form fields
-                setVersorgungsname('');
-                setMaterialien([]);
-                setMaterialienInput('');
-                setSelectedProduct(null);
-                // Reset menge to default or keep it if it should persist
-                if (menge) {
-                    const mengeNumber = menge.split(' ')[0];
-                    setLocalMenge(mengeNumber);
-                } else {
-                    setLocalMenge('1');
-                }
-            } else {
-                toast.error('Keine ID in der Antwort erhalten');
             }
+
+            toast.success(successMessage);
+
+            // Do not clear input fields - user data stays
         } catch (error: any) {
             console.error('Error creating custom versorgung:', error);
             toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Versorgung');
@@ -223,7 +196,7 @@ export default function EinmaligeVersorgungContent({
                 {/* Versorgungsname */}
                 <div className="mb-4 w-full md:w-1/2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Versorgungsname <span className="text-red-500">*</span>
+                        Versorgungsname
                     </label>
                     <input
                         type="text"
@@ -276,7 +249,7 @@ export default function EinmaligeVersorgungContent({
                     disabled={isCreating}
                     className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    {isCreating ? 'Wird erstellt...' : 'Add'}
+                    {isCreating ? 'Wird erstellt...' : 'Fertig'}
                 </Button>
             </div>
         </div>
