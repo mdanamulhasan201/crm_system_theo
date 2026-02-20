@@ -264,6 +264,9 @@ export default function OrderTableRow({
                     </div>
                     <span className="text-gray-500 text-xs">#{order.bestellnummer}</span>
                     <span className="text-gray-400 text-xs">{order.productName}</span>
+                    {order.beschreibung && (
+                        <span className="text-gray-400 text-xs">{order.beschreibung}</span>
+                    )}
                 </div>
             </TableCell>
             <TableCell className="py-4 px-6">
@@ -345,9 +348,6 @@ export default function OrderTableRow({
                         </TooltipProvider>
                     )}
                 </div>
-            </TableCell>
-            <TableCell className="py-4 px-6 text-sm whitespace-nowrap">
-                {order.beschreibung}
             </TableCell>
             <TableCell className="py-4 px-6 order-actions">
                 <DropdownMenu>

@@ -140,7 +140,7 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                         {data.customer || 'Customer Name'}
                     </div>
                     <div style={{ fontSize: '11px', color: '#333' }}>
-                        Herstelldatum: {formatDate(data.completedAt || data.createdAt || '')}
+                        Herstelldatum: {formatDate(data.barcodeCreatedAt || data.completedAt || data.createdAt || '')}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px' }}>
                         <span style={{
