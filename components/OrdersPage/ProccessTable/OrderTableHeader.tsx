@@ -87,8 +87,7 @@ export default function OrderTableHeader({
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Status</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Preis</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Zahlung</TableHead>
-            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Erstellt am</TableHead>
-            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Geplantes Fertigstelldatum</TableHead>
+            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Frist</TableHead>
             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 whitespace-nowrap text-center">Aktionen</TableHead>
         </TableRow>
     );

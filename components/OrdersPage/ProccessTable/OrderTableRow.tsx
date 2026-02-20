@@ -205,6 +205,47 @@ export default function OrderTableRow({
     const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
     const hasInvoice = !!order.invoice;
 
+    const parseGermanDateString = (dateStr?: string | null): Date | null => {
+        if (!dateStr || dateStr === '—') return null;
+        const parts = dateStr.split('.');
+        if (parts.length !== 3) return null;
+        const [dayStr, monthStr, yearStr] = parts.map(p => p.trim());
+        const day = parseInt(dayStr, 10);
+        const month = parseInt(monthStr, 10);
+        const year = parseInt(yearStr, 10);
+        if (Number.isNaN(day) || Number.isNaN(month) || Number.isNaN(year)) return null;
+        const date = new Date(year, month - 1, day);
+        return Number.isNaN(date.getTime()) ? null : date;
+    };
+
+    const getDueStatusLabel = (plannedDate: Date | null): string | null => {
+        if (!plannedDate) return null;
+        const today = new Date();
+        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const startOfPlanned = new Date(plannedDate.getFullYear(), plannedDate.getMonth(), plannedDate.getDate());
+        const diffMs = startOfPlanned.getTime() - startOfToday.getTime();
+        const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffDays === 0) return 'Due today';
+        if (diffDays === 1) return 'Due tomorrow';
+        if (diffDays > 1) return `Due in ${diffDays} days`;
+
+        const overdueDays = Math.abs(diffDays);
+        return `${overdueDays}d overdue`;
+    };
+
+    const plannedDate = parseGermanDateString(order.fertiggestelltAm);
+    const createdDate = parseGermanDateString(order.erstelltAm);
+    const dueLabel = getDueStatusLabel(plannedDate);
+    const createdLabel = createdDate
+        ? `Created ${createdDate.toLocaleDateString('de-DE', {
+            day: '2-digit',
+            month: 'short',
+        })}`
+        : order.erstelltAm && order.erstelltAm !== '—'
+            ? `Created ${order.erstelltAm}`
+            : null;
+
     return (
         <TableRow
             className={`border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${isRowSelected ? 'bg-gray-50' : ''}`}
@@ -320,12 +361,26 @@ export default function OrderTableRow({
                     {renderPaymentStatus()}
                 </div>
             </TableCell>
-            <TableCell className="py-4 px-6 text-sm whitespace-nowrap">
-                {order.erstelltAm}
-            </TableCell>
             <TableCell className="py-4 px-6">
-                <div className="flex flex-row items-center justify-center gap-2">
-                    <span className="text-sm">{order.fertiggestelltAm}</span>
+                <div className="flex flex-row items-center justify-center gap-3">
+                    <div className="flex flex-col items-start">
+                        {dueLabel && (
+                            <span
+                                className={`text-sm font-medium ${
+                                    dueLabel.includes('overdue') || dueLabel === 'Due today'
+                                        ? 'text-red-600'
+                                        : 'text-orange-500'
+                                }`}
+                            >
+                                {dueLabel}
+                            </span>
+                        )}
+                        {createdLabel && (
+                            <span className="text-xs text-gray-500">
+                                {createdLabel}
+                            </span>
+                        )}
+                    </div>
                     {safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '' && (
                         <TooltipProvider>
                             <Tooltip>
