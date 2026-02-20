@@ -294,6 +294,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         handleEmployeeDropdownChange,
         handleEmployeeSearchChange,
         handleEmployeeSelect,
+        handleEmployeeClear,
         setAusführliche_diagnose,
         setVersorgung_laut_arzt,
         setEinlagentyp,
@@ -442,13 +443,16 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setValue,
     ]);
 
-    // Sync einlagentyp when selectedEinlage changes
+    // Sync einlagentyp only when selectedEinlage changes (e.g. user clicks an Einlage button).
+    // Do not re-sync when user clears the dropdown.
+    const prevSelectedEinlageSyncRef = useRef<string | undefined>(undefined);
     useEffect(() => {
-        if (selectedEinlage && !einlagentyp) {
+        if (selectedEinlage && selectedEinlage !== prevSelectedEinlageSyncRef.current) {
+            prevSelectedEinlageSyncRef.current = selectedEinlage as string;
             setEinlagentyp(selectedEinlage as string);
             setValue('einlagentyp', selectedEinlage as string);
         }
-    }, [selectedEinlage, einlagentyp, setEinlagentyp, setValue]);
+    }, [selectedEinlage, setEinlagentyp, setValue]);
 
     // TEMPORARY: Set a dummy einlagentyp for testing the SPRINGER logo
     useEffect(() => {
@@ -971,6 +975,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 onEmployeeSearchChange={handleEmployeeSearchChange}
                 onEmployeeDropdownChange={handleEmployeeDropdownChange}
                 onEmployeeSelect={handleEmployeeSelect}
+                onEmployeeClear={handleEmployeeClear}
                 kostenvoranschlag={kostenvoranschlag}
                 onKostenvoranschlagChange={setKostenvoranschlag}
                 lieferschein={lieferschein}
@@ -989,6 +994,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setValue('einlagentyp', value);
                     setShowEinlageDropdown(false);
                 }}
+                onEinlageClear={() => {
+                    setEinlagentyp('');
+                    setValue('einlagentyp', '');
+                }}
+                onCloseEinlageDropdown={() => setShowEinlageDropdown(false)}
                 einlagentypError={errors.einlagentyp?.message}
                 überzug={überzug}
                 uberzugOptions={coverTypes}
@@ -999,6 +1009,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setShowUberzugDropdown(false);
                     setValue('überzug', value);
                 }}
+                onUberzugClear={() => {
+                    setÜberzug('');
+                    setValue('überzug', '');
+                }}
+                onCloseUberzugDropdown={() => setShowUberzugDropdown(false)}
                 überzugError={errors.überzug?.message}
                 menge={menge}
                 mengeOptions={MENGE_OPTIONS}
@@ -1009,6 +1024,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setShowMengeDropdown(false);
                     setValue('menge', value);
                 }}
+                onMengeClear={() => {
+                    setMenge('');
+                    setValue('menge', '');
+                }}
+                onCloseMengeDropdown={() => setShowMengeDropdown(false)}
                 mengeError={errors.menge?.message}
                 schuhmodell_wählen={schuhmodell_wählen}
                 onSchuhmodellChange={setSchuhmodell_wählen}

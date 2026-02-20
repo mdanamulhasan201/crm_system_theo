@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import type { EinlageType } from '@/hooks/customer/useScanningFormData';
 
@@ -48,12 +48,15 @@ export function useEinlagenForm({ selectedEinlage }: UseEinlagenFormProps = {}) 
     const [selectedEmployee, setSelectedEmployee] = useState<string>('');
     const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>('');
 
-    // Sync einlagentyp when selectedEinlage changes
+    // Sync einlagentyp only when selectedEinlage changes (e.g. user clicks an Einlage button).
+    // Do not re-sync when user clears the dropdown, so cross (clear) works.
+    const prevSelectedEinlageRef = useRef<string | undefined>(undefined);
     useEffect(() => {
-        if (selectedEinlage && !einlagentyp) {
+        if (selectedEinlage && selectedEinlage !== prevSelectedEinlageRef.current) {
+            prevSelectedEinlageRef.current = selectedEinlage as string;
             setEinlagentyp(selectedEinlage as string);
         }
-    }, [selectedEinlage, einlagentyp]);
+    }, [selectedEinlage]);
 
     // Handle employee selection
     const handleEmployeeSelect = (employee: { employeeName: string; id: string }) => {
@@ -65,6 +68,11 @@ export function useEinlagenForm({ selectedEinlage }: UseEinlagenFormProps = {}) 
     const handleEmployeeDropdownChange = (open: boolean) => {
         setIsEmployeeDropdownOpen(open);
         setShowSuggestions(open);
+    };
+
+    const handleEmployeeClear = () => {
+        setSelectedEmployee('');
+        setSelectedEmployeeId('');
     };
 
     // Get all form data
@@ -129,6 +137,7 @@ export function useEinlagenForm({ selectedEinlage }: UseEinlagenFormProps = {}) 
         selectedEmployeeId,
         handleEmployeeSearchChange,
         handleEmployeeSelect,
+        handleEmployeeClear,
         handleEmployeeDropdownChange,
         // Utilities
         getFormData,

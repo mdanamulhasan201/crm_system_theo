@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ChevronDown, Check } from 'lucide-react';
+import { ChevronDown, Check, X } from 'lucide-react';
 
 interface Employee {
     id: string;
@@ -19,6 +19,7 @@ interface EmployeeDropdownProps {
     onEmployeeSearchChange: (value: string) => void;
     onEmployeeDropdownChange: (open: boolean) => void;
     onEmployeeSelect: (employee: { employeeName: string; id: string }) => void;
+    onClear?: () => void;
     placeholder?: string;
     className?: string;
 }
@@ -32,6 +33,7 @@ export default function EmployeeDropdown({
     onEmployeeSearchChange,
     onEmployeeDropdownChange,
     onEmployeeSelect,
+    onClear,
     placeholder = "Mitarbeiter...",
     className = "w-full",
 }: EmployeeDropdownProps) {
@@ -44,10 +46,27 @@ export default function EmployeeDropdown({
                     aria-expanded={isEmployeeDropdownOpen}
                     className={`${className} cursor-pointer justify-between font-normal h-10 bg-white border-gray-300`}
                 >
-                    <span className={`truncate ${selectedEmployee ? 'text-gray-900' : 'text-gray-400'}`}>
+                    <span className={`truncate flex-1 text-left ${selectedEmployee ? 'text-gray-900' : 'text-gray-400'}`}>
                         {selectedEmployee || placeholder}
                     </span>
-                    <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {selectedEmployee && onClear ? (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onClear();
+                                }}
+                                className="rounded p-0.5 cursor-pointer text-gray-500 hover:text-gray-700 transition-colors"
+                                aria-label="Auswahl löschen"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        ) : (
+                            <ChevronDown className="h-4 w-4 opacity-50" />
+                        )}
+                    </div>
                 </Button>
             </PopoverTrigger>
             <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">

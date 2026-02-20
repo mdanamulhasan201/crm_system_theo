@@ -38,6 +38,7 @@ interface RezeptAbrechnungCardProps {
     onEmployeeSearchChange: (value: string) => void;
     onEmployeeDropdownChange: (open: boolean) => void;
     onEmployeeSelect: (employee: { employeeName: string; id: string }) => void;
+    onEmployeeClear?: () => void;
     
     // KVA & Lieferschein
     kostenvoranschlag: boolean | null;
@@ -75,6 +76,7 @@ export default function RezeptAbrechnungCard({
     onEmployeeSearchChange,
     onEmployeeDropdownChange,
     onEmployeeSelect,
+    onEmployeeClear,
     kostenvoranschlag,
     onKostenvoranschlagChange,
     lieferschein,
@@ -183,6 +185,7 @@ export default function RezeptAbrechnungCard({
                         onEmployeeSearchChange={onEmployeeSearchChange}
                         onEmployeeDropdownChange={onEmployeeDropdownChange}
                         onEmployeeSelect={onEmployeeSelect}
+                        onClear={onEmployeeClear}
                         placeholder="Mitarbeiter..."
                     />
                 </div>
