@@ -32,7 +32,9 @@ export default function PaginationControls({
                     </span>
                 ) : (
                     <span>
-                        Zeige {((currentPage - 1) * pagination.itemsPerPage) + 1} bis {Math.min(currentPage * pagination.itemsPerPage, pagination.totalItems)} von {pagination.totalItems} Aufträgen ({ordersCount} auf dieser Seite)
+                        {pagination.totalItems != null
+                            ? `Zeige ${((currentPage - 1) * pagination.itemsPerPage) + 1} bis ${Math.min(currentPage * pagination.itemsPerPage, pagination.totalItems)} von ${pagination.totalItems} Aufträgen`
+                            : `Zeige ${ordersCount} Aufträge auf dieser Seite`}
                     </span>
                 )}
             </div>
@@ -50,7 +52,7 @@ export default function PaginationControls({
                     </Button>
 
                     <span className="text-sm text-gray-600 px-3">
-                        Seite {currentPage} von {pagination.totalPages}
+                        Seite {currentPage}{pagination.totalPages != null ? ` von ${pagination.totalPages}` : ''}
                     </span>
 
                     <Button

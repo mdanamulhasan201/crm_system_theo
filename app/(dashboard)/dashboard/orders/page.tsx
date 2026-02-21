@@ -8,7 +8,8 @@ import { OrdersProvider, useOrders } from '@/contexts/OrdersContext';
 import { useRevenueOverview } from '@/hooks/orders/useRevenueOverview';
 import OrdersHeaderShimmer from '@/components/ShimmerEffect/Orders/OrdersHeaderShimmer';
 import AuftragssuchePage from '@/components/OrdersPage/AuftragssuchePage/AuftragssuchePage';
-import { Button } from '@/components/ui/button';
+import SearchBarIWithFilterInsole from '@/components/OrdersPage/ProccessTable/SearchBarIWithFilterInsole';
+// import { Button } from '@/components/ui/button';
 
 export default function Orders() {
     return (
@@ -166,6 +167,11 @@ function OrdersPageContent() {
                 </div>
             </div>
             {/* <HighPriorityCard /> */}
+
+            <div className='mt-10'>
+                <SearchBarIWithFilterInsole />
+            </div>
+
 
             {/* Type Filter Buttons */}
             <TypeFilterButtons />

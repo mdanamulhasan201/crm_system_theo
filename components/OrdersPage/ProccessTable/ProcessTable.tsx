@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { useOrders, OrderData } from "@/contexts/OrdersContext";
 import ConfirmModal from '../ConfirmModal/ConfirmModal';
 import StatusFilterBar from "./StatusFilterBar";
+import SearchBarIWithFilterInsole from "./SearchBarIWithFilterInsole";
 import BulkActionsBar from "./BulkActionsBar";
 import OrderTableHeader from "./OrderTableHeader";
 import OrderTableRow from "./OrderTableRow";
@@ -31,7 +32,8 @@ export default function ProcessTable() {
         selectedDays,
         selectedStatus,
         selectedType,
-        setCurrentPage,
+        goToNextPage,
+        goToPrevPage,
         setSelectedDays,
         setSelectedStatus,
         refetch,
@@ -143,7 +145,8 @@ export default function ProcessTable() {
 
     // Handle pagination
     const handlePageChange = (newPage: number) => {
-        setCurrentPage(newPage);
+        if (newPage > currentPage) goToNextPage();
+        else if (newPage < currentPage) goToPrevPage();
         setSelectedOrderId(null);
         setSelectedOrderIds([]);
     };
@@ -324,15 +327,18 @@ export default function ProcessTable() {
         <>
             <div className="mt-5 max-w-full space-y-6">
                 {selectedOrderIds.length === 0 ? (
-                    <StatusFilterBar
-                        selectedDays={selectedDays}
-                        selectedStatus={selectedStatus}
-                        selectedType={selectedType}
-                        activeStep={-1}
-                        onDaysChange={setSelectedDays}
-                        onStatusFilter={handleStatusFilter}
-                        onClearFilter={() => setSelectedStatus(null)}
-                    />
+                    <>
+                      
+                        <StatusFilterBar
+                            selectedDays={selectedDays}
+                            selectedStatus={selectedStatus}
+                            selectedType={selectedType}
+                            activeStep={-1}
+                            onDaysChange={setSelectedDays}
+                            onStatusFilter={handleStatusFilter}
+                            onClearFilter={() => setSelectedStatus(null)}
+                        />
+                    </>
                 ) : (
                     <BulkActionsBar
                         selectedOrderIds={selectedOrderIds}

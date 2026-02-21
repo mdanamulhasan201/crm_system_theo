@@ -59,25 +59,41 @@ export const pdfSendToCustomer = async (orderId: string, formData: FormData) => 
         throw error;
     }
 }
-
-// get all orders  &customerNumber=&orderNumber=&customerName
+// ?bezahlt={{Info}}    
+// ------
+//   "Privat_Bezahlt",
+//    "Privat_offen",
+//   "Krankenkasse_Ungenehmigt",
+//   "Krankenkasse_Genehmigt"
+// get all orders – cursor pagination: customer-orders?cursor=&limit=&days=&type=&bezahlt=&search=
 export const getAllOrders = async (
-    page: number,
     limit: number,
     days: number,
     orderStatus?: string,
+    bezahlt?: string,
+    search?: string,
+    cursor?: string,
     customerNumber?: string,
     orderNumber?: string,
     customerName?: string,
     type?: string
 ) => {
     try {
-        let url = `/customer-orders?page=${page}&limit=${limit}&days=${days}`;
+        let url = `/customer-orders?limit=${limit}&days=${days}`;
         if (type) {
             url += `&type=${type}`;
         }
         if (orderStatus) {
             url += `&orderStatus=${orderStatus}`;
+        }
+        if (bezahlt) {
+            url += `&bezahlt=${encodeURIComponent(bezahlt)}`;
+        }
+        if (search) {
+            url += `&search=${encodeURIComponent(search)}`;
+        }
+        if (cursor) {
+            url += `&cursor=${encodeURIComponent(cursor)}`;
         }
         if (customerNumber) {
             url += `&customerNumber=${customerNumber}`;

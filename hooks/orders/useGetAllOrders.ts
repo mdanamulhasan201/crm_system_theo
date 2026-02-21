@@ -55,12 +55,14 @@ export interface ApiOrderData {
 }
 
 export interface PaginationData {
-    totalItems: number;
-    totalPages: number;
-    currentPage: number;
+    totalItems?: number;
+    totalPages?: number;
+    currentPage?: number;
     itemsPerPage: number;
     hasNextPage: boolean;
     hasPrevPage: boolean;
+    nextCursor?: string | null;
+    previousCursor?: string | null;
 }
 
 export interface OrdersResponse {
@@ -71,10 +73,12 @@ export interface OrdersResponse {
 }
 
 export const useGetAllOrders = (
-    page: number = 1, 
-    limit: number = 10, 
-    days: number = 30, 
+    limit: number = 10,
+    days: number = 30,
     orderStatus?: string,
+    bezahlt?: string,
+    search?: string,
+    cursor?: string,
     customerNumber?: string,
     orderNumber?: string,
     customerName?: string,
@@ -86,10 +90,12 @@ export const useGetAllOrders = (
     const [error, setError] = useState<string | null>(null);
 
     const fetchOrders = async (
-        pageNum: number, 
-        limitNum: number, 
-        daysNum: number, 
+        limitNum: number,
+        daysNum: number,
         status?: string,
+        bezahltVal?: string,
+        searchVal?: string,
+        cursorVal?: string,
         custNumber?: string,
         ordNumber?: string,
         custName?: string,
@@ -98,10 +104,19 @@ export const useGetAllOrders = (
         try {
             setLoading(true);
             setError(null);
-            // console.log('useGetAllOrders: Fetching orders with params:', { pageNum, limitNum, daysNum, status, custNumber, ordNumber, custName, orderType });
-            const response: OrdersResponse = await getAllOrders(pageNum, limitNum, daysNum, status, custNumber, ordNumber, custName, orderType);
-            // console.log('useGetAllOrders: API response:', response);
-            
+            const response: OrdersResponse = await getAllOrders(
+                limitNum,
+                daysNum,
+                status,
+                bezahltVal,
+                searchVal,
+                cursorVal,
+                custNumber,
+                ordNumber,
+                custName,
+                orderType
+            );
+
             if (response.success) {
                 setOrders(response.data);
                 setPagination(response.pagination);
@@ -109,7 +124,6 @@ export const useGetAllOrders = (
                 setError(response.message || 'Failed to fetch orders');
             }
         } catch (err) {
-            // console.error('useGetAllOrders: Error:', err);
             setError(err instanceof Error ? err.message : 'An error occurred while fetching orders');
         } finally {
             setLoading(false);
@@ -117,11 +131,11 @@ export const useGetAllOrders = (
     };
 
     useEffect(() => {
-        fetchOrders(page, limit, days, orderStatus, customerNumber, orderNumber, customerName, type);
-    }, [page, limit, days, orderStatus, customerNumber, orderNumber, customerName, type]);
+        fetchOrders(limit, days, orderStatus, bezahlt, search, cursor, customerNumber, orderNumber, customerName, type);
+    }, [limit, days, orderStatus, bezahlt, search, cursor, customerNumber, orderNumber, customerName, type]);
 
     const refetch = () => {
-        fetchOrders(page, limit, days, orderStatus, customerNumber, orderNumber, customerName, type);
+        fetchOrders(limit, days, orderStatus, bezahlt, search, cursor, customerNumber, orderNumber, customerName, type);
     };
 
     return {

@@ -42,20 +42,27 @@ interface OrdersContextType {
     loading: boolean;
     error: string | null;
     pagination: any;
-    currentPage: number;
+    currentPage: number; // display: cursorStack.length + 1
+    cursor: string | undefined;
     selectedDays: number;
     selectedStatus: string | null;
     selectedType: string | null;
+    selectedBezahlt: string | null;
+    searchQuery: string;
     searchParams: {
         customerNumber: string;
         orderNumber: string;
         customerName: string;
     };
     orderIdFromSearch: string; // Add this to expose orderId from URL
-    setCurrentPage: (page: number) => void;
+    setCurrentPage: (page: number) => void; // no-op for cursor; kept for compat
+    goToNextPage: () => void;
+    goToPrevPage: () => void;
     setSelectedDays: (days: number) => void;
     setSelectedStatus: (status: string | null) => void;
     setSelectedType: (type: string | null) => void;
+    setSelectedBezahlt: (value: string | null) => void;
+    setSearchQuery: (value: string) => void;
     setSearchParams: (params: { customerNumber?: string; orderNumber?: string; customerName?: string }) => void;
     clearSearchParams: () => void;
     refetch: () => void;
@@ -119,10 +126,13 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParamsFromUrl = useSearchParams();
-    const [currentPage, setCurrentPage] = useState(1);
+    const [cursor, setCursor] = useState<string | undefined>(undefined);
+    const [cursorStack, setCursorStack] = useState<(string | undefined)[]>([]);
     const [selectedDays, setSelectedDays] = useState(30);
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
     const [selectedType, setSelectedType] = useState<string | null>('rady_insole');
+    const [selectedBezahlt, setSelectedBezahlt] = useState<string | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const [searchParams, setSearchParamsState] = useState({
         customerNumber: '',
         orderNumber: '',
@@ -141,15 +151,32 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const { orders: apiOrders, loading, error, pagination, refetch } = useGetAllOrders(
-        currentPage,
         10,
         selectedDays,
         selectedStatus || undefined,
+        selectedBezahlt || undefined,
+        searchQuery.trim() || undefined,
+        cursor,
         searchParams.customerNumber || undefined,
         searchParams.orderNumber || undefined,
         searchParams.customerName || undefined,
         selectedType || undefined
     );
+
+    const currentPage = cursorStack.length + 1;
+
+    const goToNextPage = useCallback(() => {
+        if (!pagination?.nextCursor) return;
+        setCursorStack(prev => [...prev, cursor]);
+        setCursor(pagination.nextCursor);
+    }, [pagination?.nextCursor, cursor]);
+
+    const goToPrevPage = useCallback(() => {
+        if (cursorStack.length === 0) return;
+        const prevCursor = cursorStack[cursorStack.length - 1];
+        setCursorStack(prev => prev.slice(0, -1));
+        setCursor(prevCursor ?? undefined);
+    }, [cursorStack]);
 
 
     useEffect(() => {
@@ -322,8 +349,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     }, [orderIdFromSearch, selectedType, isInitialized, router, pathname]);
 
     useEffect(() => {
-        setCurrentPage(1);
-    }, [selectedDays, selectedStatus, selectedType, searchParams]);
+        setCursor(undefined);
+        setCursorStack([]);
+    }, [selectedDays, selectedStatus, selectedType, selectedBezahlt, searchQuery, searchParams]);
 
     const setSearchParams = useCallback((params: { customerNumber?: string; orderNumber?: string; customerName?: string }) => {
         setSearchParamsState(prev => {
@@ -362,13 +390,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
         setOrders(prevOrders => {
             const newOrders = prevOrders.filter(o => o.id !== orderId);
-
-            if (prevOrders.length === 1 && currentPage > 1) {
-                setCurrentPage(currentPage - 1);
-            } else if (newOrders.length === 0 && currentPage > 1) {
-                setCurrentPage(currentPage - 1);
+            if (newOrders.length === 0) {
+                setCursorStack(prev => {
+                    if (prev.length === 0) return prev;
+                    const last = prev[prev.length - 1];
+                    setCursor(last ?? undefined);
+                    return prev.slice(0, -1);
+                });
             }
-
             return newOrders;
         });
 
@@ -381,12 +410,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
         setOrders(prevOrders => {
             const newOrders = prevOrders.filter(o => o.id !== orderId);
-            if (prevOrders.length === 1 && currentPage > 1) {
-                setCurrentPage(currentPage - 1);
-            } else if (newOrders.length === 0 && currentPage > 1) {
-                setCurrentPage(currentPage - 1);
+            if (newOrders.length === 0) {
+                setCursorStack(prev => {
+                    if (prev.length === 0) return prev;
+                    const last = prev[prev.length - 1];
+                    setCursor(last ?? undefined);
+                    return prev.slice(0, -1);
+                });
             }
-
             return newOrders;
         });
 
@@ -399,12 +430,14 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
         setOrders(prevOrders => {
             const newOrders = prevOrders.filter(o => !orderIds.includes(o.id));
-
-            // Adjust page if needed
-            if (newOrders.length === 0 && currentPage > 1) {
-                setCurrentPage(currentPage - 1);
+            if (newOrders.length === 0) {
+                setCursorStack(prev => {
+                    if (prev.length === 0) return prev;
+                    const last = prev[prev.length - 1];
+                    setCursor(last ?? undefined);
+                    return prev.slice(0, -1);
+                });
             }
-
             return newOrders;
         });
 
@@ -486,22 +519,37 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         }
     };
 
+    const paginationWithCursor = pagination
+        ? {
+            ...pagination,
+            hasNextPage: !!pagination.nextCursor || !!pagination.hasNextPage,
+            hasPrevPage: cursorStack.length > 0,
+        }
+        : null;
+
     return (
         <OrdersContext.Provider value={{
             orders,
             prioritizedOrders,
             loading,
             error,
-            pagination,
+            pagination: paginationWithCursor,
             currentPage,
+            cursor,
             selectedDays,
             selectedStatus,
             selectedType,
+            selectedBezahlt,
+            searchQuery,
             searchParams,
-            setCurrentPage,
+            setCurrentPage: () => {},
+            goToNextPage,
+            goToPrevPage,
             setSelectedDays,
             setSelectedStatus,
             setSelectedType,
+            setSelectedBezahlt,
+            setSearchQuery,
             setSearchParams,
             clearSearchParams,
             refetch,
