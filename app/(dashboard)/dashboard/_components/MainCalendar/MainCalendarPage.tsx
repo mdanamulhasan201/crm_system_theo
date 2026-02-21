@@ -110,7 +110,7 @@ export default function MainCalendarPage({
   const showLine = isViewingToday && mins >= START_MINUTES && mins <= END_MINUTES
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-white">
+    <div className="flex-1 flex flex-col min-h-0 bg-white border rounded-lg">
       {/* Sticky header: day names + dates */}
       <div className="flex shrink-0 sticky top-0 z-20 bg-white border-b border-gray-200">
         <div className="w-20 shrink-0 border-r border-gray-200 h-16" />

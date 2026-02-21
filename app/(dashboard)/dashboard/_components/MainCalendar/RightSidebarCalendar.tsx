@@ -63,9 +63,9 @@ export default function RightSidebarCalendar({
   }
 
   return (
-    <div className="w-80 bg-white border-l border-gray-200 p-6 flex flex-col gap-6">
+    <div className="w-80 flex flex-col gap-6">
       {/* Mini Calendar */}
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 border rounded-lg p-2 bg-white">
         {/* Month Navigation */}
         <div className="flex items-center justify-between">
           <button
@@ -113,11 +113,11 @@ export default function RightSidebarCalendar({
                 key={index}
                 onClick={() => handleDateClick(day)}
                 className={cn(
-                  "aspect-square flex items-center justify-center text-sm rounded transition-colors",
+                  "aspect-square flex items-center cursor-pointer justify-center text-sm rounded transition-colors",
                   !isCurrentMonth && "text-gray-300",
                   isCurrentMonth && !isSelected && !isToday && "text-gray-900 hover:bg-gray-100",
-                  isSelected && "bg-blue-600 text-white font-semibold",
-                  isToday && !isSelected && "bg-blue-50 text-blue-600 font-semibold"
+                  isSelected && "bg-[#62A07C] text-white font-semibold",
+                  isToday && !isSelected && "bg-green-50 text-green-600 font-semibold"
                 )}
               >
                 {format(day, "d")}
@@ -128,7 +128,7 @@ export default function RightSidebarCalendar({
       </div>
 
       {/* Employees Section */}
-      <div className="flex flex-col gap-3 bg-white rounded-xl shadow-sm p-4 border border-gray-100">
+      <div className="flex flex-col gap-3 bg-white rounded-xl p-4 border border-gray-200">
         <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
           MITARBEITER
         </h3>

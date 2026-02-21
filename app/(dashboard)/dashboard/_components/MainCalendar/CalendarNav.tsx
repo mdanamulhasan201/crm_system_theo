@@ -41,7 +41,7 @@ export default function CalendarNav({
   }
 
   return (
-    <div className="flex items-center w-full px-6 py-3 bg-white border-b border-gray-200">
+    <div className="flex items-center w-full px-6 py-3 mb-2">
       {/* Left side - Heute button and arrows */}
       <div className="flex items-center gap-2">
         <Button

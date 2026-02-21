@@ -1,11 +1,33 @@
 "use client"
 
 import React, { useState } from 'react'
+import { useForm } from 'react-hook-form'
 import CalendarMainNav from '../_components/MainCalendar/CalendarMainNav'
-import { startOfWeek } from 'date-fns'
 import CalendarNav from '../_components/MainCalendar/CalendarNav'
 import MainCalendarPage from '../_components/MainCalendar/MainCalendarPage'
 import RightSidebarCalendar from '../_components/MainCalendar/RightSidebarCalendar'
+import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
+import { useAppoinment } from '@/hooks/appoinment/useAppoinment'
+
+interface Employee {
+  employeeId: string
+  assignedTo: string
+}
+
+interface AppointmentFormData {
+  isClientEvent: boolean
+  kunde: string
+  uhrzeit: string
+  selectedEventDate: Date | undefined
+  termin: string
+  mitarbeiter: string
+  bemerk?: string
+  duration: number
+  customerId?: string
+  employeeId?: string
+  employees?: Employee[]
+  reminder?: number | null
+}
 
 interface Appointment {
   id: string
@@ -24,6 +46,26 @@ export default function Calendar() {
   })
   
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>(['daniel'])
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+
+  const { createNewAppointment } = useAppoinment()
+
+  const appointmentForm = useForm<AppointmentFormData>({
+    defaultValues: {
+      isClientEvent: true,
+      kunde: '',
+      uhrzeit: '',
+      selectedEventDate: undefined,
+      termin: '',
+      mitarbeiter: '',
+      bemerk: '',
+      duration: 1,
+      customerId: undefined,
+      employeeId: undefined,
+      employees: [],
+      reminder: null
+    }
+  })
 
   // Sample appointments data - replace with your actual data source
   const [appointments] = useState<Appointment[]>([
@@ -51,8 +93,17 @@ export default function Calendar() {
   }
 
   const handleAddAppointment = () => {
-    // TODO: Implement add appointment modal
-    console.log('Add appointment clicked')
+    appointmentForm.reset()
+    appointmentForm.setValue('selectedEventDate', currentDate)
+    setIsAddModalOpen(true)
+  }
+
+  const handleAppointmentSubmit = async (data: AppointmentFormData) => {
+    const success = await createNewAppointment(data)
+    if (success) {
+      appointmentForm.reset()
+      setIsAddModalOpen(false)
+    }
   }
 
   const handleEmployeeToggle = (employeeId: string) => {
@@ -98,7 +149,7 @@ export default function Calendar() {
       />
 
       {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden gap-2">
         {/* Main Calendar */}
         <MainCalendarPage
           currentDate={currentDate}
@@ -113,6 +164,21 @@ export default function Calendar() {
           onEmployeeToggle={handleEmployeeToggle}
         />
       </div>
+
+      {/* Add Appointment Modal */}
+      {isAddModalOpen && (
+        <AppointmentModal
+          isOpen={isAddModalOpen}
+          onClose={() => {
+            setIsAddModalOpen(false)
+            appointmentForm.reset()
+          }}
+          form={appointmentForm}
+          onSubmit={handleAppointmentSubmit}
+          title="Neuer Termin"
+          buttonText="Termin bestätigen"
+        />
+      )}
     </div>
   )
 }
