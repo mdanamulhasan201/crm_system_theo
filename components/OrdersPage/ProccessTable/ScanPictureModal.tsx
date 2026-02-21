@@ -35,6 +35,13 @@ export default function ScanPictureModal({
         : [];
 
     const hasAnyImage = !!(data?.picture_23 || data?.picture_24);
+    const isSonstiges = data?.category === 'sonstiges';
+    const isInsole = data?.category === 'insole';
+    const versorgungDisplay = isSonstiges ? data?.orderCategory?.service_name : data?.versorgungName;
+    const insoleStandards = isInsole ? data?.orderCategory?.insoleStandards ?? [] : [];
+
+    const formatLeftRight = (left: number, right: number) =>
+        left === right ? `Bds = ${left} mm` : `Links: ${left} mm, Rechts: ${right} mm`;
 
     // Format date for fertigstellungBis - converts UTC to user's local timezone
     const formatDate = (dateString: string) => {
@@ -249,7 +256,11 @@ export default function ScanPictureModal({
                                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                             Diagnose
                                         </h3>
-                                        {data.diagnosisStatus && Array.isArray(data.diagnosisStatus) && data.diagnosisStatus.length > 0 ? (
+                                        {isSonstiges ? (
+                                            <p className="text-sm font-medium text-gray-900">
+                                                {data.orderCategory?.sonstiges_category || '—'}
+                                            </p>
+                                        ) : data.diagnosisStatus && Array.isArray(data.diagnosisStatus) && data.diagnosisStatus.length > 0 ? (
                                             <div className="flex flex-wrap gap-2">
                                                 {data.diagnosisStatus.map((diagnosis, idx) => (
                                                     <span
@@ -269,9 +280,22 @@ export default function ScanPictureModal({
                                             Versorgung
                                         </h3>
                                         <p className="text-sm font-medium text-gray-900">
-                                            {data.versorgungName || '—'}
+                                            {versorgungDisplay || '—'}
                                         </p>
+                                        {isInsole && insoleStandards.length > 0 && (
+                                            <div className="mt-3 space-y-2 pl-2 border-l-2 border-gray-200">
+                                                {insoleStandards.map((item, idx) => (
+                                                    <div key={idx} className="text-sm">
+                                                        <span className="font-medium text-gray-900">{item.name}</span>
+                                                        <span className="text-gray-600 ml-2">
+                                                            {formatLeftRight(item.left, item.right)}
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </div>
+                                    {!isSonstiges && (
                                     <div className="pb-4 border-b border-gray-100">
                                         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                             Materialien
@@ -289,6 +313,7 @@ export default function ScanPictureModal({
                                             <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
                                         )}
                                     </div>
+                                    )}
 
                                     {/* Insole Stock Section */}
                                     {data.insoleStock && (
@@ -357,23 +382,11 @@ export default function ScanPictureModal({
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Diagnose
                                 </h3>
-                                {/* {data.diagnosisStatus && Array.isArray(data.diagnosisStatus) && data.diagnosisStatus.length > 0 ? (
-                                    <div className="flex flex-wrap gap-2">
-                                        {data.diagnosisStatus.map((diagnosis, idx) => (
-                                            <span
-                                                key={idx}
-                                                className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 shadow-sm"
-                                            >
-                                                {diagnosis}
-                                            </span>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <p className="text-sm text-gray-500 italic">—</p>
-                                )} */}
-
-                                {/* ausführliche_diagnose eita show koro */}
-                                {data.ausführliche_diagnose ? (
+                                {isSonstiges ? (
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {data.orderCategory?.sonstiges_category || '—'}
+                                    </p>
+                                ) : data.ausführliche_diagnose ? (
                                     <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                                         <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
                                             {data.ausführliche_diagnose}
@@ -388,8 +401,20 @@ export default function ScanPictureModal({
                                     Versorgung
                                 </h3>
                                 <p className="text-sm font-medium text-gray-900">
-                                    {data.versorgungName || '—'}
+                                    {versorgungDisplay || '—'}
                                 </p>
+                                {isInsole && insoleStandards.length > 0 && (
+                                    <div className="mt-3 space-y-2 pl-2 border-l-2 border-gray-200">
+                                        {insoleStandards.map((item, idx) => (
+                                            <div key={idx} className="text-sm">
+                                                <span className="font-medium text-gray-900">{item.name}</span>
+                                                <span className="text-gray-600 ml-2">
+                                                    {formatLeftRight(item.left, item.right)}
+                                                </span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             {/* Uberzug Section */}
@@ -404,6 +429,7 @@ export default function ScanPictureModal({
                                 </div>
                             )}
 
+                            {!isSonstiges && (
                             <div className="pb-4 border-b border-gray-100">
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Materialien
@@ -421,6 +447,7 @@ export default function ScanPictureModal({
                                     <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
                                 )}
                             </div>
+                            )}
 
                             {/* Insole Stock Section */}
                             {data.insoleStock && (

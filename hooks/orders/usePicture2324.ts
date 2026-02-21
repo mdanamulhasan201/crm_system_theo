@@ -9,9 +9,22 @@ export interface InsoleStock {
     size: string;
 }
 
+export interface InsoleStandard {
+    name: string;
+    left: number;
+    right: number;
+    isFavorite?: boolean;
+}
+
+export interface OrderCategory {
+    service_name?: string;
+    sonstiges_category?: string;
+    insoleStandards?: InsoleStandard[];
+}
+
 export interface Picture2324Data {
     customerName: string;
-    versorgungName: string;
+    versorgungName: string | null;
     diagnosisStatus: string[] | null;
     material: string | null;
     picture_23: string | null;
@@ -23,6 +36,8 @@ export interface Picture2324Data {
     uberzug?: string;
     createdAt?: string;
     ausführliche_diagnose?: string;
+    category?: string;
+    orderCategory?: OrderCategory;
 }
 
 export interface Picture2324Response {
