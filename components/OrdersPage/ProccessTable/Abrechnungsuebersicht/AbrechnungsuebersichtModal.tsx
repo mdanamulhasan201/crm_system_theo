@@ -62,6 +62,13 @@ function getSeiteFromDescription(desc: unknown): string {
     return typeof seite === 'string' ? seite.trim() || '—' : '—';
 }
 
+function getPositionsnummerFromDescription(desc: unknown): string | null {
+    if (desc == null || typeof desc !== 'object') return null;
+    const obj = desc as Record<string, unknown>;
+    const num = obj.positionsnummer;
+    return typeof num === 'string' ? num.trim() || null : null;
+}
+
 const BESCHREIBUNG_MAX_LENGTH = 70;
 
 function truncateDescription(text: string, maxLen: number = BESCHREIBUNG_MAX_LENGTH): string {
@@ -223,8 +230,8 @@ export default function AbrechnungsuebersichtModal({
                                         <tbody>
                                             {positions.map((row, idx) => (
                                                 <tr key={row.id} className="border-b border-gray-100">
-                                                    <td className="py-2.5 px-3 text-gray-700">
-                                                        {(idx + 1).toString().padStart(2, '0')}
+                                                    <td className="py-2.5 px-3 text-gray-700 font-mono text-xs">
+                                                        {getPositionsnummerFromDescription(row.description) ?? (idx + 1).toString().padStart(2, '0')}
                                                     </td>
                                                     <td
                                                         className="py-2.5 px-3 text-gray-900 max-w-[220px] cursor-pointer hover:bg-gray-50 rounded transition-colors"
