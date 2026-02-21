@@ -91,6 +91,25 @@ export default function RezeptAbrechnungCard({
 }: RezeptAbrechnungCardProps) {
     const diagnosisRef = useRef<HTMLDivElement>(null);
 
+    // VAT helpers (match PositionsnummerDropdown: country-wise)
+    const getVatRate = (): number => {
+        if (vatCountry === 'Italien (IT)') return 4;
+        if (vatCountry === 'Österreich (AT)') return 20;
+        return 0;
+    };
+    const calculateSubtotal = (): number =>
+        selectedPositionsnummer.reduce((sum, posNum) => {
+            const option = positionsnummerOptions?.find(
+                (o: any) =>
+                    o?.positionsnummer === posNum || o?.description?.positionsnummer === posNum
+            );
+            const basePrice = typeof option?.price === 'number' ? option.price : 0;
+            const side = itemSides?.[posNum] || 'R';
+            return sum + (side === 'BDS' ? basePrice * 2 : basePrice);
+        }, 0);
+    const calculateVatAmount = (amount: number): number => (amount * getVatRate()) / 100;
+    const calculateTotalWithVat = (amount: number): number => amount + calculateVatAmount(amount);
+
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as Node;
@@ -391,21 +410,38 @@ export default function RezeptAbrechnungCard({
                                 );
                             })}
                         </ul>
-                        {/* Total for selected Positionsnummer */}
-                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
-                            <span className="text-sm font-semibold text-gray-700">Gesamt Positionsnummer:</span>
-                            <span className="text-base font-bold text-green-600">
-                                € {selectedPositionsnummer.reduce((sum, posNum) => {
-                                    const option = positionsnummerOptions?.find(
-                                        (o: any) =>
-                                            o?.positionsnummer === posNum ||
-                                            o?.description?.positionsnummer === posNum
-                                    );
-                                    const basePrice = typeof option?.price === 'number' ? option.price : 0;
-                                    const side = itemSides?.[posNum] || 'R';
-                                    return sum + (side === 'BDS' ? basePrice * 2 : basePrice);
-                                }, 0).toFixed(2).replace('.', ',')}
-                            </span>
+                        {/* Total for selected Positionsnummer (with country-wise VAT, same as modal) */}
+                        <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium text-gray-700">Zwischensumme:</span>
+                                <span className="text-sm font-semibold text-gray-900">
+                                    € {calculateSubtotal().toFixed(2).replace('.', ',')}
+                                </span>
+                            </div>
+                            {getVatRate() > 0 && (
+                                <>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-gray-600">+{getVatRate()}% VAT:</span>
+                                        <span className="text-sm font-semibold text-gray-700">
+                                            € {calculateVatAmount(calculateSubtotal()).toFixed(2).replace('.', ',')}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center pt-2 border-t border-gray-300">
+                                        <span className="text-base font-bold text-gray-900">Gesamt:</span>
+                                        <span className="text-base font-bold text-green-600">
+                                            € {calculateTotalWithVat(calculateSubtotal()).toFixed(2).replace('.', ',')}
+                                        </span>
+                                    </div>
+                                </>
+                            )}
+                            {getVatRate() === 0 && (
+                                <div className="flex justify-between items-center pt-2 border-t border-gray-300">
+                                    <span className="text-base font-bold text-gray-900">Gesamt:</span>
+                                    <span className="text-base font-bold text-green-600">
+                                        € {calculateSubtotal().toFixed(2).replace('.', ',')}
+                                    </span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
