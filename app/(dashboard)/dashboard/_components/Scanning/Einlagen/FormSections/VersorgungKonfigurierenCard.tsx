@@ -379,6 +379,7 @@ export default function VersorgungKonfigurierenCard({
                         menge={menge}
                         customerId={customerId}
                         selectedEinlageId={selectedEinlageId}
+                        selectedEinlage={selectedEinlage}
                         onCustomVersorgungCreated={onCustomVersorgungCreated}
                     />
                     

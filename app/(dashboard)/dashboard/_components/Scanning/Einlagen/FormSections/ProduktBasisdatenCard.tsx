@@ -8,7 +8,7 @@ interface ProduktBasisdatenCardProps {
     einlageOptions: Array<{ id?: string; name: string; price?: number }>;
     showEinlageDropdown: boolean;
     onEinlageToggle: () => void;
-    onEinlageSelect: (value: string) => void;
+    onEinlageSelect: (value: string, id?: string) => void;
     onEinlageClear?: () => void;
     onCloseEinlageDropdown?: () => void;
     einlagentypError?: string;
@@ -132,9 +132,9 @@ export default function ProduktBasisdatenCard({
                             <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                                 {einlageOptions.map((option) => (
                                     <div
-                                        key={option.name}
+                                        key={option.id || option.name}
                                         onClick={() => {
-                                            onEinlageSelect(option.name);
+                                            onEinlageSelect(option.name, option.id);
                                         }}
                                         className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                                     >

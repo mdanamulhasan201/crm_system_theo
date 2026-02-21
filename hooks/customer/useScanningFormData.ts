@@ -190,19 +190,13 @@ export const useScanningFormData = (
             });
             
             setEinlageOptions(optionsWithPrices);
-            
-            // Set first option as default if available
-            if (statusNames.length > 0 && !selectedEinlage) {
-                setSelectedEinlage(statusNames[0]);
-                // Fetch versorgungen for the first status
-                await fetchVersorgungenByStatus(statusNames[0]);
-            }
+            // No default selection - user must explicitly select Einlagetyp
         } catch (error) {
             console.error('Error fetching supply statuses:', error);
             setEinlageOptions([]);
             hasFetchedSupplyStatuses.current = false; // Reset on error so it can retry
         }
-    }, [selectedEinlage, fetchVersorgungenByStatus]);
+    }, [fetchVersorgungenByStatus]);
 
     // Fetch diagnoses from API
     const fetchDiagnoses = useCallback(async (search: string = '') => {
@@ -507,6 +501,7 @@ export const useScanningFormData = (
         editingSupply,
         // buttons
         selectedEinlage,
+        setSelectedEinlage,
         // dynamic einlage options from API
         einlageOptions,
         // checkboxes

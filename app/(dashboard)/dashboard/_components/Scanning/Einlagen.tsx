@@ -246,6 +246,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         supply,
         setSupply,
         selectedEinlage,
+        setSelectedEinlage,
         einlageOptions,
         handleDiagnosisSelect,
         handleVersorgungCardSelect,
@@ -327,6 +328,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     // Custom Versorgung ID and name for Einmalige Versorgung
     const [customVersorgungId, setCustomVersorgungId] = useState<string | null>(null);
     const [customVersorgungsname, setCustomVersorgungsname] = useState<string | null>(null);
+
+    // Selected Einlagetyp ID (supplyStatusId) - from dropdown selection
+    const [selectedEinlageId, setSelectedEinlageId] = useState<string | undefined>(undefined);
 
     // Track active tab to determine which versorgung to use
     const [activeVersorgungTab, setActiveVersorgungTab] = useState<'standard' | 'einmalig' | 'springer' | 'manuell'>('standard');
@@ -476,6 +480,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             if (derivedEinlage) {
                 handleEinlageButtonClick(derivedEinlage);
                 setEinlagentyp(derivedEinlage);
+                const matchedOpt = einlageOptions.find((o: { name: string; id?: string }) => o.name === derivedEinlage) as { id?: string } | undefined;
+                if (matchedOpt?.id) setSelectedEinlageId(matchedOpt.id);
             }
         }
         if (typeof prefillOrderData.überzug !== 'undefined') {
@@ -1005,14 +1011,17 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 einlageOptions={einlageOptions}
                 showEinlageDropdown={showEinlageDropdown}
                 onEinlageToggle={() => setShowEinlageDropdown(!showEinlageDropdown)}
-                onEinlageSelect={(value) => {
+                onEinlageSelect={(value, id) => {
                     handleEinlageSelect(value);
                     setValue('einlagentyp', value);
+                    setSelectedEinlageId(id);
                     setShowEinlageDropdown(false);
                 }}
                 onEinlageClear={() => {
                     setEinlagentyp('');
                     setValue('einlagentyp', '');
+                    setSelectedEinlageId(undefined);
+                    setSelectedEinlage('');
                 }}
                 onCloseEinlageDropdown={() => setShowEinlageDropdown(false)}
                 einlagentypError={errors.einlagentyp?.message}
@@ -1067,7 +1076,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 onInsoleStandardsChange={setInsoleStandards}
                 menge={menge}
                 customerId={customer?.id}
-                selectedEinlageId={(einlageOptions.find(opt => opt.name === selectedEinlage) as { id?: string; name: string; price?: number } | undefined)?.id}
+                selectedEinlageId={selectedEinlageId ?? (einlageOptions.find(opt => opt.name === selectedEinlage) as { id?: string; name: string; price?: number } | undefined)?.id}
                 onCustomVersorgungCreated={handleCustomVersorgungCreated}
                 onActiveTabChange={handleActiveTabChange}
                 onSpringerClick={() => setShowSpringerDialog(true)}

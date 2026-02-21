@@ -30,6 +30,7 @@ interface EinmaligeVersorgungContentProps {
     menge?: string;
     customerId?: string;
     selectedEinlageId?: string;
+    selectedEinlage?: string;
     onCustomVersorgungCreated?: (versorgungId: string, versorgungsname?: string) => void;
 }
 
@@ -39,6 +40,7 @@ export default function EinmaligeVersorgungContent({
     menge,
     customerId,
     selectedEinlageId,
+    selectedEinlage,
     onCustomVersorgungCreated
 }: EinmaligeVersorgungContentProps) {
     const [storageProducts, setStorageProducts] = useState<StorageProduct[]>([])
@@ -57,6 +59,9 @@ export default function EinmaligeVersorgungContent({
 
     // Loading state for API call
     const [isCreating, setIsCreating] = useState(false)
+
+    // Summary view - show read-only card after Fertig is clicked successfully
+    const [showSummary, setShowSummary] = useState(false)
 
     // Update local menge when prop changes
     useEffect(() => {
@@ -163,7 +168,8 @@ export default function EinmaligeVersorgungContent({
 
             toast.success(successMessage);
 
-            // Do not clear input fields - user data stays
+            // Show summary card with entered data
+            setShowSummary(true);
         } catch (error: any) {
             console.error('Error creating custom versorgung:', error);
             toast.error(error?.response?.data?.message || 'Fehler beim Erstellen der Versorgung');
@@ -171,6 +177,46 @@ export default function EinmaligeVersorgungContent({
             setIsCreating(false);
         }
     };
+
+    // Summary card - shown after Fertig is clicked
+    if (showSummary) {
+        return (
+            <div className="mb-6">
+                <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 shadow-sm">
+                    <div className="space-y-2">
+                        <p className="text-sm">
+                            <span className="font-bold text-gray-900">Versorgung:</span>{' '}
+                            <span className="text-gray-700">{versorgungsname || '-'}</span>
+                        </p>
+                        <p className="text-sm">
+                            <span className="font-bold text-gray-900">Materialien:</span>{' '}
+                            <span className="text-gray-700">
+                                {materialien.length > 0 ? materialien.join(', ') : '-'}
+                            </span>
+                        </p>
+                        {selectedProduct && (
+                            <p className="text-sm font-bold text-gray-900">
+                                {selectedProduct.produktname}
+                            </p>
+                        )}
+                        {selectedEinlage && (
+                            <p className="text-sm">
+                                <span className="font-bold text-gray-900">Einlage:</span>{' '}
+                                <span className="text-gray-700">{selectedEinlage}</span>
+                            </p>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setShowSummary(false)}
+                        className="mt-3 text-sm font-medium text-[#61A178] hover:text-[#4A8A5F] hover:underline cursor-pointer"
+                    >
+                        Bearbeiten
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="mb-6">
