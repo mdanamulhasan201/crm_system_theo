@@ -25,6 +25,7 @@ export interface WerkstattzettelFormData {
   discountType?: string
   addonPrices?: string
   positionsnummerTotal?: number
+  selectedVersorgungData?: { supplyStatus?: { price?: number }; price?: number }
 }
 
 /**
@@ -35,7 +36,12 @@ export function createWerkstattzettelPayload(
   customerId: string
 ) {
   const parsedFoot = Number(formData.footAnalysisPrice)
-  const parsedInsole = Number(formData.insoleSupplyPrice)
+  let parsedInsole = Number(formData.insoleSupplyPrice)
+  // Fallback: use selectedVersorgungData when insoleSupplyPrice is 0 (e.g. from Einlagen flow)
+  if (isNaN(parsedInsole) || parsedInsole === 0) {
+    const fallback = (formData as any).selectedVersorgungData?.supplyStatus?.price ?? (formData as any).selectedVersorgungData?.price
+    if (fallback != null && !isNaN(Number(fallback))) parsedInsole = Number(fallback)
+  }
 
   const auftragsIso = formData.datumAuftrag
     ? `${formData.datumAuftrag}T00:00:00.000Z`
@@ -63,6 +69,18 @@ export function createWerkstattzettelPayload(
     return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
   })()
 
+  const fussanalysePreis = isNaN(parsedFoot) ? 0 : parsedFoot
+  const einlagenversorgungPreis = isNaN(parsedInsole) ? 0 : parsedInsole
+  const quantityNum = formData.quantity ?? 1
+  const positionsnummerTotal = (formData as any).positionsnummerTotal != null && (formData as any).positionsnummerTotal > 0
+    ? (formData as any).positionsnummerTotal
+    : 0
+  const subtotal = fussanalysePreis + einlagenversorgungPreis * quantityNum + addonPricesTotal + positionsnummerTotal
+  const discountAmount = validDiscount != null && formData.discountType === 'percentage'
+    ? (subtotal * validDiscount) / 100
+    : 0
+  const totalPrice = subtotal - discountAmount
+
   // Map bezahlt to paymentStatus - keep both for API compatibility
   const bezahltValue = formData.bezahlt && formData.bezahlt.trim() !== '' ? formData.bezahlt : undefined
   const paymentStatus = bezahltValue
@@ -83,15 +101,16 @@ export function createWerkstattzettelPayload(
     versorgung: formData.versorgung || undefined,
     bezahlt: bezahltValue, // Required by API
     paymentStatus: paymentStatus, // New field
-    fussanalysePreis: isNaN(parsedFoot) ? 0 : parsedFoot,
-    einlagenversorgungPreis: isNaN(parsedInsole) ? 0 : parsedInsole,
+    fussanalysePreis,
+    einlagenversorgungPreis,
+    fußanalyse: fussanalysePreis,
+    einlagenversorgung: einlagenversorgungPreis,
     quantity: formData.quantity || undefined,
     discount: validDiscount,
     discountType: formData.discountType || undefined,
     addonPrices: addonPricesTotal > 0 ? addonPricesTotal : undefined,
-    positionsnummerTotal: formData.positionsnummerTotal != null && formData.positionsnummerTotal > 0
-      ? formData.positionsnummerTotal
-      : undefined,
+    positionsnummerTotal: positionsnummerTotal > 0 ? positionsnummerTotal : undefined,
+    totalPrice: Math.round(totalPrice * 100) / 100,
   }
 }
 

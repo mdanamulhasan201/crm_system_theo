@@ -31,6 +31,7 @@ interface FormData {
   isCustomVersorgung?: boolean // Flag to indicate if using custom versorgung (Einmalige Versorgung)
   versorgungsname?: string
   positionsnummerTotal?: number
+  notiz_hinzufügen?: string
 }
 
 interface UserInfoUpdateModalProps {
@@ -68,6 +69,10 @@ export default function WerkstattzettelModal({
 
   // ✅ Local validation removed - backend handles all validation
  
+
+  // Notiz (note) state
+  const [showNotizTextarea, setShowNotizTextarea] = useState(false)
+  const [notizText, setNotizText] = useState('')
 
   // Settings data state
   const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([])
@@ -241,6 +246,7 @@ export default function WerkstattzettelModal({
           discountType: form.discountType || undefined,
           addonPrices: form.addonPrices || undefined,
           positionsnummerTotal: formData?.positionsnummerTotal,
+          selectedVersorgungData: formData?.selectedVersorgungData,
         },
         scanData.id
       )
@@ -260,6 +266,7 @@ export default function WerkstattzettelModal({
           return isNaN(parsed) ? undefined : parsed
         })(),
         discountType: form.discountType || undefined,
+        notiz_hinzufügen: notizText?.trim() || undefined,
       }
 
       // Do NOT close the Werkstattzettel modal here.
@@ -400,12 +407,11 @@ export default function WerkstattzettelModal({
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">
-              
-               
                 <Button
                   type="button"
                   variant="outline"
                   className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
+                  onClick={() => setShowNotizTextarea(!showNotizTextarea)}
                 >
                   <StickyNote className="w-4 h-4 text-gray-700" />
                   <span>Notiz hinzufügen</span>
@@ -413,6 +419,20 @@ export default function WerkstattzettelModal({
               </div>
             </div>
           </div>
+
+          {/* Notiz textarea - shown when button is clicked */}
+          {showNotizTextarea && (
+            <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Notiz</label>
+              <textarea
+                value={notizText}
+                onChange={(e) => setNotizText(e.target.value)}
+                placeholder="Notiz eingeben..."
+                rows={3}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#50C878] focus:border-transparent resize-none"
+              />
+            </div>
+          )}
         </div>
 
         {/* Action Buttons */}
