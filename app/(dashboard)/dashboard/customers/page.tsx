@@ -3,14 +3,15 @@
 import React, { useState, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { HiPlus } from "react-icons/hi";
-import { X, Mail, Phone, MapPin, User } from "lucide-react";
+// import { HiPlus } from "react-icons/hi";
+import { X, Mail, Phone, MapPin, User, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import LastScans, { LastScansRef } from "@/components/LastScans/LastScans";
 import { useSearchCustomer } from "@/hooks/customer/useSearchCustomer";
-import legsImg from "@/public/Kunden/legs.png";
+import { OrderStatusModal } from "@/components/OrderStatusModal";
+// import legsImg from "@/public/Kunden/legs.png";
 import scanner3D from "@/public/Kunden/3d.png";
 import userImg from "@/public/Kunden/user.png";
 import LastScanTable from "@/components/LastScans/LastScanTable";
@@ -65,6 +66,15 @@ export default function Customers() {
     setShowEmailSuggestions,
     setShowLocationSuggestions,
   } = useSearchCustomer();
+
+  // Order status modal (Scan & Versorgung) – separate component
+  const [orderStatusOpen, setOrderStatusOpen] = useState(false);
+  const [orderStatusCustomerId, setOrderStatusCustomerId] = useState<string | null>(null);
+
+  const openOrderStatusModal = (customerId: string) => {
+    setOrderStatusCustomerId(customerId);
+    setOrderStatusOpen(true);
+  };
 
   // ===== EVENT HANDLERS =====
 
@@ -256,19 +266,29 @@ export default function Customers() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3">
-            <Button
-              onClick={() => handleScanView(selectedCustomer.id)}
-              variant="outline"
-              className="flex-1 flex items-center justify-center gap-2 cursor-pointer border-gray-300 hover:bg-gray-50"
-            >
-              <Image src={scanner3D} alt="Scan" width={16} height={16} />
-              <span className="text-sm">Scan & Versorgung</span>
-            </Button>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-3">
+              <Button
+                onClick={() => handleScanView(selectedCustomer.id)}
+                variant="outline"
+                className="flex-1 flex items-center justify-center gap-2 cursor-pointer border-gray-300 hover:bg-gray-50"
+              >
+                <Image src={scanner3D} alt="Scan" width={16} height={16} />
+                <span className="text-sm">Scan & Versorgung</span>
+              </Button>
+              <Button
+                onClick={() => openOrderStatusModal(selectedCustomer.id)}
+                variant="outline"
+                className="flex-1 flex items-center justify-center gap-2 cursor-pointer border-[#62A07C] text-[#62A07C] hover:bg-[#62A07C]/10"
+              >
+                <Package className="w-4 h-4" />
+                <span className="text-sm">Auftragsstatus</span>
+              </Button>
+            </div>
             <Button
               onClick={() => handleCustomerInfo(selectedCustomer.id)}
               variant="outline"
-              className="flex-1 flex items-center justify-center gap-2 cursor-pointer border-gray-300 hover:bg-gray-50"
+              className="w-full flex items-center justify-center gap-2 cursor-pointer border-gray-300 hover:bg-gray-50"
             >
               <Image src={userImg} alt="User" width={16} height={16} />
               <span className="text-sm">Kundeninfo</span>
@@ -475,6 +495,15 @@ export default function Customers() {
 
       {/* ===== KUNDENAUFTRÄGE ÜBERSICHT SECTION ===== */}
       <LastScanTable onCustomerDeleted={handleCustomerDeleted} />
+
+      <OrderStatusModal
+        open={orderStatusOpen}
+        onOpenChange={(open) => {
+          setOrderStatusOpen(open);
+          if (!open) setOrderStatusCustomerId(null);
+        }}
+        customerId={orderStatusCustomerId}
+      />
     </div>
   );
 }

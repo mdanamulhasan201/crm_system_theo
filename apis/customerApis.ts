@@ -38,6 +38,18 @@ export const getSingleCustomer = async (id: string, date?: string) => {
     }
 }
 
+
+// get single customer wise order  customers/extra-info/order-status/8316981a-496d-4207-ac7e-925a5473bf05
+export const getSingleCustomerWiseOrder = async (id: string) => {
+    try {
+        const response = await axiosClient.get(`/customers/extra-info/order-status/${id}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
 // update customers
 export const updateSingleCustomer = async (id: string, customerData: FormData) => {
     try {
@@ -147,7 +159,7 @@ export const getCustomerNote = async (id: string, page: number, limit: number, c
     try {
         // Build URL with query parameters
         let url = `/customers/history/${id}?page=${page}&limit=${limit}`;
-        
+
         // Only add category if it's not empty
         if (category && category.trim() !== '') {
             url += `&category=${category}`;
