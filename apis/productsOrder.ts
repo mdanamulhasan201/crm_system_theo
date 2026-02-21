@@ -346,3 +346,15 @@ export const getPreviousOrderSingle = async (
     }
 }
 
+
+
+
+// show the note data }}customer-orders/track/status-note/id
+export const getStatusNote = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/track/status-note/${orderId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
