@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek } from 'date-fns'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 
@@ -49,6 +49,9 @@ export default function RightSidebarCalendar({
     start: calendarStart,
     end: calendarEnd
   })
+
+  // Main calendar shows 2 dates: currentDate and currentDate + 1 — both should be active in this grid
+  const visibleInMainCalendar = [currentDate, addDays(currentDate, 1)]
 
   const handlePreviousMonth = () => {
     setMiniCalendarMonth(subMonths(miniCalendarMonth, 1))
@@ -105,7 +108,7 @@ export default function RightSidebarCalendar({
         <div className="grid grid-cols-7 gap-1">
           {calendarDays.map((day, index) => {
             const isCurrentMonth = isSameMonth(day, miniCalendarMonth)
-            const isSelected = isSameDay(day, currentDate)
+            const isInMainView = visibleInMainCalendar.some((d) => isSameDay(day, d))
             const isToday = isSameDay(day, new Date())
 
             return (
@@ -115,9 +118,9 @@ export default function RightSidebarCalendar({
                 className={cn(
                   "aspect-square flex items-center cursor-pointer justify-center text-sm rounded transition-colors",
                   !isCurrentMonth && "text-gray-300",
-                  isCurrentMonth && !isSelected && !isToday && "text-gray-900 hover:bg-gray-100",
-                  isSelected && "bg-[#62A07C] text-white font-semibold",
-                  isToday && !isSelected && "bg-green-50 text-green-600 font-semibold"
+                  isCurrentMonth && !isInMainView && !isToday && "text-gray-900 hover:bg-gray-100",
+                  isInMainView && "bg-[#62A07C] text-white font-semibold",
+                  isToday && !isInMainView && "bg-green-50 text-green-600 font-semibold"
                 )}
               >
                 {format(day, "d")}
