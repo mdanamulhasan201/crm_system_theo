@@ -30,6 +30,7 @@ interface FormData {
   billingType?: 'Krankenkassa' | 'Privat'
   isCustomVersorgung?: boolean // Flag to indicate if using custom versorgung (Einmalige Versorgung)
   versorgungsname?: string
+  positionsnummerTotal?: number
 }
 
 interface UserInfoUpdateModalProps {
