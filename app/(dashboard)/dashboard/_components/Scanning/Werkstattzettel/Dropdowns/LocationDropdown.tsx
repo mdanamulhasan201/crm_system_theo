@@ -1,7 +1,7 @@
 import React from 'react'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { ChevronDown, Check } from 'lucide-react'
+import { ChevronDown, Check, X } from 'lucide-react'
 
 interface Location {
   id: string
@@ -17,6 +17,7 @@ interface LocationDropdownProps {
   onOpenChange: (open: boolean) => void
   onChange: (location: Location) => void
   onSelect: (location: Location) => void
+  onClear?: () => void
 }
 
 export default function LocationDropdown({
@@ -26,6 +27,7 @@ export default function LocationDropdown({
   onOpenChange,
   onChange,
   onSelect,
+  onClear,
 }: LocationDropdownProps) {
   // Helper function to check if a location matches the current value
   const isLocationSelected = (location: Location) => {
@@ -66,7 +68,32 @@ export default function LocationDropdown({
           <span className="truncate">
             {getSelectedDisplayValue()}
           </span>
-          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          <div className="flex items-center gap-1 shrink-0 ml-2">
+            {value && onClear ? (
+              <span
+                role="button"
+                tabIndex={-1}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onClear();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onClear();
+                  }
+                }}
+                className="rounded p-0.5 cursor-pointer text-gray-500 hover:text-gray-700 transition-colors hover:bg-gray-200"
+                aria-label="Auswahl löschen"
+              >
+                <X className="h-4 w-4" />
+              </span>
+            ) : (
+              <ChevronDown className="h-4 w-4 opacity-50" />
+            )}
+          </div>
         </Button>
       </PopoverTrigger>
       <PopoverContent

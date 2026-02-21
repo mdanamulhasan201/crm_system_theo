@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import PositionsnummerDropdown from '../Einlagen/Dropdowns/PositionsnummerDropdown';
 import EmployeeDropdown from '../Common/EmployeeDropdown';
 import LocationDropdown from '../Werkstattzettel/Dropdowns/LocationDropdown';
@@ -16,6 +17,7 @@ interface RezeptCardProps {
     showPositionsnummerDropdown: boolean;
     onPositionsnummerToggle: () => void;
     onPositionsnummerSelect: (values: string[]) => void;
+    onPositionsnummerClear?: () => void;
     vatCountry?: string;
 
     rezeptnummer: string;
@@ -28,6 +30,7 @@ interface RezeptCardProps {
     isLocationDropdownOpen: boolean;
     onLocationDropdownChange: (open: boolean) => void;
     onLocationSelect: (location: any) => void;
+    onLocationClear?: () => void;
 
     selectedEmployee: string;
     employeeSearchText: string;
@@ -37,6 +40,7 @@ interface RezeptCardProps {
     onEmployeeSearchChange: (value: string) => void;
     onEmployeeDropdownChange: (open: boolean) => void;
     onEmployeeSelect: (employee: { employeeName: string; id: string }) => void;
+    onEmployeeClear?: () => void;
 
     halbprobeGeplant: boolean | null;
     onHalbprobeGeplantChange: (value: boolean) => void;
@@ -62,6 +66,7 @@ export default function RezeptCard({
     showPositionsnummerDropdown,
     onPositionsnummerToggle,
     onPositionsnummerSelect,
+    onPositionsnummerClear,
     vatCountry,
     rezeptnummer,
     onRezeptnummerChange,
@@ -71,6 +76,7 @@ export default function RezeptCard({
     isLocationDropdownOpen,
     onLocationDropdownChange,
     onLocationSelect,
+    onLocationClear,
     selectedEmployee,
     employeeSearchText,
     isEmployeeDropdownOpen,
@@ -79,6 +85,7 @@ export default function RezeptCard({
     onEmployeeSearchChange,
     onEmployeeDropdownChange,
     onEmployeeSelect,
+    onEmployeeClear,
     halbprobeGeplant,
     onHalbprobeGeplantChange,
     kostenvoranschlag,
@@ -98,25 +105,53 @@ export default function RezeptCard({
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Ärztliche Diagnose
                     </label>
-                    <input
-                        type="text"
-                        value={ärztlicheDiagnose}
-                        onChange={(e) => onÄrztlicheDiagnoseChange(e.target.value)}
-                        placeholder="Diagnose eingeben..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                    />
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={ärztlicheDiagnose}
+                            onChange={(e) => onÄrztlicheDiagnoseChange(e.target.value)}
+                            placeholder="Diagnose eingeben..."
+                            className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                        />
+                        {ärztlicheDiagnose && (
+                            <span
+                                role="button"
+                                tabIndex={-1}
+                                onClick={() => onÄrztlicheDiagnoseChange('')}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onÄrztlicheDiagnoseChange(''); } }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                aria-label="Auswahl löschen"
+                            >
+                                <X className="h-4 w-4" />
+                            </span>
+                        )}
+                    </div>
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Ausführliche Diagnose
                     </label>
-                    <input
-                        type="text"
-                        value={ausführlicheDiagnose}
-                        onChange={(e) => onAusführlicheDiagnoseChange(e.target.value)}
-                        placeholder="Ausführliche Diagnose..."
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                    />
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={ausführlicheDiagnose}
+                            onChange={(e) => onAusführlicheDiagnoseChange(e.target.value)}
+                            placeholder="Ausführliche Diagnose..."
+                            className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                        />
+                        {ausführlicheDiagnose && (
+                            <span
+                                role="button"
+                                tabIndex={-1}
+                                onClick={() => onAusführlicheDiagnoseChange('')}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onAusführlicheDiagnoseChange(''); } }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                aria-label="Auswahl löschen"
+                            >
+                                <X className="h-4 w-4" />
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -136,6 +171,7 @@ export default function RezeptCard({
                                 isOpen={showPositionsnummerDropdown}
                                 onToggle={onPositionsnummerToggle}
                                 onSelect={onPositionsnummerSelect}
+                                onClear={onPositionsnummerClear}
                                 vatCountry={vatCountry}
                             />
                         </div>
@@ -145,13 +181,27 @@ export default function RezeptCard({
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Rezeptnummer
                             </label>
-                            <input
-                                type="text"
-                                value={rezeptnummer}
-                                onChange={(e) => onRezeptnummerChange(e.target.value)}
-                                placeholder="Rezeptnummer..."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={rezeptnummer}
+                                    onChange={(e) => onRezeptnummerChange(e.target.value)}
+                                    placeholder="Rezeptnummer..."
+                                    className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                />
+                                {rezeptnummer && (
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
+                                        onClick={() => onRezeptnummerChange('')}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRezeptnummerChange(''); } }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                        aria-label="Auswahl löschen"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -169,6 +219,7 @@ export default function RezeptCard({
                                 onOpenChange={onLocationDropdownChange}
                                 onChange={onLocationSelect}
                                 onSelect={onLocationSelect}
+                                onClear={onLocationClear}
                             />
                         </div>
 
@@ -186,6 +237,7 @@ export default function RezeptCard({
                                 onEmployeeSearchChange={onEmployeeSearchChange}
                                 onEmployeeDropdownChange={onEmployeeDropdownChange}
                                 onEmployeeSelect={onEmployeeSelect}
+                                onClear={onEmployeeClear}
                                 placeholder="Mitarbeiter..."
                             />
                         </div>
@@ -267,28 +319,56 @@ export default function RezeptCard({
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Preis (€)
                             </label>
-                            <input
-                                type="number"
-                                step=""
-                                value={price}
-                                onChange={(e) => onPriceChange?.(e.target.value)}
-                                placeholder="0.00"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    step=""
+                                    value={price}
+                                    onChange={(e) => onPriceChange?.(e.target.value)}
+                                    placeholder="0.00"
+                                    className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                />
+                                {price && (
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
+                                        onClick={() => onPriceChange?.('')}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPriceChange?.(''); } }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                        aria-label="Auswahl löschen"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         <div className="lg:col-span-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Steuersatz (%)
                             </label>
-                            <input
-                                type="number"
-                                step=""
-                                value={tax}
-                                onChange={(e) => onTaxChange?.(e.target.value)}
-                                placeholder="0"
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="number"
+                                    step=""
+                                    value={tax}
+                                    onChange={(e) => onTaxChange?.(e.target.value)}
+                                    placeholder="0"
+                                    className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                />
+                                {tax && (
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
+                                        onClick={() => onTaxChange?.('')}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTaxChange?.(''); } }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                        aria-label="Auswahl löschen"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </span>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -299,13 +379,27 @@ export default function RezeptCard({
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Rezeptnummer
                             </label>
-                            <input
-                                type="text"
-                                value={rezeptnummer}
-                                onChange={(e) => onRezeptnummerChange(e.target.value)}
-                                placeholder="Rezeptnummer..."
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                            />
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={rezeptnummer}
+                                    onChange={(e) => onRezeptnummerChange(e.target.value)}
+                                    placeholder="Rezeptnummer..."
+                                    className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                />
+                                {rezeptnummer && (
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
+                                        onClick={() => onRezeptnummerChange('')}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRezeptnummerChange(''); } }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                        aria-label="Auswahl löschen"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* Partner Location */}
@@ -320,6 +414,7 @@ export default function RezeptCard({
                                 onOpenChange={onLocationDropdownChange}
                                 onChange={onLocationSelect}
                                 onSelect={onLocationSelect}
+                                onClear={onLocationClear}
                             />
                         </div>
                     </div>
@@ -340,6 +435,7 @@ export default function RezeptCard({
                                 onEmployeeSearchChange={onEmployeeSearchChange}
                                 onEmployeeDropdownChange={onEmployeeDropdownChange}
                                 onEmployeeSelect={onEmployeeSelect}
+                                onClear={onEmployeeClear}
                                 placeholder="Mitarbeiter..."
                             />
                         </div>

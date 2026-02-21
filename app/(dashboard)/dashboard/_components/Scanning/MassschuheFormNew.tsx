@@ -181,16 +181,18 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         fetchLocations();
     }, []);
 
-    // Set primary location as default when locations are loaded
+    // Set primary location as default when locations are loaded (only on initial load, not when user clears)
+    const hasSetInitialLocation = useRef(false);
     useEffect(() => {
-        if (locations.length > 0 && !selectedLocation) {
+        if (locations.length > 0 && !hasSetInitialLocation.current) {
+            hasSetInitialLocation.current = true;
             const primaryLocation = locations.find(loc => loc.isPrimary);
             const locationToUse = primaryLocation || locations[0];
             if (locationToUse) {
                 setSelectedLocation(locationToUse);
             }
         }
-    }, [locations, selectedLocation]);
+    }, [locations]);
 
     // Massschuhe hook
     const { createMassschuhe, isLoading } = useCreateMassschuhe();
@@ -383,6 +385,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     showPositionsnummerDropdown={showPositionsnummerDropdown}
                     onPositionsnummerToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
                     onPositionsnummerSelect={setSelectedPositionsnummer}
+                    onPositionsnummerClear={() => setSelectedPositionsnummer([])}
                     vatCountry={user?.accountInfo?.vat_country || undefined}
                     rezeptnummer={rezeptnummer}
                     onRezeptnummerChange={setRezeptnummer}
@@ -392,6 +395,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     isLocationDropdownOpen={isLocationDropdownOpen}
                     onLocationDropdownChange={setIsLocationDropdownOpen}
                     onLocationSelect={(location) => setSelectedLocation(location)}
+                    onLocationClear={() => setSelectedLocation(null)}
                     selectedEmployee={selectedEmployee}
                     employeeSearchText={searchText}
                     isEmployeeDropdownOpen={isEmployeeDropdownOpen}
@@ -400,6 +404,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     onEmployeeSearchChange={handleEmployeeSearchChange}
                     onEmployeeDropdownChange={handleEmployeeDropdownChange}
                     onEmployeeSelect={handleEmployeeSelect}
+                    onEmployeeClear={() => { setSelectedEmployee(''); setSelectedEmployeeId(''); }}
                     halbprobeGeplant={halbprobeGeplant}
                     onHalbprobeGeplantChange={setHalbprobeGeplant}
                     kostenvoranschlag={kostenvoranschlag}

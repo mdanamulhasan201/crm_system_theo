@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { X } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -236,13 +237,27 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Leistungsname<span className="text-red-500">*</span>
                             </label>
-                            <Input
-                                type="text"
-                                placeholder="z.B. Sonderanpassung"
-                                value={leistungsname}
-                                onChange={(e) => setLeistungsname(e.target.value)}
-                                className="w-full h-10"
-                            />
+                            <div className="relative">
+                                <Input
+                                    type="text"
+                                    placeholder="z.B. Sonderanpassung"
+                                    value={leistungsname}
+                                    onChange={(e) => setLeistungsname(e.target.value)}
+                                    className="w-full h-10 pr-9"
+                                />
+                                {leistungsname && (
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
+                                        onClick={() => setLeistungsname('')}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLeistungsname(''); } }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                        aria-label="Auswahl löschen"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* Kategorie */}
@@ -250,13 +265,27 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Kategorie
                             </label>
-                            <Input
-                                type="text"
-                                placeholder="Optional..."
-                                value={kategorie}
-                                onChange={(e) => setKategorie(e.target.value)}
-                                className="w-full h-10"
-                            />
+                            <div className="relative">
+                                <Input
+                                    type="text"
+                                    placeholder="Optional..."
+                                    value={kategorie}
+                                    onChange={(e) => setKategorie(e.target.value)}
+                                    className="w-full h-10 pr-9"
+                                />
+                                {kategorie && (
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
+                                        onClick={() => setKategorie('')}
+                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setKategorie(''); } }}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                        aria-label="Auswahl löschen"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         {/* Durchgeführt von */}
@@ -314,14 +343,28 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     {isNetto ? 'Netto-Preis (€)' : 'Brutto-Preis (€)'}
                                 </label>
-                                <Input
-                                    type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={nettoPreis}
-                                    onChange={(e) => setNettoPreis(e.target.value)}
-                                    className="w-full h-10"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        value={nettoPreis}
+                                        onChange={(e) => setNettoPreis(e.target.value)}
+                                        className="w-full h-10 pr-9"
+                                    />
+                                    {nettoPreis && (
+                                        <span
+                                            role="button"
+                                            tabIndex={-1}
+                                            onClick={() => setNettoPreis('0.00')}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setNettoPreis('0.00'); } }}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                            aria-label="Auswahl löschen"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </span>
+                                    )}
+                                </div>
                             </div>
 
                             {/* Rabatt */}
@@ -330,16 +373,30 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                     Rabatt (% - wechseln)
                                 </label>
                                 <div className="flex items-center gap-2">
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        max="100"
-                                        placeholder="0"
-                                        value={rabatt}
-                                        onChange={(e) => setRabatt(e.target.value)}
-                                        className="w-full h-10"
-                                    />
+                                    <div className="relative flex-1">
+                                        <Input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            max="100"
+                                            placeholder="0"
+                                            value={rabatt}
+                                            onChange={(e) => setRabatt(e.target.value)}
+                                            className="w-full h-10 pr-9"
+                                        />
+                                        {rabatt && rabatt !== '0' && (
+                                            <span
+                                                role="button"
+                                                tabIndex={-1}
+                                                onClick={() => setRabatt('0')}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRabatt('0'); } }}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                                aria-label="Auswahl löschen"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </span>
+                                        )}
+                                    </div>
                                     <span className="text-sm text-gray-600 font-medium">%</span>
                                 </div>
                             </div>
@@ -427,13 +484,27 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                 {/* Leistungsnotiz Section */}
                 <div className="mb-8">
                     <h2 className="text-base font-semibold mb-4 text-gray-600">Leistungsnotiz</h2>
-                    <Textarea
-                        placeholder="Anmerkungen zur Leistung..."
-                        value={leistungsnotiz}
-                        onChange={(e) => setLeistungsnotiz(e.target.value)}
-                        className="w-full min-h-[120px] border-gray-300 resize-none"
-                        rows={4}
-                    />
+                    <div className="relative">
+                        <Textarea
+                            placeholder="Anmerkungen zur Leistung..."
+                            value={leistungsnotiz}
+                            onChange={(e) => setLeistungsnotiz(e.target.value)}
+                            className="w-full min-h-[120px] border-gray-300 resize-none pr-9"
+                            rows={4}
+                        />
+                        {leistungsnotiz && (
+                            <span
+                                role="button"
+                                tabIndex={-1}
+                                onClick={() => setLeistungsnotiz('')}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLeistungsnotiz(''); } }}
+                                className="absolute right-2 top-3 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                aria-label="Auswahl löschen"
+                            >
+                                <X className="h-4 w-4" />
+                            </span>
+                        )}
+                    </div>
                 </div>
 
                 {/* Abschliessen Button */}
