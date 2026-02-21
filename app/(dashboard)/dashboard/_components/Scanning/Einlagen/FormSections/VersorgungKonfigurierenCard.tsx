@@ -80,6 +80,12 @@ export default function VersorgungKonfigurierenCard({
         }
     }, [searchParams, activeTab]);
 
+    // Sync parent's activeVersorgungTab when our activeTab changes (including initial load from URL)
+    useEffect(() => {
+        onActiveTabChange?.(activeTab);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab]);
+
     // Function to update tab and URL
     const handleTabChange = (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => {
         setActiveTab(tab);
