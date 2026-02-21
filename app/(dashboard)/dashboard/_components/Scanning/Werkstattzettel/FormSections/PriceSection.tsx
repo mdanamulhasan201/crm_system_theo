@@ -45,6 +45,7 @@ interface PriceSectionProps {
   onDiscountValueChange: (value: string) => void
   addonPrices?: string
   onAddonPricesChange?: (value: string) => void
+  positionsnummerPrice?: number
   bezahlt: string
   onBezahltChange: (value: string) => void
   paymentError?: string
@@ -107,6 +108,7 @@ export default function PriceSection({
   onDiscountValueChange,
   addonPrices = '',
   onAddonPricesChange,
+  positionsnummerPrice = 0,
   bezahlt,
   onBezahltChange,
   paymentError,
@@ -158,7 +160,7 @@ export default function PriceSection({
     return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
   }, [addonPrices])
 
-  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal
+  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal + (positionsnummerPrice || 0)
   const discountAmount = discountType === 'percentage' && discountValue
     ? (subtotal * parseFloat(discountValue)) / 100
     : 0
@@ -419,6 +421,13 @@ export default function PriceSection({
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-gray-600">Addon Preise</span>
                   <span className="text-sm font-semibold text-gray-900">{formatPrice(addonPricesTotal)}</span>
+                </div>
+              )}
+
+              {(positionsnummerPrice || 0) > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Positionsnummer</span>
+                  <span className="text-sm font-semibold text-gray-900">{formatPrice(positionsnummerPrice || 0)}</span>
                 </div>
               )}
 

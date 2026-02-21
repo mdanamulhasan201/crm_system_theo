@@ -238,6 +238,8 @@ export default function WerkstattzettelModal({
             return isNaN(parsed) ? undefined : parsed
           })(),
           discountType: form.discountType || undefined,
+          addonPrices: form.addonPrices || undefined,
+          positionsnummerTotal: formData?.positionsnummerTotal,
         },
         scanData.id
       )
@@ -365,6 +367,7 @@ export default function WerkstattzettelModal({
               onDiscountValueChange={form.setDiscountValue}
               addonPrices={form.addonPrices}
               onAddonPricesChange={form.setAddonPrices}
+              positionsnummerPrice={formData?.positionsnummerTotal ?? 0}
               bezahlt={form.bezahlt}
               onBezahltChange={form.setBezahlt}
               paymentError={undefined}

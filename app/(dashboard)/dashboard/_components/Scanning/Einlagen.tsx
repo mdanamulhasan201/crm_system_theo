@@ -835,6 +835,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             billingType,
             insoleStandards,
             versorgungsname: activeVersorgungTab === 'einmalig' ? (customVersorgungsname ?? undefined) : undefined,
+            selectedPositionsnummer,
+            itemSides,
+            positionsnummerOptions: filteredPositionsnummerData,
         });
         
         // Add flag to indicate if using custom versorgung (Einmalige Versorgung)

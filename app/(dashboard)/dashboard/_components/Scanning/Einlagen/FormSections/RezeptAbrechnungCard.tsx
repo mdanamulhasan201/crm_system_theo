@@ -391,6 +391,22 @@ export default function RezeptAbrechnungCard({
                                 );
                             })}
                         </ul>
+                        {/* Total for selected Positionsnummer */}
+                        <div className="flex justify-between items-center mt-3 pt-3 border-t border-gray-200">
+                            <span className="text-sm font-semibold text-gray-700">Gesamt Positionsnummer:</span>
+                            <span className="text-base font-bold text-green-600">
+                                € {selectedPositionsnummer.reduce((sum, posNum) => {
+                                    const option = positionsnummerOptions?.find(
+                                        (o: any) =>
+                                            o?.positionsnummer === posNum ||
+                                            o?.description?.positionsnummer === posNum
+                                    );
+                                    const basePrice = typeof option?.price === 'number' ? option.price : 0;
+                                    const side = itemSides?.[posNum] || 'R';
+                                    return sum + (side === 'BDS' ? basePrice * 2 : basePrice);
+                                }, 0).toFixed(2).replace('.', ',')}
+                            </span>
+                        </div>
                     </div>
                 )}
         </div>

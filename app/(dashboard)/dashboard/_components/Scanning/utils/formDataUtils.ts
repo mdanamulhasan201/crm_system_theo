@@ -23,6 +23,8 @@ export interface WerkstattzettelFormData {
   quantity?: number
   discount?: number
   discountType?: string
+  addonPrices?: string
+  positionsnummerTotal?: number
 }
 
 /**
@@ -53,6 +55,14 @@ export function createWerkstattzettelPayload(
     : undefined
   const validDiscount = parsedDiscount !== undefined && !isNaN(parsedDiscount) ? parsedDiscount : undefined
 
+  // Parse addon prices - supports single number or comma/space-separated (e.g. "10" or "10, 20, 5")
+  const addonPricesTotal = (() => {
+    const raw = formData.addonPrices
+    if (!raw || typeof raw !== 'string') return 0
+    const parts = raw.split(/[,\s]+/).filter(Boolean)
+    return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
+  })()
+
   // Map bezahlt to paymentStatus - keep both for API compatibility
   const bezahltValue = formData.bezahlt && formData.bezahlt.trim() !== '' ? formData.bezahlt : undefined
   const paymentStatus = bezahltValue
@@ -78,6 +88,10 @@ export function createWerkstattzettelPayload(
     quantity: formData.quantity || undefined,
     discount: validDiscount,
     discountType: formData.discountType || undefined,
+    addonPrices: addonPricesTotal > 0 ? addonPricesTotal : undefined,
+    positionsnummerTotal: formData.positionsnummerTotal != null && formData.positionsnummerTotal > 0
+      ? formData.positionsnummerTotal
+      : undefined,
   }
 }
 

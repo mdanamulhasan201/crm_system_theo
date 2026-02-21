@@ -96,6 +96,9 @@ export interface CollectFormDataParams {
     billingType?: 'Krankenkassa' | 'Privat';
     insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>;
     versorgungsname?: string;
+    selectedPositionsnummer?: string[];
+    itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
+    positionsnummerOptions?: Array<{ positionsnummer?: string; description?: any; price: number }>;
 }
 
 export function collectFormData({
@@ -117,6 +120,9 @@ export function collectFormData({
     billingType,
     insoleStandards,
     versorgungsname,
+    selectedPositionsnummer,
+    itemSides,
+    positionsnummerOptions,
 }: CollectFormDataParams) {
     const mengeNumber = menge ? parseInt(menge.split(' ')[0]) || 1 : 1;
     const selectedVersorgungItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
@@ -139,6 +145,19 @@ export function collectFormData({
         screenerId: screenerId || null,
         billingType: billingType || undefined,
         insoleStandards: insoleStandards || [],
+        selectedPositionsnummer: selectedPositionsnummer || [],
+        itemSides: itemSides || {},
+        positionsnummerOptions: positionsnummerOptions || [],
+        positionsnummerTotal: (() => {
+            if (!selectedPositionsnummer?.length || !positionsnummerOptions?.length) return 0;
+            const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
+            return selectedPositionsnummer.reduce((sum, posNum) => {
+                const opt = positionsnummerOptions.find((o) => getPosNum(o) === posNum);
+                if (!opt || typeof opt.price !== 'number') return sum;
+                const side = itemSides?.[posNum] || 'R';
+                return sum + (side === 'BDS' ? opt.price * 2 : opt.price);
+            }, 0);
+        })(),
     };
 }
 
