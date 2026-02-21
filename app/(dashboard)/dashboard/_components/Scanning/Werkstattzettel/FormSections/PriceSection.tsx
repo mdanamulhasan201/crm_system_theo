@@ -151,7 +151,14 @@ export default function PriceSection({
       : (parseFloat(footAnalysisPrice) || 0)
   const quantityNum = parseInt(quantity?.match(/\d+/)?.[0] || '1', 10)
 
-  const subtotal = (versorgungPrice * quantityNum) + footPrice
+  // Parse addon prices - supports single number or comma-separated (e.g. "10" or "10, 20, 5")
+  const addonPricesTotal = useMemo(() => {
+    if (!addonPrices || typeof addonPrices !== 'string') return 0
+    const parts = addonPrices.split(/[,\s]+/).filter(Boolean)
+    return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
+  }, [addonPrices])
+
+  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal
   const discountAmount = discountType === 'percentage' && discountValue
     ? (subtotal * parseFloat(discountValue)) / 100
     : 0
@@ -407,6 +414,13 @@ export default function PriceSection({
                 <span className="text-sm text-gray-600">Fußanalyse</span>
                 <span className="text-sm font-semibold text-gray-900">{formatPrice(footPrice)}</span>
               </div>
+
+              {addonPricesTotal > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Addon Preise</span>
+                  <span className="text-sm font-semibold text-gray-900">{formatPrice(addonPricesTotal)}</span>
+                </div>
+              )}
 
               <div className="flex justify-between items-center pt-3 border-t border-gray-300">
                 <span className="text-sm text-gray-600">Zwischensumme</span>
