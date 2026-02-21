@@ -193,13 +193,7 @@ function TypeFilterButtons() {
     return (
         <div className="mt-10 flex gap-3">
             <button
-                onClick={() => {
-                    if (selectedType === 'rady_insole') {
-                        setSelectedType(null);
-                    } else {
-                        setSelectedType('rady_insole');
-                    }
-                }}
+                onClick={() => setSelectedType('rady_insole')}
                 className={`
                     cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
                     ${selectedType === 'rady_insole'
@@ -211,13 +205,7 @@ function TypeFilterButtons() {
                 Einlage
             </button>
             <button
-                onClick={() => {
-                    if (selectedType === 'milling_block') {
-                        setSelectedType(null);
-                    } else {
-                        setSelectedType('milling_block');
-                    }
-                }}
+                onClick={() => setSelectedType('milling_block')}
                 className={`
                     cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
                     ${selectedType === 'milling_block'
@@ -229,13 +217,7 @@ function TypeFilterButtons() {
                 Fräsblock
             </button>
             <button
-                onClick={() => {
-                    if (selectedType === 'sonstiges') {
-                        setSelectedType(null);
-                    } else {
-                        setSelectedType('sonstiges');
-                    }
-                }}
+                onClick={() => setSelectedType('sonstiges')}
                 className={`
                     cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
                     ${selectedType === 'sonstiges'
