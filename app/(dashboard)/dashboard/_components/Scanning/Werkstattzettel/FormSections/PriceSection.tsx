@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 import PaymentStatusSection from './PaymentStatusSection'
-import { FileText, Calendar, Users } from 'lucide-react'
+import { FileText } from 'lucide-react'
 
 type EinlagenversorgungPriceItem = { name: string; price: number } | number
 
@@ -139,16 +139,6 @@ export default function PriceSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [footAnalysisPrice, footOptions])
   
-  // Format date to DD.MM.YYYY
-  const formatDate = (dateString: string) => {
-    if (!dateString) return ''
-    const date = new Date(dateString)
-    const day = String(date.getDate()).padStart(2, '0')
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const year = date.getFullYear()
-    return `${day}.${month}.${year}`
-  }
-
   // Calculate prices
   const versorgungPrice = parseFloat(insoleSupplyPrice) || 0
   const footPrice =
@@ -250,18 +240,21 @@ export default function PriceSection({
               </Select>
             </div>
 
-            {/* Fertigstellung bis - Display Only */}
-            <div className="flex items-start gap-3">
-              <Calendar className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Fertigstellung bis</p>
-                <p className="text-[15px] font-semibold text-gray-700">
-                  {formatDate(fertigstellungBis) || '-'}
-                </p>
-                {fertigstellungBisError && (
-                  <p className="text-xs text-red-500 mt-1">{fertigstellungBisError}</p>
+            {/* Fertigstellung bis - Editable Date Picker */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Fertigstellung bis</Label>
+              <Input
+                type="date"
+                value={fertigstellungBis ? fertigstellungBis.slice(0, 10) : ''}
+                onChange={(e) => onFertigstellungBisChange(e.target.value)}
+                className={cn(
+                  'h-11 border-gray-300',
+                  fertigstellungBisError && 'border-red-500 focus-visible:ring-red-500'
                 )}
-              </div>
+              />
+              {fertigstellungBisError && (
+                <p className="text-xs text-red-500 mt-1">{fertigstellungBisError}</p>
+              )}
             </div>
           </div>
 
