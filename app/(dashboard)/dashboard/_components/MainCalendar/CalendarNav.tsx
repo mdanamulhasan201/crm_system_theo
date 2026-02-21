@@ -41,21 +41,21 @@ export default function CalendarNav({
   }
 
   return (
-    <div className="flex items-center justify-between w-full px-6 py-3 bg-white border-b border-gray-200">
+    <div className="flex items-center w-full px-6 py-3 bg-white border-b border-gray-200">
       {/* Left side - Heute button and arrows */}
       <div className="flex items-center gap-2">
         <Button
           variant="outline"
           size="sm"
           onClick={handleToday}
-          className="rounded-md px-3 py-1.5 text-sm font-medium"
+          className="rounded-md px-3 py-1.5 text-sm font-medium bg-gray-50 hover:bg-gray-100"
         >
           Heute
         </Button>
         
         <button
           onClick={handlePrevious}
-          className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+          className="p-1.5 hover:bg-gray-100 rounded transition-colors"
           aria-label="Previous"
         >
           <ChevronLeft className="w-4 h-4 text-gray-600" />
@@ -63,7 +63,7 @@ export default function CalendarNav({
         
         <button
           onClick={handleNext}
-          className="p-1.5 hover:bg-gray-100 rounded-md transition-colors"
+          className="p-1.5 hover:bg-gray-100 rounded transition-colors"
           aria-label="Next"
         >
           <ChevronRight className="w-4 h-4 text-gray-600" />
@@ -71,7 +71,7 @@ export default function CalendarNav({
       </div>
 
       {/* Center - Date Range */}
-      <div className="flex-1 flex items-center justify-center">
+      <div className="flex-1 flex items-center justify-center ml-4">
         <span className="text-base font-medium text-gray-900">
           {formatDateRange()}
         </span>

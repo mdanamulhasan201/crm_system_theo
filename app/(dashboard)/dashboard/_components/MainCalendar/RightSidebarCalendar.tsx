@@ -133,40 +133,69 @@ export default function RightSidebarCalendar({
           MITARBEITER
         </h3>
         
-        {/* 2x2 Grid Layout */}
-        <div className="grid grid-cols-2 gap-2">
-          {employees.map((employee) => {
-            const isSelected = selectedEmployees.includes(employee.id)
-            
-            return (
-              <button
-                key={employee.id}
-                onClick={() => onEmployeeToggle(employee.id)}
-                className={cn(
-                  "flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                  "hover:shadow-sm",
-                  isSelected
-                    ? "bg-green-500 text-white hover:bg-green-600 shadow-sm"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                )}
-              >
-                {/* Circular Badge with Initial */}
-                <div
+        {/* Employee Avatars - First two are circular only, last two have text */}
+        <div className="flex flex-col gap-2">
+          {/* M and D - Circular avatars */}
+          <div className="flex gap-2">
+            {employees.slice(0, 2).map((employee) => {
+              const isSelected = selectedEmployees.includes(employee.id)
+              
+              return (
+                <button
+                  key={employee.id}
+                  onClick={() => onEmployeeToggle(employee.id)}
                   className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0",
+                    "w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold transition-all duration-200",
+                    "border-2",
                     isSelected
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-200 text-gray-600"
+                      ? "bg-green-500 text-white border-green-600 shadow-sm"
+                      : employee.id === 'max'
+                        ? "bg-blue-600 text-white border-white"
+                        : "bg-gray-200 text-gray-600 border-gray-300"
                   )}
+                  title={employee.name}
                 >
                   {employee.initial}
-                </div>
-                
-                {/* Employee Name */}
-                <span className="text-left">{employee.name}</span>
-              </button>
-            )
-          })}
+                </button>
+              )
+            })}
+          </div>
+          
+          {/* T and S - Circular buttons with text */}
+          <div className="flex flex-col gap-2">
+            {employees.slice(2).map((employee) => {
+              const isSelected = selectedEmployees.includes(employee.id)
+              
+              return (
+                <button
+                  key={employee.id}
+                  onClick={() => onEmployeeToggle(employee.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                    "hover:shadow-sm",
+                    isSelected
+                      ? "bg-green-500 text-white hover:bg-green-600 shadow-sm"
+                      : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200"
+                  )}
+                >
+                  {/* Circular Badge with Initial */}
+                  <div
+                    className={cn(
+                      "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shrink-0",
+                      isSelected
+                        ? "bg-green-600 text-white"
+                        : "bg-gray-200 text-gray-600"
+                    )}
+                  >
+                    {employee.initial}
+                  </div>
+                  
+                  {/* Employee Name */}
+                  <span className="text-left">{employee.name}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
     </div>

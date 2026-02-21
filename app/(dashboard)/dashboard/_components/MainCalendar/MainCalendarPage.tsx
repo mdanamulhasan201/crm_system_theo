@@ -1,9 +1,8 @@
 "use client"
 
 import React from 'react'
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns'
+import { format, addDays, isSameDay } from 'date-fns'
 import { de } from 'date-fns/locale'
-import { cn } from '@/lib/utils'
 
 interface Appointment {
   id: string
@@ -20,10 +19,10 @@ interface MainCalendarPageProps {
   appointments: Appointment[]
 }
 
-// Generate time slots from 7:00 to 20:00
+// Generate time slots from 5:00 to 21:00
 const generateTimeSlots = () => {
   const slots = []
-  for (let hour = 7; hour <= 20; hour++) {
+  for (let hour = 5; hour <= 21; hour++) {
     slots.push(`${hour.toString().padStart(2, '0')}:00`)
   }
   return slots
@@ -43,9 +42,9 @@ const getAppointmentStyle = (startTime: string, endTime: string) => {
   const endMinutes = timeToMinutes(endTime)
   const duration = endMinutes - startMinutes
   
-  // Each hour is 60px, starting from 7:00 (420 minutes from midnight)
-  // Position relative to the 7:00 mark
-  const top = ((startMinutes - 420) / 60) * 60
+  // Each hour is 60px, starting from 5:00 (300 minutes from midnight)
+  // Position relative to the 5:00 mark
+  const top = ((startMinutes - 300) / 60) * 60
   const height = (duration / 60) * 60
   
   return {
@@ -100,10 +99,12 @@ export default function MainCalendarPage({
               >
                 {/* Day Header */}
                 <div className="h-16 border-b border-gray-200 px-4 flex flex-col justify-center">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xs text-gray-500">{dayName}</span>
-                    <span className="text-xl font-bold text-blue-600">{dayNumber}</span>
-                    <span className="text-xs text-gray-500">{monthName}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs text-gray-500 uppercase">{dayName}</span>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-bold text-blue-600 leading-none">{dayNumber}</span>
+                      <span className="text-xs text-gray-500">{monthName}</span>
+                    </div>
                   </div>
                 </div>
 

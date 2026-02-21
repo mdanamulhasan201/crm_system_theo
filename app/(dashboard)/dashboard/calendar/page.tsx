@@ -2,10 +2,10 @@
 
 import React, { useState } from 'react'
 import CalendarMainNav from '../_components/MainCalendar/CalendarMainNav'
+import { startOfWeek } from 'date-fns'
 import CalendarNav from '../_components/MainCalendar/CalendarNav'
 import MainCalendarPage from '../_components/MainCalendar/MainCalendarPage'
 import RightSidebarCalendar from '../_components/MainCalendar/RightSidebarCalendar'
-import { startOfWeek } from 'date-fns'
 
 interface Appointment {
   id: string
@@ -19,8 +19,8 @@ interface Appointment {
 
 export default function Calendar() {
   const [currentDate, setCurrentDate] = useState(() => {
-    // Start with Monday of current week
-    return startOfWeek(new Date(), { weekStartsOn: 1 })
+    // Start with today's date
+    return new Date()
   })
   
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>(['daniel'])
