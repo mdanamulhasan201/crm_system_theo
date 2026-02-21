@@ -358,15 +358,13 @@ export default function PositionsnummerDropdown({
                                             >
                                                 <div className="flex items-center justify-between gap-4 mb-3">
                                                     <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                        <Checkbox
-                                                            checked={isSelected}
-                                                            onChange={(e) => {
-                                                                e.stopPropagation();
-                                                                handleToggle(posNum);
-                                                            }}
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            className="shrink-0"
-                                                        />
+                                                        <div onClick={(e) => e.stopPropagation()}>
+                                                            <Checkbox
+                                                                checked={isSelected}
+                                                                onChange={() => handleToggle(posNum)}
+                                                                className="shrink-0"
+                                                            />
+                                                        </div>
                                                         <div className="flex flex-col min-w-0 flex-1">
                                                             <span className="font-bold text-gray-900 text-base">
                                                                 {posNum}
