@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import EmloyeesLists from './EmloyeesLists'
 
 interface RightSidebarCalendarProps {
   currentDate: Date
@@ -12,13 +13,6 @@ interface RightSidebarCalendarProps {
   selectedEmployees: string[]
   onEmployeeToggle: (employee: string) => void
 }
-
-const employees = [
-  { id: 'max', name: 'Max', initial: 'M' },
-  { id: 'daniel', name: 'Daniel', initial: 'D' },
-  { id: 'tina', name: 'Tina', initial: 'T' },
-  { id: 'sarah', name: 'Sarah', initial: 'S' },
-]
 
 export default function RightSidebarCalendar({
   currentDate,
@@ -66,7 +60,7 @@ export default function RightSidebarCalendar({
   }
 
   return (
-    <div className="w-80 flex flex-col gap-6">
+    <div className="w-80 flex flex-col gap-6 px-2">
       {/* Mini Calendar */}
       <div className="flex flex-col gap-4 border rounded-lg p-2 bg-white">
         {/* Month Navigation */}
@@ -130,44 +124,10 @@ export default function RightSidebarCalendar({
         </div>
       </div>
 
-      {/* Employees Section */}
-      <div className="flex flex-col gap-3 bg-white rounded-xl p-4 border border-gray-200">
-        <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
-          MITARBEITER
-        </h3>
-
-        <div className="grid grid-cols-2 gap-2">
-          {employees.map((employee) => {
-            const isSelected = selectedEmployees.includes(employee.id)
-
-            return (
-              <button
-                key={employee.id}
-                onClick={() => onEmployeeToggle(employee.id)}
-                className={cn(
-                  "flex items-center cursor-pointer gap-2 px-2 py-2 rounded-full text-sm font-medium transition-all duration-200 w-full justify-start",
-                  isSelected
-                    ? "bg-[#62A07C] text-white hover:bg-[#62A07C]/80"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                )}
-              >
-                {/* Circular initial avatar */}
-                <div
-                  className={cn(
-                    "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0",
-                    isSelected
-                      ? "border-2 border-[#62A07C] text-white"
-                      : "bg-gray-200/80 text-gray-700 border-2 border-gray-200"
-                  )}
-                >
-                  {employee.initial}
-                </div>
-                <span className="truncate text-left">{employee.name}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
+      <EmloyeesLists
+        selectedEmployees={selectedEmployees}
+        onEmployeeToggle={onEmployeeToggle}
+      />
     </div>
   )
 }
