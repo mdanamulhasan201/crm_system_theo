@@ -61,10 +61,9 @@ export const getAppointmentsByDate = async (
 // &year=2026
 // &employee={{id,id,id}}
 // &month=2
-// responce:
-// {
-//     "success": true,
-//     "dates": [
-//         "2026-02-17"
-//     ]
-// }
+
+export const getDotInMyCalendar = async (year: number, employee: string, month: number) => {
+    const response = await axiosClient.get(`/v2/appointment/all-appointments-date?year=${year}&employee=${employee}&month=${month}`);
+    return response.data;
+}
+
