@@ -5,11 +5,20 @@ import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 import PaymentStatusSection from './PaymentStatusSection'
+import LocationDropdown from '../Dropdowns/LocationDropdown'
 import { FileText } from 'lucide-react'
 
 type EinlagenversorgungPriceItem = { name: string; price: number } | number
 
 interface PriceSectionProps {
+  // Auftrag angenommen bei (location dropdown before Versorgung - separate from Abholung)
+  auftragAngenommenBei?: { id: string; address: string; description: string; isPrimary?: boolean } | null
+  locations?: Array<{ id: string; address: string; description: string; isPrimary?: boolean }>
+  isAuftragLocationDropdownOpen?: boolean
+  onAuftragLocationDropdownChange?: (open: boolean) => void
+  onAuftragAngenommenBeiChange?: (location: { id: string; address: string; description: string; isPrimary?: boolean } | null) => void
+  onAuftragAngenommenBeiClear?: () => void
+
   // Versorgung, Menge, Fertigstellung bis
   versorgung: string
   versorgungsname?: string
@@ -76,6 +85,12 @@ const formatEinlagenversorgungText = (item: EinlagenversorgungPriceItem): string
 }
 
 export default function PriceSection({
+  auftragAngenommenBei,
+  locations = [],
+  isAuftragLocationDropdownOpen = false,
+  onAuftragLocationDropdownChange,
+  onAuftragAngenommenBeiChange,
+  onAuftragAngenommenBeiClear,
   versorgung,
   versorgungsname,
   onVersorgungChange,
@@ -215,6 +230,22 @@ export default function PriceSection({
       <div className="flex flex-col lg:flex-row gap-8 w-full items-start">
         {/* Left Side: Form Fields */}
         <div className="flex-1 min-w-0 space-y-4 w-full lg:w-auto">
+          {/* Auftrag angenommen bei - location dropdown (separate from Abholung) */}
+          {locations && locations.length > 0 && onAuftragAngenommenBeiChange && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Auftrag angenommen bei</Label>
+              <LocationDropdown
+                value={auftragAngenommenBei ?? null}
+                locations={locations}
+                isOpen={isAuftragLocationDropdownOpen}
+                onOpenChange={onAuftragLocationDropdownChange ?? (() => {})}
+                onChange={onAuftragAngenommenBeiChange}
+                onSelect={onAuftragAngenommenBeiChange}
+                onClear={onAuftragAngenommenBeiClear}
+              />
+            </div>
+          )}
+
           {/* Versorgung & Versorgungsname */}
           <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-gray-400 mt-1 shrink-0" />

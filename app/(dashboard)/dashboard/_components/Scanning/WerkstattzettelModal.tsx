@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { ScanData } from '@/types/scan'
@@ -187,19 +187,20 @@ export default function WerkstattzettelModal({
 
   // Pass location objects directly to dropdown (no conversion needed)
 
-  // Set primary location as default when locations are first loaded (only once per modal open)
+  // Set primary location as default for Abholung when locations are first loaded (only once - not when user clears)
+  const hasSetInitialLocation = useRef(false)
   useEffect(() => {
-    if (locations.length > 0 && isOpen && !locationsLoading) {
-      // Only set default if geschaeftsstandort is not set
-      const currentLocation = form.geschaeftsstandort
-      if (!currentLocation) {
-        const primaryLocation = locations.find(loc => loc.isPrimary)
-        const locationToUse = primaryLocation || locations[0]
-        if (locationToUse) {
-          // Store the full location object
-          form.setGeschaeftsstandort(locationToUse)
-        }
+    if (locations.length > 0 && isOpen && !locationsLoading && !hasSetInitialLocation.current) {
+      hasSetInitialLocation.current = true
+      const primaryLocation = locations.find(loc => loc.isPrimary)
+      const locationToUse = primaryLocation || locations[0]
+      if (locationToUse) {
+        form.setGeschaeftsstandort(locationToUse)
       }
+    }
+    // Reset ref when modal closes so next open gets default again
+    if (!isOpen) {
+      hasSetInitialLocation.current = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [locations, isOpen, locationsLoading])
@@ -226,6 +227,7 @@ export default function WerkstattzettelModal({
           versorgung: form.versorgung,
           datumAuftrag: form.datumAuftrag,
           geschaeftsstandort: form.geschaeftsstandort,
+          auftragAngenommenBei: form.auftragAngenommenBei,
           fertigstellungBis: form.fertigstellungBis,
           fertigstellungBisTime: form.fertigstellungBisTime,
           bezahlt: form.bezahlt,
@@ -343,6 +345,15 @@ export default function WerkstattzettelModal({
           {/* Price Section - styled card */}
           <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
             <PriceSection
+              auftragAngenommenBei={form.auftragAngenommenBei}
+              locations={locations}
+              isAuftragLocationDropdownOpen={form.isAuftragLocationDropdownOpen}
+              onAuftragLocationDropdownChange={form.handleAuftragLocationDropdownChange}
+              onAuftragAngenommenBeiChange={form.handleAuftragLocationSelect}
+              onAuftragAngenommenBeiClear={() => {
+                form.setAuftragAngenommenBei(null)
+                form.handleAuftragLocationDropdownChange(false)
+              }}
               versorgung={form.versorgung}
               versorgungsname={formData?.versorgungsname}
               onVersorgungChange={form.setVersorgung}

@@ -36,6 +36,7 @@ export function useWerkstattzettelForm(
   const [versorgung, setVersorgung] = useState('')
   const [datumAuftrag, setDatumAuftrag] = useState('')
   const [geschaeftsstandort, setGeschaeftsstandort] = useState<{id: string; address: string; description: string; isPrimary?: boolean} | null>(null)
+  const [auftragAngenommenBei, setAuftragAngenommenBei] = useState<{id: string; address: string; description: string; isPrimary?: boolean} | null>(null)
   const [fertigstellungBis, setFertigstellungBis] = useState('')
   const [fertigstellungBisTime, setFertigstellungBisTime] = useState('')
   const [bezahlt, setBezahlt] = useState('')
@@ -44,8 +45,10 @@ export function useWerkstattzettelForm(
   const [discountValue, setDiscountValue] = useState<string>('')
   const [addonPrices, setAddonPrices] = useState<string>('')
 
-  // Business location dropdown state
+  // Business location dropdown state (for Abholung)
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false)
+  // Auftrag angenommen bei dropdown state
+  const [isAuftragLocationDropdownOpen, setIsAuftragLocationDropdownOpen] = useState(false)
 
   // Price State
   const [footAnalysisPrice, setFootAnalysisPrice] = useState<string>('')
@@ -126,15 +129,25 @@ export function useWerkstattzettelForm(
     setShowSuggestions(open)
   }
 
-  // Handle business location selection - now accepts location object
+  // Handle business location selection (Abholung)
   const handleLocationSelect = (location: {id: string; address: string; description: string; isPrimary?: boolean} | null) => {
     setGeschaeftsstandort(location)
     setIsLocationDropdownOpen(false)
   }
 
+  // Handle Auftrag angenommen bei location selection
+  const handleAuftragLocationSelect = (location: {id: string; address: string; description: string; isPrimary?: boolean} | null) => {
+    setAuftragAngenommenBei(location)
+    setIsAuftragLocationDropdownOpen(false)
+  }
+
   // Handle business location dropdown open/close
   const handleLocationDropdownChange = (open: boolean) => {
     setIsLocationDropdownOpen(open)
+  }
+
+  const handleAuftragLocationDropdownChange = (open: boolean) => {
+    setIsAuftragLocationDropdownOpen(open)
   }
 
   // Handle delivery date change with validation
@@ -176,6 +189,8 @@ export function useWerkstattzettelForm(
     setDatumAuftrag,
     geschaeftsstandort,
     setGeschaeftsstandort,
+    auftragAngenommenBei,
+    setAuftragAngenommenBei,
     fertigstellungBis,
     setFertigstellungBis,
     fertigstellungBisTime,
@@ -216,6 +231,9 @@ export function useWerkstattzettelForm(
     isLocationDropdownOpen,
     handleLocationDropdownChange,
     handleLocationSelect,
+    isAuftragLocationDropdownOpen,
+    handleAuftragLocationDropdownChange,
+    handleAuftragLocationSelect,
 
     // Handlers
     handleDeliveryDateChange,
