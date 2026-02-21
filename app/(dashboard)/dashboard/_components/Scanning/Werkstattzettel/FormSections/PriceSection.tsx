@@ -457,7 +457,7 @@ export default function PriceSection({
 
               {(positionsnummerPrice || 0) > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Positionsnummer</span>
+                  <span className="text-sm text-gray-600">Positionsnummer (inkl. MwSt.)</span>
                   <span className="text-sm font-semibold text-gray-900">{formatPrice(positionsnummerPrice || 0)}</span>
                 </div>
               )}

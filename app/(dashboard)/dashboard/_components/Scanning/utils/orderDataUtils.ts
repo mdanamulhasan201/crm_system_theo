@@ -99,6 +99,7 @@ export interface CollectFormDataParams {
     selectedPositionsnummer?: string[];
     itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
     positionsnummerOptions?: Array<{ positionsnummer?: string; description?: any; price: number }>;
+    vatCountry?: string;
 }
 
 export function collectFormData({
@@ -123,6 +124,7 @@ export function collectFormData({
     selectedPositionsnummer,
     itemSides,
     positionsnummerOptions,
+    vatCountry,
 }: CollectFormDataParams) {
     const mengeNumber = menge ? parseInt(menge.split(' ')[0]) || 1 : 1;
     const selectedVersorgungItem = versorgungData.find((item: any) => item.id === selectedVersorgungId);
@@ -151,12 +153,15 @@ export function collectFormData({
         positionsnummerTotal: (() => {
             if (!selectedPositionsnummer?.length || !positionsnummerOptions?.length) return 0;
             const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
-            return selectedPositionsnummer.reduce((sum, posNum) => {
+            const netSubtotal = selectedPositionsnummer.reduce((sum, posNum) => {
                 const opt = positionsnummerOptions.find((o) => getPosNum(o) === posNum);
                 if (!opt || typeof opt.price !== 'number') return sum;
                 const side = itemSides?.[posNum] || 'R';
                 return sum + (side === 'BDS' ? opt.price * 2 : opt.price);
             }, 0);
+            const vatRate = vatCountry === 'Italien (IT)' ? 4 : vatCountry === 'Österreich (AT)' ? 20 : 0;
+            const vatAmount = (netSubtotal * vatRate) / 100;
+            return netSubtotal + vatAmount;
         })(),
     };
 }

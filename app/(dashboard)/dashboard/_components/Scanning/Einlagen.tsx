@@ -839,6 +839,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             selectedPositionsnummer,
             itemSides,
             positionsnummerOptions: filteredPositionsnummerData,
+            vatCountry: user?.accountInfo?.vat_country ?? undefined,
         });
         
         // Add flag to indicate if using custom versorgung (Einmalige Versorgung)
