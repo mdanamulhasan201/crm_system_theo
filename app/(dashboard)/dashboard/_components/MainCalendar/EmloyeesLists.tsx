@@ -85,6 +85,7 @@ export default function EmloyeesLists({
                     return (
                         <button
                             key={employee.id}
+                            title={employee.name}
                             onClick={() => !isDisabled && onEmployeeToggle(employee.id)}
                             className={cn(
                                 "flex items-center gap-2 px-2 py-2 rounded-full text-sm font-medium transition-all duration-200 w-full justify-start",
