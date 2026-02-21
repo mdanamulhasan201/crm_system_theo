@@ -982,6 +982,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setShowDiagnosisDropdown(false);
                 }}
                 onDiagnosisClear={() => setSelectedDiagnosis('')}
+                onCloseDiagnosisDropdown={() => setShowDiagnosisDropdown(false)}
                 selectedEmployee={selectedEmployee}
                 employeeSearchText={employeeSearchText}
                 isEmployeeDropdownOpen={isEmployeeDropdownOpen}

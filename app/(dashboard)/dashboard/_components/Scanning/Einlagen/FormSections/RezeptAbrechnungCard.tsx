@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { ChevronDown, X } from 'lucide-react';
 import PositionsnummerDropdown from '../Dropdowns/PositionsnummerDropdown';
 import EmployeeDropdown from '../../Common/EmployeeDropdown';
@@ -31,6 +31,7 @@ interface RezeptAbrechnungCardProps {
     onDiagnosisToggle: () => void;
     onDiagnosisSelect: (value: string) => void;
     onDiagnosisClear?: () => void;
+    onCloseDiagnosisDropdown?: () => void;
     
     // Employee
     selectedEmployee: string;
@@ -73,6 +74,7 @@ export default function RezeptAbrechnungCard({
     onDiagnosisToggle,
     onDiagnosisSelect,
     onDiagnosisClear,
+    onCloseDiagnosisDropdown,
     selectedEmployee,
     employeeSearchText,
     isEmployeeDropdownOpen,
@@ -87,6 +89,19 @@ export default function RezeptAbrechnungCard({
     lieferschein,
     onLieferscheinChange,
 }: RezeptAbrechnungCardProps) {
+    const diagnosisRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as Node;
+            if (onCloseDiagnosisDropdown && diagnosisRef.current && !diagnosisRef.current.contains(target)) {
+                onCloseDiagnosisDropdown();
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onCloseDiagnosisDropdown]);
+
     return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-6">REZEPT & ABRECHNUNG</h2>
@@ -183,7 +198,7 @@ export default function RezeptAbrechnungCard({
                 )}
 
                 {/* Diagnose */}
-                <div className={billingType === 'Krankenkassa' ? 'lg:col-span-3' : 'lg:col-span-4'}>
+                <div className={billingType === 'Krankenkassa' ? 'lg:col-span-3' : 'lg:col-span-4'} ref={diagnosisRef}>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Diagnose
                     </label>

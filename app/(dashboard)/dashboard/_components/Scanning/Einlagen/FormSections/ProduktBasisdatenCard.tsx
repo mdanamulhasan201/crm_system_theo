@@ -285,13 +285,32 @@ export default function ProduktBasisdatenCard({
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Schuhmodell
                     </label>
-                    <input
-                        type="text"
-                        value={schuhmodell_wählen}
-                        onChange={(e) => onSchuhmodellChange(e.target.value)}
-                        placeholder="Marke, Modell, Größe"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                    />
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={schuhmodell_wählen}
+                            onChange={(e) => onSchuhmodellChange(e.target.value)}
+                            placeholder="Marke, Modell, Größe"
+                            className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                        />
+                        {schuhmodell_wählen && (
+                            <span
+                                role="button"
+                                tabIndex={-1}
+                                onClick={() => onSchuhmodellChange('')}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        onSchuhmodellChange('');
+                                    }
+                                }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                aria-label="Auswahl löschen"
+                            >
+                                <X className="h-4 w-4" />
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
