@@ -1,7 +1,8 @@
 import axiosClient from "@/lib/axiosClient";
 
 // /v2/appointment/by-date
-// &limit=30 &employee=id1,id2 &startDate=YYYY-MM-DD &endDate=YYYY-MM-DD &cursor=
+// With employee: filter by id1,id2. Without employee (or empty): all appointments for date range.
+// &limit=30 &startDate=YYYY-MM-DD &endDate=YYYY-MM-DD &cursor= &employee= (optional)
 
 export interface AppointmentByDateAssignedTo {
   employeId: string;
@@ -33,13 +34,22 @@ export interface GetAppointmentsByDateResponse {
 
 export const getAppointmentsByDate = async (
   limit: number,
-  employee: string,
   startDate: string,
   endDate: string,
-  cursor: string
+  cursor: string,
+  employee?: string
 ): Promise<GetAppointmentsByDateResponse> => {
+  const params = new URLSearchParams({
+    limit: String(limit),
+    startDate,
+    endDate,
+    cursor: cursor || ''
+  });
+  if (employee && employee.trim()) {
+    params.set('employee', employee.trim());
+  }
   const response = await axiosClient.get<GetAppointmentsByDateResponse>(
-    `/v2/appointment/by-date?limit=${limit}&employee=${encodeURIComponent(employee)}&startDate=${startDate}&endDate=${endDate}&cursor=${encodeURIComponent(cursor)}`
+    `/v2/appointment/by-date?${params.toString()}`
   );
   return response.data;
 };

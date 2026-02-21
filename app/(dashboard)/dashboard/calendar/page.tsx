@@ -106,17 +106,13 @@ export default function Calendar() {
   })
 
   const fetchAppointments = useCallback(async () => {
-    if (selectedEmployees.length === 0) {
-      setAppointments([])
-      return
-    }
     const startDate = format(currentDate, 'yyyy-MM-dd')
     const endDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
-    const employeeParam = selectedEmployees.join(',')
+    const employeeParam = selectedEmployees.length > 0 ? selectedEmployees.join(',') : undefined
     setAppointmentsLoading(true)
     setAppointmentsError(null)
     try {
-      const res = await getAppointmentsByDate(LIMIT, employeeParam, startDate, endDate, '')
+      const res = await getAppointmentsByDate(LIMIT, startDate, endDate, '', employeeParam)
       const list = (res.data ?? []).map(mapApiAppointmentToCalendar)
       setAppointments(list)
     } catch (err) {
