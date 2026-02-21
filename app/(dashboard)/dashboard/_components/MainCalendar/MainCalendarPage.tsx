@@ -126,7 +126,7 @@ export default function MainCalendarPage({
               <div className="flex flex-col gap-0.5">
                 <span className="text-xs text-gray-500 uppercase">{dayName}</span>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-blue-600 leading-none">{dayNumber}</span>
+                  <span className="text-2xl font-bold text-[#62A07C] leading-none">{dayNumber}</span>
                   <span className="text-xs text-gray-500">{monthName}</span>
                 </div>
               </div>
@@ -158,8 +158,8 @@ export default function MainCalendarPage({
               className="absolute left-0 right-0 flex items-center pointer-events-none z-10"
               style={{ top: `${lineTop}px`, transform: 'translateY(-50%)' }}
             >
-              <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shrink-0 shadow-sm ring-2 ring-white" />
-              <div className="flex-1 h-0.5 bg-blue-500" />
+              <div className="w-2.5 h-2.5 rounded-full bg-[#62A07C] shrink-0 shadow-sm ring-2 ring-white" />
+              <div className="flex-1 h-0.5 bg-[#62A07C]" />
             </div>
           )}
           {days.map((day, dayIndex) => {
