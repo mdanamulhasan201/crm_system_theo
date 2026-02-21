@@ -7,8 +7,10 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { getStatusNote } from '@/apis/productsOrder';
-import { FileText, User, Hash, Package, ClipboardList, AlertCircle } from 'lucide-react';
+import { getStatusNote, updateStatusNote } from '@/apis/productsOrder';
+import { FileText, User, Hash, Package, ClipboardList, AlertCircle, Pencil, Check, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import toast from 'react-hot-toast';
 
 export interface StatusNoteData {
     statusNote: string;
@@ -51,6 +53,9 @@ export default function StatusNoteModal({
     const [data, setData] = useState<StatusNoteData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editNote, setEditNote] = useState('');
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         if (!isOpen || !orderId) {
@@ -81,6 +86,40 @@ export default function StatusNoteModal({
             cancelled = true;
         };
     }, [isOpen, orderId]);
+
+    useEffect(() => {
+        if (data?.statusNote != null) setEditNote(data.statusNote);
+    }, [data?.statusNote]);
+
+    const handleStartEdit = () => {
+        setEditNote(data?.statusNote ?? '');
+        setIsEditing(true);
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditNote(data?.statusNote ?? '');
+    };
+
+    const handleSaveNote = async () => {
+        if (!orderId) return;
+        setSaving(true);
+        setError(null);
+        try {
+            const res: { success?: boolean } = await updateStatusNote(orderId, editNote);
+            if (res?.success !== false) {
+                setData(prev => prev ? { ...prev, statusNote: editNote } : null);
+                setIsEditing(false);
+                toast.success('Notiz gespeichert');
+            } else {
+                setError('Aktualisierung fehlgeschlagen');
+            }
+        } catch (err) {
+            setError((err as Error)?.message || 'Fehler beim Speichern der Notiz');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -117,7 +156,7 @@ export default function StatusNoteModal({
                                 <div className="px-4 py-3 bg-gray-50/80 border-b border-gray-100">
                                     <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Auftragsinfo</p>
                                 </div>
-                                <div className="px-4 divide-y divide-gray-100">
+                                <div className="px-4 divide-y divide-gray-100 mb-5">
                                     <InfoRow
                                         icon={User}
                                         label="Kunde"
@@ -133,14 +172,67 @@ export default function StatusNoteModal({
                                 </div>
                             </div>
                             <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                                <div className="px-4 py-3 bg-amber-50/80 border-b border-amber-100/50 flex items-center gap-2">
-                                    <FileText className="w-4 h-4 text-amber-600" />
-                                    <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Notiz</p>
+                                <div className="px-4 py-3 bg-amber-50/80 border-b border-amber-100/50 flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="w-4 h-4 text-amber-600" />
+                                        <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Notiz</p>
+                                    </div>
+                                    {!isEditing ? (
+                                        <button
+                                            type="button"
+                                            onClick={handleStartEdit}
+                                            className="flex items-center cursor-pointer gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-700 hover:bg-amber-100/80 transition-colors"
+                                            title="Notiz bearbeiten"
+                                        >
+                                            <Pencil className="w-3.5 h-3.5" />
+                                            Bearbeiten
+                                        </button>
+                                    ) : null}
                                 </div>
                                 <div className="p-4 min-h-[88px]">
-                                    <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                                        {data.statusNote?.trim() || '—'}
-                                    </p>
+                                    {isEditing ? (
+                                        <div className="space-y-3">
+                                            <textarea
+                                                value={editNote}
+                                                onChange={(e) => setEditNote(e.target.value)}
+                                                className="w-full min-h-[120px] px-3 py-2.5 text-sm text-gray-700 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-y"
+                                                placeholder="Notiz eingeben…"
+                                                autoFocus
+                                            />
+                                            <div className="flex items-center justify-between gap-2">
+                                             
+                                                <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    onClick={handleCancelEdit}
+                                                    disabled={saving}
+                                                    className="gap-1.5 cursor-pointer"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                    Abbrechen
+                                                </Button>
+
+
+                                                <Button
+                                                    size="sm"
+                                                    onClick={handleSaveNote}
+                                                    disabled={saving}
+                                                    className="bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 cursor-pointer"
+                                                >
+                                                    {saving ? (
+                                                        <span className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
+                                                    ) : (
+                                                        <Check className="w-4 h-4" />
+                                                    )}
+                                                    Speichern
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                                            {data.statusNote?.trim() || '—'}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </>
