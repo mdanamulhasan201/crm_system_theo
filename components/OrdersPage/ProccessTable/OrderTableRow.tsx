@@ -407,66 +407,79 @@ export default function OrderTableRow({
                 </div>
             </TableCell>
             <TableCell className="py-4 px-6 order-actions">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 p-0 cursor-pointer rounded-full hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+                <div className="flex items-center justify-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    {onScanClick && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 p-0 cursor-pointer rounded-full hover:bg-gray-100 text-gray-600 hover:text-gray-900"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onScanClick(order.id, order.bestellnummer, order.kundenname);
+                                        }}
+                                        aria-label="Scan-Daten"
+                                    >
+                                        <Scan className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Scan-Daten</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    {showBarcodeAction && onBarcodeStickerClick && (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 p-0 cursor-pointer rounded-full hover:bg-gray-100 text-gray-600 hover:text-green-600"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onBarcodeStickerClick(order.id, order.bestellnummer);
+                                        }}
+                                        aria-label="Barcode-Sticker"
+                                    >
+                                        <QrCode className="h-4 w-4" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Barcode-Sticker</TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    )}
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8 p-0 cursor-pointer rounded-full hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+                                aria-label="Weitere Aktionen"
+                            >
+                                <MoreVertical className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent
+                            align="end"
+                            className="w-52"
                             onClick={(e) => e.stopPropagation()}
-                            aria-label="Aktionen"
                         >
-                            <MoreVertical className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent
-                        align="end"
-                        className="w-52"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {onHistoryClick && (
-                            <DropdownMenuItem
-                                className="cursor-pointer"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onHistoryClick(order.id, order.bestellnummer);
-                                }}
-                            >
-                                <History className="h-4 w-4" />
-                                <span>Historie</span>
-                            </DropdownMenuItem>
-                        )}
-                        {onScanClick && (
-                            <DropdownMenuItem
-                                className="cursor-pointer"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    onScanClick(order.id, order.bestellnummer, order.kundenname);
-                                }}
-                            >
-                                <Scan className="h-4 w-4" />
-                                <span>Scan-Daten</span>
-                            </DropdownMenuItem>
-                        )}
-                        {showBarcodeAction && (
-                            <>
-                                <DropdownMenuSeparator />
+                            {onHistoryClick && (
                                 <DropdownMenuItem
                                     className="cursor-pointer"
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (onBarcodeStickerClick) {
-                                            onBarcodeStickerClick(order.id, order.bestellnummer);
-                                        }
+                                        onHistoryClick(order.id, order.bestellnummer);
                                     }}
                                 >
-                                    <QrCode className="h-4 w-4 text-green-600" />
-                                    <span>Barcode-Sticker</span>
+                                    <History className="h-4 w-4" />
+                                    <span>Historie</span>
                                 </DropdownMenuItem>
-                            </>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
+                            )}
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
                             className={`cursor-pointer ${!hasInvoice ? "opacity-50 cursor-not-allowed" : ""}`}
                             disabled={!hasInvoice}
                             onClick={(e) => {
@@ -503,6 +516,7 @@ export default function OrderTableRow({
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+                </div>
             </TableCell>
         </TableRow>
     );
