@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { IoClose } from 'react-icons/io5';
 import { CalendarIcon } from 'lucide-react';
 import { format, parse } from 'date-fns';
@@ -28,6 +29,7 @@ interface RequiredFields {
 }
 
 export default function Neukundenerstellung() {
+    const router = useRouter();
     const [gender, setGender] = useState<'mann' | 'frau' | 'keine'>('mann');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
@@ -135,7 +137,7 @@ export default function Neukundenerstellung() {
 
             await addCustomer(formData);
             toast.success('Kunde wurde erfolgreich erstellt.');
-            history.back();
+            router.push('/dashboard/customers');
         } catch (error: any) {
             console.error(error);
             // Versuche, die Fehlermeldung der API zu lesen
