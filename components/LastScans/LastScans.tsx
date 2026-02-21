@@ -8,7 +8,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import legsImg from "@/public/Kunden/leg.png";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { getAllCustomers } from "@/apis/customerApis";
+import { getAllCustomers, countCustomer } from "@/apis/customerApis";
 import toast from "react-hot-toast";
 import LastScansShimmer from "@/components/ShimmerEffect/Customer/LastScansShimmer";
 import { ChevronRight } from "lucide-react";
@@ -28,12 +28,23 @@ export interface LastScansRef {
 
 const LastScans = forwardRef<LastScansRef>((props, ref) => {
   const [lastScans, setLastScans] = useState([]);
+  const [customerCount, setCustomerCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [canScrollPrev, setCanScrollPrev] = useState(false);
   const [canScrollNext, setCanScrollNext] = useState(false);
+
+  // Fetch customer count
+  const fetchCustomerCount = React.useCallback(async () => {
+    try {
+      const res = await countCustomer();
+      setCustomerCount(res?.count ?? 0);
+    } catch {
+      setCustomerCount(null);
+    }
+  }, []);
 
   // Fetch customer data
   const fetchLastScans = React.useCallback(
@@ -42,10 +53,7 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
         setIsLoading(true);
         const response = await getAllCustomers(1, 8);
         setLastScans(response.data);
-
-        // No toast needed - just refresh silently
-
-        // Mark initial load as complete after first fetch
+        await fetchCustomerCount();
         setIsInitialLoad(false);
       } catch (error) {
         console.error("Error fetching last scans:", error);
@@ -56,7 +64,7 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
         setIsLoading(false);
       }
     },
-    []
+    [fetchCustomerCount]
   );
 
   useEffect(() => {
@@ -148,7 +156,7 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
     <div className="border border-gray-200 rounded-lg p-6 mb-8 bg-white shadow-sm">
       <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold">Scan History View</h1>
+          <h1 className="text-2xl font-bold">Scan-Verlauf</h1>
           {isLoading && (
             <div className="flex items-center gap-2 text-sm text-gray-500">
               <svg
@@ -176,7 +184,7 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
           )}
         </div>
         <div className="text-sm text-gray-500">
-          {lastScans.length * 125} Insoles found
+          {customerCount != null ? customerCount : "—"} Insoles found
         </div>
       </div>
       {lastScans.length === 0 ? (

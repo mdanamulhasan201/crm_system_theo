@@ -24,6 +24,17 @@ export const getAllCustomers = async (page: number, limit: number) => {
     }
 }
 
+// count customer
+// customers/count/customers
+// response: { success: true, count: number }
+export const countCustomer = async (): Promise<{ success: boolean; count: number }> => {
+  const response = await axiosClient.get<{ success: boolean; count: number }>(
+    "/customers/count/customers"
+  );
+  return response.data;
+};
+
+
 // get single customer ?date=2025-11-25T04:41:00.120Z
 export const getSingleCustomer = async (id: string, date?: string) => {
     try {
