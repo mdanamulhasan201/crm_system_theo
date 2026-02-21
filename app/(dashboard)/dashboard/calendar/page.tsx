@@ -1,13 +1,15 @@
 "use client"
 
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { format, addDays } from 'date-fns'
 import CalendarMainNav from '../_components/MainCalendar/CalendarMainNav'
 import CalendarNav from '../_components/MainCalendar/CalendarNav'
 import MainCalendarPage from '../_components/MainCalendar/MainCalendarPage'
 import RightSidebarCalendar from '../_components/MainCalendar/RightSidebarCalendar'
 import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
 import { useAppoinment } from '@/hooks/appoinment/useAppoinment'
+import { getAppointmentsByDate, type AppointmentByDateItem } from '@/apis/calendarManagementApis'
 
 interface Employee {
   employeeId: string
@@ -29,7 +31,7 @@ interface AppointmentFormData {
   reminder?: number | null
 }
 
-interface Appointment {
+export interface CalendarAppointment {
   id: string
   title: string
   startTime: string
@@ -37,6 +39,39 @@ interface Appointment {
   person: string
   date: Date
   type?: string
+}
+
+const LIMIT = 30
+
+function parseTime12to24(timeStr: string): { hours: number; minutes: number } {
+  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (!match) return { hours: 9, minutes: 0 }
+  let hours = parseInt(match[1], 10)
+  const minutes = parseInt(match[2], 10)
+  if (match[3].toUpperCase() === 'PM' && hours !== 12) hours += 12
+  if (match[3].toUpperCase() === 'AM' && hours === 12) hours = 0
+  return { hours, minutes }
+}
+
+function formatTime24(hours: number, minutes: number): string {
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
+}
+
+function mapApiAppointmentToCalendar(api: AppointmentByDateItem): CalendarAppointment {
+  const { hours, minutes } = parseTime12to24(api.time)
+  const endMinutes = hours * 60 + minutes + Math.round(api.duration * 60)
+  const endHours = Math.floor(endMinutes / 60) % 24
+  const endMins = endMinutes % 60
+  const person = api.assignedTo?.[0]?.assignedTo ?? '—'
+  return {
+    id: api.id,
+    title: api.customer_name,
+    startTime: formatTime24(hours, minutes),
+    endTime: formatTime24(endHours, endMins),
+    person,
+    date: new Date(api.date),
+    type: api.reason
+  }
 }
 
 export default function Calendar() {
@@ -47,6 +82,9 @@ export default function Calendar() {
   
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [appointments, setAppointments] = useState<CalendarAppointment[]>([])
+  const [appointmentsLoading, setAppointmentsLoading] = useState(false)
+  const [appointmentsError, setAppointmentsError] = useState<string | null>(null)
 
   const { createNewAppointment } = useAppoinment()
 
@@ -67,26 +105,31 @@ export default function Calendar() {
     }
   })
 
-  // Sample appointments data - replace with your actual data source
-  const [appointments] = useState<Appointment[]>([
-    {
-      id: '1',
-      title: 'Nachsorge Klein',
-      startTime: '09:30',
-      endTime: '10:30',
-      person: 'Daniel',
-      date: new Date(2026, 1, 16), // Feb 16, 2026
-    },
-    {
-      id: '2',
-      title: 'Behandlung Schmidt',
-      startTime: '10:00',
-      endTime: '11:30',
-      person: 'Daniel',
-      date: new Date(2026, 1, 17), // Feb 17, 2026
-      type: 'Nachkontrolle',
-    },
-  ])
+  const fetchAppointments = useCallback(async () => {
+    if (selectedEmployees.length === 0) {
+      setAppointments([])
+      return
+    }
+    const startDate = format(currentDate, 'yyyy-MM-dd')
+    const endDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
+    const employeeParam = selectedEmployees.join(',')
+    setAppointmentsLoading(true)
+    setAppointmentsError(null)
+    try {
+      const res = await getAppointmentsByDate(LIMIT, employeeParam, startDate, endDate, '')
+      const list = (res.data ?? []).map(mapApiAppointmentToCalendar)
+      setAppointments(list)
+    } catch (err) {
+      setAppointmentsError(err instanceof Error ? err.message : 'Failed to load appointments')
+      setAppointments([])
+    } finally {
+      setAppointmentsLoading(false)
+    }
+  }, [currentDate, selectedEmployees])
+
+  useEffect(() => {
+    fetchAppointments()
+  }, [fetchAppointments])
 
   const handleDateChange = (date: Date) => {
     setCurrentDate(date)
@@ -103,6 +146,7 @@ export default function Calendar() {
     if (success) {
       appointmentForm.reset()
       setIsAddModalOpen(false)
+      fetchAppointments()
     }
   }
 
@@ -116,25 +160,6 @@ export default function Calendar() {
       return [...prev, employeeId]
     })
   }
-
-  // Filter appointments by selected employees
-  const filteredAppointments = appointments.filter(apt => {
-    const employeeMap: { [key: string]: string } = {
-      'max': 'Max',
-      'daniel': 'Daniel',
-      'tina': 'Tina',
-      'sarah': 'Sarah',
-    }
-    
-    // If no employees selected, show all appointments
-    if (selectedEmployees.length === 0) {
-      return true
-    }
-    
-    return selectedEmployees.some(empId => 
-      employeeMap[empId] === apt.person
-    )
-  })
 
   return (
     <div className="flex flex-col h-full bg-gray-50 -m-4">
@@ -154,7 +179,9 @@ export default function Calendar() {
         {/* Main Calendar */}
         <MainCalendarPage
           currentDate={currentDate}
-          appointments={filteredAppointments}
+          appointments={appointments}
+          loading={appointmentsLoading}
+          error={appointmentsError}
         />
 
         {/* Right Sidebar */}

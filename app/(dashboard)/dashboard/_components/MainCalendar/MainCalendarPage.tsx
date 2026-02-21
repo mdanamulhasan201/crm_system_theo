@@ -21,6 +21,8 @@ interface Appointment {
 interface MainCalendarPageProps {
   currentDate: Date
   appointments: Appointment[]
+  loading?: boolean
+  error?: string | null
 }
 
 // Generate time slots from 5:00 to 21:00
@@ -57,7 +59,9 @@ const getAppointmentStyle = (startTime: string, endTime: string) => {
 
 export default function MainCalendarPage({
   currentDate,
-  appointments
+  appointments,
+  loading = false,
+  error = null
 }: MainCalendarPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => new Date())
@@ -152,6 +156,16 @@ export default function MainCalendarPage({
 
         {/* Calendar Grid */}
         <div className="flex-1 flex relative">
+          {error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/90 z-30 p-4">
+              <p className="text-sm text-red-600 text-center">{error}</p>
+            </div>
+          )}
+          {loading && !error && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-20">
+              <div className="w-8 h-8 border-2 border-[#62A07C] border-t-transparent rounded-full animate-spin" />
+            </div>
+          )}
           {/* Current time line overlay - only when viewing today */}
           {showLine && (
             <div
