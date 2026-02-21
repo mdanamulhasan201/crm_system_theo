@@ -957,6 +957,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 showPositionsnummerDropdown={showPositionsnummerDropdown}
                 onPositionsnummerToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
                 onPositionsnummerSelect={setSelectedPositionsnummer}
+                onPositionsnummerClear={() => {
+                    setSelectedPositionsnummer([]);
+                    setItemSides({});
+                }}
                 itemSides={itemSides}
                 onItemSideChange={(posNum, side) => {
                     setItemSides(prev => ({
@@ -977,6 +981,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     }
                     setShowDiagnosisDropdown(false);
                 }}
+                onDiagnosisClear={() => setSelectedDiagnosis('')}
                 selectedEmployee={selectedEmployee}
                 employeeSearchText={employeeSearchText}
                 isEmployeeDropdownOpen={isEmployeeDropdownOpen}

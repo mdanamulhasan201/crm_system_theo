@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IoSearch } from 'react-icons/io5';
-import { IoClose } from 'react-icons/io5';
+import { IoSearch, IoClose } from 'react-icons/io5';
+import { X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 
@@ -26,6 +26,7 @@ interface PositionsnummerDropdownProps {
     isOpen: boolean;
     onToggle: () => void;
     onSelect: (values: string[]) => void;
+    onClear?: () => void;
     error?: string;
     // Per-item side selection: Map of positionsnummer -> side
     itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
@@ -41,6 +42,7 @@ export default function PositionsnummerDropdown({
     isOpen,
     onToggle,
     onSelect,
+    onClear,
     error,
     itemSides: propItemSides,
     onItemSideChange,
@@ -180,12 +182,12 @@ export default function PositionsnummerDropdown({
                 </div>
                 <div className="relative">
                     <div
-                        className={`px-3 py-2.5 border rounded-md cursor-pointer flex justify-between items-center ${
+                        className={`px-3 py-2.5 border rounded-md cursor-pointer flex justify-between items-center gap-2 ${
                             error ? 'border-red-500' : 'border-gray-300'
                         }`}
                         onClick={onToggle}
                     >
-                        <div className={`text-sm flex-1 overflow-hidden ${value.length > 0 ? '' : 'text-gray-400'}`}>
+                        <div className={`text-sm flex-1 overflow-hidden min-w-0 ${value.length > 0 ? '' : 'text-gray-400'}`}>
                             {selectedOptions.length > 0 ? (
                                 <div className="flex items-center gap-2 overflow-hidden">
                                     {selectedOptions.length === 1 ? (
@@ -204,18 +206,43 @@ export default function PositionsnummerDropdown({
                                 placeholder
                             )}
                         </div>
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-5 w-5 shrink-0"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
+                        <div className="flex items-center shrink-0">
+                            {value.length > 0 && onClear ? (
+                                <span
+                                    role="button"
+                                    tabIndex={-1}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        onClear();
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onClear();
+                                        }
+                                    }}
+                                    className="rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                    aria-label="Auswahl löschen"
+                                >
+                                    <X className="h-4 w-4" />
+                                </span>
+                            ) : (
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-5 w-5"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            )}
+                        </div>
                     </div>
                     {error && (
                         <p className="text-red-500 text-sm mt-1">{error}</p>
