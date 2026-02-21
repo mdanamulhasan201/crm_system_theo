@@ -42,6 +42,7 @@ export function useWerkstattzettelForm(
   const [quantity, setQuantity] = useState<string>('1 paar')
   const [discountType, setDiscountType] = useState<string>('')
   const [discountValue, setDiscountValue] = useState<string>('')
+  const [addonPrices, setAddonPrices] = useState<string>('')
 
   // Business location dropdown state
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false)
@@ -189,6 +190,8 @@ export function useWerkstattzettelForm(
     setDiscountType,
     discountValue,
     setDiscountValue,
+    addonPrices,
+    setAddonPrices,
 
     // Price state
     footAnalysisPrice,

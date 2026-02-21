@@ -43,6 +43,8 @@ interface PriceSectionProps {
   onDiscountTypeChange: (value: string) => void
   discountValue: string
   onDiscountValueChange: (value: string) => void
+  addonPrices?: string
+  onAddonPricesChange?: (value: string) => void
   bezahlt: string
   onBezahltChange: (value: string) => void
   paymentError?: string
@@ -103,6 +105,8 @@ export default function PriceSection({
   onDiscountTypeChange,
   discountValue,
   onDiscountValueChange,
+  addonPrices = '',
+  onAddonPricesChange,
   bezahlt,
   onBezahltChange,
   paymentError,
@@ -329,45 +333,57 @@ export default function PriceSection({
             </div>
           </div>
 
-          {/* Rabatt and Kostenträger */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10 items-end">
-            <div className="space-y-2">
+          {/* Rabatt (dropdown + % input when visible) 50% | Addon Preise 50% */}
+          <div className="flex gap-6 w-full">
+            <div className="space-y-2 flex-1 min-w-0 basis-1/2">
               <Label className="text-sm font-medium text-gray-700">Rabatt</Label>
-              <Select
-                value={discountType || 'none'}
-                onValueChange={(value) => onDiscountTypeChange(value === 'none' ? '' : value)}
-              >
-                <SelectTrigger className="h-11 border-gray-300">
-                  <SelectValue placeholder="Kein Rabatt" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Kein Rabatt</SelectItem>
-                  <SelectItem value="percentage">Prozent (%)</SelectItem>
-                </SelectContent>
-              </Select>
-              {discountType === 'percentage' && (
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="z.B. 10"
-                  value={discountValue}
-                  onChange={(e) => onDiscountValueChange(e.target.value)}
-                  className="h-11 border-gray-300 mt-2"
-                />
-              )}
+              <div className="flex gap-2 items-center">
+                <Select
+                  value={discountType || 'none'}
+                  onValueChange={(value) => onDiscountTypeChange(value === 'none' ? '' : value)}
+                >
+                  <SelectTrigger className="h-11 border-gray-300 flex-1 min-w-0">
+                    <SelectValue placeholder="Kein Rabatt" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Kein Rabatt</SelectItem>
+                    <SelectItem value="percentage">Prozent (%)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {discountType === 'percentage' && (
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="z.B. 10"
+                    value={discountValue}
+                    onChange={(e) => onDiscountValueChange(e.target.value)}
+                    className="py-2 border-gray-300 flex-1 min-w-0"
+                  />
+                )}
+              </div>
             </div>
-
-            <div className="space-y-2">
-              {/* <Label className="text-sm font-medium text-gray-700">Kostenträger</Label> */}
-              <PaymentStatusSection
-                value={bezahlt}
-                onChange={onBezahltChange}
-                error={paymentError}
-                disabledPaymentType={disabledPaymentType}
+            <div className="space-y-2 flex-1 min-w-0 basis-1/2">
+              <Label className="text-sm font-medium text-gray-700">Addon Preise</Label>
+              <Input
+                type="text"
+                placeholder="Addon Preise eingeben"
+                value={addonPrices}
+                onChange={(e) => onAddonPricesChange?.(e.target.value)}
+                className="py-2 border-gray-300 w-full"
               />
             </div>
+          </div>
+
+          {/* Kostenträger - below */}
+          <div className="space-y-2">
+            <PaymentStatusSection
+              value={bezahlt}
+              onChange={onBezahltChange}
+              error={paymentError}
+              disabledPaymentType={disabledPaymentType}
+            />
           </div>
         </div>
 

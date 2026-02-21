@@ -363,6 +363,8 @@ export default function WerkstattzettelModal({
               onDiscountTypeChange={form.setDiscountType}
               discountValue={form.discountValue}
               onDiscountValueChange={form.setDiscountValue}
+              addonPrices={form.addonPrices}
+              onAddonPricesChange={form.setAddonPrices}
               bezahlt={form.bezahlt}
               onBezahltChange={form.setBezahlt}
               paymentError={undefined}

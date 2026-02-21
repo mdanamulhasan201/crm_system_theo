@@ -101,6 +101,7 @@ export default function SonstigesOrderModal({
     const [customInsolePrice, setCustomInsolePrice] = useState<string>('');
     const [discountType, setDiscountType] = useState<string>(''); // default: Kein Rabatt
     const [discountValue, setDiscountValue] = useState<string>('');
+    const [addonPrices, setAddonPrices] = useState<string>('');
     const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
 
@@ -449,6 +450,8 @@ export default function SonstigesOrderModal({
                             onDiscountTypeChange={setDiscountType}
                             discountValue={discountValue}
                             onDiscountValueChange={setDiscountValue}
+                            addonPrices={addonPrices}
+                            onAddonPricesChange={setAddonPrices}
                             bezahlt={bezahlt}
                             onBezahltChange={setBezahlt}
                             paymentError={undefined}
