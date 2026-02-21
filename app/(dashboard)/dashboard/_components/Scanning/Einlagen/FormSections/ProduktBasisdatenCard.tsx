@@ -103,18 +103,26 @@ export default function ProduktBasisdatenCard({
                             </span>
                             <div className="flex items-center shrink-0">
                                 {einlagentyp && onEinlageClear ? (
-                                    <button
-                                        type="button"
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             onEinlageClear();
                                         }}
-                                        className="rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onEinlageClear();
+                                            }
+                                        }}
+                                        className="rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
                                         aria-label="Auswahl löschen"
                                     >
                                         <X className="h-4 w-4" />
-                                    </button>
+                                    </span>
                                 ) : (
                                     <ChevronDown className="h-4 w-4 opacity-50" />
                                 )}
@@ -164,18 +172,26 @@ export default function ProduktBasisdatenCard({
                             </span>
                             <div className="flex items-center shrink-0">
                                 {überzug && onUberzugClear ? (
-                                    <button
-                                        type="button"
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             onUberzugClear();
                                         }}
-                                        className="rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onUberzugClear();
+                                            }
+                                        }}
+                                        className="rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
                                         aria-label="Auswahl löschen"
                                     >
                                         <X className="h-4 w-4" />
-                                    </button>
+                                    </span>
                                 ) : (
                                     <ChevronDown className="h-4 w-4 opacity-50" />
                                 )}
@@ -218,18 +234,26 @@ export default function ProduktBasisdatenCard({
                             </span>
                             <div className="flex items-center shrink-0">
                                 {menge && onMengeClear ? (
-                                    <button
-                                        type="button"
+                                    <span
+                                        role="button"
+                                        tabIndex={-1}
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
                                             onMengeClear();
                                         }}
-                                        className="rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                onMengeClear();
+                                            }
+                                        }}
+                                        className="rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
                                         aria-label="Auswahl löschen"
                                     >
                                         <X className="h-4 w-4" />
-                                    </button>
+                                    </span>
                                 ) : (
                                     <ChevronDown className="h-4 w-4 opacity-50" />
                                 )}
