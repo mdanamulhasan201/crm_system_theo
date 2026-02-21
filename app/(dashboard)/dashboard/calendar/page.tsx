@@ -45,7 +45,7 @@ export default function Calendar() {
     return new Date()
   })
   
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>(['daniel'])
+  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
   const { createNewAppointment } = useAppoinment()
@@ -110,9 +110,10 @@ export default function Calendar() {
     setSelectedEmployees(prev => {
       if (prev.includes(employeeId)) {
         return prev.filter(id => id !== employeeId)
-      } else {
-        return [...prev, employeeId]
       }
+      // Max 2 employees can be selected
+      if (prev.length >= 2) return prev
+      return [...prev, employeeId]
     })
   }
 

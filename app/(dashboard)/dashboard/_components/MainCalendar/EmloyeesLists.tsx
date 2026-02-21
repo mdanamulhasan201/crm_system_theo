@@ -80,13 +80,16 @@ export default function EmloyeesLists({
             <div className="grid grid-cols-2 gap-2">
                 {employees.map((employee) => {
                     const isSelected = selectedEmployees.includes(employee.id)
+                    const isDisabled = selectedEmployees.length >= 2 && !isSelected
 
                     return (
                         <button
                             key={employee.id}
-                            onClick={() => onEmployeeToggle(employee.id)}
+                            onClick={() => !isDisabled && onEmployeeToggle(employee.id)}
                             className={cn(
-                                "flex items-center cursor-pointer gap-2 px-2 py-2 rounded-full text-sm font-medium transition-all duration-200 w-full justify-start",
+                                "flex items-center gap-2 px-2 py-2 rounded-full text-sm font-medium transition-all duration-200 w-full justify-start",
+                                isDisabled && "opacity-60 cursor-not-allowed",
+                                !isDisabled && "cursor-pointer",
                                 isSelected
                                     ? "bg-[#62A07C] text-white hover:bg-[#62A07C]/80"
                                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -96,8 +99,8 @@ export default function EmloyeesLists({
                                 className={cn(
                                     "w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold shrink-0",
                                     isSelected
-                                        ? "border-2 border-[#62A07C] text-white"
-                                        : "bg-gray-200/80 text-gray-700 border-2 border-gray-200"
+                                        ? "bg-green-100 text-[#62A07C] border border-white/90"
+                                        : "bg-gray-200/80 text-gray-700 border border-gray-200"
                                 )}
                             >
                                 {employee.initial}
