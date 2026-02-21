@@ -14,7 +14,7 @@ import HistorySidebar from "./HistorySidebar";
 import VersorgungModal from "./VersorgungModal";
 import ScanPictureModal from "./ScanPictureModal";
 import BarcodeStickerModal from "./BarcodeSticker/BarcodeStickerModal";
-import OrderNoteModal from "./OrderNoteModal";
+import StatusNoteModal from "./StatusNoteModal";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
@@ -609,22 +609,12 @@ export default function ProcessTable() {
                     autoGenerate={autoGenerateBarcode}
                 />
 
-                {/* Note Modal */}
-                {openNoteModalId && (() => {
-                    const selectedOrder = memoizedOrders.find(order => order.id === openNoteModalId);
-                    return (
-                        <OrderNoteModal
-                            isOpen={!!openNoteModalId}
-                            onClose={() => setOpenNoteModalId(null)}
-                            orderData={selectedOrder ? {
-                                name: selectedOrder.kundenname,
-                                orderNumber: selectedOrder.bestellnummer,
-                                product: selectedOrder.productName
-                            } : undefined}
-                            notes={undefined} // Add notes field to OrderData if available
-                        />
-                    );
-                })()}
+                {/* Status Note Modal – fetches getStatusNote(orderId) and shows note + order/customer/product */}
+                <StatusNoteModal
+                    isOpen={!!openNoteModalId}
+                    onClose={() => setOpenNoteModalId(null)}
+                    orderId={openNoteModalId}
+                />
             </div>
         </>
     );

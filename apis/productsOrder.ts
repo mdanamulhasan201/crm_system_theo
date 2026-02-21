@@ -358,3 +358,18 @@ export const getStatusNote = async (orderId: string) => {
         throw error;
     }
 }
+
+
+// update note customer-orders/update/9f82a50f-ad00-42f3-81ea-188cbff58989
+// Body: {
+//     "statusNote": "updadfdgte"
+// }
+
+export const updateStatusNote = async (orderId: string, statusNote: string) => {
+    try {
+        const response = await axiosClient.patch(`/customer-orders/update/${orderId}`, { statusNote });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
