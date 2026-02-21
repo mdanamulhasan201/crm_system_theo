@@ -69,7 +69,7 @@ export default function MainCalendarPage({
   }
 
   return (
-    <div className="flex-1 overflow-auto bg-white">
+    <div className="flex-1 overflow-auto bg-white calendar-scrollbar">
       <div className="flex">
         {/* Time Column */}
         <div className="w-20 flex-shrink-0 border-r border-gray-200">
