@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, startOfWeek, endOfWeek, addDays } from 'date-fns'
 import { de } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import EmloyeesLists from './EmloyeesLists'
+import { getDotInMyCalendar } from '@/apis/calendarManagementApis'
 
 interface RightSidebarCalendarProps {
   currentDate: Date
@@ -21,7 +22,24 @@ export default function RightSidebarCalendar({
   onEmployeeToggle
 }: RightSidebarCalendarProps) {
   const [miniCalendarMonth, setMiniCalendarMonth] = useState(() => startOfMonth(currentDate))
+  const [datesWithDots, setDatesWithDots] = useState<string[]>([])
   const lastSyncedDateRef = useRef<Date>(currentDate)
+
+  const fetchDatesWithAppointments = useCallback(async () => {
+    const year = miniCalendarMonth.getFullYear()
+    const month = miniCalendarMonth.getMonth() + 1
+    const employeeParam = selectedEmployees.length > 0 ? selectedEmployees.join(',') : undefined
+    try {
+      const res = await getDotInMyCalendar(year, month, employeeParam)
+      setDatesWithDots(res.dates ?? [])
+    } catch {
+      setDatesWithDots([])
+    }
+  }, [miniCalendarMonth, selectedEmployees])
+
+  useEffect(() => {
+    fetchDatesWithAppointments()
+  }, [fetchDatesWithAppointments])
 
   // Sync mini calendar month when currentDate changes to a different month
   useEffect(() => {
@@ -104,20 +122,31 @@ export default function RightSidebarCalendar({
             const isCurrentMonth = isSameMonth(day, miniCalendarMonth)
             const isInMainView = visibleInMainCalendar.some((d) => isSameDay(day, d))
             const isToday = isSameDay(day, new Date())
+            const dateStr = format(day, 'yyyy-MM-dd')
+            const hasDot = datesWithDots.includes(dateStr)
 
             return (
               <button
                 key={index}
                 onClick={() => handleDateClick(day)}
                 className={cn(
-                  "aspect-square flex items-center cursor-pointer justify-center text-sm rounded transition-colors",
+                  "aspect-square flex flex-col items-center cursor-pointer justify-center text-sm rounded transition-colors relative",
                   !isCurrentMonth && "text-gray-300",
                   isCurrentMonth && !isInMainView && !isToday && "text-gray-900 hover:bg-gray-100",
                   isInMainView && "bg-[#62A07C] text-white font-semibold",
                   isToday && !isInMainView && "bg-green-50 text-green-600 font-semibold"
                 )}
               >
-                {format(day, "d")}
+                <span>{format(day, "d")}</span>
+                {hasDot && (
+                  <span
+                    className={cn(
+                      "absolute top-1 right-1 w-1.5 h-1.5 rounded-full shrink-0",
+                      isInMainView ? "bg-white shadow-sm" : "bg-emerald-400"
+                    )}
+                    aria-hidden
+                  />
+                )}
               </button>
             )
           })}

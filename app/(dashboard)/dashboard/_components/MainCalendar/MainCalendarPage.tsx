@@ -5,8 +5,8 @@ import { format, addDays, isSameDay } from 'date-fns'
 import { de } from 'date-fns/locale'
 
 const SLOT_HEIGHT = 60
-const START_MINUTES = 5 * 60 // 5:00
-const END_MINUTES = 22 * 60 // 21:00 end (21:00 slot bottom)
+const START_MINUTES = 0 // 0:00 so early-morning appointments (e.g. 12:27 AM) are visible
+const END_MINUTES = 22 * 60 // 22:00 end
 
 interface Appointment {
   id: string
@@ -25,10 +25,10 @@ interface MainCalendarPageProps {
   error?: string | null
 }
 
-// Generate time slots from 5:00 to 21:00
+// Generate time slots from 0:00 to 22:00
 const generateTimeSlots = () => {
   const slots = []
-  for (let hour = 5; hour <= 21; hour++) {
+  for (let hour = 0; hour <= 22; hour++) {
     slots.push(`${hour.toString().padStart(2, '0')}:00`)
   }
   return slots
@@ -42,18 +42,20 @@ const timeToMinutes = (time: string): number => {
   return hours * 60 + minutes
 }
 
+// Min height so title (2 lines) + time + type + person are visible
+const MIN_CARD_HEIGHT_PX = 72
+
 // Calculate position and height for appointment block
 const getAppointmentStyle = (startTime: string, endTime: string) => {
   const startMinutes = timeToMinutes(startTime)
   const endMinutes = timeToMinutes(endTime)
   const duration = endMinutes - startMinutes
-  
   const top = ((startMinutes - START_MINUTES) / 60) * SLOT_HEIGHT
   const height = (duration / 60) * SLOT_HEIGHT
 
   return {
     top: `${top}px`,
-    height: `${Math.max(height, 40)}px`,
+    height: `${Math.max(height, MIN_CARD_HEIGHT_PX)}px`,
   }
 }
 
@@ -202,23 +204,28 @@ export default function MainCalendarPage({
                     return (
                       <div
                         key={appointment.id}
-                        className="absolute left-2 right-2 bg-green-50 rounded-t-md border border-green-200/50 p-2 cursor-pointer hover:bg-green-100 transition-colors"
+                        className="absolute left-2 right-2 overflow-hidden rounded-lg border border-green-200/50 bg-[#eeffee] cursor-pointer hover:bg-[#dcf5dc] transition-colors border-l-4 border-l-green-700 shadow-sm"
                         style={style}
                       >
-                        <div className="flex flex-col h-full">
-                          <div className="font-semibold text-green-900 text-sm leading-tight">
+                        <div className="flex flex-col h-full min-h-0 p-2.5 gap-1.5">
+                          <div className="font-semibold text-green-800 text-xs leading-snug line-clamp-2 shrink-0">
                             {appointment.title}
                           </div>
-                          <div className="text-xs text-green-700 mt-1">
-                            {appointment.startTime} - {appointment.endTime}
+                          <div className="text-[11px] text-gray-600 shrink-0">
+                            {appointment.startTime} – {appointment.endTime}
                           </div>
                           {appointment.type && (
-                            <div className="text-xs text-green-700 mt-0.5">
+                            <div className="text-[11px] text-gray-500 line-clamp-1 shrink-0">
                               {appointment.type}
                             </div>
                           )}
-                          <div className="text-xs text-green-800 mt-auto font-medium">
-                            P {appointment.person}
+                          <div className="flex items-center gap-1.5 mt-auto shrink-0 min-h-0">
+                            <span className="font-semibold text-gray-700 text-[11px]">
+                              {appointment.person.charAt(0).toUpperCase()}
+                            </span>
+                            <span className="text-[11px] text-gray-600 truncate">
+                              {appointment.person}
+                            </span>
                           </div>
                         </div>
                       </div>

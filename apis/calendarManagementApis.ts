@@ -55,15 +55,29 @@ export const getAppointmentsByDate = async (
 };
 
 
-// get dot in my calendar 
+// Get dates that have appointments (for mini calendar dots)
 // v2/appointment/all-appointments-date
-
-// &year=2026
-// &employee={{id,id,id}}
-// &month=2
-
-export const getDotInMyCalendar = async (year: number, employee: string, month: number) => {
-    const response = await axiosClient.get(`/v2/appointment/all-appointments-date?year=${year}&employee=${employee}&month=${month}`);
-    return response.data;
+// With employee: only that employee's dates. Without: all dates with data.
+export interface GetDotInMyCalendarResponse {
+  success: boolean;
+  dates: string[];
 }
+
+export const getDotInMyCalendar = async (
+  year: number,
+  month: number,
+  employee?: string
+): Promise<GetDotInMyCalendarResponse> => {
+  const params = new URLSearchParams({
+    year: String(year),
+    month: String(month)
+  });
+  if (employee && employee.trim()) {
+    params.set('employee', employee.trim());
+  }
+  const response = await axiosClient.get<GetDotInMyCalendarResponse>(
+    `/v2/appointment/all-appointments-date?${params.toString()}`
+  );
+  return response.data;
+};
 

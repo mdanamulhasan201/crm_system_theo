@@ -57,6 +57,12 @@ function formatTime24(hours: number, minutes: number): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 
+function parseApiDate(dateStr: string): Date {
+  const part = dateStr.split('T')[0]
+  const [y, m, d] = part.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
 function mapApiAppointmentToCalendar(api: AppointmentByDateItem): CalendarAppointment {
   const { hours, minutes } = parseTime12to24(api.time)
   const endMinutes = hours * 60 + minutes + Math.round(api.duration * 60)
@@ -69,7 +75,7 @@ function mapApiAppointmentToCalendar(api: AppointmentByDateItem): CalendarAppoin
     startTime: formatTime24(hours, minutes),
     endTime: formatTime24(endHours, endMins),
     person,
-    date: new Date(api.date),
+    date: parseApiDate(api.date),
     type: api.reason
   }
 }
