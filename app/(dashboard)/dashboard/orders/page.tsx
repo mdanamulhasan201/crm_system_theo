@@ -161,9 +161,9 @@ function OrdersPageContent() {
                             {data?.totalPrice ? (data.totalPrice) : '-'}
                         </div>
                     </div>
-                    <div className='border-r border-gray-300 mr-5 hidden md:block'></div>
+                    <div className=' border-gray-300 mr-5 hidden md:block'></div>
                     {/* search order */}
-                    <AuftragssuchePage />
+                    {/* <AuftragssuchePage /> */}
                 </div>
             </div>
             {/* <HighPriorityCard /> */}

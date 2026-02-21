@@ -15,6 +15,7 @@ import VersorgungModal from "./VersorgungModal";
 import ScanPictureModal from "./ScanPictureModal";
 import BarcodeStickerModal from "./BarcodeSticker/BarcodeStickerModal";
 import StatusNoteModal from "./StatusNoteModal";
+import { AbrechnungsuebersichtModal } from "./Abrechnungsuebersicht";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
@@ -86,6 +87,9 @@ export default function ProcessTable() {
     const [isUpdatingKrankenkasseStatus, setIsUpdatingKrankenkasseStatus] = useState(false);
     const [isUpdatingPaymentStatus, setIsUpdatingPaymentStatus] = useState(false);
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
+    const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
+    const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
+    const [billingModalOrderNumber, setBillingModalOrderNumber] = useState<string>('');
 
     // Direct generate and send PDF when status is clicked
     const handleStatusClickGenerateAndSend = async (orderId: string, orderNumber: string) => {
@@ -431,6 +435,11 @@ export default function ProcessTable() {
                                             onNoteClick={(orderId) => {
                                                 setOpenNoteModalId(orderId);
                                             }}
+                                            onPriceClick={(orderId, customerName, orderNumber) => {
+                                                setBillingModalOrderId(orderId);
+                                                setBillingModalCustomerName(customerName);
+                                                setBillingModalOrderNumber(orderNumber);
+                                            }}
                                         />
                                     ))
                                 )}
@@ -614,6 +623,20 @@ export default function ProcessTable() {
                     isOpen={!!openNoteModalId}
                     onClose={() => setOpenNoteModalId(null)}
                     orderId={openNoteModalId}
+                />
+
+                {/* Abrechnungsübersicht – opens on Preis click, fetches getPriseDetails(orderId) */}
+                <AbrechnungsuebersichtModal
+                    isOpen={!!billingModalOrderId}
+                    onClose={() => {
+                        setBillingModalOrderId(null);
+                        setBillingModalCustomerName('');
+                        setBillingModalOrderNumber('');
+                    }}
+                    orderId={billingModalOrderId}
+                    customerName={billingModalCustomerName}
+                    orderNumber={billingModalOrderNumber}
+                    onInvoiceDownload={handleInvoiceDownload}
                 />
             </div>
         </>

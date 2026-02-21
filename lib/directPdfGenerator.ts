@@ -11,6 +11,7 @@ interface BarcodeStickerData {
     partner: {
         name: string;
         image: string;
+        barcodeLabel?: string;
     };
     customer: string;
     customerNumber: number;
@@ -33,8 +34,11 @@ const formatDate = (dateString: string): string => {
     });
 };
 
-// Get barcode value with padding
+// Get barcode value: use partner.barcodeLabel from API when present, else padded order/customer number
 const getBarcodeValue = (data: BarcodeStickerData): string => {
+    if (data.partner?.barcodeLabel?.trim()) {
+        return data.partner.barcodeLabel.trim();
+    }
     const value = data.orderNumber?.toString() || data.customerNumber?.toString() || '0';
     return value.padStart(10, '0');
 };

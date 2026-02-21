@@ -373,3 +373,14 @@ export const updateStatusNote = async (orderId: string, statusNote: string) => {
         throw error;
     }
 }
+
+
+// customer-orders/track/prise-details/bca8ab2c-4fea-4ff2-a6dd-717d45dc665a
+export const getPriseDetails = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/track/prise-details/${orderId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

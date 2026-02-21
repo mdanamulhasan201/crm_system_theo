@@ -93,6 +93,7 @@ interface OrderTableRowProps {
     onBarcodeStickerClick?: (orderId: string, orderNumber: string, autoGenerate?: boolean) => void;
     onStatusClickGenerateAndSend?: (orderId: string, orderNumber: string) => void;
     onNoteClick?: (orderId: string) => void;
+    onPriceClick?: (orderId: string, customerName: string, orderNumber: string) => void;
 }
 
 export default function OrderTableRow({
@@ -111,6 +112,7 @@ export default function OrderTableRow({
     onBarcodeStickerClick,
     onStatusClickGenerateAndSend,
     onNoteClick,
+    onPriceClick,
 }: OrderTableRowProps) {
     const { selectedType } = useOrders();
     // Helper function to safely get string value
@@ -353,8 +355,18 @@ export default function OrderTableRow({
                     )}
                 </div>
             </TableCell>
-            <TableCell className="py-4 px-6 text-sm whitespace-nowrap">
-                {order.preis}
+            <TableCell className="py-4 px-6 text-sm whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                {onPriceClick ? (
+                    <button
+                        type="button"
+                        onClick={() => onPriceClick(order.id, order.kundenname, order.bestellnummer)}
+                        className="text-left font-medium text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                    >
+                        {order.preis}
+                    </button>
+                ) : (
+                    order.preis
+                )}
             </TableCell>
             <TableCell className="py-4 px-6">
                 <div className="flex flex-col items-center gap-1.5 py-1 px-1">

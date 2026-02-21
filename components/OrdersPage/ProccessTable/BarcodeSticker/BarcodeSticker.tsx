@@ -7,6 +7,7 @@ interface BarcodeStickerData {
     partner: {
         name: string;
         image: string;
+        barcodeLabel?: string;
     };
     customer: string;
     customerNumber: number;
@@ -25,17 +26,20 @@ interface BarcodeStickerProps {
 export default function BarcodeSticker({ data }: BarcodeStickerProps) {
     const barcodeRef = useRef<SVGSVGElement>(null);
 
-    const getBarcodeValue = () => {
+    const getBarcodeValue = (): string => {
+        if (data.partner?.barcodeLabel?.trim()) {
+            return data.partner.barcodeLabel.trim();
+        }
         const value = data.orderNumber?.toString() || data.customerNumber?.toString() || '0';
         return value.padStart(10, '0');
     };
 
+    const barcodeValue = getBarcodeValue();
+
     useEffect(() => {
         if (barcodeRef.current) {
             try {
-                const barcodeValue = data.orderNumber?.toString() || data.customerNumber?.toString() || '0';
-                const paddedValue = barcodeValue.padStart(10, '0');
-                JsBarcode(barcodeRef.current, paddedValue, {
+                JsBarcode(barcodeRef.current, barcodeValue, {
                     format: 'CODE128',
                     width: 2,
                     height: 50,
@@ -46,7 +50,7 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                 console.error('Error generating barcode:', error);
             }
         }
-    }, [data.orderNumber, data.customerNumber]);
+    }, [barcodeValue]);
 
     const formatDate = (dateString: string) => {
         if (!dateString) return '';
@@ -171,7 +175,7 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                             <svg ref={barcodeRef} style={{ height: '100%', width: 'auto', maxWidth: '100%' }} />
                         </div>
                         <div style={{ fontSize: '10px', color: '#333', textAlign: 'center', letterSpacing: '1px', fontWeight: '500' }}>
-                            {getBarcodeValue()}
+                            {barcodeValue}
                         </div>
                     </div>
                 </div>
