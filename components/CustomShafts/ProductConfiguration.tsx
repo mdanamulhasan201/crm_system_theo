@@ -46,11 +46,23 @@ interface ProductConfigurationProps {
   setSchafthoheLinks: (hohe: string) => void;
   schafthoheRechts: string;
   setSchafthoheRechts: (hohe: string) => void;
-  // Umfangmaße (circumference) - only required when shaft height > 15cm
-  umfangmasseLinks: string;
-  setUmfangmasseLinks: (masse: string) => void;
-  umfangmasseRechts: string;
-  setUmfangmasseRechts: (masse: string) => void;
+  // Umfangmaße (circumference) - dynamic per shaft height; ankle required when height > 15cm
+  umfangBei14Links: string;
+  setUmfangBei14Links: (v: string) => void;
+  umfangBei16Links: string;
+  setUmfangBei16Links: (v: string) => void;
+  umfangBei18Links: string;
+  setUmfangBei18Links: (v: string) => void;
+  knoechelumfangLinks: string;
+  setKnoechelumfangLinks: (v: string) => void;
+  umfangBei14Rechts: string;
+  setUmfangBei14Rechts: (v: string) => void;
+  umfangBei16Rechts: string;
+  setUmfangBei16Rechts: (v: string) => void;
+  umfangBei18Rechts: string;
+  setUmfangBei18Rechts: (v: string) => void;
+  knoechelumfangRechts: string;
+  setKnoechelumfangRechts: (v: string) => void;
   polsterung: string[];
   setPolsterung: (items: string[]) => void;
   verstarkungen: string[];
@@ -114,10 +126,22 @@ export default function ProductConfiguration({
   setSchafthoheLinks,
   schafthoheRechts,
   setSchafthoheRechts,
-  umfangmasseLinks,
-  setUmfangmasseLinks,
-  umfangmasseRechts,
-  setUmfangmasseRechts,
+  umfangBei14Links,
+  setUmfangBei14Links,
+  umfangBei16Links,
+  setUmfangBei16Links,
+  umfangBei18Links,
+  setUmfangBei18Links,
+  knoechelumfangLinks,
+  setKnoechelumfangLinks,
+  umfangBei14Rechts,
+  setUmfangBei14Rechts,
+  umfangBei16Rechts,
+  setUmfangBei16Rechts,
+  umfangBei18Rechts,
+  setUmfangBei18Rechts,
+  knoechelumfangRechts,
+  setKnoechelumfangRechts,
   polsterung,
   setPolsterung,
   verstarkungen,
@@ -186,6 +210,18 @@ export default function ProductConfiguration({
   }, [paintImage]);
 
   // Zipper is now controlled by the "Zusätzlicher Reißverschluss" checkbox, not by closureType
+
+  // Shaft circumference fields to show by height (from ground). Ankle is required when height > 15.
+  const getCircumferenceFieldsForHeight = (heightCm: number) => {
+    const h = heightCm;
+    return {
+      showUmfang14: h > 15,
+      showUmfang16: h > 16,
+      showUmfang18: h > 18,
+      showKnoechelumfang: h > 15,
+      requireCircumference: h > 15,
+    };
+  };
 
   const CATEGORY_OPTIONS = [
     { value: 'Halbschuhe', label: 'Halbschuhe', price: 209.99 },
@@ -483,22 +519,70 @@ export default function ProductConfiguration({
               />
               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
             </div>
-            
-            {/* Show Umfangmaße field only if shaft height > 15cm */}
-            {parseFloat(schafthoheLinks) > 15 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <Label className="text-sm font-medium text-yellow-900 mb-2 block">
-                  Umfangmaße Links (erforderlich bei Schafthöhe {'>'} 15cm):
-                </Label>
-                <Input
-                  type="text"
-                  placeholder="z.B. 35cm"
-                  className="w-full border-yellow-300 bg-white"
-                  value={umfangmasseLinks}
-                  onChange={e => setUmfangmasseLinks(e.target.value)}
-                />
-              </div>
-            )}
+            {(() => {
+              const leftH = parseFloat(schafthoheLinks);
+              const fields = getCircumferenceFieldsForHeight(leftH);
+              if (!fields.requireCircumference) return null;
+              return (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-3">
+                  <Label className="text-sm font-medium text-yellow-900 block">
+                    Umfangmaße Links (erforderlich bei Schafthöhe {'>'} 15 cm):
+                  </Label>
+                  {fields.showUmfang14 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 14 cm Höhe (ab Boden)</Label>
+                      <Input
+                        type="text"
+                        placeholder="z.B. 35"
+                        className="flex-1 border-yellow-300 bg-white"
+                        value={umfangBei14Links}
+                        onChange={e => setUmfangBei14Links(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-600">cm</span>
+                    </div>
+                  )}
+                  {fields.showUmfang16 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 16 cm Höhe (ab Boden)</Label>
+                      <Input
+                        type="text"
+                        placeholder="z.B. 36"
+                        className="flex-1 border-yellow-300 bg-white"
+                        value={umfangBei16Links}
+                        onChange={e => setUmfangBei16Links(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-600">cm</span>
+                    </div>
+                  )}
+                  {fields.showUmfang18 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 18 cm Höhe (ab Boden)</Label>
+                      <Input
+                        type="text"
+                        placeholder="z.B. 37"
+                        className="flex-1 border-yellow-300 bg-white"
+                        value={umfangBei18Links}
+                        onChange={e => setUmfangBei18Links(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-600">cm</span>
+                    </div>
+                  )}
+                  {fields.showKnoechelumfang && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Knöchelumfang</Label>
+                      <Input
+                        type="text"
+                        placeholder="z.B. 38"
+                        className="flex-1 border-yellow-300 bg-white"
+                        value={knoechelumfangLinks}
+                        onChange={e => setKnoechelumfangLinks(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-600">cm</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -516,22 +600,70 @@ export default function ProductConfiguration({
               />
               <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
             </div>
-            
-            {/* Show Umfangmaße field only if shaft height > 15cm */}
-            {parseFloat(schafthoheRechts) > 15 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                <Label className="text-sm font-medium text-yellow-900 mb-2 block">
-                  Umfangmaße Rechts (erforderlich bei Schafthöhe {'>'} 15cm):
-                </Label>
-                <Input
-                  type="text"
-                  placeholder="z.B. 35cm"
-                  className="w-full border-yellow-300 bg-white"
-                  value={umfangmasseRechts}
-                  onChange={e => setUmfangmasseRechts(e.target.value)}
-                />
-              </div>
-            )}
+            {(() => {
+              const rightH = parseFloat(schafthoheRechts);
+              const fields = getCircumferenceFieldsForHeight(rightH);
+              if (!fields.requireCircumference) return null;
+              return (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-3">
+                  <Label className="text-sm font-medium text-yellow-900 block">
+                    Umfangmaße Rechts (erforderlich bei Schafthöhe {'>'} 15 cm):
+                  </Label>
+                  {fields.showUmfang14 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 14 cm Höhe (ab Boden)</Label>
+                      <Input
+                        type="text"
+                        placeholder="z.B. 35"
+                        className="flex-1 border-yellow-300 bg-white"
+                        value={umfangBei14Rechts}
+                        onChange={e => setUmfangBei14Rechts(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-600">cm</span>
+                    </div>
+                  )}
+                  {fields.showUmfang16 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 16 cm Höhe (ab Boden)</Label>
+                      <Input
+                        type="text"
+                        placeholder="z.B. 36"
+                        className="flex-1 border-yellow-300 bg-white"
+                        value={umfangBei16Rechts}
+                        onChange={e => setUmfangBei16Rechts(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-600">cm</span>
+                    </div>
+                  )}
+                  {fields.showUmfang18 && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 18 cm Höhe (ab Boden)</Label>
+                      <Input
+                        type="text"
+                        placeholder="z.B. 37"
+                        className="flex-1 border-yellow-300 bg-white"
+                        value={umfangBei18Rechts}
+                        onChange={e => setUmfangBei18Rechts(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-600">cm</span>
+                    </div>
+                  )}
+                  {fields.showKnoechelumfang && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Knöchelumfang</Label>
+                      <Input
+                        type="text"
+                        placeholder="z.B. 38"
+                        className="flex-1 border-yellow-300 bg-white"
+                        value={knoechelumfangRechts}
+                        onChange={e => setKnoechelumfangRechts(e.target.value)}
+                      />
+                      <span className="text-sm text-gray-600">cm</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -823,18 +955,48 @@ export default function ProductConfiguration({
                 return;
               }
 
-              // Validate Umfangmaße if shaft height > 15cm
+              // Validate circumference fields by shaft height
               const leftHeight = parseFloat(schafthoheLinks);
               const rightHeight = parseFloat(schafthoheRechts);
+              const leftFields = getCircumferenceFieldsForHeight(leftHeight);
+              const rightFields = getCircumferenceFieldsForHeight(rightHeight);
 
-              if (leftHeight > 15 && !umfangmasseLinks) {
-                toast.error('Bitte geben Sie die Umfangmaße Links ein (erforderlich bei Schafthöhe > 15cm).');
-                return;
+              if (leftFields.requireCircumference) {
+                if (leftFields.showUmfang14 && !umfangBei14Links?.trim()) {
+                  toast.error('Bitte geben Sie den Umfang bei 14 cm Höhe (Links) ein.');
+                  return;
+                }
+                if (leftFields.showUmfang16 && !umfangBei16Links?.trim()) {
+                  toast.error('Bitte geben Sie den Umfang bei 16 cm Höhe (Links) ein.');
+                  return;
+                }
+                if (leftFields.showUmfang18 && !umfangBei18Links?.trim()) {
+                  toast.error('Bitte geben Sie den Umfang bei 18 cm Höhe (Links) ein.');
+                  return;
+                }
+                if (leftFields.showKnoechelumfang && !knoechelumfangLinks?.trim()) {
+                  toast.error('Bitte geben Sie den Knöchelumfang (Links) ein.');
+                  return;
+                }
               }
 
-              if (rightHeight > 15 && !umfangmasseRechts) {
-                toast.error('Bitte geben Sie die Umfangmaße Rechts ein (erforderlich bei Schafthöhe > 15cm).');
-                return;
+              if (rightFields.requireCircumference) {
+                if (rightFields.showUmfang14 && !umfangBei14Rechts?.trim()) {
+                  toast.error('Bitte geben Sie den Umfang bei 14 cm Höhe (Rechts) ein.');
+                  return;
+                }
+                if (rightFields.showUmfang16 && !umfangBei16Rechts?.trim()) {
+                  toast.error('Bitte geben Sie den Umfang bei 16 cm Höhe (Rechts) ein.');
+                  return;
+                }
+                if (rightFields.showUmfang18 && !umfangBei18Rechts?.trim()) {
+                  toast.error('Bitte geben Sie den Umfang bei 18 cm Höhe (Rechts) ein.');
+                  return;
+                }
+                if (rightFields.showKnoechelumfang && !knoechelumfangRechts?.trim()) {
+                  toast.error('Bitte geben Sie den Knöchelumfang (Rechts) ein.');
+                  return;
+                }
               }
 
               // Validate Abholen or Versenden selection (when required)

@@ -92,8 +92,14 @@ export default function CollectionShaftDetailsPage() {
   const [schafthohe, setSchafthohe] = useState('');
   const [schafthoheLinks, setSchafthoheLinks] = useState('');
   const [schafthoheRechts, setSchafthoheRechts] = useState('');
-  const [umfangmasseLinks, setUmfangmasseLinks] = useState('');
-  const [umfangmasseRechts, setUmfangmasseRechts] = useState('');
+  const [umfangBei14Links, setUmfangBei14Links] = useState('');
+  const [umfangBei16Links, setUmfangBei16Links] = useState('');
+  const [umfangBei18Links, setUmfangBei18Links] = useState('');
+  const [knoechelumfangLinks, setKnoechelumfangLinks] = useState('');
+  const [umfangBei14Rechts, setUmfangBei14Rechts] = useState('');
+  const [umfangBei16Rechts, setUmfangBei16Rechts] = useState('');
+  const [umfangBei18Rechts, setUmfangBei18Rechts] = useState('');
+  const [knoechelumfangRechts, setKnoechelumfangRechts] = useState('');
   const [polsterung, setPolsterung] = useState<string[]>([]);
   const [verstarkungen, setVerstarkungen] = useState<string[]>([]);
   const [polsterungText, setPolsterungText] = useState('');
@@ -215,6 +221,18 @@ export default function CollectionShaftDetailsPage() {
 
   const deliveryMethod = getDeliveryMethod();
 
+  // Build formatted circumference strings for PDF/display (from structured fields)
+  const formatUmfangmasseSide = (u14: string, u16: string, u18: string, knoechel: string) => {
+    const parts: string[] = [];
+    if (u14?.trim()) parts.push(`Umfang 14 cm: ${u14.trim()} cm`);
+    if (u16?.trim()) parts.push(`Umfang 16 cm: ${u16.trim()} cm`);
+    if (u18?.trim()) parts.push(`Umfang 18 cm: ${u18.trim()} cm`);
+    if (knoechel?.trim()) parts.push(`Knöchelumfang: ${knoechel.trim()} cm`);
+    return parts.length ? parts.join(', ') : '';
+  };
+  const umfangmasseLinksDisplay = formatUmfangmasseSide(umfangBei14Links, umfangBei16Links, umfangBei18Links, knoechelumfangLinks);
+  const umfangmasseRechtsDisplay = formatUmfangmasseSide(umfangBei14Rechts, umfangBei16Rechts, umfangBei18Rechts, knoechelumfangRechts);
+
   // Calculate total price
   const calculateTotalPrice = () => {
     let total = (shaft?.price ?? customCategoryPrice) || 0;
@@ -298,8 +316,16 @@ export default function CollectionShaftDetailsPage() {
       schafthohe,
       schafthoheLinks,
       schafthoheRechts,
-      umfangmasseLinks,
-      umfangmasseRechts,
+      umfangmasseLinks: umfangmasseLinksDisplay,
+      umfangmasseRechts: umfangmasseRechtsDisplay,
+      umfangBei14Links,
+      umfangBei16Links,
+      umfangBei18Links,
+      knoechelumfangLinks,
+      umfangBei14Rechts,
+      umfangBei16Rechts,
+      umfangBei18Rechts,
+      knoechelumfangRechts,
       polsterung,
       verstarkungen,
       polsterung_text: polsterungText,
@@ -584,10 +610,22 @@ export default function CollectionShaftDetailsPage() {
           setSchafthoheLinks={setSchafthoheLinks}
           schafthoheRechts={schafthoheRechts}
           setSchafthoheRechts={setSchafthoheRechts}
-          umfangmasseLinks={umfangmasseLinks}
-          setUmfangmasseLinks={setUmfangmasseLinks}
-          umfangmasseRechts={umfangmasseRechts}
-          setUmfangmasseRechts={setUmfangmasseRechts}
+          umfangBei14Links={umfangBei14Links}
+          setUmfangBei14Links={setUmfangBei14Links}
+          umfangBei16Links={umfangBei16Links}
+          setUmfangBei16Links={setUmfangBei16Links}
+          umfangBei18Links={umfangBei18Links}
+          setUmfangBei18Links={setUmfangBei18Links}
+          knoechelumfangLinks={knoechelumfangLinks}
+          setKnoechelumfangLinks={setKnoechelumfangLinks}
+          umfangBei14Rechts={umfangBei14Rechts}
+          setUmfangBei14Rechts={setUmfangBei14Rechts}
+          umfangBei16Rechts={umfangBei16Rechts}
+          setUmfangBei16Rechts={setUmfangBei16Rechts}
+          umfangBei18Rechts={umfangBei18Rechts}
+          setUmfangBei18Rechts={setUmfangBei18Rechts}
+          knoechelumfangRechts={knoechelumfangRechts}
+          setKnoechelumfangRechts={setKnoechelumfangRechts}
           polsterung={polsterung}
           setPolsterung={setPolsterung}
           verstarkungen={verstarkungen}
@@ -668,8 +706,8 @@ export default function CollectionShaftDetailsPage() {
             schafthohe,
             schafthoheLinks,
             schafthoheRechts,
-            umfangmasseLinks,
-            umfangmasseRechts,
+            umfangmasseLinks: umfangmasseLinksDisplay,
+            umfangmasseRechts: umfangmasseRechtsDisplay,
             polsterung,
             verstarkungen,
             polsterungText,
@@ -734,8 +772,8 @@ export default function CollectionShaftDetailsPage() {
             schafthohe,
             schafthoheLinks,
             schafthoheRechts,
-            umfangmasseLinks,
-            umfangmasseRechts,
+            umfangmasseLinks: umfangmasseLinksDisplay,
+            umfangmasseRechts: umfangmasseRechtsDisplay,
             polsterung,
             verstarkungen,
             polsterungText,
