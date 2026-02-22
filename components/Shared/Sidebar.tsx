@@ -137,7 +137,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
 
                         { icon: FiBarChart, label: 'Monatsstatistik', href: '/dashboard/monatsstatistik' },
                         { icon: TbUsers, label: 'Mitarbeitercontrolling', href: '/dashboard/mitarbeitercontrolling' },
-                        { icon: TbActivityHeartbeat, label: 'Einlagencontrolling', href: '/dashboard/einlagencontrolling' },
+                        { icon: TbActivityHeartbeat, label: 'Krankenkasse', href: '/dashboard/einlagencontrolling' },
                     ]
                 },
                 {
