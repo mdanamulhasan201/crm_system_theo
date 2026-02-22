@@ -260,7 +260,7 @@ export default function Customers() {
             {selectedCustomer.Geschäftstandort && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <MapPin className="w-4 h-4 text-gray-400" />
-                <span>Ort: Pichlarn Adr. Terantien...</span>
+                <span>Ort: {selectedCustomer.Geschäftstandort}</span>
               </div>
             )}
           </div>
@@ -320,7 +320,7 @@ export default function Customers() {
       {/* ===== SEARCH SECTION WITH GRID ===== */}
       <div className="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-6 mb-8">
         {/* Left Side - Search Form */}
-        <Card className="bg-white shadow-sm border border-gray-200">
+        <Card className="bg-white shadow border border-gray-200">
           <CardContent className="p-6">
             <div className="space-y-4">
               {/* First Row: Name and Email */}

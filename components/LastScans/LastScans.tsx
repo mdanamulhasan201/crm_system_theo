@@ -183,9 +183,9 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
             </div>
           )}
         </div>
-        <div className="text-sm text-gray-500">
+        {/* <div className="text-sm text-gray-500">
           {customerCount != null ? customerCount : "—"} Einlagen gefunden
-        </div>
+        </div> */}
       </div>
       {lastScans.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400">

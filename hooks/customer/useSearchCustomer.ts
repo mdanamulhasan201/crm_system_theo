@@ -120,7 +120,7 @@ export const useSearchCustomer = () => {
                         name: customer.name || customer.nameKunde || `${customer.vorname || ''} ${customer.nachname || ''}`.trim(),
                         phone: customer.phone || customer.Telefon || customer.telefon || '',
                         email: customer.email || '',
-                        location: customer.location || customer.Geschäftstandort || customer.wohnort || ''
+                        location: customer.location || customer.Geschäftstandort || customer.ort || customer.wohnort || ''
                     };
                     return mappedCustomer;
                 });
@@ -242,7 +242,7 @@ export const useSearchCustomer = () => {
                         Telefon: customer.phone || customer.Telefon || customer.telefon || '',
                         email: customer.email || '',
                         Geburtsdatum: customer.Geburtsdatum || customer.geburtsdatum || '',
-                        Geschäftstandort: customer.location || customer.Geschäftstandort || customer.wohnort || '',
+                        Geschäftstandort: customer.location || customer.Geschäftstandort || customer.ort || customer.wohnort || '',
                         createdAt: customer.createdAt || new Date().toISOString(),
                         customerNumber: customer.customerNumber || customer.kundennummer || undefined
                     };
@@ -311,7 +311,7 @@ export const useSearchCustomer = () => {
                     Telefon: customer.phone || customer.Telefon || customer.telefon || '',
                     email: customer.email || '',
                     Geburtsdatum: customer.Geburtsdatum || customer.geburtsdatum || '',
-                    Geschäftstandort: customer.location || customer.Geschäftstandort || customer.wohnort || '',
+                    Geschäftstandort: customer.location || customer.Geschäftstandort || customer.ort || customer.wohnort || '',
                     createdAt: customer.createdAt || new Date().toISOString(),
                     customerNumber: customer.customerNumber || customer.kundennummer || undefined
                 };
