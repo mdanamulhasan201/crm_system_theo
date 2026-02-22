@@ -175,10 +175,15 @@ export default function Calendar() {
     setCurrentDate(date)
   }
 
-  const handleAddAppointment = () => {
+  const handleAddAppointment = (presetDate?: Date, presetTime?: string) => {
     appointmentForm.reset()
-    appointmentForm.setValue('selectedEventDate', currentDate)
+    appointmentForm.setValue('selectedEventDate', presetDate ?? currentDate)
+    if (presetTime) appointmentForm.setValue('uhrzeit', presetTime)
     setIsAddModalOpen(true)
+  }
+
+  const handleSlotClick = (date: Date, time: string) => {
+    handleAddAppointment(date, time)
   }
 
   const handleAppointmentSubmit = async (data: AppointmentFormData) => {
@@ -274,6 +279,7 @@ export default function Calendar() {
           loading={appointmentsLoading}
           error={appointmentsError}
           onAppointmentClick={handleAppointmentClick}
+          onSlotClick={handleSlotClick}
         />
 
         {/* Right Sidebar */}

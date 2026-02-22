@@ -24,6 +24,7 @@ interface MainCalendarPageProps {
   loading?: boolean
   error?: string | null
   onAppointmentClick?: (appointmentId: string) => void
+  onSlotClick?: (date: Date, time: string) => void
 }
 
 // Generate time slots from 0:00 to 22:00
@@ -65,7 +66,8 @@ export default function MainCalendarPage({
   appointments,
   loading = false,
   error = null,
-  onAppointmentClick
+  onAppointmentClick,
+  onSlotClick
 }: MainCalendarPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => new Date())
@@ -192,7 +194,11 @@ export default function MainCalendarPage({
                   {timeSlots.map((time) => (
                     <div
                       key={time}
-                      className="h-[72px] border-b border-gray-100"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onSlotClick?.(day, time)}
+                      onKeyDown={(e) => e.key === 'Enter' && onSlotClick?.(day, time)}
+                      className="h-[72px] border-b border-gray-100 cursor-pointer hover:bg-gray-50/80 transition-colors"
                     />
                   ))}
 

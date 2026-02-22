@@ -118,22 +118,17 @@ export default function AppointmentModal({
         { value: 1440, label: '24 Stunden vorher' },
     ];
 
-    // Generate time slots in 5-minute intervals from 5:00 to 21:00
+    // Generate time slots in 5-minute intervals from 0:00 to 23:55 (full day for calendar slot click)
     const timeSlots = React.useMemo(() => {
         const slots = [];
-        const startHour = 5;
-        const endHour = 21;
-        
+        const startHour = 0;
+        const endHour = 23;
+
         for (let hour = startHour; hour <= endHour; hour++) {
             for (let minute = 0; minute < 60; minute += 5) {
-                // Skip times after 21:00
-                if (hour === endHour && minute > 0) break;
-                
+                if (hour === endHour && minute > 55) break;
                 const timeString = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-                slots.push({
-                    value: timeString,
-                    label: timeString
-                });
+                slots.push({ value: timeString, label: timeString });
             }
         }
         return slots;
