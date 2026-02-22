@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
 import SonstigesCreateModal from './SonstigesCreateModal'
+import SonstigesDeleteModal from './SonstigesDeleteModal'
 import {
     Table,
     TableBody,
@@ -12,22 +13,58 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { IoSearch } from 'react-icons/io5'
-import { createSonstiges, getAllSonstiges } from '@/apis/storeManagement'
+import { IoSearch, IoCreate, IoTrash } from 'react-icons/io5'
+import { createSonstiges, getAllSonstiges, updateSonstiges, deleteSonstiges } from '@/apis/storeManagement'
+import type { SonstigesItem } from '@/apis/storeManagement'
 import { SonstigesFormData } from './SonstigesCreateModal'
 import toast from 'react-hot-toast'
 import useDebounce from '@/hooks/useDebounce'
 
+function CustomCheckbox({
+    checked,
+    onChange,
+    id,
+}: {
+    checked: boolean
+    onChange: (checked: boolean) => void
+    id?: string
+}) {
+    return (
+        <div className="relative flex items-center justify-center">
+            <input
+                type="checkbox"
+                id={id}
+                className="sr-only"
+                checked={checked}
+                onChange={(e) => onChange(e.target.checked)}
+            />
+            <div
+                className={`
+                    w-4 h-4 rounded border-2 cursor-pointer transition-all flex items-center justify-center
+                    ${checked ? 'bg-[#61A178] border-[#61A178]' : 'bg-white border-gray-300 hover:border-gray-400'}
+                `}
+                onClick={() => onChange(!checked)}
+            >
+                {checked && (
+                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                    </svg>
+                )}
+            </div>
+        </div>
+    )
+}
+
 export default function SonstigesData() {
     const [searchQuery, setSearchQuery] = useState('')
     const [createModalOpen, setCreateModalOpen] = useState(false)
-    const [items, setItems] = useState<Array<{
-        id: string
-        article: string
-        ein: string
-        quantity: number
-        value: number
-    }>>([])
+    const [editModalOpen, setEditModalOpen] = useState(false)
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+    const [editingItem, setEditingItem] = useState<SonstigesItem | null>(null)
+    const [deleteIds, setDeleteIds] = useState<string[]>([])
+    const [isDeleting, setIsDeleting] = useState(false)
+    const [items, setItems] = useState<SonstigesItem[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const debouncedSearch = useDebounce(searchQuery, 500)
 
@@ -54,6 +91,26 @@ export default function SonstigesData() {
 
     const visibleProducts = useMemo(() => items, [items])
 
+    const isAllSelected = visibleProducts.length > 0 && selectedIds.size === visibleProducts.length
+    const isSomeSelected = selectedIds.size > 0
+
+    const handleSelectAll = () => {
+        if (isAllSelected) {
+            setSelectedIds(new Set())
+        } else {
+            setSelectedIds(new Set(visibleProducts.map((p) => p.id)))
+        }
+    }
+
+    const handleSelectRow = (id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }
+
     const handleCreateSubmit = async (data: SonstigesFormData) => {
         try {
             const response = await createSonstiges({
@@ -66,7 +123,6 @@ export default function SonstigesData() {
             })
             if (response?.success && response?.message) {
                 toast.success(response.message)
-                // Optimistic update: add new item to list without full reload
                 if (response?.data) {
                     setItems((prev) => [...prev, response.data])
                 }
@@ -75,6 +131,75 @@ export default function SonstigesData() {
             const msg = err?.response?.data?.message || err?.message || 'Fehler beim Erstellen'
             toast.error(msg)
             throw err
+        }
+    }
+
+    const handleEditClick = (item: SonstigesItem) => {
+        setEditingItem(item)
+        setEditModalOpen(true)
+    }
+
+    const handleEditSubmit = async (data: SonstigesFormData) => {
+        if (!editingItem) return
+        try {
+            const response = await updateSonstiges(editingItem.id, {
+                manufacturer: data.manufacturer,
+                delivery_business: data.delivery_business,
+                article: data.article,
+                ein: data.ein,
+                quantity: data.quantity,
+                value: data.value,
+            })
+            if (response?.success && response?.message) {
+                toast.success(response.message)
+                setItems((prev) =>
+                    prev.map((p) =>
+                        p.id === editingItem.id
+                            ? { ...p, ...data }
+                            : p
+                    )
+                )
+            }
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || 'Fehler beim Aktualisieren'
+            toast.error(msg)
+            throw err
+        }
+    }
+
+    const handleDeleteClick = (id: string) => {
+        setDeleteIds([id])
+        setDeleteModalOpen(true)
+    }
+
+    const handleBulkDeleteClick = () => {
+        if (selectedIds.size > 0) {
+            setDeleteIds(Array.from(selectedIds))
+            setDeleteModalOpen(true)
+        }
+    }
+
+    const handleDeleteConfirm = async () => {
+        if (deleteIds.length === 0) return
+        setIsDeleting(true)
+        try {
+            const response = await deleteSonstiges({ ids: deleteIds })
+            if (response?.success && response?.message) {
+                toast.success(response.message)
+                setItems((prev) => prev.filter((p) => !deleteIds.includes(p.id)))
+                setSelectedIds((prev) => {
+                    const next = new Set(prev)
+                    deleteIds.forEach((id) => next.delete(id))
+                    return next
+                })
+                setDeleteModalOpen(false)
+                setDeleteIds([])
+            }
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.message || 'Fehler beim Löschen'
+            toast.error(msg)
+        } finally {
+            setIsDeleting(false)
         }
     }
 
@@ -104,9 +229,19 @@ export default function SonstigesData() {
                 </div>
             </div>
 
-            <div className='flex justify-end'>
+            <div className='flex flex-col sm:flex-row items-center justify-end gap-2 sm:gap-4'>
+                {isSomeSelected && (
+                    <Button
+                        variant="destructive"
+                        className="bg-red-600 hover:bg-red-700 text-white cursor-pointer shrink-0"
+                        onClick={handleBulkDeleteClick}
+                    >
+                        <IoTrash className="w-4 h-4 mr-1" />
+                        Ausgewählte löschen ({selectedIds.size})
+                    </Button>
+                )}
                 <Button
-                    className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer order-1 sm:order-2 shrink-0"
+                    className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer shrink-0"
                     onClick={() => setCreateModalOpen(true)}
                 >
                     Erstellen
@@ -114,42 +249,63 @@ export default function SonstigesData() {
             </div>
 
             {/* Table */}
-            <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
+            <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow overflow-hidden">
                 {isLoading ? (
-                    <Table className="w-full bg-white rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                    <Table className="w-full bg-white rounded-lg min-w-[900px]">
                         <TableHeader>
                             <TableRow className="border-b bg-white">
+                                <TableHead className="p-3 w-12 shrink-0" />
+                                <TableHead className="p-3 text-left font-medium text-gray-900">Hersteller</TableHead>
+                                <TableHead className="p-3 text-left font-medium text-gray-900">Liefergeschäft</TableHead>
                                 <TableHead className="p-3 text-left font-medium text-gray-900">Artikel</TableHead>
-                                <TableHead className="p-3 text-left font-medium text-gray-900">SKU</TableHead>
+                                <TableHead className="p-3 text-left font-medium text-gray-900">EIN</TableHead>
                                 <TableHead className="p-3 text-right font-medium text-gray-900">Bestand</TableHead>
                                 <TableHead className="p-3 text-right font-medium text-gray-900">Wert</TableHead>
+                                <TableHead className="p-3 text-center font-medium text-gray-900 w-24 shrink-0">Aktionen</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {[1, 2, 3, 4, 5].map((i) => (
                                 <TableRow key={i} className="border-b bg-white">
-                                    <TableCell className="p-3"><div className="h-4 w-32 animate-pulse bg-gray-200 rounded" /></TableCell>
+                                    <TableCell className="p-3"><div className="h-4 w-4 animate-pulse bg-gray-200 rounded" /></TableCell>
                                     <TableCell className="p-3"><div className="h-4 w-24 animate-pulse bg-gray-200 rounded" /></TableCell>
+                                    <TableCell className="p-3"><div className="h-4 w-24 animate-pulse bg-gray-200 rounded" /></TableCell>
+                                    <TableCell className="p-3"><div className="h-4 w-28 animate-pulse bg-gray-200 rounded" /></TableCell>
+                                    <TableCell className="p-3"><div className="h-4 w-20 animate-pulse bg-gray-200 rounded" /></TableCell>
                                     <TableCell className="p-3 text-right"><div className="h-4 w-12 animate-pulse bg-gray-200 rounded ml-auto" /></TableCell>
-                                    <TableCell className="p-3 text-right"><div className="h-4 w-16 animate-pulse bg-gray-200 rounded ml-auto" /></TableCell>
+                                    <TableCell className="p-3 text-right"><div className="h-4 w-14 animate-pulse bg-gray-200 rounded ml-auto" /></TableCell>
+                                    <TableCell className="p-3"><div className="h-4 w-20 animate-pulse bg-gray-200 rounded" /></TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
                     </Table>
+                    </div>
                 ) : (
-                    <Table className="w-full bg-white rounded-lg overflow-hidden">
+                    <div className="overflow-x-auto">
+                    <Table className="w-full bg-white rounded-lg min-w-[900px]">
                         <TableHeader>
                             <TableRow className="border-b bg-white">
+                                <TableHead className="p-3 w-12 shrink-0">
+                                    <CustomCheckbox
+                                        checked={isAllSelected}
+                                        onChange={handleSelectAll}
+                                        id="select-all"
+                                    />
+                                </TableHead>
+                                <TableHead className="p-3 text-left font-medium text-gray-900">Hersteller</TableHead>
+                                <TableHead className="p-3 text-left font-medium text-gray-900">Liefergeschäft</TableHead>
                                 <TableHead className="p-3 text-left font-medium text-gray-900">Artikel</TableHead>
-                                <TableHead className="p-3 text-left font-medium text-gray-900">SKU</TableHead>
+                                <TableHead className="p-3 text-left font-medium text-gray-900">EIN</TableHead>
                                 <TableHead className="p-3 text-right font-medium text-gray-900">Bestand</TableHead>
                                 <TableHead className="p-3 text-right font-medium text-gray-900">Wert</TableHead>
+                                <TableHead className="p-3 text-center font-medium text-gray-900 w-24 shrink-0">Aktionen</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {visibleProducts.length === 0 ? (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="p-8 text-center">
+                                    <TableCell colSpan={8} className="p-8 text-center">
                                         <div className="flex flex-col items-center justify-center py-8">
                                             <div className="text-gray-400 mb-2">
                                                 <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -164,15 +320,47 @@ export default function SonstigesData() {
                             ) : (
                                 visibleProducts.map((row) => (
                                     <TableRow key={row.id} className="border-b bg-white">
-                                        <TableCell className="p-3 text-gray-900">{row.article}</TableCell>
-                                        <TableCell className="p-3 text-gray-900">{row.ein}</TableCell>
+                                        <TableCell className="p-3" onClick={(e) => e.stopPropagation()}>
+                                            <CustomCheckbox
+                                                checked={selectedIds.has(row.id)}
+                                                onChange={() => handleSelectRow(row.id)}
+                                                id={`checkbox-${row.id}`}
+                                            />
+                                        </TableCell>
+                                        <TableCell className="p-3 text-gray-900 truncate max-w-[140px]" title={row.manufacturer}>{row.manufacturer}</TableCell>
+                                        <TableCell className="p-3 text-gray-900 truncate max-w-[140px]" title={row.delivery_business}>{row.delivery_business}</TableCell>
+                                        <TableCell className="p-3 text-gray-900 truncate max-w-[140px]" title={row.article}>{row.article}</TableCell>
+                                        <TableCell className="p-3 text-gray-900 truncate max-w-[120px]" title={row.ein}>{row.ein}</TableCell>
                                         <TableCell className="p-3 text-right text-gray-900 tabular-nums">{row.quantity}</TableCell>
                                         <TableCell className="p-3 text-right text-gray-900 tabular-nums">{formatValue(row.value)}</TableCell>
+                                        <TableCell className="p-3 whitespace-nowrap text-center">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => handleEditClick(row)}
+                                                    className="h-8 w-8 p-0 cursor-pointer text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                                    title="Bearbeiten"
+                                                >
+                                                    <IoCreate className="w-4 h-4" />
+                                                </Button>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => handleDeleteClick(row.id)}
+                                                    className="h-8 w-8 p-0 cursor-pointer text-gray-600 hover:text-red-600 hover:bg-red-50"
+                                                    title="Löschen"
+                                                >
+                                                    <IoTrash className="w-4 h-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
                         </TableBody>
                     </Table>
+                    </div>
                 )}
             </div>
 
@@ -180,6 +368,40 @@ export default function SonstigesData() {
                 isOpen={createModalOpen}
                 onClose={() => setCreateModalOpen(false)}
                 onSubmit={handleCreateSubmit}
+                mode="create"
+            />
+
+            <SonstigesCreateModal
+                isOpen={editModalOpen}
+                onClose={() => {
+                    setEditModalOpen(false)
+                    setEditingItem(null)
+                }}
+                onSubmit={handleEditSubmit}
+                initialData={
+                    editingItem
+                        ? {
+                              manufacturer: editingItem.manufacturer,
+                              delivery_business: editingItem.delivery_business,
+                              article: editingItem.article,
+                              ein: editingItem.ein,
+                              quantity: editingItem.quantity,
+                              value: editingItem.value,
+                          }
+                        : null
+                }
+                mode="edit"
+            />
+
+            <SonstigesDeleteModal
+                isOpen={deleteModalOpen}
+                onClose={() => {
+                    setDeleteModalOpen(false)
+                    setDeleteIds([])
+                }}
+                onConfirm={handleDeleteConfirm}
+                count={deleteIds.length}
+                isLoading={isDeleting}
             />
         </div>
     )

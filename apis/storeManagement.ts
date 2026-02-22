@@ -140,3 +140,37 @@ export const getAllSonstiges = async (limit: number, cursor: string, search: str
         throw error;
     }
 }
+
+
+// get single sonstiges v2/stock-material/get-details/18708ea2-1a0a-4474-975f-4d2562e8fcd1
+export const getSingleSonstiges = async (id: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/stock-material/get-details/${id}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// update sonstiges }v2/stock-material/update/18708ea2-1a0a-4474-975f-4d2562e8fcd1
+export const updateSonstiges = async (id: string, body: SonstigesCreateBody) => {
+    try {
+        const response = await axiosClient.patch(`/v2/stock-material/update/${id}`, body);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// delete sonstiges v2/stock-material/delete
+// -req.body: {
+//     "ids": ["18708ea2-1a0a-4474-975f-4d2562e8fcd1", "321d7655-9ce9-4b2c-a514-19db5f46589c"]
+// }
+export const deleteSonstiges = async (body: { ids: string[] }) => {
+    try {
+        const response = await axiosClient.delete('/v2/stock-material/delete/', { data: body });
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}

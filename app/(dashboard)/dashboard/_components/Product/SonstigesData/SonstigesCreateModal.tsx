@@ -34,21 +34,36 @@ interface SonstigesCreateModalProps {
     isOpen: boolean
     onClose: () => void
     onSubmit?: (data: SonstigesFormData) => void | Promise<void>
+    initialData?: SonstigesFormData | null
+    mode?: 'create' | 'edit'
 }
 
 export default function SonstigesCreateModal({
     isOpen,
     onClose,
     onSubmit,
+    initialData = null,
+    mode = 'create',
 }: SonstigesCreateModalProps) {
     const [formData, setFormData] = useState<SonstigesFormData>(INITIAL_FORM)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
     useEffect(() => {
-        if (!isOpen) {
-            setFormData(INITIAL_FORM)
+        if (isOpen) {
+            setFormData(
+                initialData
+                    ? {
+                          manufacturer: initialData.manufacturer,
+                          delivery_business: initialData.delivery_business,
+                          article: initialData.article,
+                          ein: initialData.ein,
+                          quantity: initialData.quantity,
+                          value: initialData.value,
+                      }
+                    : INITIAL_FORM
+            )
         }
-    }, [isOpen])
+    }, [isOpen, initialData])
 
     const handleChange = (field: keyof SonstigesFormData, value: string | number) => {
         setFormData((prev) => ({ ...prev, [field]: value }))
@@ -72,7 +87,7 @@ export default function SonstigesCreateModal({
             <DialogContent className="sm:!max-w-xl p-0 gap-0 overflow-hidden rounded-xl border border-gray-200 shadow-xl">
                 <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-b from-gray-50/80 to-white border-b border-gray-100">
                     <DialogTitle className="text-xl font-semibold text-gray-900 tracking-tight">
-                        Sonstiges erstellen
+                        {mode === 'edit' ? 'Sonstiges bearbeiten' : 'Sonstiges erstellen'}
                     </DialogTitle>
                     <p className="text-sm text-gray-500 mt-1">
                         Lieferdetails und Artikelinformationen eingeben
@@ -192,7 +207,7 @@ export default function SonstigesCreateModal({
                             disabled={isSubmitting}
                             className="bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer"
                         >
-                            {isSubmitting ? 'Erstellen...' : 'Erstellen'}
+                            {isSubmitting ? (mode === 'edit' ? 'Speichern...' : 'Erstellen...') : (mode === 'edit' ? 'Speichern' : 'Erstellen')}
                         </Button>
                     </DialogFooter>
                 </form>
