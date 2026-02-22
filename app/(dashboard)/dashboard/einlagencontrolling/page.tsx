@@ -4,6 +4,10 @@ import Finanzubersicht from '../_components/Krankenkasse/Finanzubersicht/Finanzu
 import BassenperformanceData from '../_components/Krankenkasse/Finanzubersicht/BassenperformanceData'
 import UmasatzstrukturPieChart from '../_components/Krankenkasse/Finanzubersicht/UmasatzstrukturPieChart'
 import FalligkeitsstrukturBarChart from '../_components/Krankenkasse/Finanzubersicht/FalligkeitsstrukturBarChart'
+import PriceCardData from '../_components/Krankenkasse/PriceCardData'
+import AktuelleAuftrageTable from '../_components/Krankenkasse/AktuelleAuftrageTable'
+import Umsatzverteilung from '../_components/Krankenkasse/Umsatzverteilung'
+import Produktverteilung from '../_components/Krankenkasse/Produktverteilung'
 
 export default function Krankenkasse() {
     return (
@@ -14,6 +18,13 @@ export default function Krankenkasse() {
                 <FalligkeitsstrukturBarChart />
                 <UmasatzstrukturPieChart />
                 <BassenperformanceData />
+            </section>
+            <PriceCardData />
+            <AktuelleAuftrageTable />
+
+            <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Umsatzverteilung />
+                <Produktverteilung />
             </section>
         </div>
     )
