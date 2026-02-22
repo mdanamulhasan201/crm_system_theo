@@ -12,7 +12,7 @@ interface RightSidebarCalendarProps {
   currentDate: Date
   onDateSelect: (date: Date) => void
   selectedEmployees: string[]
-  onEmployeeToggle: (employee: string) => void
+  onEmployeeToggle: (employeeId: string, employeeName?: string) => void
 }
 
 export default function RightSidebarCalendar({

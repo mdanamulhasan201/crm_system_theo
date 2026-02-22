@@ -15,7 +15,7 @@ interface EmployeeItem {
 
 interface EmloyeesListsProps {
     selectedEmployees: string[]
-    onEmployeeToggle: (employeeId: string) => void
+    onEmployeeToggle: (employeeId: string, employeeName?: string) => void
 }
 
 type ApiEmployee = { id?: string; _id?: string; employeeName?: string; name?: string }
@@ -94,7 +94,7 @@ export default function EmloyeesLists({
                         <button
                             key={employee.id}
                             title={employee.name}
-                            onClick={() => !isDisabled && onEmployeeToggle(employee.id)}
+                            onClick={() => !isDisabled && onEmployeeToggle(employee.id, isSelected ? undefined : employee.name)}
                             className={cn(
                                 "flex items-center gap-2 px-2 py-2 rounded-full text-sm font-medium transition-all duration-200 w-full justify-start",
                                 isDisabled && "opacity-60 cursor-not-allowed",

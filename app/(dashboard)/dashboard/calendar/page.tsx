@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { format, addDays } from 'date-fns'
 import CalendarMainNav from '../_components/MainCalendar/CalendarMainNav'
@@ -105,7 +105,11 @@ export default function Calendar() {
     return new Date()
   })
   
-  const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
+  const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState<Array<{ employeeId: string; assignedTo: string }>>([])
+  const selectedEmployees = useMemo(
+    () => selectedEmployeeDetails.map((e) => e.employeeId),
+    [selectedEmployeeDetails]
+  )
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
@@ -152,7 +156,8 @@ export default function Calendar() {
   const fetchAppointments = useCallback(async () => {
     const startDate = format(currentDate, 'yyyy-MM-dd')
     const endDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
-    const employeeParam = selectedEmployees.length > 0 ? selectedEmployees.join(',') : undefined
+    const ids = selectedEmployeeDetails.map((e) => e.employeeId)
+    const employeeParam = ids.length > 0 ? ids.join(',') : undefined
     setAppointmentsLoading(true)
     setAppointmentsError(null)
     try {
@@ -165,7 +170,7 @@ export default function Calendar() {
     } finally {
       setAppointmentsLoading(false)
     }
-  }, [currentDate, selectedEmployees])
+  }, [currentDate, selectedEmployeeDetails])
 
   useEffect(() => {
     fetchAppointments()
@@ -179,6 +184,9 @@ export default function Calendar() {
     appointmentForm.reset()
     appointmentForm.setValue('selectedEventDate', presetDate ?? currentDate)
     if (presetTime) appointmentForm.setValue('uhrzeit', presetTime)
+    if (selectedEmployeeDetails.length > 0) {
+      appointmentForm.setValue('employees', selectedEmployeeDetails)
+    }
     setIsAddModalOpen(true)
   }
 
@@ -246,14 +254,15 @@ export default function Calendar() {
     }
   }
 
-  const handleEmployeeToggle = (employeeId: string) => {
-    setSelectedEmployees(prev => {
-      if (prev.includes(employeeId)) {
-        return prev.filter(id => id !== employeeId)
+  const handleEmployeeToggle = (employeeId: string, employeeName?: string) => {
+    setSelectedEmployeeDetails((prev) => {
+      const exists = prev.some((e) => e.employeeId === employeeId)
+      if (exists) {
+        return prev.filter((e) => e.employeeId !== employeeId)
       }
-      // Max 2 employees can be selected
       if (prev.length >= 2) return prev
-      return [...prev, employeeId]
+      if (!employeeName) return prev
+      return [...prev, { employeeId, assignedTo: employeeName }]
     })
   }
 
