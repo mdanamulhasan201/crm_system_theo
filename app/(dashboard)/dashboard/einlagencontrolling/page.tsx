@@ -8,6 +8,7 @@ import PriceCardData from '../_components/Krankenkasse/PriceCardData'
 import AktuelleAuftrageTable from '../_components/Krankenkasse/AktuelleAuftrageTable'
 import Umsatzverteilung from '../_components/Krankenkasse/Umsatzverteilung'
 import Produktverteilung from '../_components/Krankenkasse/Produktverteilung'
+import KrankenkassenTable from '../_components/Krankenkasse/KrankenkassenTable'
 
 export default function Krankenkasse() {
     return (
@@ -26,6 +27,7 @@ export default function Krankenkasse() {
                 <Umsatzverteilung />
                 <Produktverteilung />
             </section>
+            <KrankenkassenTable />
         </div>
     )
 }
