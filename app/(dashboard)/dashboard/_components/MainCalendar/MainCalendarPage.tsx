@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { de } from 'date-fns/locale'
+import { X } from 'lucide-react'
 
 const SLOT_HEIGHT = 72
 const START_MINUTES = 0 // 0:00 so early-morning appointments (e.g. 12:27 AM) are visible
@@ -25,6 +26,7 @@ interface MainCalendarPageProps {
   error?: string | null
   onAppointmentClick?: (appointmentId: string) => void
   onSlotClick?: (date: Date, time: string) => void
+  onDeleteAppointment?: (appointmentId: string) => void
 }
 
 // Generate time slots from 0:00 to 22:00
@@ -67,7 +69,8 @@ export default function MainCalendarPage({
   loading = false,
   error = null,
   onAppointmentClick,
-  onSlotClick
+  onSlotClick,
+  onDeleteAppointment
 }: MainCalendarPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => new Date())
@@ -216,29 +219,36 @@ export default function MainCalendarPage({
                         tabIndex={0}
                         onClick={() => onAppointmentClick?.(appointment.id)}
                         onKeyDown={(e) => e.key === 'Enter' && onAppointmentClick?.(appointment.id)}
-                        className="absolute left-2 right-2 overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-sm bg-[#62A07C]/20 border-l-4 border-l-[#62A07C]"
+                        className="group absolute left-2 right-2 overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-sm bg-[#62A07C]/20 border-l-4 border-l-[#62A07C]"
                         style={style}
                       >
-                        <div className="flex flex-col h-full min-h-0 p-2.5 gap-1">
+                        <div className="flex flex-col h-full min-h-0 p-2.5 gap-1 relative">
+                          {onDeleteAppointment && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                onDeleteAppointment(appointment.id)
+                              }}
+                              className="absolute top-1.5 right-1.5 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity cursor-pointer"
+                              aria-label="Delete"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <div className="font-semibold text-green-800 text-xs leading-snug line-clamp-2 shrink-0">
                             {appointment.title}
                           </div>
                           <div className="text-[11px] text-gray-600 shrink-0">
                             {appointment.startTime} – {appointment.endTime}
                           </div>
-                          {/* {appointment.type && (
-                            <div className="text-[11px] text-gray-500 line-clamp-1 shrink-0">
-                              {appointment.type}
-                            </div>
-                          )} */}
                           <div className="flex items-center gap-2 mt-auto shrink-0 min-h-0">
-                          <span className="text-[11px] text-gray-700 truncate font-medium">
+                            <span className="text-[11px] text-gray-700 truncate font-medium">
                               {appointment.person.trim()}
                             </span>
                             <span className="w-4 h-4 rounded-full bg-[#62A07C] text-white flex items-center justify-center text-[10px] font-semibold shrink-0 shadow-sm">
                               {appointment.person.trim().charAt(0).toUpperCase()}
                             </span>
-                          
                           </div>
                         </div>
                       </div>

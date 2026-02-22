@@ -8,6 +8,7 @@ import CalendarNav from '../_components/MainCalendar/CalendarNav'
 import MainCalendarPage from '../_components/MainCalendar/MainCalendarPage'
 import RightSidebarCalendar from '../_components/MainCalendar/RightSidebarCalendar'
 import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
+import DeleteConfirmModal from '@/app/(dashboard)/dashboard/_components/MainCalendar/DeleteConfirmModal'
 import { useAppoinment } from '@/hooks/appoinment/useAppoinment'
 import { getAppointmentsByDate, type AppointmentByDateItem } from '@/apis/calendarManagementApis'
 
@@ -116,6 +117,8 @@ export default function Calendar() {
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([])
   const [appointmentsLoading, setAppointmentsLoading] = useState(false)
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null)
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
+  const [appointmentIdToDelete, setAppointmentIdToDelete] = useState<string | null>(null)
 
   const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
@@ -254,6 +257,21 @@ export default function Calendar() {
     }
   }
 
+  const handleDeleteClick = (appointmentId: string) => {
+    setAppointmentIdToDelete(appointmentId)
+    setIsDeleteConfirmOpen(true)
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!appointmentIdToDelete) return
+    const ok = await deleteAppointmentById(appointmentIdToDelete)
+    if (ok) {
+      setIsDeleteConfirmOpen(false)
+      setAppointmentIdToDelete(null)
+      fetchAppointments()
+    }
+  }
+
   const handleEmployeeToggle = (employeeId: string, employeeName?: string) => {
     setSelectedEmployeeDetails((prev) => {
       const exists = prev.some((e) => e.employeeId === employeeId)
@@ -289,6 +307,7 @@ export default function Calendar() {
           error={appointmentsError}
           onAppointmentClick={handleAppointmentClick}
           onSlotClick={handleSlotClick}
+          onDeleteAppointment={handleDeleteClick}
         />
 
         {/* Right Sidebar */}
@@ -340,6 +359,20 @@ export default function Calendar() {
           }}
         />
       )}
+
+      {/* Delete Confirm Modal */}
+      <DeleteConfirmModal
+        isOpen={isDeleteConfirmOpen}
+        onClose={() => {
+          setIsDeleteConfirmOpen(false)
+          setAppointmentIdToDelete(null)
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Termin löschen"
+        message="Möchten Sie diesen Termin wirklich löschen?"
+        confirmText="Löschen"
+        cancelText="Abbrechen"
+      />
     </div>
   )
 }
