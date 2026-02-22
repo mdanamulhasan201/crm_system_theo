@@ -229,85 +229,67 @@ export default function ZipperPlacementModal({
     }
   };
 
-  // Generate composite image - optimized to avoid CORS errors
+  // Get base image as data URL so we can composite without CORS/taint. Uses proxy for external URLs.
+  const getBaseImageAsDataUrl = async (): Promise<string | null> => {
+    if (!imageUrl) return null;
+    if (imageUrl.startsWith('data:')) return imageUrl;
+    try {
+      const absoluteUrl = imageUrl.startsWith('http') ? imageUrl : `${window.location.origin}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+      const res = await fetch(`/api/proxy-image?url=${encodeURIComponent(absoluteUrl)}`);
+      if (!res.ok) return null;
+      const blob = await res.blob();
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return null;
+    }
+  };
+
+  // Always build composite (base + drawing) using a fresh Image with data URL so canvas is never tainted
   const generateCompositeImage = async (): Promise<{ compositeImage: string | null; drawingOnly: string | null }> => {
     const drawingLayer = drawingLayerRef.current;
-    const img = imageRef.current;
-    
     if (!drawingLayer || !imageUrl) {
       return { compositeImage: null, drawingOnly: null };
     }
 
-    // Always save the drawing layer as fallback
     const drawingOnly = drawingLayer.toDataURL('image/png');
+    const w = imageDimensions.width || drawingLayer.width;
+    const h = imageDimensions.height || drawingLayer.height;
+    if (!w || !h) return { compositeImage: null, drawingOnly };
+
+    const baseDataUrl = await getBaseImageAsDataUrl();
+    if (!baseDataUrl) return { compositeImage: null, drawingOnly };
 
     const compositeCanvas = document.createElement('canvas');
-    compositeCanvas.width = imageDimensions.width;
-    compositeCanvas.height = imageDimensions.height;
+    compositeCanvas.width = w;
+    compositeCanvas.height = h;
     const compositeCtx = compositeCanvas.getContext('2d', { willReadFrequently: true });
-    
-    if (!compositeCtx) {
-      return { compositeImage: null, drawingOnly };
-    }
-
-    // Helper function to check if image is from same origin
-    const isSameOrigin = (url: string): boolean => {
-      try {
-        const imageOrigin = new URL(url, window.location.href).origin;
-        const currentOrigin = window.location.origin;
-        return imageOrigin === currentOrigin;
-      } catch {
-        return false;
-      }
-    };
+    if (!compositeCtx) return { compositeImage: null, drawingOnly };
 
     return new Promise((resolve) => {
-      // Strategy 1: Try using already-loaded DOM image (only for same-origin images)
-      if (isSameOrigin(imageUrl) && img && img.complete && img.naturalWidth > 0) {
-        try {
-          compositeCtx.drawImage(img, 0, 0, compositeCanvas.width, compositeCanvas.height);
-          compositeCtx.drawImage(drawingLayer, 0, 0, compositeCanvas.width, compositeCanvas.height);
-          const dataUrl = compositeCanvas.toDataURL('image/png');
-          resolve({ compositeImage: dataUrl, drawingOnly });
-          return;
-        } catch (error: any) {
-          // Continue to cross-origin strategy
-        }
-      }
-
-      // For cross-origin images: Use crossOrigin='anonymous' approach directly
-      // This works for S3 with proper CORS headers
-      const baseImg = new Image();
-      baseImg.crossOrigin = 'anonymous';
-      
-      const timeoutId = setTimeout(() => {
-        // Timeout - return drawing only
-        resolve({ compositeImage: null, drawingOnly });
-      }, 5000);
-      
-      baseImg.onload = () => {
+      const img = new Image();
+      const timeoutId = setTimeout(() => resolve({ compositeImage: null, drawingOnly }), 15000);
+      img.onload = () => {
         clearTimeout(timeoutId);
         try {
-          compositeCtx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
-          compositeCtx.drawImage(baseImg, 0, 0, compositeCanvas.width, compositeCanvas.height);
-          compositeCtx.drawImage(drawingLayer, 0, 0, compositeCanvas.width, compositeCanvas.height);
+          compositeCtx.clearRect(0, 0, w, h);
+          compositeCtx.drawImage(img, 0, 0, w, h);
+          compositeCtx.drawImage(drawingLayer, 0, 0, w, h);
           const dataUrl = compositeCanvas.toDataURL('image/png');
           resolve({ compositeImage: dataUrl, drawingOnly });
-        } catch (error: any) {
-          // Failed - return drawing only
+        } catch {
           resolve({ compositeImage: null, drawingOnly });
         }
       };
-      
-      baseImg.onerror = () => {
+      img.onerror = () => {
         clearTimeout(timeoutId);
-        // Failed to load - return drawing only
         resolve({ compositeImage: null, drawingOnly });
       };
-      
-      // Add cache buster to ensure fresh load
-      const cacheBuster = `?t=${Date.now()}`;
-      baseImg.src = imageUrl.includes('?') ? `${imageUrl}&t=${Date.now()}` : `${imageUrl}${cacheBuster}`;
+      img.src = baseDataUrl;
     });
   };
 
@@ -411,12 +393,12 @@ export default function ZipperPlacementModal({
                   </div>
                 )}
                 
-                {/* Base image displayed using img tag - always visible */}
+                {/* Base image displayed using img tag - no crossOrigin so image always loads and displays */}
                 {imageUrl && (
                   <img
                     ref={imageRef}
                     src={imageUrl}
-                    alt="Shoe"
+                    alt="Schuh"
                     className="relative z-0 max-w-full h-auto max-h-[600px] object-contain"
                     style={{ 
                       pointerEvents: 'none',
