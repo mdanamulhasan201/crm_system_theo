@@ -91,3 +91,52 @@ export const deleteStorage = async (storageId: string) => {
         throw error;
     }
 };
+
+
+
+
+// ==================================
+// Sonstiges (Stock Material)
+// ==================================
+
+export interface SonstigesCreateBody {
+    manufacturer: string
+    delivery_business: string
+    article: string
+    ein: string
+    quantity: number
+    value: number
+}
+
+export interface SonstigesItem {
+    id: string
+    partnerId: string
+    manufacturer: string
+    delivery_business: string
+    article: string
+    ein: string
+    quantity: number
+    value: number
+    createdAt: string
+    updatedAt: string
+}
+
+// create sonstiges POST /stock-material/create
+export const createSonstiges = async (body: SonstigesCreateBody) => {
+    try {
+        const response = await axiosClient.post(`/v2/stock-material/create`, body);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// get all sonstiges GET /stock-material/get-all?limit=&cursor=&search=
+export const getAllSonstiges = async (limit: number, cursor: string, search: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/stock-material/get-all?limit=${limit}&cursor=${cursor}&search=${search}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}

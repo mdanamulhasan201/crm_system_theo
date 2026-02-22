@@ -4,8 +4,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import ProductsManagement from '../_components/Product/ProductsManagement'
 import MillingBlocks from '../_components/Product/MillingBlocks/MillingBlocks'
+import SonstigesData from '../_components/Product/SonstigesData/SonstigesData'
 
-type UIType = 'Einlagenrohlinge' | 'Fräsblock'
+type UIType = 'Einlagenrohlinge' | 'Fräsblock' | 'Sonstiges'
 type APIType = 'rady_insole' | 'milling_block'
 
 export default function Lager() {
@@ -14,7 +15,7 @@ export default function Lager() {
     const typeFromQuery = searchParams.get('type') as UIType | null
     
     const [selectedProductType, setSelectedProductType] = useState<UIType>(
-        typeFromQuery && (typeFromQuery === 'Einlagenrohlinge' || typeFromQuery === 'Fräsblock')
+        typeFromQuery && (typeFromQuery === 'Einlagenrohlinge' || typeFromQuery === 'Fräsblock' || typeFromQuery === 'Sonstiges')
             ? typeFromQuery
             : 'Einlagenrohlinge'
     )
@@ -34,7 +35,7 @@ export default function Lager() {
 
     // Sync state with query parameter on mount and when query changes
     useEffect(() => {
-        if (typeFromQuery && (typeFromQuery === 'Einlagenrohlinge' || typeFromQuery === 'Fräsblock')) {
+        if (typeFromQuery && (typeFromQuery === 'Einlagenrohlinge' || typeFromQuery === 'Fräsblock' || typeFromQuery === 'Sonstiges')) {
             setSelectedProductType(typeFromQuery)
         }
     }, [typeFromQuery])
@@ -63,14 +64,26 @@ export default function Lager() {
                 >
                     Fräsblock
                 </button>
+                <button
+                    onClick={() => handleTabChange('Sonstiges')}
+                    className={`px-6 cursor-pointer py-2 rounded-full font-medium transition-colors ${
+                        selectedProductType === 'Sonstiges'
+                            ? 'bg-[#61A178] text-white'
+                            : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
+                    }`}
+                >
+                    Sonstiges
+                </button>
             </div>
 
             {/* Conditionally render components based on selected type */}
             {selectedProductType === 'Einlagenrohlinge' ? (
                 <ProductsManagement type={apiType} />
-            ) : (
+            ) : selectedProductType === 'Fräsblock' ? (
                 <MillingBlocks type={apiType} />
-            )}
+            ) : selectedProductType === 'Sonstiges' ? (
+                <SonstigesData />
+            ) : null}
         </div>
     )
 }
