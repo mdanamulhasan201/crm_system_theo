@@ -184,7 +184,7 @@ const LastScans = forwardRef<LastScansRef>((props, ref) => {
           )}
         </div>
         <div className="text-sm text-gray-500">
-          {customerCount != null ? customerCount : "—"} Insoles found
+          {customerCount != null ? customerCount : "—"} Einlagen gefunden
         </div>
       </div>
       {lastScans.length === 0 ? (

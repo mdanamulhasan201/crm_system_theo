@@ -204,7 +204,7 @@ export default function MainCalendarPage({
                     return (
                       <div
                         key={appointment.id}
-                        className="absolute left-2 right-2 overflow-hidden rounded-lg border border-green-200/50 bg-[#eeffee] cursor-pointer hover:bg-[#dcf5dc] transition-colors border-l-4 border-l-green-700 shadow-sm"
+                        className="absolute left-2 right-2 overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-sm bg-[#62A07C]/20"
                         style={style}
                       >
                         <div className="flex flex-col h-full min-h-0 p-2.5 gap-1.5">
@@ -214,17 +214,17 @@ export default function MainCalendarPage({
                           <div className="text-[11px] text-gray-600 shrink-0">
                             {appointment.startTime} – {appointment.endTime}
                           </div>
-                          {appointment.type && (
+                          {/* {appointment.type && (
                             <div className="text-[11px] text-gray-500 line-clamp-1 shrink-0">
                               {appointment.type}
                             </div>
-                          )}
-                          <div className="flex items-center gap-1.5 mt-auto shrink-0 min-h-0">
-                            <span className="font-semibold text-gray-700 text-[11px]">
-                              {appointment.person.charAt(0).toUpperCase()}
+                          )} */}
+                          <div className="flex items-center gap-2 mt-auto shrink-0 min-h-0">
+                            <span className="w-6 h-6 rounded-full bg-[#62A07C] text-white flex items-center justify-center text-[10px] font-semibold shrink-0 shadow-sm">
+                              {appointment.person.trim().charAt(0).toUpperCase()}
                             </span>
-                            <span className="text-[11px] text-gray-600 truncate">
-                              {appointment.person}
+                            <span className="text-[11px] text-gray-700 truncate font-medium">
+                              {appointment.person.trim()}
                             </span>
                           </div>
                         </div>

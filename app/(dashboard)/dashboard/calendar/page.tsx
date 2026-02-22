@@ -43,39 +43,52 @@ export interface CalendarAppointment {
 
 const LIMIT = 30
 
-function parseTime12to24(timeStr: string): { hours: number; minutes: number } {
-  const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
-  if (!match) return { hours: 9, minutes: 0 }
-  let hours = parseInt(match[1], 10)
-  const minutes = parseInt(match[2], 10)
-  if (match[3].toUpperCase() === 'PM' && hours !== 12) hours += 12
-  if (match[3].toUpperCase() === 'AM' && hours === 12) hours = 0
-  return { hours, minutes }
+/** Parse API time (12h "11:55 PM" or 24h "23:55") to hours & minutes */
+function parseApiTime(timeStr: string): { hours: number; minutes: number } {
+  const s = (timeStr || '').trim()
+  if (!s) return { hours: 9, minutes: 0 }
+  // 12h: "11:55 PM" / "11:55PM"
+  const m12 = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
+  if (m12) {
+    let h = parseInt(m12[1], 10)
+    const min = parseInt(m12[2], 10)
+    if (m12[3].toUpperCase() === 'PM' && h !== 12) h += 12
+    if (m12[3].toUpperCase() === 'AM' && h === 12) h = 0
+    return { hours: h, minutes: min }
+  }
+  // 24h: "23:55"
+  const m24 = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/)
+  if (m24) {
+    return { hours: parseInt(m24[1], 10) % 24, minutes: parseInt(m24[2], 10) % 60 }
+  }
+  return { hours: 9, minutes: 0 }
 }
 
 function formatTime24(hours: number, minutes: number): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 
+/** Take only date part from API date string "2026-02-19T00:00:00.000Z" -> local Date for 2026-02-19 */
 function parseApiDate(dateStr: string): Date {
-  const part = dateStr.split('T')[0]
+  const part = (dateStr || '').split('T')[0]
   const [y, m, d] = part.split('-').map(Number)
+  if (!y || !m || !d) return new Date()
   return new Date(y, m - 1, d)
 }
 
 function mapApiAppointmentToCalendar(api: AppointmentByDateItem): CalendarAppointment {
-  const { hours, minutes } = parseTime12to24(api.time)
+  const { hours, minutes } = parseApiTime(api.time || '')
   const endMinutes = hours * 60 + minutes + Math.round(api.duration * 60)
   const endHours = Math.floor(endMinutes / 60) % 24
   const endMins = endMinutes % 60
   const person = api.assignedTo?.[0]?.assignedTo ?? '—'
   return {
     id: api.id,
-    title: api.customer_name,
+    title: api.customer_name || '—',
     startTime: formatTime24(hours, minutes),
     endTime: formatTime24(endHours, endMins),
     person,
-    date: parseApiDate(api.date),
+    date: parseApiDate(api.date || ''),
     type: api.reason
   }
 }
