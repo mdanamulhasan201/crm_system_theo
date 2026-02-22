@@ -43,25 +43,31 @@ export interface CalendarAppointment {
 
 const LIMIT = 30
 
-/** Parse API time (12h "11:55 PM" or 24h "23:55") to hours & minutes */
-function parseApiTime(timeStr: string): { hours: number; minutes: number } {
+/** Parse API time to 24h "HH:mm" for form */
+function parseApiTimeTo24(timeStr: string): string {
   const s = (timeStr || '').trim()
-  if (!s) return { hours: 9, minutes: 0 }
-  // 12h: "11:55 PM" / "11:55PM"
+  if (!s) return '09:00'
   const m12 = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i)
   if (m12) {
     let h = parseInt(m12[1], 10)
     const min = parseInt(m12[2], 10)
     if (m12[3].toUpperCase() === 'PM' && h !== 12) h += 12
     if (m12[3].toUpperCase() === 'AM' && h === 12) h = 0
-    return { hours: h, minutes: min }
+    return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`
   }
-  // 24h: "23:55"
   const m24 = s.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/)
   if (m24) {
-    return { hours: parseInt(m24[1], 10) % 24, minutes: parseInt(m24[2], 10) % 60 }
+    const h = parseInt(m24[1], 10) % 24
+    const min = parseInt(m24[2], 10) % 60
+    return `${h.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`
   }
-  return { hours: 9, minutes: 0 }
+  return '09:00'
+}
+
+function parseApiTime(timeStr: string): { hours: number; minutes: number } {
+  const t = parseApiTimeTo24(timeStr)
+  const [h, m] = t.split(':').map(Number)
+  return { hours: h, minutes: m }
 }
 
 function formatTime24(hours: number, minutes: number): string {
@@ -101,13 +107,32 @@ export default function Calendar() {
   
   const [selectedEmployees, setSelectedEmployees] = useState<string[]>([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false)
+  const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
   const [appointments, setAppointments] = useState<CalendarAppointment[]>([])
   const [appointmentsLoading, setAppointmentsLoading] = useState(false)
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null)
 
-  const { createNewAppointment } = useAppoinment()
+  const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
   const appointmentForm = useForm<AppointmentFormData>({
+    defaultValues: {
+      isClientEvent: true,
+      kunde: '',
+      uhrzeit: '',
+      selectedEventDate: undefined,
+      termin: '',
+      mitarbeiter: '',
+      bemerk: '',
+      duration: 1,
+      customerId: undefined,
+      employeeId: undefined,
+      employees: [],
+      reminder: null
+    }
+  })
+
+  const updateAppointmentForm = useForm<AppointmentFormData>({
     defaultValues: {
       isClientEvent: true,
       kunde: '',
@@ -165,6 +190,57 @@ export default function Calendar() {
     }
   }
 
+  const handleAppointmentClick = async (appointmentId: string) => {
+    setSelectedAppointmentId(appointmentId)
+    const apt = await getAppointmentById(appointmentId)
+    if (!apt) return
+    const a = apt as {
+      customer_name?: string
+      time?: string
+      date?: string
+      reason?: string
+      assignedTo?: Array<{ employeId: string; assignedTo: string }>
+      details?: string
+      isClient?: boolean
+      duration?: number
+      customerId?: string
+      reminder?: number | null
+    }
+    const assignedList = (a.assignedTo || []) as Array<{ employeId?: string; assignedTo: string }>
+    const employees = assignedList.map((e) => ({
+      employeeId: e.employeId ?? '',
+      assignedTo: e.assignedTo
+    }))
+    const datePart = (a.date || '').toString().split('T')[0]
+    const [y, m, d] = datePart.split('-').map(Number)
+    updateAppointmentForm.reset({
+      isClientEvent: Boolean(a.isClient),
+      kunde: a.customer_name || '',
+      uhrzeit: parseApiTimeTo24(a.time || ''),
+      selectedEventDate: y && m && d ? new Date(y, m - 1, d) : undefined,
+      termin: a.reason || '',
+      mitarbeiter: employees[0]?.assignedTo || '',
+      bemerk: a.details || '',
+      duration: a.duration ?? 1,
+      customerId: a.customerId,
+      employeeId: employees[0]?.employeeId,
+      employees,
+      reminder: a.reminder ?? null
+    })
+    setIsUpdateModalOpen(true)
+  }
+
+  const handleUpdateSubmit = async (data: AppointmentFormData) => {
+    if (!selectedAppointmentId) return
+    const success = await updateAppointmentById(selectedAppointmentId, data)
+    if (success) {
+      setIsUpdateModalOpen(false)
+      setSelectedAppointmentId(null)
+      updateAppointmentForm.reset()
+      fetchAppointments()
+    }
+  }
+
   const handleEmployeeToggle = (employeeId: string) => {
     setSelectedEmployees(prev => {
       if (prev.includes(employeeId)) {
@@ -197,6 +273,7 @@ export default function Calendar() {
           appointments={appointments}
           loading={appointmentsLoading}
           error={appointmentsError}
+          onAppointmentClick={handleAppointmentClick}
         />
 
         {/* Right Sidebar */}
@@ -220,6 +297,32 @@ export default function Calendar() {
           onSubmit={handleAppointmentSubmit}
           title="Neuer Termin"
           buttonText="Termin bestätigen"
+        />
+      )}
+
+      {/* Update Appointment Modal */}
+      {isUpdateModalOpen && selectedAppointmentId && (
+        <AppointmentModal
+          isOpen={isUpdateModalOpen}
+          onClose={() => {
+            setIsUpdateModalOpen(false)
+            setSelectedAppointmentId(null)
+            updateAppointmentForm.reset()
+          }}
+          form={updateAppointmentForm}
+          onSubmit={handleUpdateSubmit}
+          title="Termin bearbeiten"
+          buttonText="Aktualisieren"
+          showDeleteButton
+          onDelete={async () => {
+            const ok = await deleteAppointmentById(selectedAppointmentId)
+            if (ok) {
+              setIsUpdateModalOpen(false)
+              setSelectedAppointmentId(null)
+              updateAppointmentForm.reset()
+              fetchAppointments()
+            }
+          }}
         />
       )}
     </div>

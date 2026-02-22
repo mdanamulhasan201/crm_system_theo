@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import { format, addDays, isSameDay } from 'date-fns'
 import { de } from 'date-fns/locale'
 
-const SLOT_HEIGHT = 60
+const SLOT_HEIGHT = 72
 const START_MINUTES = 0 // 0:00 so early-morning appointments (e.g. 12:27 AM) are visible
 const END_MINUTES = 22 * 60 // 22:00 end
 
@@ -23,6 +23,7 @@ interface MainCalendarPageProps {
   appointments: Appointment[]
   loading?: boolean
   error?: string | null
+  onAppointmentClick?: (appointmentId: string) => void
 }
 
 // Generate time slots from 0:00 to 22:00
@@ -63,7 +64,8 @@ export default function MainCalendarPage({
   currentDate,
   appointments,
   loading = false,
-  error = null
+  error = null,
+  onAppointmentClick
 }: MainCalendarPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => new Date())
@@ -149,7 +151,7 @@ export default function MainCalendarPage({
             {timeSlots.map((time) => (
               <div
                 key={time}
-                className="h-[60px] border-b border-gray-100 flex items-start justify-end pr-2 pt-1"
+                className="h-[72px] border-b border-gray-100 flex items-start justify-end pr-2 pt-1"
               >
                 <span className="text-xs text-gray-400">{time}</span>
               </div>
@@ -190,7 +192,7 @@ export default function MainCalendarPage({
                   {timeSlots.map((time) => (
                     <div
                       key={time}
-                      className="h-[60px] border-b border-gray-100"
+                      className="h-[72px] border-b border-gray-100"
                     />
                   ))}
 
@@ -204,10 +206,14 @@ export default function MainCalendarPage({
                     return (
                       <div
                         key={appointment.id}
-                        className="absolute left-2 right-2 overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-sm bg-[#62A07C]/20"
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onAppointmentClick?.(appointment.id)}
+                        onKeyDown={(e) => e.key === 'Enter' && onAppointmentClick?.(appointment.id)}
+                        className="absolute left-2 right-2 overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-sm bg-[#62A07C]/20 border-l-4 border-l-[#62A07C]"
                         style={style}
                       >
-                        <div className="flex flex-col h-full min-h-0 p-2.5 gap-1.5">
+                        <div className="flex flex-col h-full min-h-0 p-2.5 gap-1">
                           <div className="font-semibold text-green-800 text-xs leading-snug line-clamp-2 shrink-0">
                             {appointment.title}
                           </div>
@@ -220,12 +226,13 @@ export default function MainCalendarPage({
                             </div>
                           )} */}
                           <div className="flex items-center gap-2 mt-auto shrink-0 min-h-0">
-                            <span className="w-6 h-6 rounded-full bg-[#62A07C] text-white flex items-center justify-center text-[10px] font-semibold shrink-0 shadow-sm">
-                              {appointment.person.trim().charAt(0).toUpperCase()}
-                            </span>
-                            <span className="text-[11px] text-gray-700 truncate font-medium">
+                          <span className="text-[11px] text-gray-700 truncate font-medium">
                               {appointment.person.trim()}
                             </span>
+                            <span className="w-4 h-4 rounded-full bg-[#62A07C] text-white flex items-center justify-center text-[10px] font-semibold shrink-0 shadow-sm">
+                              {appointment.person.trim().charAt(0).toUpperCase()}
+                            </span>
+                          
                           </div>
                         </div>
                       </div>

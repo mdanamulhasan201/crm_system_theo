@@ -1,8 +1,11 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getAllEmployees } from '@/apis/employeeaApis'
+
+const PER_PAGE = 10
 
 interface EmployeeItem {
     id: string
@@ -15,6 +18,8 @@ interface EmloyeesListsProps {
     onEmployeeToggle: (employeeId: string) => void
 }
 
+type ApiEmployee = { id?: string; _id?: string; employeeName?: string; name?: string }
+
 export default function EmloyeesLists({
     selectedEmployees,
     onEmployeeToggle
@@ -22,28 +27,31 @@ export default function EmloyeesLists({
     const [employees, setEmployees] = useState<EmployeeItem[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [page, setPage] = useState(1)
+    const [totalPages, setTotalPages] = useState(1)
+
+    const fetchEmployees = useCallback(async (pageNum: number) => {
+        setLoading(true)
+        setError(null)
+        try {
+            const res = await getAllEmployees(pageNum, PER_PAGE)
+            const list = (res?.data || []).map((e: ApiEmployee) => ({
+                id: e.id || e._id || '',
+                name: e.employeeName || e.name || '—',
+                initial: (e.employeeName || e.name || '?').charAt(0).toUpperCase()
+            })).filter((e: EmployeeItem) => e.id)
+            setEmployees(list)
+            setTotalPages(res?.pagination?.totalPages ?? 1)
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Failed to load employees')
+        } finally {
+            setLoading(false)
+        }
+    }, [])
 
     useEffect(() => {
-        const fetchEmployees = async () => {
-            setLoading(true)
-            setError(null)
-            try {
-                const res = await getAllEmployees(1, 100)
-                type ApiEmployee = { id?: string; _id?: string; employeeName?: string; name?: string }
-                const list = (res?.data || []).map((e: ApiEmployee) => ({
-                    id: e.id || e._id || '',
-                    name: e.employeeName || e.name || '—',
-                    initial: (e.employeeName || e.name || '?').charAt(0).toUpperCase()
-                })).filter((e: EmployeeItem) => e.id)
-                setEmployees(list)
-            } catch (err: unknown) {
-                setError(err instanceof Error ? err.message : 'Failed to load employees')
-            } finally {
-                setLoading(false)
-            }
-        }
-        fetchEmployees()
-    }, [])
+        fetchEmployees(page)
+    }, [page, fetchEmployees])
 
     if (loading) {
         return (
@@ -111,6 +119,30 @@ export default function EmloyeesLists({
                     )
                 })}
             </div>
+
+            {totalPages > 1 && (
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <button
+                        onClick={() => setPage((p) => Math.max(1, p - 1))}
+                        disabled={page <= 1}
+                        className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Previous page"
+                    >
+                        <ChevronLeft className="w-4 h-4 text-gray-600" />
+                    </button>
+                    <span className="text-xs text-gray-500">
+                        {page} / {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                        disabled={page >= totalPages}
+                        className="p-1 rounded hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Next page"
+                    >
+                        <ChevronRight className="w-4 h-4 text-gray-600" />
+                    </button>
+                </div>
+            )}
         </div>
     )
 }
