@@ -250,14 +250,16 @@ export default function FileUploadSection({
           {/* Linker Leisten Section - Hide when hideFileUploads is true */}
           {!hideFileUploads && (
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">Linker Leisten</label>
+              <label className="text-sm font-medium text-gray-700">
+                Linker Leisten <span className="text-red-500">*</span>
+              </label>
               <Button 
                 variant="outline" 
                 className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white"
                 onClick={() => linkerLeistenInputRef.current?.click()}
               >
                 <UploadCloud className="w-5 h-5" />
-                {linkerLeistenFileName || "Upload 3D-File"}
+                {linkerLeistenFileName || "Upload 3D-File Linker Leisten"}
               </Button>
               <input
                 type="file"
@@ -272,14 +274,16 @@ export default function FileUploadSection({
           {/* Rechter Leisten Section - Hide when hideFileUploads is true */}
           {!hideFileUploads && (
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-gray-700">Rechter Leisten</label>
+              <label className="text-sm font-medium text-gray-700">
+                Rechter Leisten <span className="text-red-500">*</span>
+              </label>
               <Button 
                 variant="outline" 
                 className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white"
                 onClick={() => rechterLeistenInputRef.current?.click()}
               >
                 <UploadCloud className="w-5 h-5" />
-                {rechterLeistenFileName || "Upload 3D-File"}
+                {rechterLeistenFileName || "Upload 3D-File Rechter Leisten"}
               </Button>
               <input
                 type="file"

@@ -476,7 +476,16 @@ export default function CustomShoeOrderPage() {
           leatherColors={leatherColors}
           setLeatherColors={setLeatherColors}
           shoeImage={uploadedImage || null}
-          onOrderComplete={() => setShowConfirmationModal(true)}
+          onOrderComplete={() => {
+            // When 3D upload is shown, both Leisten files are required
+            if (!isAbholung) {
+              if (!linkerLeistenFile || !rechterLeistenFile) {
+                toast.error('Bitte laden Sie beide 3D-Dateien hoch (Linker Leisten und Rechter Leisten).');
+                return;
+              }
+            }
+            setShowConfirmationModal(true);
+          }}
           category={customCategory}
           allowCategoryEdit={true}
           zipperImage={zipperImage}

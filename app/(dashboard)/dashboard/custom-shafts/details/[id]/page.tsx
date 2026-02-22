@@ -641,7 +641,16 @@ export default function CollectionShaftDetailsPage() {
           leatherColors={leatherColors}
           setLeatherColors={setLeatherColors}
           shoeImage={shaft?.image || null}
-          onOrderComplete={() => setShowConfirmationModal(true)}
+          onOrderComplete={() => {
+            // When 3D upload is shown, both Leisten files are required
+            if (!isAbholung) {
+              if (!linkerLeistenFile || !rechterLeistenFile) {
+                toast.error('Bitte laden Sie beide 3D-Dateien hoch (Linker Leisten und Rechter Leisten).');
+                return;
+              }
+            }
+            setShowConfirmationModal(true);
+          }}
           category={shaft?.catagoary}
           allowCategoryEdit={false}
           zipperImage={zipperImage}
