@@ -103,9 +103,9 @@ export default function PaymentStatusSection({
     return (
         <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">Kostenträger</Label>
-            <div className="flex gap-3">
+            <div className="flex gap-3 flex-wrap">
                 {/* Payment Type Dropdown */}
-                <div className="flex-1">
+                <div className="w-full max-w-[180px]">
                     <Select 
                         value={paymentType} 
                         onValueChange={handlePaymentTypeChange}
@@ -113,14 +113,14 @@ export default function PaymentStatusSection({
                     >
                     <SelectTrigger
                         className={cn(
-                            'w-full h-11 border-gray-300',
+                            'w-full h-11 border-gray-300 min-w-0',
                             error && 'border-red-500 focus-visible:ring-red-500',
                             disabledPaymentType && 'opacity-60 cursor-not-allowed'
                         )}
                     >
                             <SelectValue placeholder="Privat" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="min-w-[8rem] w-[var(--radix-select-trigger-width)]">
                             <SelectItem value="Privat">Privat</SelectItem>
                             <SelectItem value="Krankenkasse">Krankenkasse</SelectItem>
                         </SelectContent>
@@ -129,7 +129,7 @@ export default function PaymentStatusSection({
 
                 {/* Status Dropdown - Only show if payment type is selected */}
                 {paymentType && (
-                    <div className="flex-1">
+                    <div className="w-full max-w-[180px]">
                         <Select 
                             key={`status-${paymentType}`} 
                             value={status} 
@@ -137,13 +137,13 @@ export default function PaymentStatusSection({
                         >
                             <SelectTrigger
                                 className={cn(
-                                    'w-full h-11 border-gray-300',
+                                    'w-full h-11 border-gray-300 min-w-0',
                                     error && 'border-red-500 focus-visible:ring-red-500'
                                 )}
                             >
                                 <SelectValue placeholder="Status auswählen..." />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="min-w-[8rem] w-[var(--radix-select-trigger-width)]">
                                 {paymentType === 'Privat' ? (
                                     <>
                                         <SelectItem value="Bezahlt">Bezahlt</SelectItem>

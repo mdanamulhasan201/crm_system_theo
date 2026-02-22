@@ -15,6 +15,18 @@ type DiagnosisOption = {
     name: string
 }
 
+// Default diagnosis options – always shown first; user-added ones appear below
+const DEFAULT_DIAGNOSIS_OPTIONS: DiagnosisOption[] = [
+    { id: 'Fersenschmerz (Fersensporn)', name: 'Fersenschmerz (Fersensporn)' },
+    { id: 'Spreizfuß (Pes transversoplanus)', name: 'Spreizfuß (Pes transversoplanus)' },
+    { id: 'Knick-Senkfuß (Pes planovalgus)', name: 'Knick-Senkfuß (Pes planovalgus)' },
+    { id: 'Metatarsalgie (Vorfußschmerzen)', name: 'Metatarsalgie (Vorfußschmerzen)' },
+    { id: 'Hallux valgus (Begleitversorgung)', name: 'Hallux valgus (Begleitversorgung)' },
+    { id: 'Achillessehnenbeschwerden / Achillodynie', name: 'Achillessehnenbeschwerden / Achillodynie' },
+    { id: 'Funktionelle Kniebeschwerden (z. B. patellofemorales Schmerzsyndrom)', name: 'Funktionelle Kniebeschwerden (z. B. patellofemorales Schmerzsyndrom)' },
+    { id: 'Diabetisches Fußsyndrom (druckentlastende Versorgung)', name: 'Diabetisches Fußsyndrom (druckentlastende Versorgung)' },
+]
+
 type DiagnosisSelectorProps = {
     value: string[]
     onChange: (value: string[]) => void
@@ -82,10 +94,20 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
         }
     }, [open])
 
-    // Use API results directly since API handles search filtering
+    // Merge default options with API results: defaults first (use API id if name matches), then rest from API
     const filteredOptions = useMemo(() => {
-        return diagnosisOptions
-    }, [diagnosisOptions])
+        const defaultNames = new Set(DEFAULT_DIAGNOSIS_OPTIONS.map(d => d.name))
+        const apiByName = new Map(diagnosisOptions.map(opt => [opt.name, opt]))
+        const merged: DiagnosisOption[] = DEFAULT_DIAGNOSIS_OPTIONS.map(def => {
+            const fromApi = apiByName.get(def.name)
+            return fromApi ? { id: fromApi.id, name: fromApi.name } : def
+        })
+        const restFromApi = diagnosisOptions.filter(opt => !defaultNames.has(opt.name))
+        const combined = [...merged, ...restFromApi]
+        if (!searchQuery.trim()) return combined
+        const q = searchQuery.trim().toLowerCase()
+        return combined.filter(opt => opt.name.toLowerCase().includes(q))
+    }, [diagnosisOptions, searchQuery])
 
     // Handle creating new diagnosis
     const handleCreateDiagnosis = async () => {
@@ -123,9 +145,10 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
     }
 
     const getSelectedLabels = () => {
-        return value
-            .map(v => diagnosisOptions.find(opt => opt.id === v)?.name)
-            .filter(Boolean) as string[]
+        return value.map(v => {
+            const fromMerged = filteredOptions.find(opt => opt.id === v)
+            return fromMerged?.name ?? v
+        }).filter(Boolean) as string[]
     }
 
     const selectedLabels = getSelectedLabels()
@@ -156,9 +179,9 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
                         )}
                     >
                         <div className="flex flex-wrap gap-1.5 flex-1 min-h-[20px] items-center ">
-                            {selectedLabels.length > 0 ? (
-                                selectedLabels.map((label) => {
-                                    const diagnosisId = diagnosisOptions.find(opt => opt.name === label)?.id || ''
+                            {value.length > 0 ? (
+                                value.map((diagnosisId) => {
+                                    const label = filteredOptions.find(opt => opt.id === diagnosisId)?.name ?? diagnosisId
                                     return (
                                         <span
                                             key={diagnosisId}

@@ -311,10 +311,10 @@ export default function PriceSection({
 
 
           <div className="flex items-center gap-4 flex-wrap">
-            <div className="space-y-1.5 flex-1 min-w-[140px]">
+            <div className="space-y-1.5 w-full max-w-[160px]">
               <Label className="text-sm font-medium text-gray-700">Menge</Label>
               <Select value={quantity} onValueChange={onQuantityChange}>
-                <SelectTrigger className="h-10 border-gray-300 w-full text-sm">
+                <SelectTrigger className="h-10 border-gray-300 w-full text-sm min-w-0">
                   <SelectValue placeholder="Menge wählen" />
                 </SelectTrigger>
                 <SelectContent>
@@ -326,7 +326,7 @@ export default function PriceSection({
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5 flex-1 min-w-[140px]">
+            <div className="space-y-1.5 w-full max-w-[220px]">
               <Label className="text-sm font-medium text-gray-700">Fußanalyse</Label>
               {(() => {
                 const handleChange = (key: string) => {
@@ -340,13 +340,13 @@ export default function PriceSection({
                   <Select value={footSelectedKey} onValueChange={handleChange}>
                     <SelectTrigger
                       className={cn(
-                        'h-10 border-gray-300 w-full text-sm',
+                        'h-10 border-gray-300 w-full text-sm min-w-0',
                         footAnalysisPriceError && 'border-red-500 focus-visible:ring-red-500'
                       )}
                     >
                       <SelectValue placeholder={pricesLoading ? 'Lade...' : 'Preis auswählen'} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="max-w-[min(24rem,100vw)]">
                       {laserPrintPrices.length > 0 ? (
                         footOptions.map((item) => (
                           <SelectItem className="cursor-pointer" key={item.key} value={item.key}>
@@ -382,10 +382,10 @@ export default function PriceSection({
                   value={discountType || 'none'}
                   onValueChange={(value) => onDiscountTypeChange(value === 'none' ? '' : value)}
                 >
-                  <SelectTrigger className="h-11 border-gray-300 flex-1 min-w-0">
+                  <SelectTrigger className="h-11 border-gray-300 w-full max-w-[180px] min-w-0">
                     <SelectValue placeholder="Kein Rabatt" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="min-w-[8rem] w-[var(--radix-select-trigger-width)]">
                     <SelectItem value="none">Kein Rabatt</SelectItem>
                     <SelectItem value="percentage">Prozent (%)</SelectItem>
                   </SelectContent>

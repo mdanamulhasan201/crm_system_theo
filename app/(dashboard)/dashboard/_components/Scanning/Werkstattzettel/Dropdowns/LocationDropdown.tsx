@@ -49,10 +49,19 @@ export default function LocationDropdown({
     onOpenChange(false)
   }
 
-  // Get display value for the selected location
+  // Full display value (for tooltip)
   const getSelectedDisplayValue = () => {
     if (!value) return 'Standort wählen'
     return getLocationDisplayValue(value)
+  }
+
+  // Short display for dropdown trigger only (max chars before "...")
+  const maxTriggerChars = 28
+  const getShortDisplayValue = () => {
+    if (!value) return 'Standort wählen'
+    const full = getLocationDisplayValue(value)
+    if (full.length <= maxTriggerChars) return full
+    return full.slice(0, maxTriggerChars).trim() + '...'
   }
 
   return (
@@ -62,11 +71,12 @@ export default function LocationDropdown({
           variant="outline"
           role="combobox"
           aria-expanded={isOpen}
-          className="w-full justify-between font-normal h-10"
+          title={value ? getLocationDisplayValue(value) : undefined}
+          className="w-full justify-between font-normal h-10 min-w-0"
           onClick={() => onOpenChange(!isOpen)}
         >
-          <span className="truncate">
-            {getSelectedDisplayValue()}
+          <span className="truncate min-w-0 flex-1 text-left">
+            {getShortDisplayValue()}
           </span>
           <div className="flex items-center gap-1 shrink-0 ml-2">
             {value && onClear ? (
