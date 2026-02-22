@@ -2,6 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { X, Download, Clock, User, CheckCircle, Info, CheckCircle2, XCircle } from 'lucide-react';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { useOrderHistory } from '@/hooks/orders/useOrderHistory';
 import { getPaymentStatus } from '@/apis/productsOrder';
@@ -564,61 +570,67 @@ export default function HistorySidebar({
                                     </div>
                                 )}
 
-                                {/* Schritt-Dauer Übersicht */}
+                                {/* Schritt-Dauer Übersicht - Collapsible */}
                                 {data.stepDurations && data.stepDurations.length > 0 && (
-                                    <div>
-                                        <h3 className="text-base font-normal text-gray-900 mb-5">
-                                            Schritt-Dauer Übersicht
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {data.stepDurations.map((step, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="bg-gray-100 rounded-lg p-4 shadow-sm"
-                                                >
-                                                    <div className="flex items-start justify-between gap-4">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center gap-2 mb-2">
-                                                                <Clock className="h-4 w-4 text-gray-600 flex-shrink-0" />
-                                                                <p className="text-sm font-normal text-gray-900">
-                                                                    {step.statusDisplay}
-                                                                </p>
+                                    <Accordion type="single" collapsible defaultValue="schritt-dauer" className="w-full">
+                                        <AccordionItem value="schritt-dauer" className="border-none">
+                                            <AccordionTrigger className="text-base font-semibold text-gray-900 py-0 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                                                Schritt-Dauer Übersicht
+                                            </AccordionTrigger>
+                                            <AccordionContent className="pt-4 pb-0">
+                                                <div className="space-y-3">
+                                                    {data.stepDurations.map((step, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="bg-gray-100 rounded-lg p-4 shadow-sm"
+                                                        >
+                                                            <div className="flex items-start justify-between gap-4">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center gap-2 mb-2">
+                                                                        <Clock className="h-4 w-4 text-gray-600 flex-shrink-0" />
+                                                                        <p className="text-sm font-normal text-gray-900">
+                                                                            {step.statusDisplay}
+                                                                        </p>
+                                                                    </div>
+                                                                    <p className="text-base font-bold text-gray-900">
+                                                                        {step.duration}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                                    <User className="h-4 w-4 text-gray-500" />
+                                                                    <p className="text-xs text-gray-600">
+                                                                        {step.assignee}
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                            <p className="text-base font-bold text-gray-900">
-                                                                {step.duration}
-                                                            </p>
                                                         </div>
-                                                        <div className="flex items-center gap-2 flex-shrink-0">
-                                                            <User className="h-4 w-4 text-gray-500" />
-                                                            <p className="text-xs text-gray-600">
-                                                                {step.assignee}
-                                                            </p>
-                                                        </div>
-                                                    </div>
+                                                    ))}
                                                 </div>
-                                            ))}
-                                        </div>
-                                    </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
                                 )}
 
-                                {/* Änderungsprotokoll */}
+                                {/* Änderungsprotokoll - Collapsible */}
                                 {(data.changeLog && data.changeLog.length > 0) || (data.scannerInfo && data.scannerInfo.hasScanner) ? (
-                                    <div>
-                                        <div className="flex items-center justify-between mb-5">
-                                            <h3 className="text-base font-normal text-gray-900">
-                                                Änderungsprotokoll
-                                            </h3>
-                                            <Button
-                                                onClick={handleCSVExport}
-                                                variant="outline"
-                                                size="sm"
-                                                className="flex cursor-pointer items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
-                                            >
-                                                <Download className="h-4 w-4" />
-                                                CSV Export
-                                            </Button>
-                                        </div>
-                                        <div className="relative">
+                                    <Accordion type="single" collapsible defaultValue="aenderungsprotokoll" className="w-full">
+                                        <AccordionItem value="aenderungsprotokoll" className="border-none">
+                                            <AccordionTrigger className="text-base font-normal text-gray-900 py-0 hover:no-underline [&[data-state=open]>svg]:rotate-180">
+                                                <div className="flex items-center justify-between w-full pr-4">
+                                                    <span className="font-semibold">Änderungsprotokoll</span>
+                                                    <Button
+                                                        onClick={(e) => e.stopPropagation()}
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="flex cursor-pointer items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50 shrink-0"
+                                                    >
+                                                        <Download className="h-4 w-4" />
+                                                        CSV Export
+                                                    </Button>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className="pt-4 pb-0">
+                                                <div className="relative">
                                             {/* Continuous background line */}
                                             {((data.changeLog && data.changeLog.length > 0) || (data.scannerInfo && data.scannerInfo.hasScanner)) && 
                                              ((data.changeLog?.length || 0) + (data.scannerInfo?.hasScanner ? 1 : 0)) > 1 && (
@@ -712,7 +724,9 @@ export default function HistorySidebar({
                                                 ))}
                                             </div>
                                         </div>
-                                    </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
                                 ) : null}
 
                                 {(!data.stepDurations || data.stepDurations.length === 0) &&
