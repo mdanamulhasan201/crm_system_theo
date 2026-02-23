@@ -1731,41 +1731,23 @@ export function BrandsohleSideField({
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             <p className="text-sm text-gray-600 mb-3">Brandsohle kann links und rechts unterschiedlich konfiguriert werden</p>
             
-            {/* Side Selection */}
+            {/* Side Selection - use radio for single selection (fix: checkbox was not checkable) */}
             <div className="mb-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
                 <div className="flex flex-wrap items-center gap-4">
                     {["links", "rechts", "beidseitig"].map((sideOption) => {
                         const isChecked = side === sideOption
                         return (
-                            <div key={sideOption} className="flex items-center gap-2">
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only"
-                                        checked={isChecked}
-                                        onChange={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
-                                        aria-label={sideOption}
-                                    />
-                                    <div 
-                                        className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            isChecked 
-                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
-                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
-                                        }`}
-                                        onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
-                                    >
-                                        {isChecked && (
-                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                </div>
-                                <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}>
-                                    {sideOption}
-                                </span>
-                            </div>
+                            <label key={sideOption} className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="brandsohle-seite"
+                                    checked={isChecked}
+                                    onChange={() => updateSide(sideOption as SideSelection)}
+                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                                />
+                                <span className="text-base text-gray-700 capitalize">{sideOption}</span>
+                            </label>
                         )
                     })}
                 </div>

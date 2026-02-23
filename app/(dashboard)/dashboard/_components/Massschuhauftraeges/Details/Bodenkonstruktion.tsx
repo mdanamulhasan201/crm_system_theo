@@ -19,7 +19,7 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "./Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, SoleElevationData } from "./Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, SoleElevationData, BrandsohleSideData } from "./Bodenkonstruktion/FormFields"
 
 // Components
 import ProductHeader from "./Bodenkonstruktion/ProductHeader"
@@ -55,6 +55,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
     const [soleElevation, setSoleElevation] = useState<SoleElevationData | null>(null)
+    const [brandsohleSide, setBrandsohleSide] = useState<BrandsohleSideData | null>(null)
     
     // Modal states
     const [showModal, setShowModal] = useState(false)
@@ -64,7 +65,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const [isWeiterLoading, setIsWeiterLoading] = useState(false)
     const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
     
-    // Store custom shaft data for later API call
+    // Store custom shaft data for later API call (synced from context when landing from redirect)
     const [customShaftData, setCustomShaftData] = useState<any>(null)
     const [isCustomOrder, setIsCustomOrder] = useState(false)
     
@@ -131,6 +132,14 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     // Calculations - use basePrice which includes shaft price
     const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice)
+
+    // Sync contextData to customShaftData when landing from redirect (so payload has full data)
+    React.useEffect(() => {
+        if (contextData) {
+            setCustomShaftData(contextData)
+            setIsCustomOrder(!!contextData.uploadedImage)
+        }
+    }, [contextData])
 
     // Reset sole id "4", "5", and "6" options when sole changes
     React.useEffect(() => {
@@ -249,6 +258,17 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             return
         }
         setCheckboxError(false)
+        
+        // Validate Brandsohle (Seite wählen + at least one option when side is selected)
+        if (brandsohleSide?.side) {
+            const hasLeft = (brandsohleSide.leftValues?.length ?? 0) > 0
+            const hasRight = (brandsohleSide.rightValues?.length ?? 0) > 0
+            const valid = (brandsohleSide.side === "links" && hasLeft) || (brandsohleSide.side === "rechts" && hasRight) || (brandsohleSide.side === "beidseitig" && (hasLeft || hasRight))
+            if (!valid) {
+                toast.error("Bitte wählen Sie mindestens eine Brandsohle-Option aus.")
+                return
+            }
+        }
         
         // Validate sole id "4" required fields
         if (selectedSole?.id === "4") {
@@ -726,27 +746,43 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return subOption?.price || 0
     }
 
-    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data)
+    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - all fields for payload
     const prepareMassschafterstellungJson2 = () => {
         const json: any = {
             "Mehr_ansehen_title": selectedSole?.name || "",
             "Mehr_ansehen_description": selectedSole?.description || "",
             "hinterkappe": getSelectedValue(selected.hinterkappe) || "",
+            "Hinterkappe": getSelectedValue(selected.hinterkappe) || "",
             "leder_auswahl": "",
             "leder_auswahl_price": 0.0,
+            "Verbindungsleder": getSelectedValue(selected.verbindungsleder) || "",
             "Konstruktionsart": getSelectedValue(selected.Konstruktionsart) || "",
             "Konstruktionsart_price": 0.0,
             "brandsohle": getSelectedValue(selected.brandsohle) || "",
             "brandsohle_price": 0.0,
-            "ohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
+            "Seite_wählen": brandsohleSide?.side || "",
+            "brandsohleSide": brandsohleSide ? { side: brandsohleSide.side, leftValues: brandsohleSide.leftValues || [], rightValues: brandsohleSide.rightValues || [] } : null,
+            "Sohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
+            "Bevorzugte_Farbe": textAreas.schlemmaterial_preferred_colour || "",
+            "Sohlenerhöhung": soleElevation?.enabled ? "ja" : "nein",
+            "Seite_der_Sohlenerhöhung": soleElevation?.side || "",
+            "Höhe_der_Sohlenerhöhung_mm": soleElevation?.height_mm ?? "",
             "absatz_höhe_am_besten_wie_bei_leisten_beachten": getSelectedValue(selected.absatzhoehe) || "",
-            "abrollhilfe_Rolle": getSelectedValue(selected.abrollhilfe) || "",
+            "Absatz_Form": getSelectedValue(selected.absatzform) || "",
             "absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich": getSelectedValue(selected.absatzform) || "",
+            "Abrollhilfe_Rolle": getSelectedValue(selected.abrollhilfe) || "",
+            "abrollhilfe_Rolle": getSelectedValue(selected.abrollhilfe) || "",
+            "Absatzbreite_anpassen_mm": heelWidthAdjustment ? JSON.stringify(heelWidthAdjustment) : "",
+            "Linker_Schuh_innen_medial": heelWidthAdjustment?.leftMedial ? `${heelWidthAdjustment.leftMedial.op || ""} ${heelWidthAdjustment.leftMedial.mm || 0}mm` : "",
+            "Linker_Schuh_außen_lateral": heelWidthAdjustment?.leftLateral ? `${heelWidthAdjustment.leftLateral.op || ""} ${heelWidthAdjustment.leftLateral.mm || 0}mm` : "",
+            "Rechter_Schuh_innen_medial": heelWidthAdjustment?.rightMedial ? `${heelWidthAdjustment.rightMedial.op || ""} ${heelWidthAdjustment.rightMedial.mm || 0}mm` : "",
+            "Rechter_Schuh_außen_lateral": heelWidthAdjustment?.rightLateral ? `${heelWidthAdjustment.rightLateral.op || ""} ${heelWidthAdjustment.rightLateral.mm || 0}mm` : "",
             "linker_schuh_left_Shoe": "",
             "rechter_schuh_right_Shoe": "",
             "möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen": getSelectedValue(selected.laufsohle_lose_beilegen) || "",
             "möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price": 0.0,
-            "besondere_hinweise": textAreas.besondere_hinweise || ""
+            "besondere_hinweise": textAreas.besondere_hinweise || "",
+            "Besondere_Hinweise": textAreas.besondere_hinweise || ""
         }
 
         // Get leder_auswahl and price if hinterkappe is "leder"
@@ -764,9 +800,11 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             json.Konstruktionsart_price = getOptionPrice("Konstruktionsart", konstruktionsartValue)
         }
 
-        // Get brandsohle price
-        const brandsohleValue = getSelectedValue(selected.brandsohle)
+        // Get brandsohle price - use brandsohleSide when selected.brandsohle is empty
+        const brandsohleValue = getSelectedValue(selected.brandsohle) 
+            || (brandsohleSide?.leftValues?.[0] ?? brandsohleSide?.rightValues?.[0] ?? null)
         if (brandsohleValue) {
+            json.brandsohle = brandsohleValue
             json.brandsohle_price = getOptionPrice("brandsohle", brandsohleValue)
         }
 
@@ -1036,6 +1074,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 onCancel={() => router.back()}
                 isSubmitting={isWeiterLoading}
                 selectedSole={selectedSole}
+                onBrandsohleChange={setBrandsohleSide}
+                brandsohleSide={brandsohleSide}
             />
 
             {/* PDF Popup */}
@@ -1057,6 +1097,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     selectedSole={selectedSole}
                     heelWidthAdjustment={heelWidthAdjustment}
                     soleElevation={soleElevation}
+                    brandsohleSide={brandsohleSide}
                 />
             )}
 
@@ -1072,13 +1113,16 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                         // Set loading state immediately
                         setIsSubmitting(true)
                         
+                        // Use customShaftData or fallback to contextData (for redirect flow)
+                        const shaftDataToUse = customShaftData || contextData
+                        
                         try {
                             if (orderId) {
-                                if (customShaftData) {
+                                if (shaftDataToUse) {
                                     // Prepare FormData and determine isCourierContact in parallel where possible
-                                    const has3DFiles = !!(customShaftData?.image3d_1_file || customShaftData?.image3d_2_file);
-                                    const isAbholenSelected = !!(customShaftData?.businessAddress && (customShaftData.businessAddress.companyName || customShaftData.businessAddress.address));
-                                    const isVersendenSelected = !!customShaftData?.versendenData;
+                                    const has3DFiles = !!(shaftDataToUse?.image3d_1_file || shaftDataToUse?.image3d_2_file);
+                                    const isAbholenSelected = !!(shaftDataToUse?.businessAddress && (shaftDataToUse.businessAddress.companyName || shaftDataToUse.businessAddress.address));
+                                    const isVersendenSelected = !!shaftDataToUse?.versendenData;
                                     
                                     // Determine isCourierContact (synchronous, fast)
                                     const isCourierContact: 'yes' | 'no' = has3DFiles 
@@ -1086,10 +1130,11 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                         : (isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'));
                                     
                                     // Prepare FormData (async operation)
-                                    const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
+                                    const { formData } = await prepareFormDataForAdmin2(shaftDataToUse, pdfBlob)
                                     
-                                    // Make API call
-                                    const response = isCustomOrder 
+                                    // Make API call (derive isCustomOrder from shaft data)
+                                    const isCustomOrderForApi = !!shaftDataToUse?.uploadedImage
+                                    const response = isCustomOrderForApi 
                                         ? await sendMassschuheCustomShaftOrderToAdmin2(orderId, formData, isCourierContact)
                                         : await sendMassschuheOrderToAdmin2(orderId, formData, isCourierContact)
                                     
@@ -1101,21 +1146,22 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                     await handleFormSubmit(pdfBlob)
                                 }
                             } else {
-                                if (customShaftData) {
+                                if (shaftDataToUse) {
                                     // Prepare isCourierContact (synchronous, fast)
-                                    const has3DFiles = !!(customShaftData?.image3d_1_file || customShaftData?.image3d_2_file);
-                                    const isAbholenSelected = !!(customShaftData?.businessAddress && (customShaftData.businessAddress.companyName || customShaftData.businessAddress.address));
-                                    const isVersendenSelected = !!customShaftData?.versendenData;
+                                    const has3DFiles = !!(shaftDataToUse?.image3d_1_file || shaftDataToUse?.image3d_2_file);
+                                    const isAbholenSelected = !!(shaftDataToUse?.businessAddress && (shaftDataToUse.businessAddress.companyName || shaftDataToUse.businessAddress.address));
+                                    const isVersendenSelected = !!shaftDataToUse?.versendenData;
                                     
                                     const isCourierContact: 'yes' | 'no' = has3DFiles 
                                         ? 'no' 
                                         : (isAbholenSelected ? 'yes' : (isVersendenSelected ? 'no' : 'yes'));
                                     
                                     // Prepare FormData (async operation)
-                                    const { formData } = await prepareFormDataForAdmin2(customShaftData, pdfBlob)
+                                    const { formData } = await prepareFormDataForAdmin2(shaftDataToUse, pdfBlob)
                                     
-                                    // Make API call
-                                    const response = isCustomOrder
+                                    // Make API call (derive isCustomOrder from shaft data)
+                                    const isCustomOrderForApi = !!shaftDataToUse?.uploadedImage
+                                    const response = isCustomOrderForApi
                                         ? await createMassschuheWithoutOrderId(formData, isCourierContact)
                                         : await createMassschuheWithoutOrderIdWithoutCustomModels(formData, isCourierContact)
                                     

@@ -50,6 +50,15 @@ interface CustomShaftData {
   schafthoheRechts: string;
   umfangmasseLinks: string;
   umfangmasseRechts: string;
+  /** Individual circumference fields for JSON payload */
+  umfangBei14Links?: string;
+  umfangBei16Links?: string;
+  umfangBei18Links?: string;
+  knoechelumfangLinks?: string;
+  umfangBei14Rechts?: string;
+  umfangBei16Rechts?: string;
+  umfangBei18Rechts?: string;
+  knoechelumfangRechts?: string;
   polsterung: string[];
   verstarkungen: string[];
   polsterung_text: string;
@@ -71,6 +80,9 @@ interface CustomShaftData {
   // Business address (for courier)
   businessAddress: BusinessAddress | null;
   isAbholung: boolean;
+  
+  // Versenden (shipping) data
+  versendenData?: { company?: string; street?: string; city?: string; country?: string } | null;
   
   // Pricing
   totalPrice: number;
