@@ -585,10 +585,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       if (hinterkappeMusterSide?.mode) {
                         parts.push(`Ausführung: ${hinterkappeMusterSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
                         if (hinterkappeMusterSide.mode === "gleich" && hinterkappeMusterSide.sameValue) {
-                          parts.push(`Hinterkappe (beide Seiten): ${hinterkappeMusterSide.sameValue === "ja" ? "Ja (+5,00 €)" : "Nein"}`)
+                          parts.push(`Hinterkappe (beide Seiten): ${hinterkappeMusterSide.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein"}`)
                         } else if (hinterkappeMusterSide.mode === "unterschiedlich") {
-                          if (hinterkappeMusterSide.leftValue) parts.push(`Hinterkappe links: ${hinterkappeMusterSide.leftValue === "ja" ? "Ja (+2,50 €)" : "Nein"}`)
-                          if (hinterkappeMusterSide.rightValue) parts.push(`Hinterkappe rechts: ${hinterkappeMusterSide.rightValue === "ja" ? "Ja (+2,50 €)" : "Nein"}`)
+                          if (hinterkappeMusterSide.leftValue) parts.push(`Hinterkappe links: ${hinterkappeMusterSide.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
+                          if (hinterkappeMusterSide.rightValue) parts.push(`Hinterkappe rechts: ${hinterkappeMusterSide.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
                         }
                       }
                       return (
@@ -1065,10 +1065,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   if (hinterkappeMusterSide?.mode) {
                     parts.push(`Ausführung: ${hinterkappeMusterSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
                     if (hinterkappeMusterSide.mode === "gleich" && hinterkappeMusterSide.sameValue) {
-                      parts.push(`Hinterkappe (beide Seiten): ${hinterkappeMusterSide.sameValue === "ja" ? "Ja (+5,00 €)" : "Nein"}`)
+                      parts.push(`Hinterkappe (beide Seiten): ${hinterkappeMusterSide.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein"}`)
                     } else if (hinterkappeMusterSide.mode === "unterschiedlich") {
-                      if (hinterkappeMusterSide.leftValue) parts.push(`Hinterkappe links: ${hinterkappeMusterSide.leftValue === "ja" ? "Ja (+2,50 €)" : "Nein"}`)
-                      if (hinterkappeMusterSide.rightValue) parts.push(`Hinterkappe rechts: ${hinterkappeMusterSide.rightValue === "ja" ? "Ja (+2,50 €)" : "Nein"}`)
+                      if (hinterkappeMusterSide.leftValue) parts.push(`Hinterkappe links: ${hinterkappeMusterSide.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
+                      if (hinterkappeMusterSide.rightValue) parts.push(`Hinterkappe rechts: ${hinterkappeMusterSide.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
                     }
                   }
                   return (

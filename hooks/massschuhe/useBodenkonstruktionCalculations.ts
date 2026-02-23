@@ -84,12 +84,12 @@ export function useBodenkonstruktionCalculations(
         }
         
         // Add orthopedic field prices
-        // 1. Hinterkappe Muster (mode: gleich | unterschiedlich): Ja = +5€ or +2.50€ per side, max 5€
+        // 1. Hinterkappe Muster (mode: gleich | unterschiedlich): Ja = +4,99€ or +2,49€ per side
         if (hinterkappeMusterSide?.mode === "gleich" && hinterkappeMusterSide.sameValue === "ja") {
-            totalExtraPrice += 5.00
+            totalExtraPrice += 4.99
         } else if (hinterkappeMusterSide?.mode === "unterschiedlich") {
-            if (hinterkappeMusterSide.leftValue === "ja") totalExtraPrice += 2.50
-            if (hinterkappeMusterSide.rightValue === "ja") totalExtraPrice += 2.50
+            if (hinterkappeMusterSide.leftValue === "ja") totalExtraPrice += 2.49
+            if (hinterkappeMusterSide.rightValue === "ja") totalExtraPrice += 2.49
         } else if (selected.hinterkappe_muster === "nein") {
             totalExtraPrice += 4.99
         }

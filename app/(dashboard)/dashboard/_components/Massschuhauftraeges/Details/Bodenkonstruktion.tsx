@@ -724,11 +724,11 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 leftValue: hinterkappeMusterSide.leftValue ?? "",
                 rightValue: hinterkappeMusterSide.rightValue ?? "",
                 ...(hinterkappeMusterSide.mode === "gleich" && {
-                    samePrice: hinterkappeMusterSide.sameValue === "ja" ? 5.00 : 0,
+                    samePrice: hinterkappeMusterSide.sameValue === "ja" ? 4.99 : 0,
                 }),
                 ...(hinterkappeMusterSide.mode === "unterschiedlich" && {
-                    leftPrice: hinterkappeMusterSide.leftValue === "ja" ? 2.50 : 0,
-                    rightPrice: hinterkappeMusterSide.rightValue === "ja" ? 2.50 : 0,
+                    leftPrice: hinterkappeMusterSide.leftValue === "ja" ? 2.49 : 0,
+                    rightPrice: hinterkappeMusterSide.rightValue === "ja" ? 2.49 : 0,
                 }),
             } : {},
             "hinterkappe": hinterkappeSide && hinterkappeSide.mode ? {
@@ -1076,8 +1076,13 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
     return (
         <div className="relative bg-white pb-24">
-            {/* Sticky Price Summary - bottom-right, always visible */}
-            <StickyPriceSummary price={grandTotal} />
+            {/* Sticky Price Summary - bottom-right with Abbrechen + Weiter buttons */}
+            <StickyPriceSummary
+                price={grandTotal}
+                onWeiterClick={handleWeiterClick}
+                onCancel={() => router.back()}
+                isSubmitting={isWeiterLoading}
+            />
 
             {/* Product Header */}
             <ProductHeader orderData={orderDataForPDF} />
@@ -1119,6 +1124,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 onWeiterClick={handleWeiterClick}
                 onCancel={() => router.back()}
                 isSubmitting={isWeiterLoading}
+                hideActionButtons={true}
                 selectedSole={selectedSole}
                 showOrthopedicFields={true}
                 onVorderkappeChange={setVorderkappeSide}

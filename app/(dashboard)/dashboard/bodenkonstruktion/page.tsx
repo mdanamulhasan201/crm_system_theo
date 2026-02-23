@@ -449,11 +449,11 @@ export default function BodenkonstruktionPage() {
                 leftValue: hinterkappeMusterSide?.leftValue ?? "",
                 rightValue: hinterkappeMusterSide?.rightValue ?? "",
                 ...(hinterkappeMusterSide?.mode === "gleich" && {
-                    samePrice: hinterkappeMusterSide?.sameValue === "ja" ? 5.00 : 0,
+                    samePrice: hinterkappeMusterSide?.sameValue === "ja" ? 4.99 : 0,
                 }),
                 ...(hinterkappeMusterSide?.mode === "unterschiedlich" && {
-                    leftPrice: hinterkappeMusterSide?.leftValue === "ja" ? 2.50 : 0,
-                    rightPrice: hinterkappeMusterSide?.rightValue === "ja" ? 2.50 : 0,
+                    leftPrice: hinterkappeMusterSide?.leftValue === "ja" ? 2.49 : 0,
+                    rightPrice: hinterkappeMusterSide?.rightValue === "ja" ? 2.49 : 0,
                 }),
             },
             
@@ -692,8 +692,13 @@ export default function BodenkonstruktionPage() {
 
     return (
         <div className="relative bg-white ">
-            {/* Sticky Price Summary - bottom-right, always visible */}
-            <StickyPriceSummary price={grandTotal} />
+            {/* Sticky Price Summary - bottom-right with Abbrechen + Weiter buttons */}
+            <StickyPriceSummary
+              price={grandTotal}
+              onWeiterClick={handleWeiterClick}
+              onCancel={() => router.back()}
+              isSubmitting={isSubmitting}
+            />
 
             {/* Product Header with Customer Input */}
             <div className="my-8">
@@ -772,6 +777,7 @@ export default function BodenkonstruktionPage() {
                 onWeiterClick={handleWeiterClick}
                 onCancel={() => router.back()}
                 isSubmitting={isSubmitting}
+                hideActionButtons={true}
                 selectedSole={selectedSole}
                 showOrthopedicFields={true}
                 onVorderkappeChange={setVorderkappeSide}

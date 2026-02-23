@@ -264,9 +264,9 @@ export const GROUPS2: GroupDef2[] = [
     ],
     subOptions: {
       leder: [
-        { id: "leder_duenn", label: "Leder Dünn (+5 €)", price: 5 },
-        { id: "leder_normal", label: "Leder Normal (+8 €)", price: 8 },
-        { id: "leder_stark", label: "Leder Stark (+10 €)", price: 10 },
+        { id: "leder_duenn", label: "Leder Dünn (+4,99 €)", price: 4.99 },
+        { id: "leder_normal", label: "Leder Normal (+7,99 €)", price: 7.99 },
+        { id: "leder_stark", label: "Leder Stark (+9,99 €)", price: 9.99 },
       ],
     },
   },
@@ -305,7 +305,7 @@ export const GROUPS2: GroupDef2[] = [
     fieldType: "checkbox",
     options: [
       { id: "geldakt", label: "Geklebt" },
-      { id: "reimmargandritt", label: "Rahmengenäht (Maschine) (+30 € Aufpreis)" },
+      { id: "reimmargandritt", label: "Rahmengenäht (Maschine) (+30 € Aufpreis)", disabled: true },
     ],
   },
   

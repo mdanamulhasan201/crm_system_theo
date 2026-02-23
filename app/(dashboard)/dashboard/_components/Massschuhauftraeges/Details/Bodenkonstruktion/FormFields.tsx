@@ -950,30 +950,66 @@ export function VorderkappeSideField({
         <div className="mb-6">
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             
-            {/* Mode Selection - only 2 options */}
+            {/* Mode Selection - Auswahlbereich (checkbox-style like other fields) */}
             <div className="mb-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
                 <div className="flex flex-wrap items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="vorderkappe-mode"
-                            checked={mode === "gleich"}
-                            onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
-                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">Beidseitig – gleich</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="vorderkappe-mode"
-                            checked={mode === "unterschiedlich"}
-                            onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
-                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">Beidseitig – unterschiedlich</span>
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={mode === "gleich"}
+                                onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
+                                aria-label="Beidseitig – gleich"
+                            />
+                            <div
+                                className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                    mode === "gleich"
+                                        ? 'bg-green-500 border-green-500 cursor-pointer'
+                                        : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                }`}
+                                onClick={() => updateMode(mode === "gleich" ? null : "gleich")}
+                            >
+                                {mode === "gleich" && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateMode(mode === "gleich" ? null : "gleich")}>
+                            Beidseitig – gleich
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={mode === "unterschiedlich"}
+                                onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                                aria-label="Beidseitig – unterschiedlich"
+                            />
+                            <div
+                                className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                    mode === "unterschiedlich"
+                                        ? 'bg-green-500 border-green-500 cursor-pointer'
+                                        : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                }`}
+                                onClick={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                            >
+                                {mode === "unterschiedlich" && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}>
+                            Beidseitig – unterschiedlich
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -1355,30 +1391,66 @@ export function HinterkappeMusterSideField({
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             <p className="text-sm text-gray-600 mb-3">Auswahl gilt separat für linken und rechten Schuh</p>
             
-            {/* Mode Selection - only 2 options */}
+            {/* Mode Selection - Auswahlbereich (checkbox-style like other fields) */}
             <div className="mb-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
                 <div className="flex flex-wrap items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="hinterkappe-muster-mode"
-                            checked={mode === "gleich"}
-                            onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
-                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">Beidseitig – gleich</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="hinterkappe-muster-mode"
-                            checked={mode === "unterschiedlich"}
-                            onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
-                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">Beidseitig – unterschiedlich</span>
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={mode === "gleich"}
+                                onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
+                                aria-label="Beidseitig – gleich"
+                            />
+                            <div
+                                className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                    mode === "gleich"
+                                        ? 'bg-green-500 border-green-500 cursor-pointer'
+                                        : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                }`}
+                                onClick={() => updateMode(mode === "gleich" ? null : "gleich")}
+                            >
+                                {mode === "gleich" && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateMode(mode === "gleich" ? null : "gleich")}>
+                            Beidseitig – gleich
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={mode === "unterschiedlich"}
+                                onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                                aria-label="Beidseitig – unterschiedlich"
+                            />
+                            <div
+                                className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                    mode === "unterschiedlich"
+                                        ? 'bg-green-500 border-green-500 cursor-pointer'
+                                        : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                }`}
+                                onClick={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                            >
+                                {mode === "unterschiedlich" && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}>
+                            Beidseitig – unterschiedlich
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -1395,7 +1467,7 @@ export function HinterkappeMusterSideField({
                                 onChange={() => updateSameValue(sameValue === "ja" ? null : "ja")}
                                 className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
                             />
-                            <span className="text-base text-gray-700">Ja (+5,00 €)</span>
+                            <span className="text-base text-gray-700">Ja (+4,99 €)</span>
                         </label>
                         <label className="flex items-center gap-2 cursor-pointer">
                             <input
@@ -1425,7 +1497,7 @@ export function HinterkappeMusterSideField({
                                     onChange={() => updateLeftValue(leftValue === "ja" ? null : "ja")}
                                     className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
                                 />
-                                <span className="text-base text-gray-700">Ja (+2,50 €)</span>
+                                <span className="text-base text-gray-700">Ja (+2,49 €)</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
@@ -1450,7 +1522,7 @@ export function HinterkappeMusterSideField({
                                     onChange={() => updateRightValue(rightValue === "ja" ? null : "ja")}
                                     className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
                                 />
-                                <span className="text-base text-gray-700">Ja (+2,50 €)</span>
+                                <span className="text-base text-gray-700">Ja (+2,49 €)</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input
@@ -1561,30 +1633,66 @@ export function HinterkappeSideField({
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             <p className="text-sm text-gray-600 mb-3">Material und Leder können links und rechts unterschiedlich gewählt werden</p>
             
-            {/* Mode Selection - only 2 options */}
+            {/* Mode Selection - Auswahlbereich (checkbox-style like other fields) */}
             <div className="mb-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
                 <div className="flex flex-wrap items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="hinterkappe-mode"
-                            checked={mode === "gleich"}
-                            onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
-                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">Beidseitig – gleich</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="hinterkappe-mode"
-                            checked={mode === "unterschiedlich"}
-                            onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
-                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">Beidseitig – unterschiedlich</span>
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={mode === "gleich"}
+                                onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
+                                aria-label="Beidseitig – gleich"
+                            />
+                            <div
+                                className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                    mode === "gleich"
+                                        ? 'bg-green-500 border-green-500 cursor-pointer'
+                                        : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                }`}
+                                onClick={() => updateMode(mode === "gleich" ? null : "gleich")}
+                            >
+                                {mode === "gleich" && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateMode(mode === "gleich" ? null : "gleich")}>
+                            Beidseitig – gleich
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={mode === "unterschiedlich"}
+                                onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                                aria-label="Beidseitig – unterschiedlich"
+                            />
+                            <div
+                                className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                    mode === "unterschiedlich"
+                                        ? 'bg-green-500 border-green-500 cursor-pointer'
+                                        : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                }`}
+                                onClick={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                            >
+                                {mode === "unterschiedlich" && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}>
+                            Beidseitig – unterschiedlich
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -1776,30 +1884,66 @@ export function BrandsohleSideField({
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             <p className="text-sm text-gray-600 mb-3">Brandsohle kann links und rechts unterschiedlich konfiguriert werden</p>
             
-            {/* Mode Selection: Beidseitig – gleich | Beidseitig – unterschiedlich */}
+            {/* Mode Selection: Beidseitig – gleich | Beidseitig – unterschiedlich (checkbox-style like other fields) */}
             <div className="mb-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Ausführung:</div>
                 <div className="flex flex-wrap items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="brandsohle-mode"
-                            checked={mode === "gleich"}
-                            onChange={() => updateMode("gleich")}
-                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">Beidseitig – gleich</span>
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                            type="radio"
-                            name="brandsohle-mode"
-                            checked={mode === "unterschiedlich"}
-                            onChange={() => updateMode("unterschiedlich")}
-                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                        />
-                        <span className="text-base text-gray-700">Beidseitig – unterschiedlich</span>
-                    </label>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={mode === "gleich"}
+                                onChange={() => updateMode("gleich")}
+                                aria-label="Beidseitig – gleich"
+                            />
+                            <div
+                                className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                    mode === "gleich"
+                                        ? 'bg-green-500 border-green-500 cursor-pointer'
+                                        : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                }`}
+                                onClick={() => updateMode("gleich")}
+                            >
+                                {mode === "gleich" && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateMode("gleich")}>
+                            Beidseitig – gleich
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <div className="relative flex items-center">
+                            <input
+                                type="checkbox"
+                                className="sr-only"
+                                checked={mode === "unterschiedlich"}
+                                onChange={() => updateMode("unterschiedlich")}
+                                aria-label="Beidseitig – unterschiedlich"
+                            />
+                            <div
+                                className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                    mode === "unterschiedlich"
+                                        ? 'bg-green-500 border-green-500 cursor-pointer'
+                                        : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                }`}
+                                onClick={() => updateMode("unterschiedlich")}
+                            >
+                                {mode === "unterschiedlich" && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                            </div>
+                        </div>
+                        <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateMode("unterschiedlich")}>
+                            Beidseitig – unterschiedlich
+                        </span>
+                    </div>
                 </div>
             </div>
 
