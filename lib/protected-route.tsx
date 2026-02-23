@@ -12,7 +12,11 @@ interface ProtectedRouteProps {
   unauthorizedRedirectPath?: string;
 }
 
-const LoadingSpinner = () => null;
+const LoadingSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-[#141414]">
+    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white" />
+  </div>
+);
 
 /**
  * ProtectedRoute Component
@@ -74,11 +78,15 @@ export default function ProtectedRoute({
     return getFirstAllowedRoute(permissions, isEmployeeMode);
   }, [permissions, isEmployeeMode]);
 
-  // Handle redirects
+  // Handle redirects: no auth → login or manage-profile (if first-login token exists)
   useEffect(() => {
-    // Wait for authentication check
     if (!isAuthenticated) {
-      router.push('/login');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (token) {
+        router.replace('/manage-profile');
+      } else {
+        router.replace('/login');
+      }
       return;
     }
 
@@ -109,9 +117,9 @@ export default function ProtectedRoute({
     permissions.length,
   ]);
 
-  // Not authenticated - don't render anything
+  // Not authenticated: redirect happens in useEffect; show loading to avoid blank screen
   if (!isAuthenticated) {
-    return null;
+    return <LoadingSpinner />;
   }
 
   // Loading permissions - don't show spinner, let default loading handle it

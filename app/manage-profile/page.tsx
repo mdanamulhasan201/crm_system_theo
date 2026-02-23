@@ -107,6 +107,10 @@ export default function ManageProfilePage() {
   }
 
   const displayName = (p: ProfileItem) => p.busnessName || p.employeeName || p.role || 'Profile'
+  const isPartner = (p: ProfileItem) => p.role === 'PARTNER'
+
+  // Partner(s) first, then others
+  const sortedProfiles = [...profiles].sort((a, b) => (isPartner(a) ? 0 : 1) - (isPartner(b) ? 0 : 1))
 
   if (loading) {
     return (
@@ -134,36 +138,57 @@ export default function ManageProfilePage() {
           Who&apos;s watching?
         </h1>
 
-        <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-10 md:gap-12 mb-12 sm:mb-16">
-          {profiles.map((profile) => (
-            <button
-              key={profile.id}
-              type="button"
-              onClick={() => handleProfileClick(profile)}
-              disabled={submitting}
-              className="group cursor-pointer flex flex-col items-center gap-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414] rounded-lg transition-transform hover:scale-105 active:scale-100 disabled:opacity-60 disabled:cursor-not-allowed"
-            >
-              <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 bg-gray-700 rounded-lg flex items-center justify-center text-white overflow-hidden border-2 border-transparent group-hover:border-white transition-all duration-200 shadow-lg">
-                {profile.image ? (
-                  <Image
-                    src={profile.image}
-                    alt={displayName(profile)}
-                    width={112}
-                    height={112}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <User className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14" strokeWidth={1.5} />
+        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 md:gap-10 mb-12 sm:mb-16">
+          {sortedProfiles.map((profile) => {
+            const partner = isPartner(profile)
+            return (
+              <button
+                key={profile.id}
+                type="button"
+                onClick={() => handleProfileClick(profile)}
+                disabled={submitting}
+                className={`group cursor-pointer flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414] rounded-lg transition-transform hover:scale-105 active:scale-100 disabled:opacity-60 disabled:cursor-not-allowed ${
+                  partner ? 'gap-4' : 'gap-3'
+                }`}
+              >
+                <div
+                  className={`bg-gray-700 rounded-lg flex items-center justify-center text-white overflow-hidden border-2 border-transparent group-hover:border-white transition-all duration-200 shadow-lg ${
+                    partner
+                      ? 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36'
+                      : 'w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28'
+                  }`}
+                >
+                  {profile.image ? (
+                    <Image
+                      src={profile.image}
+                      alt={displayName(profile)}
+                      width={partner ? 144 : 112}
+                      height={partner ? 144 : 112}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <User
+                      className={partner ? 'w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18' : 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14'}
+                      strokeWidth={1.5}
+                    />
+                  )}
+                </div>
+                <span
+                  className={`text-gray-400 group-hover:text-white transition-colors duration-200 text-center truncate ${
+                    partner ? 'text-base sm:text-lg font-medium max-w-40' : 'text-sm sm:text-base max-w-32'
+                  }`}
+                >
+                  {displayName(profile)}
+                </span>
+                {partner && (
+                  <span className="text-xs text-gray-500 uppercase tracking-wider">Hauptkonto</span>
                 )}
-              </div>
-              <span className="text-gray-400 text-sm sm:text-base group-hover:text-white transition-colors duration-200 text-center max-w-32 truncate">
-                {displayName(profile)}
-              </span>
-              {profile.hasPassword && (
-                <span className="text-xs text-gray-500">Passwort erforderlich</span>
-              )}
-            </button>
-          ))}
+                {!partner && profile.hasPassword && (
+                  <span className="text-xs text-gray-500">Passwort erforderlich</span>
+                )}
+              </button>
+            )
+          })}
         </div>
       </div>
 
