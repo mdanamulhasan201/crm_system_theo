@@ -222,9 +222,9 @@ export default function CollectionShaftDetailsPage() {
   const deliveryMethod = getDeliveryMethod();
 
   // Build formatted circumference strings for PDF/display (from structured fields)
-  const formatUmfangmasseSide = (u14: string, u16: string, u18: string, knoechel: string) => {
+  const formatUmfangmasseSide = (u15: string, u16: string, u18: string, knoechel: string) => {
     const parts: string[] = [];
-    if (u14?.trim()) parts.push(`Umfang 14 cm: ${u14.trim()} cm`);
+    if (u15?.trim()) parts.push(`Umfang 15 cm: ${u15.trim()} cm`);
     if (u16?.trim()) parts.push(`Umfang 16 cm: ${u16.trim()} cm`);
     if (u18?.trim()) parts.push(`Umfang 18 cm: ${u18.trim()} cm`);
     if (knoechel?.trim()) parts.push(`Knöchelumfang: ${knoechel.trim()} cm`);
