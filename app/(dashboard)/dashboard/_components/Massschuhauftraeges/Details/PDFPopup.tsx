@@ -897,6 +897,29 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     
                     // Handle checkbox and other field types (default)
                     // Always show the field, renderModalOptions will show all options with selected ones checked
+                    // For Sohlenmaterial, show Bevorzugte Farbe right below (not at bottom)
+                    if (g.id === "schlemmaterial") {
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {g.options && g.options.length > 0 ? (
+                              <>
+                                {renderModalOptions(g)}
+                                {textAreas?.schlemmaterial_preferred_colour && (
+                                  <div className="mt-3">
+                                    <div className="text-xs font-semibold text-slate-700 mb-1">Bevorzugte Farbe (Sohlenmaterial)</div>
+                                    <div className="text-xs text-slate-600 p-2 bg-slate-50 border border-gray-200 rounded leading-relaxed">{textAreas.schlemmaterial_preferred_colour}</div>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <span className="text-xs text-slate-400 italic">Keine Optionen verfügbar</span>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    }
                     return (
                     <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
@@ -912,7 +935,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 })}
 
                 {/* Text areas */}
-                {textAreas && (textAreas.korrektur_bereich || textAreas.fussproblem_bettung || textAreas.bettung_wuensche || textAreas.fussproblem_leisten || textAreas.leisten_wuensche || textAreas.besondere_hinweise || textAreas.schlemmaterial_preferred_colour) && (
+                {textAreas && (textAreas.korrektur_bereich || textAreas.fussproblem_bettung || textAreas.bettung_wuensche || textAreas.fussproblem_leisten || textAreas.leisten_wuensche || textAreas.besondere_hinweise) && (
                   <div className="mt-4 pt-4">
                     {textAreas?.korrektur_bereich && (
                       <div className="mb-4">
@@ -948,12 +971,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       <div>
                         <div className="text-sm font-semibold text-slate-800 mb-2">Besondere Hinweise</div>
                         <div className="text-xs text-slate-600 p-3 bg-slate-50 border border-gray-300 rounded-lg min-h-[60px] leading-relaxed">{textAreas.besondere_hinweise}</div>
-                      </div>
-                    )}
-                    {textAreas?.schlemmaterial_preferred_colour && (
-                      <div className="mt-4">
-                        <div className="text-sm font-semibold text-slate-800 mb-2">Bevorzugte Farbe (Sohlenmaterial)</div>
-                        <div className="text-xs text-slate-600 p-3 bg-slate-50 border border-gray-300 rounded-lg min-h-[40px] leading-relaxed">{textAreas.schlemmaterial_preferred_colour}</div>
                       </div>
                     )}
                   </div>
@@ -1376,7 +1393,29 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 }
                             
                 // Handle checkbox and other field types (default)
-                // Always show the field, renderPDFOptions will show all options with selected ones checked
+                // For Sohlenmaterial, show Bevorzugte Farbe right below (not at bottom)
+                if (g.id === "schlemmaterial") {
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {g.options && g.options.length > 0 ? (
+                          <>
+                            {renderPDFOptions(g)}
+                            {textAreas?.schlemmaterial_preferred_colour && (
+                              <div style={{ marginTop: '12px' }}>
+                                <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}>Bevorzugte Farbe (Sohlenmaterial)</div>
+                                <div style={{ fontSize: '12px', color: '#475569', padding: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', lineHeight: 1.5 }}>{textAreas.schlemmaterial_preferred_colour}</div>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>Keine Optionen verfügbar</span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                }
                 return (
                   <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
@@ -1392,7 +1431,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
               })}
 
               {/* Text areas */}
-                  {textAreas && (textAreas.korrektur_bereich || textAreas.fussproblem_bettung || textAreas.bettung_wuensche || textAreas.fussproblem_leisten || textAreas.leisten_wuensche || textAreas.besondere_hinweise || textAreas.schlemmaterial_preferred_colour) && (
+                  {textAreas && (textAreas.korrektur_bereich || textAreas.fussproblem_bettung || textAreas.bettung_wuensche || textAreas.fussproblem_leisten || textAreas.leisten_wuensche || textAreas.besondere_hinweise) && (
                 <div style={{ marginTop: '16px', paddingTop: '16px', pageBreakInside: 'auto' }}>
                       {textAreas?.korrektur_bereich && (
                         <div className="pdf-page-break-avoid" style={{ marginBottom: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
@@ -1428,12 +1467,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                         <div className="pdf-page-break-avoid" style={{ pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Besondere Hinweise</div>
                       <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '60px', lineHeight: 1.5 }}>{textAreas.besondere_hinweise}</div>
-                        </div>
-                      )}
-                      {textAreas?.schlemmaterial_preferred_colour && (
-                        <div className="pdf-page-break-avoid" style={{ marginTop: '16px', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>Bevorzugte Farbe (Sohlenmaterial)</div>
-                      <div style={{ fontSize: '12px', color: '#475569', padding: '12px', background: '#f8fafc', border: '1px solid #d1d5db', borderRadius: '8px', minHeight: '40px', lineHeight: 1.5 }}>{textAreas.schlemmaterial_preferred_colour}</div>
                         </div>
                       )}
                     </div>

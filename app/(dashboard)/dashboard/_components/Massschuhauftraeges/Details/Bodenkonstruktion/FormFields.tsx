@@ -1454,86 +1454,80 @@ export function HinterkappeMusterSideField({
                 </div>
             </div>
 
-            {/* Mode "gleich": one field "Hinterkappe (beide Seiten)" - Ja (+5€) / Nein */}
+            {/* Mode "gleich": one field "Hinterkappe (beide Seiten)" - Ja / Nein (checkbox-style) */}
             {mode === "gleich" && (
                 <div className="mb-4">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Hinterkappe (beide Seiten)</div>
                     <div className="flex flex-wrap items-center gap-4">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="hinterkappe-muster-same"
-                                checked={sameValue === "ja"}
-                                onChange={() => updateSameValue(sameValue === "ja" ? null : "ja")}
-                                className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                            />
-                            <span className="text-base text-gray-700">Ja (+4,99 €)</span>
-                        </label>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="radio"
-                                name="hinterkappe-muster-same"
-                                checked={sameValue === "nein"}
-                                onChange={() => updateSameValue(sameValue === "nein" ? null : "nein")}
-                                className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                            />
-                            <span className="text-base text-gray-700">Nein</span>
-                        </label>
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex items-center">
+                                <input type="checkbox" className="sr-only" checked={sameValue === "ja"} onChange={() => updateSameValue(sameValue === "ja" ? null : "ja")} aria-label="Ja (+4,99 €)" />
+                                <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${sameValue === "ja" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateSameValue(sameValue === "ja" ? null : "ja")}>
+                                    {sameValue === "ja" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                </div>
+                            </div>
+                            <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateSameValue(sameValue === "ja" ? null : "ja")}>Ja (+4,99 €)</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <div className="relative flex items-center">
+                                <input type="checkbox" className="sr-only" checked={sameValue === "nein"} onChange={() => updateSameValue(sameValue === "nein" ? null : "nein")} aria-label="Nein" />
+                                <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${sameValue === "nein" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateSameValue(sameValue === "nein" ? null : "nein")}>
+                                    {sameValue === "nein" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                </div>
+                            </div>
+                            <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateSameValue(sameValue === "nein" ? null : "nein")}>Nein</span>
+                        </div>
                     </div>
                 </div>
             )}
 
-            {/* Mode "unterschiedlich": two fields - Links/Rechts each Ja (+2.50€) / Nein */}
+            {/* Mode "unterschiedlich": Hinterkappe links + rechts (checkbox-style) */}
             {mode === "unterschiedlich" && (
                 <>
                     <div className="mb-4">
                         <div className="text-sm font-semibold text-gray-700 mb-2">Hinterkappe links</div>
                         <div className="flex flex-wrap items-center gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="hinterkappe-muster-links"
-                                    checked={leftValue === "ja"}
-                                    onChange={() => updateLeftValue(leftValue === "ja" ? null : "ja")}
-                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                                />
-                                <span className="text-base text-gray-700">Ja (+2,49 €)</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="hinterkappe-muster-links"
-                                    checked={leftValue === "nein"}
-                                    onChange={() => updateLeftValue(leftValue === "nein" ? null : "nein")}
-                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                                />
-                                <span className="text-base text-gray-700">Nein</span>
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex items-center">
+                                    <input type="checkbox" className="sr-only" checked={leftValue === "ja"} onChange={() => updateLeftValue(leftValue === "ja" ? null : "ja")} aria-label="Links Ja (+2,49 €)" />
+                                    <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${leftValue === "ja" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateLeftValue(leftValue === "ja" ? null : "ja")}>
+                                        {leftValue === "ja" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                    </div>
+                                </div>
+                                <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateLeftValue(leftValue === "ja" ? null : "ja")}>Ja (+2,49 €)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex items-center">
+                                    <input type="checkbox" className="sr-only" checked={leftValue === "nein"} onChange={() => updateLeftValue(leftValue === "nein" ? null : "nein")} aria-label="Links Nein" />
+                                    <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${leftValue === "nein" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateLeftValue(leftValue === "nein" ? null : "nein")}>
+                                        {leftValue === "nein" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                    </div>
+                                </div>
+                                <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateLeftValue(leftValue === "nein" ? null : "nein")}>Nein</span>
+                            </div>
                         </div>
                     </div>
                     <div className="mb-4">
                         <div className="text-sm font-semibold text-gray-700 mb-2">Hinterkappe rechts</div>
                         <div className="flex flex-wrap items-center gap-4">
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="hinterkappe-muster-rechts"
-                                    checked={rightValue === "ja"}
-                                    onChange={() => updateRightValue(rightValue === "ja" ? null : "ja")}
-                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                                />
-                                <span className="text-base text-gray-700">Ja (+2,49 €)</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="hinterkappe-muster-rechts"
-                                    checked={rightValue === "nein"}
-                                    onChange={() => updateRightValue(rightValue === "nein" ? null : "nein")}
-                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                                />
-                                <span className="text-base text-gray-700">Nein</span>
-                            </label>
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex items-center">
+                                    <input type="checkbox" className="sr-only" checked={rightValue === "ja"} onChange={() => updateRightValue(rightValue === "ja" ? null : "ja")} aria-label="Rechts Ja (+2,49 €)" />
+                                    <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${rightValue === "ja" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateRightValue(rightValue === "ja" ? null : "ja")}>
+                                        {rightValue === "ja" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                    </div>
+                                </div>
+                                <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateRightValue(rightValue === "ja" ? null : "ja")}>Ja (+2,49 €)</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="relative flex items-center">
+                                    <input type="checkbox" className="sr-only" checked={rightValue === "nein"} onChange={() => updateRightValue(rightValue === "nein" ? null : "nein")} aria-label="Rechts Nein" />
+                                    <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${rightValue === "nein" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateRightValue(rightValue === "nein" ? null : "nein")}>
+                                        {rightValue === "nein" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                    </div>
+                                </div>
+                                <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateRightValue(rightValue === "nein" ? null : "nein")}>Nein</span>
+                            </div>
                         </div>
                     </div>
                 </>
