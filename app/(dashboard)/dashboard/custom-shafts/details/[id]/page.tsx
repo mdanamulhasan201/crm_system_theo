@@ -533,7 +533,7 @@ export default function CollectionShaftDetailsPage() {
   return (
     <div className="relative px-2 md:px-6 py-8 w-full pb-24">
       {/* Sticky Price Summary - bottom-right, price only (no button) */}
-      <StickyPriceSummary price={orderPrice} />
+      {/* <StickyPriceSummary price={orderPrice} /> */}
 
       {/* File Upload Section */}
       <FileUploadSection

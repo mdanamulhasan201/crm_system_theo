@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import ReusableBalanceTable, { BalanceTableColumn, TableAction } from '@/components/Shared/ReusableBalanceTable'
 import { getAllOrderData, cancelOrder } from '@/apis/MassschuheManagemantApis'
 import toast from 'react-hot-toast'
@@ -86,6 +87,7 @@ export default function DataTables({
     customActions,
     renderActions,
 }: DataTablesProps) {
+    const router = useRouter()
     const [data, setData] = useState<TransactionData[]>([]);
     const [loading, setLoading] = useState(false);
     const [cursor, setCursor] = useState<string>('');
@@ -439,6 +441,23 @@ export default function DataTables({
         show: (row) => row.custom_shafts_order_status === 'active' && row.custom_shafts_status === 'Neu',
     };
 
+    // Reorder action - navigate to product-order to place the same order again
+    const reorderAction: TableAction<TransactionData> = {
+        type: 'custom',
+        label: 'Nachbestellen',
+        icon: (
+            <span className="text-xs font-semibold">
+                Nachbestellen
+            </span>
+        ),
+        className: 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer border border-emerald-200 rounded-md px-2 py-1',
+        onClick: (row) => {
+            const orderId = row.custom_shafts_id || row.id
+            router.push(`/dashboard/custom-shafts/product-order/${orderId}`)
+        },
+        show: () => true,
+    };
+
     // Download invoice action - show if invoice or invoice2 exists
     const downloadInvoiceAction: TableAction<TransactionData> = {
         type: 'custom',
@@ -472,7 +491,9 @@ export default function DataTables({
         const baseActions = buildActions();
         const actions = baseActions ? [...baseActions] : [];
 
-        // Add download invoice action first (so it appears before cancel/canceled status)
+        // Reorder button (always show in Aktionen column)
+        actions.push(reorderAction);
+        // Add download invoice action
         actions.push(downloadInvoiceAction);
         
         // Add cancel and canceled-status actions (they conditionally show based on status)
