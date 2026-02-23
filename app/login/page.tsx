@@ -19,14 +19,18 @@ type FormInputs = {
 export default function Login() {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
-    const { login, isAuthenticated } = useAuth()
+    const { isAuthenticated } = useAuth()
     const [showPassword, setShowPassword] = useState(false);
     const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
-    // Redirect if already authenticated
+    // Redirect: full auth -> dashboard; token but no role (first login) -> manage-profile
     useEffect(() => {
         if (isAuthenticated) {
             router.push('/dashboard')
+            return
+        }
+        if (typeof window !== 'undefined' && localStorage.getItem('token')) {
+            router.push('/manage-profile')
         }
     }, [isAuthenticated, router])
 
@@ -40,15 +44,14 @@ export default function Login() {
         setIsLoading(true)
         try {
             const response = await loginUser(data.email, data.password)
-            if (response.success && response.user.role === 'PARTNER') {
-                await login(response.token)
+            if (response.success && response.token) {
+                localStorage.setItem('token', response.token)
                 toast.success('Login successful')
-                router.push('/dashboard')
+                router.push('/manage-profile')
             } else {
-                throw new Error('User not found')
+                throw new Error('Invalid response')
             }
         } catch (error) {
-
             const errorMessage = error instanceof Error ? error.message : 'Login failed';
             toast.error(errorMessage);
         } finally {

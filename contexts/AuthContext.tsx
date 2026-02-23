@@ -118,8 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           localStorage.removeItem('currentEmployeeId');
           localStorage.removeItem('currentEmployeeData');
           window.location.reload();
-        } else {
-          await forceLogout();
+        } else if (pathname !== '/manage-profile') {
+          // First-login token (no role): keep token, go to profile selection
+          setUser(null);
+          setIsAuthenticated(false);
+          router.push('/manage-profile');
         }
       }
       return false;
@@ -190,7 +193,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             window.location.reload();
           }, 500);
         } else {
-          await forceLogout();
+          // First-login token (no role): keep token, allow manage-profile
+          setUser(null);
+          setIsAuthenticated(false);
+          if (pathname !== '/manage-profile') {
+            router.push('/manage-profile');
+          }
         }
       } else {
         setIsAuthenticated(false);

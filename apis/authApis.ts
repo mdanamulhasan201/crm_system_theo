@@ -1,24 +1,16 @@
 import axiosClient from "@/lib/axiosClient";
 
-interface LoginResponse {
+// First login response (no role) - redirect to manage-profile
+interface FirstLoginResponse {
   success: boolean;
   message: string;
-  user: {
-    id: string;
-    name: string | null;
-    email: string;
-    image: string | null;
-    role: string;
-  };
   token: string;
 }
 
-
-
-// user login
+// user login (first step: returns token only, no role)
 export const loginUser = async (email: string, password: string) => {
   try {
-    const response = await axiosClient.post<LoginResponse>('/users/login', {
+    const response = await axiosClient.post<FirstLoginResponse>('/v2/auth/system-login', {
       email,
       password,
     });
@@ -28,10 +20,9 @@ export const loginUser = async (email: string, password: string) => {
     }
 
     return {
-      success: true,
+      success: response.data.success,
       message: response.data.message || 'Successfully logged in!',
       token: response.data.token,
-      user: response.data.user
     };
   } catch (error: any) {
     const errorMessage = error.response?.data?.message || error.message || 'An error occurred during login';
@@ -40,6 +31,30 @@ export const loginUser = async (email: string, password: string) => {
 };
 
 
+// get profile list  v2/auth/profile-selection
+export const getProfileList = async () => {
+  try {
+    const response = await axiosClient.get('/v2/auth/profile-selection');
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to get profile list';
+    throw new Error(errorMessage);
+  }
+}
+
+
+// v2/auth/logical-login/{id}?role=PARTNER
+// body: { password } when hasPassword true, else {}
+export const logicalLogin = async (id: string, role: string, password?: string) => {
+  try {
+    const body = password != null && password !== '' ? { password } : {};
+    const response = await axiosClient.post(`/v2/auth/logical-login/${id}?role=${role}`, body);
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to logical login';
+    throw new Error(errorMessage);
+  }
+};
 // user check auth
 export const userCheckAuth = async () => {
   try {
@@ -139,3 +154,6 @@ export const setSecretPassword = async (secretPassword: string) => {
     throw new Error(errorMessage);
   }
 }
+
+
+
