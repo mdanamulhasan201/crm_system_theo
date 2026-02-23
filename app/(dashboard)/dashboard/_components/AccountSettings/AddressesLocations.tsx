@@ -248,7 +248,7 @@ export default function AddressesLocations() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-              <MapPin className="w-5 h-5 text-blue-600" />
+              <MapPin className="w-5 h-5 text-[#61A175]" />
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-base sm:text-lg font-semibold text-gray-900">Adressen & Standorte</h2>
@@ -257,7 +257,7 @@ export default function AddressesLocations() {
           </div>
           <button 
             onClick={handleAddLocation}
-            className="w-full sm:w-auto px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+            className="w-full sm:w-auto px-3 py-1.5 text-sm bg-[#61A175] text-white rounded-lg hover:bg-[#61A175]/90 transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
           >
             <Plus className="w-4 h-4" />
             <span className="font-medium">Standort hinzufügen</span>
@@ -300,7 +300,7 @@ export default function AddressesLocations() {
             <p className="text-gray-600 text-sm mb-3">Noch keine Standorte hinzugefügt</p>
             <Button
               onClick={handleAddLocation}
-              className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1.5 h-auto"
+              className="bg-[#61A175] hover:bg-[#61A175]/90 text-white text-xs px-3 py-1.5 h-auto"
             >
               <Plus className="w-3 h-3 mr-1" />
               Ersten Standort hinzufügen
@@ -321,7 +321,7 @@ export default function AddressesLocations() {
                         {location.description || "Location"}
                       </span>
                       {location.isPrimary && (
-                        <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs rounded-full font-medium">
+                        <span className="px-2 py-0.5 bg-[#61A175] text-white text-xs rounded-full font-medium">
                           Hauptstandort
                         </span>
                       )}
@@ -421,7 +421,7 @@ export default function AddressesLocations() {
             <Button
               onClick={handleSave}
               disabled={isSaving || !formData.address.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-[#61A175] hover:bg-[#61A175]/90 text-white"
             >
               {isSaving
                 ? editingLocation

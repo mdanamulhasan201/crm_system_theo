@@ -127,3 +127,15 @@ export const employeeLoginWithId = async (id: string) => {
     throw new Error(errorMessage);
   }
 }
+
+
+// set seceret password v2/auth/set-secret-password
+export const setSecretPassword = async (secretPassword: string) => {
+  try {
+    const response = await axiosClient.post('/v2/auth/set-secret-password', { secretPassword });
+    return response.data;
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.response?.message || error.message || 'Failed to set secret password';
+    throw new Error(errorMessage);
+  }
+}

@@ -19,10 +19,11 @@ export const useCanvasPainting = ({ shoeImage, assignments, getColorForLeather }
   const imageRef = useRef<HTMLDivElement | null>(null);
 
   /**
-   * Generate painted image with error handling and user feedback
+   * Generate painted image with error handling and user feedback.
+   * @param assignmentsOverride - Optional sorted assignments (e.g. by leatherNumber 1,2,3) so image order matches payload
    * @returns Painted image data URL, or null if generation fails
    */
-  const createPaintedImage = async (): Promise<string | null> => {
+  const createPaintedImage = async (assignmentsOverride?: LeatherColorAssignment[]): Promise<string | null> => {
     if (!shoeImage || !imageRef.current) {
       return null;
     }
@@ -33,11 +34,13 @@ export const useCanvasPainting = ({ shoeImage, assignments, getColorForLeather }
       return null;
     }
 
+    const assignmentsToUse = assignmentsOverride ?? assignments;
+
     try {
       const result = await generatePaintedImage({
         shoeImage,
         renderedImage,
-        assignments,
+        assignments: assignmentsToUse,
         getColorForLeather,
       });
 

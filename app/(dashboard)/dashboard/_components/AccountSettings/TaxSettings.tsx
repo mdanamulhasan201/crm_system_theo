@@ -56,7 +56,7 @@ export default function TaxSettings() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-            <Percent className="w-5 h-5 text-blue-600" />
+            <Percent className="w-5 h-5 text-[#61A175]" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-base sm:text-lg font-semibold text-gray-900">UST und Steuersätze</h2>
@@ -86,7 +86,7 @@ export default function TaxSettings() {
                 value={newTaxRate.name}
                 onChange={(e) => setNewTaxRate({ ...newTaxRate, name: e.target.value })}
                 placeholder="z.B. Standard VAT"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61A175] focus:border-[#61A175]"
               />
             </div>
             <div>
@@ -99,7 +99,7 @@ export default function TaxSettings() {
                 onChange={(e) => setNewTaxRate({ ...newTaxRate, rate: e.target.value })}
                 placeholder="19"
                 step="0.01"
-                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61A175] focus:border-[#61A175]"
               />
             </div>
           </div>
@@ -112,13 +112,13 @@ export default function TaxSettings() {
               value={newTaxRate.description}
               onChange={(e) => setNewTaxRate({ ...newTaxRate, description: e.target.value })}
               placeholder="Beschreibung des Steuersatzes"
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61A175] focus:border-[#61A175]"
             />
           </div>
           <div className="flex gap-2">
             <button
               onClick={handleAddTaxRate}
-              className="px-4 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+              className="px-4 py-2 text-sm bg-[#61A175] text-white rounded-lg hover:bg-[#61A175]/90 transition-colors font-medium"
             >
               Hinzufügen
             </button>
@@ -156,7 +156,7 @@ export default function TaxSettings() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <div className="text-lg font-bold text-blue-600">{rate.rate}%</div>
+                  <div className="text-lg font-bold text-[#61A175]">{rate.rate}%</div>
                 </div>
               </div>
             </div>
@@ -176,7 +176,7 @@ export default function TaxSettings() {
         <div className="flex justify-end pt-4 mt-4 border-t border-gray-200">
           <button
             onClick={handleSaveSettings}
-            className="w-full sm:w-auto px-5 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2"
+            className="w-full sm:w-auto px-5 py-2 text-sm bg-[#61A175] text-white rounded-lg hover:bg-[#61A175]/90 transition-colors font-medium flex items-center justify-center gap-2"
           >
             <Save className="w-4 h-4" />
             Einstellungen speichern

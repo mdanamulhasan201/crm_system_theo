@@ -144,14 +144,20 @@ export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
     };
   }
 
-  // Add leather types definition if multiple colors
+  // Add leather types definition if multiple colors (order by leatherNumber 1,2,3 so payload matches numbering)
   if (data.numberOfLeatherColors === '2' || data.numberOfLeatherColors === '3') {
     const ledertypenDefinieren: any = {};
     data.leatherColors?.forEach((color: string, index: number) => {
       ledertypenDefinieren[`leatherColor_${index + 1}`] = color;
     });
-    if (data.leatherColorAssignments) {
-      ledertypenDefinieren.assignments = data.leatherColorAssignments;
+    if (data.leatherColorAssignments && data.leatherColorAssignments.length > 0) {
+      const sorted = [...data.leatherColorAssignments].sort(
+        (a: any, b: any) =>
+          (a.leatherNumber ?? 0) - (b.leatherNumber ?? 0) ||
+          (a.y ?? 0) - (b.y ?? 0) ||
+          (a.x ?? 0) - (b.x ?? 0)
+      );
+      ledertypenDefinieren.assignments = sorted;
     }
     json.ledertypen_definieren = ledertypenDefinieren;
   }

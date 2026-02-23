@@ -180,16 +180,24 @@ export default function LeatherColorSectionModal({
       return;
     }
 
-    // Combine leather type and color name
+    // Combine leather type and color name (index 0 = Leder 1, index 1 = Leder 2, index 2 = Leder 3)
     const leatherColorsWithNames = leatherColors.map((type, index) => {
       const colorName = leatherColorNames[index] || '';
       return colorName ? `${type} - ${colorName}` : type;
     });
 
-    // Generate painted image
+    // Sort assignments by leatherNumber (1, 2, 3) then position so payload and image use same order
+    const sortedAssignments = [...assignments].sort(
+      (a, b) =>
+        a.leatherNumber - b.leatherNumber ||
+        a.y - b.y ||
+        a.x - b.x
+    );
+
+    // Generate painted image with sorted order so image matches payload numbering
     let paintedImage: string | null = null;
     if (shoeImage && imageRef.current) {
-      paintedImage = await createPaintedImage();
+      paintedImage = await createPaintedImage(sortedAssignments);
     }
 
     // Show success message only if image generation succeeded without CORS issues
@@ -197,8 +205,8 @@ export default function LeatherColorSectionModal({
       toast.success('Ledertypen-Zuordnung erfolgreich gespeichert!');
     }
 
-    // Always save - even if painted image failed
-    onSave(assignments, leatherColorsWithNames, paintedImage);
+    // Always save with sorted assignments so payload order matches numbering (1, 2, 3)
+    onSave(sortedAssignments, leatherColorsWithNames, paintedImage);
     onClose();
   };
 

@@ -115,7 +115,7 @@ export default function CompanyInformation() {
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-5">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">
         <div className="w-10 h-10 sm:w-11 sm:h-11 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
-          <Building2 className="w-5 h-5 text-blue-600" />
+          <Building2 className="w-5 h-5 text-[#61A175]" />
         </div>
         <div className="flex-1 min-w-0">
           <h2 className="text-base sm:text-lg font-semibold text-gray-900">Unternehmensinformationen</h2>
@@ -145,7 +145,7 @@ export default function CompanyInformation() {
               value={formData.companyName}
               onChange={handleChange}
               placeholder=""
-              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61A175] focus:border-[#61A175]"
             />
           </div>
           <div>
@@ -158,7 +158,7 @@ export default function CompanyInformation() {
               value={formData.vatNumber}
               onChange={handleChange}
               placeholder=""
-              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61A175] focus:border-[#61A175]"
             />
             <p className="text-xs text-gray-500 mt-0.5">Erforderlich für Bestellungen und Abrechnung innerhalb der EU</p>
           </div>
@@ -173,7 +173,7 @@ export default function CompanyInformation() {
               name="vatCountry"
               value={formData.vatCountry || ''}
               onChange={handleChange}
-              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61A175] focus:border-[#61A175]"
             >
               <option value="">Bitte wählen...</option>
               <option value="Deutschland (DE)">Deutschland (DE)</option>
@@ -194,7 +194,7 @@ export default function CompanyInformation() {
               value={formData.phoneNumber}
               onChange={handleChange}
               placeholder=""
-              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+              className="w-full px-3 py-2 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#61A175] focus:border-[#61A175]"
             />
           </div>
         </div>
@@ -217,7 +217,7 @@ export default function CompanyInformation() {
           <button
             onClick={handleSaveChanges}
             disabled={isLoading}
-            className="w-full sm:w-auto px-5 py-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto px-5 py-2 text-sm bg-[#61A175] text-white rounded-lg hover:bg-[#61A175]/90 transition-colors font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {isLoading ? (
               <>

@@ -215,7 +215,7 @@ export default function EmployeeAccounts() {
                 {/* Avatar - Now clickable for switching */}
                 <div 
                   onClick={() => !isSwitching && handleSwitchClick(employee)}
-                  className={`aspect-square rounded-lg bg-gradient-to-br flex items-center justify-center text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl 2xl:text-4xl transition-all duration-200 from-blue-400 to-blue-600 hover:ring-4 hover:ring-blue-300 group-hover:scale-105 cursor-pointer ${isSwitching ? 'opacity-50 cursor-wait' : ''}`}
+                  className={`aspect-square rounded-lg bg-gradient-to-br flex items-center justify-center text-white font-bold text-xl sm:text-2xl md:text-3xl lg:text-3xl xl:text-4xl 2xl:text-4xl transition-all duration-200 bg-[#61A175]  hover:ring-4 hover:ring-[#61A175] group-hover:scale-105 cursor-pointer ${isSwitching ? 'opacity-50 cursor-wait' : ''}`}
                 >
                   {isSwitching ? (
                     <RefreshCw className="w-8 h-8 animate-spin" />
@@ -240,7 +240,7 @@ export default function EmployeeAccounts() {
                 {/* Status Badge */}
                 <div className="absolute bottom-2 right-2 z-10">
                   <div className={`w-3 h-3 rounded-full border-2 border-white ${
-                    employee.financialAccess ? 'bg-green-500' : 'bg-gray-400'
+                    employee.financialAccess ? 'bg-[#61A175]' : 'bg-gray-400'
                   }`} />
                 </div>
 
