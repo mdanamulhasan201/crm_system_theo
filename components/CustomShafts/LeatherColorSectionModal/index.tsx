@@ -17,6 +17,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 // Types
@@ -69,6 +70,8 @@ export default function LeatherColorSectionModal({
 
   const [selectedLeatherNumber, setSelectedLeatherNumber] = useState<number>(1);
 
+  const [isSaving, setIsSaving] = useState(false);
+
   // ===== Custom Hooks =====
   const { imageRef, createPaintedImage } = useCanvasPainting({
     shoeImage,
@@ -85,6 +88,7 @@ export default function LeatherColorSectionModal({
   // Reset state when modal opens/closes or numberOfColors changes
   useEffect(() => {
     if (isOpen) {
+      setIsSaving(false);
       if (initialLeatherColors.length === numberOfColors) {
         setLeatherColors(initialLeatherColors);
       } else {
@@ -180,34 +184,39 @@ export default function LeatherColorSectionModal({
       return;
     }
 
-    // Combine leather type and color name (index 0 = Leder 1, index 1 = Leder 2, index 2 = Leder 3)
-    const leatherColorsWithNames = leatherColors.map((type, index) => {
-      const colorName = leatherColorNames[index] || '';
-      return colorName ? `${type} - ${colorName}` : type;
-    });
+    setIsSaving(true);
+    try {
+      // Combine leather type and color name (index 0 = Leder 1, index 1 = Leder 2, index 2 = Leder 3)
+      const leatherColorsWithNames = leatherColors.map((type, index) => {
+        const colorName = leatherColorNames[index] || '';
+        return colorName ? `${type} - ${colorName}` : type;
+      });
 
-    // Sort assignments by leatherNumber (1, 2, 3) then position so payload and image use same order
-    const sortedAssignments = [...assignments].sort(
-      (a, b) =>
-        a.leatherNumber - b.leatherNumber ||
-        a.y - b.y ||
-        a.x - b.x
-    );
+      // Sort assignments by leatherNumber (1, 2, 3) then position so payload and image use same order
+      const sortedAssignments = [...assignments].sort(
+        (a, b) =>
+          a.leatherNumber - b.leatherNumber ||
+          a.y - b.y ||
+          a.x - b.x
+      );
 
-    // Generate painted image with sorted order so image matches payload numbering
-    let paintedImage: string | null = null;
-    if (shoeImage && imageRef.current) {
-      paintedImage = await createPaintedImage(sortedAssignments);
+      // Generate painted image with sorted order so image matches payload numbering
+      let paintedImage: string | null = null;
+      if (shoeImage && imageRef.current) {
+        paintedImage = await createPaintedImage(sortedAssignments);
+      }
+
+      // Show success message only if image generation succeeded without CORS issues
+      if (paintedImage) {
+        toast.success('Ledertypen-Zuordnung erfolgreich gespeichert!');
+      }
+
+      // Always save with sorted assignments so payload order matches numbering (1, 2, 3)
+      onSave(sortedAssignments, leatherColorsWithNames, paintedImage);
+      onClose();
+    } finally {
+      setIsSaving(false);
     }
-
-    // Show success message only if image generation succeeded without CORS issues
-    if (paintedImage) {
-      toast.success('Ledertypen-Zuordnung erfolgreich gespeichert!');
-    }
-
-    // Always save with sorted assignments so payload order matches numbering (1, 2, 3)
-    onSave(sortedAssignments, leatherColorsWithNames, paintedImage);
-    onClose();
   };
 
   // ===== Render =====
@@ -273,11 +282,18 @@ export default function LeatherColorSectionModal({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Abbrechen
           </Button>
-          <Button onClick={handleSave} className="bg-black text-white hover:bg-gray-800">
-            Speichern
+          <Button onClick={handleSave} disabled={isSaving} className="bg-black text-white hover:bg-gray-800 min-w-[120px]">
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Speichern...
+              </>
+            ) : (
+              'Speichern'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
