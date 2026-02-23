@@ -35,6 +35,7 @@ import { useBodenkonstruktionCalculations } from "@/hooks/massschuhe/useBodenkon
 
 // Utils
 import { prepareOrderDataForPDF, parseEuroFromText } from "./HelperFunctions"
+import { buildUmfangmasseWithTitles } from "@/utils/customShoeOrderHelpers"
 
 interface BodenkonstruktionProps {
     orderId?: string | null
@@ -328,6 +329,18 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             schafthoheRechts: customShaftData.schafthoheRechts || customShaftData.schafthohe_rechts || null,
             umfangmasseLinks: customShaftData.umfangmasseLinks || customShaftData.umfangmasse_links || null,
             umfangmasseRechts: customShaftData.umfangmasseRechts || customShaftData.umfangmasse_rechts || null,
+            umfangmasse_links: buildUmfangmasseWithTitles(
+                customShaftData.knoechelumfangLinks,
+                customShaftData.umfangBei14Links,
+                customShaftData.umfangBei16Links,
+                customShaftData.umfangBei18Links
+            ),
+            umfangmasse_rechts: buildUmfangmasseWithTitles(
+                customShaftData.knoechelumfangRechts,
+                customShaftData.umfangBei14Rechts,
+                customShaftData.umfangBei16Rechts,
+                customShaftData.umfangBei18Rechts
+            ),
             polsterung: customShaftData.polsterung?.join(',') || null,
             polsterung_text: customShaftData.polsterung_text || null,
             verstärkungen: customShaftData.verstarkungen?.join(',') || null,

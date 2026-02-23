@@ -43,6 +43,15 @@ interface CustomShaftData {
   schafthoheRechts: string;
   umfangmasseLinks: string;
   umfangmasseRechts: string;
+  /** Individual circumference fields for JSON payload (title + value) */
+  umfangBei14Links?: string;
+  umfangBei16Links?: string;
+  umfangBei18Links?: string;
+  knoechelumfangLinks?: string;
+  umfangBei14Rechts?: string;
+  umfangBei16Rechts?: string;
+  umfangBei18Rechts?: string;
+  knoechelumfangRechts?: string;
   polsterung: string[];
   verstarkungen: string[];
   polsterung_text: string;
@@ -97,6 +106,32 @@ export const convertImageToFile = async (
 };
 
 /**
+ * Build umfangmasse array with title + value for JSON payload.
+ * Order: Knöchelumfang, Umfang 15 cm, 16 cm, 18 cm (only non-empty).
+ */
+export const buildUmfangmasseWithTitles = (
+  knoechel: string | undefined,
+  umfang15: string | undefined,
+  umfang16: string | undefined,
+  umfang18: string | undefined
+): Array<{ title: string; value: string }> => {
+  const items: Array<{ title: string; value: string }> = [];
+  if (knoechel?.trim()) {
+    items.push({ title: 'Knöchelumfang', value: knoechel.trim() });
+  }
+  if (umfang15?.trim()) {
+    items.push({ title: 'Umfang bei 15 cm Höhe (ab Boden)', value: umfang15.trim() });
+  }
+  if (umfang16?.trim()) {
+    items.push({ title: 'Umfang bei 16 cm Höhe (ab Boden)', value: umfang16.trim() });
+  }
+  if (umfang18?.trim()) {
+    items.push({ title: 'Umfang bei 18 cm Höhe (ab Boden)', value: umfang18.trim() });
+  }
+  return items;
+};
+
+/**
  * Prepare Massschafterstellung_json1 from custom shaft data
  */
 export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
@@ -112,6 +147,19 @@ export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
     schafthoheRechts: data.schafthoheRechts || null,
     umfangmasseLinks: data.umfangmasseLinks || null,
     umfangmasseRechts: data.umfangmasseRechts || null,
+    // Umfangmaße mit Titel + Wert (für Payload)
+    umfangmasse_links: buildUmfangmasseWithTitles(
+      data.knoechelumfangLinks,
+      data.umfangBei14Links,
+      data.umfangBei16Links,
+      data.umfangBei18Links
+    ),
+    umfangmasse_rechts: buildUmfangmasseWithTitles(
+      data.knoechelumfangRechts,
+      data.umfangBei14Rechts,
+      data.umfangBei16Rechts,
+      data.umfangBei18Rechts
+    ),
     polsterung: data.polsterung?.join(',') || null,
     polsterung_text: data.polsterung_text || null,
     verstärkungen: data.verstarkungen?.join(',') || null,
