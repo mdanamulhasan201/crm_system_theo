@@ -35,6 +35,7 @@ import { useBodenkonstruktionCalculations } from "@/hooks/massschuhe/useBodenkon
 
 // Utils
 import { prepareOrderDataForPDF, parseEuroFromText } from "./HelperFunctions"
+import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 import { buildUmfangmasseWithTitles } from "@/utils/customShoeOrderHelpers"
 
 interface BodenkonstruktionProps {
@@ -990,8 +991,9 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     }
 
     return (
-        <div className="relative bg-white">
-          
+        <div className="relative bg-white pb-24">
+            {/* Sticky Price Summary - bottom-right, always visible */}
+            <StickyPriceSummary price={grandTotal} />
 
             {/* Product Header */}
             <ProductHeader orderData={orderDataForPDF} />

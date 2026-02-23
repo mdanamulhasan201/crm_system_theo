@@ -14,6 +14,7 @@ import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
 import ShaftPDFPopup, { ShaftOrderDataForPDF } from '@/components/CustomShafts/ShaftPDFPopup';
 import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp';
+import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
 import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
 
 interface Customer {
@@ -359,7 +360,10 @@ export default function CustomShoeOrderPage() {
   };
 
   return (
-    <div className="px-2 md:px-6 py-8 w-full">
+    <div className="relative px-2 md:px-6 py-8 w-full pb-24">
+      {/* Sticky Price Summary - bottom-right, price only (no button) */}
+      <StickyPriceSummary price={orderPrice} />
+
       {/* File Upload Section */}
       <FileUploadSection
         linkerLeistenFileName={linkerLeistenFileName}

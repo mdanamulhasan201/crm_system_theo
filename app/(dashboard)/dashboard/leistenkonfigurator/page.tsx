@@ -8,6 +8,7 @@ import Leistentyp, { LeistentypRef } from '../_components/Leistenkonfigurator/le
 import AllgemeineOptionen, { AllgemeineOptionenRef } from '../_components/Leistenkonfigurator/allgemeine-optionen';
 import KorrekturenModellierung, { KorrekturenModellierungRef } from '../_components/Leistenkonfigurator/korrekturen-modellierung';
 import Bemerkungen, { BemerkungenRef } from '../_components/Leistenkonfigurator/bemerkungen';
+import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
 
 export default function LeistenKonfiguratorPage() {
   const kopfdatenRef = useRef<KopfdatenRef>(null);
@@ -47,7 +48,9 @@ export default function LeistenKonfiguratorPage() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gray-50 px-4 py-8 md:px-8 ">
+    <div className="relative w-full min-h-screen bg-gray-50 px-4 py-8 md:px-8 pb-24">
+      {/* Sticky Price Summary - bottom-right, price only (no button) */}
+      <StickyPriceSummary price={totalPrice} />
       {/* Header */}
       <header className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">

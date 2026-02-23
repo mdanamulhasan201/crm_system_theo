@@ -9,6 +9,7 @@ import { sendMassschuheOrderToAdmin2 } from '@/apis/MassschuheManagemantApis';
 // import { prepareStep1FormData } from '@/utils/customShoeOrderHelpers';
 import toast from 'react-hot-toast';
 import CustomShaftDetailsShimmer from '@/components/ShimmerEffect/Maßschäfte/CustomShaftDetailsShimmer';
+import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
 
 // Import components
 import FileUploadSection from '@/components/CustomShafts/FileUploadSection';
@@ -530,7 +531,10 @@ export default function CollectionShaftDetailsPage() {
   }
 
   return (
-    <div className="px-2 md:px-6 py-8 w-full">
+    <div className="relative px-2 md:px-6 py-8 w-full pb-24">
+      {/* Sticky Price Summary - bottom-right, price only (no button) */}
+      <StickyPriceSummary price={orderPrice} />
+
       {/* File Upload Section */}
       <FileUploadSection
         linkerLeistenFileName={linkerLeistenFileName}

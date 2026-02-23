@@ -32,6 +32,7 @@ import {
     getCountDate
 } from "@/apis/MassschuheManagemantApis"
 import Image from "next/image"
+import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 
 export default function BodenkonstruktionPage() {
     const router = useRouter()
@@ -663,7 +664,10 @@ export default function BodenkonstruktionPage() {
     }
 
     return (
-        <div className="relative bg-white">
+        <div className="relative bg-white ">
+            {/* Sticky Price Summary - bottom-right, always visible */}
+            <StickyPriceSummary price={grandTotal} />
+
             {/* Product Header with Customer Input */}
             <div className="my-8">
                 <div className="flex justify-between items-center mb-6">

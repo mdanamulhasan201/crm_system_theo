@@ -20,6 +20,7 @@ import ProductHeader from "./ShoeDetails/components/ProductHeader";
 
 // Import helpers
 import { prepareFormDataForAdmin1 } from "./ShoeDetails/helpers/formHelpers";
+import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary";
 
 // ==================== Types ====================
 type SelectedState = {
@@ -247,7 +248,10 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
 
   // ==================== Render ====================
   return (
-    <div className="relative bg-white">
+    <div className="relative bg-white pb-24">
+      {/* Sticky Price Summary - bottom-right, always visible */}
+      <StickyPriceSummary price={grandTotal} />
+
       {/* Product Header with File Upload */}
       <ProductHeader
         shoeImage={shoe.imageUrl}
