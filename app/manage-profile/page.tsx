@@ -1,9 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { User, Eye, EyeOff } from 'lucide-react'
+import { User, Eye, EyeOff, ChevronLeft, ChevronRight } from 'lucide-react'
+import useEmblaCarousel from 'embla-carousel-react'
 import logo from '@/public/images/logo.png'
 import { getProfileList, logicalLogin } from '@/apis/authApis'
 import { useAuth } from '@/contexts/AuthContext'
@@ -35,6 +36,33 @@ export default function ManageProfilePage() {
   const [password, setPassword] = useState('')
   const [showPasswordInModal, setShowPasswordInModal] = useState(false)
   const [submitting, setSubmitting] = useState(false)
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    loop: true,
+    align: 'start',
+    skipSnaps: false,
+    dragFree: false,
+  })
+  const [canScrollPrev, setCanScrollPrev] = useState(false)
+  const [canScrollNext, setCanScrollNext] = useState(false)
+
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi])
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi])
+
+  const onEmblaSelect = useCallback(() => {
+    if (!emblaApi) return
+    setCanScrollPrev(emblaApi.canScrollPrev())
+    setCanScrollNext(emblaApi.canScrollNext())
+  }, [emblaApi])
+
+  useEffect(() => {
+    if (!emblaApi) return
+    onEmblaSelect()
+    emblaApi.on('select', onEmblaSelect)
+    return () => {
+      emblaApi.off('select', onEmblaSelect)
+    }
+  }, [emblaApi, onEmblaSelect])
 
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
@@ -121,74 +149,93 @@ export default function ManageProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#141414] flex items-center justify-center px-4 py-8 relative">
-      <div className="absolute top-6 left-6 sm:top-8 sm:left-8">
+    <div className="min-h-screen bg-[#141414] flex items-center justify-center px-3 py-6 sm:px-4 sm:py-8 md:px-5 md:py-10 lg:px-6 lg:py-12 xl:px-8 xl:py-14 2xl:px-10 2xl:py-16 relative">
+      <div className="absolute top-4 left-4 sm:top-5 sm:left-5 md:top-6 md:left-6 lg:top-8 lg:left-8 xl:top-10 xl:left-10 2xl:top-12 2xl:left-12">
         <Image
           src={logo}
           alt="Logo"
           width={100}
           height={100}
-          className="h-16 w-auto sm:h-16"
+          className="h-12 w-auto sm:h-14 md:h-16 lg:h-18 xl:h-20 2xl:h-24"
           priority
         />
       </div>
 
-      <div className="flex flex-col items-center justify-center text-center max-w-4xl">
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-medium text-white mb-10 sm:mb-14">
+      <div className="flex flex-col items-center justify-center text-center w-full max-w-[92vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-medium text-white mb-6 sm:mb-8 md:mb-10 lg:mb-12 xl:mb-14 2xl:mb-16">
           Who&apos;s watching?
         </h1>
 
-        <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 md:gap-10 mb-12 sm:mb-16">
-          {sortedProfiles.map((profile) => {
-            const partner = isPartner(profile)
-            return (
-              <button
-                key={profile.id}
-                type="button"
-                onClick={() => handleProfileClick(profile)}
-                disabled={submitting}
-                className={`group cursor-pointer flex flex-col items-center focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414] rounded-lg transition-transform hover:scale-105 active:scale-100 disabled:opacity-60 disabled:cursor-not-allowed ${
-                  partner ? 'gap-4' : 'gap-3'
-                }`}
-              >
-                <div
-                  className={`bg-gray-700 rounded-lg flex items-center justify-center text-white overflow-hidden border-2 border-transparent group-hover:border-white transition-all duration-200 shadow-lg ${
-                    partner
-                      ? 'w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36'
-                      : 'w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28'
-                  }`}
-                >
-                  {profile.image ? (
-                    <Image
-                      src={profile.image}
-                      alt={displayName(profile)}
-                      width={partner ? 144 : 112}
-                      height={partner ? 144 : 112}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <User
-                      className={partner ? 'w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18' : 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14'}
-                      strokeWidth={1.5}
-                    />
-                  )}
-                </div>
-                <span
-                  className={`text-gray-400 group-hover:text-white transition-colors duration-200 text-center truncate ${
-                    partner ? 'text-base sm:text-lg font-medium max-w-40' : 'text-sm sm:text-base max-w-32'
-                  }`}
-                >
-                  {displayName(profile)}
-                </span>
-                {partner && (
-                  <span className="text-xs text-gray-500 uppercase tracking-wider">Hauptkonto</span>
-                )}
-                {!partner && profile.hasPassword && (
-                  <span className="text-xs text-gray-500">Passwort erforderlich</span>
-                )}
-              </button>
-            )
-          })}
+        <div className="w-full mx-auto mb-6 sm:mb-8 md:mb-10 lg:mb-12 xl:mb-14 2xl:mb-16 px-1 sm:px-2 md:px-3 lg:px-4 xl:px-5 2xl:px-6">
+          <div className="relative flex items-center">
+            <button
+              type="button"
+              onClick={scrollPrev}
+              disabled={!canScrollPrev}
+              className="absolute left-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 disabled:opacity-40 disabled:pointer-events-none transition-all shrink-0 -translate-x-0.5 sm:-translate-x-1 md:-translate-x-1.5 lg:-translate-x-2 xl:-translate-x-2 2xl:-translate-x-3"
+              aria-label="Vorherige Profile"
+            >
+              <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" strokeWidth={2} />
+            </button>
+
+            <div className="overflow-hidden flex-1 mx-7 sm:mx-9 md:mx-11 lg:mx-14 xl:mx-16 2xl:mx-20 min-w-0" ref={emblaRef}>
+              <div className="flex gap-2 sm:gap-3 md:gap-4 lg:gap-5 xl:gap-6 2xl:gap-6 touch-pan-y">
+                {sortedProfiles.map((profile) => {
+                  const partner = isPartner(profile)
+                  return (
+                    <div
+                      key={profile.id}
+                      className={`min-w-0 flex flex-col items-center justify-center ${
+                        partner
+                          ? 'flex-[0_0_calc(1.4*(100%-0.5rem)/2)] sm:flex-[0_0_calc(1.4*(100%-0.75rem)/2)] md:flex-[0_0_calc(1.4*(100%-2rem)/3)] lg:flex-[0_0_calc(1.4*(100%-3.75rem)/4)] xl:flex-[0_0_calc(1.4*(100%-6rem)/5)] 2xl:flex-[0_0_calc(1.4*(100%-7.5rem)/6)]'
+                          : 'flex-[0_0_calc((100%-0.5rem)/2)] sm:flex-[0_0_calc((100%-0.75rem)/2)] md:flex-[0_0_calc((100%-2rem)/3)] lg:flex-[0_0_calc((100%-3.75rem)/4)] xl:flex-[0_0_calc((100%-6rem)/5)] 2xl:flex-[0_0_calc((100%-7.5rem)/6)]'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleProfileClick(profile)}
+                        disabled={submitting}
+                        className="group cursor-pointer flex flex-col items-center justify-center gap-1.5 sm:gap-2 md:gap-2.5 lg:gap-3 xl:gap-3 2xl:gap-4 w-full max-w-full focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#141414] rounded-lg sm:rounded-xl lg:rounded-xl xl:rounded-2xl transition-all duration-200 hover:scale-105 active:scale-100 disabled:opacity-60 disabled:cursor-not-allowed text-center"
+                      >
+                        <div className={`bg-gray-700/90 rounded-lg sm:rounded-xl lg:rounded-xl xl:rounded-2xl flex items-center justify-center text-white overflow-hidden border-2 border-transparent group-hover:border-white/80 group-hover:bg-gray-600/90 transition-all duration-200 shadow-lg md:shadow-xl w-full aspect-square ${partner ? 'ring-2 ring-white/50' : ''}`}>
+                          {profile.image ? (
+                            <Image
+                              src={profile.image}
+                              alt={displayName(profile)}
+                              width={280}
+                              height={280}
+                              className="w-full h-full object-cover object-center"
+                            />
+                          ) : (
+                            <User
+                              className={`mx-auto block ${partner ? 'w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-20 xl:h-20 2xl:w-24 2xl:h-24' : 'w-7 h-7 sm:w-8 sm:h-8 md:w-9 md:h-9 lg:w-10 lg:h-10 xl:w-12 xl:h-12 2xl:w-14 2xl:h-14'}`}
+                              strokeWidth={1.5}
+                            />
+                          )}
+                        </div>
+                        <span className={`text-gray-400 group-hover:text-white transition-colors duration-200 w-full max-w-full truncate block text-center ${partner ? 'text-xs sm:text-sm md:text-base lg:text-lg xl:text-xl 2xl:text-2xl font-semibold' : 'text-[10px] sm:text-xs md:text-sm lg:text-base xl:text-lg 2xl:text-xl'}`}>
+                          {displayName(profile)}
+                        </span>
+                        {profile.hasPassword && (
+                          <span className="text-[9px] sm:text-[10px] md:text-xs lg:text-sm xl:text-sm 2xl:text-base text-gray-500 block text-center w-full">Passwort erforderlich</span>
+                        )}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={scrollNext}
+              disabled={!canScrollNext}
+              className="absolute right-0 top-1/2 -translate-y-1/2 z-10 w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 lg:w-11 lg:h-11 xl:w-12 xl:h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-white/20 disabled:opacity-40 disabled:pointer-events-none transition-all shrink-0 translate-x-0.5 sm:translate-x-1 md:translate-x-1.5 lg:translate-x-2 xl:translate-x-2 2xl:translate-x-3"
+              aria-label="Nächste Profile"
+            >
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7" strokeWidth={2} />
+            </button>
+          </div>
         </div>
       </div>
 
