@@ -1156,7 +1156,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     selected={selected}
                     optionInputs={optionInputs}
                     textAreas={textAreas}
-                    orderData={orderDataForPDF}
+                    orderData={{ ...orderDataForPDF, totalPrice: grandTotal }}
                     selectedSole={selectedSole}
                     heelWidthAdjustment={heelWidthAdjustment}
                     soleElevation={soleElevation}

@@ -125,22 +125,22 @@ export default function BodenkonstruktionPage() {
         })
     }, [deliveryDaysCount])
 
-    // Prepare order data for PDF
-    const orderDataForPDF: OrderDataForPDF = useMemo(() => {
-        return {
-            customerName: customerName || "",
-            productName: shoe2.name || "",
-            orderNumber: "", // Removed as per requirement
-            deliveryDate: deliveryDate,
-            totalPrice: 189.99, // Base price
-        }
-    }, [customerName, deliveryDate])
-
     // Base price - start with 189.99€
     const basePrice = 189.99
 
     // Calculations
     const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, brandsohleSide)
+
+    // Prepare order data for PDF (use grandTotal so modal/PDF show correct price)
+    const orderDataForPDF: OrderDataForPDF = useMemo(() => {
+        return {
+            customerName: customerName || "",
+            productName: shoe2.name || "",
+            orderNumber: "",
+            deliveryDate: deliveryDate,
+            totalPrice: grandTotal,
+        }
+    }, [customerName, deliveryDate, grandTotal])
 
     // Reset sole options when sole changes
     React.useEffect(() => {
@@ -581,8 +581,10 @@ export default function BodenkonstruktionPage() {
             const rightSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.rightSubValue
             if (hinterkappeSide.mode === "gleich" && leftVal) {
                 bodenkonstruktionJson.hinterkappe_legacy = leftVal
+                bodenkonstruktionJson.Hinterkappe = leftVal
             } else if (hinterkappeSide.mode === "unterschiedlich" && (leftVal || rightVal)) {
                 bodenkonstruktionJson.hinterkappe_legacy = [leftVal, rightVal].filter(Boolean).join(",")
+                bodenkonstruktionJson.Hinterkappe = [leftVal, rightVal].filter(Boolean).join(",")
             }
             if (leftVal === "leder" && leftSub) {
                 bodenkonstruktionJson.leder_auswahl_links = leftSub
@@ -610,7 +612,8 @@ export default function BodenkonstruktionPage() {
 
         // 3. Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
         if (brandsohleSide && brandsohleSide.mode) {
-            bodenkonstruktionJson.brandsohle = {
+            bodenkonstruktionJson.Seite_wählen = brandsohleSide.mode
+            bodenkonstruktionJson.brandsohleSide = {
                 mode: brandsohleSide.mode,
                 sameValues: brandsohleSide.sameValues || [],
                 leftValues: brandsohleSide.leftValues || [],
@@ -631,6 +634,8 @@ export default function BodenkonstruktionPage() {
                 }
             }
             bodenkonstruktionJson.brandsohle_price = price
+            const firstVal = brandsohleSide.mode === "gleich" ? brandsohleSide.sameValues?.[0] : (brandsohleSide.leftValues?.[0] ?? brandsohleSide.rightValues?.[0] ?? null)
+            if (firstVal) bodenkonstruktionJson.brandsohle = firstVal
             const legacyArr = brandsohleSide.mode === "gleich" ? brandsohleSide.sameValues : [...(brandsohleSide.leftValues || []), ...(brandsohleSide.rightValues || [])]
             if (legacyArr?.length) {
                 bodenkonstruktionJson.brandsohle_legacy = legacyArr.join(',')
