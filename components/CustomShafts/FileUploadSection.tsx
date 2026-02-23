@@ -79,6 +79,13 @@ export default function FileUploadSection({
   const linkerLeistenInputRef = useRef<HTMLInputElement>(null);
   const rechterLeistenInputRef = useRef<HTMLInputElement>(null);
   const [showCustomerModal, setShowCustomerModal] = useState(false);
+
+  // Truncate long filenames so they don't overflow the button (show start...end)
+  const truncateFileName = (name: string, maxChars = 36) => {
+    if (!name || name.length <= maxChars) return name;
+    const half = Math.floor(maxChars / 2) - 2;
+    return name.slice(0, half) + '…' + name.slice(-half);
+  };
   const [showOtherCustomerModal, setShowOtherCustomerModal] = useState(false);
   const [showBusinessAddressModal, setShowBusinessAddressModal] = useState(false);
 
@@ -255,11 +262,14 @@ export default function FileUploadSection({
               </label>
               <Button 
                 variant="outline" 
-                className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white"
+                className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white min-w-0"
                 onClick={() => linkerLeistenInputRef.current?.click()}
+                title={linkerLeistenFileName || undefined}
               >
-                <UploadCloud className="w-5 h-5" />
-                {linkerLeistenFileName || "Upload 3D-File Linker Leisten"}
+                <UploadCloud className="w-5 h-5 shrink-0" />
+                <span className="truncate min-w-0">
+                  {linkerLeistenFileName ? truncateFileName(linkerLeistenFileName) : "Upload 3D-File Linker Leisten"}
+                </span>
               </Button>
               <input
                 type="file"
@@ -279,11 +289,14 @@ export default function FileUploadSection({
               </label>
               <Button 
                 variant="outline" 
-                className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white"
+                className="justify-start cursor-pointer w-full h-12 text-base font-normal border border-gray-300 rounded-md hover:bg-gray-50 gap-3 bg-white min-w-0"
                 onClick={() => rechterLeistenInputRef.current?.click()}
+                title={rechterLeistenFileName || undefined}
               >
-                <UploadCloud className="w-5 h-5" />
-                {rechterLeistenFileName || "Upload 3D-File Rechter Leisten"}
+                <UploadCloud className="w-5 h-5 shrink-0" />
+                <span className="truncate min-w-0">
+                  {rechterLeistenFileName ? truncateFileName(rechterLeistenFileName) : "Upload 3D-File Rechter Leisten"}
+                </span>
               </Button>
               <input
                 type="file"
@@ -489,8 +502,8 @@ export default function FileUploadSection({
           <>
             {linkerLeistenFileName && (
               <div className="mt-4">
-                <div className="text-sm text-green-600 font-medium mb-2">
-                  ✓ Datei hochgeladen: {linkerLeistenFileName}
+                <div className="text-sm text-green-600 font-medium mb-2 truncate" title={linkerLeistenFileName}>
+                  ✓ Datei hochgeladen: {truncateFileName(linkerLeistenFileName)}
                 </div>
                 <FilePreviewWithShimmer file={linkerLeistenFile} fileName={linkerLeistenFileName} />
               </div>
@@ -498,8 +511,8 @@ export default function FileUploadSection({
 
             {rechterLeistenFileName && (
               <div className="mt-4">
-                <div className="text-sm text-green-600 font-medium mb-2">
-                  ✓ Datei hochgeladen: {rechterLeistenFileName}
+                <div className="text-sm text-green-600 font-medium mb-2 truncate" title={rechterLeistenFileName}>
+                  ✓ Datei hochgeladen: {truncateFileName(rechterLeistenFileName)}
                 </div>
                 <FilePreviewWithShimmer file={rechterLeistenFile} fileName={rechterLeistenFileName} />
               </div>
