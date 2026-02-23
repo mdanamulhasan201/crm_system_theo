@@ -19,7 +19,7 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "./Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, SoleElevationData, BrandsohleSideData } from "./Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, SoleElevationData, VorderkappeSideData, RahmenData, SohlenhoeheDifferenziertData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "./Bodenkonstruktion/FormFields"
 
 // Components
 import ProductHeader from "./Bodenkonstruktion/ProductHeader"
@@ -56,6 +56,11 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
     const [soleElevation, setSoleElevation] = useState<SoleElevationData | null>(null)
+    const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
+    const [rahmen, setRahmen] = useState<RahmenData | null>(null)
+    const [sohlenhoeheDifferenziert, setSohlenhoeheDifferenziert] = useState<SohlenhoeheDifferenziertData | null>(null)
+    const [hinterkappeMusterSide, setHinterkappeMusterSide] = useState<HinterkappeMusterSideData | null>(null)
+    const [hinterkappeSide, setHinterkappeSide] = useState<HinterkappeSideData | null>(null)
     const [brandsohleSide, setBrandsohleSide] = useState<BrandsohleSideData | null>(null)
     
     // Modal states
@@ -132,7 +137,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     }, [contextData, orderDataForPDF.totalPrice])
 
     // Calculations - use basePrice which includes shaft price
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, brandsohleSide)
 
     // Sync contextData to customShaftData when landing from redirect (so payload has full data)
     React.useEffect(() => {
@@ -708,15 +713,53 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return obj
     }
 
-    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - all fields, no null, prices included
+    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - same structure as bodenkonstruktion/page.tsx
     const prepareMassschafterstellungJson2 = () => {
         const json: any = {
             "Mehr_ansehen_title": selectedSole?.name || "",
             "Mehr_ansehen_description": selectedSole?.description || "",
-            "hinterkappe": getSelectedValue(selected.hinterkappe) || "",
-            "Hinterkappe": getSelectedValue(selected.hinterkappe) || "",
+            "hinterkappe_muster": hinterkappeMusterSide ? {
+                mode: hinterkappeMusterSide.mode ?? "",
+                sameValue: hinterkappeMusterSide.sameValue ?? "",
+                leftValue: hinterkappeMusterSide.leftValue ?? "",
+                rightValue: hinterkappeMusterSide.rightValue ?? "",
+                ...(hinterkappeMusterSide.mode === "gleich" && {
+                    samePrice: hinterkappeMusterSide.sameValue === "ja" ? 5.00 : 0,
+                }),
+                ...(hinterkappeMusterSide.mode === "unterschiedlich" && {
+                    leftPrice: hinterkappeMusterSide.leftValue === "ja" ? 2.50 : 0,
+                    rightPrice: hinterkappeMusterSide.rightValue === "ja" ? 2.50 : 0,
+                }),
+            } : {},
+            "hinterkappe": hinterkappeSide && hinterkappeSide.mode ? {
+                mode: hinterkappeSide.mode,
+                sameValue: hinterkappeSide.sameValue ?? "",
+                sameSubValue: hinterkappeSide.sameSubValue ?? "",
+                leftValue: hinterkappeSide.leftValue ?? "",
+                leftSubValue: hinterkappeSide.leftSubValue ?? "",
+                rightValue: hinterkappeSide.rightValue ?? "",
+                rightSubValue: hinterkappeSide.rightSubValue ?? "",
+            } : (getSelectedValue(selected.hinterkappe) || ""),
+            "Hinterkappe": hinterkappeSide && hinterkappeSide.mode ? (hinterkappeSide.mode === "gleich" ? (hinterkappeSide.sameValue || "") : ([hinterkappeSide.leftValue, hinterkappeSide.rightValue].filter(Boolean).join(",") || "")) : (getSelectedValue(selected.hinterkappe) || ""),
             "leder_auswahl": "",
             "leder_auswahl_price": 0.0,
+            "leder_auswahl_links": "",
+            "leder_auswahl_links_price": 0.0,
+            "leder_auswahl_rechts": "",
+            "leder_auswahl_rechts_price": 0.0,
+            "vorderkappe": vorderkappeSide && vorderkappeSide.mode ? {
+                mode: vorderkappeSide.mode,
+                sameMaterial: vorderkappeSide.sameMaterial || "",
+                leftMaterial: vorderkappeSide.leftMaterial || "",
+                rightMaterial: vorderkappeSide.rightMaterial || "",
+            } : {},
+            "rahmen": rahmen && rahmen.type ? { type: rahmen.type, color: rahmen.color || "" } : {},
+            "Rahmenfarbe": rahmen?.color || "",
+            "sohlenhoehe_differenziert": sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze) ? {
+                ferse: sohlenhoeheDifferenziert.ferse || 0,
+                ballen: sohlenhoeheDifferenziert.ballen || 0,
+                spitze: sohlenhoeheDifferenziert.spitze || 0,
+            } : {},
             "Verbindungsleder": getSelectedValue(selected.verbindungsleder) || "",
             "Konstruktionsart": getSelectedValue(selected.Konstruktionsart) || "",
             "Konstruktionsart_price": 0.0,
@@ -747,8 +790,29 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             "Besondere_Hinweise": textAreas.besondere_hinweise || ""
         }
 
-        // Get leder_auswahl and price if hinterkappe is "leder"
-        if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {
+        // Get leder_auswahl and prices from hinterkappeSide (mode: gleich | unterschiedlich)
+        if (hinterkappeSide && hinterkappeSide.mode) {
+            const leftVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.leftValue
+            const rightVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.rightValue
+            const leftSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.leftSubValue
+            const rightSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.rightSubValue
+            if (leftVal === "leder" && leftSub) {
+                json.leder_auswahl_links = leftSub
+                json.leder_auswahl_links_price = getSubOptionPrice("hinterkappe", leftSub)
+                json.leder_auswahl = json.leder_auswahl || leftSub
+                json.leder_auswahl_price += getSubOptionPrice("hinterkappe", leftSub)
+            }
+            if (rightVal === "leder" && rightSub) {
+                json.leder_auswahl_rechts = rightSub
+                if (hinterkappeSide.mode === "unterschiedlich") {
+                    json.leder_auswahl_rechts_price = getSubOptionPrice("hinterkappe", rightSub)
+                    json.leder_auswahl = json.leder_auswahl ? `${json.leder_auswahl},${rightSub}` : rightSub
+                    json.leder_auswahl_price += getSubOptionPrice("hinterkappe", rightSub)
+                } else {
+                    json.leder_auswahl_rechts = leftSub
+                }
+            }
+        } else if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {
             const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
             if (hinterkappeSub) {
                 json.leder_auswahl = hinterkappeSub
@@ -762,12 +826,31 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             json.Konstruktionsart_price = getOptionPrice("Konstruktionsart", konstruktionsartValue)
         }
 
-        // Get brandsohle price - use brandsohleSide when selected.brandsohle is empty
-        const brandsohleValue = getSelectedValue(selected.brandsohle) 
-            || (brandsohleSide?.mode === "gleich" ? brandsohleSide?.sameValues?.[0] : (brandsohleSide?.leftValues?.[0] ?? brandsohleSide?.rightValues?.[0] ?? null))
-        if (brandsohleValue) {
-            json.brandsohle = brandsohleValue
-            json.brandsohle_price = getOptionPrice("brandsohle", brandsohleValue)
+        // Get brandsohle price (mode: gleich = full | unterschiedlich = half per side)
+        if (brandsohleSide?.mode) {
+            let brandsohlePrice = 0
+            const halfPrice = (p: number) => Math.floor(p * 50) / 100
+            if (brandsohleSide.mode === "gleich") {
+                for (const id of (brandsohleSide.sameValues || [])) {
+                    brandsohlePrice += getOptionPrice("brandsohle", id)
+                }
+            } else {
+                for (const id of (brandsohleSide.leftValues || [])) {
+                    brandsohlePrice += halfPrice(getOptionPrice("brandsohle", id))
+                }
+                for (const id of (brandsohleSide.rightValues || [])) {
+                    brandsohlePrice += halfPrice(getOptionPrice("brandsohle", id))
+                }
+            }
+            json.brandsohle_price = brandsohlePrice
+            const firstVal = brandsohleSide.mode === "gleich" ? brandsohleSide?.sameValues?.[0] : (brandsohleSide?.leftValues?.[0] ?? brandsohleSide?.rightValues?.[0] ?? null)
+            if (firstVal) json.brandsohle = firstVal
+        } else {
+            const brandsohleValue = getSelectedValue(selected.brandsohle)
+            if (brandsohleValue) {
+                json.brandsohle = brandsohleValue
+                json.brandsohle_price = getOptionPrice("brandsohle", brandsohleValue)
+            }
         }
 
         // Get laufsohle_lose_beilegen price
@@ -1037,6 +1120,17 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                 onCancel={() => router.back()}
                 isSubmitting={isWeiterLoading}
                 selectedSole={selectedSole}
+                showOrthopedicFields={true}
+                onVorderkappeChange={setVorderkappeSide}
+                vorderkappeSide={vorderkappeSide}
+                onRahmenChange={setRahmen}
+                rahmen={rahmen}
+                onSohlenhoeheDifferenziertChange={setSohlenhoeheDifferenziert}
+                sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
+                onHinterkappeMusterChange={setHinterkappeMusterSide}
+                hinterkappeMusterSide={hinterkappeMusterSide}
+                onHinterkappeChange={setHinterkappeSide}
+                hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}
                 brandsohleSide={brandsohleSide}
             />
@@ -1060,6 +1154,11 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     selectedSole={selectedSole}
                     heelWidthAdjustment={heelWidthAdjustment}
                     soleElevation={soleElevation}
+                    vorderkappeSide={vorderkappeSide}
+                    rahmen={rahmen}
+                    sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
+                    hinterkappeMusterSide={hinterkappeMusterSide}
+                    hinterkappeSide={hinterkappeSide}
                     brandsohleSide={brandsohleSide}
                 />
             )}

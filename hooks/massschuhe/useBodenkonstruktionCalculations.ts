@@ -7,7 +7,7 @@ export type SelectedState = {
 }
 
 // Import orthopedic field types
-import type { RahmenData, HinterkappeMusterSideData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { RahmenData, HinterkappeMusterSideData, BrandsohleSideData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 /**
  * Custom hook to calculate prices for Bodenkonstruktion configuration.
@@ -16,13 +16,15 @@ import type { RahmenData, HinterkappeMusterSideData } from "@/app/(dashboard)/da
  * @param orderTotalPrice - Optional base price from the order (defaults to 0)
  * @param rahmen - Rahmen selection data (EVA or Gummi with color)
  * @param hinterkappeMusterSide - Hinterkappe Muster (mode: gleich | unterschiedlich). Ja = +5€ or +2.50€ per side
+ * @param brandsohleSide - Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
  * @returns Object containing extraPriceTotal (sum of option prices) and grandTotal (base + extras)
  */
 export function useBodenkonstruktionCalculations(
     selected: SelectedState, 
     orderTotalPrice?: number,
     rahmen?: RahmenData | null,
-    hinterkappeMusterSide?: HinterkappeMusterSideData | null
+    hinterkappeMusterSide?: HinterkappeMusterSideData | null,
+    brandsohleSide?: BrandsohleSideData | null
 ) {
     // Calculate the sum of all selected option prices (can be positive or negative)
     const extraPriceTotal = useMemo(() => {
@@ -96,11 +98,27 @@ export function useBodenkonstruktionCalculations(
         if (rahmen && rahmen.type === "gummi") {
             totalExtraPrice += 20.00
         }
-        
+
+        // 3. Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
+        const brandsohleGroup = GROUPS2.find(g => g.id === "brandsohle")
+        if (brandsohleSide?.mode && brandsohleGroup) {
+            const getFullPrice = (optId: string) => {
+                const opt = brandsohleGroup.options.find(o => o.id === optId)
+                return opt ? parseEuroFromText(opt.label) : 0
+            }
+            if (brandsohleSide.mode === "gleich" && brandsohleSide.sameValues?.length) {
+                brandsohleSide.sameValues.forEach(id => { totalExtraPrice += getFullPrice(id) })
+            } else if (brandsohleSide.mode === "unterschiedlich") {
+                const half = (p: number) => Math.floor(p * 50) / 100
+                ;(brandsohleSide.leftValues || []).forEach(id => { totalExtraPrice += half(getFullPrice(id)) })
+                ;(brandsohleSide.rightValues || []).forEach(id => { totalExtraPrice += half(getFullPrice(id)) })
+            }
+        }
+
         // Note: vorderkappe and sohlenhoehe_differenziert have no price impact
 
         return totalExtraPrice
-    }, [selected, rahmen, hinterkappeMusterSide])
+    }, [selected, rahmen, hinterkappeMusterSide, brandsohleSide])
 
     // Calculate grand total: base price + extra prices from selected options
     const grandTotal = useMemo(() => {

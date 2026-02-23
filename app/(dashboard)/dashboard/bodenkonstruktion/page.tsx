@@ -140,7 +140,7 @@ export default function BodenkonstruktionPage() {
     const basePrice = 189.99
 
     // Calculations
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, brandsohleSide)
 
     // Reset sole options when sole changes
     React.useEffect(() => {
@@ -608,7 +608,7 @@ export default function BodenkonstruktionPage() {
             }
         }
 
-        // 3. Brandsohle (mode: gleich | unterschiedlich)
+        // 3. Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
         if (brandsohleSide && brandsohleSide.mode) {
             bodenkonstruktionJson.brandsohle = {
                 mode: brandsohleSide.mode,
@@ -616,12 +616,21 @@ export default function BodenkonstruktionPage() {
                 leftValues: brandsohleSide.leftValues || [],
                 rightValues: brandsohleSide.rightValues || []
             }
-            const firstVal = brandsohleSide.mode === "gleich" 
-                ? (brandsohleSide.sameValues?.[0] ?? null) 
-                : (brandsohleSide.leftValues?.[0] ?? brandsohleSide.rightValues?.[0] ?? null)
-            if (firstVal) {
-                bodenkonstruktionJson.brandsohle_price = getOptionPrice("brandsohle", firstVal)
+            let price = 0
+            const halfPrice = (p: number) => Math.floor(p * 50) / 100
+            if (brandsohleSide.mode === "gleich") {
+                for (const id of (brandsohleSide.sameValues || [])) {
+                    price += getOptionPrice("brandsohle", id)
+                }
+            } else {
+                for (const id of (brandsohleSide.leftValues || [])) {
+                    price += halfPrice(getOptionPrice("brandsohle", id))
+                }
+                for (const id of (brandsohleSide.rightValues || [])) {
+                    price += halfPrice(getOptionPrice("brandsohle", id))
+                }
             }
+            bodenkonstruktionJson.brandsohle_price = price
             const legacyArr = brandsohleSide.mode === "gleich" ? brandsohleSide.sameValues : [...(brandsohleSide.leftValues || []), ...(brandsohleSide.rightValues || [])]
             if (legacyArr?.length) {
                 bodenkonstruktionJson.brandsohle_legacy = legacyArr.join(',')

@@ -1,6 +1,15 @@
 import React from "react"
 import { GroupDef2 } from "../Types"
-import { normalizeUnderscores } from "../HelperFunctions"
+import { normalizeUnderscores, parseEuroFromText } from "../HelperFunctions"
+
+/** Format label with half price for "unterschiedlich" mode - e.g. (+4,99€) -> (+2,49€) */
+function formatBrandsohleLabelWithHalfPrice(label: string): string {
+    const price = parseEuroFromText(label)
+    if (price <= 0) return label
+    const half = Math.floor(price * 50) / 100
+    const halfStr = half.toFixed(2).replace(".", ",")
+    return label.replace(/\([+-]?\d{1,3}[.,]\d{2}\s*€\)/, `(+${halfStr} €)`)
+}
 import type { OptionDef, OptionInputsState } from "./types"
 
 type GroupDef = {
@@ -1844,6 +1853,7 @@ export function BrandsohleSideField({
                     <div className="flex flex-wrap items-center gap-4">
                         {def.options.map((opt) => {
                             const isChecked = Array.isArray(leftValues) && leftValues.includes(opt.id)
+                            const displayLabel = formatBrandsohleLabelWithHalfPrice(opt.label)
                             return (
                                 <div key={opt.id} className="flex items-center gap-2">
                                     <div className="relative flex items-center">
@@ -1852,7 +1862,7 @@ export function BrandsohleSideField({
                                             className="sr-only"
                                             checked={isChecked}
                                             onChange={() => toggleLeftValue(opt.id)}
-                                            aria-label={`Links ${opt.label}`}
+                                            aria-label={`Links ${displayLabel}`}
                                         />
                                         <div 
                                             className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
@@ -1870,7 +1880,7 @@ export function BrandsohleSideField({
                                         </div>
                                     </div>
                                     <span className="text-base text-gray-700 cursor-pointer" onClick={() => toggleLeftValue(opt.id)}>
-                                        {opt.label}
+                                        {displayLabel}
                                     </span>
                                 </div>
                             )
@@ -1883,6 +1893,7 @@ export function BrandsohleSideField({
                     <div className="flex flex-wrap items-center gap-4">
                         {def.options.map((opt) => {
                             const isChecked = Array.isArray(rightValues) && rightValues.includes(opt.id)
+                            const displayLabel = formatBrandsohleLabelWithHalfPrice(opt.label)
                             return (
                                 <div key={opt.id} className="flex items-center gap-2">
                                     <div className="relative flex items-center">
@@ -1891,7 +1902,7 @@ export function BrandsohleSideField({
                                             className="sr-only"
                                             checked={isChecked}
                                             onChange={() => toggleRightValue(opt.id)}
-                                            aria-label={`Rechts ${opt.label}`}
+                                            aria-label={`Rechts ${displayLabel}`}
                                         />
                                         <div 
                                             className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
@@ -1909,7 +1920,7 @@ export function BrandsohleSideField({
                                         </div>
                                     </div>
                                     <span className="text-base text-gray-700 cursor-pointer" onClick={() => toggleRightValue(opt.id)}>
-                                        {opt.label}
+                                        {displayLabel}
                                     </span>
                                 </div>
                             )
