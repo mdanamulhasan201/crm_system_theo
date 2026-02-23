@@ -7,7 +7,7 @@ export type SelectedState = {
 }
 
 // Import orthopedic field types
-import type { RahmenData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { RahmenData, HinterkappeMusterSideData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 /**
  * Custom hook to calculate prices for Bodenkonstruktion configuration.
@@ -15,12 +15,14 @@ import type { RahmenData } from "@/app/(dashboard)/dashboard/_components/Masssch
  * @param selected - Object containing selected options for each field group
  * @param orderTotalPrice - Optional base price from the order (defaults to 0)
  * @param rahmen - Rahmen selection data (EVA or Gummi with color)
+ * @param hinterkappeMusterSide - Hinterkappe Muster (mode: gleich | unterschiedlich). Ja = +5€ or +2.50€ per side
  * @returns Object containing extraPriceTotal (sum of option prices) and grandTotal (base + extras)
  */
 export function useBodenkonstruktionCalculations(
     selected: SelectedState, 
     orderTotalPrice?: number,
-    rahmen?: RahmenData | null
+    rahmen?: RahmenData | null,
+    hinterkappeMusterSide?: HinterkappeMusterSideData | null
 ) {
     // Calculate the sum of all selected option prices (can be positive or negative)
     const extraPriceTotal = useMemo(() => {
@@ -80,8 +82,13 @@ export function useBodenkonstruktionCalculations(
         }
         
         // Add orthopedic field prices
-        // 1. Hinterkappe Muster: "nein" = +4.99€
-        if (selected.hinterkappe_muster === "nein") {
+        // 1. Hinterkappe Muster (mode: gleich | unterschiedlich): Ja = +5€ or +2.50€ per side, max 5€
+        if (hinterkappeMusterSide?.mode === "gleich" && hinterkappeMusterSide.sameValue === "ja") {
+            totalExtraPrice += 5.00
+        } else if (hinterkappeMusterSide?.mode === "unterschiedlich") {
+            if (hinterkappeMusterSide.leftValue === "ja") totalExtraPrice += 2.50
+            if (hinterkappeMusterSide.rightValue === "ja") totalExtraPrice += 2.50
+        } else if (selected.hinterkappe_muster === "nein") {
             totalExtraPrice += 4.99
         }
         
@@ -93,7 +100,7 @@ export function useBodenkonstruktionCalculations(
         // Note: vorderkappe and sohlenhoehe_differenziert have no price impact
 
         return totalExtraPrice
-    }, [selected, rahmen])
+    }, [selected, rahmen, hinterkappeMusterSide])
 
     // Calculate grand total: base price + extra prices from selected options
     const grandTotal = useMemo(() => {

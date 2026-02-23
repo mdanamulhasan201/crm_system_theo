@@ -5,6 +5,7 @@ import React, { useRef } from "react"
 import { CloseIcon, DownloadIcon, PrintIcon } from "./Icons"
 import type { GroupDef2 } from "./ShoeData"
 import { getVorderkappeMaterialLabel } from "./Bodenkonstruktion/FormFields"
+import type { VorderkappeSideData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "./Bodenkonstruktion/FormFields"
 
 // Order data interface for dynamic PDF content
 export interface OrderDataForPDF {
@@ -54,14 +55,13 @@ interface PDFPopupProps {
     lateral?: { op: "widen" | "narrow" | null; mm: number }
   } | null
   soleElevation?: { enabled: boolean; side: "links" | "rechts" | "beidseitig" | null; height_mm: number } | null
-  // Orthopedic fields
-  vorderkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; leftMaterial?: "leicht" | "normal" | "doppelt" | null; rightMaterial?: "leicht" | "normal" | "doppelt" | null } | null
+  // Orthopedic fields (mode: gleich | unterschiedlich)
+  vorderkappeSide?: VorderkappeSideData | null
   rahmen?: { type: "eva" | "gummi" | null; color?: string } | null
   sohlenhoeheDifferenziert?: { ferse?: number; ballen?: number; spitze?: number } | null
-  // Left/Right selection fields
-  hinterkappeMusterSide?: { side: "links" | "rechts" | "beidseitig" | null; leftValue?: "ja" | "nein" | null; rightValue?: "ja" | "nein" | null } | null
-  hinterkappeSide?: { side: "links" | "rechts" | "beidseitig" | null; leftValue?: string | null; leftSubValue?: string | null; rightValue?: string | null; rightSubValue?: string | null } | null
-  brandsohleSide?: { side: "links" | "rechts" | "beidseitig" | null; leftValues?: string[] | null; rightValues?: string[] | null } | null
+  hinterkappeMusterSide?: HinterkappeMusterSideData | null
+  hinterkappeSide?: HinterkappeSideData | null
+  brandsohleSide?: BrandsohleSideData | null
 }
 
 type OptionDef = { id: string; label: string }
@@ -582,20 +582,14 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     // Handle hinterkappeMusterSide field type - always show in PDF
                     if (g.fieldType === "hinterkappeMusterSide") {
                       const parts: string[] = []
-                      if (hinterkappeMusterSide?.side) {
-                        parts.push(`Seite: ${hinterkappeMusterSide.side.charAt(0).toUpperCase() + hinterkappeMusterSide.side.slice(1)}`)
-                      if ((hinterkappeMusterSide.side === "links" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.leftValue) {
-                        const leftOption = g.options.find(opt => opt.id === hinterkappeMusterSide.leftValue)
-                        if (leftOption) {
-                          parts.push(`Links: ${leftOption.label}`)
+                      if (hinterkappeMusterSide?.mode) {
+                        parts.push(`Ausführung: ${hinterkappeMusterSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
+                        if (hinterkappeMusterSide.mode === "gleich" && hinterkappeMusterSide.sameValue) {
+                          parts.push(`Hinterkappe (beide Seiten): ${hinterkappeMusterSide.sameValue === "ja" ? "Ja (+5,00 €)" : "Nein"}`)
+                        } else if (hinterkappeMusterSide.mode === "unterschiedlich") {
+                          if (hinterkappeMusterSide.leftValue) parts.push(`Hinterkappe links: ${hinterkappeMusterSide.leftValue === "ja" ? "Ja (+2,50 €)" : "Nein"}`)
+                          if (hinterkappeMusterSide.rightValue) parts.push(`Hinterkappe rechts: ${hinterkappeMusterSide.rightValue === "ja" ? "Ja (+2,50 €)" : "Nein"}`)
                         }
-                      }
-                      if ((hinterkappeMusterSide.side === "rechts" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.rightValue) {
-                        const rightOption = g.options.find(opt => opt.id === hinterkappeMusterSide.rightValue)
-                        if (rightOption) {
-                          parts.push(`Rechts: ${rightOption.label}`)
-                        }
-                      }
                       }
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
@@ -614,38 +608,32 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     // Handle hinterkappeSide field type - always show in PDF
                     if (g.fieldType === "hinterkappeSide") {
                       const parts: string[] = []
-                      if (hinterkappeSide?.side) {
-                      const sideLabel = hinterkappeSide.side === "links" ? "Links" : hinterkappeSide.side === "rechts" ? "Rechts" : "Beidseitig"
-                      parts.push(`Seite: ${sideLabel}`)
-                      // Left side details - show ALL selected data
-                      if ((hinterkappeSide.side === "links" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.leftValue) {
-                        const leftOption = g.options.find(opt => opt.id === hinterkappeSide.leftValue)
-                        if (leftOption) {
-                          parts.push(`Links - Material: ${leftOption.label}`)
-                          // Show Leder sub-option if material is leder
-                          if (hinterkappeSide.leftValue === "leder" && hinterkappeSide.leftSubValue && g.subOptions?.leder) {
-                            const leftSubOption = g.subOptions.leder.find(opt => opt.id === hinterkappeSide.leftSubValue)
-                            if (leftSubOption) {
-                              parts.push(`Links - Leder-Auswahl: ${leftSubOption.label}`)
+                      if (hinterkappeSide?.mode) {
+                        parts.push(`Ausführung: ${hinterkappeSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
+                        const leftVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.leftValue
+                        const rightVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.rightValue
+                        const leftSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.leftSubValue
+                        const rightSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.rightSubValue
+                        if (leftVal) {
+                          const leftOption = g.options.find(opt => opt.id === leftVal)
+                          if (leftOption) {
+                            parts.push(hinterkappeSide.mode === "gleich" ? `Material (beide Seiten): ${leftOption.label}` : `Links - Material: ${leftOption.label}`)
+                            if (leftVal === "leder" && leftSub && g.subOptions?.leder) {
+                              const leftSubOption = g.subOptions.leder.find(opt => opt.id === leftSub)
+                              if (leftSubOption) parts.push(hinterkappeSide.mode === "gleich" ? `Leder-Auswahl: ${leftSubOption.label}` : `Links - Leder-Auswahl: ${leftSubOption.label}`)
                             }
                           }
                         }
-                      }
-                      
-                      // Right side details - show ALL selected data
-                      if ((hinterkappeSide.side === "rechts" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.rightValue) {
-                        const rightOption = g.options.find(opt => opt.id === hinterkappeSide.rightValue)
-                        if (rightOption) {
-                          parts.push(`Rechts - Material: ${rightOption.label}`)
-                          // Show Leder sub-option if material is leder
-                          if (hinterkappeSide.rightValue === "leder" && hinterkappeSide.rightSubValue && g.subOptions?.leder) {
-                            const rightSubOption = g.subOptions.leder.find(opt => opt.id === hinterkappeSide.rightSubValue)
-                            if (rightSubOption) {
-                              parts.push(`Rechts - Leder-Auswahl: ${rightSubOption.label}`)
+                        if (hinterkappeSide.mode === "unterschiedlich" && rightVal) {
+                          const rightOption = g.options.find(opt => opt.id === rightVal)
+                          if (rightOption) {
+                            parts.push(`Rechts - Material: ${rightOption.label}`)
+                            if (rightVal === "leder" && rightSub && g.subOptions?.leder) {
+                              const rightSubOption = g.subOptions.leder.find(opt => opt.id === rightSub)
+                              if (rightSubOption) parts.push(`Rechts - Leder-Auswahl: ${rightSubOption.label}`)
                             }
                           }
                         }
-                      }
                       }
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
@@ -667,25 +655,29 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     
                     // Handle brandsohleSide field type
                     if (g.fieldType === "brandsohleSide") {
-                      if (!brandsohleSide || !brandsohleSide.side) {
+                      if (!brandsohleSide || !brandsohleSide.mode) {
                         return null
                       }
-                      const parts: string[] = [`Seite: ${brandsohleSide.side.charAt(0).toUpperCase() + brandsohleSide.side.slice(1)}`]
-                      if ((brandsohleSide.side === "links" || brandsohleSide.side === "beidseitig") && brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
-                        brandsohleSide.leftValues.forEach(val => {
+                      const parts: string[] = [`Ausführung: ${brandsohleSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`]
+                      if (brandsohleSide.mode === "gleich" && brandsohleSide.sameValues && Array.isArray(brandsohleSide.sameValues)) {
+                        brandsohleSide.sameValues.forEach(val => {
                           const option = g.options.find(opt => opt.id === val)
-                          if (option) {
-                            parts.push(`Links: ${option.label}`)
-                          }
+                          if (option) parts.push(`Auswahl (beide Seiten): ${option.label}`)
                         })
                       }
-                      if ((brandsohleSide.side === "rechts" || brandsohleSide.side === "beidseitig") && brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
-                        brandsohleSide.rightValues.forEach(val => {
-                          const option = g.options.find(opt => opt.id === val)
-                          if (option) {
-                            parts.push(`Rechts: ${option.label}`)
-                          }
-                        })
+                      if (brandsohleSide.mode === "unterschiedlich") {
+                        if (brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
+                          brandsohleSide.leftValues.forEach(val => {
+                            const option = g.options.find(opt => opt.id === val)
+                            if (option) parts.push(`Links: ${option.label}`)
+                          })
+                        }
+                        if (brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
+                          brandsohleSide.rightValues.forEach(val => {
+                            const option = g.options.find(opt => opt.id === val)
+                            if (option) parts.push(`Rechts: ${option.label}`)
+                          })
+                        }
                       }
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
@@ -807,15 +799,16 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     
                     // Handle vorderkappeSide field type
                     if (g.fieldType === "vorderkappeSide") {
-                      if (!vorderkappeSide || !vorderkappeSide.side) {
+                      if (!vorderkappeSide || !vorderkappeSide.mode) {
                         return null
                       }
-                      const parts: string[] = [`Seite: ${vorderkappeSide.side.charAt(0).toUpperCase() + vorderkappeSide.side.slice(1)}`]
-                      if ((vorderkappeSide.side === "links" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.leftMaterial) {
-                        parts.push(`Material (Links): ${getVorderkappeMaterialLabel(vorderkappeSide.leftMaterial)}`)
+                      const parts: string[] = [`Ausführung: ${vorderkappeSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`]
+                      if (vorderkappeSide.mode === "gleich" && vorderkappeSide.sameMaterial) {
+                        parts.push(`Material (beide Seiten): ${getVorderkappeMaterialLabel(vorderkappeSide.sameMaterial)}`)
                       }
-                      if ((vorderkappeSide.side === "rechts" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.rightMaterial) {
-                        parts.push(`Material (Rechts): ${getVorderkappeMaterialLabel(vorderkappeSide.rightMaterial)}`)
+                      if (vorderkappeSide.mode === "unterschiedlich") {
+                        if (vorderkappeSide.leftMaterial) parts.push(`Material (Links): ${getVorderkappeMaterialLabel(vorderkappeSide.leftMaterial)}`)
+                        if (vorderkappeSide.rightMaterial) parts.push(`Material (Rechts): ${getVorderkappeMaterialLabel(vorderkappeSide.rightMaterial)}`)
                       }
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
@@ -1069,20 +1062,14 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 // Handle hinterkappeMusterSide field type - always show in PDF
                 if (g.fieldType === "hinterkappeMusterSide") {
                   const parts: string[] = []
-                  if (hinterkappeMusterSide?.side) {
-                    parts.push(`Seite: ${hinterkappeMusterSide.side.charAt(0).toUpperCase() + hinterkappeMusterSide.side.slice(1)}`)
-                  if ((hinterkappeMusterSide.side === "links" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.leftValue) {
-                    const leftOption = g.options.find(opt => opt.id === hinterkappeMusterSide.leftValue)
-                    if (leftOption) {
-                      parts.push(`Links: ${leftOption.label}`)
+                  if (hinterkappeMusterSide?.mode) {
+                    parts.push(`Ausführung: ${hinterkappeMusterSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
+                    if (hinterkappeMusterSide.mode === "gleich" && hinterkappeMusterSide.sameValue) {
+                      parts.push(`Hinterkappe (beide Seiten): ${hinterkappeMusterSide.sameValue === "ja" ? "Ja (+5,00 €)" : "Nein"}`)
+                    } else if (hinterkappeMusterSide.mode === "unterschiedlich") {
+                      if (hinterkappeMusterSide.leftValue) parts.push(`Hinterkappe links: ${hinterkappeMusterSide.leftValue === "ja" ? "Ja (+2,50 €)" : "Nein"}`)
+                      if (hinterkappeMusterSide.rightValue) parts.push(`Hinterkappe rechts: ${hinterkappeMusterSide.rightValue === "ja" ? "Ja (+2,50 €)" : "Nein"}`)
                     }
-                  }
-                  if ((hinterkappeMusterSide.side === "rechts" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.rightValue) {
-                    const rightOption = g.options.find(opt => opt.id === hinterkappeMusterSide.rightValue)
-                    if (rightOption) {
-                      parts.push(`Rechts: ${rightOption.label}`)
-                    }
-                  }
                   }
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
@@ -1101,38 +1088,32 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 // Handle hinterkappeSide field type - always show in PDF
                 if (g.fieldType === "hinterkappeSide") {
                   const parts: string[] = []
-                  if (hinterkappeSide?.side) {
-                  const sideLabel = hinterkappeSide.side === "links" ? "Links" : hinterkappeSide.side === "rechts" ? "Rechts" : "Beidseitig"
-                  parts.push(`Seite: ${sideLabel}`)
-                  // Left side details - show ALL selected data
-                  if ((hinterkappeSide.side === "links" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.leftValue) {
-                    const leftOption = g.options.find(opt => opt.id === hinterkappeSide.leftValue)
-                    if (leftOption) {
-                      parts.push(`Links - Material: ${leftOption.label}`)
-                      // Show Leder sub-option if material is leder
-                      if (hinterkappeSide.leftValue === "leder" && hinterkappeSide.leftSubValue && g.subOptions?.leder) {
-                        const leftSubOption = g.subOptions.leder.find(opt => opt.id === hinterkappeSide.leftSubValue)
-                        if (leftSubOption) {
-                          parts.push(`Links - Leder-Auswahl: ${leftSubOption.label}`)
+                  if (hinterkappeSide?.mode) {
+                    parts.push(`Ausführung: ${hinterkappeSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
+                    const leftVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.leftValue
+                    const rightVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.rightValue
+                    const leftSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.leftSubValue
+                    const rightSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.rightSubValue
+                    if (leftVal) {
+                      const leftOption = g.options.find(opt => opt.id === leftVal)
+                      if (leftOption) {
+                        parts.push(hinterkappeSide.mode === "gleich" ? `Material (beide Seiten): ${leftOption.label}` : `Links - Material: ${leftOption.label}`)
+                        if (leftVal === "leder" && leftSub && g.subOptions?.leder) {
+                          const leftSubOption = g.subOptions.leder.find(opt => opt.id === leftSub)
+                          if (leftSubOption) parts.push(hinterkappeSide.mode === "gleich" ? `Leder-Auswahl: ${leftSubOption.label}` : `Links - Leder-Auswahl: ${leftSubOption.label}`)
                         }
                       }
                     }
-                  }
-                  
-                  // Right side details - show ALL selected data
-                  if ((hinterkappeSide.side === "rechts" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.rightValue) {
-                    const rightOption = g.options.find(opt => opt.id === hinterkappeSide.rightValue)
-                    if (rightOption) {
-                      parts.push(`Rechts - Material: ${rightOption.label}`)
-                      // Show Leder sub-option if material is leder
-                      if (hinterkappeSide.rightValue === "leder" && hinterkappeSide.rightSubValue && g.subOptions?.leder) {
-                        const rightSubOption = g.subOptions.leder.find(opt => opt.id === hinterkappeSide.rightSubValue)
-                        if (rightSubOption) {
-                          parts.push(`Rechts - Leder-Auswahl: ${rightSubOption.label}`)
+                    if (hinterkappeSide.mode === "unterschiedlich" && rightVal) {
+                      const rightOption = g.options.find(opt => opt.id === rightVal)
+                      if (rightOption) {
+                        parts.push(`Rechts - Material: ${rightOption.label}`)
+                        if (rightVal === "leder" && rightSub && g.subOptions?.leder) {
+                          const rightSubOption = g.subOptions.leder.find(opt => opt.id === rightSub)
+                          if (rightSubOption) parts.push(`Rechts - Leder-Auswahl: ${rightSubOption.label}`)
                         }
                       }
                     }
-                  }
                   }
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
@@ -1154,25 +1135,29 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 
                 // Handle brandsohleSide field type
                 if (g.fieldType === "brandsohleSide") {
-                  if (!brandsohleSide || !brandsohleSide.side) {
+                  if (!brandsohleSide || !brandsohleSide.mode) {
                     return null
                   }
-                  const parts: string[] = [`Seite: ${brandsohleSide.side.charAt(0).toUpperCase() + brandsohleSide.side.slice(1)}`]
-                  if ((brandsohleSide.side === "links" || brandsohleSide.side === "beidseitig") && brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
-                    brandsohleSide.leftValues.forEach(val => {
+                  const parts: string[] = [`Ausführung: ${brandsohleSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`]
+                  if (brandsohleSide.mode === "gleich" && brandsohleSide.sameValues && Array.isArray(brandsohleSide.sameValues)) {
+                    brandsohleSide.sameValues.forEach(val => {
                       const option = g.options.find(opt => opt.id === val)
-                      if (option) {
-                        parts.push(`Links: ${option.label}`)
-                      }
+                      if (option) parts.push(`Auswahl (beide Seiten): ${option.label}`)
                     })
                   }
-                  if ((brandsohleSide.side === "rechts" || brandsohleSide.side === "beidseitig") && brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
-                    brandsohleSide.rightValues.forEach(val => {
-                      const option = g.options.find(opt => opt.id === val)
-                      if (option) {
-                        parts.push(`Rechts: ${option.label}`)
-                      }
-                    })
+                  if (brandsohleSide.mode === "unterschiedlich") {
+                    if (brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
+                      brandsohleSide.leftValues.forEach(val => {
+                        const option = g.options.find(opt => opt.id === val)
+                        if (option) parts.push(`Links: ${option.label}`)
+                      })
+                    }
+                    if (brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
+                      brandsohleSide.rightValues.forEach(val => {
+                        const option = g.options.find(opt => opt.id === val)
+                        if (option) parts.push(`Rechts: ${option.label}`)
+                      })
+                    }
                   }
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
@@ -1294,15 +1279,16 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 
                 // Handle vorderkappeSide field type
                 if (g.fieldType === "vorderkappeSide") {
-                  if (!vorderkappeSide || !vorderkappeSide.side) {
+                  if (!vorderkappeSide || !vorderkappeSide.mode) {
                     return null
                   }
-                  const parts: string[] = [`Seite: ${vorderkappeSide.side.charAt(0).toUpperCase() + vorderkappeSide.side.slice(1)}`]
-                  if ((vorderkappeSide.side === "links" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.leftMaterial) {
-                    parts.push(`Material (Links): ${getVorderkappeMaterialLabel(vorderkappeSide.leftMaterial)}`)
+                  const parts: string[] = [`Ausführung: ${vorderkappeSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`]
+                  if (vorderkappeSide.mode === "gleich" && vorderkappeSide.sameMaterial) {
+                    parts.push(`Material (beide Seiten): ${getVorderkappeMaterialLabel(vorderkappeSide.sameMaterial)}`)
                   }
-                  if ((vorderkappeSide.side === "rechts" || vorderkappeSide.side === "beidseitig") && vorderkappeSide.rightMaterial) {
-                    parts.push(`Material (Rechts): ${getVorderkappeMaterialLabel(vorderkappeSide.rightMaterial)}`)
+                  if (vorderkappeSide.mode === "unterschiedlich") {
+                    if (vorderkappeSide.leftMaterial) parts.push(`Material (Links): ${getVorderkappeMaterialLabel(vorderkappeSide.leftMaterial)}`)
+                    if (vorderkappeSide.rightMaterial) parts.push(`Material (Rechts): ${getVorderkappeMaterialLabel(vorderkappeSide.rightMaterial)}`)
                   }
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>

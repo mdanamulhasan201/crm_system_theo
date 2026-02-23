@@ -260,11 +260,12 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         }
         setCheckboxError(false)
         
-        // Validate Brandsohle (Seite wählen + at least one option when side is selected)
-        if (brandsohleSide?.side) {
+        // Validate Brandsohle (mode + at least one option when mode is selected)
+        if (brandsohleSide?.mode) {
+            const hasSame = (brandsohleSide.sameValues?.length ?? 0) > 0
             const hasLeft = (brandsohleSide.leftValues?.length ?? 0) > 0
             const hasRight = (brandsohleSide.rightValues?.length ?? 0) > 0
-            const valid = (brandsohleSide.side === "links" && hasLeft) || (brandsohleSide.side === "rechts" && hasRight) || (brandsohleSide.side === "beidseitig" && (hasLeft || hasRight))
+            const valid = (brandsohleSide.mode === "gleich" && hasSame) || (brandsohleSide.mode === "unterschiedlich" && (hasLeft || hasRight))
             if (!valid) {
                 toast.error("Bitte wählen Sie mindestens eine Brandsohle-Option aus.")
                 return
@@ -721,8 +722,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             "Konstruktionsart_price": 0.0,
             "brandsohle": getSelectedValue(selected.brandsohle) || "",
             "brandsohle_price": 0.0,
-            "Seite_wählen": brandsohleSide?.side || "",
-            "brandsohleSide": brandsohleSide ? { side: brandsohleSide.side, leftValues: brandsohleSide.leftValues || [], rightValues: brandsohleSide.rightValues || [] } : {},
+            "Seite_wählen": brandsohleSide?.mode || "",
+            "brandsohleSide": brandsohleSide ? { mode: brandsohleSide.mode, sameValues: brandsohleSide.sameValues || [], leftValues: brandsohleSide.leftValues || [], rightValues: brandsohleSide.rightValues || [] } : {},
             "Sohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
             "Bevorzugte_Farbe": textAreas.schlemmaterial_preferred_colour || "",
             "Sohlenerhöhung": soleElevation?.enabled ? "ja" : "nein",
@@ -763,7 +764,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
 
         // Get brandsohle price - use brandsohleSide when selected.brandsohle is empty
         const brandsohleValue = getSelectedValue(selected.brandsohle) 
-            || (brandsohleSide?.leftValues?.[0] ?? brandsohleSide?.rightValues?.[0] ?? null)
+            || (brandsohleSide?.mode === "gleich" ? brandsohleSide?.sameValues?.[0] : (brandsohleSide?.leftValues?.[0] ?? brandsohleSide?.rightValues?.[0] ?? null))
         if (brandsohleValue) {
             json.brandsohle = brandsohleValue
             json.brandsohle_price = getOptionPrice("brandsohle", brandsohleValue)

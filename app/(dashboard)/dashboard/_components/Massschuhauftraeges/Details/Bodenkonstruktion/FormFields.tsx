@@ -874,8 +874,8 @@ export function OptionGroup({
     )
 }
 
-// Vorderkappe Field - Side selection + Material selection (separate for each side)
-export type VorderkappeSideSelection = "links" | "rechts" | "beidseitig" | null
+// Vorderkappe Field - mode: gleich | unterschiedlich (only 2 options)
+export type GleichUnterschiedlichMode = "gleich" | "unterschiedlich" | null
 export type VorderkappeMatSel = "leicht" | "normal" | "doppelt" | null
 
 // Helper function to get display label for material
@@ -893,7 +893,8 @@ export const getVorderkappeMaterialLabel = (material: VorderkappeMatSel): string
 }
 
 export type VorderkappeSideData = {
-    side: VorderkappeSideSelection
+    mode: GleichUnterschiedlichMode
+    sameMaterial?: VorderkappeMatSel
     leftMaterial?: VorderkappeMatSel
     rightMaterial?: VorderkappeMatSel
 }
@@ -907,89 +908,93 @@ export function VorderkappeSideField({
     value: VorderkappeSideData | null
     onChange: (value: VorderkappeSideData | null) => void
 }) {
-    const side = value?.side || null
+    const mode = value?.mode || null
+    const sameMaterial = value?.sameMaterial || null
     const leftMaterial = value?.leftMaterial || null
     const rightMaterial = value?.rightMaterial || null
 
-    const updateSide = (newSide: VorderkappeSideSelection) => {
-        const newValue: VorderkappeSideData = {
-            side: newSide,
-            leftMaterial: (newSide === "links" || newSide === "beidseitig") ? (leftMaterial || null) : undefined,
-            rightMaterial: (newSide === "rechts" || newSide === "beidseitig") ? (rightMaterial || null) : undefined,
-        }
-        onChange(newValue)
+    const updateMode = (newMode: GleichUnterschiedlichMode) => {
+        onChange({
+            mode: newMode,
+            sameMaterial: newMode === "gleich" ? (sameMaterial || null) : undefined,
+            leftMaterial: newMode === "unterschiedlich" ? (leftMaterial || null) : undefined,
+            rightMaterial: newMode === "unterschiedlich" ? (rightMaterial || null) : undefined,
+        })
+    }
+
+    const updateSameMaterial = (newMaterial: VorderkappeMatSel) => {
+        if (mode !== "gleich") return
+        onChange({ mode, sameMaterial: newMaterial })
     }
 
     const updateLeftMaterial = (newMaterial: VorderkappeMatSel) => {
-        if (!side) return
-        const newValue: VorderkappeSideData = {
-            side,
-            leftMaterial: newMaterial,
-            rightMaterial: rightMaterial,
-        }
-        onChange(newValue)
+        if (mode !== "unterschiedlich") return
+        onChange({ mode, leftMaterial: newMaterial, rightMaterial })
     }
 
     const updateRightMaterial = (newMaterial: VorderkappeMatSel) => {
-        if (!side) return
-        const newValue: VorderkappeSideData = {
-            side,
-            leftMaterial: leftMaterial,
-            rightMaterial: newMaterial,
-        }
-        onChange(newValue)
+        if (mode !== "unterschiedlich") return
+        onChange({ mode, leftMaterial, rightMaterial: newMaterial })
     }
 
     return (
         <div className="mb-6">
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             
-            {/* Side Selection */}
+            {/* Mode Selection - only 2 options */}
             <div className="mb-4">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
+                <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
                 <div className="flex flex-wrap items-center gap-4">
-                    {["links", "rechts", "beidseitig"].map((sideOption) => {
-                        const isChecked = side === sideOption
-                        const handleToggle = () => {
-                            // Toggle: if already checked, uncheck it; otherwise check it
-                            updateSide(isChecked ? null : (sideOption as VorderkappeSideSelection))
-                        }
-                        return (
-                            <div key={sideOption} className="flex items-center gap-2">
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only"
-                                        checked={isChecked}
-                                        onChange={handleToggle}
-                                        aria-label={sideOption}
-                                    />
-                                    <div 
-                                        className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            isChecked 
-                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
-                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
-                                        }`}
-                                        onClick={handleToggle}
-                                    >
-                                        {isChecked && (
-                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                </div>
-                                <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={handleToggle}>
-                                    {sideOption}
-                                </span>
-                            </div>
-                        )
-                    })}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="vorderkappe-mode"
+                            checked={mode === "gleich"}
+                            onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
+                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">Beidseitig – gleich</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="vorderkappe-mode"
+                            checked={mode === "unterschiedlich"}
+                            onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">Beidseitig – unterschiedlich</span>
+                    </label>
                 </div>
             </div>
 
-            {/* Material Selection - show based on selected side */}
-            {side && (side === "links" || side === "beidseitig") && (
+            {/* Mode "gleich": one material for both sides */}
+            {mode === "gleich" && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Vorderkappe (beide Seiten)</div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {["leicht", "normal", "doppelt"].map((matOption) => {
+                            const isChecked = sameMaterial === matOption
+                            const handleToggle = () => updateSameMaterial(isChecked ? null : (matOption as VorderkappeMatSel))
+                            return (
+                                <div key={matOption} className="flex items-center gap-2">
+                                    <div className="relative flex items-center">
+                                        <input type="checkbox" className="sr-only" checked={!!isChecked} onChange={handleToggle} aria-label={`Material ${matOption}`} />
+                                        <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${isChecked ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={handleToggle}>
+                                            {isChecked && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                                        </div>
+                                    </div>
+                                    <span className="text-base text-gray-700 cursor-pointer" onClick={handleToggle}>{getVorderkappeMaterialLabel(matOption as VorderkappeMatSel)}</span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Mode "unterschiedlich": Material Links + Rechts */}
+            {mode === "unterschiedlich" && (
+                <>
                 <div className="mb-4">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Material (Links):</div>
                     <div className="flex flex-wrap items-center gap-4">
@@ -1032,9 +1037,7 @@ export function VorderkappeSideField({
                         })}
                     </div>
                 </div>
-            )}
 
-            {side && (side === "rechts" || side === "beidseitig") && (
                 <div className="mb-4">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Material (Rechts):</div>
                     <div className="flex flex-wrap items-center gap-4">
@@ -1077,6 +1080,7 @@ export function VorderkappeSideField({
                         })}
                     </div>
                 </div>
+                </>
             )}
         </div>
     )
@@ -1289,9 +1293,12 @@ export function SohlenhoeheDifferenziertField({
 // Common type for side selection
 export type SideSelection = "links" | "rechts" | "beidseitig" | null
 
-// 1. Hinterkappe Muster Side Field
+// 1. Hinterkappe Muster Side Field - only 2 modes: Beidseitig – gleich | Beidseitig – unterschiedlich
 export type HinterkappeMusterSideData = {
-    side: SideSelection
+    mode: GleichUnterschiedlichMode
+    /** For mode "gleich": single selection for both sides. Ja = +5€, Nein = 0 */
+    sameValue?: "ja" | "nein" | null
+    /** For mode "unterschiedlich": left/right separate. Each Ja = +2.50€, max 5€ total */
     leftValue?: "ja" | "nein" | null
     rightValue?: "ja" | "nein" | null
 }
@@ -1305,35 +1312,33 @@ export function HinterkappeMusterSideField({
     value: HinterkappeMusterSideData | null
     onChange: (value: HinterkappeMusterSideData | null) => void
 }) {
-    const side = value?.side || null
+    const mode = value?.mode || null
+    const sameValue = value?.sameValue || null
     const leftValue = value?.leftValue || null
     const rightValue = value?.rightValue || null
 
-    const updateSide = (newSide: SideSelection) => {
-        const newValue: HinterkappeMusterSideData = {
-            side: newSide,
-            leftValue: (newSide === "links" || newSide === "beidseitig") ? (leftValue || null) : undefined,
-            rightValue: (newSide === "rechts" || newSide === "beidseitig") ? (rightValue || null) : undefined,
-        }
-        onChange(newValue)
+    const updateMode = (newMode: GleichUnterschiedlichMode) => {
+        onChange({
+            mode: newMode,
+            sameValue: newMode === "gleich" ? (sameValue || null) : undefined,
+            leftValue: newMode === "unterschiedlich" ? (leftValue || null) : undefined,
+            rightValue: newMode === "unterschiedlich" ? (rightValue || null) : undefined,
+        })
+    }
+
+    const updateSameValue = (newValue: "ja" | "nein" | null) => {
+        if (mode !== "gleich") return
+        onChange({ mode, sameValue: newValue })
     }
 
     const updateLeftValue = (newValue: "ja" | "nein" | null) => {
-        if (!side) return
-        onChange({
-            side,
-            leftValue: newValue,
-            rightValue: rightValue,
-        })
+        if (mode !== "unterschiedlich") return
+        onChange({ mode, leftValue: newValue, rightValue })
     }
 
     const updateRightValue = (newValue: "ja" | "nein" | null) => {
-        if (!side) return
-        onChange({
-            side,
-            leftValue: leftValue,
-            rightValue: newValue,
-        })
+        if (mode !== "unterschiedlich") return
+        onChange({ mode, leftValue, rightValue: newValue })
     }
 
     return (
@@ -1341,136 +1346,126 @@ export function HinterkappeMusterSideField({
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             <p className="text-sm text-gray-600 mb-3">Auswahl gilt separat für linken und rechten Schuh</p>
             
-            {/* Side Selection */}
+            {/* Mode Selection - only 2 options */}
             <div className="mb-4">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
+                <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
                 <div className="flex flex-wrap items-center gap-4">
-                    {["links", "rechts", "beidseitig"].map((sideOption) => {
-                        const isChecked = side === sideOption
-                        return (
-                            <div key={sideOption} className="flex items-center gap-2">
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only"
-                                        checked={isChecked}
-                                        onChange={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
-                                        aria-label={sideOption}
-                                    />
-                                    <div 
-                                        className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            isChecked 
-                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
-                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
-                                        }`}
-                                        onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
-                                    >
-                                        {isChecked && (
-                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                </div>
-                                <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}>
-                                    {sideOption}
-                                </span>
-                            </div>
-                        )
-                    })}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="hinterkappe-muster-mode"
+                            checked={mode === "gleich"}
+                            onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
+                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">Beidseitig – gleich</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="hinterkappe-muster-mode"
+                            checked={mode === "unterschiedlich"}
+                            onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">Beidseitig – unterschiedlich</span>
+                    </label>
                 </div>
             </div>
 
-            {/* Left Value Selection */}
-            {side && (side === "links" || side === "beidseitig") && (
+            {/* Mode "gleich": one field "Hinterkappe (beide Seiten)" - Ja (+5€) / Nein */}
+            {mode === "gleich" && (
                 <div className="mb-4">
-                    <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (Links):</div>
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Hinterkappe (beide Seiten)</div>
                     <div className="flex flex-wrap items-center gap-4">
-                        {def.options.map((opt) => {
-                            const isChecked = leftValue === opt.id
-                            return (
-                                <div key={opt.id} className="flex items-center gap-2">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={isChecked}
-                                            onChange={() => updateLeftValue(isChecked ? null : (opt.id as "ja" | "nein"))}
-                                            aria-label={`Links ${opt.label}`}
-                                        />
-                                        <div 
-                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
-                                                isChecked 
-                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
-                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
-                                            }`}
-                                            onClick={() => updateLeftValue(isChecked ? null : (opt.id as "ja" | "nein"))}
-                                        >
-                                            {isChecked && (
-                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateLeftValue(isChecked ? null : (opt.id as "ja" | "nein"))}>
-                                        {opt.label}
-                                    </span>
-                                </div>
-                            )
-                        })}
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="hinterkappe-muster-same"
+                                checked={sameValue === "ja"}
+                                onChange={() => updateSameValue(sameValue === "ja" ? null : "ja")}
+                                className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                            />
+                            <span className="text-base text-gray-700">Ja (+5,00 €)</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                                type="radio"
+                                name="hinterkappe-muster-same"
+                                checked={sameValue === "nein"}
+                                onChange={() => updateSameValue(sameValue === "nein" ? null : "nein")}
+                                className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                            />
+                            <span className="text-base text-gray-700">Nein</span>
+                        </label>
                     </div>
                 </div>
             )}
 
-            {/* Right Value Selection */}
-            {side && (side === "rechts" || side === "beidseitig") && (
-                <div className="mb-4">
-                    <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (Rechts):</div>
-                    <div className="flex flex-wrap items-center gap-4">
-                        {def.options.map((opt) => {
-                            const isChecked = rightValue === opt.id
-                            return (
-                                <div key={opt.id} className="flex items-center gap-2">
-                                    <div className="relative flex items-center">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only"
-                                            checked={isChecked}
-                                            onChange={() => updateRightValue(isChecked ? null : (opt.id as "ja" | "nein"))}
-                                            aria-label={`Rechts ${opt.label}`}
-                                        />
-                                        <div 
-                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
-                                                isChecked 
-                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
-                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
-                                            }`}
-                                            onClick={() => updateRightValue(isChecked ? null : (opt.id as "ja" | "nein"))}
-                                        >
-                                            {isChecked && (
-                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateRightValue(isChecked ? null : (opt.id as "ja" | "nein"))}>
-                                        {opt.label}
-                                    </span>
-                                </div>
-                            )
-                        })}
+            {/* Mode "unterschiedlich": two fields - Links/Rechts each Ja (+2.50€) / Nein */}
+            {mode === "unterschiedlich" && (
+                <>
+                    <div className="mb-4">
+                        <div className="text-sm font-semibold text-gray-700 mb-2">Hinterkappe links</div>
+                        <div className="flex flex-wrap items-center gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="hinterkappe-muster-links"
+                                    checked={leftValue === "ja"}
+                                    onChange={() => updateLeftValue(leftValue === "ja" ? null : "ja")}
+                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                                />
+                                <span className="text-base text-gray-700">Ja (+2,50 €)</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="hinterkappe-muster-links"
+                                    checked={leftValue === "nein"}
+                                    onChange={() => updateLeftValue(leftValue === "nein" ? null : "nein")}
+                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                                />
+                                <span className="text-base text-gray-700">Nein</span>
+                            </label>
+                        </div>
                     </div>
-                </div>
+                    <div className="mb-4">
+                        <div className="text-sm font-semibold text-gray-700 mb-2">Hinterkappe rechts</div>
+                        <div className="flex flex-wrap items-center gap-4">
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="hinterkappe-muster-rechts"
+                                    checked={rightValue === "ja"}
+                                    onChange={() => updateRightValue(rightValue === "ja" ? null : "ja")}
+                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                                />
+                                <span className="text-base text-gray-700">Ja (+2,50 €)</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="hinterkappe-muster-rechts"
+                                    checked={rightValue === "nein"}
+                                    onChange={() => updateRightValue(rightValue === "nein" ? null : "nein")}
+                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                                />
+                                <span className="text-base text-gray-700">Nein</span>
+                            </label>
+                        </div>
+                    </div>
+                </>
             )}
         </div>
     )
 }
 
-// 2. Hinterkappe Side Field (Material & Leder-Auswahl)
+// 2. Hinterkappe Side Field (Material & Leder-Auswahl) - mode: gleich | unterschiedlich
 export type HinterkappeSideData = {
-    side: SideSelection
+    mode: GleichUnterschiedlichMode
+    sameValue?: string | null
+    sameSubValue?: string | null
     leftValue?: string | null
     leftSubValue?: string | null
     rightValue?: string | null
@@ -1486,65 +1481,70 @@ export function HinterkappeSideField({
     value: HinterkappeSideData | null
     onChange: (value: HinterkappeSideData | null) => void
 }) {
-    const side = value?.side || null
+    const mode = value?.mode || null
+    const sameValue = value?.sameValue || null
+    const sameSubValue = value?.sameSubValue || null
     const leftValue = value?.leftValue || null
     const leftSubValue = value?.leftSubValue || null
     const rightValue = value?.rightValue || null
     const rightSubValue = value?.rightSubValue || null
 
-    const updateSide = (newSide: SideSelection) => {
-        const newValue: HinterkappeSideData = {
-            side: newSide,
-            leftValue: (newSide === "links" || newSide === "beidseitig") ? (leftValue || null) : undefined,
-            leftSubValue: (newSide === "links" || newSide === "beidseitig") ? (leftSubValue || null) : undefined,
-            rightValue: (newSide === "rechts" || newSide === "beidseitig") ? (rightValue || null) : undefined,
-            rightSubValue: (newSide === "rechts" || newSide === "beidseitig") ? (rightSubValue || null) : undefined,
-        }
-        onChange(newValue)
+    const updateMode = (newMode: GleichUnterschiedlichMode) => {
+        onChange({
+            mode: newMode,
+            sameValue: newMode === "gleich" ? (sameValue || null) : undefined,
+            sameSubValue: newMode === "gleich" ? (sameSubValue || null) : undefined,
+            leftValue: newMode === "unterschiedlich" ? (leftValue || null) : undefined,
+            leftSubValue: newMode === "unterschiedlich" ? (leftSubValue || null) : undefined,
+            rightValue: newMode === "unterschiedlich" ? (rightValue || null) : undefined,
+            rightSubValue: newMode === "unterschiedlich" ? (rightSubValue || null) : undefined,
+        })
+    }
+
+    const updateSameValue = (newValue: string | null) => {
+        if (mode !== "gleich") return
+        onChange({
+            mode,
+            sameValue: newValue,
+            sameSubValue: newValue === "leder" ? sameSubValue : undefined,
+        })
+    }
+
+    const updateSameSubValue = (newValue: string | null) => {
+        if (mode !== "gleich") return
+        onChange({ mode, sameValue, sameSubValue: newValue })
     }
 
     const updateLeftValue = (newValue: string | null) => {
-        if (!side) return
+        if (mode !== "unterschiedlich") return
         onChange({
-            side,
+            mode,
             leftValue: newValue,
             leftSubValue: newValue === "leder" ? leftSubValue : undefined,
-            rightValue: rightValue,
-            rightSubValue: rightSubValue,
+            rightValue,
+            rightSubValue,
         })
     }
 
     const updateLeftSubValue = (newValue: string | null) => {
-        if (!side) return
-        onChange({
-            side,
-            leftValue: leftValue,
-            leftSubValue: newValue,
-            rightValue: rightValue,
-            rightSubValue: rightSubValue,
-        })
+        if (mode !== "unterschiedlich") return
+        onChange({ mode, leftValue, leftSubValue: newValue, rightValue, rightSubValue })
     }
 
     const updateRightValue = (newValue: string | null) => {
-        if (!side) return
+        if (mode !== "unterschiedlich") return
         onChange({
-            side,
-            leftValue: leftValue,
-            leftSubValue: leftSubValue,
+            mode,
+            leftValue,
+            leftSubValue,
             rightValue: newValue,
             rightSubValue: newValue === "leder" ? rightSubValue : undefined,
         })
     }
 
     const updateRightSubValue = (newValue: string | null) => {
-        if (!side) return
-        onChange({
-            side,
-            leftValue: leftValue,
-            leftSubValue: leftSubValue,
-            rightValue: rightValue,
-            rightSubValue: newValue,
-        })
+        if (mode !== "unterschiedlich") return
+        onChange({ mode, leftValue, leftSubValue, rightValue, rightSubValue: newValue })
     }
 
     return (
@@ -1552,55 +1552,42 @@ export function HinterkappeSideField({
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             <p className="text-sm text-gray-600 mb-3">Material und Leder können links und rechts unterschiedlich gewählt werden</p>
             
-            {/* Side Selection */}
+            {/* Mode Selection - only 2 options */}
             <div className="mb-4">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
+                <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
                 <div className="flex flex-wrap items-center gap-4">
-                    {["links", "rechts", "beidseitig"].map((sideOption) => {
-                        const isChecked = side === sideOption
-                        return (
-                            <div key={sideOption} className="flex items-center gap-2">
-                                <div className="relative flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        className="sr-only"
-                                        checked={isChecked}
-                                        onChange={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
-                                        aria-label={sideOption}
-                                    />
-                                    <div 
-                                        className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
-                                            isChecked 
-                                                ? 'bg-green-500 border-green-500 cursor-pointer' 
-                                                : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
-                                        }`}
-                                        onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}
-                                    >
-                                        {isChecked && (
-                                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        )}
-                                    </div>
-                                </div>
-                                <span className="text-base text-gray-700 cursor-pointer capitalize" onClick={() => updateSide(isChecked ? null : (sideOption as SideSelection))}>
-                                    {sideOption}
-                                </span>
-                            </div>
-                        )
-                    })}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="hinterkappe-mode"
+                            checked={mode === "gleich"}
+                            onChange={() => updateMode(mode === "gleich" ? null : "gleich")}
+                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">Beidseitig – gleich</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="hinterkappe-mode"
+                            checked={mode === "unterschiedlich"}
+                            onChange={() => updateMode(mode === "unterschiedlich" ? null : "unterschiedlich")}
+                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">Beidseitig – unterschiedlich</span>
+                    </label>
                 </div>
             </div>
 
-            {/* Left Value Selection */}
-            {side && (side === "links" || side === "beidseitig") && (
+            {/* Mode "gleich": one Material field for both sides */}
+            {mode === "gleich" && (
                 <div className="mb-4">
-                    <div className="text-sm font-semibold text-gray-700 mb-2">Material (Links):</div>
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Hinterkappe (beide Seiten)</div>
                     <select
                         className="w-full px-3 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none mb-2"
-                        value={leftValue || ""}
-                        onChange={(e) => updateLeftValue(e.target.value || null)}
-                        aria-label="Material Links"
+                        value={sameValue || ""}
+                        onChange={(e) => updateSameValue(e.target.value || null)}
+                        aria-label="Material beide Seiten"
                     >
                         <option value="">Bitte wählen</option>
                         {def.options.map((opt) => (
@@ -1609,14 +1596,14 @@ export function HinterkappeSideField({
                             </option>
                         ))}
                     </select>
-                    {leftValue === "leder" && def.subOptions?.leder && (
+                    {sameValue === "leder" && def.subOptions?.leder && (
                         <div className="mt-2">
-                            <div className="text-sm font-semibold text-gray-700 mb-2">Leder Auswahl (Links):</div>
+                            <div className="text-sm font-semibold text-gray-700 mb-2">Leder Auswahl (beide Seiten):</div>
                             <select
                                 className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none"
-                                value={leftSubValue || ""}
-                                onChange={(e) => updateLeftSubValue(e.target.value || null)}
-                                aria-label="Leder Auswahl Links"
+                                value={sameSubValue || ""}
+                                onChange={(e) => updateSameSubValue(e.target.value || null)}
+                                aria-label="Leder Auswahl beide Seiten"
                             >
                                 <option value="">Bitte wählen</option>
                                 {def.subOptions.leder.map((opt: { id: string; label: string; price: number }) => (
@@ -1630,50 +1617,89 @@ export function HinterkappeSideField({
                 </div>
             )}
 
-            {/* Right Value Selection */}
-            {side && (side === "rechts" || side === "beidseitig") && (
-                <div className="mb-4">
-                    <div className="text-sm font-semibold text-gray-700 mb-2">Material (Rechts):</div>
-                    <select
-                        className="w-full px-3 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none mb-2"
-                        value={rightValue || ""}
-                        onChange={(e) => updateRightValue(e.target.value || null)}
-                        aria-label="Material Rechts"
-                    >
-                        <option value="">Bitte wählen</option>
-                        {def.options.map((opt) => (
-                            <option key={opt.id} value={opt.id}>
-                                {opt.label}
-                            </option>
-                        ))}
-                    </select>
-                    {rightValue === "leder" && def.subOptions?.leder && (
-                        <div className="mt-2">
-                            <div className="text-sm font-semibold text-gray-700 mb-2">Leder Auswahl (Rechts):</div>
-                            <select
-                                className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none"
-                                value={rightSubValue || ""}
-                                onChange={(e) => updateRightSubValue(e.target.value || null)}
-                                aria-label="Leder Auswahl Rechts"
-                            >
-                                <option value="">Bitte wählen</option>
-                                {def.subOptions.leder.map((opt: { id: string; label: string; price: number }) => (
-                                    <option key={opt.id} value={opt.id}>
-                                        {opt.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-                </div>
+            {/* Mode "unterschiedlich": Material Links + Rechts */}
+            {mode === "unterschiedlich" && (
+                <>
+                    <div className="mb-4">
+                        <div className="text-sm font-semibold text-gray-700 mb-2">Material (Links):</div>
+                        <select
+                            className="w-full px-3 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none mb-2"
+                            value={leftValue || ""}
+                            onChange={(e) => updateLeftValue(e.target.value || null)}
+                            aria-label="Material Links"
+                        >
+                            <option value="">Bitte wählen</option>
+                            {def.options.map((opt) => (
+                                <option key={opt.id} value={opt.id}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        {leftValue === "leder" && def.subOptions?.leder && (
+                            <div className="mt-2">
+                                <div className="text-sm font-semibold text-gray-700 mb-2">Leder Auswahl (Links):</div>
+                                <select
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none"
+                                    value={leftSubValue || ""}
+                                    onChange={(e) => updateLeftSubValue(e.target.value || null)}
+                                    aria-label="Leder Auswahl Links"
+                                >
+                                    <option value="">Bitte wählen</option>
+                                    {def.subOptions.leder.map((opt: { id: string; label: string; price: number }) => (
+                                        <option key={opt.id} value={opt.id}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                    <div className="mb-4">
+                        <div className="text-sm font-semibold text-gray-700 mb-2">Material (Rechts):</div>
+                        <select
+                            className="w-full px-3 py-2 cursor-pointer border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none mb-2"
+                            value={rightValue || ""}
+                            onChange={(e) => updateRightValue(e.target.value || null)}
+                            aria-label="Material Rechts"
+                        >
+                            <option value="">Bitte wählen</option>
+                            {def.options.map((opt) => (
+                                <option key={opt.id} value={opt.id}>
+                                    {opt.label}
+                                </option>
+                            ))}
+                        </select>
+                        {rightValue === "leder" && def.subOptions?.leder && (
+                            <div className="mt-2">
+                                <div className="text-sm font-semibold text-gray-700 mb-2">Leder Auswahl (Rechts):</div>
+                                <select
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none"
+                                    value={rightSubValue || ""}
+                                    onChange={(e) => updateRightSubValue(e.target.value || null)}
+                                    aria-label="Leder Auswahl Rechts"
+                                >
+                                    <option value="">Bitte wählen</option>
+                                    {def.subOptions.leder.map((opt: { id: string; label: string; price: number }) => (
+                                        <option key={opt.id} value={opt.id}>
+                                            {opt.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                    </div>
+                </>
             )}
         </div>
     )
 }
 
-// 3. Brandsohle Side Field
+// 3. Brandsohle Side Field - gleich/unterschiedlich
 export type BrandsohleSideData = {
-    side: SideSelection
+    mode: GleichUnterschiedlichMode
+    /** For mode "gleich": single selection for both sides */
+    sameValues?: string[] | null
+    /** For mode "unterschiedlich": left/right separate */
     leftValues?: string[] | null
     rightValues?: string[] | null
 }
@@ -1687,40 +1713,50 @@ export function BrandsohleSideField({
     value: BrandsohleSideData | null
     onChange: (value: BrandsohleSideData | null) => void
 }) {
-    const side = value?.side || null
+    const mode = value?.mode || null
+    const sameValues = value?.sameValues || []
     const leftValues = value?.leftValues || []
     const rightValues = value?.rightValues || []
 
-    const updateSide = (newSide: SideSelection) => {
-        const newValue: BrandsohleSideData = {
-            side: newSide,
-            leftValues: (newSide === "links" || newSide === "beidseitig") ? (leftValues || []) : undefined,
-            rightValues: (newSide === "rechts" || newSide === "beidseitig") ? (rightValues || []) : undefined,
-        }
-        onChange(newValue)
+    const updateMode = (newMode: GleichUnterschiedlichMode) => {
+        onChange({
+            mode: newMode,
+            sameValues: newMode === "gleich" ? (sameValues || []) : undefined,
+            leftValues: newMode === "unterschiedlich" ? (leftValues || []) : undefined,
+            rightValues: newMode === "unterschiedlich" ? (rightValues || []) : undefined,
+        })
+    }
+
+    const toggleSameValue = (optionId: string) => {
+        if (mode !== "gleich") return
+        const currentArray = Array.isArray(sameValues) ? sameValues : []
+        const newArray = currentArray.includes(optionId)
+            ? currentArray.filter(id => id !== optionId)
+            : [...currentArray, optionId]
+        onChange({ mode, sameValues: newArray.length > 0 ? newArray : null })
     }
 
     const toggleLeftValue = (optionId: string) => {
-        if (!side) return
+        if (mode !== "unterschiedlich") return
         const currentArray = Array.isArray(leftValues) ? leftValues : []
         const newArray = currentArray.includes(optionId)
             ? currentArray.filter(id => id !== optionId)
             : [...currentArray, optionId]
         onChange({
-            side,
+            mode,
             leftValues: newArray.length > 0 ? newArray : null,
             rightValues: rightValues,
         })
     }
 
     const toggleRightValue = (optionId: string) => {
-        if (!side) return
+        if (mode !== "unterschiedlich") return
         const currentArray = Array.isArray(rightValues) ? rightValues : []
         const newArray = currentArray.includes(optionId)
             ? currentArray.filter(id => id !== optionId)
             : [...currentArray, optionId]
         onChange({
-            side,
+            mode,
             leftValues: leftValues,
             rightValues: newArray.length > 0 ? newArray : null,
         })
@@ -1731,30 +1767,78 @@ export function BrandsohleSideField({
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             <p className="text-sm text-gray-600 mb-3">Brandsohle kann links und rechts unterschiedlich konfiguriert werden</p>
             
-            {/* Side Selection - use radio for single selection (fix: checkbox was not checkable) */}
+            {/* Mode Selection: Beidseitig – gleich | Beidseitig – unterschiedlich */}
             <div className="mb-4">
-                <div className="text-sm font-semibold text-gray-700 mb-2">Seite wählen:</div>
+                <div className="text-sm font-semibold text-gray-700 mb-2">Ausführung:</div>
                 <div className="flex flex-wrap items-center gap-4">
-                    {["links", "rechts", "beidseitig"].map((sideOption) => {
-                        const isChecked = side === sideOption
-                        return (
-                            <label key={sideOption} className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="radio"
-                                    name="brandsohle-seite"
-                                    checked={isChecked}
-                                    onChange={() => updateSide(sideOption as SideSelection)}
-                                    className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
-                                />
-                                <span className="text-base text-gray-700 capitalize">{sideOption}</span>
-                            </label>
-                        )
-                    })}
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="brandsohle-mode"
+                            checked={mode === "gleich"}
+                            onChange={() => updateMode("gleich")}
+                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">Beidseitig – gleich</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="brandsohle-mode"
+                            checked={mode === "unterschiedlich"}
+                            onChange={() => updateMode("unterschiedlich")}
+                            className="w-5 h-5 text-green-500 border-gray-300 focus:ring-green-500"
+                        />
+                        <span className="text-base text-gray-700">Beidseitig – unterschiedlich</span>
+                    </label>
                 </div>
             </div>
 
-            {/* Left Values Selection */}
-            {side && (side === "links" || side === "beidseitig") && (
+            {/* Mode "gleich": one selection for both sides */}
+            {mode === "gleich" && (
+                <div className="mb-4">
+                    <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (beide Seiten):</div>
+                    <div className="flex flex-wrap items-center gap-4">
+                        {def.options.map((opt) => {
+                            const isChecked = Array.isArray(sameValues) && sameValues.includes(opt.id)
+                            return (
+                                <div key={opt.id} className="flex items-center gap-2">
+                                    <div className="relative flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            className="sr-only"
+                                            checked={isChecked}
+                                            onChange={() => toggleSameValue(opt.id)}
+                                            aria-label={`Beide Seiten ${opt.label}`}
+                                        />
+                                        <div 
+                                            className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
+                                                isChecked 
+                                                    ? 'bg-green-500 border-green-500 cursor-pointer' 
+                                                    : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
+                                            }`}
+                                            onClick={() => toggleSameValue(opt.id)}
+                                        >
+                                            {isChecked && (
+                                                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => toggleSameValue(opt.id)}>
+                                        {opt.label}
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* Mode "unterschiedlich": Links + Rechts separate */}
+            {mode === "unterschiedlich" && (
+                <>
                 <div className="mb-4">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (Links):</div>
                     <div className="flex flex-wrap items-center gap-4">
@@ -1793,10 +1877,7 @@ export function BrandsohleSideField({
                         })}
                     </div>
                 </div>
-            )}
 
-            {/* Right Values Selection */}
-            {side && (side === "rechts" || side === "beidseitig") && (
                 <div className="mb-4">
                     <div className="text-sm font-semibold text-gray-700 mb-2">Auswahl (Rechts):</div>
                     <div className="flex flex-wrap items-center gap-4">
@@ -1835,6 +1916,7 @@ export function BrandsohleSideField({
                         })}
                     </div>
                 </div>
+                </>
             )}
         </div>
     )

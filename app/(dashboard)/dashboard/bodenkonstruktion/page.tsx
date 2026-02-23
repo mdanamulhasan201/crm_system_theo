@@ -140,7 +140,7 @@ export default function BodenkonstruktionPage() {
     const basePrice = 189.99
 
     // Calculations
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide)
 
     // Reset sole options when sole changes
     React.useEffect(() => {
@@ -442,18 +442,26 @@ export default function BodenkonstruktionPage() {
             Mehr_ansehen_title: selectedSole?.name || "",
             Mehr_ansehen_description: selectedSole?.description || "",
             
-            // === 1. Hinterkappe - Muster wird bereitgestellt (always full structure) ===
+            // === 1. Hinterkappe - Muster wird bereitgestellt (mode: gleich | unterschiedlich) ===
             hinterkappe_muster: {
-                side: hinterkappeMusterSide?.side ?? "",
+                mode: hinterkappeMusterSide?.mode ?? "",
+                sameValue: hinterkappeMusterSide?.sameValue ?? "",
                 leftValue: hinterkappeMusterSide?.leftValue ?? "",
                 rightValue: hinterkappeMusterSide?.rightValue ?? "",
-                leftPrice: (hinterkappeMusterSide?.leftValue === "nein") ? 4.99 : 0,
-                rightPrice: (hinterkappeMusterSide?.rightValue === "nein") ? 4.99 : 0,
+                ...(hinterkappeMusterSide?.mode === "gleich" && {
+                    samePrice: hinterkappeMusterSide?.sameValue === "ja" ? 5.00 : 0,
+                }),
+                ...(hinterkappeMusterSide?.mode === "unterschiedlich" && {
+                    leftPrice: hinterkappeMusterSide?.leftValue === "ja" ? 2.50 : 0,
+                    rightPrice: hinterkappeMusterSide?.rightValue === "ja" ? 2.50 : 0,
+                }),
             },
             
-            // === 2. Hinterkappe (Material, Leder Auswahl L/R - always full structure) ===
-            hinterkappe: hinterkappeSide && hinterkappeSide.side ? {
-                side: hinterkappeSide.side,
+            // === 2. Hinterkappe (Material, Leder Auswahl - mode: gleich | unterschiedlich) ===
+            hinterkappe: hinterkappeSide && hinterkappeSide.mode ? {
+                mode: hinterkappeSide.mode,
+                sameValue: hinterkappeSide.sameValue ?? "",
+                sameSubValue: hinterkappeSide.sameSubValue ?? "",
                 leftValue: hinterkappeSide.leftValue ?? "",
                 leftSubValue: hinterkappeSide.leftSubValue ?? "",
                 rightValue: hinterkappeSide.rightValue ?? "",
@@ -565,24 +573,32 @@ export default function BodenkonstruktionPage() {
         }
 
         // Add orthopedic fields - hinterkappe_muster and hinterkappe already set above with full structure
-        // Set leder_auswahl and prices from hinterkappeSide (left/right)
-        if (hinterkappeSide && hinterkappeSide.side) {
-            if (hinterkappeSide.side === "beidseitig" && hinterkappeSide.leftValue) {
-                bodenkonstruktionJson.hinterkappe_legacy = hinterkappeSide.leftValue
+        // Set leder_auswahl and prices from hinterkappeSide (mode: gleich | unterschiedlich)
+        if (hinterkappeSide && hinterkappeSide.mode) {
+            const leftVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.leftValue
+            const rightVal = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameValue : hinterkappeSide.rightValue
+            const leftSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.leftSubValue
+            const rightSub = hinterkappeSide.mode === "gleich" ? hinterkappeSide.sameSubValue : hinterkappeSide.rightSubValue
+            if (hinterkappeSide.mode === "gleich" && leftVal) {
+                bodenkonstruktionJson.hinterkappe_legacy = leftVal
+            } else if (hinterkappeSide.mode === "unterschiedlich" && (leftVal || rightVal)) {
+                bodenkonstruktionJson.hinterkappe_legacy = [leftVal, rightVal].filter(Boolean).join(",")
             }
-            // Left side Leder
-            if ((hinterkappeSide.side === "links" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.leftValue === "leder" && hinterkappeSide.leftSubValue) {
-                bodenkonstruktionJson.leder_auswahl_links = hinterkappeSide.leftSubValue
-                bodenkonstruktionJson.leder_auswahl_links_price = getSubOptionPrice("hinterkappe", hinterkappeSide.leftSubValue)
-                bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl || hinterkappeSide.leftSubValue
-                bodenkonstruktionJson.leder_auswahl_price += getSubOptionPrice("hinterkappe", hinterkappeSide.leftSubValue)
+            if (leftVal === "leder" && leftSub) {
+                bodenkonstruktionJson.leder_auswahl_links = leftSub
+                bodenkonstruktionJson.leder_auswahl_links_price = getSubOptionPrice("hinterkappe", leftSub)
+                bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl || leftSub
+                bodenkonstruktionJson.leder_auswahl_price += getSubOptionPrice("hinterkappe", leftSub)
             }
-            // Right side Leder
-            if ((hinterkappeSide.side === "rechts" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.rightValue === "leder" && hinterkappeSide.rightSubValue) {
-                bodenkonstruktionJson.leder_auswahl_rechts = hinterkappeSide.rightSubValue
-                bodenkonstruktionJson.leder_auswahl_rechts_price = getSubOptionPrice("hinterkappe", hinterkappeSide.rightSubValue)
-                bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl ? `${bodenkonstruktionJson.leder_auswahl},${hinterkappeSide.rightSubValue}` : hinterkappeSide.rightSubValue
-                bodenkonstruktionJson.leder_auswahl_price += getSubOptionPrice("hinterkappe", hinterkappeSide.rightSubValue)
+            if (rightVal === "leder" && rightSub) {
+                bodenkonstruktionJson.leder_auswahl_rechts = rightSub
+                if (hinterkappeSide.mode === "unterschiedlich") {
+                    bodenkonstruktionJson.leder_auswahl_rechts_price = getSubOptionPrice("hinterkappe", rightSub)
+                    bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl ? `${bodenkonstruktionJson.leder_auswahl},${rightSub}` : rightSub
+                    bodenkonstruktionJson.leder_auswahl_price += getSubOptionPrice("hinterkappe", rightSub)
+                } else {
+                    bodenkonstruktionJson.leder_auswahl_rechts = leftSub
+                }
             }
         } else if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {
             const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
@@ -592,22 +608,23 @@ export default function BodenkonstruktionPage() {
             }
         }
 
-        // 3. Brandsohle (with left/right support) - include prices for all sides
-        if (brandsohleSide && brandsohleSide.side) {
+        // 3. Brandsohle (mode: gleich | unterschiedlich)
+        if (brandsohleSide && brandsohleSide.mode) {
             bodenkonstruktionJson.brandsohle = {
-                side: brandsohleSide.side,
+                mode: brandsohleSide.mode,
+                sameValues: brandsohleSide.sameValues || [],
                 leftValues: brandsohleSide.leftValues || [],
                 rightValues: brandsohleSide.rightValues || []
             }
-            // Set price from first selected value (links or rechts)
-            const firstVal = (brandsohleSide.leftValues?.[0] ?? brandsohleSide.rightValues?.[0]) || null
+            const firstVal = brandsohleSide.mode === "gleich" 
+                ? (brandsohleSide.sameValues?.[0] ?? null) 
+                : (brandsohleSide.leftValues?.[0] ?? brandsohleSide.rightValues?.[0] ?? null)
             if (firstVal) {
                 bodenkonstruktionJson.brandsohle_price = getOptionPrice("brandsohle", firstVal)
             }
-            if (brandsohleSide.side === "beidseitig" && brandsohleSide.leftValues?.length) {
-                bodenkonstruktionJson.brandsohle_legacy = Array.isArray(brandsohleSide.leftValues) 
-                    ? brandsohleSide.leftValues.join(',') 
-                    : String(brandsohleSide.leftValues)
+            const legacyArr = brandsohleSide.mode === "gleich" ? brandsohleSide.sameValues : [...(brandsohleSide.leftValues || []), ...(brandsohleSide.rightValues || [])]
+            if (legacyArr?.length) {
+                bodenkonstruktionJson.brandsohle_legacy = legacyArr.join(',')
             }
         } else {
             // Legacy format
@@ -618,10 +635,11 @@ export default function BodenkonstruktionPage() {
             }
         }
 
-        // 4. Vorderkappe - use "" not null
-        if (vorderkappeSide && vorderkappeSide.side) {
+        // 4. Vorderkappe (mode: gleich | unterschiedlich)
+        if (vorderkappeSide && vorderkappeSide.mode) {
             bodenkonstruktionJson.vorderkappe = {
-                side: vorderkappeSide.side,
+                mode: vorderkappeSide.mode,
+                sameMaterial: vorderkappeSide.sameMaterial || "",
                 leftMaterial: vorderkappeSide.leftMaterial || "",
                 rightMaterial: vorderkappeSide.rightMaterial || ""
             }
