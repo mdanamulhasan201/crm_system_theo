@@ -279,14 +279,14 @@ export default function ManageProfilePage() {
                     setPassword('')
                     setShowPasswordInModal(false)
                   }}
-                  className="flex-1 py-2 px-4 border border-gray-500 text-gray-300 rounded-md hover:bg-gray-700 transition-colors"
+                  className="flex-1 cursor-pointer py-2 px-4 border border-gray-500 text-gray-300 rounded-md hover:bg-gray-700 transition-colors"
                 >
                   Abbrechen
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 py-2 px-4 bg-white text-black rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-2 px-4 cursor-pointer bg-white text-black rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {submitting ? 'Wird geladen...' : 'Anmelden'}
                 </button>
