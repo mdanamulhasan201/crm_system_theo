@@ -579,12 +579,11 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       )
                     }
                     
-                    // Handle hinterkappeMusterSide field type
+                    // Handle hinterkappeMusterSide field type - always show in PDF
                     if (g.fieldType === "hinterkappeMusterSide") {
-                      if (!hinterkappeMusterSide || !hinterkappeMusterSide.side) {
-                        return null
-                      }
-                      const parts: string[] = [`Seite: ${hinterkappeMusterSide.side.charAt(0).toUpperCase() + hinterkappeMusterSide.side.slice(1)}`]
+                      const parts: string[] = []
+                      if (hinterkappeMusterSide?.side) {
+                        parts.push(`Seite: ${hinterkappeMusterSide.side.charAt(0).toUpperCase() + hinterkappeMusterSide.side.slice(1)}`)
                       if ((hinterkappeMusterSide.side === "links" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.leftValue) {
                         const leftOption = g.options.find(opt => opt.id === hinterkappeMusterSide.leftValue)
                         if (leftOption) {
@@ -597,31 +596,27 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           parts.push(`Rechts: ${rightOption.label}`)
                         }
                       }
+                      }
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
                           <div className="flex-1 leading-loose">
-                            {parts.map((part, idx) => (
+                            {parts.length > 0 ? parts.map((part, idx) => (
                               <div key={idx} className="mb-1">
                                 <ModalCheckbox isSelected={true} label={part} />
                               </div>
-                            ))}
+                            )) : <span className="text-xs text-slate-400">Nicht ausgewählt</span>}
                           </div>
                         </div>
                       )
                     }
                     
-                    // Handle hinterkappeSide field type
+                    // Handle hinterkappeSide field type - always show in PDF
                     if (g.fieldType === "hinterkappeSide") {
-                      if (!hinterkappeSide || !hinterkappeSide.side) {
-                        return null
-                      }
                       const parts: string[] = []
-                      
-                      // Show side selection first
+                      if (hinterkappeSide?.side) {
                       const sideLabel = hinterkappeSide.side === "links" ? "Links" : hinterkappeSide.side === "rechts" ? "Rechts" : "Beidseitig"
                       parts.push(`Seite: ${sideLabel}`)
-                      
                       // Left side details - show ALL selected data
                       if ((hinterkappeSide.side === "links" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.leftValue) {
                         const leftOption = g.options.find(opt => opt.id === hinterkappeSide.leftValue)
@@ -651,7 +646,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                           }
                         }
                       }
-                      
+                      }
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
@@ -1071,12 +1066,11 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   )
                 }
                 
-                // Handle hinterkappeMusterSide field type
+                // Handle hinterkappeMusterSide field type - always show in PDF
                 if (g.fieldType === "hinterkappeMusterSide") {
-                  if (!hinterkappeMusterSide || !hinterkappeMusterSide.side) {
-                    return null
-                  }
-                  const parts: string[] = [`Seite: ${hinterkappeMusterSide.side.charAt(0).toUpperCase() + hinterkappeMusterSide.side.slice(1)}`]
+                  const parts: string[] = []
+                  if (hinterkappeMusterSide?.side) {
+                    parts.push(`Seite: ${hinterkappeMusterSide.side.charAt(0).toUpperCase() + hinterkappeMusterSide.side.slice(1)}`)
                   if ((hinterkappeMusterSide.side === "links" || hinterkappeMusterSide.side === "beidseitig") && hinterkappeMusterSide.leftValue) {
                     const leftOption = g.options.find(opt => opt.id === hinterkappeMusterSide.leftValue)
                     if (leftOption) {
@@ -1089,31 +1083,27 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       parts.push(`Rechts: ${rightOption.label}`)
                     }
                   }
+                  }
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
                       <div style={{ flex: 1, lineHeight: 1.8 }}>
-                        {parts.map((part, idx) => (
+                        {parts.length > 0 ? parts.map((part, idx) => (
                           <div key={idx} style={{ marginBottom: '4px' }}>
                             <PDFCheckbox isSelected={true} label={part} />
                           </div>
-                        ))}
+                        )) : <span style={{ fontSize: '12px', color: '#94a3b8' }}>Nicht ausgewählt</span>}
                       </div>
                     </div>
                   )
                 }
                 
-                // Handle hinterkappeSide field type
+                // Handle hinterkappeSide field type - always show in PDF
                 if (g.fieldType === "hinterkappeSide") {
-                  if (!hinterkappeSide || !hinterkappeSide.side) {
-                    return null
-                  }
                   const parts: string[] = []
-                  
-                  // Show side selection first
+                  if (hinterkappeSide?.side) {
                   const sideLabel = hinterkappeSide.side === "links" ? "Links" : hinterkappeSide.side === "rechts" ? "Rechts" : "Beidseitig"
                   parts.push(`Seite: ${sideLabel}`)
-                  
                   // Left side details - show ALL selected data
                   if ((hinterkappeSide.side === "links" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.leftValue) {
                     const leftOption = g.options.find(opt => opt.id === hinterkappeSide.leftValue)
@@ -1143,7 +1133,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       }
                     }
                   }
-                  
+                  }
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>

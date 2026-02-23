@@ -450,19 +450,19 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         
         // Add sole specific fields
         if (selectedSole?.id === "4") {
-            json.sole4_thickness = sole4Thickness || null
-            json.sole4_color = sole4Color || null
+            json.sole4_thickness = sole4Thickness || ""
+            json.sole4_color = sole4Color || ""
         }
         if (selectedSole?.id === "5") {
-            json.sole5_thickness = sole5Thickness || null
-            json.sole5_color = sole5Color || null
+            json.sole5_thickness = sole5Thickness || ""
+            json.sole5_color = sole5Color || ""
         }
         if (selectedSole?.id === "6") {
-            json.sole6_thickness = sole6Thickness || null
-            json.sole6_color = sole6Color || null
+            json.sole6_thickness = sole6Thickness || ""
+            json.sole6_color = sole6Color || ""
         }
         
-        return json
+        return removeNulls(json)
     }
 
     // Prepare form data for Admin2 API (custom shaft + Bodenkonstruktion)
@@ -613,63 +613,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         const massschafterstellungJson1 = prepareMassschafterstellungJson1(customShaftData)
         formData.append('Massschafterstellung_json1', JSON.stringify(massschafterstellungJson1))
 
-        // Add Massschafterstellung_json2 (Bodenkonstruktion data)
-        const massschafterstellungJson2: any = {
-            Mehr_ansehen_title: selectedSole?.name || "",
-            Mehr_ansehen_description: selectedSole?.description || "",
-            hinterkappe: getSelectedValue(selected.hinterkappe) || "",
-            leder_auswahl: "",
-            leder_auswahl_price: 0.0,
-            Konstruktionsart: getSelectedValue(selected.Konstruktionsart) || "",
-            Konstruktionsart_price: 0.0,
-            brandsohle: getSelectedValue(selected.brandsohle) || "",
-            brandsohle_price: 0.0,
-            ohlenmaterial: getSelectedValue(selected.schlemmaterial) || "",
-            absatz_höhe_am_besten_wie_bei_leisten_beachten: getSelectedValue(selected.absatzhoehe) || "",
-            abrollhilfe_Rolle: getSelectedValue(selected.abrollhilfe) || "",
-            absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich: getSelectedValue(selected.absatzform) || "",
-            linker_schuh_left_Shoe: "",
-            rechter_schuh_right_Shoe: "",
-            möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen: getSelectedValue(selected.laufsohle_lose_beilegen) || "",
-            möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price: 0.0,
-            besondere_hinweise: textAreas.besondere_hinweise || ""
-        }
-
-        // Get leder_auswahl and price if hinterkappe is "leder"
-        if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {
-            const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
-            if (hinterkappeSub) {
-                massschafterstellungJson2.leder_auswahl = hinterkappeSub
-                massschafterstellungJson2.leder_auswahl_price = getSubOptionPrice("hinterkappe", hinterkappeSub)
-            }
-        }
-
-        // Get Konstruktionsart price
-        const konstruktionsartValue = getSelectedValue(selected.Konstruktionsart)
-        if (konstruktionsartValue) {
-            massschafterstellungJson2.Konstruktionsart_price = getOptionPrice("Konstruktionsart", konstruktionsartValue)
-        }
-
-        // Get brandsohle price
-        const brandsohleValue = getSelectedValue(selected.brandsohle)
-        if (brandsohleValue) {
-            massschafterstellungJson2.brandsohle_price = getOptionPrice("brandsohle", brandsohleValue)
-        }
-
-        // Get laufsohle_lose_beilegen price
-        const laufsohleValue = getSelectedValue(selected.laufsohle_lose_beilegen)
-        if (laufsohleValue) {
-            massschafterstellungJson2.möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price = getOptionPrice("laufsohle_lose_beilegen", laufsohleValue)
-        }
-
-        // Get left and right shoe images from order
-        if (orderAny?.threed_model_left || orderAny?.image3d_2) {
-            massschafterstellungJson2.rechter_schuh_right_Shoe = orderAny.threed_model_left || orderAny.image3d_2 || ""
-        }
-        if (orderAny?.threed_model_right || orderAny?.image3d_1) {
-            massschafterstellungJson2.linker_schuh_left_Shoe = orderAny.threed_model_right || orderAny.image3d_1 || ""
-        }
-
+        // Add Massschafterstellung_json2 (Bodenkonstruktion data) - shared builder, no nulls, all prices
+        const massschafterstellungJson2 = prepareMassschafterstellungJson2()
         formData.append('Massschafterstellung_json2', JSON.stringify(massschafterstellungJson2))
 
         // Add staticImage (selectedSole image - this is Mehr_ansehen image) as File
@@ -746,7 +691,22 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return subOption?.price || 0
     }
 
-    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - all fields for payload
+    // Helper to remove null from payload
+    const removeNulls = (obj: any): any => {
+        if (obj === null) return ""
+        if (Array.isArray(obj)) return obj.map(removeNulls)
+        if (typeof obj === "object") {
+            const cleaned: any = {}
+            for (const [k, v] of Object.entries(obj)) {
+                const val = removeNulls(v)
+                if (val !== undefined) cleaned[k] = val
+            }
+            return cleaned
+        }
+        return obj
+    }
+
+    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - all fields, no null, prices included
     const prepareMassschafterstellungJson2 = () => {
         const json: any = {
             "Mehr_ansehen_title": selectedSole?.name || "",
@@ -761,7 +721,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             "brandsohle": getSelectedValue(selected.brandsohle) || "",
             "brandsohle_price": 0.0,
             "Seite_wählen": brandsohleSide?.side || "",
-            "brandsohleSide": brandsohleSide ? { side: brandsohleSide.side, leftValues: brandsohleSide.leftValues || [], rightValues: brandsohleSide.rightValues || [] } : null,
+            "brandsohleSide": brandsohleSide ? { side: brandsohleSide.side, leftValues: brandsohleSide.leftValues || [], rightValues: brandsohleSide.rightValues || [] } : {},
             "Sohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
             "Bevorzugte_Farbe": textAreas.schlemmaterial_preferred_colour || "",
             "Sohlenerhöhung": soleElevation?.enabled ? "ja" : "nein",
@@ -823,7 +783,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             json.linker_schuh_left_Shoe = orderAny.threed_model_right || orderAny.image3d_1 || ""
         }
 
-        return json
+        return removeNulls(json)
     }
 
     // Prepare form data for API

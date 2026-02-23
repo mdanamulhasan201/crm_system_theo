@@ -416,39 +416,123 @@ export default function BodenkonstruktionPage() {
             formData.append('invoice', pdfBlob, 'invoice.pdf')
         }
 
-        // Prepare bodenkonstruktion_json - Include ALL fields
+    // Helper to remove null from payload - use "" or {} so no data goes as null
+    const removeNulls = (obj: any): any => {
+        if (obj === null) return ""
+        if (Array.isArray(obj)) return obj.map(removeNulls)
+        if (typeof obj === "object") {
+            const cleaned: any = {}
+            for (const [k, v] of Object.entries(obj)) {
+                const val = removeNulls(v)
+                if (val !== undefined) cleaned[k] = val
+            }
+            return cleaned
+        }
+        return obj
+    }
+
+    // Prepare bodenkonstruktion_json - Include ALL form fields (no null, prices included)
         const bodenkonstruktionJson: any = {
+            // Customer & delivery
+            customerName: customerName || "",
+            
             // Sole information
             Mehr_ansehen_image: selectedSole?.image || "",
             Mehr_ansehen_title: selectedSole?.name || "",
             Mehr_ansehen_description: selectedSole?.description || "",
             
-            // Standard fields
-            hinterkappe: "", // Will be set below if using legacy format
+            // === 1. Hinterkappe - Muster wird bereitgestellt (always full structure) ===
+            hinterkappe_muster: {
+                side: hinterkappeMusterSide?.side ?? "",
+                leftValue: hinterkappeMusterSide?.leftValue ?? "",
+                rightValue: hinterkappeMusterSide?.rightValue ?? "",
+                leftPrice: (hinterkappeMusterSide?.leftValue === "nein") ? 4.99 : 0,
+                rightPrice: (hinterkappeMusterSide?.rightValue === "nein") ? 4.99 : 0,
+            },
+            
+            // === 2. Hinterkappe (Material, Leder Auswahl L/R - always full structure) ===
+            hinterkappe: hinterkappeSide && hinterkappeSide.side ? {
+                side: hinterkappeSide.side,
+                leftValue: hinterkappeSide.leftValue ?? "",
+                leftSubValue: hinterkappeSide.leftSubValue ?? "",
+                rightValue: hinterkappeSide.rightValue ?? "",
+                rightSubValue: hinterkappeSide.rightSubValue ?? "",
+            } : (getSelectedValue(selected.hinterkappe) || ""),
             leder_auswahl: "",
-            leder_auswahl_price: 0.0,
-            Konstruktionsart: getSelectedValue(selected.Konstruktionsart) || "",
-            Konstruktionsart_price: 0.0,
-            brandsohle: "", // Will be set below if using legacy format
-            brandsohle_price: 0.0,
-            ohlenmaterial: getSelectedValue(selected.schlemmaterial) || "",
-            absatz_höhe_am_besten_wie_bei_leisten_beachten: getSelectedValue(selected.absatzhoehe) || "",
-            abrollhilfe_Rolle: getSelectedValue(selected.abrollhilfe) || "",
-            absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich: getSelectedValue(selected.absatzform) || "",
-            linker_schuh_left_Shoe: "",
-            rechter_schuh_right_Shoe: "",
-            möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen: getSelectedValue(selected.laufsohle_lose_beilegen) || "",
-            möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price: 0.0,
-            besondere_hinweise: textAreas.besondere_hinweise || "",
+            leder_auswahl_price: 0,
+            leder_auswahl_links: "",
+            leder_auswahl_links_price: 0,
+            leder_auswahl_rechts: "",
+            leder_auswahl_rechts_price: 0,
+            
+            // === 3. Vorderkappe ===
+            vorderkappe: {} as any,
+            
+            // === 4. Brandsohle ===
+            brandsohle: "" as any,
+            brandsohle_price: 0,
+            
+            // === 5. Verbindungsleder ===
             verbindungsleder: getSelectedValue(selected.verbindungsleder) || "",
+            
+            // === 6. Konstruktionsart ===
+            Konstruktionsart: getSelectedValue(selected.Konstruktionsart) || "",
+            Konstruktionsart_price: 0,
+            
+            // === 7. Rahmen ===
+            rahmen: {} as any,
+            Rahmenfarbe: "",
+            
+            // === 8. Sohlenmaterial ===
+            Sohlenmaterial: getSelectedValue(selected.schlemmaterial) || "",
+            ohlenmaterial: getSelectedValue(selected.schlemmaterial) || "",
+            
+            // === 9. Bevorzugte Farbe ===
+            Bevorzugte_Farbe: textAreas.schlemmaterial_preferred_colour || "",
+            schlemmaterial_preferred_colour: textAreas.schlemmaterial_preferred_colour || "",
+            
+            // === 10. Sohlenhöhe gesamt – Differenziert (Ferse, Ballen, Spitze mm) ===
+            sohlenhoehe_differenziert: {} as any,
+            
+            // === 11. Sohlenerhöhung ===
+            Sohlenerhöhung: soleElevation?.enabled ? "ja" : "nein",
+            Seite_der_Sohlenerhöhung: soleElevation?.side || "",
+            Höhe_der_Sohlenerhöhung_mm: soleElevation?.height_mm ?? "",
+            sole_elevation: (soleElevation && soleElevation.enabled) ? soleElevation : {},
+            
+            // === 12. Absatz Form ===
+            absatz_form: getSelectedValue(selected.absatzform) || "",
+            absatz_höhe_am_besten_wie_bei_leisten_beachten: getSelectedValue(selected.absatzhoehe) || "",
+            absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich: getSelectedValue(selected.absatzform) || "",
+            
+            // === 13. Abrollhilfe (Rolle) ===
+            abrollhilfe_Rolle: getSelectedValue(selected.abrollhilfe) || "",
+            
+            // === 14. Absatzbreite anpassen (mm) ===
+            Absatzbreite_anpassen: heelWidthAdjustment ? JSON.stringify(heelWidthAdjustment) : "",
+            Linker_Schuh_innen_medial: heelWidthAdjustment?.leftMedial ? `${heelWidthAdjustment.leftMedial.op || ""} ${heelWidthAdjustment.leftMedial.mm || 0}mm` : "",
+            Linker_Schuh_außen_lateral: heelWidthAdjustment?.leftLateral ? `${heelWidthAdjustment.leftLateral.op || ""} ${heelWidthAdjustment.leftLateral.mm || 0}mm` : "",
+            Rechter_Schuh_innen_medial: heelWidthAdjustment?.rightMedial ? `${heelWidthAdjustment.rightMedial.op || ""} ${heelWidthAdjustment.rightMedial.mm || 0}mm` : "",
+            Rechter_Schuh_außen_lateral: heelWidthAdjustment?.rightLateral ? `${heelWidthAdjustment.rightLateral.op || ""} ${heelWidthAdjustment.rightLateral.mm || 0}mm` : "",
+            heel_width_adjustment: heelWidthAdjustment || {},
+            
+            // === 15. Möchten Sie die Laufsohle lose der Bestellung beilegen? ===
+            möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen: getSelectedValue(selected.laufsohle_lose_beilegen) || "",
+            möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price: 0,
+            
+            // === 16. Leisten im Schuh belassen oder ausleisten? ===
+            leisten_belassen: getSelectedValue(selected.leisten_belassen) || "",
+            
+            // === 17. Besondere Hinweise ===
+            besondere_hinweise: textAreas.besondere_hinweise || "",
+            Besondere_Hinweise: textAreas.besondere_hinweise || "",
+            
+            // Legacy / extra
             farbauswahl: getSelectedValue(selected.farbauswahl) || "",
             laufkohle: getSelectedValue(selected.laufkohle) || "",
             schlenstaerke: getSelectedValue(selected.schlenstaerke) || "",
-            schlemmaterial_preferred_colour: textAreas.schlemmaterial_preferred_colour || "",
-            
-            // Special adjustment fields
-            heel_width_adjustment: heelWidthAdjustment || null,
-            sole_elevation: (soleElevation && soleElevation.enabled) ? soleElevation : null,
+            linker_schuh_left_Shoe: "",
+            rechter_schuh_right_Shoe: "",
         }
 
         // Get Konstruktionsart price
@@ -479,66 +563,50 @@ export default function BodenkonstruktionPage() {
             if (sole6Color) bodenkonstruktionJson.sole6_color = sole6Color
         }
 
-        // Add orthopedic fields to JSON
-        // 1. Hinterkappe Muster (with left/right support)
-        if (hinterkappeMusterSide && hinterkappeMusterSide.side) {
-            bodenkonstruktionJson.hinterkappe_muster = {
-                side: hinterkappeMusterSide.side,
-                leftValue: hinterkappeMusterSide.leftValue || null,
-                rightValue: hinterkappeMusterSide.rightValue || null
-            }
-        } else if (selected.hinterkappe_muster) {
-            // Fallback to old format for backward compatibility
-            bodenkonstruktionJson.hinterkappe_muster = getSelectedValue(selected.hinterkappe_muster)
-        }
-
-        // 2. Hinterkappe (Material & Leder-Auswahl with left/right support)
+        // Add orthopedic fields - hinterkappe_muster and hinterkappe already set above with full structure
+        // Set leder_auswahl and prices from hinterkappeSide (left/right)
         if (hinterkappeSide && hinterkappeSide.side) {
-            bodenkonstruktionJson.hinterkappe = {
-                side: hinterkappeSide.side,
-                leftValue: hinterkappeSide.leftValue || null,
-                leftSubValue: hinterkappeSide.leftSubValue || null,
-                rightValue: hinterkappeSide.rightValue || null,
-                rightSubValue: hinterkappeSide.rightSubValue || null
-            }
-            // Also set legacy fields for backward compatibility
             if (hinterkappeSide.side === "beidseitig" && hinterkappeSide.leftValue) {
                 bodenkonstruktionJson.hinterkappe_legacy = hinterkappeSide.leftValue
-                if (hinterkappeSide.leftValue === "leder" && hinterkappeSide.leftSubValue) {
-                    bodenkonstruktionJson.leder_auswahl = hinterkappeSide.leftSubValue
-                    bodenkonstruktionJson.leder_auswahl_price = getSubOptionPrice("hinterkappe", hinterkappeSide.leftSubValue)
-                }
             }
-        } else {
-            // Legacy format
-            bodenkonstruktionJson.hinterkappe = getSelectedValue(selected.hinterkappe) || ""
-            if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {
-                const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
-                if (hinterkappeSub) {
-                    bodenkonstruktionJson.leder_auswahl = hinterkappeSub
-                    bodenkonstruktionJson.leder_auswahl_price = getSubOptionPrice("hinterkappe", hinterkappeSub)
-                }
+            // Left side Leder
+            if ((hinterkappeSide.side === "links" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.leftValue === "leder" && hinterkappeSide.leftSubValue) {
+                bodenkonstruktionJson.leder_auswahl_links = hinterkappeSide.leftSubValue
+                bodenkonstruktionJson.leder_auswahl_links_price = getSubOptionPrice("hinterkappe", hinterkappeSide.leftSubValue)
+                bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl || hinterkappeSide.leftSubValue
+                bodenkonstruktionJson.leder_auswahl_price += getSubOptionPrice("hinterkappe", hinterkappeSide.leftSubValue)
+            }
+            // Right side Leder
+            if ((hinterkappeSide.side === "rechts" || hinterkappeSide.side === "beidseitig") && hinterkappeSide.rightValue === "leder" && hinterkappeSide.rightSubValue) {
+                bodenkonstruktionJson.leder_auswahl_rechts = hinterkappeSide.rightSubValue
+                bodenkonstruktionJson.leder_auswahl_rechts_price = getSubOptionPrice("hinterkappe", hinterkappeSide.rightSubValue)
+                bodenkonstruktionJson.leder_auswahl = bodenkonstruktionJson.leder_auswahl ? `${bodenkonstruktionJson.leder_auswahl},${hinterkappeSide.rightSubValue}` : hinterkappeSide.rightSubValue
+                bodenkonstruktionJson.leder_auswahl_price += getSubOptionPrice("hinterkappe", hinterkappeSide.rightSubValue)
+            }
+        } else if (selected.hinterkappe === "leder" && selected.hinterkappe_sub) {
+            const hinterkappeSub = typeof selected.hinterkappe_sub === 'string' ? selected.hinterkappe_sub : null
+            if (hinterkappeSub) {
+                bodenkonstruktionJson.leder_auswahl = hinterkappeSub
+                bodenkonstruktionJson.leder_auswahl_price = getSubOptionPrice("hinterkappe", hinterkappeSub)
             }
         }
 
-        // 3. Brandsohle (with left/right support)
+        // 3. Brandsohle (with left/right support) - include prices for all sides
         if (brandsohleSide && brandsohleSide.side) {
             bodenkonstruktionJson.brandsohle = {
                 side: brandsohleSide.side,
-                leftValues: brandsohleSide.leftValues || null,
-                rightValues: brandsohleSide.rightValues || null
+                leftValues: brandsohleSide.leftValues || [],
+                rightValues: brandsohleSide.rightValues || []
             }
-            // Also set legacy field for backward compatibility
-            if (brandsohleSide.side === "beidseitig" && brandsohleSide.leftValues) {
+            // Set price from first selected value (links or rechts)
+            const firstVal = (brandsohleSide.leftValues?.[0] ?? brandsohleSide.rightValues?.[0]) || null
+            if (firstVal) {
+                bodenkonstruktionJson.brandsohle_price = getOptionPrice("brandsohle", firstVal)
+            }
+            if (brandsohleSide.side === "beidseitig" && brandsohleSide.leftValues?.length) {
                 bodenkonstruktionJson.brandsohle_legacy = Array.isArray(brandsohleSide.leftValues) 
                     ? brandsohleSide.leftValues.join(',') 
-                    : brandsohleSide.leftValues
-                const brandsohleValue = Array.isArray(brandsohleSide.leftValues) 
-                    ? brandsohleSide.leftValues[0] 
-                    : brandsohleSide.leftValues
-                if (brandsohleValue) {
-                    bodenkonstruktionJson.brandsohle_price = getOptionPrice("brandsohle", brandsohleValue)
-                }
+                    : String(brandsohleSide.leftValues)
             }
         } else {
             // Legacy format
@@ -549,21 +617,22 @@ export default function BodenkonstruktionPage() {
             }
         }
 
-        // 4. Vorderkappe
+        // 4. Vorderkappe - use "" not null
         if (vorderkappeSide && vorderkappeSide.side) {
             bodenkonstruktionJson.vorderkappe = {
                 side: vorderkappeSide.side,
-                leftMaterial: vorderkappeSide.leftMaterial || null,
-                rightMaterial: vorderkappeSide.rightMaterial || null
+                leftMaterial: vorderkappeSide.leftMaterial || "",
+                rightMaterial: vorderkappeSide.rightMaterial || ""
             }
         }
 
-        // 5. Rahmen
+        // 5. Rahmen (with Rahmenfarbe)
         if (rahmen && rahmen.type) {
             bodenkonstruktionJson.rahmen = {
                 type: rahmen.type,
                 color: rahmen.color || ""
             }
+            bodenkonstruktionJson.Rahmenfarbe = rahmen.color || ""
         }
 
         // 6. Sohlenhöhe Differenziert
@@ -575,12 +644,9 @@ export default function BodenkonstruktionPage() {
             }
         }
 
-        // 7. Leisten belassen
-        if (selected.leisten_belassen) {
-            bodenkonstruktionJson.leisten_belassen = getSelectedValue(selected.leisten_belassen)
-        }
-
-        formData.append('bodenkonstruktion_json', JSON.stringify(bodenkonstruktionJson))
+        // Remove any remaining nulls before sending
+        const cleanedJson = removeNulls(bodenkonstruktionJson)
+        formData.append('bodenkonstruktion_json', JSON.stringify(cleanedJson))
 
         // Add staticImage (selectedSole image) - convert to File
         if (selectedSole?.image) {
