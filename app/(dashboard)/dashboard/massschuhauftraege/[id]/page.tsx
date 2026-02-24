@@ -16,6 +16,7 @@ import {
 import { SHOE_STEPS, ProgressData } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuProgressTable';
 import FertigungsweisungSidebar from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/FertigungsweisungSidebar';
 import LeistenerstellungStepFields, { type LeistenfertigungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/LeistenerstellungStepFields';
+import BettungserstellungStepFields from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BettungserstellungStepFields';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 // Short names for progress indicator (matching the image design)
@@ -246,6 +247,7 @@ export default function MassschuhauftraegePage() {
     const [material, setMaterial] = useState('');
     const [leistentyp, setLeistentyp] = useState('');
     const [leistenfertigung, setLeistenfertigung] = useState<LeistenfertigungValue>('');
+    const [thickness, setThickness] = useState('');
 
     useEffect(() => {
         if (!id) {
@@ -269,6 +271,7 @@ export default function MassschuhauftraegePage() {
                     if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
                     const lf = data.leistenfertigung;
                     if (lf === 'Extern' || lf === 'Über F1rst') setLeistenfertigung(lf);
+                    if (data.thickness != null && data.thickness !== '') setThickness(String(data.thickness));
                 }
                 setLoading(false);
             })
@@ -314,6 +317,7 @@ export default function MassschuhauftraegePage() {
             formData.append('material', material);
             formData.append('leistentyp', leistentyp);
             formData.append('leistenfertigung', leistenfertigung);
+            formData.append('thickness', thickness);
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
                 router.push('/dashboard/massschuhauftraege');
@@ -383,10 +387,12 @@ export default function MassschuhauftraegePage() {
                             </div>
                         </div>
 
-                        {/* Instruction Text */}
+                        {/* Instruction Text – Step 3 (Bettungserstellung): only first line; other steps: full text */}
                         <div className="mb-6 p-3 bg-gray-50 rounded-lg ">
                             <p className="text-sm text-gray-500">
-                                Dieser Schritt wartet auf Bearbeitung. Laden Sie relevante Bilder hoch und fügen Sie Notizen hinzu.
+                                {(orderData?.currentStepIndex ?? activeStepIndex) === 2
+                                    ? 'Dieser Schritt wartet auf Bearbeitung.'
+                                    : 'Dieser Schritt wartet auf Bearbeitung. Laden Sie relevante Bilder hoch und fügen Sie Notizen hinzu.'}
                             </p>
                         </div>
 
@@ -504,6 +510,14 @@ export default function MassschuhauftraegePage() {
                         )}
 
                         {/* Step 3: Bettungserstellung – Material & Dicke (only when this step) */}
+                        {(orderData?.currentStepIndex ?? activeStepIndex) === 2 && (
+                            <BettungserstellungStepFields
+                                material={material}
+                                thickness={thickness}
+                                onMaterialChange={setMaterial}
+                                onThicknessChange={setThickness}
+                            />
+                        )}
 
                         {/* Complete Button */}
                         <Button
