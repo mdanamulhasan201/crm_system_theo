@@ -1,15 +1,82 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, FileText, ArrowRight, AlertCircle, History } from 'lucide-react';
+import { Check, FileText, ArrowRight, AlertCircle, History, Search, Loader2 } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import toast from 'react-hot-toast';
 import MasschuhauNoteModal from './MasschuhauNoteModal';
 import PriorityModal from './PriorityModal';
 import MasschuHistorySidebar from './MasschuHistorySidebar';
+import { getAllMassschuheOrders } from '@/apis/MassschuheAddedApis';
+import { Input } from '@/components/ui/input';
 
+// API response types
+export interface ShoeOrderStepApi {
+    status: string;
+    isCompleted: boolean;
+    createdAt: string;
+}
+
+export interface ShoeOrderApi {
+    id: string;
+    orderNumber: number;
+    customer: { vorname: string; nachname: string };
+    status: string;
+    branch_location: { title: string; description: string };
+    createdAt: string;
+    payment_status: string;
+    priority: string;
+    shoeOrderStep: ShoeOrderStepApi[];
+}
+
+// Normalize API step name to match SHOE_STEPS (e.g. "Halbprobe_durchführen" -> "Halbprobe durchführen")
+function normalizeStepName(apiStatus: string): string {
+    return apiStatus.replace(/_/g, ' ');
+}
+
+// Get current step index from shoeOrderStep (number of completed steps = index of current step)
+function getCurrentStepIndex(shoeOrderStep: ShoeOrderStepApi[]): number {
+    const completed = shoeOrderStep?.filter(s => s.isCompleted) ?? [];
+    return Math.min(completed.length, SHOE_STEPS.length - 1);
+}
+
+// Get days since the current step started (last step's createdAt)
+function getDaysInCurrentStep(shoeOrderStep: ShoeOrderStepApi[]): number {
+    if (!shoeOrderStep?.length) return 0;
+    const lastStep = shoeOrderStep[shoeOrderStep.length - 1];
+    const created = new Date(lastStep.createdAt).getTime();
+    const now = Date.now();
+    return Math.floor((now - created) / (24 * 60 * 60 * 1000));
+}
+
+// Map API order to ProgressData
+function mapOrderToProgressData(order: ShoeOrderApi): ProgressData {
+    const steps = order.shoeOrderStep ?? [];
+    const currentStepIndex = getCurrentStepIndex(steps);
+    const days = getDaysInCurrentStep(steps);
+    const nextAction = currentStepIndex < SHOE_STEPS.length - 1 ? SHOE_STEPS[currentStepIndex + 1] : 'Abgeschlossen';
+    const currentStepDisplay = order.status ? normalizeStepName(order.status) : SHOE_STEPS[currentStepIndex] ?? '-';
+
+    return {
+        id: order.id,
+        auftrag: {
+            name: [order.customer?.vorname, order.customer?.nachname].filter(Boolean).join(' ') || '-',
+            orderNumber: `#${order.orderNumber}`,
+            product: 'Massschuhe',
+            isUrgent: order.priority === 'Dringend' || order.priority === 'Urgent',
+        },
+        currentStep: currentStepDisplay,
+        location: order.branch_location?.title || order.branch_location?.description || '-',
+        createDate: order.createdAt ? new Date(order.createdAt).toLocaleDateString('de-DE') : '-',
+        days,
+        isOverdue: days > 14, // optional: treat >14 days as overdue
+        currentStepIndex,
+        nextAction,
+        responsible: order.payment_status || undefined,
+    };
+}
 
 export const SHOE_STEPS = [
     'Auftragserstellung',
@@ -43,108 +110,6 @@ export interface ProgressData {
     responsible?: string;
     notes?: string;
 }
-
-export const demoData: ProgressData[] = [
-    {
-        id: '1',
-        auftrag: {
-            name: 'Max Mustermann',
-            orderNumber: '#1008',
-            product: 'Massschuhe',
-            // assignees: ['d', 'd'],
-        },
-        currentStep: 'Bodenerstellen',
-        location: 'Berlin',
-        createDate: '15.01.2024',
-        days: 6,
-        isOverdue: true,
-        currentStepIndex: 6,
-        nextAction: 'Boden erstellen',
-        responsible: 'Werkstatt',
-        notes: ''
-    },
-    {
-        id: '2',
-        auftrag: {
-            name: 'Max Mustermann',
-            orderNumber: '#1007',
-            product: 'Massschuhe',
-        },
-        currentStep: 'Schaft fertigen',
-        location: 'München',
-        createDate: '10.01.2024',
-        days: 12,
-        isOverdue: true,
-        currentStepIndex: 5,
-        nextAction: 'Schaft fertigen',
-        responsible: 'Schaftmacher'
-    },
-    {
-        id: '3',
-        auftrag: {
-            name: 'Max Mustermann',
-            orderNumber: '#1005',
-            product: 'Massschuhe',
-        },
-        currentStep: 'Halbprobe durchführen',
-        location: 'Hamburg',
-        createDate: '12.01.2024',
-        days: 9,
-        isOverdue: true,
-        currentStepIndex: 3,
-        nextAction: 'Halbprobe durchführen',
-        responsible: 'Techniker'
-    },
-    {
-        id: '4',
-        auftrag: {
-            name: 'Max Mustermann',
-            orderNumber: '#1004',
-            product: 'Massschuhe',
-            isUrgent: true,
-        },
-        currentStep: 'Leistenerstellung',
-        location: 'Köln',
-        createDate: '18.01.2024',
-        days: 4,
-        isOverdue: true,
-        currentStepIndex: 1,
-        nextAction: 'Leisten erstellen',
-        responsible: 'Techniker'
-    },
-    {
-        id: '5',
-        auftrag: {
-            name: 'Michael Maier',
-            orderNumber: '#1003',
-            product: 'Massschuhe',
-        },
-        currentStep: 'Bettungserstellung',
-        location: 'Frankfurt',
-        createDate: '20.01.2024',
-        days: 1,
-        isOverdue: false,
-        currentStepIndex: 2,
-        nextAction: 'Bettung erstellen',
-        responsible: 'Werkstatt'
-    },
-    {
-        id: '6',
-        auftrag: {
-            name: 'Michael Maier',
-            orderNumber: '#1001',
-            product: 'Massschuhe',
-        },
-        currentStep: 'Abholbereit',
-        location: 'Stuttgart',
-        createDate: '19.01.2024',
-        days: 3,
-        isOverdue: false,
-        currentStepIndex: 8,
-        nextAction: 'Abholung koordinieren',
-        responsible: 'Empfang'
-    }
-];
 
 // Custom Checkbox Component with light green border
 function CustomCheckbox({
@@ -281,6 +246,8 @@ function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
     );
 }
 
+const PAGE_LIMIT = 10;
+
 interface MasschuProgressTableProps {
     selectedStepIndex?: number | null;
     onRowClick?: (stepIndex: number) => void;
@@ -291,17 +258,69 @@ export default function MasschuProgressTable({
     onRowClick
 }: MasschuProgressTableProps = {}) {
     const router = useRouter();
-    const filteredData = selectedStepIndex !== null
-        ? demoData.filter(row => row.currentStepIndex === selectedStepIndex)
-        : demoData;
+    const status = SHOE_STEPS[selectedStepIndex ?? 0];
+
+    const [orders, setOrders] = useState<ProgressData[]>([]);
+    const [cursor, setCursor] = useState<string>('');
+    const [hasMore, setHasMore] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [search, setSearch] = useState('');
+    const [searchInput, setSearchInput] = useState('');
+
+    const fetchOrders = useCallback(async (cursorVal: string, isLoadMore: boolean) => {
+        const setLoader = isLoadMore ? setLoadingMore : setLoading;
+        try {
+            setLoader(true);
+            const statusParam = status.replace(/\s+/g, '_');
+            const response = await getAllMassschuheOrders(PAGE_LIMIT, statusParam, cursorVal, search);
+            const list = (response?.data ?? []).map((o: ShoeOrderApi) => mapOrderToProgressData(o));
+            const pagination = response?.pagination ?? {};
+            const hasMorePages = !!pagination.hasMore;
+
+            if (isLoadMore) {
+                setOrders(prev => [...prev, ...list]);
+            } else {
+                setOrders(list);
+                setUrgentOrderIds(new Set(list.filter((r: ProgressData) => r.auftrag.isUrgent).map((r: ProgressData) => r.id)));
+            }
+            setHasMore(hasMorePages);
+            // Cursor for next page: use API nextCursor if returned, else last item id
+            const nextCursor = (pagination as { nextCursor?: string }).nextCursor ?? (list.length > 0 ? list[list.length - 1]?.id : '');
+            setCursor(nextCursor);
+        } catch (err) {
+            toast.error('Fehler beim Laden der Aufträge');
+            if (!isLoadMore) setOrders([]);
+        } finally {
+            setLoader(false);
+        }
+    }, [status, search]);
+
+    useEffect(() => {
+        setCursor('');
+        setHasMore(true);
+        fetchOrders('', false);
+    }, [status, search, fetchOrders]);
+
+    const loadMore = () => {
+        if (!hasMore || loadingMore || loading) return;
+        fetchOrders(cursor, true);
+    };
+
+    // Debounce search: update `search` after user stops typing (400ms)
+    useEffect(() => {
+        const trimmed = searchInput.trim();
+        const timer = setTimeout(() => setSearch(trimmed), 400);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
+    const filteredData = orders;
 
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
     const [priorityModalOrderId, setPriorityModalOrderId] = useState<string | null>(null);
     const [historySidebarOrderId, setHistorySidebarOrderId] = useState<string | null>(null);
-    const [urgentOrderIds, setUrgentOrderIds] = useState<Set<string>>(
-        new Set(demoData.filter(row => row.auftrag.isUrgent).map(row => row.id))
-    );
+    const [urgentOrderIds, setUrgentOrderIds] = useState<Set<string>>(new Set());
 
     const allSelected = filteredData.length > 0 && filteredData.every(row => selectedIds.has(row.id));
     const someSelected = filteredData.some(row => selectedIds.has(row.id));
@@ -365,6 +384,26 @@ export default function MasschuProgressTable({
 
     return (
         <div className="mt-8 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* Search - right aligned, debounced */}
+            <div className="p-4 border-b border-gray-100 flex justify-end">
+                <div className="relative w-full max-w-xs">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Input
+                        type="text"
+                        placeholder="Suchen (Auftrag, Kunde, …)"
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        className="pl-9"
+                    />
+                </div>
+            </div>
+
+            {loading ? (
+                <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+                </div>
+            ) : (
+            <>
             <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
@@ -530,7 +569,30 @@ export default function MasschuProgressTable({
                     </TableBody>
                 </Table>
             </div>
-            
+
+            {/* Cursor pagination: limit 10, "Mehr laden" sends cursor for next page */}
+            {(filteredData.length > 0 || hasMore) && (
+                <div className="p-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <span className="text-sm text-gray-500">
+                        {filteredData.length} Einträge
+                        <span className="text-gray-400 ml-1">(Cursor-Pagination, {PAGE_LIMIT} pro Seite)</span>
+                    </span>
+                    {hasMore && (
+                        <button
+                            type="button"
+                            onClick={loadMore}
+                            disabled={loadingMore}
+                            className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-2"
+                        >
+                            {loadingMore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                            Mehr laden
+                        </button>
+                    )}
+                </div>
+            )}
+            </>
+            )}
+
             {/* Note Modal */}
             {openNoteModalId && (() => {
                 const selectedRow = filteredData.find(row => row.id === openNoteModalId);

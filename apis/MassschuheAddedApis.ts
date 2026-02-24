@@ -52,4 +52,24 @@ export const createMassschuheOrderV2 = async (massschuheOrderData: any) => {
 }
 
 
-// massschuhe order update v2/shoe-orders/update/:id
+// massschuhe all order get – cursor pagination: v2/shoe-orders/get-all?limit=2&status=Auftragserstellung&cursor=&search=
+// cursor: empty for first page, then use last item id or response.pagination.nextCursor for next page
+export const getAllMassschuheOrders = async (limit: number = 10, status: string = 'Auftragserstellung', cursor: string = '', search: string = '') => {
+    try {
+        const cursorParam = cursor ? encodeURIComponent(cursor) : '';
+        const response = await axiosClient.get(`/v2/shoe-orders/get-all?limit=${limit}&status=${status}&cursor=${cursorParam}&search=${encodeURIComponent(search || '')}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// get single massschuhe order by id v2/shoe-orders/:id
+export const getMassschuheOrderById = async (id: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/${id}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}

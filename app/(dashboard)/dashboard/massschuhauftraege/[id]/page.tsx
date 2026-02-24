@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText, X } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import { Button } from '@/components/ui/button';
-import { SHOE_STEPS, demoData, ProgressData } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuProgressTable';
+import { SHOE_STEPS, ProgressData } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuProgressTable';
+import { getMassschuheOrderById } from '@/apis/MassschuheAddedApis';
 
 // Short names for progress indicator (matching the image design)
 const STEP_SHORT_NAMES = [
@@ -21,45 +22,24 @@ const STEP_SHORT_NAMES = [
     'Geliefert'       // Ausgeführt
 ];
 
-// Get order data by ID from demoData
-const getOrderData = (id: string) => {
-    const order = demoData.find(item => item.id === id);
-    if (!order) return null;
-
-    // Calculate zeitverlauf based on currentStepIndex
-    const zeitverlauf = SHOE_STEPS.map((step, index) => {
-        const isCompleted = index < order.currentStepIndex;
-        const isCurrent = index === order.currentStepIndex;
-        
-        // Calculate duration (demo values based on step)
-        const durationMap: Record<number, string> = {
-            0: '0d', 1: '3d', 2: '2d', 3: '6d', 4: '0d', 5: '10d', 6: '6d', 7: '2d', 8: '1d', 9: '0d'
-        };
-        const duration = isCompleted || isCurrent ? durationMap[index] || '0d' : '0d';
-
-        return {
-            step,
-            stepIndex: index, // Store original index for short name lookup
-            duration,
-            completed: isCompleted,
-            isCurrent: isCurrent,
-        };
-    });
-
-    return {
-        ...order,
-        fertigungsweisung: {
-            leisten: '',
-            bettung: '',
-            schaft: '',
-            boden: '',
-            sonderanpassungen: '',
-            halbprobe: '',
-            checkliste: '',
-            anmerkungen: order.notes || ''
-        },
-        zeitverlauf
+type OrderDetailData = ProgressData & {
+    fertigungsweisung: {
+        leisten: string;
+        bettung: string;
+        schaft: string;
+        boden: string;
+        sonderanpassungen: string;
+        halbprobe: string;
+        checkliste: string;
+        anmerkungen: string;
     };
+    zeitverlauf: Array<{
+        step: string;
+        stepIndex: number;
+        duration: string;
+        completed: boolean;
+        isCurrent: boolean;
+    }>;
 };
 
 function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
@@ -116,13 +96,86 @@ function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
     );
 }
 
+function mapApiOrderToDetailData(apiOrder: any): OrderDetailData | null {
+    if (!apiOrder?.id) return null;
+    const steps = apiOrder.shoeOrderStep ?? [];
+    const completedCount = steps.filter((s: any) => s.isCompleted).length;
+    const currentStepIndex = Math.min(completedCount, SHOE_STEPS.length - 1);
+    const lastStep = steps[steps.length - 1];
+    const days = lastStep ? Math.floor((Date.now() - new Date(lastStep.createdAt).getTime()) / (24 * 60 * 60 * 1000)) : 0;
+    const currentStepDisplay = apiOrder.status ? apiOrder.status.replace(/_/g, ' ') : SHOE_STEPS[currentStepIndex] ?? '-';
+    const nextAction = currentStepIndex < SHOE_STEPS.length - 1 ? SHOE_STEPS[currentStepIndex + 1] : 'Abgeschlossen';
+
+    const zeitverlauf = SHOE_STEPS.map((step, index) => {
+        const isCompleted = index < currentStepIndex;
+        const isCurrent = index === currentStepIndex;
+        const stepData = steps[index];
+        const duration = stepData?.createdAt
+            ? `${Math.max(0, Math.floor((Date.now() - new Date(stepData.createdAt).getTime()) / (24 * 60 * 60 * 1000)))}d`
+            : '0d';
+        return {
+            step,
+            stepIndex: index,
+            duration: isCompleted || isCurrent ? duration : '0d',
+            completed: isCompleted,
+            isCurrent,
+        };
+    });
+
+    return {
+        id: apiOrder.id,
+        auftrag: {
+            name: [apiOrder.customer?.vorname, apiOrder.customer?.nachname].filter(Boolean).join(' ') || '-',
+            orderNumber: `#${apiOrder.orderNumber}`,
+            product: 'Massschuhe',
+            isUrgent: apiOrder.priority === 'Dringend' || apiOrder.priority === 'Urgent',
+        },
+        currentStep: currentStepDisplay,
+        location: apiOrder.branch_location?.title || apiOrder.branch_location?.description || '-',
+        createDate: apiOrder.createdAt ? new Date(apiOrder.createdAt).toLocaleDateString('de-DE') : '-',
+        days,
+        isOverdue: days > 14,
+        currentStepIndex,
+        nextAction,
+        responsible: apiOrder.payment_status || undefined,
+        notes: '',
+        fertigungsweisung: {
+            leisten: '',
+            bettung: '',
+            schaft: '',
+            boden: '',
+            sonderanpassungen: '',
+            halbprobe: '',
+            checkliste: '',
+            anmerkungen: '',
+        },
+        zeitverlauf,
+    };
+}
+
 export default function MassschuhauftraegePage() {
     const params = useParams();
     const id = params?.id as string;
-    const orderData = useMemo(() => getOrderData(id || '1'), [id]);
+    const [orderData, setOrderData] = useState<OrderDetailData | null>(null);
+    const [loading, setLoading] = useState(true);
     const [notes, setNotes] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+
+    useEffect(() => {
+        if (!id) {
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        getMassschuheOrderById(id)
+            .then((res) => {
+                const data = res?.data ?? res;
+                setOrderData(mapApiOrderToDetailData(data));
+            })
+            .catch(() => setOrderData(null))
+            .finally(() => setLoading(false));
+    }, [id]);
 
     useEffect(() => {
         if (orderData?.notes) {
@@ -146,6 +199,13 @@ export default function MassschuhauftraegePage() {
         });
     };
 
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+                <div className="text-center text-gray-500">Laden...</div>
+            </div>
+        );
+    }
     if (!orderData) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">

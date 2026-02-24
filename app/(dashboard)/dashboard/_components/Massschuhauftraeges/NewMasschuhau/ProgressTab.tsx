@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import MasschuProgressTable, { SHOE_STEPS } from './MasschuProgressTable';
 
 export default function ProgressTab() {
-    const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
+    const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(0);
 
     const handleStepClick = (stepIndex: number) => {
         if (selectedStepIndex === stepIndex) {
