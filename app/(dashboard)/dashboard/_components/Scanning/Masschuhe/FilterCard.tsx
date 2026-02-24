@@ -1,40 +1,63 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
-export default function FilterCard() {
-    // State for each question
-    const [halbprobeErforderlich, setHalbprobeErforderlich] = useState<boolean | null>(null);
-    const [leistenVorhanden, setLeistenVorhanden] = useState<boolean | null>(null);
-    const [bettungErforderlich, setBettungErforderlich] = useState<boolean | null>(null);
+export interface Step2Data {
+    material: string;
+    size: string;
+    notes: string;
+}
+export interface Step3Data {
+    material: string;
+    thickness: string;
+    notes: string;
+}
+export interface CustomerFittingData {
+    fittingDate: Date | undefined;
+    adjustments: string;
+    customerNotes: string;
+}
+export interface InternalPrepData {
+    notes: string;
+    preparationDate: Date | undefined;
+}
 
-    // State for conditional input fields
-    const [lastData, setLastData] = useState({
-        material: '',
-        size: '',
-        notes: '',
-    });
+interface FilterCardProps {
+    halbprobeErforderlich: boolean | null;
+    onHalbprobeErforderlichChange: (v: boolean | null) => void;
+    leistenVorhanden: boolean | null;
+    onLeistenVorhandenChange: (v: boolean | null) => void;
+    bettungErforderlich: boolean | null;
+    onBettungErforderlichChange: (v: boolean | null) => void;
+    lastData: Step2Data;
+    onLastDataChange: (v: Step2Data) => void;
+    footbedData: Step3Data;
+    onFootbedDataChange: (v: Step3Data) => void;
+    internalPrepData: InternalPrepData;
+    onInternalPrepDataChange: (v: InternalPrepData) => void;
+    customerFittingData: CustomerFittingData;
+    onCustomerFittingDataChange: (v: CustomerFittingData) => void;
+}
 
-    const [footbedData, setFootbedData] = useState({
-        material: '',
-        thickness: '',
-        notes: '',
-    });
-
-    const [internalPrepData, setInternalPrepData] = useState({
-        notes: '',
-        preparationDate: undefined as Date | undefined,
-    });
-
-    const [customerFittingData, setCustomerFittingData] = useState({
-        fittingDate: undefined as Date | undefined,
-        adjustments: '',
-        customerNotes: '',
-    });
-
+export default function FilterCard({
+    halbprobeErforderlich,
+    onHalbprobeErforderlichChange,
+    leistenVorhanden,
+    onLeistenVorhandenChange,
+    bettungErforderlich,
+    onBettungErforderlichChange,
+    lastData,
+    onLastDataChange,
+    footbedData,
+    onFootbedDataChange,
+    internalPrepData,
+    onInternalPrepDataChange,
+    customerFittingData,
+    onCustomerFittingDataChange,
+}: FilterCardProps) {
   return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-6">PRODUKTIONSWORKFLOW</h2>
@@ -45,7 +68,7 @@ export default function FilterCard() {
                 <div className="flex gap-3">
                     <button
                         type="button"
-                        onClick={() => setHalbprobeErforderlich(true)}
+                        onClick={() => onHalbprobeErforderlichChange(true)}
                         className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 ${
                             halbprobeErforderlich === true
                                 ? 'bg-green-50 text-[#61A178] border-2 border-green-400'
@@ -56,7 +79,7 @@ export default function FilterCard() {
                     </button>
                     <button
                         type="button"
-                        onClick={() => setHalbprobeErforderlich(false)}
+                        onClick={() => onHalbprobeErforderlichChange(false)}
                         className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 ${
                             halbprobeErforderlich === false
                                 ? 'bg-green-50 text-[#61A178] border-2 border-green-400'
@@ -94,7 +117,7 @@ export default function FilterCard() {
                                         <Calendar
                                             mode="single"
                                             selected={internalPrepData.preparationDate}
-                                            onSelect={(date) => setInternalPrepData({ ...internalPrepData, preparationDate: date })}
+                                            onSelect={(date) => onInternalPrepDataChange({ ...internalPrepData, preparationDate: date })}
                                             initialFocus
                                             captionLayout="dropdown"
                                             fromYear={new Date().getFullYear()}
@@ -109,7 +132,7 @@ export default function FilterCard() {
                                 </label>
                                 <textarea
                                     value={internalPrepData.notes}
-                                    onChange={(e) => setInternalPrepData({ ...internalPrepData, notes: e.target.value })}
+                                    onChange={(e) => onInternalPrepDataChange({ ...internalPrepData, notes: e.target.value })}
                                     placeholder="Interne Vorbereitungsnotizen..."
                                     rows={2}
                                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
@@ -146,7 +169,7 @@ export default function FilterCard() {
                                         <Calendar
                                             mode="single"
                                             selected={customerFittingData.fittingDate}
-                                            onSelect={(date) => setCustomerFittingData({ ...customerFittingData, fittingDate: date })}
+                                            onSelect={(date) => onCustomerFittingDataChange({ ...customerFittingData, fittingDate: date })}
                                             initialFocus
                                             captionLayout="dropdown"
                                             fromYear={new Date().getFullYear()}
@@ -162,7 +185,7 @@ export default function FilterCard() {
                                     </label>
                                     <textarea
                                         value={customerFittingData.adjustments}
-                                        onChange={(e) => setCustomerFittingData({ ...customerFittingData, adjustments: e.target.value })}
+                                        onChange={(e) => onCustomerFittingDataChange({ ...customerFittingData, adjustments: e.target.value })}
                                         placeholder="Anpassungen während der Anprobe..."
                                         rows={2}
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
@@ -174,7 +197,7 @@ export default function FilterCard() {
                                     </label>
                                     <textarea
                                         value={customerFittingData.customerNotes}
-                                        onChange={(e) => setCustomerFittingData({ ...customerFittingData, customerNotes: e.target.value })}
+                                        onChange={(e) => onCustomerFittingDataChange({ ...customerFittingData, customerNotes: e.target.value })}
                                         placeholder="Kundenwünsche und Notizen..."
                                         rows={2}
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
@@ -192,7 +215,7 @@ export default function FilterCard() {
                 <div className="flex gap-3">
                     <button
                         type="button"
-                        onClick={() => setLeistenVorhanden(true)}
+                        onClick={() => onLeistenVorhandenChange(true)}
                         className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 ${
                             leistenVorhanden === true
                                 ? 'bg-green-50 text-[#61A178] border-2 border-green-400'
@@ -203,7 +226,7 @@ export default function FilterCard() {
                     </button>
                     <button
                         type="button"
-                        onClick={() => setLeistenVorhanden(false)}
+                        onClick={() => onLeistenVorhandenChange(false)}
                         className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 ${
                             leistenVorhanden === false
                                 ? 'bg-green-50 text-[#61A178] border-2 border-green-400'
@@ -227,7 +250,7 @@ export default function FilterCard() {
                                     <input
                                         type="text"
                                         value={lastData.material}
-                                        onChange={(e) => setLastData({ ...lastData, material: e.target.value })}
+                                        onChange={(e) => onLastDataChange({ ...lastData, material: e.target.value })}
                                         placeholder="Leisten-Material..."
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
@@ -239,7 +262,7 @@ export default function FilterCard() {
                                     <input
                                         type="text"
                                         value={lastData.size}
-                                        onChange={(e) => setLastData({ ...lastData, size: e.target.value })}
+                                        onChange={(e) => onLastDataChange({ ...lastData, size: e.target.value })}
                                         placeholder="Leisten-Größe..."
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
@@ -251,7 +274,7 @@ export default function FilterCard() {
                                 </label>
                                 <textarea
                                     value={lastData.notes}
-                                    onChange={(e) => setLastData({ ...lastData, notes: e.target.value })}
+                                    onChange={(e) => onLastDataChange({ ...lastData, notes: e.target.value })}
                                     placeholder="Leisten-Notizen..."
                                     rows={2}
                                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
@@ -268,7 +291,7 @@ export default function FilterCard() {
                 <div className="flex gap-3">
                     <button
                         type="button"
-                        onClick={() => setBettungErforderlich(true)}
+                        onClick={() => onBettungErforderlichChange(true)}
                         className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 ${
                             bettungErforderlich === true
                                 ? 'bg-green-50 text-[#61A178] border-2 border-green-400'
@@ -279,7 +302,7 @@ export default function FilterCard() {
                     </button>
                     <button
                         type="button"
-                        onClick={() => setBettungErforderlich(false)}
+                        onClick={() => onBettungErforderlichChange(false)}
                         className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 ${
                             bettungErforderlich === false
                                 ? 'bg-green-50 text-[#61A178] border-2 border-green-400'
@@ -290,8 +313,8 @@ export default function FilterCard() {
                     </button>
                 </div>
 
-                {/* Step 3: Footbed Data Input - Only show if Bettung = No */}
-                {bettungErforderlich === false && (
+                {/* Step 3: Bettungs-Daten - Only show if Bettung erforderlich = Ja */}
+                {bettungErforderlich === true && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                         <h4 className="text-xs font-semibold text-gray-600 mb-3">Step 3: Bettungs-Daten</h4>
                         <div className="space-y-3">
@@ -303,7 +326,7 @@ export default function FilterCard() {
                                     <input
                                         type="text"
                                         value={footbedData.material}
-                                        onChange={(e) => setFootbedData({ ...footbedData, material: e.target.value })}
+                                        onChange={(e) => onFootbedDataChange({ ...footbedData, material: e.target.value })}
                                         placeholder="Bettungs-Material..."
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
@@ -315,7 +338,7 @@ export default function FilterCard() {
                                     <input
                                         type="text"
                                         value={footbedData.thickness}
-                                        onChange={(e) => setFootbedData({ ...footbedData, thickness: e.target.value })}
+                                        onChange={(e) => onFootbedDataChange({ ...footbedData, thickness: e.target.value })}
                                         placeholder="Bettungs-Dicke..."
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
@@ -327,7 +350,7 @@ export default function FilterCard() {
                                 </label>
                                 <textarea
                                     value={footbedData.notes}
-                                    onChange={(e) => setFootbedData({ ...footbedData, notes: e.target.value })}
+                                    onChange={(e) => onFootbedDataChange({ ...footbedData, notes: e.target.value })}
                                     placeholder="Bettungs-Notizen..."
                                     rows={2}
                                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"

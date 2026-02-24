@@ -4,13 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from '@/lib/utils';
-import { MapPin, FileText, StickyNote } from 'lucide-react';
+import { MapPin, StickyNote } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { initializeDeliveryDate, getRequiredDeliveryDate } from './utils/dateUtils';
 import { getSettingData } from '@/apis/einlagenApis';
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
+import PaymentStatusSection from './Werkstattzettel/FormSections/PaymentStatusSection';
 
 interface Customer {
     id: string;
@@ -33,40 +34,41 @@ interface Customer {
     };
 }
 
-interface OrderFormData {
+/** Payload for v2 API POST /v2/shoe-orders/create */
+export interface MassschuheOrderV2Payload {
     customerId: string;
-    employeeId: string;
-    arztliche_diagnose: string;
-    usführliche_diagnose: string;
-    rezeptnummer: string;
-    durchgeführt_von: string;
-    note: string;
-    halbprobe_geplant: boolean;
-    kostenvoranschlag: boolean;
-    statusBezahlt?: boolean;
-    datumAuftrag: string;
-    fertigstellungBis?: string;
-    filiale: {
-        address: string;
-        description: string;
-    };
-    paymentType: 'krankenkasse' | 'privat';
-    fußanalyse?: number;
-    einlagenversorgung?: number;
+    medical_diagnosis?: string;
+    detailed_diagnosis?: string;
+    price?: number;
+    vat_rate?: number;
+    branch_location?: string;
+    employeeId?: string;
+    kva?: boolean;
+    halbprobe?: boolean;
+    insurances?: string;
+    half_sample_required?: boolean;
+    preparation_date?: string;
+    notes?: string;
+    fitting_date?: string;
+    adjustments?: string;
+    customer_reviews?: string;
+    has_trim_strips?: boolean;
+    step2_material?: string;
+    step2_size?: string;
+    step2_notes?: string;
+    bedding_required?: boolean;
+    step3_material?: string;
+    step3_thickness?: string;
+    step3_notes?: string;
+    supply_note?: string;
     quantity?: number;
-    orderNote?: string;
-    location?: string;
-    insurances?: Array<{
-        price: number;
-        description: any;
-    }>;
-    // Additional fields for API
-    delivery_date?: string;
-    telefon?: string;
-    kunde?: string;
-    email?: string;
-    button_text?: string;
-    customer_note?: string;
+    total_price?: number;
+    payment_status?: string;
+    deposit_provision?: number;
+    foot_analysis_price?: number | object;
+    pick_up_location?: string;
+    store_location?: string;
+    order_note?: string;
 }
 
 interface MassschuheOrderModalProps {
@@ -88,8 +90,24 @@ interface MassschuheOrderModalProps {
         billingType?: 'Krankenkassa' | 'Privat';
         price?: string;
         tax?: string;
+        /** Produktionsworkflow – same names as API payload */
+        has_trim_strips?: boolean;
+        step2_material?: string;
+        step2_size?: string;
+        step2_notes?: string;
+        bedding_required?: boolean;
+        step3_material?: string;
+        step3_thickness?: string;
+        step3_notes?: string;
+        adjustments?: string;
+        customer_reviews?: string;
+        /** Halbprobe from Produktionsworkflow – when true, send Step 4 & 5 data */
+        halbprobeErforderlich?: boolean | null;
+        step4_preparation_date?: string;
+        step4_notes?: string;
+        step5_fitting_date?: string;
     };
-    onSubmit: (orderData: OrderFormData) => Promise<void>;
+    onSubmit: (orderData: MassschuheOrderV2Payload) => Promise<void>;
     isLoading?: boolean;
 }
 
@@ -110,12 +128,13 @@ export default function MassschuheOrderModal({
     const [selectedEinlagenversorgung, setSelectedEinlagenversorgung] = useState<string>('');
     const [orderNote, setOrderNote] = useState<string>('');
     const [selectedLocation, setSelectedLocation] = useState<string>('');
-    const [isPaid, setIsPaid] = useState<boolean>(true);
+    const [bezahlt, setBezahlt] = useState<string>('');
     const [quantity, setQuantity] = useState<number>(1);
     const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
     const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([]);
     const [locationsLoading, setLocationsLoading] = useState(false);
+    const [showNotizTextarea, setShowNotizTextarea] = useState(false);
 
     const { user } = useAuth();
 
@@ -252,6 +271,14 @@ export default function MassschuheOrderModal({
                 setSelectedEinlagenversorgung('');
             }
             setOrderNote('');
+            // Set default bezahlt based on billingType (same as WerkstattzettelModal)
+            if (formData.billingType === 'Krankenkassa') {
+                setBezahlt('Krankenkasse_Genehmigt');
+            } else if (formData.billingType === 'Privat') {
+                setBezahlt('Privat_Bezahlt');
+            } else {
+                setBezahlt('');
+            }
             // Don't reset selectedLocation here - it will be set by the locations useEffect
         }
     }, [isOpen, user?.hauptstandort, customer, completionDays, formData.billingType, laserPrintPrices]);
@@ -319,60 +346,101 @@ export default function MassschuheOrderModal({
             return '';
         };
 
-        // Build insurances array from selected positionsnummer
-        const buildInsurancesArray = () => {
+        // Build insurances array for v2 (with vat_country), then JSON string
+        const vatCountryCode = user?.accountInfo?.vat_country === 'Österreich (AT)' ? 'AT' : user?.accountInfo?.vat_country === 'Italien (IT)' ? 'IT' : 'DE';
+        const buildInsurancesForV2 = (): string => {
             if (!formData.selectedPositionsnummer || formData.selectedPositionsnummer.length === 0) {
-                return [];
+                return '[]';
             }
-            
             const allData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
-            
-            return formData.selectedPositionsnummer.map(posNum => {
-                // Find the option in both Austrian and Italian data
+            const arr = formData.selectedPositionsnummer.map(posNum => {
                 const option = allData.find(opt => getPositionsnummer(opt) === posNum);
-                
                 if (option) {
                     return {
                         price: option.price,
-                        description: typeof option.description === 'object' ? option.description : {}
+                        description: typeof option.description === 'object' ? option.description : {},
+                        vat_country: vatCountryCode,
                     };
                 }
-                
                 return null;
-            }).filter(item => item !== null) as Array<{ price: number; description: any }>;
+            }).filter(Boolean);
+            return JSON.stringify(arr);
         };
 
-        const orderData: OrderFormData = {
+        // Total price (Gesamt): Krankenkassa = positions * qty + VAT; Privat = (foot + insole) * qty
+        let totalPrice: number;
+        if (paymentType === 'privat') {
+            totalPrice = (getFußanalysePrice(selectedFußanalyse) + (parseFloat(selectedEinlagenversorgung) || 0)) * qty;
+        } else {
+            const allPosData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
+            const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
+            const positionsSum = (formData.selectedPositionsnummer || []).reduce((sum, posNum) => {
+                const opt = allPosData.find((o: any) => getPosNum(o) === posNum);
+                return sum + (typeof opt?.price === 'number' ? opt.price : 0);
+            }, 0);
+            const vatRate = vatCountryCode === 'IT' ? 4 : vatCountryCode === 'AT' ? 20 : 0;
+            totalPrice = positionsSum * qty * (1 + vatRate / 100);
+        }
+
+        const branchLocationJson = JSON.stringify({
+            title: selectedLoc?.description || filiale,
+            description: selectedLoc?.address || '',
+        });
+        const pickUpLocationJson = JSON.stringify({ title: filiale || selectedLocation });
+        const storeLocationJson = JSON.stringify({ title: selectedLoc?.description || filiale, description: selectedLoc?.address || '' });
+
+        const halfSampleRequired = formData.halbprobeErforderlich === true;
+        const preparationDateIso = orderDate ? new Date(orderDate + 'T12:00:00.000Z').toISOString() : undefined;
+        const fittingDateIso = fertigstellungDate ? new Date(fertigstellungDate + 'T12:00:00.000Z').toISOString() : undefined;
+
+        // When half_sample_required is true: use Step 4 (preparation_date, notes) and Step 5 (fitting_date, adjustments, customer_reviews)
+        const preparationDateWhenHalfSample = halfSampleRequired && formData.step4_preparation_date
+            ? formData.step4_preparation_date
+            : undefined;
+        const notesWhenHalfSample = halfSampleRequired ? (formData.step4_notes ?? orderNote ?? undefined) : (orderNote || undefined);
+        const fittingDateWhenHalfSample = halfSampleRequired && formData.step5_fitting_date
+            ? formData.step5_fitting_date
+            : undefined;
+        const adjustmentsWhenHalfSample = halfSampleRequired ? (formData.adjustments ?? '') : undefined;
+        const customerReviewsWhenHalfSample = halfSampleRequired ? (formData.customer_reviews ?? '') : undefined;
+
+        // Build v2 payload: use null for empty optional strings so keys are always in JSON (same names as API)
+        const v2Payload: MassschuheOrderV2Payload = {
             customerId: customer.id,
-            employeeId: formData.selectedEmployeeId,
-            arztliche_diagnose: formData.arztlicheDiagnose,
-            usführliche_diagnose: formData.ausführlicheDiagnose,
-            rezeptnummer: formData.rezeptnummer,
-            durchgeführt_von: formData.selectedEmployee,
-            note: formData.versorgungNote,
-            halbprobe_geplant: formData.halbprobeGeplant === true,
-            kostenvoranschlag: formData.kostenvoranschlag === true,
-            datumAuftrag: orderDate,
-            fertigstellungBis: fertigstellungDate || undefined,
-            filiale: filialeObject,
-            paymentType: paymentType,
-            statusBezahlt: isPaid,
-            fußanalyse: paymentType === 'privat' ? getFußanalysePrice(selectedFußanalyse) * qty : undefined,
-            einlagenversorgung: paymentType === 'privat' ? parseFloat(selectedEinlagenversorgung) * qty : undefined,
-            quantity: paymentType === 'privat' ? qty : undefined,
-            orderNote: orderNote,
-            location: selectedLocation || undefined,
-            insurances: buildInsurancesArray(),
-            // Additional fields
-            delivery_date: fertigstellungDate || undefined,
-            telefon: customerPhone,
-            kunde: customerName,
-            email: customerEmail,
-            button_text: 'Bestellung speichern',
-            customer_note: orderNote,
+            medical_diagnosis: formData.arztlicheDiagnose || undefined,
+            detailed_diagnosis: formData.ausführlicheDiagnose || undefined,
+            price: paymentType === 'privat' ? parseFloat(formData.price || '0') || undefined : undefined,
+            vat_rate: paymentType === 'privat' && formData.tax ? parseFloat(formData.tax) || undefined : undefined,
+            branch_location: branchLocationJson,
+            employeeId: formData.selectedEmployeeId || undefined,
+            kva: formData.kostenvoranschlag === true,
+            halbprobe: formData.halbprobeGeplant === true,
+            insurances: (formData.selectedPositionsnummer?.length && paymentType === 'krankenkasse') ? buildInsurancesForV2() : undefined,
+            half_sample_required: halfSampleRequired,
+            preparation_date: halfSampleRequired ? (preparationDateWhenHalfSample ?? undefined) : undefined,
+            notes: halfSampleRequired ? notesWhenHalfSample : (orderNote || undefined),
+            fitting_date: halfSampleRequired ? (fittingDateWhenHalfSample ?? undefined) : undefined,
+            adjustments: adjustmentsWhenHalfSample,
+            customer_reviews: customerReviewsWhenHalfSample,
+            has_trim_strips: formData.has_trim_strips ?? false,
+            step2_material: formData.step2_material ?? '',
+            step2_size: formData.step2_size ?? '',
+            step2_notes: formData.step2_notes ?? '',
+            bedding_required: formData.bedding_required ?? false,
+            step3_material: formData.bedding_required ? (formData.step3_material ?? '') : undefined,
+            step3_thickness: formData.bedding_required ? (formData.step3_thickness ?? '') : undefined,
+            step3_notes: formData.bedding_required ? (formData.step3_notes ?? '') : undefined,
+            supply_note: formData.versorgungNote || undefined,
+            quantity: qty,
+            total_price: totalPrice,
+            payment_status: bezahlt || undefined,
+            foot_analysis_price: paymentType === 'privat' && selectedFußanalyse ? getFußanalysePrice(selectedFußanalyse) : undefined,
+            pick_up_location: pickUpLocationJson,
+            store_location: storeLocationJson,
+            order_note: orderNote || undefined,
         };
 
-        await onSubmit(orderData);
+        await onSubmit(v2Payload);
     };
 
     return (
@@ -453,42 +521,11 @@ export default function MassschuheOrderModal({
                             </div>
 
                             <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Status</label>
-                                <div className="flex items-center gap-4 mt-1">
-                                    <span className="text-gray-900 font-semibold text-sm">Bezahlt</span>
-                                    {/* Ja checkbox */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsPaid(true)}
-                                        className="flex items-center gap-2 text-xs text-gray-700"
-                                    >
-                                        <span
-                                            className={cn(
-                                                "w-4 h-4 rounded-[4px] border transition-colors",
-                                                isPaid
-                                                    ? "border-[#1E76FF] bg-[#1E76FF]"
-                                                    : "border-[#d0d7e6] bg-white"
-                                            )}
-                                        />
-                                        <span>Ja</span>
-                                    </button>
-                                    {/* Nein checkbox */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsPaid(false)}
-                                        className="flex items-center gap-2 text-xs text-gray-700"
-                                    >
-                                        <span
-                                            className={cn(
-                                                "w-4 h-4 rounded-[4px] border transition-colors",
-                                                !isPaid
-                                                    ? "border-[#1E76FF] bg-[#1E76FF]"
-                                                    : "border-[#d0d7e6] bg-white"
-                                            )}
-                                        />
-                                        <span>Nein</span>
-                                    </button>
-                                </div>
+                                <PaymentStatusSection
+                                    value={bezahlt}
+                                    onChange={setBezahlt}
+                                    disabledPaymentType={formData.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData.billingType === 'Privat' ? 'Privat' : undefined}
+                                />
                             </div>
                         </div>
 
@@ -797,15 +834,8 @@ export default function MassschuheOrderModal({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
-                                >
-                                    <FileText className="w-4 h-4 text-gray-700" />
-                                    <span>PDF anzeigen</span>
-                                </Button>
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
+                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none cursor-pointer"
+                                    onClick={() => setShowNotizTextarea(!showNotizTextarea)}
                                 >
                                     <StickyNote className="w-4 h-4 text-gray-700" />
                                     <span>Notiz hinzufügen</span>
@@ -813,6 +843,20 @@ export default function MassschuheOrderModal({
                             </div>
                         </div>
                     </div>
+
+                    {/* Notiz textarea - shown when "Notiz hinzufügen" is clicked (same as WerkstattzettelModal) */}
+                    {showNotizTextarea && (
+                        <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Notiz</label>
+                            <textarea
+                                value={orderNote}
+                                onChange={(e) => setOrderNote(e.target.value)}
+                                placeholder="Notiz eingeben..."
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
+                            />
+                        </div>
+                    )}
 
                 </div>
 

@@ -103,9 +103,9 @@ export default function PaymentStatusSection({
     return (
         <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">Kostenträger</Label>
-            <div className="flex gap-3 flex-wrap">
-                {/* Payment Type Dropdown */}
-                <div className="w-full max-w-[180px]">
+            <div className="flex gap-3 w-full">
+                {/* Payment Type Dropdown - half width */}
+                <div className="flex-1 min-w-0">
                     <Select 
                         value={paymentType} 
                         onValueChange={handlePaymentTypeChange}
@@ -127,9 +127,9 @@ export default function PaymentStatusSection({
                     </Select>
                 </div>
 
-                {/* Status Dropdown - Only show if payment type is selected */}
+                {/* Status Dropdown - half width, only show if payment type is selected */}
                 {paymentType && (
-                    <div className="w-full max-w-[180px]">
+                    <div className="flex-1 min-w-0">
                         <Select 
                             key={`status-${paymentType}`} 
                             value={status} 

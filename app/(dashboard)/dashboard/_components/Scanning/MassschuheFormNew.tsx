@@ -7,7 +7,7 @@ import MassschuheOrderModal from './MassschuheOrderModal';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import RezeptCard from './Masschuhe/RezeptCard';
-import FilterCard from './Masschuhe/FilterCard';
+import FilterCard, { type Step2Data, type Step3Data, type CustomerFittingData, type InternalPrepData } from './Masschuhe/FilterCard';
 import VersorgungsnotizCard from './Masschuhe/VersorgungsnotizCard';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
 
@@ -162,6 +162,15 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [selectedLocation, setSelectedLocation] = useState<any | null>(null);
     const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
 
+    // Produktionsworkflow state (FilterCard) – sent in order payload
+    const [halbprobeErforderlich, setHalbprobeErforderlich] = useState<boolean | null>(null);
+    const [leistenVorhanden, setLeistenVorhanden] = useState<boolean | null>(null);
+    const [bettungErforderlich, setBettungErforderlich] = useState<boolean | null>(null);
+    const [lastData, setLastData] = useState<Step2Data>({ material: '', size: '', notes: '' });
+    const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '' });
+    const [internalPrepData, setInternalPrepData] = useState<InternalPrepData>({ notes: '', preparationDate: undefined });
+    const [customerFittingData, setCustomerFittingData] = useState<CustomerFittingData>({ fittingDate: undefined, adjustments: '', customerNotes: '' });
+
     // Fetch locations on mount
     useEffect(() => {
         const fetchLocations = async () => {
@@ -275,57 +284,12 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         setShowOrderModal(true);
     };
 
-    // Helper function to get positionsnummer from option
-    const getPositionsnummer = (option: any): string => {
-        if (option.positionsnummer) {
-            return option.positionsnummer;
-        }
-        if (typeof option.description === 'object' && option.description?.positionsnummer) {
-            return option.description.positionsnummer;
-        }
-        return '';
-    };
-
-    // Build insurances array from selected positionsnummer
-    const buildInsurancesArray = () => {
-        if (!selectedPositionsnummer || selectedPositionsnummer.length === 0) {
-            return [];
-        }
-
-        const allData = [...positionsnummerAustriaData, ...positionsnummerItalyData];
-
-        return selectedPositionsnummer.map(posNum => {
-            // Find the option in both Austrian and Italian data
-            const option = allData.find(opt => getPositionsnummer(opt) === posNum);
-
-            if (option) {
-                return {
-                    price: option.price,
-                    description: typeof option.description === 'object' ? option.description : {}
-                };
-            }
-
-            return null;
-        }).filter(item => item !== null);
-    };
-
-    // Handle order submission from modal
+    // Handle order submission from modal (orderData is v2 payload from MassschuheOrderModal)
     const handleOrderSubmit = async (orderData: any) => {
-        // Add insurances array to orderData
-        const insurances = buildInsurancesArray();
-        const orderDataWithInsurances = {
-            ...orderData,
-            insurances: insurances
-        };
-
-        // Submit to API
-        const result = await createMassschuhe(orderDataWithInsurances);
+        const result = await createMassschuhe(orderData);
 
         if (result.success) {
-            // Close modal
             setShowOrderModal(false);
-
-            // Reset form
             setÄrztlicheDiagnose('');
             setAusführlicheDiagnose('');
             setRezeptnummer('');
@@ -334,13 +298,18 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setKostenvoranschlag(null);
             setSelectedEmployee('');
             setSelectedEmployeeId('');
+            setSelectedPositionsnummer([]);
+            setItemSides({});
             setPrice('');
             setTax('');
-
-            // Refresh data if callback provided
-            if (onDataRefresh) {
-                onDataRefresh();
-            }
+            setHalbprobeErforderlich(null);
+            setLeistenVorhanden(null);
+            setBettungErforderlich(null);
+            setLastData({ material: '', size: '', notes: '' });
+            setFootbedData({ material: '', thickness: '', notes: '' });
+            setInternalPrepData({ notes: '', preparationDate: undefined });
+            setCustomerFittingData({ fittingDate: undefined, adjustments: '', customerNotes: '' });
+            if (onDataRefresh) onDataRefresh();
         }
     };
 
@@ -419,8 +388,23 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     onTaxChange={setTax}
                 />
 
-                {/* new filed  */}
-                <FilterCard />
+                {/* Produktionsworkflow – data passed to order payload */}
+                <FilterCard
+                    halbprobeErforderlich={halbprobeErforderlich}
+                    onHalbprobeErforderlichChange={setHalbprobeErforderlich}
+                    leistenVorhanden={leistenVorhanden}
+                    onLeistenVorhandenChange={setLeistenVorhanden}
+                    bettungErforderlich={bettungErforderlich}
+                    onBettungErforderlichChange={setBettungErforderlich}
+                    lastData={lastData}
+                    onLastDataChange={setLastData}
+                    footbedData={footbedData}
+                    onFootbedDataChange={setFootbedData}
+                    internalPrepData={internalPrepData}
+                    onInternalPrepDataChange={setInternalPrepData}
+                    customerFittingData={customerFittingData}
+                    onCustomerFittingDataChange={setCustomerFittingData}
+                />
 
                 {/* Versorgungsnotiz Card */}
                 <VersorgungsnotizCard
@@ -468,6 +452,26 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     billingType: billingType,
                     price: price,
                     tax: tax,
+                    // Produktionsworkflow – same field names as API payload
+                    has_trim_strips: leistenVorhanden === true,
+                    step2_material: lastData.material,
+                    step2_size: lastData.size,
+                    step2_notes: lastData.notes,
+                    bedding_required: bettungErforderlich === true,
+                    step3_material: footbedData.material,
+                    step3_thickness: footbedData.thickness,
+                    step3_notes: footbedData.notes,
+                    adjustments: customerFittingData.adjustments,
+                    customer_reviews: customerFittingData.customerNotes,
+                    // Halbprobe (half_sample_required): when true, send Step 4 & 5 data
+                    halbprobeErforderlich,
+                    step4_preparation_date: internalPrepData.preparationDate
+                        ? internalPrepData.preparationDate.toISOString()
+                        : undefined,
+                    step4_notes: internalPrepData.notes,
+                    step5_fitting_date: customerFittingData.fittingDate
+                        ? customerFittingData.fittingDate.toISOString()
+                        : undefined,
                 }}
                 onSubmit={handleOrderSubmit}
                 isLoading={isLoading}

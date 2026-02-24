@@ -1,29 +1,14 @@
 import { useState } from 'react';
-import { createMassschuheAdded } from '@/apis/MassschuheAddedApis';
+import { createMassschuheOrderV2 } from '@/apis/MassschuheAddedApis';
 import toast from 'react-hot-toast';
-import { safeToastMessage } from '@/lib/toastUtils';
-
-interface MassschuheData {
-    customerId: string;
-    employeeId: string;
-    arztliche_diagnose: string;
-    usführliche_diagnose: string;
-    rezeptnummer: string;
-    durchgeführt_von: string;
-    note: string;
-    halbprobe_geplant: boolean;
-    kostenvoranschlag: boolean;
-}
+import type { MassschuheOrderV2Payload } from '@/app/(dashboard)/dashboard/_components/Scanning/MassschuheOrderModal';
 
 // Normalize backend error messages for better UX
 const normalizeErrorMessage = (message: string): string => {
     if (!message) return message;
-
-    // If backend sends typo "usführliche_diagnose", show the corrected name
     if (message.includes('usführliche_diagnose is required!')) {
         return message.replace('usführliche_diagnose', 'ausführliche_diagnose');
     }
-
     return message;
 };
 
@@ -31,12 +16,12 @@ export const useCreateMassschuhe = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const createMassschuhe = async (data: MassschuheData) => {
+    const createMassschuhe = async (data: MassschuheOrderV2Payload) => {
         setIsLoading(true);
         setError(null);
 
         try {
-            const response = await createMassschuheAdded(data);
+            const response = await createMassschuheOrderV2(data);
 
             if (response.success) {
                 toast.success(response.message || 'Massschuhe erfolgreich erstellt!');
