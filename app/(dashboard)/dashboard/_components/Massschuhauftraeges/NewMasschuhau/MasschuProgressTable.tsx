@@ -648,7 +648,8 @@ export default function MasschuProgressTable({
                                             <button
                                                 onClick={(e) => {
                                                     e.stopPropagation();
-                                                    router.push(`/dashboard/massschuhauftraege/${row.id}`);
+                                                    const statusParam = SHOE_STEPS[row.currentStepIndex]?.replace(/\s+/g, '_') ?? 'Auftragserstellung';
+                                                    router.push(`/dashboard/massschuhauftraege/${row.id}?status=${encodeURIComponent(statusParam)}`);
                                                 }}
                                                 className="w-8 h-8 cursor-pointer flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
                                                 title="Details anzeigen"

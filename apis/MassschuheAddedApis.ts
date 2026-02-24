@@ -64,15 +64,44 @@ export const getAllMassschuheOrders = async (limit: number = 10, status: string 
     }
 }
 
-// get single massschuhe order by id v2/shoe-orders/:id
-export const getMassschuheOrderById = async (id: string) => {
+// get single massschuhe by id and status /v2/shoe-orders/get-status/:id?status=Auftragserstellung
+export const getMassschuheOrderById = async (id: string, status: string) => {
     try {
-        const response = await axiosClient.get(`/v2/shoe-orders/${id}`);
+        const statusParam = encodeURIComponent(status);
+        const response = await axiosClient.get(`/v2/shoe-orders/get-status/${id}?status=${statusParam}`);
         return response.data;
     } catch (error: any) {
         throw error;
     }
 }
+
+
+// order details v2/shoe-orders/get-order-details/98bd0578-f4fc-4ca3-8d21-027bf807bb21
+export const getMassschuheOrderDetails = async (id: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/get-order-details/${id}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// v2/shoe-orders/update-status/32a953f1-7832-40de-90b3-56905fde1306?status=Auftragserstellung body e data jabe  form data 
+export const updateMassschuheOrderStatus = async (id: string, status: string, data: any) => {
+    try {
+        const response = await axiosClient.patch(`/v2/shoe-orders/update-status/${id}?status=${status}`, data, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        return response.data.success;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
 
 // get note v2/shoe-orders/get-status-note/:id
 export const getMassschuheOrderNote = async (id: string) => {
@@ -84,7 +113,7 @@ export const getMassschuheOrderNote = async (id: string) => {
     }
 }
 
- 
+
 // update note v2/shoe-orders/update-order/:id "status_note": "Hello"
 export const updateMassschuheOrderNote = async (id: string, status_note: string) => {
     try {

@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText, X } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import { Button } from '@/components/ui/button';
 import { SHOE_STEPS, ProgressData } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuProgressTable';
+import FertigungsweisungSidebar from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/FertigungsweisungSidebar';
 import { getMassschuheOrderById } from '@/apis/MassschuheAddedApis';
 
 // Short names for progress indicator (matching the image design)
@@ -96,19 +97,18 @@ function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
     );
 }
 
-function mapApiOrderToDetailData(apiOrder: any): OrderDetailData | null {
+// activeStepIndex = which step is shown as current on this page (from URL status)
+function mapApiOrderToDetailData(apiOrder: any, activeStepIndex: number): OrderDetailData | null {
     if (!apiOrder?.id) return null;
     const steps = apiOrder.shoeOrderStep ?? [];
-    const completedCount = steps.filter((s: any) => s.isCompleted).length;
-    const currentStepIndex = Math.min(completedCount, SHOE_STEPS.length - 1);
     const lastStep = steps[steps.length - 1];
     const days = lastStep ? Math.floor((Date.now() - new Date(lastStep.createdAt).getTime()) / (24 * 60 * 60 * 1000)) : 0;
-    const currentStepDisplay = apiOrder.status ? apiOrder.status.replace(/_/g, ' ') : SHOE_STEPS[currentStepIndex] ?? '-';
-    const nextAction = currentStepIndex < SHOE_STEPS.length - 1 ? SHOE_STEPS[currentStepIndex + 1] : 'Abgeschlossen';
+    const currentStepDisplay = SHOE_STEPS[activeStepIndex] ?? (apiOrder.status ? apiOrder.status.replace(/_/g, ' ') : '-');
+    const nextAction = activeStepIndex < SHOE_STEPS.length - 1 ? SHOE_STEPS[activeStepIndex + 1] : 'Abgeschlossen';
 
     const zeitverlauf = SHOE_STEPS.map((step, index) => {
-        const isCompleted = index < currentStepIndex;
-        const isCurrent = index === currentStepIndex;
+        const isCompleted = index < activeStepIndex;
+        const isCurrent = index === activeStepIndex;
         const stepData = steps[index];
         const duration = stepData?.createdAt
             ? `${Math.max(0, Math.floor((Date.now() - new Date(stepData.createdAt).getTime()) / (24 * 60 * 60 * 1000)))}d`
@@ -135,7 +135,7 @@ function mapApiOrderToDetailData(apiOrder: any): OrderDetailData | null {
         createDate: apiOrder.createdAt ? new Date(apiOrder.createdAt).toLocaleDateString('de-DE') : '-',
         days,
         isOverdue: days > 14,
-        currentStepIndex,
+        currentStepIndex: activeStepIndex,
         nextAction,
         responsible: apiOrder.payment_status || undefined,
         notes: '',
@@ -153,9 +153,22 @@ function mapApiOrderToDetailData(apiOrder: any): OrderDetailData | null {
     };
 }
 
+// Resolve status from URL to step index (0-9). Status can be "Auftragserstellung" or "Halbprobe_durchführen" etc.
+function getActiveStepIndexFromStatus(statusParam: string | null): number {
+    if (!statusParam) return 0;
+    const normalized = statusParam.replace(/_/g, ' ');
+    const idx = SHOE_STEPS.findIndex((s) => s === normalized);
+    return idx >= 0 ? idx : 0;
+}
+
 export default function MassschuhauftraegePage() {
     const params = useParams();
+    const searchParams = useSearchParams();
+    const router = useRouter();
     const id = params?.id as string;
+    const statusFromUrl = searchParams?.get('status') || 'Auftragserstellung';
+    const activeStepIndex = getActiveStepIndexFromStatus(statusFromUrl);
+
     const [orderData, setOrderData] = useState<OrderDetailData | null>(null);
     const [loading, setLoading] = useState(true);
     const [notes, setNotes] = useState('');
@@ -168,14 +181,21 @@ export default function MassschuhauftraegePage() {
             return;
         }
         setLoading(true);
-        getMassschuheOrderById(id)
-            .then((res) => {
+        getMassschuheOrderById(id, statusFromUrl)
+            .then((res: any) => {
+                if (res?.success === false && typeof res?.message === 'string' && res.message.toLowerCase().includes('no step')) {
+                    router.replace(`/dashboard/massschuhauftraege/${id}?status=Auftragserstellung`);
+                    return;
+                }
                 const data = res?.data ?? res;
-                setOrderData(mapApiOrderToDetailData(data));
+                setOrderData(mapApiOrderToDetailData(data, activeStepIndex));
+                setLoading(false);
             })
-            .catch(() => setOrderData(null))
-            .finally(() => setLoading(false));
-    }, [id]);
+            .catch(() => {
+                setOrderData(null);
+                setLoading(false);
+            });
+    }, [id, statusFromUrl, activeStepIndex, router]);
 
     useEffect(() => {
         if (orderData?.notes) {
@@ -199,60 +219,45 @@ export default function MassschuhauftraegePage() {
         });
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center text-gray-500">Laden...</div>
-            </div>
-        );
-    }
-    if (!orderData) {
-        return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <p className="text-red-600 mb-4">Auftrag nicht gefunden</p>
-                </div>
-            </div>
-        );
-    }
+    const currentStepForProgress = orderData ? orderData.currentStepIndex : activeStepIndex;
 
     return (
         <div className="min-h-screen bg-gray-50">
-           
-
-            {/* Progress Bar */}
+            {/* Progress Bar - active step from URL status when no order data */}
             <div className="bg-white border border-gray-200 px-4 py-4">
                 <div className="overflow-x-auto">
-                    <ProgressIndicator currentStepIndex={orderData.currentStepIndex} />
+                    <ProgressIndicator currentStepIndex={currentStepForProgress} />
                 </div>
             </div>
 
             {/* Main Content */}
             <div className="flex gap-6 mt-5">
-                {/* Left Side - Main Content */}
                 <div className="flex-1">
                     <div className="bg-white rounded-lg border border-red-200 p-6">
-                        {/* Header Section with Step Icon and Info */}
+                        {loading ? (
+                            <div className="py-16 flex items-center justify-center">
+                                <p className="text-gray-500">Laden...</p>
+                            </div>
+                        ) : (
+                            <>
+                        {/* Header: step number from URL when no order, else from order */}
                         <div className="mb-6 flex items-center gap-3">
-                            {/* Circular Icon with Step Number */}
                             <div className="relative shrink-0">
-                                {/* Red circle with step number */}
                                 <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center ">
                                     <span className="text-white text-base font-bold">
-                                        {orderData.currentStepIndex + 1}
+                                        {(orderData?.currentStepIndex ?? activeStepIndex) + 1}
                                     </span>
-                                   
                                 </div>
                             </div>
-                            
-                            {/* Step Info */}
                             <div className="flex-1">
-                                <h2 className="text-xl font-bold text-gray-900 mb-1">{orderData.currentStep}</h2>
+                                <h2 className="text-xl font-bold text-gray-900 mb-1">
+                                    {orderData?.currentStep ?? SHOE_STEPS[activeStepIndex]}
+                                </h2>
                                 <div className="flex items-center gap-3">
                                     <span className="text-sm text-gray-400">
-                                        Verantwortlich: <span className="text-gray-400">{orderData.responsible}</span>
+                                        Verantwortlich: <span className="text-gray-400">{orderData?.responsible ?? '–'}</span>
                                     </span>
-                                    {orderData.isOverdue && (
+                                    {orderData?.isOverdue && (
                                         <span className="text-sm text-red-600 font-medium">
                                             • {orderData.days}d überfällig
                                         </span>
@@ -376,105 +381,13 @@ export default function MassschuhauftraegePage() {
                             Schritt abschließen & weiterleiten
                             <ArrowRight className="w-5 h-5" />
                         </Button>
+                            </>
+                        )}
                     </div>
                 </div>
 
                 {/* Right Side - Sidebar */}
-                <div className="w-96 space-y-6">
-                    {/* Fertigungsweisung */}
-                    <div className="bg-white rounded-lg border border-green-200 p-6">
-                        <div className="flex items-center justify-between border-b pb-4 mb-4">
-                            <div className="flex items-center gap-2 ">
-                                <div className="w-6 h-6 bg-emerald-600 rounded flex items-center justify-center">
-                                    <FileText className="w-4 h-4 text-white" />
-                                </div>
-                                <h3 className="text-sm font-semibold text-gray-900">Fertigungsweisung</h3>
-                            </div>
-                            <button className="flex cursor-pointer  gap-1 text-xs text-gray-600 hover:text-gray-900">
-                                <FileText className="w-4 h-4" />
-                                PDF
-                            </button>
-                        </div>
-                        <div className="space-y-3 text-xs">
-                            <div>
-                                <div className="font-semibold  text-gray-600 mb-1">LEISTEN:</div>
-                                <div className="text-gray-700">{orderData.fertigungsweisung.leisten}</div>
-                            </div>
-                            <div>
-                                <div className="font-semibold text-gray-600 mb-1">BETTUNG:</div>
-                                <div className="text-gray-700">{orderData.fertigungsweisung.bettung}</div>
-                            </div>
-                            <div>
-                                <div className="font-semibold text-gray-600 mb-1">SCHAFT:</div>
-                                <div className="text-gray-700">{orderData.fertigungsweisung.schaft}</div>
-                            </div>
-                            <div>
-                                <div className="font-semibold text-gray-600 mb-1">BODEN:</div>
-                                <div className="text-gray-700">{orderData.fertigungsweisung.boden}</div>
-                            </div>
-                            <div>
-                                <div className="font-semibold text-gray-600 mb-1">SONDERANPASSUNGEN:</div>
-                                <div className="text-gray-700">{orderData.fertigungsweisung.sonderanpassungen}</div>
-                            </div>
-                            <div>
-                                <div className="font-semibold text-gray-600 mb-1">HALBPROBE:</div>
-                                <div className="text-gray-700">{orderData.fertigungsweisung.halbprobe}</div>
-                            </div>
-                            <div>
-                                <button className="w-full p-2 bg-gray-100 hover:bg-gray-200 rounded text-left text-sm text-gray-700 transition-colors">
-                                    {orderData.fertigungsweisung.checkliste}
-                                </button>
-                            </div>
-                            <div>
-                                <div className="font-semibold text-gray-600 mb-1">ANMERKUNGEN:</div>
-                                <div className="text-gray-700">{orderData.fertigungsweisung.anmerkungen}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* ZEITVERLAUF */}
-                    <div className="bg-white rounded-lg border border-gray-200 p-6">
-                        <h3 className="text-sm font-semibold text-gray-500 mb-4">ZEITVERLAUF</h3>
-                        <div className="space-y-2">
-                            {orderData.zeitverlauf
-                                .filter((item) => item.completed || item.isCurrent) // Only show completed and current steps
-                                .map((item, index) => {
-                                    const stepIndex = (item as any).stepIndex ?? orderData.zeitverlauf.findIndex(v => v.step === item.step);
-                                    return (
-                                        <div
-                                            key={index}
-                                            className="flex items-center justify-between"
-                                        >
-                                            {/* Step Name - Left aligned */}
-                                            <span className={`text-sm font-medium ${
-                                                item.isCurrent ? 'text-emerald-700 font-semibold' : 'text-gray-700'
-                                            }`}>
-                                                {STEP_SHORT_NAMES[stepIndex] || item.step}
-                                            </span>
-                                            
-                                            {/* Duration and Icon - Right aligned */}
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-sm font-semibold text-gray-900">
-                                                    {item.duration}
-                                                </span>
-                                                
-                                                {/* Icon - Immediately right of duration */}
-                                                {item.completed ? (
-                                                    <div className="w-5 h-5 bg-emerald-600 rounded-full flex items-center justify-center shrink-0">
-                                                        <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                                                    </div>
-                                                ) : item.isCurrent ? (
-                                                    <div className="w-5 h-5 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
-                                                        <Clock className="w-3 h-3 text-gray-600" />
-                                                    </div>
-                                                ) : null}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                        </div>
-                    </div>
-                </div>
+                <FertigungsweisungSidebar orderId={id} />
             </div>
         </div>
     );
