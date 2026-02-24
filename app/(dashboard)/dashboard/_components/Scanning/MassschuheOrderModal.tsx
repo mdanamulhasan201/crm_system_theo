@@ -135,6 +135,7 @@ export default function MassschuheOrderModal({
     const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([]);
     const [locationsLoading, setLocationsLoading] = useState(false);
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const { user } = useAuth();
 
@@ -444,6 +445,7 @@ export default function MassschuheOrderModal({
     };
 
     return (
+        <>
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -872,7 +874,7 @@ export default function MassschuheOrderModal({
                     </Button>
                     <Button
                         type="button"
-                        onClick={handleSubmit}
+                        onClick={() => setShowConfirmModal(true)}
                         disabled={isLoading}
                         className="flex-1 bg-[#62A07C] hover:bg-[#4A8A5F] text-white min-w-[140px] flex items-center justify-center gap-2"
                     >
@@ -891,6 +893,40 @@ export default function MassschuheOrderModal({
                 </DialogFooter>
             </DialogContent>
         </Dialog>
+
+        {/* Confirmation modal: show before submitting order */}
+        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+            <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                    <DialogTitle>Auftrag bestätigen</DialogTitle>
+                </DialogHeader>
+                <p className="text-sm text-gray-600 py-2">
+                    Möchten Sie den Auftrag wirklich erstellen?
+                </p>
+                <DialogFooter className="flex gap-2 sm:gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowConfirmModal(false)}
+                        disabled={isLoading}
+                    >
+                        Abbrechen
+                    </Button>
+                    <Button
+                        type="button"
+                        onClick={async () => {
+                            setShowConfirmModal(false);
+                            await handleSubmit();
+                        }}
+                        disabled={isLoading}
+                        className="bg-[#62A07C] hover:bg-[#4A8A5F] text-white"
+                    >
+                        OK
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }
 
