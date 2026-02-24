@@ -54,7 +54,7 @@ export interface MassschuheOrderV2Payload {
     customer_reviews?: string;
     has_trim_strips?: boolean;
     step2_material?: string;
-    step2_size?: string;
+    leistentyp?: string;
     step2_notes?: string;
     bedding_required?: boolean;
     step3_material?: string;
@@ -93,7 +93,7 @@ interface MassschuheOrderModalProps {
         /** Produktionsworkflow – same names as API payload */
         has_trim_strips?: boolean;
         step2_material?: string;
-        step2_size?: string;
+        leistentyp?: string;
         step2_notes?: string;
         bedding_required?: boolean;
         step3_material?: string;
@@ -424,7 +424,7 @@ export default function MassschuheOrderModal({
             customer_reviews: customerReviewsWhenHalfSample,
             has_trim_strips: formData.has_trim_strips ?? false,
             step2_material: formData.step2_material ?? '',
-            step2_size: formData.step2_size ?? '',
+            leistentyp: formData.leistentyp ?? '',
             step2_notes: formData.step2_notes ?? '',
             bedding_required: formData.bedding_required ?? false,
             step3_material: formData.bedding_required ? (formData.step3_material ?? '') : undefined,

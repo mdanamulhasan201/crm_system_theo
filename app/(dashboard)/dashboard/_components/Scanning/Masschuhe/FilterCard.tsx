@@ -2,12 +2,16 @@ import React from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 
+export const LEISTENTYP_OPTIONS = ['Halbschuhleisten', 'Knöchelhoher Leisten'] as const;
+export type LeistentypValue = typeof LEISTENTYP_OPTIONS[number];
+
 export interface Step2Data {
     material: string;
-    size: string;
+    leistentyp: string;
     notes: string;
 }
 export interface Step3Data {
@@ -93,7 +97,7 @@ export default function FilterCard({
                 {/* Step 4: Internal Preparation - Only show if Halbprobe = Yes */}
                 {halbprobeErforderlich === true && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Step 4: Interne Vorbereitung</h4>
+                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Schritt 4</h4>
                         <div className="space-y-3">
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -145,7 +149,7 @@ export default function FilterCard({
                 {/* Step 5: Customer Fitting - Only show if Halbprobe = Yes */}
                 {halbprobeErforderlich === true && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Step 5: Kundenanprobe</h4>
+                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Schritt 5</h4>
                         <div className="space-y-3">
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -240,7 +244,7 @@ export default function FilterCard({
                 {/* Step 2: Last Data Input - Only show if Leisten = No */}
                 {leistenVorhanden === false && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Step 2: Leisten-Daten</h4>
+                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Schritt 2</h4>
                         <div className="space-y-3">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
@@ -257,15 +261,21 @@ export default function FilterCard({
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        Größe
+                                        Leistentyp
                                     </label>
-                                    <input
-                                        type="text"
-                                        value={lastData.size}
-                                        onChange={(e) => onLastDataChange({ ...lastData, size: e.target.value })}
-                                        placeholder="Leisten-Größe..."
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                                    />
+                                    <Select
+                                        value={lastData.leistentyp || undefined}
+                                        onValueChange={(value) => onLastDataChange({ ...lastData, leistentyp: value })}
+                                    >
+                                        <SelectTrigger className="w-full h-10 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#61A178] focus:border-transparent">
+                                            <SelectValue placeholder="Leistentyp wählen" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {LEISTENTYP_OPTIONS.map((opt) => (
+                                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                             <div>
@@ -316,7 +326,7 @@ export default function FilterCard({
                 {/* Step 3: Bettungs-Daten - Only show if Bettung erforderlich = Ja */}
                 {bettungErforderlich === true && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Step 3: Bettungs-Daten</h4>
+                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Schritt 3</h4>
                         <div className="space-y-3">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>

@@ -166,7 +166,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [halbprobeErforderlich, setHalbprobeErforderlich] = useState<boolean | null>(null);
     const [leistenVorhanden, setLeistenVorhanden] = useState<boolean | null>(null);
     const [bettungErforderlich, setBettungErforderlich] = useState<boolean | null>(null);
-    const [lastData, setLastData] = useState<Step2Data>({ material: '', size: '', notes: '' });
+    const [lastData, setLastData] = useState<Step2Data>({ material: '', leistentyp: '', notes: '' });
     const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '' });
     const [internalPrepData, setInternalPrepData] = useState<InternalPrepData>({ notes: '', preparationDate: undefined });
     const [customerFittingData, setCustomerFittingData] = useState<CustomerFittingData>({ fittingDate: undefined, adjustments: '', customerNotes: '' });
@@ -305,7 +305,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setHalbprobeErforderlich(null);
             setLeistenVorhanden(null);
             setBettungErforderlich(null);
-            setLastData({ material: '', size: '', notes: '' });
+            setLastData({ material: '', leistentyp: '', notes: '' });
             setFootbedData({ material: '', thickness: '', notes: '' });
             setInternalPrepData({ notes: '', preparationDate: undefined });
             setCustomerFittingData({ fittingDate: undefined, adjustments: '', customerNotes: '' });
@@ -455,7 +455,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     // Produktionsworkflow – same field names as API payload
                     has_trim_strips: leistenVorhanden === true,
                     step2_material: lastData.material,
-                    step2_size: lastData.size,
+                    leistentyp: lastData.leistentyp,
                     step2_notes: lastData.notes,
                     bedding_required: bettungErforderlich === true,
                     step3_material: footbedData.material,
