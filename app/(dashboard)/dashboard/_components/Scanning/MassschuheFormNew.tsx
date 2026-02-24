@@ -116,7 +116,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     // Form state
     const [ärztlicheDiagnose, setÄrztlicheDiagnose] = useState<string>('');
     const [ausführlicheDiagnose, setAusführlicheDiagnose] = useState<string>('');
-    const [rezeptnummer, setRezeptnummer] = useState<string>('');
     const [versorgungNote, setVersorgungNote] = useState<string>('');
     const [halbprobeGeplant, setHalbprobeGeplant] = useState<boolean | null>(null);
     const [kostenvoranschlag, setKostenvoranschlag] = useState<boolean | null>(null);
@@ -225,7 +224,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             prefillOrderData?.ausführliche_diagnose ??
             ''
         );
-        setRezeptnummer(prefillOrderData?.rezeptnummer ?? '');
         setVersorgungNote(prefillOrderData?.note ?? prefillOrderData?.customer_note ?? '');
 
         if (typeof prefillOrderData?.halbprobe_geplant === 'boolean') {
@@ -292,7 +290,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setShowOrderModal(false);
             setÄrztlicheDiagnose('');
             setAusführlicheDiagnose('');
-            setRezeptnummer('');
             setVersorgungNote('');
             setHalbprobeGeplant(null);
             setKostenvoranschlag(null);
@@ -360,8 +357,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     itemSides={itemSides}
                     onItemSideChange={(posNum: string, side: 'L' | 'R' | 'BDS') => setItemSides(prev => ({ ...prev, [posNum]: side }))}
                     vatCountry={user?.accountInfo?.vat_country || undefined}
-                    rezeptnummer={rezeptnummer}
-                    onRezeptnummerChange={setRezeptnummer}
                     selectedLocation={selectedLocation}
                     locations={locations}
                     locationsLoading={locationsLoading}
@@ -440,7 +435,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                 formData={{
                     arztlicheDiagnose: ärztlicheDiagnose,
                     ausführlicheDiagnose: ausführlicheDiagnose,
-                    rezeptnummer: rezeptnummer,
                     versorgungNote: versorgungNote,
                     halbprobeGeplant: halbprobeGeplant,
                     kostenvoranschlag: kostenvoranschlag,

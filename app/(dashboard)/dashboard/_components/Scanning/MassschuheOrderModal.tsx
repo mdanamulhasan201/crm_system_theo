@@ -78,7 +78,6 @@ interface MassschuheOrderModalProps {
     formData: {
         arztlicheDiagnose: string;
         ausführlicheDiagnose: string;
-        rezeptnummer: string;
         versorgungNote: string;
         halbprobeGeplant: boolean | null;
         kostenvoranschlag: boolean | null;

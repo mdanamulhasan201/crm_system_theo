@@ -22,9 +22,6 @@ interface RezeptCardProps {
     onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
     vatCountry?: string;
 
-    rezeptnummer: string;
-    onRezeptnummerChange: (value: string) => void;
-
     // Location dropdown
     selectedLocation: any | null;
     locations: any[];
@@ -72,8 +69,6 @@ export default function RezeptCard({
     itemSides,
     onItemSideChange,
     vatCountry,
-    rezeptnummer,
-    onRezeptnummerChange,
     selectedLocation,
     locations,
     locationsLoading,
@@ -181,7 +176,7 @@ export default function RezeptCard({
             {/* Layout for Krankenkassa */}
             {billingType === 'Krankenkassa' && (
                 <>
-                    {/* First Row: Positionsnummer and Rezeptnummer */}
+                    {/* First Row: Positionsnummer and Standort (same line) */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end mb-4">
                         {/* Positionsnummer */}
                         <div className="lg:col-span-6">
@@ -201,39 +196,8 @@ export default function RezeptCard({
                             />
                         </div>
 
-                        {/* Rezeptnummer */}
+                        {/* Standort */}
                         <div className="lg:col-span-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Rezeptnummer
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={rezeptnummer}
-                                    onChange={(e) => onRezeptnummerChange(e.target.value)}
-                                    placeholder="Rezeptnummer..."
-                                    className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                                />
-                                {rezeptnummer && (
-                                    <span
-                                        role="button"
-                                        tabIndex={-1}
-                                        onClick={() => onRezeptnummerChange('')}
-                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRezeptnummerChange(''); } }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                                        aria-label="Auswahl löschen"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Second Row: Standort, Durchgeführt von, and Halbprobe & KVA */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
-                        {/* Partner Location */}
-                        <div className="lg:col-span-4">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Standort
                             </label>
@@ -247,9 +211,12 @@ export default function RezeptCard({
                                 onClear={onLocationClear}
                             />
                         </div>
+                    </div>
 
+                    {/* Second Row: Durchgeführt von and Halbprobe & KVA */}
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
                         {/* Durchgeführt von */}
-                        <div className="lg:col-span-4">
+                        <div className="lg:col-span-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Durchgeführt von
                             </label>
@@ -268,7 +235,7 @@ export default function RezeptCard({
                         </div>
 
                         {/* Halbprobe & KVA */}
-                        <div className="lg:col-span-4">
+                        <div className="lg:col-span-6">
                             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                                 <div className="flex-1">
                                     <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -480,36 +447,8 @@ export default function RezeptCard({
                         </div>
                     </div>
 
-                    {/* Second Row: Rezeptnummer and Standort */}
+                    {/* Second Row: Standort */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end mb-4">
-                        {/* Rezeptnummer */}
-                        <div className="lg:col-span-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Rezeptnummer
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    value={rezeptnummer}
-                                    onChange={(e) => onRezeptnummerChange(e.target.value)}
-                                    placeholder="Rezeptnummer..."
-                                    className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                                />
-                                {rezeptnummer && (
-                                    <span
-                                        role="button"
-                                        tabIndex={-1}
-                                        onClick={() => onRezeptnummerChange('')}
-                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRezeptnummerChange(''); } }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                                        aria-label="Auswahl löschen"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </span>
-                                )}
-                            </div>
-                        </div>
-
                         {/* Partner Location */}
                         <div className="lg:col-span-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
