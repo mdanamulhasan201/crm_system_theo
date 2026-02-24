@@ -11,12 +11,14 @@ import PriorityModal from './PriorityModal';
 import MasschuHistorySidebar from './MasschuHistorySidebar';
 import { getAllMassschuheOrders } from '@/apis/MassschuheAddedApis';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // API response types
 export interface ShoeOrderStepApi {
     status: string;
     isCompleted: boolean;
     createdAt: string;
+    auto_print?: boolean;
 }
 
 export interface ShoeOrderApi {
@@ -28,6 +30,7 @@ export interface ShoeOrderApi {
     createdAt: string;
     payment_status: string;
     priority: string;
+    total_price?: number | null;
     shoeOrderStep: ShoeOrderStepApi[];
 }
 
@@ -36,10 +39,39 @@ function normalizeStepName(apiStatus: string): string {
     return apiStatus.replace(/_/g, ' ');
 }
 
-// Get current step index from shoeOrderStep (number of completed steps = index of current step)
-function getCurrentStepIndex(shoeOrderStep: ShoeOrderStepApi[]): number {
-    const completed = shoeOrderStep?.filter(s => s.isCompleted) ?? [];
-    return Math.min(completed.length, SHOE_STEPS.length - 1);
+// Map API step status to our step index (0-9). API uses underscores e.g. Schaft_fertigen.
+function getStepIndexFromStatus(apiStatus: string): number {
+    const normalized = normalizeStepName(apiStatus?.trim() || '');
+    const idx = SHOE_STEPS.findIndex(s => s === normalized);
+    return idx >= 0 ? idx : -1;
+}
+
+// Per-step completion info: index and whether it was auto_print (gray tick) or manual (green tick).
+export type CompletedStepInfo = { index: number; auto_print: boolean };
+
+function getCompletedStepsInfo(shoeOrderStep: ShoeOrderStepApi[]): CompletedStepInfo[] {
+    const steps = shoeOrderStep ?? [];
+    const byIndex = new Map<number, boolean>();
+    for (const s of steps) {
+        const done = s.isCompleted === true || s.auto_print === true;
+        if (!done) continue;
+        const idx = getStepIndexFromStatus(s.status);
+        if (idx >= 0) byIndex.set(idx, s.auto_print === true);
+    }
+    return Array.from(byIndex.entries()).map(([index, auto_print]) => ({ index, auto_print }));
+}
+
+function getCompletedStepIndices(completedStepsInfo: CompletedStepInfo[]): number[] {
+    return completedStepsInfo.map((x) => x.index);
+}
+
+// Current step = first step not in completed set (0..9), or 10 if all done.
+function getCurrentStepIndexFromCompleted(completedStepIndices: number[]): number {
+    const set = new Set(completedStepIndices);
+    for (let i = 0; i < SHOE_STEPS.length; i++) {
+        if (!set.has(i)) return i;
+    }
+    return SHOE_STEPS.length; // all done
 }
 
 // Get days since the current step started (last step's createdAt)
@@ -51,13 +83,16 @@ function getDaysInCurrentStep(shoeOrderStep: ShoeOrderStepApi[]): number {
     return Math.floor((now - created) / (24 * 60 * 60 * 1000));
 }
 
-// Map API order to ProgressData
+// Map API order to ProgressData (Fortschritt from shoeOrderStep by status, not by count)
 function mapOrderToProgressData(order: ShoeOrderApi): ProgressData {
     const steps = order.shoeOrderStep ?? [];
-    const currentStepIndex = getCurrentStepIndex(steps);
+    const completedStepsInfo = getCompletedStepsInfo(steps);
+    const completedStepIndices = getCompletedStepIndices(completedStepsInfo);
+    const currentStepIndex = getCurrentStepIndexFromCompleted(completedStepIndices);
     const days = getDaysInCurrentStep(steps);
-    const nextAction = currentStepIndex < SHOE_STEPS.length - 1 ? SHOE_STEPS[currentStepIndex + 1] : 'Abgeschlossen';
-    const currentStepDisplay = order.status ? normalizeStepName(order.status) : SHOE_STEPS[currentStepIndex] ?? '-';
+    const nextStepLabel = currentStepIndex < SHOE_STEPS.length ? SHOE_STEPS[currentStepIndex] : 'Abgeschlossen';
+    const nextAction = currentStepIndex < SHOE_STEPS.length ? nextStepLabel : 'Abgeschlossen';
+    const currentStepDisplay = order.status ? normalizeStepName(order.status) : (currentStepIndex < SHOE_STEPS.length ? SHOE_STEPS[currentStepIndex] : 'Ausgeführt');
 
     return {
         id: order.id,
@@ -71,10 +106,14 @@ function mapOrderToProgressData(order: ShoeOrderApi): ProgressData {
         location: order.branch_location?.title || order.branch_location?.description || '-',
         createDate: order.createdAt ? new Date(order.createdAt).toLocaleDateString('de-DE') : '-',
         days,
-        isOverdue: days > 14, // optional: treat >14 days as overdue
-        currentStepIndex,
+        isOverdue: days > 14,
+        currentStepIndex: Math.min(currentStepIndex, SHOE_STEPS.length - 1),
+        completedStepIndices,
+        completedStepsInfo,
         nextAction,
         responsible: order.payment_status || undefined,
+        payment_status: order.payment_status,
+        total_price: order.total_price ?? null,
     };
 }
 
@@ -106,8 +145,12 @@ export interface ProgressData {
     days: number;
     isOverdue: boolean;
     currentStepIndex: number;
+    completedStepIndices?: number[];
+    completedStepsInfo?: CompletedStepInfo[];
     nextAction: string;
     responsible?: string;
+    payment_status?: string;
+    total_price?: number | null;
     notes?: string;
 }
 
@@ -200,48 +243,100 @@ function AuftragCell({ auftrag, isUrgent }: { auftrag: ProgressData['auftrag']; 
     );
 }
 
-function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
+function ProgressIndicator({ currentStepIndex, completedStepIndices, completedStepsInfo }: { currentStepIndex: number; completedStepIndices?: number[]; completedStepsInfo?: CompletedStepInfo[] }) {
+    const completedSet = new Set(completedStepIndices ?? []);
+    const autoPrintByIndex = new Map<number, boolean>();
+    for (const x of completedStepsInfo ?? []) {
+        autoPrintByIndex.set(x.index, x.auto_print);
+    }
+    const allDone = completedSet.size >= SHOE_STEPS.length;
     return (
-        <div className="flex items-center">
-            {SHOE_STEPS.map((step, index) => {
-                const isCompleted = index < currentStepIndex;
-                const isCurrent = index === currentStepIndex;
+        <TooltipProvider delayDuration={300}>
+            <div className="flex items-center">
+                {SHOE_STEPS.map((step, index) => {
+                    const isCompleted = completedSet.has(index);
+                    const isAutoPrint = isCompleted && autoPrintByIndex.get(index) === true;
+                    const isCurrent = index === currentStepIndex && !allDone;
 
-                return (
-                    <React.Fragment key={index}>
-                        {index > 0 && (
-                            <span
-                                className={`text-[13px] font-semibold mx-1 shrink-0 leading-none select-none ${index <= currentStepIndex ? 'text-emerald-400' : 'text-gray-300'
-                                    }`}
-                            >
-                                <BsDash />
-                            </span>
-                        )}
-                        <div
-                            title={step}
-                            className={`
-                                flex items-center justify-center
-                                rounded-full shrink-0
-                                w-6 h-6 
-                                text-xs font-bold
-                                transition-all
-                                ${isCompleted
-                                    ? 'bg-emerald-100 text-emerald-500'
-                                    : isCurrent
-                                        ? 'bg-emerald-600 text-white shadow-lg'
-                                        : 'bg-gray-100 text-gray-400'
-                                }
-                            `}
-                        >
-                            {isCompleted ? (
-                                <Check className="w-4 h-4" strokeWidth={2.5} />
-                            ) : (
-                                <span className="leading-none">{index + 1}</span>
+                    return (
+                        <React.Fragment key={index}>
+                            {index > 0 && (
+                                <span
+                                    className={`text-[13px] font-semibold mx-1 shrink-0 leading-none select-none ${completedSet.has(index - 1) ? 'text-emerald-400' : 'text-gray-300'}`}
+                                >
+                                    <BsDash />
+                                </span>
                             )}
-                        </div>
-                    </React.Fragment>
-                );
-            })}
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div
+                                        className={`
+                                            flex items-center justify-center
+                                            rounded-full shrink-0
+                                            w-6 h-6 
+                                            text-xs font-bold
+                                            transition-all cursor-default
+                                            ${isCompleted
+                                                ? 'bg-emerald-100'
+                                                : isCurrent
+                                                    ? 'bg-emerald-600 text-white shadow-lg'
+                                                    : 'bg-gray-100 text-gray-400'
+                                            }
+                                        `}
+                                    >
+                                        {isCompleted ? (
+                                            <Check
+                                                className={`w-4 h-4 ${isAutoPrint ? 'text-gray-400' : 'text-emerald-500'}`}
+                                                strokeWidth={2.5}
+                                            />
+                                        ) : (
+                                            <span className="leading-none">{index + 1}</span>
+                                        )}
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-[240px]">
+                                    {step}
+                                </TooltipContent>
+                            </Tooltip>
+                        </React.Fragment>
+                    );
+                })}
+            </div>
+        </TooltipProvider>
+    );
+}
+
+// Kostenträger: price (green/red for Privat) or only status (Krankenkasse)
+const PAYMENT_STATUS_LABELS: Record<string, string> = {
+    Privat_Bezahlt: 'Privat - bezahlt',
+    Privat_offen: 'Privat - offen',
+    Krankenkasse_Ungenehmigt: 'Krankenkasse - Ungenehmigt',
+    Krankenkasse_Genehmigt: 'Krankenkasse - Genehmigt',
+};
+
+function formatPrice(value: number): string {
+    return `${Number(value).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+
+function KostentraegerCell({ payment_status, total_price }: { payment_status?: string; total_price?: number | null }) {
+    const status = payment_status?.trim() || '';
+    const label = PAYMENT_STATUS_LABELS[status] ?? status.replace(/_/g, ' - ');
+    const isPrivat = status === 'Privat_Bezahlt' || status === 'Privat_offen';
+    const isPaid = status === 'Privat_Bezahlt';
+    const showPrice = isPrivat && total_price != null;
+
+    if (!status) return <div className="text-gray-400 text-sm">–</div>;
+
+    return (
+        <div className="flex flex-col gap-0.5">
+            {showPrice && (
+                <span
+                    className={`font-semibold text-sm ${isPaid ? 'text-emerald-600' : 'text-red-600'}`}
+                >
+                    {formatPrice(total_price!)}
+                </span>
+            )}
+            <span className="text-gray-700 text-sm">{label}</span>
         </div>
     );
 }
@@ -509,15 +604,14 @@ export default function MasschuProgressTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
-                                        {row.responsible && (
-                                            <div className="text-emerald-600 font-medium text-sm">
-                                                {row.responsible}
-                                            </div>
-                                        )}
+                                        <KostentraegerCell
+                                            payment_status={row.payment_status ?? row.responsible}
+                                            total_price={row.total_price}
+                                        />
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
                                         <div className="overflow-x-auto">
-                                            <ProgressIndicator currentStepIndex={row.currentStepIndex} />
+                                            <ProgressIndicator currentStepIndex={row.currentStepIndex} completedStepIndices={row.completedStepIndices} completedStepsInfo={row.completedStepsInfo} />
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
@@ -600,6 +694,7 @@ export default function MasschuProgressTable({
                     <MasschuhauNoteModal
                         isOpen={!!openNoteModalId}
                         onClose={() => setOpenNoteModalId(null)}
+                        orderId={openNoteModalId}
                         orderData={selectedRow ? {
                             name: selectedRow.auftrag.name,
                             orderNumber: selectedRow.auftrag.orderNumber,

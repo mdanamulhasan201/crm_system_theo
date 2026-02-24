@@ -73,3 +73,24 @@ export const getMassschuheOrderById = async (id: string) => {
         throw error;
     }
 }
+
+// get note v2/shoe-orders/get-status-note/:id
+export const getMassschuheOrderNote = async (id: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/get-status-note/${id}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+ 
+// update note v2/shoe-orders/update-order/:id "status_note": "Hello"
+export const updateMassschuheOrderNote = async (id: string, status_note: string) => {
+    try {
+        const response = await axiosClient.patch(`/v2/shoe-orders/update-order/${id}`, { status_note });
+        return response.data.success;
+    } catch (error: any) {
+        throw error;
+    }
+}
