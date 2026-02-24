@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import { useCreateMassschuhe } from '@/hooks/massschuhe/useCreateMassschuhe';
@@ -10,6 +10,7 @@ import RezeptCard from './Masschuhe/RezeptCard';
 import FilterCard, { type Step2Data, type Step3Data, type CustomerFittingData, type InternalPrepData } from './Masschuhe/FilterCard';
 import VersorgungsnotizCard from './Masschuhe/VersorgungsnotizCard';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
+import { getTaxRatesByCountry } from '@/utils/taxRates';
 
 
 interface Customer {
@@ -120,9 +121,41 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [halbprobeGeplant, setHalbprobeGeplant] = useState<boolean | null>(null);
     const [kostenvoranschlag, setKostenvoranschlag] = useState<boolean | null>(null);
 
-    // Privat billing fields
-    const [price, setPrice] = useState<string>('');
-    const [tax, setTax] = useState<string>('');
+    // Tax rates for Privat (same as SonstigesForm)
+    const vatCountry = user?.accountInfo?.vat_country;
+    const taxRates = useMemo(() => getTaxRatesByCountry(vatCountry) || [], [vatCountry]);
+    const defaultTaxRate = useMemo(
+        () => taxRates?.find((r: { isDefault: boolean }) => r.isDefault) || { rate: 22, name: 'Standard', description: 'Standard' },
+        [taxRates]
+    );
+
+    // Privat billing fields (PREIS & STEUER – same logic as SonstigesForm)
+    const [nettoPreis, setNettoPreis] = useState<string>('0.00');
+    const [rabatt, setRabatt] = useState<string>('0');
+    const [steuersatz, setSteuersatz] = useState<number>(defaultTaxRate.rate);
+    const [isNetto, setIsNetto] = useState<boolean>(true);
+
+    const priceCalculations = useMemo(() => {
+        const priceInput = parseFloat(nettoPreis) || 0;
+        const discountPercent = parseFloat(rabatt) || 0;
+        const taxRate = steuersatz / 100;
+        const priceAfterDiscount = priceInput * (1 - discountPercent / 100);
+        let netto, mwst, brutto;
+        if (isNetto) {
+            netto = priceAfterDiscount;
+            mwst = netto * taxRate;
+            brutto = netto + mwst;
+        } else {
+            brutto = priceAfterDiscount;
+            netto = brutto / (1 + taxRate);
+            mwst = brutto - netto;
+        }
+        return {
+            netto: Math.round(netto * 100) / 100,
+            mwst: Math.round(mwst * 100) / 100,
+            brutto: Math.round(brutto * 100) / 100,
+        };
+    }, [nettoPreis, rabatt, steuersatz, isNetto]);
 
     // Billing type state (Krankenkassa/Privat)
     const [billingType, setBillingType] = useState<'Krankenkassa' | 'Privat'>('Krankenkassa');
@@ -134,12 +167,16 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     useEffect(() => {
         setSelectedPositionsnummer([]);
         setItemSides({});
-        // Clear price and tax when switching to Krankenkassa
         if (billingType === 'Krankenkassa') {
-            setPrice('');
-            setTax('');
+            setNettoPreis('0.00');
+            setRabatt('0');
+            setIsNetto(true);
         }
     }, [billingType]);
+
+    useEffect(() => {
+        if (defaultTaxRate?.rate != null) setSteuersatz(defaultTaxRate.rate);
+    }, [vatCountry, defaultTaxRate]);
 
     const positionsnummerError = getPositionsnummerError();
 
@@ -242,6 +279,18 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         if (typeof prefillOrderData?.employeeId === 'string') {
             setSelectedEmployeeId(prefillOrderData.employeeId);
         }
+        if (prefillOrderData?.net_price !== undefined && prefillOrderData?.net_price !== null) {
+            const np = Number(prefillOrderData.net_price);
+            setNettoPreis(Number.isFinite(np) ? np.toFixed(2) : String(prefillOrderData.net_price));
+            setIsNetto(true);
+        }
+        if (prefillOrderData?.discount !== undefined && prefillOrderData?.discount !== null) {
+            setRabatt(String(prefillOrderData.discount));
+        }
+        if (prefillOrderData?.vatRate !== undefined && prefillOrderData?.vatRate !== null) {
+            const vr = Number(prefillOrderData.vatRate);
+            if (Number.isFinite(vr)) setSteuersatz(vr);
+        }
     }, [prefillOrderData]);
 
 
@@ -297,8 +346,9 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setSelectedEmployeeId('');
             setSelectedPositionsnummer([]);
             setItemSides({});
-            setPrice('');
-            setTax('');
+            setNettoPreis('0.00');
+            setRabatt('0');
+            setIsNetto(true);
             setHalbprobeErforderlich(null);
             setLeistenVorhanden(null);
             setBettungErforderlich(null);
@@ -377,10 +427,17 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     onHalbprobeGeplantChange={setHalbprobeGeplant}
                     kostenvoranschlag={kostenvoranschlag}
                     onKostenvoranschlagChange={setKostenvoranschlag}
-                    price={price}
-                    onPriceChange={setPrice}
-                    tax={tax}
-                    onTaxChange={setTax}
+                    nettoPreis={nettoPreis}
+                    onNettoPreisChange={setNettoPreis}
+                    rabatt={rabatt}
+                    onRabattChange={setRabatt}
+                    steuersatz={steuersatz}
+                    onSteuersatzChange={setSteuersatz}
+                    isNetto={isNetto}
+                    onIsNettoChange={setIsNetto}
+                    taxRates={taxRates}
+                    defaultTaxRate={defaultTaxRate}
+                    priceCalculations={priceCalculations}
                 />
 
                 {/* Produktionsworkflow – data passed to order payload */}
@@ -444,8 +501,8 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     positionsnummerAustriaData: positionsnummerAustriaData,
                     positionsnummerItalyData: positionsnummerItalyData,
                     billingType: billingType,
-                    price: price,
-                    tax: tax,
+                    price: billingType === 'Privat' ? String(priceCalculations.netto) : '',
+                    tax: billingType === 'Privat' ? String(steuersatz) : '',
                     // Produktionsworkflow – same field names as API payload
                     has_trim_strips: leistenVorhanden === true,
                     step2_material: lastData.material,

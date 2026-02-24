@@ -1,5 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PositionsnummerDropdown from '../Einlagen/Dropdowns/PositionsnummerDropdown';
 import EmployeeDropdown from '../Common/EmployeeDropdown';
 import LocationDropdown from '../Werkstattzettel/Dropdowns/LocationDropdown';
@@ -45,12 +47,19 @@ interface RezeptCardProps {
     onHalbprobeGeplantChange: (value: boolean) => void;
     kostenvoranschlag: boolean | null;
     onKostenvoranschlagChange: (value: boolean) => void;
-    
-    // Privat billing fields
-    price?: string;
-    onPriceChange?: (value: string) => void;
-    tax?: string;
-    onTaxChange?: (value: string) => void;
+
+    // Privat – PREIS & STEUER (same as SonstigesForm)
+    nettoPreis?: string;
+    onNettoPreisChange?: (value: string) => void;
+    rabatt?: string;
+    onRabattChange?: (value: string) => void;
+    steuersatz?: number;
+    onSteuersatzChange?: (value: number) => void;
+    isNetto?: boolean;
+    onIsNettoChange?: (value: boolean) => void;
+    taxRates?: { rate: number; name: string; description?: string; isDefault?: boolean }[];
+    defaultTaxRate?: { rate: number; name: string; description?: string };
+    priceCalculations?: { netto: number; mwst: number; brutto: number };
 }
 
 export default function RezeptCard({
@@ -89,11 +98,19 @@ export default function RezeptCard({
     onHalbprobeGeplantChange,
     kostenvoranschlag,
     onKostenvoranschlagChange,
-    price = '',
-    onPriceChange,
-    tax = '',
-    onTaxChange,
+    nettoPreis = '0.00',
+    onNettoPreisChange,
+    rabatt = '0',
+    onRabattChange,
+    steuersatz = 22,
+    onSteuersatzChange,
+    isNetto = true,
+    onIsNettoChange,
+    taxRates = [],
+    defaultTaxRate = { rate: 22, name: 'Standard', description: 'Standard' },
+    priceCalculations = { netto: 0, mwst: 0, brutto: 0 },
 }: RezeptCardProps) {
+    const selectedTaxRate = taxRates?.find((r) => r.rate === steuersatz) || defaultTaxRate;
     // VAT and calculation helpers (match Einlagen RezeptAbrechnungCard)
     const getVatRate = (): number => {
         if (vatCountry === 'Italien (IT)') return 4;
@@ -385,69 +402,146 @@ export default function RezeptCard({
                 </>
             )}
 
-            {/* Layout for Privat - Two rows */}
+            {/* Layout for Privat – PREIS & STEUER (same as SonstigesForm) */}
             {billingType === 'Privat' && (
                 <>
-                    {/* First Row: Preis and Steuersatz */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end mb-4">
-                        <div className="lg:col-span-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Preis (€)
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    step=""
-                                    value={price}
-                                    onChange={(e) => onPriceChange?.(e.target.value)}
-                                    placeholder="0.00"
-                                    className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                                />
-                                {price && (
-                                    <span
-                                        role="button"
-                                        tabIndex={-1}
-                                        onClick={() => onPriceChange?.('')}
-                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onPriceChange?.(''); } }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                                        aria-label="Auswahl löschen"
+                    {/* PREIS & STEUER Section */}
+                    <div className="mb-6">
+                        <h3 className="text-sm font-semibold mb-4 text-gray-400 uppercase tracking-wide">PREIS &amp; STEUER</h3>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Left – Inputs */}
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        {isNetto ? 'Netto-Preis (€)' : 'Brutto-Preis (€)'}
+                                    </label>
+                                    <div className="relative">
+                                        <Input
+                                            type="number"
+                                            step="0.01"
+                                            placeholder="0.00"
+                                            value={nettoPreis}
+                                            onChange={(e) => onNettoPreisChange?.(e.target.value)}
+                                            className="w-full h-10 pr-9"
+                                        />
+                                        {nettoPreis && (
+                                            <span
+                                                role="button"
+                                                tabIndex={-1}
+                                                onClick={() => onNettoPreisChange?.('0.00')}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNettoPreisChange?.('0.00'); } }}
+                                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                                aria-label="Auswahl löschen"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Rabatt (% - wechseln)
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <div className="relative flex-1">
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                min={0}
+                                                max={100}
+                                                placeholder="0"
+                                                value={rabatt}
+                                                onChange={(e) => onRabattChange?.(e.target.value)}
+                                                className="w-full h-10 pr-9"
+                                            />
+                                            {rabatt && rabatt !== '0' && (
+                                                <span
+                                                    role="button"
+                                                    tabIndex={-1}
+                                                    onClick={() => onRabattChange?.('0')}
+                                                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onRabattChange?.('0'); } }}
+                                                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
+                                                    aria-label="Auswahl löschen"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </span>
+                                            )}
+                                        </div>
+                                        <span className="text-sm text-gray-600 font-medium">%</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                        Steuersatz
+                                    </label>
+                                    <Select
+                                        value={String(steuersatz)}
+                                        onValueChange={(value) => onSteuersatzChange?.(parseFloat(value))}
                                     >
-                                        <X className="h-4 w-4" />
-                                    </span>
-                                )}
+                                        <SelectTrigger className="w-full h-10">
+                                            <SelectValue>
+                                                {steuersatz}% - {selectedTaxRate.name}
+                                            </SelectValue>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {taxRates && taxRates.length > 0 ? (
+                                                taxRates.map((rate, index) => (
+                                                    <SelectItem key={`${rate.rate}-${rate.name}-${index}`} value={String(rate.rate)}>
+                                                        {rate.rate}% - {rate.name}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value={String(defaultTaxRate.rate)}>
+                                                    {defaultTaxRate.rate}% - {defaultTaxRate.name}
+                                                </SelectItem>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
-                        </div>
-
-                        <div className="lg:col-span-6">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Steuersatz (%)
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="number"
-                                    step=""
-                                    value={tax}
-                                    onChange={(e) => onTaxChange?.(e.target.value)}
-                                    placeholder="0"
-                                    className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                                />
-                                {tax && (
-                                    <span
-                                        role="button"
-                                        tabIndex={-1}
-                                        onClick={() => onTaxChange?.('')}
-                                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onTaxChange?.(''); } }}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                                        aria-label="Auswahl löschen"
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </span>
-                                )}
+                            {/* Right – Toggle & Summary */}
+                            <div>
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                    <div className="flex gap-2 mb-4">
+                                        <button
+                                            type="button"
+                                            onClick={() => onIsNettoChange?.(true)}
+                                            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                                                isNetto ? 'bg-[#62A17C] text-white shadow-sm' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            Preis ist Netto
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onIsNettoChange?.(false)}
+                                            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                                                !isNetto ? 'bg-[#62A17C] text-white shadow-sm' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                            }`}
+                                        >
+                                            Preis ist Brutto
+                                        </button>
+                                    </div>
+                                    <div className="space-y-2.5">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-700">Netto:</span>
+                                            <span className="text-sm font-medium text-gray-900">€{priceCalculations.netto.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-700">MwSt ({steuersatz}%):</span>
+                                            <span className="text-sm font-medium text-gray-900">€{priceCalculations.mwst.toFixed(2)}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-2.5 border-t border-gray-300">
+                                            <span className="text-sm font-semibold text-gray-900">Brutto:</span>
+                                            <span className="text-sm font-semibold text-gray-900">€{priceCalculations.brutto.toFixed(2)}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    {/* Second Row: Standort */}
+                    {/* Standort row */}
                     <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end mb-4">
                         {/* Partner Location */}
                         <div className="lg:col-span-6">
