@@ -18,6 +18,8 @@ interface RezeptCardProps {
     onPositionsnummerToggle: () => void;
     onPositionsnummerSelect: (values: string[]) => void;
     onPositionsnummerClear?: () => void;
+    itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
+    onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
     vatCountry?: string;
 
     rezeptnummer: string;
@@ -67,6 +69,8 @@ export default function RezeptCard({
     onPositionsnummerToggle,
     onPositionsnummerSelect,
     onPositionsnummerClear,
+    itemSides,
+    onItemSideChange,
     vatCountry,
     rezeptnummer,
     onRezeptnummerChange,
@@ -95,6 +99,25 @@ export default function RezeptCard({
     tax = '',
     onTaxChange,
 }: RezeptCardProps) {
+    // VAT and calculation helpers (match Einlagen RezeptAbrechnungCard)
+    const getVatRate = (): number => {
+        if (vatCountry === 'Italien (IT)') return 4;
+        if (vatCountry === 'Österreich (AT)') return 20;
+        return 0;
+    };
+    const calculateSubtotal = (): number =>
+        (selectedPositionsnummer || []).reduce((sum, posNum) => {
+            const option = positionsnummerOptions?.find(
+                (o: any) =>
+                    o?.positionsnummer === posNum || o?.description?.positionsnummer === posNum
+            );
+            const basePrice = typeof option?.price === 'number' ? option.price : 0;
+            const side = itemSides?.[posNum] || 'R';
+            return sum + (side === 'BDS' ? basePrice * 2 : basePrice);
+        }, 0);
+    const calculateVatAmount = (amount: number): number => (amount * getVatRate()) / 100;
+    const calculateTotalWithVat = (amount: number): number => amount + calculateVatAmount(amount);
+
   return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-6">REZEPT &amp; ABRECHNUNG</h2>
@@ -172,6 +195,8 @@ export default function RezeptCard({
                                 onToggle={onPositionsnummerToggle}
                                 onSelect={onPositionsnummerSelect}
                                 onClear={onPositionsnummerClear}
+                                itemSides={itemSides}
+                                onItemSideChange={onItemSideChange}
                                 vatCountry={vatCountry}
                             />
                         </div>
@@ -307,6 +332,89 @@ export default function RezeptCard({
                             </div>
                         </div>
                     </div>
+
+                    {/* Ausgewählte Positionen & Seite - only when Krankenkassa and positions selected */}
+                    {Array.isArray(selectedPositionsnummer) &&
+                        selectedPositionsnummer.length > 0 && (
+                            <div className="mt-6 pt-6 border-t border-gray-200">
+                                <p className="text-xs font-bold text-gray-700 uppercase tracking-wide mb-3">
+                                    Ausgewählte Positionen &amp; Seite
+                                </p>
+                                <ul className="space-y-2">
+                                    {selectedPositionsnummer.map((posNum) => {
+                                        const option = positionsnummerOptions?.find(
+                                            (o: any) =>
+                                                o?.positionsnummer === posNum ||
+                                                o?.description?.positionsnummer === posNum
+                                        );
+                                        const desc =
+                                            typeof option?.description === 'string'
+                                                ? option.description
+                                                : option?.description
+                                                    ? `${(option.description as any).title || ''}${(option.description as any).subtitle ? ` - ${(option.description as any).subtitle}` : ''}`.trim() || posNum
+                                                    : posNum;
+                                        const side = itemSides?.[posNum] || 'R';
+                                        const sideLabel =
+                                            side === 'BDS' ? 'Beide (BDS)' : side === 'L' ? 'Links (L)' : 'Rechts (R)';
+                                        const basePrice = typeof option?.price === 'number' ? option.price : 0;
+                                        const itemPrice = side === 'BDS' ? basePrice * 2 : basePrice;
+                                        const priceStr = `€ ${itemPrice.toFixed(2).replace('.', ',')}`;
+                                        return (
+                                            <li
+                                                key={posNum}
+                                                className="flex flex-wrap items-center justify-between gap-2 text-sm py-2 px-3 rounded-md bg-gray-50 border border-gray-100"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <span className="font-semibold text-gray-900">{posNum}</span>
+                                                    <span className="text-gray-600 ml-1.5">— {desc}</span>
+                                                </div>
+                                                <div className="shrink-0 flex items-center gap-2">
+                                                    <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-[#61A178]/15 text-[#61A178] border border-[#61A178]/30">
+                                                        Seite: {sideLabel}
+                                                    </span>
+                                                    <span className="font-semibold text-green-600 whitespace-nowrap">
+                                                        {priceStr}
+                                                    </span>
+                                                </div>
+                                            </li>
+                                        );
+                                    })}
+                                </ul>
+                                {/* Zwischensumme, VAT, Gesamt */}
+                                <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm font-medium text-gray-700">Zwischensumme:</span>
+                                        <span className="text-sm font-semibold text-gray-900">
+                                            € {calculateSubtotal().toFixed(2).replace('.', ',')}
+                                        </span>
+                                    </div>
+                                    {getVatRate() > 0 && (
+                                        <>
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-600">+{getVatRate()}% VAT:</span>
+                                                <span className="text-sm font-semibold text-gray-700">
+                                                    € {calculateVatAmount(calculateSubtotal()).toFixed(2).replace('.', ',')}
+                                                </span>
+                                            </div>
+                                            <div className="flex justify-between items-center pt-2 border-t border-gray-300">
+                                                <span className="text-base font-bold text-gray-900">Gesamt:</span>
+                                                <span className="text-base font-bold text-green-600">
+                                                    € {calculateTotalWithVat(calculateSubtotal()).toFixed(2).replace('.', ',')}
+                                                </span>
+                                            </div>
+                                        </>
+                                    )}
+                                    {getVatRate() === 0 && (
+                                        <div className="flex justify-between items-center pt-2 border-t border-gray-300">
+                                            <span className="text-base font-bold text-gray-900">Gesamt:</span>
+                                            <span className="text-base font-bold text-green-600">
+                                                € {calculateSubtotal().toFixed(2).replace('.', ',')}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                 </>
             )}
 

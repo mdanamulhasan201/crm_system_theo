@@ -129,10 +129,12 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [billingType, setBillingType] = useState<'Krankenkassa' | 'Privat'>('Krankenkassa');
     const [selectedPositionsnummer, setSelectedPositionsnummer] = useState<string[]>([]);
     const [showPositionsnummerDropdown, setShowPositionsnummerDropdown] = useState(false);
+    const [itemSides, setItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
 
-    // Clear selectedPositionsnummer when billingType changes
+    // Clear selectedPositionsnummer and itemSides when billingType changes
     useEffect(() => {
         setSelectedPositionsnummer([]);
+        setItemSides({});
         // Clear price and tax when switching to Krankenkassa
         if (billingType === 'Krankenkassa') {
             setPrice('');
@@ -385,7 +387,9 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     showPositionsnummerDropdown={showPositionsnummerDropdown}
                     onPositionsnummerToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
                     onPositionsnummerSelect={setSelectedPositionsnummer}
-                    onPositionsnummerClear={() => setSelectedPositionsnummer([])}
+                    onPositionsnummerClear={() => { setSelectedPositionsnummer([]); setItemSides({}); }}
+                    itemSides={itemSides}
+                    onItemSideChange={(posNum: string, side: 'L' | 'R' | 'BDS') => setItemSides(prev => ({ ...prev, [posNum]: side }))}
                     vatCountry={user?.accountInfo?.vat_country || undefined}
                     rezeptnummer={rezeptnummer}
                     onRezeptnummerChange={setRezeptnummer}
