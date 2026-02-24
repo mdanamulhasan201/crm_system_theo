@@ -17,6 +17,7 @@ import { SHOE_STEPS, ProgressData } from '@/app/(dashboard)/dashboard/_component
 import FertigungsweisungSidebar from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/FertigungsweisungSidebar';
 import LeistenerstellungStepFields, { type LeistenfertigungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/LeistenerstellungStepFields';
 import BettungserstellungStepFields from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BettungserstellungStepFields';
+import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobenerstellungStepFields';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 // Short names for progress indicator (matching the image design)
@@ -248,6 +249,10 @@ export default function MassschuhauftraegePage() {
     const [leistentyp, setLeistentyp] = useState('');
     const [leistenfertigung, setLeistenfertigung] = useState<LeistenfertigungValue>('');
     const [thickness, setThickness] = useState('');
+    const [preparation_date, setPreparation_date] = useState('');
+    const [anmerkungen_halbprobe, setAnmerkungen_halbprobe] = useState('');
+    const [halbprobe_durchfuehrung, setHalbprobe_durchfuehrung] = useState<HalbprobeDurchfuehrungValue>('');
+    const [checkliste_halbprobe, setCheckliste_halbprobe] = useState('');
 
     useEffect(() => {
         if (!id) {
@@ -272,6 +277,11 @@ export default function MassschuhauftraegePage() {
                     const lf = data.leistenfertigung;
                     if (lf === 'Extern' || lf === 'Über F1rst') setLeistenfertigung(lf);
                     if (data.thickness != null && data.thickness !== '') setThickness(String(data.thickness));
+                    if (data.preparation_date) setPreparation_date(String(data.preparation_date).slice(0, 10));
+                    if (data.anmerkungen_halbprobe != null && data.anmerkungen_halbprobe !== '') setAnmerkungen_halbprobe(String(data.anmerkungen_halbprobe));
+                    if (data.checkliste_halbprobe != null && data.checkliste_halbprobe !== '') setCheckliste_halbprobe(String(data.checkliste_halbprobe));
+                    const hd = data.halbprobe_durchfuehrung;
+                    if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
                 }
                 setLoading(false);
             })
@@ -318,6 +328,10 @@ export default function MassschuhauftraegePage() {
             formData.append('leistentyp', leistentyp);
             formData.append('leistenfertigung', leistenfertigung);
             formData.append('thickness', thickness);
+            formData.append('preparation_date', preparation_date);
+            formData.append('checkliste_halbprobe', checkliste_halbprobe);
+            formData.append('anmerkungen_halbprobe', anmerkungen_halbprobe);
+            formData.append('halbprobe_durchfuehrung', halbprobe_durchfuehrung);
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
                 router.push('/dashboard/massschuhauftraege');
@@ -516,6 +530,20 @@ export default function MassschuhauftraegePage() {
                                 thickness={thickness}
                                 onMaterialChange={setMaterial}
                                 onThicknessChange={setThickness}
+                            />
+                        )}
+
+                        {/* Step 4: Halbprobenerstellung – Vorbereitungsdatum, Anmerkungen, Halbprobe Durchführung, Checkliste */}
+                        {(orderData?.currentStepIndex ?? activeStepIndex) === 3 && (
+                            <HalbprobenerstellungStepFields
+                                preparation_date={preparation_date}
+                                anmerkungen_halbprobe={anmerkungen_halbprobe}
+                                halbprobe_durchfuehrung={halbprobe_durchfuehrung}
+                                checkliste_halbprobe={checkliste_halbprobe}
+                                onPreparationDateChange={setPreparation_date}
+                                onAnmerkungenHalbprobeChange={setAnmerkungen_halbprobe}
+                                onHalbprobeDurchfuehrungChange={setHalbprobe_durchfuehrung}
+                                onChecklisteHalbprobeChange={setCheckliste_halbprobe}
                             />
                         )}
 
