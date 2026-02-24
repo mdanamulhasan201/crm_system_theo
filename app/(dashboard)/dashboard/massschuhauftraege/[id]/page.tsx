@@ -2,12 +2,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText, X } from 'lucide-react';
+import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText, X, Loader2 } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import { Button } from '@/components/ui/button';
 import { SHOE_STEPS, ProgressData } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuProgressTable';
 import FertigungsweisungSidebar from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/FertigungsweisungSidebar';
-import { getMassschuheOrderById } from '@/apis/MassschuheAddedApis';
+import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 // Short names for progress indicator (matching the image design)
 const STEP_SHORT_NAMES = [
@@ -24,6 +24,8 @@ const STEP_SHORT_NAMES = [
 ];
 
 type OrderDetailData = ProgressData & {
+    stepsCompleted?: boolean[];
+    stepsAutoPrint?: boolean[];
     fertigungsweisung: {
         leisten: string;
         bettung: string;
@@ -43,11 +45,23 @@ type OrderDetailData = ProgressData & {
     }>;
 };
 
-function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
+// Same as MasschuProgressTable: auto_print = gray tick, manual = green tick.
+function ProgressIndicator({
+    currentStepIndex,
+    stepsCompleted,
+    stepsAutoPrint,
+}: {
+    currentStepIndex: number;
+    stepsCompleted?: boolean[];
+    stepsAutoPrint?: boolean[];
+}) {
     return (
         <div className="flex items-end">
             {SHOE_STEPS.map((step, index) => {
-                const isCompleted = index < currentStepIndex;
+                const isCompleted = stepsCompleted
+                    ? stepsCompleted[index] === true
+                    : index < currentStepIndex;
+                const isAutoPrint = isCompleted && (stepsAutoPrint?.[index] === true);
                 const isCurrent = index === currentStepIndex;
 
                 return (
@@ -55,7 +69,7 @@ function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
                         {index > 0 && (
                             <span
                                 className={`font-semibold mx-5 shrink-0 leading-none select-none mb-3 ${
-                                    index <= currentStepIndex ? 'text-emerald-400' : 'text-gray-300'
+                                    isCompleted || isCurrent ? 'text-emerald-400' : 'text-gray-300'
                                 }`}
                             >
                                 <BsDash className='text-4xl'/>
@@ -71,7 +85,7 @@ function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
                                     text-xs font-bold
                                     transition-all mb-2
                                     ${isCompleted
-                                        ? 'bg-emerald-100 text-emerald-500'
+                                        ? 'bg-emerald-100'
                                         : isCurrent
                                             ? 'bg-emerald-600 text-white'
                                             : 'bg-gray-100 text-gray-400'
@@ -79,7 +93,10 @@ function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
                                 `}
                             >
                                 {isCompleted ? (
-                                    <Check className="w-4 h-4" strokeWidth={2.5} />
+                                    <Check
+                                        className={`w-4 h-4 ${isAutoPrint ? 'text-gray-400' : 'text-emerald-500'}`}
+                                        strokeWidth={2.5}
+                                    />
                                 ) : (
                                     <span className="leading-none">{index + 1}</span>
                                 )}
@@ -97,21 +114,31 @@ function ProgressIndicator({ currentStepIndex }: { currentStepIndex: number }) {
     );
 }
 
-// activeStepIndex = which step is shown as current on this page (from URL status)
-function mapApiOrderToDetailData(apiOrder: any, activeStepIndex: number): OrderDetailData | null {
-    if (!apiOrder?.id) return null;
-    const steps = apiOrder.shoeOrderStep ?? [];
+// Map API response (with data + shoeOrderStep) to OrderDetailData. Progress comes from shoeOrderStep.
+function mapApiOrderToDetailData(apiResponse: any): OrderDetailData | null {
+    const order = apiResponse?.data ?? apiResponse;
+    const shoeOrderStep = apiResponse?.shoeOrderStep ?? order?.shoeOrderStep;
+    const orderId = order?.id ?? order?.orderId;
+    if (!orderId) return null;
+
+    const { currentStepIndex, stepsCompleted, stepsAutoPrint } = getProgressFromShoeOrderSteps(shoeOrderStep);
+    const steps = shoeOrderStep ?? [];
     const lastStep = steps[steps.length - 1];
-    const days = lastStep ? Math.floor((Date.now() - new Date(lastStep.createdAt).getTime()) / (24 * 60 * 60 * 1000)) : 0;
-    const currentStepDisplay = SHOE_STEPS[activeStepIndex] ?? (apiOrder.status ? apiOrder.status.replace(/_/g, ' ') : '-');
-    const nextAction = activeStepIndex < SHOE_STEPS.length - 1 ? SHOE_STEPS[activeStepIndex + 1] : 'Abgeschlossen';
+    const days = lastStep?.createdAt
+        ? Math.floor((Date.now() - new Date(lastStep.createdAt).getTime()) / (24 * 60 * 60 * 1000))
+        : 0;
+    const currentStepDisplay = SHOE_STEPS[currentStepIndex] ?? (order.status ? order.status.replace(/_/g, ' ') : '-');
+    const nextAction = currentStepIndex < SHOE_STEPS.length - 1 ? SHOE_STEPS[currentStepIndex + 1] : 'Abgeschlossen';
 
     const zeitverlauf = SHOE_STEPS.map((step, index) => {
-        const isCompleted = index < activeStepIndex;
-        const isCurrent = index === activeStepIndex;
-        const stepData = steps[index];
-        const duration = stepData?.createdAt
-            ? `${Math.max(0, Math.floor((Date.now() - new Date(stepData.createdAt).getTime()) / (24 * 60 * 60 * 1000)))}d`
+        const isCompleted = stepsCompleted[index] === true;
+        const isCurrent = index === currentStepIndex;
+        const stepEntry = steps.find((s: any) => {
+            const n = (s.status || '').trim().replace(/_/g, ' ');
+            return SHOE_STEPS[index] === n;
+        });
+        const duration = stepEntry?.createdAt
+            ? `${Math.max(0, Math.floor((Date.now() - new Date(stepEntry.createdAt).getTime()) / (24 * 60 * 60 * 1000)))}d`
             : '0d';
         return {
             step,
@@ -123,22 +150,24 @@ function mapApiOrderToDetailData(apiOrder: any, activeStepIndex: number): OrderD
     });
 
     return {
-        id: apiOrder.id,
+        id: orderId,
         auftrag: {
-            name: [apiOrder.customer?.vorname, apiOrder.customer?.nachname].filter(Boolean).join(' ') || '-',
-            orderNumber: `#${apiOrder.orderNumber}`,
+            name: [order.customer?.vorname, order.customer?.nachname].filter(Boolean).join(' ') || '-',
+            orderNumber: `#${order.orderNumber ?? ''}`,
             product: 'Massschuhe',
-            isUrgent: apiOrder.priority === 'Dringend' || apiOrder.priority === 'Urgent',
+            isUrgent: order.priority === 'Dringend' || order.priority === 'Urgent',
         },
         currentStep: currentStepDisplay,
-        location: apiOrder.branch_location?.title || apiOrder.branch_location?.description || '-',
-        createDate: apiOrder.createdAt ? new Date(apiOrder.createdAt).toLocaleDateString('de-DE') : '-',
+        location: order.branch_location?.title || order.branch_location?.description || '-',
+        createDate: order.createdAt ? new Date(order.createdAt).toLocaleDateString('de-DE') : '-',
         days,
         isOverdue: days > 14,
-        currentStepIndex: activeStepIndex,
+        currentStepIndex,
+        stepsCompleted,
+        stepsAutoPrint,
         nextAction,
-        responsible: apiOrder.payment_status || undefined,
-        notes: '',
+        responsible: order.payment_status || undefined,
+        notes: order.notes ?? '',
         fertigungsweisung: {
             leisten: '',
             bettung: '',
@@ -161,6 +190,34 @@ function getActiveStepIndexFromStatus(statusParam: string | null): number {
     return idx >= 0 ? idx : 0;
 }
 
+// Derive current step index, per-step completed, and auto_print from shoeOrderStep (same logic as MasschuProgressTable).
+function getProgressFromShoeOrderSteps(shoeOrderStep: Array<{ status: string; isCompleted?: boolean; auto_print?: boolean }> | null | undefined): {
+    currentStepIndex: number;
+    stepsCompleted: boolean[];
+    stepsAutoPrint: boolean[];
+} {
+    const steps = shoeOrderStep ?? [];
+    const stepsCompleted = new Array(SHOE_STEPS.length).fill(false);
+    const stepsAutoPrint = new Array(SHOE_STEPS.length).fill(false);
+    for (const s of steps) {
+        const normalized = (s.status || '').trim().replace(/_/g, ' ');
+        const idx = SHOE_STEPS.findIndex((step) => step === normalized);
+        if (idx >= 0) {
+            const done = s.isCompleted === true || s.auto_print === true;
+            stepsCompleted[idx] = done;
+            stepsAutoPrint[idx] = s.auto_print === true;
+        }
+    }
+    let currentStepIndex = SHOE_STEPS.length;
+    for (let i = 0; i < SHOE_STEPS.length; i++) {
+        if (!stepsCompleted[i]) {
+            currentStepIndex = i;
+            break;
+        }
+    }
+    return { currentStepIndex, stepsCompleted, stepsAutoPrint };
+}
+
 export default function MassschuhauftraegePage() {
     const params = useParams();
     const searchParams = useSearchParams();
@@ -170,29 +227,34 @@ export default function MassschuhauftraegePage() {
     const activeStepIndex = getActiveStepIndexFromStatus(statusFromUrl);
 
     const [orderData, setOrderData] = useState<OrderDetailData | null>(null);
+    const [shoeOrderStep, setShoeOrderStep] = useState<Array<{ status: string; isCompleted?: boolean; auto_print?: boolean }> | null>(null);
     const [loading, setLoading] = useState(true);
     const [notes, setNotes] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (!id) {
             setLoading(false);
+            setShoeOrderStep(null);
             return;
         }
         setLoading(true);
-        getMassschuheOrderById(id, statusFromUrl)
+        MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl)
             .then((res: any) => {
                 if (res?.success === false && typeof res?.message === 'string' && res.message.toLowerCase().includes('no step')) {
                     router.replace(`/dashboard/massschuhauftraege/${id}?status=Auftragserstellung`);
                     return;
                 }
-                const data = res?.data ?? res;
-                setOrderData(mapApiOrderToDetailData(data, activeStepIndex));
+                const steps = res?.shoeOrderStep ?? null;
+                setShoeOrderStep(Array.isArray(steps) ? steps : null);
+                setOrderData(mapApiOrderToDetailData(res));
                 setLoading(false);
             })
             .catch(() => {
                 setOrderData(null);
+                setShoeOrderStep(null);
                 setLoading(false);
             });
     }, [id, statusFromUrl, activeStepIndex, router]);
@@ -219,14 +281,45 @@ export default function MassschuhauftraegePage() {
         });
     };
 
-    const currentStepForProgress = orderData ? orderData.currentStepIndex : activeStepIndex;
+    const handleCompleteStep = async () => {
+        if (!id) return;
+        setSubmitting(true);
+        try {
+            const formData = new FormData();
+            formData.append('notes', notes);
+            uploadedFiles.forEach((file) => {
+                formData.append('files', file);
+            });
+            const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
+            if (success) {
+                router.push('/dashboard/massschuhauftraege');
+            }
+        } catch (err: any) {
+            console.error(err);
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const progressFromSteps = shoeOrderStep ? getProgressFromShoeOrderSteps(shoeOrderStep) : null;
+    const currentStepForProgress = orderData
+        ? orderData.currentStepIndex
+        : progressFromSteps
+            ? progressFromSteps.currentStepIndex
+            : activeStepIndex;
+    const stepsCompletedForProgress = orderData?.stepsCompleted ?? progressFromSteps?.stepsCompleted;
+    const stepsAutoPrintForProgress = orderData?.stepsAutoPrint ?? progressFromSteps?.stepsAutoPrint;
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Progress Bar - active step from URL status when no order data */}
+            {/* Progress Bar - from shoeOrderStep when order loaded, else from URL (auto_print = gray tick, manual = green) */}
             <div className="bg-white border border-gray-200 px-4 py-4">
                 <div className="overflow-x-auto">
-                    <ProgressIndicator currentStepIndex={currentStepForProgress} />
+                    <ProgressIndicator
+                        currentStepIndex={currentStepForProgress}
+                        stepsCompleted={stepsCompletedForProgress}
+                        stepsAutoPrint={stepsAutoPrintForProgress}
+                    />
                 </div>
             </div>
 
@@ -375,9 +468,16 @@ export default function MassschuhauftraegePage() {
 
                         {/* Complete Button */}
                         <Button
-                            className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2"
+                            type="button"
+                            disabled={submitting}
+                            onClick={handleCompleteStep}
+                            className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
                         >
-                            <CheckCircle2 className="w-5 h-5" />
+                            {submitting ? (
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                            ) : (
+                                <CheckCircle2 className="w-5 h-5" />
+                            )}
                             Schritt abschließen & weiterleiten
                             <ArrowRight className="w-5 h-5" />
                         </Button>

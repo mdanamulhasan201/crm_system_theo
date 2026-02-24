@@ -87,19 +87,23 @@ export const getMassschuheOrderDetails = async (id: string) => {
 }
 
 
-// v2/shoe-orders/update-status/32a953f1-7832-40de-90b3-56905fde1306?status=Auftragserstellung body e data jabe  form data 
-export const updateMassschuheOrderStatus = async (id: string, status: string, data: any) => {
+// v2/shoe-orders/update-status/:id?status=Auftragserstellung
+// body: FormData with "notes" (string) and "files" (multiple files). Only for Auftragserstellung send notes + files.
+export const updateMassschuheOrderStatus = async (
+    id: string,
+    status: string,
+    data: FormData
+): Promise<boolean> => {
     try {
-        const response = await axiosClient.patch(`/v2/shoe-orders/update-status/${id}?status=${status}`, data, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-        return response.data.success;
+        const response = await axiosClient.patch(
+            `/v2/shoe-orders/update-status/${id}?status=${encodeURIComponent(status)}`,
+            data
+        );
+        return response.data?.success ?? false;
     } catch (error: any) {
         throw error;
     }
-}
+};
 
 
 
@@ -122,4 +126,13 @@ export const updateMassschuheOrderNote = async (id: string, status_note: string)
     } catch (error: any) {
         throw error;
     }
-}
+};
+
+const MassschuheAddedApisDefault = {
+    getMassschuheOrderById,
+    getMassschuheOrderDetails,
+    updateMassschuheOrderStatus,
+    getAllMassschuheOrders,
+    createMassschuheOrderV2,
+};
+export default MassschuheAddedApisDefault;
