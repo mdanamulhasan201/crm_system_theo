@@ -5,8 +5,17 @@ import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText, X, Loader2 } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { SHOE_STEPS, ProgressData } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/MasschuProgressTable';
 import FertigungsweisungSidebar from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/FertigungsweisungSidebar';
+import LeistenerstellungStepFields, { type LeistenfertigungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/LeistenerstellungStepFields';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 // Short names for progress indicator (matching the image design)
@@ -233,6 +242,10 @@ export default function MassschuhauftraegePage() {
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
     const [isDragging, setIsDragging] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [material, setMaterial] = useState('');
+    const [leistentyp, setLeistentyp] = useState('');
+    const [leistenfertigung, setLeistenfertigung] = useState<LeistenfertigungValue>('');
 
     useEffect(() => {
         if (!id) {
@@ -250,6 +263,13 @@ export default function MassschuhauftraegePage() {
                 const steps = res?.shoeOrderStep ?? null;
                 setShoeOrderStep(Array.isArray(steps) ? steps : null);
                 setOrderData(mapApiOrderToDetailData(res));
+                const data = res?.data;
+                if (data) {
+                    if (data.material != null && data.material !== '') setMaterial(String(data.material));
+                    if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
+                    const lf = data.leistenfertigung;
+                    if (lf === 'Extern' || lf === 'Über F1rst') setLeistenfertigung(lf);
+                }
                 setLoading(false);
             })
             .catch(() => {
@@ -283,6 +303,7 @@ export default function MassschuhauftraegePage() {
 
     const handleCompleteStep = async () => {
         if (!id) return;
+        setConfirmOpen(false);
         setSubmitting(true);
         try {
             const formData = new FormData();
@@ -290,6 +311,9 @@ export default function MassschuhauftraegePage() {
             uploadedFiles.forEach((file) => {
                 formData.append('files', file);
             });
+            formData.append('material', material);
+            formData.append('leistentyp', leistentyp);
+            formData.append('leistenfertigung', leistenfertigung);
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
                 router.push('/dashboard/massschuhauftraege');
@@ -365,6 +389,8 @@ export default function MassschuhauftraegePage() {
                                 Dieser Schritt wartet auf Bearbeitung. Laden Sie relevante Bilder hoch und fügen Sie Notizen hinzu.
                             </p>
                         </div>
+
+                      
 
                         {/* Bilder Section */}
                         <div className="mb-6">
@@ -465,12 +491,25 @@ export default function MassschuhauftraegePage() {
                                 className="w-full min-h-[120px] p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
                             />
                         </div>
+                          {/* Step 2: Leistenerstellung – Material & Leistentyp (only when this step) */}
+                          {(orderData?.currentStepIndex ?? activeStepIndex) === 1 && (
+                            <LeistenerstellungStepFields
+                                material={material}
+                                leistentyp={leistentyp}
+                                leistenfertigung={leistenfertigung}
+                                onMaterialChange={setMaterial}
+                                onLeistentypChange={setLeistentyp}
+                                onLeistenfertigungChange={setLeistenfertigung}
+                            />
+                        )}
+
+                        {/* Step 3: Bettungserstellung – Material & Dicke (only when this step) */}
 
                         {/* Complete Button */}
                         <Button
                             type="button"
                             disabled={submitting}
-                            onClick={handleCompleteStep}
+                            onClick={() => setConfirmOpen(true)}
                             className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
                         >
                             {submitting ? (
@@ -481,6 +520,40 @@ export default function MassschuhauftraegePage() {
                             Schritt abschließen & weiterleiten
                             <ArrowRight className="w-5 h-5" />
                         </Button>
+
+                        {/* Confirm Modal */}
+                        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                            <DialogContent className="sm:max-w-md">
+                                <DialogHeader>
+                                    <DialogTitle>Schritt abschließen</DialogTitle>
+                                    <DialogDescription>
+                                        Möchten Sie diesen Schritt wirklich abschließen und weiterleiten? Die Änderung wird gespeichert.
+                                    </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter className="flex gap-2 sm:gap-0">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => setConfirmOpen(false)}
+                                        disabled={submitting}
+                                    >
+                                        Abbrechen
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        className="bg-emerald-600 hover:bg-emerald-700"
+                                        onClick={handleCompleteStep}
+                                        disabled={submitting}
+                                    >
+                                        {submitting ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                            'Bestätigen'
+                                        )}
+                                    </Button>
+                                </DialogFooter>
+                            </DialogContent>
+                        </Dialog>
                             </>
                         )}
                     </div>
