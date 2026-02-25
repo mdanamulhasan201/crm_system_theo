@@ -328,14 +328,14 @@ export default function ProductManagementTable({
                     </DialogHeader>
                     <div className="space-y-6">
                         {/* Large Image */}
-                        <div className="flex justify-center items-center bg-gray-50 rounded-lg p-6">
+                        <div className="flex justify-center items-center  p-6">
                             {selectedProductForImage?.image ? (
                                 <Image
                                     width={500}
                                     height={500}
                                     src={selectedProductForImage.image}
                                     alt={selectedProductForImage.Produktname}
-                                    className="max-w-full max-h-96 rounded-lg object-contain shadow-lg"
+                                    className="max-w-full max-h-96 rounded-lg object-contain "
                                 />
                             ) : (
                                 <div className="w-96 h-96 flex items-center justify-center rounded-lg border-2 border-gray-200 bg-white">
@@ -347,7 +347,7 @@ export default function ProductManagementTable({
                         </div>
 
                         {/* Eigenschaften Section */}
-                        <div className="border-t pt-6">
+                        <div className=" pt-6">
                             <h3 className="text-xl font-semibold mb-4 text-gray-900">Eigenschaften</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-1">
