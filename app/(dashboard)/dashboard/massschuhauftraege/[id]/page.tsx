@@ -281,6 +281,9 @@ export default function MassschuhauftraegePage() {
     const [checkliste_halbprobe, setCheckliste_halbprobe] = useState('');
     const [probenergebnis, setProbenergebnis] = useState<ProbenergebnisValue>('');
     const [schafttyp, setSchafttyp] = useState<SchafttypValue>('');
+    const [fitting_date, setFitting_date] = useState('');
+    const [adjustments, setAdjustments] = useState('');
+    const [customer_reviews, setCustomer_reviews] = useState('');
     const [deleteFileConfirmId, setDeleteFileConfirmId] = useState<string | null>(null);
     const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
 
@@ -319,6 +322,9 @@ export default function MassschuhauftraegePage() {
                     if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
                     if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch' || data.probenergebnis === 'Änderungen') setProbenergebnis(data.probenergebnis);
                     if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
+                    if (data.fitting_date) setFitting_date(String(data.fitting_date).slice(0, 10));
+                    if (data.adjustments != null) setAdjustments(String(data.adjustments));
+                    if (data.customer_reviews != null) setCustomer_reviews(String(data.customer_reviews));
                     setStepFilesFromApi(Array.isArray(data.files) ? data.files.map((f: any) => ({
                         id: f.id || '',
                         fileName: f.fileName || 'Datei',
@@ -338,6 +344,9 @@ export default function MassschuhauftraegePage() {
                     setHalbprobe_durchfuehrung('');
                     setProbenergebnis('');
                     setSchafttyp('');
+                    setFitting_date('');
+                    setAdjustments('');
+                    setCustomer_reviews('');
                 }
                 setLoading(false);
             })
@@ -400,6 +409,9 @@ export default function MassschuhauftraegePage() {
             if (statusFromUrl === 'Halbprobe_durchführen') {
                 if (probenergebnis) formData.append('probenergebnis', probenergebnis);
                 if (schafttyp) formData.append('schafttyp', schafttyp);
+                if (fitting_date) formData.append('fitting_date', fitting_date);
+                if (adjustments) formData.append('adjustments', adjustments);
+                if (customer_reviews) formData.append('customer_reviews', customer_reviews);
             }
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
@@ -431,6 +443,9 @@ export default function MassschuhauftraegePage() {
                     if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
                     if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch' || data.probenergebnis === 'Änderungen') setProbenergebnis(data.probenergebnis);
                     if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
+                    if (data.fitting_date) setFitting_date(String(data.fitting_date).slice(0, 10));
+                    if (data.adjustments != null) setAdjustments(String(data.adjustments));
+                    if (data.customer_reviews != null) setCustomer_reviews(String(data.customer_reviews));
                     setStepFilesFromApi(Array.isArray(data.files) ? data.files.map((f: any) => ({
                         id: f.id || '',
                         fileName: f.fileName || 'Datei',
@@ -748,9 +763,15 @@ export default function MassschuhauftraegePage() {
                             <HalbprobeDurchfuehrungStepFields
                                 probenergebnis={probenergebnis}
                                 schafttyp={schafttyp}
+                                fitting_date={fitting_date}
+                                adjustments={adjustments}
+                                customer_reviews={customer_reviews}
                                 checklisteHalbprobe={checkliste_halbprobe}
                                 onProbenergebnisChange={setProbenergebnis}
                                 onSchafttypChange={setSchafttyp}
+                                onFittingDateChange={setFitting_date}
+                                onAdjustmentsChange={setAdjustments}
+                                onCustomerReviewsChange={setCustomer_reviews}
                                 onChecklisteHalbprobeChange={setCheckliste_halbprobe}
                             />
                         )}

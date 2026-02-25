@@ -4,9 +4,25 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-import { Check, ClipboardList, Pencil } from 'lucide-react';
+import { CalendarIcon, Check, ClipboardList, Pencil } from 'lucide-react';
 import ChecklisteHalbprobeModal, { type ChecklisteHalbprobeData } from './ChecklisteHalbprobeModal';
+
+function formatDateForDisplay(isoDate: string): string {
+    if (!isoDate) return '';
+    const d = new Date(isoDate + 'T00:00:00');
+    if (Number.isNaN(d.getTime())) return isoDate;
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+function toISODateString(date: Date): string {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
 
 export const PROBENERGEBNIS_OPTIONS = [
     { value: 'Gut', label: 'Gut', colorClass: 'border-emerald-500 text-emerald-700 hover:bg-emerald-50 data-[selected=true]:bg-emerald-50 data-[selected=true]:ring-2 data-[selected=true]:ring-emerald-500' },
@@ -26,10 +42,16 @@ export type SchafttypValue = (typeof SCHAFTTYP_OPTIONS)[number]['value'] | '';
 export interface HalbprobeDurchfuehrungStepFieldsProps {
     probenergebnis: ProbenergebnisValue;
     schafttyp: SchafttypValue;
+    fitting_date: string;
+    adjustments: string;
+    customer_reviews: string;
     /** JSON string of checklist answers (checkliste_halbprobe) */
     checklisteHalbprobe?: string;
     onProbenergebnisChange: (value: ProbenergebnisValue) => void;
     onSchafttypChange: (value: SchafttypValue) => void;
+    onFittingDateChange: (value: string) => void;
+    onAdjustmentsChange: (value: string) => void;
+    onCustomerReviewsChange: (value: string) => void;
     onChecklisteHalbprobeChange?: (jsonString: string) => void;
 }
 
@@ -46,9 +68,15 @@ function parseChecklisteHalbprobe(json: string | undefined): ChecklisteHalbprobe
 export default function HalbprobeDurchfuehrungStepFields({
     probenergebnis,
     schafttyp,
+    fitting_date,
+    adjustments,
+    customer_reviews,
     checklisteHalbprobe,
     onProbenergebnisChange,
     onSchafttypChange,
+    onFittingDateChange,
+    onAdjustmentsChange,
+    onCustomerReviewsChange,
     onChecklisteHalbprobeChange,
 }: HalbprobeDurchfuehrungStepFieldsProps) {
     const router = useRouter();
@@ -58,6 +86,62 @@ export default function HalbprobeDurchfuehrungStepFields({
 
     return (
         <div className="mb-6 space-y-6">
+            {/* Anprobedatum (fitting_date) */}
+            <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
+                <Label className="text-sm font-medium text-gray-800 mb-2 block">
+                    Anprobedatum
+                </Label>
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="outline"
+                            className={cn(
+                                'h-14 w-full min-w-[280px] max-w-md justify-start gap-3 rounded-xl border-gray-300 bg-gray-50/80 pl-4 text-left text-base font-normal hover:bg-gray-100 hover:border-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400',
+                                !fitting_date && 'text-muted-foreground'
+                            )}
+                        >
+                            <CalendarIcon className="h-5 w-5 shrink-0 text-gray-500" />
+                            {fitting_date ? formatDateForDisplay(fitting_date) : <span>Datum auswählen</span>}
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                            mode="single"
+                            selected={fitting_date ? new Date(fitting_date + 'T00:00:00') : undefined}
+                            onSelect={(date) => date && onFittingDateChange(toISODateString(date))}
+                            initialFocus
+                            captionLayout="dropdown"
+                            fromYear={new Date().getFullYear() - 2}
+                            toYear={new Date().getFullYear() + 5}
+                        />
+                    </PopoverContent>
+                </Popover>
+            </div>
+
+            {/* Anpassungen & Kundennotizen – side by side */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
+                    <Label className="text-sm font-medium text-gray-800 mb-2 block">Anpassungen</Label>
+                    <textarea
+                        value={adjustments}
+                        onChange={(e) => onAdjustmentsChange(e.target.value)}
+                        placeholder="Anpassungen während der Anprobe..."
+                        rows={4}
+                        className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
+                    />
+                </div>
+                <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
+                    <Label className="text-sm font-medium text-gray-800 mb-2 block">Kundennotizen</Label>
+                    <textarea
+                        value={customer_reviews}
+                        onChange={(e) => onCustomerReviewsChange(e.target.value)}
+                        placeholder="Kundenwünsche und Notizen..."
+                        rows={4}
+                        className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
+                    />
+                </div>
+            </div>
+
             {/* Probenergebnis * */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
                 <Label className="text-sm font-medium text-gray-800 mb-3 block">
