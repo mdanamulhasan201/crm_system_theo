@@ -18,6 +18,7 @@ import FertigungsweisungSidebar from '@/app/(dashboard)/dashboard/_components/Ma
 import LeistenerstellungStepFields, { type LeistenfertigungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/LeistenerstellungStepFields';
 import BettungserstellungStepFields from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BettungserstellungStepFields';
 import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobenerstellungStepFields';
+import HalbprobeDurchfuehrungStepFields, { type ProbenergebnisValue, type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobeDurchfuehrungStepFields';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 // Short names for progress indicator (matching the image design)
@@ -253,6 +254,8 @@ export default function MassschuhauftraegePage() {
     const [anmerkungen_halbprobe, setAnmerkungen_halbprobe] = useState('');
     const [halbprobe_durchfuehrung, setHalbprobe_durchfuehrung] = useState<HalbprobeDurchfuehrungValue>('');
     const [checkliste_halbprobe, setCheckliste_halbprobe] = useState('');
+    const [probenergebnis, setProbenergebnis] = useState<ProbenergebnisValue>('');
+    const [schafttyp, setSchafttyp] = useState<SchafttypValue>('');
 
     useEffect(() => {
         if (!id) {
@@ -282,6 +285,8 @@ export default function MassschuhauftraegePage() {
                     if (data.checkliste_halbprobe != null && data.checkliste_halbprobe !== '') setCheckliste_halbprobe(String(data.checkliste_halbprobe));
                     const hd = data.halbprobe_durchfuehrung;
                     if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
+                    if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch' || data.probenergebnis === 'Änderungen') setProbenergebnis(data.probenergebnis);
+                    if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
                 }
                 setLoading(false);
             })
@@ -332,6 +337,10 @@ export default function MassschuhauftraegePage() {
             formData.append('checkliste_halbprobe', checkliste_halbprobe);
             formData.append('anmerkungen_halbprobe', anmerkungen_halbprobe);
             formData.append('halbprobe_durchfuehrung', halbprobe_durchfuehrung);
+            if (statusFromUrl === 'Halbprobe_durchführen') {
+                if (probenergebnis) formData.append('probenergebnis', probenergebnis);
+                if (schafttyp) formData.append('schafttyp', schafttyp);
+            }
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
                 router.push('/dashboard/massschuhauftraege');
@@ -543,6 +552,18 @@ export default function MassschuhauftraegePage() {
                                 onPreparationDateChange={setPreparation_date}
                                 onAnmerkungenHalbprobeChange={setAnmerkungen_halbprobe}
                                 onHalbprobeDurchfuehrungChange={setHalbprobe_durchfuehrung}
+                                onChecklisteHalbprobeChange={setCheckliste_halbprobe}
+                            />
+                        )}
+
+                        {/* Step 5: Halbprobe durchführen – Probenergebnis & Schafttyp */}
+                        {(orderData?.currentStepIndex ?? activeStepIndex) === 4 && (
+                            <HalbprobeDurchfuehrungStepFields
+                                probenergebnis={probenergebnis}
+                                schafttyp={schafttyp}
+                                checklisteHalbprobe={checkliste_halbprobe}
+                                onProbenergebnisChange={setProbenergebnis}
+                                onSchafttypChange={setSchafttyp}
                                 onChecklisteHalbprobeChange={setCheckliste_halbprobe}
                             />
                         )}
