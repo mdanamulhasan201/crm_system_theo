@@ -293,7 +293,8 @@ export default function MassschuhauftraegePage() {
         setLoading(true);
         MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl)
             .then((res: any) => {
-                if (res?.success === false && typeof res?.message === 'string' && res.message.toLowerCase().includes('no step')) {
+                const noStepForStatus = typeof res?.message === 'string' && res.message.toLowerCase().includes('no step');
+                if (res?.success === false && noStepForStatus) {
                     router.replace(`/dashboard/massschuhauftraege/${id}?status=Auftragserstellung`);
                     return;
                 }
@@ -324,8 +325,20 @@ export default function MassschuhauftraegePage() {
                         fileUrl: f.fileUrl || '',
                         fileType: f.fileType,
                     })) : []);
+                } else {
+                    setNotes('');
+                    setStepFilesFromApi([]);
+                    setMaterial('');
+                    setLeistentyp('');
+                    setLeistenfertigung('');
+                    setThickness('');
+                    setPreparation_date('');
+                    setAnmerkungen_halbprobe('');
+                    setCheckliste_halbprobe('');
+                    setHalbprobe_durchfuehrung('');
+                    setProbenergebnis('');
+                    setSchafttyp('');
                 }
-                if (!data) setStepFilesFromApi([]);
                 setLoading(false);
             })
             .catch(() => {
@@ -390,7 +403,43 @@ export default function MassschuhauftraegePage() {
             }
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
-                router.push('/dashboard/massschuhauftraege');
+                setUploadedFiles([]);
+                // Stay on same page – no redirect to list; refetch and show updated data
+                const res: any = await MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl);
+                if (res?.success === false && typeof res?.message === 'string' && res.message.toLowerCase().includes('no step')) {
+                    router.replace(`/dashboard/massschuhauftraege/${id}?status=Auftragserstellung`);
+                    return;
+                }
+                const steps = res?.shoeOrderStep ?? null;
+                setShoeOrderStep(Array.isArray(steps) ? steps : null);
+                setOrderData(mapApiOrderToDetailData(res));
+                const data = res?.data;
+                if (data) {
+                    setNotes(data.notes != null ? String(data.notes) : '');
+                    if (data.material != null && data.material !== '') setMaterial(String(data.material));
+                    if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
+                    const lf = data.leistenfertigung;
+                    if (lf === 'Extern' || lf === 'Über F1rst') setLeistenfertigung(lf);
+                    if (data.thickness != null && data.thickness !== '') setThickness(String(data.thickness));
+                    if (data.preparation_date) setPreparation_date(String(data.preparation_date).slice(0, 10));
+                    if (data.anmerkungen_halbprobe != null && data.anmerkungen_halbprobe !== '') setAnmerkungen_halbprobe(String(data.anmerkungen_halbprobe));
+                    if (data.checkliste_halbprobe != null) {
+                        const ch = data.checkliste_halbprobe;
+                        setCheckliste_halbprobe(Array.isArray(ch) ? JSON.stringify(ch) : String(ch));
+                    }
+                    const hd = data.halbprobe_durchfuehrung;
+                    if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
+                    if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch' || data.probenergebnis === 'Änderungen') setProbenergebnis(data.probenergebnis);
+                    if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
+                    setStepFilesFromApi(Array.isArray(data.files) ? data.files.map((f: any) => ({
+                        id: f.id || '',
+                        fileName: f.fileName || 'Datei',
+                        fileUrl: f.fileUrl || '',
+                        fileType: f.fileType,
+                    })) : []);
+                } else {
+                    setStepFilesFromApi([]);
+                }
             }
         } catch (err: any) {
             console.error(err);
