@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import toast from 'react-hot-toast';
 
 export interface StatusNoteData {
-    statusNote: string;
+    versorgung_note?: string;
     orderNumber: number;
     product: {
         name: string;
@@ -54,7 +54,7 @@ export default function StatusNoteModal({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [editNote, setEditNote] = useState('');
+    const [editVersorgungNote, setEditVersorgungNote] = useState('');
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
@@ -88,17 +88,18 @@ export default function StatusNoteModal({
     }, [isOpen, orderId]);
 
     useEffect(() => {
-        if (data?.statusNote != null) setEditNote(data.statusNote);
-    }, [data?.statusNote]);
+        if (data?.versorgung_note != null) setEditVersorgungNote(data.versorgung_note);
+        else setEditVersorgungNote('');
+    }, [data?.versorgung_note]);
 
     const handleStartEdit = () => {
-        setEditNote(data?.statusNote ?? '');
+        setEditVersorgungNote(data?.versorgung_note ?? '');
         setIsEditing(true);
     };
 
     const handleCancelEdit = () => {
         setIsEditing(false);
-        setEditNote(data?.statusNote ?? '');
+        setEditVersorgungNote(data?.versorgung_note ?? '');
     };
 
     const handleSaveNote = async () => {
@@ -106,16 +107,18 @@ export default function StatusNoteModal({
         setSaving(true);
         setError(null);
         try {
-            const res: { success?: boolean } = await updateStatusNote(orderId, editNote);
+            const res: { success?: boolean } = await updateStatusNote(orderId, {
+                versorgung_note: editVersorgungNote,
+            });
             if (res?.success !== false) {
-                setData(prev => prev ? { ...prev, statusNote: editNote } : null);
+                setData(prev => prev ? { ...prev, versorgung_note: editVersorgungNote } : null);
                 setIsEditing(false);
-                toast.success('Notiz gespeichert');
+                toast.success('Versorgung Notiz gespeichert');
             } else {
                 setError('Aktualisierung fehlgeschlagen');
             }
         } catch (err) {
-            setError((err as Error)?.message || 'Fehler beim Speichern der Notiz');
+            setError((err as Error)?.message || 'Fehler beim Speichern');
         } finally {
             setSaving(false);
         }
@@ -175,14 +178,14 @@ export default function StatusNoteModal({
                                 <div className="px-4 py-3 bg-amber-50/80 border-b border-amber-100/50 flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
                                         <FileText className="w-4 h-4 text-amber-600" />
-                                        <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Notiz</p>
+                                        <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Versorgung Notiz</p>
                                     </div>
                                     {!isEditing ? (
                                         <button
                                             type="button"
                                             onClick={handleStartEdit}
                                             className="flex items-center cursor-pointer gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium text-amber-700 hover:bg-amber-100/80 transition-colors"
-                                            title="Notiz bearbeiten"
+                                            title="Versorgung Notiz bearbeiten"
                                         >
                                             <Pencil className="w-3.5 h-3.5" />
                                             Bearbeiten
@@ -193,14 +196,13 @@ export default function StatusNoteModal({
                                     {isEditing ? (
                                         <div className="space-y-3">
                                             <textarea
-                                                value={editNote}
-                                                onChange={(e) => setEditNote(e.target.value)}
+                                                value={editVersorgungNote}
+                                                onChange={(e) => setEditVersorgungNote(e.target.value)}
                                                 className="w-full min-h-[120px] px-3 py-2.5 text-sm text-gray-700 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-emerald-500/30 resize-y"
-                                                placeholder="Notiz eingeben…"
+                                                placeholder="Versorgung Notiz eingeben…"
                                                 autoFocus
                                             />
                                             <div className="flex items-center justify-between gap-2">
-                                             
                                                 <Button
                                                     size="sm"
                                                     variant="outline"
@@ -211,8 +213,6 @@ export default function StatusNoteModal({
                                                     <X className="w-4 h-4" />
                                                     Abbrechen
                                                 </Button>
-
-
                                                 <Button
                                                     size="sm"
                                                     onClick={handleSaveNote}
@@ -230,7 +230,7 @@ export default function StatusNoteModal({
                                         </div>
                                     ) : (
                                         <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                                            {data.statusNote?.trim() || '—'}
+                                            {data.versorgung_note?.trim() || '—'}
                                         </p>
                                     )}
                                 </div>

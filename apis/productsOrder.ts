@@ -360,14 +360,15 @@ export const getStatusNote = async (orderId: string) => {
 }
 
 
-// update note customer-orders/update/9f82a50f-ad00-42f3-81ea-188cbff58989
-// Body: {
-//     "statusNote": "updadfdgte"
-// }
+// update note customer-orders/update/:orderId
+// Body: { statusNote?: string; versorgung_note?: string }
 
-export const updateStatusNote = async (orderId: string, statusNote: string) => {
+export const updateStatusNote = async (
+    orderId: string,
+    payload: { statusNote?: string; versorgung_note?: string }
+) => {
     try {
-        const response = await axiosClient.patch(`/customer-orders/update/${orderId}`, { statusNote });
+        const response = await axiosClient.patch(`/customer-orders/update/${orderId}`, payload);
         return response.data;
     } catch (error) {
         throw error;
