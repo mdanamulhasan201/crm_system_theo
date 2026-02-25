@@ -100,7 +100,7 @@ function ProgressIndicator({
                                 <BsDash className='text-4xl'/>
                             </span>
                         )}
-                        <div className="flex flex-col items-center shrink-0">
+                        <div className="flex flex-col items-center shrink-0 py-2 px-2">
                             <button
                                 type="button"
                                 title={isClickable ? step : undefined}
@@ -115,11 +115,11 @@ function ProgressIndicator({
                                     className={`
                                         flex items-center justify-center
                                         rounded-full shrink-0
-                                        w-8 h-8
+                                        w-7 h-7
                                         text-xs font-bold
                                         transition-all mb-2
                                         ${isCompleted
-                                            ? 'bg-emerald-300 border-2 border-emerald-500'
+                                            ? 'bg-emerald-100'
                                             : isCurrent
                                                 ? 'bg-emerald-600 text-white'
                                                 : 'bg-gray-100 text-gray-400'
@@ -129,7 +129,7 @@ function ProgressIndicator({
                                 >
                                     {isCompleted ? (
                                         <Check
-                                            className={`w-4 h-4 ${isAutoPrint ? 'text-gray-500' : 'text-emerald-700'}`}
+                                            className={`w-4 h-4 ${isAutoPrint ? 'text-gray-400' : 'text-emerald-500'}`}
                                             strokeWidth={2.5}
                                         />
                                     ) : (
