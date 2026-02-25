@@ -57,15 +57,25 @@ type OrderDetailData = ProgressData & {
     }>;
 };
 
-// Same as MasschuProgressTable: auto_print = gray tick, manual = green tick.
+// Convert step index to URL status param (e.g. "Halbprobe durchführen" -> "Halbprobe_durchführen")
+function getStatusParamFromStepIndex(index: number): string {
+    const step = SHOE_STEPS[index];
+    return step ? step.replace(/\s+/g, '_') : 'Auftragserstellung';
+}
+
+// Same as MasschuProgressTable: auto_print = gray tick, manual = green tick. Steps are clickable to view that step's data.
 function ProgressIndicator({
     currentStepIndex,
     stepsCompleted,
     stepsAutoPrint,
+    onStepClick,
+    orderId,
 }: {
     currentStepIndex: number;
     stepsCompleted?: boolean[];
     stepsAutoPrint?: boolean[];
+    onStepClick?: (index: number) => void;
+    orderId?: string;
 }) {
     return (
         <div className="flex items-end">
@@ -75,6 +85,9 @@ function ProgressIndicator({
                     : index < currentStepIndex;
                 const isAutoPrint = isCompleted && (stepsAutoPrint?.[index] === true);
                 const isCurrent = index === currentStepIndex;
+                const nextStepToDo = stepsCompleted ? stepsCompleted.findIndex((c) => !c) : 0;
+                const isNextStepToDo = nextStepToDo >= 0 && index === nextStepToDo;
+                const isClickable = !!orderId && !!onStepClick && (isCompleted || isNextStepToDo);
 
                 return (
                     <React.Fragment key={index}>
@@ -88,36 +101,47 @@ function ProgressIndicator({
                             </span>
                         )}
                         <div className="flex flex-col items-center shrink-0">
-                            <div
-                                title={step}
+                            <button
+                                type="button"
+                                title={isClickable ? step : undefined}
+                                onClick={() => isClickable && onStepClick(index)}
+                                disabled={!isClickable}
                                 className={`
-                                    flex items-center justify-center
-                                    rounded-full shrink-0
-                                    w-7 h-7 
-                                    text-xs font-bold
-                                    transition-all mb-2
-                                    ${isCompleted
-                                        ? 'bg-emerald-100'
-                                        : isCurrent
-                                            ? 'bg-emerald-600 text-white'
-                                            : 'bg-gray-100 text-gray-400'
-                                    }
+                                    flex flex-col items-center shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2
+                                    ${isClickable ? 'cursor-pointer hover:opacity-90' : 'cursor-default'}
                                 `}
                             >
-                                {isCompleted ? (
-                                    <Check
-                                        className={`w-4 h-4 ${isAutoPrint ? 'text-gray-400' : 'text-emerald-500'}`}
-                                        strokeWidth={2.5}
-                                    />
-                                ) : (
-                                    <span className="leading-none">{index + 1}</span>
-                                )}
-                            </div>
-                            <span className={`text-xs font-medium text-center leading-tight ${
-                                isCurrent ? 'text-emerald-700 font-semibold' : 'text-gray-600'
-                            }`}>
-                                {STEP_SHORT_NAMES[index] || step}
-                            </span>
+                                <div
+                                    className={`
+                                        flex items-center justify-center
+                                        rounded-full shrink-0
+                                        w-8 h-8
+                                        text-xs font-bold
+                                        transition-all mb-2
+                                        ${isCompleted
+                                            ? 'bg-emerald-300 border-2 border-emerald-500'
+                                            : isCurrent
+                                                ? 'bg-emerald-600 text-white'
+                                                : 'bg-gray-100 text-gray-400'
+                                        }
+                                        ${isCurrent ? 'ring-2 ring-emerald-600 ring-offset-2' : ''}
+                                    `}
+                                >
+                                    {isCompleted ? (
+                                        <Check
+                                            className={`w-4 h-4 ${isAutoPrint ? 'text-gray-500' : 'text-emerald-700'}`}
+                                            strokeWidth={2.5}
+                                        />
+                                    ) : (
+                                        <span className="leading-none">{index + 1}</span>
+                                    )}
+                                </div>
+                                <span className={`text-xs font-medium text-center leading-tight ${
+                                    isCurrent ? 'text-emerald-700 font-semibold' : 'text-gray-600'
+                                }`}>
+                                    {STEP_SHORT_NAMES[index] || step}
+                                </span>
+                            </button>
                         </div>
                     </React.Fragment>
                 );
@@ -243,6 +267,7 @@ export default function MassschuhauftraegePage() {
     const [loading, setLoading] = useState(true);
     const [notes, setNotes] = useState('');
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+    const [stepFilesFromApi, setStepFilesFromApi] = useState<Array<{ id: string; fileName: string; fileUrl: string; fileType?: string }>>([]);
     const [isDragging, setIsDragging] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [confirmOpen, setConfirmOpen] = useState(false);
@@ -275,6 +300,7 @@ export default function MassschuhauftraegePage() {
                 setOrderData(mapApiOrderToDetailData(res));
                 const data = res?.data;
                 if (data) {
+                    setNotes(data.notes != null ? String(data.notes) : '');
                     if (data.material != null && data.material !== '') setMaterial(String(data.material));
                     if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
                     const lf = data.leistenfertigung;
@@ -282,12 +308,22 @@ export default function MassschuhauftraegePage() {
                     if (data.thickness != null && data.thickness !== '') setThickness(String(data.thickness));
                     if (data.preparation_date) setPreparation_date(String(data.preparation_date).slice(0, 10));
                     if (data.anmerkungen_halbprobe != null && data.anmerkungen_halbprobe !== '') setAnmerkungen_halbprobe(String(data.anmerkungen_halbprobe));
-                    if (data.checkliste_halbprobe != null && data.checkliste_halbprobe !== '') setCheckliste_halbprobe(String(data.checkliste_halbprobe));
+                    if (data.checkliste_halbprobe != null) {
+                        const ch = data.checkliste_halbprobe;
+                        setCheckliste_halbprobe(Array.isArray(ch) ? JSON.stringify(ch) : String(ch));
+                    }
                     const hd = data.halbprobe_durchfuehrung;
                     if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
                     if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch' || data.probenergebnis === 'Änderungen') setProbenergebnis(data.probenergebnis);
                     if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
+                    setStepFilesFromApi(Array.isArray(data.files) ? data.files.map((f: any) => ({
+                        id: f.id || '',
+                        fileName: f.fileName || 'Datei',
+                        fileUrl: f.fileUrl || '',
+                        fileType: f.fileType,
+                    })) : []);
                 }
+                if (!data) setStepFilesFromApi([]);
                 setLoading(false);
             })
             .catch(() => {
@@ -297,11 +333,6 @@ export default function MassschuhauftraegePage() {
             });
     }, [id, statusFromUrl, activeStepIndex, router]);
 
-    useEffect(() => {
-        if (orderData?.notes) {
-            setNotes(orderData.notes);
-        }
-    }, [orderData]);
 
     const handleFileUpload = (files: File[]) => {
         setUploadedFiles((prev) => [...prev, ...files]);
@@ -363,13 +394,18 @@ export default function MassschuhauftraegePage() {
 
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Progress Bar - from shoeOrderStep when order loaded, else from URL (auto_print = gray tick, manual = green) */}
+            {/* Progress Bar – steps clickable to view that step's data; current = active step from URL */}
             <div className="bg-white border border-gray-200 px-4 py-4">
                 <div className="overflow-x-auto">
                     <ProgressIndicator
-                        currentStepIndex={currentStepForProgress}
+                        currentStepIndex={activeStepIndex}
                         stepsCompleted={stepsCompletedForProgress}
                         stepsAutoPrint={stepsAutoPrintForProgress}
+                        orderId={id}
+                        onStepClick={(index) => {
+                            const status = getStatusParamFromStepIndex(index);
+                            router.push(`/dashboard/massschuhauftraege/${id}?status=${encodeURIComponent(status)}`);
+                        }}
                     />
                 </div>
             </div>
@@ -384,18 +420,18 @@ export default function MassschuhauftraegePage() {
                             </div>
                         ) : (
                             <>
-                        {/* Header: step number from URL when no order, else from order */}
+                        {/* Header: immer den angezeigten Schritt (aus URL/active) anzeigen */}
                         <div className="mb-6 flex items-center gap-3">
                             <div className="relative shrink-0">
                                 <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center ">
                                     <span className="text-white text-base font-bold">
-                                        {(orderData?.currentStepIndex ?? activeStepIndex) + 1}
+                                        {activeStepIndex + 1}
                                     </span>
                                 </div>
                             </div>
                             <div className="flex-1">
                                 <h2 className="text-xl font-bold text-gray-900 mb-1">
-                                    {orderData?.currentStep ?? SHOE_STEPS[activeStepIndex]}
+                                    {SHOE_STEPS[activeStepIndex]}
                                 </h2>
                                 <div className="flex items-center gap-3">
                                     <span className="text-sm text-gray-400">
@@ -413,7 +449,7 @@ export default function MassschuhauftraegePage() {
                         {/* Instruction Text – Step 3 (Bettungserstellung): only first line; other steps: full text */}
                         <div className="mb-6 p-3 bg-gray-50 rounded-lg ">
                             <p className="text-sm text-gray-500">
-                                {(orderData?.currentStepIndex ?? activeStepIndex) === 2
+                                {activeStepIndex === 2
                                     ? 'Dieser Schritt wartet auf Bearbeitung.'
                                     : 'Dieser Schritt wartet auf Bearbeitung. Laden Sie relevante Bilder hoch und fügen Sie Notizen hinzu.'}
                             </p>
@@ -427,6 +463,28 @@ export default function MassschuhauftraegePage() {
                                 <Camera className="w-5 h-5 text-gray-600" />
                                 <h3 className="text-lg font-semibold text-gray-900">Bilder</h3>
                             </div>
+
+                            {/* Existing files for this step (from API) */}
+                            {stepFilesFromApi.length > 0 && (
+                                <div className="mb-4">
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Vorhandene Dateien (dieser Schritt)</p>
+                                    <ul className="flex flex-wrap gap-2">
+                                        {stepFilesFromApi.map((f) => (
+                                            <li key={f.id}>
+                                                <a
+                                                    href={f.fileUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                >
+                                                    <FileText className="h-4 w-4 shrink-0" />
+                                                    <span className="truncate max-w-[180px]">{f.fileName}</span>
+                                                </a>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
                             
                             {/* File Upload Area */}
                             <div
@@ -521,7 +579,7 @@ export default function MassschuhauftraegePage() {
                             />
                         </div>
                           {/* Step 2: Leistenerstellung – Material & Leistentyp (only when this step) */}
-                          {(orderData?.currentStepIndex ?? activeStepIndex) === 1 && (
+                          {activeStepIndex === 1 && (
                             <LeistenerstellungStepFields
                                 material={material}
                                 leistentyp={leistentyp}
@@ -533,7 +591,7 @@ export default function MassschuhauftraegePage() {
                         )}
 
                         {/* Step 3: Bettungserstellung – Material & Dicke (only when this step) */}
-                        {(orderData?.currentStepIndex ?? activeStepIndex) === 2 && (
+                        {activeStepIndex === 2 && (
                             <BettungserstellungStepFields
                                 material={material}
                                 thickness={thickness}
@@ -543,7 +601,7 @@ export default function MassschuhauftraegePage() {
                         )}
 
                         {/* Step 4: Halbprobenerstellung – Vorbereitungsdatum, Anmerkungen, Halbprobe Durchführung, Checkliste */}
-                        {(orderData?.currentStepIndex ?? activeStepIndex) === 3 && (
+                        {activeStepIndex === 3 && (
                             <HalbprobenerstellungStepFields
                                 preparation_date={preparation_date}
                                 anmerkungen_halbprobe={anmerkungen_halbprobe}
@@ -557,7 +615,7 @@ export default function MassschuhauftraegePage() {
                         )}
 
                         {/* Step 5: Halbprobe durchführen – Probenergebnis & Schafttyp */}
-                        {(orderData?.currentStepIndex ?? activeStepIndex) === 4 && (
+                        {activeStepIndex === 4 && (
                             <HalbprobeDurchfuehrungStepFields
                                 probenergebnis={probenergebnis}
                                 schafttyp={schafttyp}
