@@ -595,10 +595,9 @@ export default function MasschuProgressTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
-                                        <div className={`flex items-center gap-1.5 font-semibold text-sm ${row.isOverdue ? 'text-red-600' : 'text-gray-900'
-                                            }`}>
-                                            {row.isOverdue && (
-                                                <span className="text-red-500 text-xs">▲</span>
+                                        <div className={`flex items-center gap-1.5 font-semibold text-sm ${row.days > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                                            {row.days > 0 && (
+                                                <span className="text-red-500 text-[10px] leading-none" aria-hidden>▲</span>
                                             )}
                                             <span>{row.days}</span>
                                         </div>
