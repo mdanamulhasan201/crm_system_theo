@@ -98,35 +98,31 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                 </div>
 
                 <div style={{ width: '145px', flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    <div>
+                    <div style={{ minWidth: 0, maxWidth: '108px' }}>
                         <div style={{ fontWeight: 'bold', fontSize: '13px', marginBottom: '2px' }}>
                             {data.partner?.name || 'Partner Name'}
                         </div>
-                        <div style={{ fontSize: '9px', color: '#666' }}>
-                            {typeof data.partnerAddress === 'string' 
-                                ? data.partnerAddress 
+                        <div
+                            style={{
+                                fontSize: '9px',
+                                color: '#666',
+                                lineHeight: 1.35,
+                                wordBreak: 'break-word',
+                                overflow: 'hidden',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical' as const,
+                            }}
+                        >
+                            {typeof data.partnerAddress === 'string'
+                                ? data.partnerAddress
                                 : (() => {
                                     const addr = data.partnerAddress;
                                     if (!addr || typeof addr !== 'object') return 'Address';
-                                    
-                                    // Get address and description
                                     const addressText = addr.address || addr.title || '';
                                     const descriptionText = addr.description || '';
-                                    
-                                    // Show description first (top), then address (bottom)
-                                    if (descriptionText && descriptionText.trim() !== '' && addressText && addressText.trim() !== '') {
-                                        return (
-                                            <>
-                                                <div>{descriptionText}</div>
-                                                <div style={{ marginTop: '2px' }}>{addressText}</div>
-                                            </>
-                                        );
-                                    } else if (descriptionText && descriptionText.trim() !== '') {
-                                        return descriptionText;
-                                    } else if (addressText && addressText.trim() !== '') {
-                                        return addressText;
-                                    }
-                                    return 'Address';
+                                    if (descriptionText && addressText) return `${descriptionText}, ${addressText}`;
+                                    return descriptionText || addressText || 'Address';
                                 })()}
                         </div>
                     </div>

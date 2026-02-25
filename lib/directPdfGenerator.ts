@@ -145,33 +145,31 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
         ctx.drawImage(brandLogo, 368, currentY - 5, 20, 20);
     }
     
-    // Address (left-aligned within right section)
+    // Address (left-aligned within right section) – wrap to max 2 lines so it stays inside PDF
     ctx.font = '9px Arial';
     ctx.fillStyle = '#666666';
     let addressY = currentY + 14;
-    
-    if (typeof data.partnerAddress === 'string') {
-        ctx.fillText(data.partnerAddress, 255, addressY);
-    } else if (data.partnerAddress) {
-        // Get address and description
-        const addressText = data.partnerAddress.address || data.partnerAddress.title || '';
-        const descriptionText = data.partnerAddress.description || '';
-        
-        // Show description on first line (top) if it exists
-        if (descriptionText && descriptionText.trim() !== '') {
-            ctx.fillText(descriptionText, 255, addressY);
-            addressY += 12; // Move to next line for address
+    const addressMaxWidth = 108; // space between partner name area and brand logo
+    const addressLineHeight = 10;
+    const addressMaxLines = 2;
+
+    const getAddressLines = (): string[] => {
+        let full = '';
+        if (typeof data.partnerAddress === 'string') {
+            full = data.partnerAddress;
+        } else if (data.partnerAddress && typeof data.partnerAddress === 'object') {
+            const desc = (data.partnerAddress.description || data.partnerAddress.title || '').trim();
+            const addr = (data.partnerAddress.address || '').trim();
+            full = [desc, addr].filter(Boolean).join(', ');
         }
-        
-        // Show address on second line (bottom) if it exists
-        if (addressText && addressText.trim() !== '') {
-            ctx.fillText(addressText, 255, addressY);
-        } else if (!descriptionText || descriptionText.trim() === '') {
-            // If no description and no address, show fallback
-            ctx.fillText('Address', 255, addressY);
-        }
-    } else {
-        ctx.fillText('Address', 255, addressY);
+        if (!full) return ['Address'];
+        return wrapText(ctx, full, addressMaxWidth).slice(0, addressMaxLines);
+    };
+
+    const addressLines = getAddressLines();
+    for (const line of addressLines) {
+        ctx.fillText(line, 255, addressY);
+        addressY += addressLineHeight;
     }
     
     currentY += 55;
