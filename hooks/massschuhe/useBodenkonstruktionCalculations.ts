@@ -7,7 +7,7 @@ export type SelectedState = {
 }
 
 // Import orthopedic field types
-import type { RahmenData, HinterkappeMusterSideData, BrandsohleSideData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 /**
  * Custom hook to calculate prices for Bodenkonstruktion configuration.
@@ -16,6 +16,7 @@ import type { RahmenData, HinterkappeMusterSideData, BrandsohleSideData } from "
  * @param orderTotalPrice - Optional base price from the order (defaults to 0)
  * @param rahmen - Rahmen selection data (EVA or Gummi with color)
  * @param hinterkappeMusterSide - Hinterkappe Muster (mode: gleich | unterschiedlich). Ja = +5€ or +2.50€ per side
+ * @param hinterkappeSide - Hinterkappe (beide Seiten): Leder sub-options (e.g. Leder Dünn +4,99 €)
  * @param brandsohleSide - Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
  * @returns Object containing extraPriceTotal (sum of option prices) and grandTotal (base + extras)
  */
@@ -24,6 +25,7 @@ export function useBodenkonstruktionCalculations(
     orderTotalPrice?: number,
     rahmen?: RahmenData | null,
     hinterkappeMusterSide?: HinterkappeMusterSideData | null,
+    hinterkappeSide?: HinterkappeSideData | null,
     brandsohleSide?: BrandsohleSideData | null
 ) {
     // Calculate the sum of all selected option prices (can be positive or negative)
@@ -99,6 +101,23 @@ export function useBodenkonstruktionCalculations(
             totalExtraPrice += 20.00
         }
 
+        // 2b. Hinterkappe (beide Seiten): Leder sub-options (e.g. Leder Dünn +4,99 €)
+        const hinterkappeGroup = GROUPS2.find(g => g.id === "hinterkappe")
+        const lederSubOptions = hinterkappeGroup?.subOptions?.leder
+        if (hinterkappeSide?.mode && lederSubOptions) {
+            const getLederSubPrice = (subId: string | null | undefined) => {
+                if (!subId) return 0
+                const sub = lederSubOptions.find((s: { id: string; price: number }) => s.id === subId)
+                return sub?.price ?? 0
+            }
+            if (hinterkappeSide.mode === "gleich" && hinterkappeSide.sameValue === "leder") {
+                totalExtraPrice += getLederSubPrice(hinterkappeSide.sameSubValue)
+            } else if (hinterkappeSide.mode === "unterschiedlich") {
+                if (hinterkappeSide.leftValue === "leder") totalExtraPrice += getLederSubPrice(hinterkappeSide.leftSubValue)
+                if (hinterkappeSide.rightValue === "leder") totalExtraPrice += getLederSubPrice(hinterkappeSide.rightSubValue)
+            }
+        }
+
         // 3. Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
         const brandsohleGroup = GROUPS2.find(g => g.id === "brandsohle")
         if (brandsohleSide?.mode && brandsohleGroup) {
@@ -118,7 +137,7 @@ export function useBodenkonstruktionCalculations(
         // Note: vorderkappe and sohlenhoehe_differenziert have no price impact
 
         return totalExtraPrice
-    }, [selected, rahmen, hinterkappeMusterSide, brandsohleSide])
+    }, [selected, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide])
 
     // Calculate grand total: base price + extra prices from selected options
     const grandTotal = useMemo(() => {

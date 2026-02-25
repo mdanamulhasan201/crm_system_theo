@@ -128,8 +128,8 @@ export default function BodenkonstruktionPage() {
     // Base price - start with 189.99€
     const basePrice = 189.99
 
-    // Calculations
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, brandsohleSide)
+    // Calculations (include hinterkappeSide so Leder options e.g. Leder Dünn +4,99 € update sticky price)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide)
 
     // Prepare order data for PDF (use grandTotal so modal/PDF show correct price)
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {

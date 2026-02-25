@@ -136,8 +136,8 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return DEFAULT_BASE_PRICE + additionalPrice
     }, [contextData, orderDataForPDF.totalPrice])
 
-    // Calculations - use basePrice which includes shaft price
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, brandsohleSide)
+    // Calculations - use basePrice which includes shaft price (hinterkappeSide for Leder options price)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide)
 
     // Sync contextData to customShaftData when landing from redirect (so payload has full data)
     React.useEffect(() => {
