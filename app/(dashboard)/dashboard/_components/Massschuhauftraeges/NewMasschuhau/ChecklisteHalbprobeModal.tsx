@@ -10,7 +10,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer } from 'lucide-react';
+import { Printer, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const CHECKLIST_QUESTIONS = [
@@ -138,31 +138,40 @@ export default function ChecklisteHalbprobeModal({
                     ))}
                 </div>
 
-                <DialogFooter className="flex flex-row items-center justify-end gap-2 px-6 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-xl">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="h-9 rounded-lg border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-800"
-                        onClick={() => onOpenChange(false)}
-                    >
-                        Abbrechen
-                    </Button>
-                    <Button
-                        type="button"
-                        className="h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
-                        onClick={handleWeiter}
-                    >
-                        Weiter
-                    </Button>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="h-9 w-9 shrink-0 rounded-lg border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
-                        aria-label="Drucken"
-                    >
-                        <Printer className="h-4 w-4" />
-                    </Button>
+                <DialogFooter className="flex flex-row flex-wrap items-center justify-between gap-3 px-6 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-xl">
+                    <p className="text-xs text-gray-500">
+                        {answers.filter((a) => a !== null).length} von {CHECKLIST_QUESTIONS.length} Punkte beantwortet
+                        {answers.every((a) => a !== null) && (
+                            <span className="ml-1.5 text-emerald-600 font-medium">· Alle ausgefüllt</span>
+                        )}
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-9 rounded-lg border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-800"
+                            onClick={() => onOpenChange(false)}
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            type="button"
+                            className="h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm inline-flex items-center gap-2"
+                            onClick={handleWeiter}
+                        >
+                            <Check className="h-4 w-4" />
+                            Speichern & Weiter
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-9 w-9 shrink-0 rounded-lg border-gray-300 bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+                            aria-label="Drucken"
+                        >
+                            <Printer className="h-4 w-4" />
+                        </Button>
+                    </div>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
