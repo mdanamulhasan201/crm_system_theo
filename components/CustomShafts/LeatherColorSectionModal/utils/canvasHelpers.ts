@@ -9,11 +9,11 @@ import { LeatherColorAssignment } from '../types';
  * @param assignments - Array of leather color assignments
  * @param getColorForLeather - Function to get color for leather number
  */
-/** Min/max marker size so numbers stay visible on any image size */
-const MARKER_RADIUS_MIN = 24;
-const MARKER_RADIUS_MAX = 56;
-const FONT_SIZE_MIN = 20;
-const FONT_SIZE_MAX = 44;
+/** Min/max marker size – slightly smaller so markers are visible but not too big */
+const MARKER_RADIUS_MIN = 18;
+const MARKER_RADIUS_MAX = 40;
+const FONT_SIZE_MIN = 16;
+const FONT_SIZE_MAX = 32;
 
 export const drawMarkersOnCanvas = (
   canvas: HTMLCanvasElement,
@@ -22,9 +22,9 @@ export const drawMarkersOnCanvas = (
   getColorForLeather: (num: number) => string
 ): void => {
   const shortSide = Math.min(canvas.width, canvas.height);
-  const radius = Math.min(MARKER_RADIUS_MAX, Math.max(MARKER_RADIUS_MIN, shortSide * 0.06));
-  const fontSize = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, Math.round(shortSide * 0.04)));
-  const borderWidth = Math.max(2, Math.round(radius * 0.2));
+  const radius = Math.min(MARKER_RADIUS_MAX, Math.max(MARKER_RADIUS_MIN, shortSide * 0.045));
+  const fontSize = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, Math.round(shortSide * 0.03)));
+  const borderWidth = Math.max(2, Math.round(radius * 0.18));
 
   assignments.forEach((assignment) => {
     const x = (assignment.x / 100) * canvas.width;

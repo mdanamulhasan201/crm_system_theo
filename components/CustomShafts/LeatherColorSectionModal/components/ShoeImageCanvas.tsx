@@ -116,10 +116,10 @@ export const ShoeImageCanvas: React.FC<ShoeImageCanvasProps> = ({
             }}
             title={`Leder ${assignment.leatherNumber} - ${assignment.color} (Klicken zum Entfernen)`}
           >
-            <div className="w-11 h-11 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-base bg-emerald-500">
+            <div className="w-9 h-9 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white font-bold text-sm bg-emerald-500">
               {assignment.leatherNumber}
             </div>
-            <div className="absolute top-12 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+            <div className="absolute top-10 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-xs px-2 py-1 rounded whitespace-nowrap">
               {assignment.color}
             </div>
           </div>
