@@ -197,6 +197,22 @@ export const getAllOrderData = async (limit: number, cursor: string, search: str
     }
 }
 
+
+// 
+// get all deadline date   custom_shafts/delivery-dates/get
+
+export const getDeadlineDate = async () => {
+    try {
+        const response = await axiosClient.get(`/custom_shafts/delivery-dates/get`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
+
 // custom_shafts/cancel-order/0efa9d0f-6971-4932-ba3e-e18dc3159328
 export const cancelOrder = async (orderId: string) => {
     try {

@@ -1,9 +1,9 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import ReusableBalanceTable, { BalanceTableColumn, TableAction } from '@/components/Shared/ReusableBalanceTable'
-import { getAllOrderData, cancelOrder } from '@/apis/MassschuheManagemantApis'
+import { getAllOrderData, cancelOrder, getDeadlineDate } from '@/apis/MassschuheManagemantApis'
 import toast from 'react-hot-toast'
 import ConfirmModal from '@/components/OrdersPage/ConfirmModal/ConfirmModal'
 
@@ -24,6 +24,9 @@ export interface TransactionData {
     // Invoice URLs
     custom_shafts_invoice?: string | null;
     custom_shafts_invoice2?: string | null;
+    // Lieferdatum: formatted date and relative time (e.g. "noch 1 Tag", "heute")
+    lieferdatumFormatted?: string;
+    lieferdatumRelative?: string;
 }
 
 interface ApiOrderData {
@@ -41,12 +44,20 @@ interface ApiOrderData {
         invoice2?: string;
         other_customer_name?: string | null;
         orderNumber?: string;
+        deliveryDate?: string | null;
+        createdAt?: string;
     } | null;
     customer: {
         vorname: string;
         nachname: string;
     } | null;
     createdAt: string;
+}
+
+interface DeadlineDateItem {
+    id: string;
+    day: number;
+    category: string;
 }
 
 interface ApiResponse {
@@ -88,7 +99,8 @@ export default function DataTables({
     renderActions,
 }: DataTablesProps) {
     const router = useRouter()
-    const [data, setData] = useState<TransactionData[]>([]);
+    const [apiOrderDataRaw, setApiOrderDataRaw] = useState<ApiOrderData[]>([]);
+    const [deadlineDates, setDeadlineDates] = useState<DeadlineDateItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [cursor, setCursor] = useState<string>('');
     const [hasMore, setHasMore] = useState(false);
@@ -97,6 +109,51 @@ export default function DataTables({
     const [selectedOrder, setSelectedOrder] = useState<TransactionData | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Format date as "26. Feb. 2026"
+    const formatLieferdatumDate = (date: Date): string => {
+        return date.toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+
+    // Relative time in German: "noch 1 Tag", "heute", "vor X Tagen", etc.
+    const getRelativeTimeGerman = (deadline: Date): string => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        const d = new Date(deadline);
+        d.setHours(0, 0, 0, 0);
+        const diffMs = d.getTime() - now.getTime();
+        const diffDays = Math.round(diffMs / (24 * 60 * 60 * 1000));
+
+        if (diffDays === 0) return 'heute';
+        if (diffDays === 1) return 'noch 1 Tag';
+        if (diffDays > 1 && diffDays <= 365) return `noch ${diffDays} Tage`;
+        if (diffDays === -1) return 'vor 1 Tag';
+        if (diffDays < -1) return `vor ${Math.abs(diffDays)} Tagen`;
+        return '';
+    };
+
+    // Compute deadline for an order: use deliveryDate if set, else createdAt + category days
+    const getDeadlineForOrder = (order: ApiOrderData, deadlines: DeadlineDateItem[]): { formatted: string; relative: string } | null => {
+        const deliveryDateStr = order.custom_shafts?.deliveryDate;
+        let deadlineDate: Date;
+
+        if (deliveryDateStr) {
+            deadlineDate = new Date(deliveryDateStr);
+        } else {
+            const category = order.custom_shafts_catagoary;
+            const item = deadlines.find((d) => d.category === category);
+            if (!item) return null;
+            const created = new Date(order.createdAt);
+            deadlineDate = new Date(created);
+            deadlineDate.setDate(deadlineDate.getDate() + item.day);
+        }
+
+        if (isNaN(deadlineDate.getTime())) return null;
+        return {
+            formatted: formatLieferdatumDate(deadlineDate),
+            relative: getRelativeTimeGerman(deadlineDate),
+        };
+    };
 
     // Helper function to format date
     const formatDate = (dateString: string): string => {
@@ -111,8 +168,8 @@ export default function DataTables({
         }
     };
 
-    // Helper function to map API data to TransactionData
-    const mapApiDataToTransactionData = (apiData: ApiOrderData[]): TransactionData[] => {
+    // Helper function to map API data to TransactionData (uses deadlineDates for Lieferdatum)
+    const mapApiDataToTransactionData = (apiData: ApiOrderData[], deadlines: DeadlineDateItem[]): TransactionData[] => {
         if (!Array.isArray(apiData)) {
             return [];
         }
@@ -124,6 +181,8 @@ export default function DataTables({
                 const customerName = hasCustomerData
                     ? `${item.customer?.vorname || ''} ${item.customer?.nachname || ''}`.trim()
                     : (item.custom_shafts?.other_customer_name || '--');
+
+                const lieferdatum = getDeadlineForOrder(item, deadlines);
 
                 return {
                     // Keep transition ID for table row key
@@ -140,6 +199,8 @@ export default function DataTables({
                     custom_shafts_status: item.custom_shafts?.status || null,
                     custom_shafts_invoice: item.custom_shafts?.invoice || null,
                     custom_shafts_invoice2: item.custom_shafts?.invoice2 || null,
+                    lieferdatumFormatted: lieferdatum?.formatted,
+                    lieferdatumRelative: lieferdatum?.relative,
                 };
             } catch (error) {
                 return {
@@ -155,10 +216,23 @@ export default function DataTables({
                     custom_shafts_status: null,
                     custom_shafts_invoice: null,
                     custom_shafts_invoice2: null,
+                    lieferdatumFormatted: undefined,
+                    lieferdatumRelative: undefined,
                 };
             }
         });
     };
+
+    // Fetch deadline dates on mount (category -> days for Lieferdatum calculation)
+    useEffect(() => {
+        getDeadlineDate()
+            .then((res: { success?: boolean; data?: DeadlineDateItem[] }) => {
+                if (res?.data && Array.isArray(res.data)) {
+                    setDeadlineDates(res.data);
+                }
+            })
+            .catch((err) => console.error('Failed to fetch deadline dates:', err));
+    }, []);
 
     // Fetch initial data
     const fetchData = async (search: string = '') => {
@@ -167,8 +241,7 @@ export default function DataTables({
             const response = await getAllOrderData(5, '', search) as ApiResponse;
 
             if (response && response.success && Array.isArray(response.data)) {
-                const mappedData = mapApiDataToTransactionData(response.data);
-                setData(mappedData);
+                setApiOrderDataRaw(response.data);
                 setHasMore(response.hasMore || false);
 
                 // Set cursor to the last item's ID for next fetch
@@ -177,12 +250,12 @@ export default function DataTables({
                     setCursor(lastId);
                 }
             } else {
-                setData([]);
+                setApiOrderDataRaw([]);
                 setHasMore(false);
             }
         } catch (error) {
             console.error('Failed to fetch order data:', error);
-            setData([]);
+            setApiOrderDataRaw([]);
             setHasMore(false);
         } finally {
             setLoading(false);
@@ -198,8 +271,7 @@ export default function DataTables({
             const response = await getAllOrderData(5, cursor, searchQuery) as ApiResponse;
 
             if (response.success && Array.isArray(response.data)) {
-                const mappedData = mapApiDataToTransactionData(response.data);
-                setData(prevData => [...prevData, ...mappedData]);
+                setApiOrderDataRaw((prev) => [...prev, ...response.data]);
                 setHasMore(response.hasMore);
 
                 // Update cursor to the last item's ID
@@ -213,6 +285,13 @@ export default function DataTables({
             setLoadingMore(false);
         }
     };
+
+    // Derive table data from raw API data + deadline dates (so Lieferdatum updates when deadlines load)
+    const data = useMemo(
+        () => mapApiDataToTransactionData(apiOrderDataRaw, deadlineDates),
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- only recompute when raw data or deadline config changes
+        [apiOrderDataRaw, deadlineDates]
+    );
 
     // Handle cancel order button click - open modal
     const handleCancelOrder = (row: TransactionData) => {
@@ -386,6 +465,21 @@ export default function DataTables({
                     {formatCurrency(value)}
                 </span>
             ),
+        },
+        {
+            key: 'lieferdatumFormatted',
+            header: 'Lieferdatum',
+            render: (_value, row) => {
+                const formatted = row.lieferdatumFormatted;
+                const relative = row.lieferdatumRelative;
+                if (!formatted && !relative) return <span className="text-gray-400">–</span>;
+                return (
+                    <div className="flex flex-col">
+                        {formatted && <span className="text-gray-900 text-sm">{formatted}</span>}
+                        {relative && <span className="text-gray-500 text-xs">{relative}</span>}
+                    </div>
+                );
+            },
         },
         {
             key: 'status',
