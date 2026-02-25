@@ -41,7 +41,7 @@ interface ApiOrderData {
         invoice2?: string;
         other_customer_name?: string | null;
         orderNumber?: string;
-    };
+    } | null;
     customer: {
         vorname: string;
         nachname: string;
@@ -220,13 +220,10 @@ export default function DataTables({
         setShowCancelModal(true);
     };
 
-    // Handle invoice download
-    const handleDownloadInvoice = (row: TransactionData) => {
-        // Priority: invoice first, then invoice2
-        const invoiceUrl = row.custom_shafts_invoice || row.custom_shafts_invoice2;
-        if (invoiceUrl) {
-            // Open in new tab to download
-            window.open(invoiceUrl, '_blank');
+    // Handle invoice download - open PDF in new tab
+    const handleDownloadInvoice = (url: string) => {
+        if (url) {
+            window.open(url, '_blank');
         }
     };
 
@@ -458,18 +455,30 @@ export default function DataTables({
         show: () => true,
     };
 
-    // Download invoice action - show if invoice or invoice2 exists
+    const pdfIcon = (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+    );
+
+    // Invoice PDF button - show when invoice URL exists
     const downloadInvoiceAction: TableAction<TransactionData> = {
         type: 'custom',
-        label: 'Rechnung herunterladen',
-        icon: (
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-        ),
+        label: 'Rechnung (Schaft)',
+        icon: pdfIcon,
         className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer border border-blue-200 rounded-md p-2',
-        onClick: (row) => handleDownloadInvoice(row),
-        show: (row) => !!(row.custom_shafts_invoice || row.custom_shafts_invoice2),
+        onClick: (row) => handleDownloadInvoice(row.custom_shafts_invoice!),
+        show: (row) => !!row.custom_shafts_invoice,
+    };
+
+    // Invoice2 PDF button - show when invoice2 URL exists
+    const downloadInvoice2Action: TableAction<TransactionData> = {
+        type: 'custom',
+        label: 'Rechnung (Boden)',
+        icon: pdfIcon,
+        className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer border border-blue-200 rounded-md p-2',
+        onClick: (row) => handleDownloadInvoice(row.custom_shafts_invoice2!),
+        show: (row) => !!row.custom_shafts_invoice2,
     };
 
     // Show a non-clickable "Storniert" badge in the actions column when order is canceled
@@ -493,9 +502,10 @@ export default function DataTables({
 
         // Reorder button (always show in Aktionen column)
         actions.push(reorderAction);
-        // Add download invoice action
+        // PDF buttons - show when invoice / invoice2 exist
         actions.push(downloadInvoiceAction);
-        
+        actions.push(downloadInvoice2Action);
+
         // Add cancel and canceled-status actions (they conditionally show based on status)
         actions.push(cancelAction);
         actions.push(canceledStatusAction);
