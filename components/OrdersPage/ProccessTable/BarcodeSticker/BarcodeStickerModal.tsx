@@ -26,6 +26,7 @@ export default function BarcodeStickerModal({
     const [originalBarcodeData, setOriginalBarcodeData] = useState<any>(null); // Keep original for PDF
     const [loading, setLoading] = useState(false);
     const [generating, setGenerating] = useState(false);
+    const [activeType, setActiveType] = useState<'left' | 'right'>('right');
 
     // Keep partnerAddress as object to preserve address and description structure
     // BarcodeSticker component will handle the display properly
@@ -38,25 +39,33 @@ export default function BarcodeStickerModal({
         return 'Address';
     };
 
-    const fetchBarcodeData = useCallback(async () => {
+    const fetchBarcodeData = useCallback(async (type: 'left' | 'right') => {
         setLoading(true);
         try {
-            const response = await getBarCodeData(orderId);
+            const response = await getBarCodeData(orderId, type);
             if (response.success && response.data) {
-                // Store original data for PDF generation (needs object structure)
+                setActiveType(type);
                 setOriginalBarcodeData(response.data);
-                // Normalize partnerAddress to string for React rendering
                 const normalizedData = {
                     ...response.data,
-                    partnerAddress: normalizePartnerAddress(response.data.partnerAddress)
+                    partnerAddress: normalizePartnerAddress(response.data.partnerAddress),
+                    type: response.data.type ?? null
                 };
                 setBarcodeData(normalizedData);
             } else {
-                toast.error('Fehler beim Laden der Barcode-Daten');
+                if (type === 'left') {
+                    toast.error('Keine Daten für Links verfügbar');
+                } else {
+                    toast.error('Fehler beim Laden der Barcode-Daten');
+                }
             }
         } catch (error) {
             console.error('Error fetching barcode data:', error);
-            toast.error('Fehler beim Laden der Barcode-Daten');
+            if (type === 'left') {
+                toast.error('Keine Daten für Links verfügbar');
+            } else {
+                toast.error('Fehler beim Laden der Barcode-Daten');
+            }
         } finally {
             setLoading(false);
         }
@@ -171,7 +180,8 @@ export default function BarcodeStickerModal({
 
     useEffect(() => {
         if (isOpen && orderId) {
-            fetchBarcodeData();
+            setActiveType('right');
+            fetchBarcodeData('right');
         } else {
             setBarcodeData(null);
             setOriginalBarcodeData(null);
@@ -214,6 +224,32 @@ export default function BarcodeStickerModal({
                         </div>
                     ) : barcodeData ? (
                         <>
+                            <div className="flex gap-2 mb-3">
+                                <button
+                                    type="button"
+                                    onClick={() => fetchBarcodeData('right')}
+                                    disabled={loading}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition ${
+                                        activeType === 'right'
+                                            ? 'bg-[#62A17C] text-white'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    Rechts
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => fetchBarcodeData('left')}
+                                    disabled={loading}
+                                    className={`px-4 py-2 rounded-lg text-sm font-medium cursor-pointer transition ${
+                                        activeType === 'left'
+                                            ? 'bg-[#62A17C] text-white'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    Links
+                                </button>
+                            </div>
                             <div className="flex justify-center bg-gray-50 p-4 rounded-lg">
                                 <BarcodeSticker data={barcodeData} />
                             </div>

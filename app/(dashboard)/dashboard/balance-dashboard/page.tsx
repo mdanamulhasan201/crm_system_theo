@@ -10,7 +10,7 @@ import Ausgaben from "../_components/FeetF1rstBalance/Ausgaben";
 import { useFeatureAccess } from "@/contexts/FeatureAccessContext";
 
 export default function BalanceDashboard() {
-    const [activeTab, setActiveTab] = useState<'einnahmen' | 'ausgaben'>('einnahmen');
+    const [activeTab, setActiveTab] = useState<'einnahmen' | 'ausgaben'>('ausgaben');
     const { isPathAllowed, loading: featureLoading } = useFeatureAccess();
 
     // Check if "/dashboard/kasse" has action: true
@@ -77,8 +77,12 @@ export default function BalanceDashboard() {
 
                 </div>
 
-                {activeTab === 'einnahmen' && <Ausgaben />}
-                {activeTab === 'ausgaben' && <DataTables />}
+                <div className={activeTab === 'einnahmen' ? 'block' : 'hidden'}>
+                    <Ausgaben />
+                </div>
+                <div className={activeTab === 'ausgaben' ? 'block' : 'hidden'}>
+                    <DataTables />
+                </div>
             </div>
         </div>
     );

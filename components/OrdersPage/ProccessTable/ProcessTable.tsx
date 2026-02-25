@@ -98,7 +98,7 @@ export default function ProcessTable() {
         setIsGeneratingBarcode(true);
         try {
             // Fetch barcode data
-            const response = await getBarCodeData(orderId);
+            const response = await getBarCodeData(orderId, 'right');
             if (!response.success || !response.data) {
                 toast.error('Fehler beim Laden der Barcode-Daten');
                 setIsGeneratingBarcode(false);

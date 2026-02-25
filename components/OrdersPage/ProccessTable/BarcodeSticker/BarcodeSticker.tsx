@@ -17,6 +17,7 @@ interface BarcodeStickerData {
     createdAt?: string | null;
     barcodeCreatedAt?: string | null;
     partnerAddress: string | { address?: string; title?: string; description?: string };
+    type?: 'left' | 'right' | null;
 }
 
 interface BarcodeStickerProps {
@@ -204,7 +205,7 @@ export default function BarcodeSticker({ data }: BarcodeStickerProps) {
                         <div>SONDERANFERTIGUNG</div>
                         <div>MEDIZINPRODUKT</div>
                         <div>MASSEINLAGE</div>
-                        <div>LINKS</div>
+                        <div>{data.type === 'right' ? 'RECHTS' : 'LINKS'}</div>
                     </div>
                 </div>
             </div>

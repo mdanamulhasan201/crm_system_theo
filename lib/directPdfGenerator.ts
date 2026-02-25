@@ -21,6 +21,7 @@ interface BarcodeStickerData {
     createdAt?: string | null;
     barcodeCreatedAt?: string | null;
     partnerAddress: string | { address?: string; title?: string; description?: string };
+    type?: 'left' | 'right' | null;
 }
 
 // Helper to format date in German format
@@ -282,10 +283,11 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 8px Arial';
     ctx.textAlign = 'center';
+    const typeLabel = data.type === 'right' ? 'RECHTS' : 'LINKS';
     ctx.fillText('SONDERANFERTIGUNG', 321, blackBoxY + 10);
     ctx.fillText('MEDIZINPRODUKT', 321, blackBoxY + 22);
     ctx.fillText('MASSEINLAGE', 321, blackBoxY + 34);
-    ctx.fillText('LINKS', 321, blackBoxY + 46);
+    ctx.fillText(typeLabel, 321, blackBoxY + 46);
     
     // BARCODE
     const barcodeCanvas = document.createElement('canvas');
