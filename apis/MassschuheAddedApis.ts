@@ -128,6 +128,17 @@ export const updateMassschuheOrderNote = async (id: string, status_note: string)
     }
 };
 
+
+// delete single image v2/shoe-orders/remove-file/98bd0578-f4fc-4ca3-8d21-027bf807bb21
+export const deleteMassschuheOrderImage = async (id: string) => {
+    try {
+        const response = await axiosClient.delete(`/v2/shoe-orders/remove-file/${id}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
 const MassschuheAddedApisDefault = {
     getMassschuheOrderById,
     getMassschuheOrderDetails,

@@ -281,6 +281,8 @@ export default function MassschuhauftraegePage() {
     const [checkliste_halbprobe, setCheckliste_halbprobe] = useState('');
     const [probenergebnis, setProbenergebnis] = useState<ProbenergebnisValue>('');
     const [schafttyp, setSchafttyp] = useState<SchafttypValue>('');
+    const [deleteFileConfirmId, setDeleteFileConfirmId] = useState<string | null>(null);
+    const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!id) {
@@ -348,6 +350,20 @@ export default function MassschuhauftraegePage() {
             newFiles.splice(index, 1);
             return newFiles;
         });
+    };
+
+    const handleDeleteStepFile = async (fileId: string) => {
+        if (!fileId) return;
+        setDeletingFileId(fileId);
+        try {
+            await MassschuheAddedApis.deleteMassschuheOrderImage(fileId);
+            setStepFilesFromApi((prev) => prev.filter((f) => f.id !== fileId));
+            setDeleteFileConfirmId(null);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setDeletingFileId(null);
+        }
     };
 
     const handleCompleteStep = async () => {
@@ -464,27 +480,91 @@ export default function MassschuhauftraegePage() {
                                 <h3 className="text-lg font-semibold text-gray-900">Bilder</h3>
                             </div>
 
-                            {/* Existing files for this step (from API) */}
+                            {/* Existing files for this step (from API) – visible in real time, with delete */}
                             {stepFilesFromApi.length > 0 && (
                                 <div className="mb-4">
                                     <p className="text-sm font-medium text-gray-700 mb-2">Vorhandene Dateien (dieser Schritt)</p>
-                                    <ul className="flex flex-wrap gap-2">
-                                        {stepFilesFromApi.map((f) => (
-                                            <li key={f.id}>
-                                                <a
-                                                    href={f.fileUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                        {stepFilesFromApi.map((f) => {
+                                            const isImage = (f.fileType || '').startsWith('image/') || /\.(png|jpg|jpeg|gif|webp)$/i.test(f.fileName || '');
+                                            const isDeleting = deletingFileId === f.id;
+                                            return (
+                                                <div
+                                                    key={f.id}
+                                                    className="relative group rounded-lg border border-gray-200 bg-gray-50 overflow-hidden hover:border-emerald-400 hover:shadow-sm transition-all"
                                                 >
-                                                    <FileText className="h-4 w-4 shrink-0" />
-                                                    <span className="truncate max-w-[180px]">{f.fileName}</span>
-                                                </a>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setDeleteFileConfirmId(f.id);
+                                                        }}
+                                                        disabled={!!deletingFileId}
+                                                        className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity disabled:opacity-50"
+                                                        aria-label="Datei löschen"
+                                                    >
+                                                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                                                    </button>
+                                                    <a
+                                                        href={f.fileUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="block"
+                                                    >
+                                                        {isImage ? (
+                                                            <div className="aspect-square relative bg-gray-100">
+                                                                <img
+                                                                    src={f.fileUrl}
+                                                                    alt={f.fileName || 'Bild'}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                            </div>
+                                                        ) : (
+                                                            <div className="aspect-square flex flex-col items-center justify-center p-3">
+                                                                <FileText className="h-8 w-8 text-gray-400 mb-1" />
+                                                                <span className="text-xs text-gray-600 text-center truncate w-full">{f.fileName}</span>
+                                                            </div>
+                                                        )}
+                                                        <p className="p-2 text-xs text-gray-600 truncate border-t border-gray-100" title={f.fileName}>
+                                                            {f.fileName}
+                                                        </p>
+                                                    </a>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
+
+                            {/* Confirm delete step file modal */}
+                            <Dialog open={!!deleteFileConfirmId} onOpenChange={(open) => !open && setDeleteFileConfirmId(null)}>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>Datei löschen</DialogTitle>
+                                        <DialogDescription>
+                                            Möchten Sie diese Datei wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                                        </DialogDescription>
+                                    </DialogHeader>
+                                    <DialogFooter>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => setDeleteFileConfirmId(null)}
+                                            disabled={!!deletingFileId}
+                                        >
+                                            Abbrechen
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            className="bg-red-600 hover:bg-red-700"
+                                            disabled={!!deletingFileId}
+                                            onClick={() => deleteFileConfirmId && handleDeleteStepFile(deleteFileConfirmId)}
+                                        >
+                                            {deletingFileId ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Löschen'}
+                                        </Button>
+                                    </DialogFooter>
+                                </DialogContent>
+                            </Dialog>
                             
                             {/* File Upload Area */}
                             <div
