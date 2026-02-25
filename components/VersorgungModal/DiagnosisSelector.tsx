@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import { ChevronDownIcon, X, Search, Plus } from 'lucide-react'
+import { ChevronDownIcon, X, Search, Plus, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { getAllDiagnoses, createDiagnosis } from '@/apis/versorgungApis'
+import { getAllDiagnoses, createDiagnosis, deleteDiagnosis } from '@/apis/versorgungApis'
 import toast from 'react-hot-toast'
 
 type DiagnosisOption = {
@@ -41,7 +41,11 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
     const [createModalOpen, setCreateModalOpen] = useState(false)
     const [newDiagnosisName, setNewDiagnosisName] = useState('')
     const [isCreating, setIsCreating] = useState(false)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
     const debounceTimerRef = useRef<NodeJS.Timeout | null>(null)
+
+    const defaultIds = useMemo(() => new Set(DEFAULT_DIAGNOSIS_OPTIONS.map(d => d.id)), [])
+    const isFromApi = useCallback((option: DiagnosisOption) => !defaultIds.has(option.id), [defaultIds])
 
     // Fetch diagnoses from API
     const fetchDiagnoses = useCallback(async (search: string = '') => {
@@ -142,6 +146,24 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
     const handleRemove = (diagnosisId: string, e: React.MouseEvent) => {
         e.stopPropagation()
         onChange(value.filter(v => v !== diagnosisId))
+    }
+
+    const handleDeleteFromApi = async (option: DiagnosisOption, e: React.MouseEvent) => {
+        e.preventDefault()
+        e.stopPropagation()
+        if (!isFromApi(option)) return
+        try {
+            setDeletingId(option.id)
+            await deleteDiagnosis(option.id)
+            toast.success('Diagnose gelöscht')
+            onChange(value.filter(v => v !== option.id))
+            await fetchDiagnoses(debouncedSearchQuery)
+        } catch (err: any) {
+            console.error('Failed to delete diagnosis:', err)
+            toast.error(err.response?.data?.message || 'Diagnose konnte nicht gelöscht werden')
+        } finally {
+            setDeletingId(null)
+        }
     }
 
     const getSelectedLabels = () => {
@@ -272,13 +294,28 @@ export default function DiagnosisSelector({ value, onChange }: DiagnosisSelector
                                             className="flex-shrink-0"
                                         />
                                         <span className={cn(
-                                            "text-sm flex-1 select-none",
+                                            "text-sm flex-1 select-none min-w-0",
                                             value.includes(option.id) && "font-medium text-blue-900"
                                         )}>
                                             {option.name}
                                         </span>
                                         {value.includes(option.id) && (
                                             <div className="h-2 w-2 rounded-full bg-blue-600 flex-shrink-0"></div>
+                                        )}
+                                        {isFromApi(option) && (
+                                            <button
+                                                type="button"
+                                                onClick={(e) => handleDeleteFromApi(option, e)}
+                                                disabled={deletingId === option.id}
+                                                className="flex-shrink-0 p-1.5 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50"
+                                                aria-label={`Diagnose ${option.name} löschen`}
+                                            >
+                                                {deletingId === option.id ? (
+                                                    <div className="h-4 w-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="h-4 w-4" />
+                                                )}
+                                            </button>
                                         )}
                                     </label>
                                 ))
