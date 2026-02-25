@@ -13,6 +13,18 @@ type DiagnosisOption = {
     name: string;
 };
 
+// Default diagnosis options – always shown; API results are merged below these
+const DEFAULT_DIAGNOSIS_OPTIONS: DiagnosisOption[] = [
+    { id: 'Fersenschmerz (Fersensporn)', name: 'Fersenschmerz (Fersensporn)' },
+    { id: 'Spreizfuß (Pes transversoplanus)', name: 'Spreizfuß (Pes transversoplanus)' },
+    { id: 'Knick-Senkfuß (Pes planovalgus)', name: 'Knick-Senkfuß (Pes planovalgus)' },
+    { id: 'Metatarsalgie (Vorfußschmerzen)', name: 'Metatarsalgie (Vorfußschmerzen)' },
+    { id: 'Hallux valgus (Begleitversorgung)', name: 'Hallux valgus (Begleitversorgung)' },
+    { id: 'Achillessehnenbeschwerden / Achillodynie', name: 'Achillessehnenbeschwerden / Achillodynie' },
+    { id: 'Funktionelle Kniebeschwerden (z. B. patellofemorales Schmerzsyndrom)', name: 'Funktionelle Kniebeschwerden (z. B. patellofemorales Schmerzsyndrom)' },
+    { id: 'Diabetisches Fußsyndrom (druckentlastende Versorgung)', name: 'Diabetisches Fußsyndrom (druckentlastende Versorgung)' },
+];
+
 export interface ManualEntryData {
     marke: string;
     modell: string;
@@ -43,7 +55,7 @@ export const useScanningFormData = (
     const [hasDataLoaded, setHasDataLoaded] = useState(false);
     const [selectedVersorgungId, setSelectedVersorgungId] = useState<string | null>(null);
     const [einlageOptions, setEinlageOptions] = useState<Array<{id?: string, name: string, price?: number}>>([]); // Dynamic Einlagentyp options from API with prices and IDs
-    const [diagnosisOptions, setDiagnosisOptions] = useState<DiagnosisOption[]>([]); // Dynamic diagnosis options from API
+    const [diagnosisOptions, setDiagnosisOptions] = useState<DiagnosisOption[]>(() => [...DEFAULT_DIAGNOSIS_OPTIONS]); // Static defaults + API
     const [loadingDiagnoses, setLoadingDiagnoses] = useState(false);
 
     // Editable fields
@@ -198,23 +210,39 @@ export const useScanningFormData = (
         }
     }, [fetchVersorgungenByStatus]);
 
-    // Fetch diagnoses from API
+    // Fetch diagnoses from API and merge with static defaults (defaults first, then API, dedupe by name)
     const fetchDiagnoses = useCallback(async (search: string = '') => {
         if (hasFetchedDiagnoses.current && !search) {
             return; // Already fetched, skip unless searching
         }
-        
+
         try {
             setLoadingDiagnoses(true);
             const response = await getAllDiagnoses(search);
-            const diagnoses = response?.data || response || [];
-            setDiagnosisOptions(diagnoses);
+            const apiDiagnoses: DiagnosisOption[] = response?.data || response || [];
+            const seenNames = new Set<string>();
+            const merged: DiagnosisOption[] = [];
+            for (const d of DEFAULT_DIAGNOSIS_OPTIONS) {
+                if (!seenNames.has(d.name)) {
+                    seenNames.add(d.name);
+                    merged.push(d);
+                }
+            }
+            for (const d of apiDiagnoses) {
+                const name = (d?.name ?? '').trim();
+                if (name && !seenNames.has(name)) {
+                    seenNames.add(name);
+                    merged.push({ id: d?.id ?? name, name });
+                }
+            }
+            setDiagnosisOptions(merged);
             if (!search) {
                 hasFetchedDiagnoses.current = true;
             }
         } catch (error) {
             console.error('Error fetching diagnoses:', error);
             toast.error('Failed to load diagnoses');
+            setDiagnosisOptions([...DEFAULT_DIAGNOSIS_OPTIONS]);
         } finally {
             setLoadingDiagnoses(false);
         }
