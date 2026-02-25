@@ -9,31 +9,42 @@ import { LeatherColorAssignment } from '../types';
  * @param assignments - Array of leather color assignments
  * @param getColorForLeather - Function to get color for leather number
  */
+/** Min/max marker size so numbers stay visible on any image size */
+const MARKER_RADIUS_MIN = 24;
+const MARKER_RADIUS_MAX = 56;
+const FONT_SIZE_MIN = 20;
+const FONT_SIZE_MAX = 44;
+
 export const drawMarkersOnCanvas = (
   canvas: HTMLCanvasElement,
   ctx: CanvasRenderingContext2D,
   assignments: LeatherColorAssignment[],
   getColorForLeather: (num: number) => string
 ): void => {
+  const shortSide = Math.min(canvas.width, canvas.height);
+  const radius = Math.min(MARKER_RADIUS_MAX, Math.max(MARKER_RADIUS_MIN, shortSide * 0.06));
+  const fontSize = Math.min(FONT_SIZE_MAX, Math.max(FONT_SIZE_MIN, Math.round(shortSide * 0.04)));
+  const borderWidth = Math.max(2, Math.round(radius * 0.2));
+
   assignments.forEach((assignment) => {
     const x = (assignment.x / 100) * canvas.width;
     const y = (assignment.y / 100) * canvas.height;
     const color = getColorForLeather(assignment.leatherNumber);
 
-    // Draw marker circle
+    // Draw marker circle (larger so numbering is clearly visible)
     ctx.fillStyle = color;
     ctx.beginPath();
-    ctx.arc(x, y, 15, 0, 2 * Math.PI);
+    ctx.arc(x, y, radius, 0, 2 * Math.PI);
     ctx.fill();
 
     // Draw white border
     ctx.strokeStyle = '#FFFFFF';
-    ctx.lineWidth = 3;
+    ctx.lineWidth = borderWidth;
     ctx.stroke();
 
-    // Draw leather number
+    // Draw leather number (bigger font so it matches position and is readable)
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 16px Arial';
+    ctx.font = `bold ${fontSize}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(assignment.leatherNumber.toString(), x, y);

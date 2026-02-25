@@ -26,6 +26,7 @@ import { LeatherColorSectionModalProps, LeatherColorAssignment } from './types';
 // Utilities
 import { getColorHex } from './constants';
 import { validateLeatherColors } from './utils/validation';
+import { getContainedImageRect, containerClickToImagePercent } from './utils/imageCoordinates';
 
 // Custom Hooks
 import { useCanvasPainting } from './hooks/useCanvasPainting';
@@ -103,15 +104,40 @@ export default function LeatherColorSectionModal({
   // ===== Event Handlers =====
   
   /**
-   * Handle click on shoe image to add assignment marker
+   * Handle click on shoe image to add assignment marker.
+   * Converts click to image percentage (0-100) so payload and painted image use same position.
    */
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!imageRef.current || !shoeImage) return;
 
-    const rect = imageRef.current.getBoundingClientRect();
-    const x = ((e.clientX - rect.left) / rect.width) * 100;
-    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    const containerRect = imageRef.current.getBoundingClientRect();
+    const img = imageRef.current.querySelector('img') as HTMLImageElement | null;
+    if (!img?.naturalWidth || !img?.naturalHeight) {
+      // Fallback to container % if img not ready
+      const x = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+      const y = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+      return addAssignmentAt(x, y);
+    }
 
+    const displayed = getContainedImageRect(
+      containerRect.width,
+      containerRect.height,
+      img.naturalWidth,
+      img.naturalHeight
+    );
+    const clickX = e.clientX - containerRect.left;
+    const clickY = e.clientY - containerRect.top;
+    const { x, y } = containerClickToImagePercent(
+      clickX,
+      clickY,
+      displayed,
+      containerRect.width,
+      containerRect.height
+    );
+    addAssignmentAt(x, y);
+  };
+
+  const addAssignmentAt = (x: number, y: number) => {
     // Validate leather type is selected
     const colorIndex = selectedLeatherNumber - 1;
     if (!leatherColors[colorIndex] || !leatherColors[colorIndex].trim()) {
@@ -125,7 +151,7 @@ export default function LeatherColorSectionModal({
       return;
     }
 
-    // Create new assignment
+    // Create new assignment (x, y are image percentage 0-100 so payload matches position)
     const colorName = leatherColorNames[colorIndex] || '';
     const newAssignment: LeatherColorAssignment = {
       x,

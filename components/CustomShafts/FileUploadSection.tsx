@@ -161,8 +161,8 @@ export default function FileUploadSection({
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className={`grid gap-4 md:gap-6 ${
           hideFileUploads 
-            ? (hideCustomerSearch ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4') 
-            : (hideCustomerSearch ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4')
+            ? (hideCustomerSearch ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-4') 
+            : (hideCustomerSearch ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-4' : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 2xl:grid-cols-4')
         }`}>
           {/* Kunde auswählen Section */}
           {!hideCustomerSearch && (
