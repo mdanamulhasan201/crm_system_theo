@@ -45,6 +45,8 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     fitting_date: string;
     adjustments: string;
     customer_reviews: string;
+    /** Order ID for navigation when "Intern" is clicked (go to step Schaft_fertigen) */
+    orderId?: string;
     /** JSON string of checklist answers (checkliste_halbprobe) */
     checklisteHalbprobe?: string;
     onProbenergebnisChange: (value: ProbenergebnisValue) => void;
@@ -71,6 +73,7 @@ export default function HalbprobeDurchfuehrungStepFields({
     fitting_date,
     adjustments,
     customer_reviews,
+    orderId,
     checklisteHalbprobe,
     onProbenergebnisChange,
     onSchafttypChange,
@@ -230,7 +233,11 @@ export default function HalbprobeDurchfuehrungStepFields({
                                 type="button"
                                 onClick={() => {
                                     onSchafttypChange(opt.value);
-                                    if (isExtern) router.push('/dashboard/custom-shafts');
+                                    if (isExtern) {
+                                        router.push('/dashboard/custom-shafts');
+                                    } else if (opt.value === 'Intern' && orderId) {
+                                        router.push(`/dashboard/massschuhauftraege/${orderId}?status=Schaft_fertigen`);
+                                    }
                                 }}
                                 className={cn(
                                     'relative flex cursor-pointer min-w-0 flex-1 basis-[calc(50%-0.375rem)] items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',

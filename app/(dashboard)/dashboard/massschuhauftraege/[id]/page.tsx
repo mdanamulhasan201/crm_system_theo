@@ -761,6 +761,7 @@ export default function MassschuhauftraegePage() {
                         {/* Step 5: Halbprobe durchführen – Probenergebnis & Schafttyp */}
                         {activeStepIndex === 4 && (
                             <HalbprobeDurchfuehrungStepFields
+                                orderId={id}
                                 probenergebnis={probenergebnis}
                                 schafttyp={schafttyp}
                                 fitting_date={fitting_date}
