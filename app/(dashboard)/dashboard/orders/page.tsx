@@ -190,44 +190,31 @@ function TypeFilterButtons() {
         return null;
     }
 
+    const typeButtons = [
+        { value: 'alle' as const, label: 'Alle' },
+        { value: 'rady_insole' as const, label: 'Einlage' },
+        { value: 'milling_block' as const, label: 'Fräsblock' },
+        { value: 'sonstiges' as const, label: 'Sonstiges' },
+    ];
+
     return (
-        <div className="mt-10 flex gap-3">
-            <button
-                onClick={() => setSelectedType('rady_insole')}
-                className={`
-                    cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
-                    ${selectedType === 'rady_insole'
-                        ? 'bg-[#62A07C] text-white'
-                        : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
-                    }
-                `}
-            >
-                Einlage
-            </button>
-            <button
-                onClick={() => setSelectedType('milling_block')}
-                className={`
-                    cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
-                    ${selectedType === 'milling_block'
-                        ? 'bg-[#62A07C] text-white'
-                        : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
-                    }
-                `}
-            >
-                Fräsblock
-            </button>
-            <button
-                onClick={() => setSelectedType('sonstiges')}
-                className={`
-                    cursor-pointer rounded-md px-4 py-2 text-sm font-medium transition-colors
-                    ${selectedType === 'sonstiges'
-                        ? 'bg-[#62A07C] text-white'
-                        : 'bg-[#F8F8F9] text-gray-500 hover:bg-gray-200'
-                    }
-                `}
-            >
-                Sonstiges
-            </button>
+        <div className="mt-10 flex flex-wrap gap-2">
+            {typeButtons.map(({ value, label }) => (
+                <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSelectedType(value)}
+                    className={`
+                        cursor-pointer rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors
+                        ${selectedType === value
+                            ? 'border-[#62A07C] bg-[#62A07C] text-white shadow-sm'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                        }
+                    `}
+                >
+                    {label}
+                </button>
+            ))}
         </div>
     );
 }

@@ -1097,7 +1097,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 <div className="flex justify-center my-10">
                     <Button
                         type="button"
-                        className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px]"
+                        className="bg-[#61A178] cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-[#4A8A5F] transition-colors flex items-center justify-center min-w-[160px]"
                         onClick={handleSpeichernClick}
                         disabled={isCreating}
                     >

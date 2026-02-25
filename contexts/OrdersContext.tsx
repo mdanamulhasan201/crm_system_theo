@@ -130,7 +130,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     const [cursorStack, setCursorStack] = useState<(string | undefined)[]>([]);
     const [selectedDays, setSelectedDays] = useState(30);
     const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
-    const [selectedType, setSelectedType] = useState<string | null>('rady_insole');
+    const [selectedType, setSelectedType] = useState<string | null>('alle');
     const [selectedBezahlt, setSelectedBezahlt] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchParams, setSearchParamsState] = useState({
@@ -150,6 +150,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         setStatsRefreshKey(prev => prev + 1);
     }, []);
 
+    // When "Alle" is selected, send "all" in payload; otherwise send the selected type
+    const typeForApi = selectedType === 'alle' ? 'all' : (selectedType || undefined);
+
     const { orders: apiOrders, loading, error, pagination, refetch } = useGetAllOrders(
         10,
         selectedDays,
@@ -160,7 +163,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         searchParams.customerNumber || undefined,
         searchParams.orderNumber || undefined,
         searchParams.customerName || undefined,
-        selectedType || undefined
+        typeForApi
     );
 
     const currentPage = cursorStack.length + 1;
@@ -318,9 +321,13 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                 });
             }
             
-            // Set type from URL if available, otherwise use default
-            if (urlType && (urlType === 'rady_insole' || urlType === 'milling_block' || urlType === 'sonstiges')) {
-                setSelectedType(urlType);
+            // Set type from URL if available (all/alle → Alle), otherwise use default
+            if (urlType) {
+                if (urlType === 'all' || urlType === 'alle') {
+                    setSelectedType('alle');
+                } else if (urlType === 'rady_insole' || urlType === 'milling_block' || urlType === 'sonstiges') {
+                    setSelectedType(urlType);
+                }
             }
             
             setIsInitialized(true);
@@ -338,9 +345,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             params.set('orderId', orderIdFromSearch);
         }
         
-        // Show type in URL if selected
+        // Show type in URL if selected (Alle → "all" in URL/payload)
         if (selectedType) {
-            params.set('type', selectedType);
+            params.set('type', selectedType === 'alle' ? 'all' : selectedType);
         }
 
         const queryString = params.toString();

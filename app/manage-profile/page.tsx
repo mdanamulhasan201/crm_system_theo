@@ -163,7 +163,7 @@ export default function ManageProfilePage() {
 
       <div className="flex flex-col items-center justify-center text-center w-full max-w-[92vw] sm:max-w-2xl md:max-w-3xl lg:max-w-4xl xl:max-w-5xl 2xl:max-w-6xl">
         <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-medium text-white mb-6 sm:mb-8 md:mb-10 lg:mb-12 xl:mb-14 2xl:mb-16">
-          Who&apos;s watching?
+          Benutzer auswählen!
         </h1>
 
         <div className="w-full mx-auto mb-6 sm:mb-8 md:mb-10 lg:mb-12 xl:mb-14 2xl:mb-16 px-1 sm:px-2 md:px-3 lg:px-4 xl:px-5 2xl:px-6">
@@ -185,11 +185,10 @@ export default function ManageProfilePage() {
                   return (
                     <div
                       key={profile.id}
-                      className={`min-w-0 flex flex-col items-center justify-center ${
-                        partner
-                          ? 'flex-[0_0_calc(1.4*(100%-0.5rem)/2)] sm:flex-[0_0_calc(1.4*(100%-0.75rem)/2)] md:flex-[0_0_calc(1.4*(100%-2rem)/3)] lg:flex-[0_0_calc(1.4*(100%-3.75rem)/4)] xl:flex-[0_0_calc(1.4*(100%-6rem)/5)] 2xl:flex-[0_0_calc(1.4*(100%-7.5rem)/6)]'
-                          : 'flex-[0_0_calc((100%-0.5rem)/2)] sm:flex-[0_0_calc((100%-0.75rem)/2)] md:flex-[0_0_calc((100%-2rem)/3)] lg:flex-[0_0_calc((100%-3.75rem)/4)] xl:flex-[0_0_calc((100%-6rem)/5)] 2xl:flex-[0_0_calc((100%-7.5rem)/6)]'
-                      }`}
+                      className={`min-w-0 flex flex-col items-center justify-center ${partner
+                        ? 'flex-[0_0_calc(1.4*(100%-0.5rem)/2)] sm:flex-[0_0_calc(1.4*(100%-0.75rem)/2)] md:flex-[0_0_calc(1.4*(100%-2rem)/3)] lg:flex-[0_0_calc(1.4*(100%-3.75rem)/4)] xl:flex-[0_0_calc(1.4*(100%-6rem)/5)] 2xl:flex-[0_0_calc(1.4*(100%-7.5rem)/6)]'
+                        : 'flex-[0_0_calc((100%-0.5rem)/2)] sm:flex-[0_0_calc((100%-0.75rem)/2)] md:flex-[0_0_calc((100%-2rem)/3)] lg:flex-[0_0_calc((100%-3.75rem)/4)] xl:flex-[0_0_calc((100%-6rem)/5)] 2xl:flex-[0_0_calc((100%-7.5rem)/6)]'
+                        }`}
                     >
                       <button
                         type="button"

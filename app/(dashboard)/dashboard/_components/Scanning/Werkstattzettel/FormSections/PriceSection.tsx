@@ -221,33 +221,18 @@ export default function PriceSection({
   return (
     <div className="space-y-0">
       {/* Header with icon */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="flex items-start gap-2 mb-8 ">
         <FileText className="w-5 h-5 text-gray-400" />
         <h3 className="text-sm font-semibold text-green-600 uppercase tracking-wider">Auftragsdetails & Preise</h3>
       </div>
 
-      {/* Main Layout: Form on left, Summary on right - equal width flex */}
-      <div className="flex flex-col lg:flex-row gap-8 w-full items-start">
-        {/* Left Side: Form Fields */}
-        <div className="flex-1 min-w-0 space-y-4 w-full lg:w-auto">
-          {/* Auftrag angenommen bei - location dropdown (separate from Abholung) */}
-          {locations && locations.length > 0 && onAuftragAngenommenBeiChange && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium text-gray-700">Auftrag angenommen bei</Label>
-              <LocationDropdown
-                value={auftragAngenommenBei ?? null}
-                locations={locations}
-                isOpen={isAuftragLocationDropdownOpen}
-                onOpenChange={onAuftragLocationDropdownChange ?? (() => {})}
-                onChange={onAuftragAngenommenBeiChange}
-                onSelect={onAuftragAngenommenBeiChange}
-                onClear={onAuftragAngenommenBeiClear}
-              />
-            </div>
-          )}
+      {/* Main Layout: Left 10/12 (form), Right 2/12 (summary) on lg; stacked on small */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 w-full max-w-full items-stretch overflow-hidden">
+        {/* Left Side: Form Fields – 10/12 on lg */}
+        <div className="space-y-4 w-full min-w-0 lg:col-span-7">
 
-          {/* Versorgung & Versorgungsname */}
-          <div className="flex items-start gap-3">
+            {/* Versorgung & Versorgungsname */}
+            <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Versorgung</p>
@@ -264,16 +249,33 @@ export default function PriceSection({
               )}
             </div>
           </div>
+          {/* Auftrag angenommen bei - location dropdown (separate from Abholung) */}
+          {locations && locations.length > 0 && onAuftragAngenommenBeiChange && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">Auftrag angenommen bei</Label>
+              <LocationDropdown
+                value={auftragAngenommenBei ?? null}
+                locations={locations}
+                isOpen={isAuftragLocationDropdownOpen}
+                onOpenChange={onAuftragLocationDropdownChange ?? (() => {})}
+                onChange={onAuftragAngenommenBeiChange}
+                onSelect={onAuftragAngenommenBeiChange}
+                onClear={onAuftragAngenommenBeiClear}
+              />
+            </div>
+          )}
+
+        
 
           {/* Menge | Fußanalyse | Fertigstellung bis - same line, flex, Fertigstellung bis last */}
 
 
           <div className="">
 
-            {/* Fertigstellung bis - Date 50%, Time dropdowns 50% */}
+            {/* Fertigstellung bis - Date + Time, responsive */}
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-gray-700">Fertigstellung bis</Label>
-              <div className="flex items-center gap-2 w-full">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full min-w-0">
                 <Input
                   type="date"
                   value={fertigstellungBis ? fertigstellungBis.slice(0, 10) : ''}
@@ -310,23 +312,10 @@ export default function PriceSection({
           </div>
 
 
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="space-y-1.5 w-full max-w-[160px]">
-              <Label className="text-sm font-medium text-gray-700">Menge</Label>
-              <Select value={quantity} onValueChange={onQuantityChange}>
-                <SelectTrigger className="h-10 border-gray-300 w-full text-sm min-w-0">
-                  <SelectValue placeholder="Menge wählen" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1 paar">1 Paar</SelectItem>
-                  <SelectItem value="2 paar">2 Paare</SelectItem>
-                  <SelectItem value="3 paar">3 Paare</SelectItem>
-                  <SelectItem value="4 paar">4 Paare</SelectItem>
-                  <SelectItem value="5 paar">5 Paare</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5 w-full max-w-[220px]">
+          {/* Fußanalyse (left 50%) | Rabatt (right 50%, split half-half when % input visible) – flex */}
+          <div className="flex flex-col sm:flex-row gap-4 w-full items-stretch">
+            {/* Left half: Fußanalyse – always 50% */}
+            <div className="space-y-1.5 min-w-0 flex-1 sm:flex-[0_0_60%]">
               <Label className="text-sm font-medium text-gray-700">Fußanalyse</Label>
               {(() => {
                 const handleChange = (key: string) => {
@@ -366,117 +355,121 @@ export default function PriceSection({
                   placeholder="Preis eingeben"
                   value={customFootPrice}
                   onChange={(e) => onCustomFootPriceChange(e.target.value)}
-                  className={cn('h-10 border-gray-300 text-sm mt-1', customFootPriceError && 'border-red-500')}
+                  className={cn(' border-gray-300 text-sm mt-1 w-full min-w-0', customFootPriceError && 'border-red-500')}
                 />
               )}
               {footAnalysisPriceError && <p className="text-xs text-red-500">{footAnalysisPriceError}</p>}
             </div>
-          </div>
 
-          {/* Rabatt (dropdown + % input when visible) 50% | Addon Preise 50% */}
-          <div className="flex gap-6 w-full">
-            <div className="space-y-2 flex-1 min-w-0 basis-1/2">
+            {/* Right half: Rabatt – when Prozent selected, dropdown and input each take exactly half */}
+            <div className="space-y-1.5 min-w-0 flex-1 sm:flex-[0_0_40%]">
               <Label className="text-sm font-medium text-gray-700">Rabatt</Label>
-              <div className="flex gap-2 items-center">
-                <Select
-                  value={discountType || 'none'}
-                  onValueChange={(value) => onDiscountTypeChange(value === 'none' ? '' : value)}
-                >
-                  <SelectTrigger className="h-11 border-gray-300 w-full max-w-[180px] min-w-0">
-                    <SelectValue placeholder="Kein Rabatt" />
-                  </SelectTrigger>
-                  <SelectContent className="min-w-[8rem] w-[var(--radix-select-trigger-width)]">
-                    <SelectItem value="none">Kein Rabatt</SelectItem>
-                    <SelectItem value="percentage">Prozent (%)</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="flex flex-row gap-2 w-full min-w-0">
+                <div className={cn('min-w-0', discountType === 'percentage' ? 'flex-1 basis-0' : 'flex-1')}>
+                  <Select
+                    value={discountType || 'none'}
+                    onValueChange={(value) => onDiscountTypeChange(value === 'none' ? '' : value)}
+                  >
+                    <SelectTrigger className=" border-gray-300 text-sm w-full min-w-0 max-w-full overflow-hidden">
+                      <SelectValue placeholder="Kein Rabatt" />
+                    </SelectTrigger>
+                    <SelectContent className="min-w-32 w-[var(--radix-select-trigger-width)]">
+                      <SelectItem value="none">Kein Rabatt</SelectItem>
+                      <SelectItem value="percentage">Prozent (%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 {discountType === 'percentage' && (
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    placeholder="z.B. 10"
-                    value={discountValue}
-                    onChange={(e) => onDiscountValueChange(e.target.value)}
-                    className="py-2 border-gray-300 flex-1 min-w-0"
-                  />
+                  <div className="flex-1 basis-0 min-w-0">
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="100"
+                      placeholder="z.B. 10 %"
+                      value={discountValue}
+                      onChange={(e) => onDiscountValueChange(e.target.value)}
+                      className=" py-2 border-gray-300 w-full min-w-0 text-sm"
+                    />
+                  </div>
                 )}
               </div>
             </div>
-            <div className="space-y-2 flex-1 min-w-0 basis-1/2">
-              <Label className="text-sm font-medium text-gray-700">Addon Preise</Label>
+          </div>
+
+          {/* Addon Preise (left half) | Kostenträger (right half) – bottom row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+            <div className="space-y-1.5 min-w-0">
+              <Label className="text-sm font-medium text-gray-700">Wirtschaftlicher Aufpreis</Label>
               <Input
                 type="text"
                 placeholder="Addon Preise eingeben"
                 value={addonPrices}
                 onChange={(e) => onAddonPricesChange?.(e.target.value)}
-                className="py-2 border-gray-300 w-full"
+                className="py-2 border-gray-300 w-full min-w-0 text-sm"
+              />
+            </div>
+            <div className="space-y-1.5 min-w-0">
+              <PaymentStatusSection
+                value={bezahlt}
+                onChange={onBezahltChange}
+                error={paymentError}
+                disabledPaymentType={disabledPaymentType}
               />
             </div>
           </div>
-
-          {/* Kostenträger - below */}
-          <div className="space-y-2">
-            <PaymentStatusSection
-              value={bezahlt}
-              onChange={onBezahltChange}
-              error={paymentError}
-              disabledPaymentType={disabledPaymentType}
-            />
-          </div>
         </div>
 
-        {/* Right Side: Price Summary - same width as left */}
-        <div className="flex-1 min-w-0 w-full lg:w-auto">
-          <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-4 h-full">
+        {/* Right Side: Price Summary – 2/12 on lg, full width on small */}
+        <div className="w-full min-w-0 lg:col-span-5">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 space-y-4 h-full min-h-0">
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Preisübersicht</h4>
 
-            <div className="space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Versorgung</span>
-                <span className="text-sm font-semibold text-gray-900">{formatPrice(versorgungPrice)}</span>
+            <div className="space-y-3 min-w-0">
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm text-gray-600 truncate">Versorgung</span>
+                <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(versorgungPrice)}</span>
               </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Menge</span>
-                <span className="text-sm font-semibold text-gray-900">× {quantityNum}</span>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm text-gray-600 truncate">Menge</span>
+                <span className="text-sm font-semibold text-gray-900 shrink-0">× {quantityNum}</span>
               </div>
 
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Fußanalyse</span>
-                <span className="text-sm font-semibold text-gray-900">{formatPrice(footPrice)}</span>
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm text-gray-600 truncate">Fußanalyse</span>
+                <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(footPrice)}</span>
               </div>
 
               {addonPricesTotal > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Addon Preise</span>
-                  <span className="text-sm font-semibold text-gray-900">{formatPrice(addonPricesTotal)}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm text-gray-600 truncate">Addon Preise</span>
+                  <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(addonPricesTotal)}</span>
                 </div>
               )}
 
               {(positionsnummerPrice || 0) > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Positionsnummer (inkl. MwSt.)</span>
-                  <span className="text-sm font-semibold text-gray-900">{formatPrice(positionsnummerPrice || 0)}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm text-gray-600 truncate">Positionsnummer (inkl. MwSt.)</span>
+                  <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(positionsnummerPrice || 0)}</span>
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-3 border-t border-gray-300">
-                <span className="text-sm text-gray-600">Zwischensumme</span>
-                <span className="text-sm font-semibold text-gray-900">{formatPrice(subtotal)}</span>
+              <div className="flex justify-between items-center gap-2 pt-3 border-t border-gray-300">
+                <span className="text-sm text-gray-600 truncate">Zwischensumme</span>
+                <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(subtotal)}</span>
               </div>
 
               {discountAmount > 0 && (
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600">Rabatt ({discountValue}%)</span>
-                  <span className="text-sm font-semibold text-red-600">-{formatPrice(discountAmount)}</span>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm text-gray-600 truncate">Rabatt ({discountValue}%)</span>
+                  <span className="text-sm font-semibold text-red-600 shrink-0">-{formatPrice(discountAmount)}</span>
                 </div>
               )}
 
-              <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
+              <div className="flex justify-between items-center gap-2 pt-3 border-t-2 border-gray-400">
                 <span className="text-base font-bold text-gray-900">Gesamt</span>
-                <span className="text-xl font-bold text-green-600">{formatPrice(total)}</span>
+                <span className="text-lg sm:text-xl font-bold text-green-600 shrink-0">{formatPrice(total)}</span>
               </div>
             </div>
           </div>
