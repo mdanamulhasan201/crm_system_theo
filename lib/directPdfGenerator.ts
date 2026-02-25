@@ -44,7 +44,7 @@ const getBarcodeValue = (data: BarcodeStickerData): string => {
     return value.padStart(10, '0');
 };
 
-// Helper to load image
+// Helper to load image (for same-origin / relative paths)
 const loadImage = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -53,6 +53,13 @@ const loadImage = (src: string): Promise<HTMLImageElement> => {
         img.onerror = reject;
         img.src = src;
     });
+};
+
+// Build same-origin proxy URL for external images (avoids S3 CORS; PDF can then load the image)
+const getProxyImageUrl = (externalUrl: string): string => {
+    if (typeof window === 'undefined') return externalUrl;
+    const origin = window.location.origin;
+    return `${origin}/api/proxy-image?url=${encodeURIComponent(externalUrl)}`;
 };
 
 // Helper to wrap text within max width
@@ -105,19 +112,15 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     // TOP SECTION - Logo and Company Info
     let currentY = 10;
     
-    // Load all images in parallel for better performance
-    const imagePromises: Promise<HTMLImageElement | null>[] = [];
-    
-    if (data.partner?.image) {
-        imagePromises.push(loadImage(data.partner.image).catch(() => null));
-    } else {
-        imagePromises.push(Promise.resolve(null));
-    }
-    
-    imagePromises.push(loadImage(BRAND_LOGO).catch(() => null));
-    
-    // Draw partner logo
-    const logoImg = await imagePromises[0];
+    // Partner logo: use proxy for external URLs (S3 etc.) so same-origin load works in PDF
+    const partnerImageUrl = data.partner?.image;
+    const isExternalUrl = partnerImageUrl?.startsWith('http://') || partnerImageUrl?.startsWith('https://');
+    const partnerLogoUrl = partnerImageUrl && isExternalUrl ? getProxyImageUrl(partnerImageUrl) : partnerImageUrl;
+    const partnerLogoPromise = partnerLogoUrl ? loadImage(partnerLogoUrl).catch(() => null) : Promise.resolve(null);
+    const brandLogoPromise = loadImage(BRAND_LOGO).catch(() => null);
+
+    const [logoImg, brandLogo] = await Promise.all([partnerLogoPromise, brandLogoPromise]);
+
     if (logoImg) {
         const logoMaxWidth = 100;
         const logoMaxHeight = 45;
@@ -130,7 +133,7 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
         ctx.fillStyle = '#dc2626';
         ctx.fillText('logo not found', 12, currentY + 15);
     }
-    
+
     // Partner name (left-aligned within right section)
     ctx.textAlign = 'left';
     ctx.font = 'bold 13px Arial';
@@ -138,7 +141,6 @@ export const generateBarcodeStickerPdfCanvas = async (data: BarcodeStickerData):
     ctx.fillText(data.partner?.name || 'Partner Name', 255, currentY);
     
     // Brand logo (far right)
-    const brandLogo = await imagePromises[1];
     if (brandLogo) {
         ctx.drawImage(brandLogo, 368, currentY - 5, 20, 20);
     }
