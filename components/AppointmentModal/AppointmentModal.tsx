@@ -9,6 +9,12 @@ import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { de } from "date-fns/locale";
+
+function toValidDate(value: Date | string | undefined | null): Date | undefined {
+    if (value == null) return undefined;
+    const d = value instanceof Date ? value : new Date(value);
+    return Number.isNaN(d.getTime()) ? undefined : d;
+}
 import { UseFormReturn } from "react-hook-form";
 import { Calendar } from "../ui/calendar";
 import { useSearchCustomer } from "@/hooks/customer/useSearchCustomer";
@@ -424,8 +430,8 @@ export default function AppointmentModal({
                                                             !field.value && "text-muted-foreground"
                                                         )}
                                                     >
-                                                        {field.value ? (
-                                                            format(new Date(field.value), "dd.MM.yyyy", { locale: de })
+                                                        {toValidDate(field.value) ? (
+                                                            format(toValidDate(field.value)!, "dd.MM.yyyy", { locale: de })
                                                         ) : (
                                                             <span>Datum auswählen</span>
                                                         )}
@@ -436,7 +442,7 @@ export default function AppointmentModal({
                                             <PopoverContent className="w-auto p-0" align="start">
                                                 <Calendar
                                                     mode="single"
-                                                    selected={field.value ? new Date(field.value) : undefined}
+                                                    selected={toValidDate(field.value)}
                                                     onSelect={field.onChange}
                                                     disabled={(date) =>
                                                         date < new Date(new Date().setHours(0, 0, 0, 0))
