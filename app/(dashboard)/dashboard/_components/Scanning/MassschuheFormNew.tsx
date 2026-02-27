@@ -470,7 +470,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                         type="button"
                         onClick={handleSubmit}
                         disabled={isLoading}
-                        className="bg-black cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-gray-800 transition-colors flex items-center justify-center min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-[#61A178] cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-[#4A8A5F] transition-colors flex items-center justify-center min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? (
                             <>
