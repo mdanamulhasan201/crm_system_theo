@@ -2,9 +2,13 @@
 import React, { useState } from 'react';
 import MasschuProgressTable, { SHOE_STEPS } from './MasschuProgressTable';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
+import { PlusIcon } from 'lucide-react';
+import SchnellAuftragModal from './SchnellAuftragModal';
 
 export default function ProgressTab() {
     const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(0);
+    const [schnellModalOpen, setSchnellModalOpen] = useState(false);
 
     const handleStepClick = (stepIndex: number) => {
         if (selectedStepIndex === stepIndex) {
@@ -20,7 +24,18 @@ export default function ProgressTab() {
 
     return (
         <div className="mt-8">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Fortschritt</h2>
+            <div className='flex flex-col sm:flex-row items-center justify-between mb-6'>
+                <h2 className="text-xl font-semibold text-gray-900 ">Fortschritt</h2>
+                <Button
+                    variant="outline"
+                    size="default"
+                    className='cursor-pointer bg-[#61A175] hover:bg-[#61A175]/80 text-white font-semibold rounded-lg px-6 py-2.5 flex items-center gap-2'
+                    onClick={() => setSchnellModalOpen(true)}
+                >
+                    <PlusIcon className='w-4 h-4' />
+                    Schnell Auftrag
+                </Button>
+            </div>
 
             {/* Horizontal Progress Stepper */}
             <TooltipProvider delayDuration={300}>
@@ -103,6 +118,11 @@ export default function ProgressTab() {
             <MasschuProgressTable
                 selectedStepIndex={selectedStepIndex}
                 onRowClick={handleRowClick}
+            />
+
+            <SchnellAuftragModal
+                isOpen={schnellModalOpen}
+                onClose={() => setSchnellModalOpen(false)}
             />
         </div>
     );
