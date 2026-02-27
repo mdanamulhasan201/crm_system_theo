@@ -208,6 +208,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setValue,
         watch,
         trigger,
+        reset,
     } = useForm<EinlagenFormData>({
         resolver: zodResolver(einlagenFormSchema),
         mode: 'onChange',
@@ -342,6 +343,55 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             setCustomVersorgungId(storedId);
         }
     }, []);
+
+    // Reset the entire Einlagen flow after a successful order
+    const resetEinlagenForm = () => {
+        // React Hook Form values
+        reset();
+
+        // Custom Einlagen form state
+        setAusführliche_diagnose('');
+        setVersorgung_laut_arzt('');
+        setEinlagentyp('');
+        setÜberzug('');
+        setMenge('');
+        setVersorgung_note('');
+        setSchuhmodell_wählen('');
+        setKostenvoranschlag(null);
+        handleEmployeeClear();
+
+        // Scanning form data (diagnosis / supply / einlage)
+        setSelectedDiagnosis('');
+        setSupply('');
+        setSelectedEinlage('');
+        setSelectedVersorgungId(null);
+
+        // Billing & positionsnummer
+        setBillingType('Krankenkassa');
+        setSelectedPositionsnummer([]);
+        setItemSides({});
+
+        // Insole standards back to defaults
+        setInsoleStandards([
+            { name: 'Verkürzungsausgleich', left: 0, right: 0, isFavorite: true },
+            { name: 'Supination', left: 0, right: 0, isFavorite: true },
+            { name: 'Pronation', left: 0, right: 0, isFavorite: true },
+        ]);
+
+        // Custom Versorgung / tabs
+        setCustomVersorgungId(null);
+        setCustomVersorgungsname(null);
+        setSelectedEinlageId(undefined);
+        setActiveVersorgungTab('standard');
+
+        // Modal and order state
+        setShowUserInfoUpdateModal(false);
+        setShowConfirmModal(false);
+        setShowSpringerDialog(false);
+        setFormDataForOrder(null);
+        setRealOrderData(null);
+        setOrderPrices(null);
+    };
     
     // Clear selectedPositionsnummer and itemSides when billingType changes
     useEffect(() => {
@@ -786,6 +836,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         localStorage.removeItem('key');
                         setCustomVersorgungId(null);
                     }
+
+                    // After successful order creation, clear all Einlagen inputs
+                    resetEinlagenForm();
                 }
             } catch (error) {
                 console.error('Error while creating order:', error);
