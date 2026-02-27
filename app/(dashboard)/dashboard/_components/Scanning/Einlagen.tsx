@@ -821,6 +821,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             return;
         }
 
+        // For Krankenkassa-Abrechnung: at least one Positionsnummer is required
+        if (billingType === 'Krankenkassa' && (!selectedPositionsnummer || selectedPositionsnummer.length === 0)) {
+            toast.error('Bitte wählen Sie mindestens eine Positionsnummer für Krankenkasse.');
+            return;
+        }
+
         const formData = collectFormData({
             ausführliche_diagnose,
             versorgung_laut_arzt,

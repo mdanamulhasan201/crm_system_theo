@@ -7,6 +7,7 @@ import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_compone
 import PaymentStatusSection from './PaymentStatusSection'
 import LocationDropdown from '../Dropdowns/LocationDropdown'
 import { FileText } from 'lucide-react'
+import { useAuth } from '@/contexts/AuthContext'
 
 type EinlagenversorgungPriceItem = { name: string; price: number } | number
 
@@ -180,6 +181,20 @@ export default function PriceSection({
     ? (subtotal * parseFloat(discountValue)) / 100
     : 0
   const total = subtotal - discountAmount
+
+  // Positionsnummer VAT breakdown for summary (using account vat_country, same logic as elsewhere)
+  const { user } = useAuth()
+  const vatCountry = user?.accountInfo?.vat_country
+  const getVatRate = (): number => {
+    if (vatCountry === 'Italien (IT)') return 4
+    if (vatCountry === 'Österreich (AT)') return 20
+    return 0
+  }
+  const positionsnummerGross = positionsnummerPrice || 0
+  const positionsVatRate = getVatRate()
+  const positionsnummerNet =
+    positionsVatRate > 0 ? positionsnummerGross / (1 + positionsVatRate / 100) : positionsnummerGross
+  const positionsnummerVatAmount = positionsnummerGross - positionsnummerNet
 
   // Generate hours (05-21) for 24-hour format and minutes (00, 10, 20, 30, 40, 50)
   const hours24 = Array.from({ length: 17 }, (_, i) => String(i + 5).padStart(2, '0'))
@@ -449,9 +464,29 @@ export default function PriceSection({
               )}
 
               {(positionsnummerPrice || 0) > 0 && (
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-sm text-gray-600 truncate">Positionsnummer (inkl. MwSt.)</span>
-                  <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(positionsnummerPrice || 0)}</span>
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-sm text-gray-600 truncate">Positionsnummer netto</span>
+                    <span className="text-sm font-semibold text-gray-900 shrink-0">
+                      {formatPrice(positionsnummerNet)}
+                    </span>
+                  </div>
+                  {positionsVatRate > 0 && (
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm text-gray-600 truncate">
+                        + {positionsVatRate}% MwSt. auf Positionsnummer
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900 shrink-0">
+                        {formatPrice(positionsnummerVatAmount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-sm text-gray-600 truncate">Positionsnummer (inkl. MwSt.)</span>
+                    <span className="text-sm font-semibold text-gray-900 shrink-0">
+                      {formatPrice(positionsnummerPrice || 0)}
+                    </span>
+                  </div>
                 </div>
               )}
 
