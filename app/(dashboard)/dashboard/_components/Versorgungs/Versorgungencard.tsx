@@ -60,6 +60,8 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [cardToDelete, setCardToDelete] = useState<string | null>(null);
     const [deleting, setDeleting] = useState(false);
+    const [diagnosisModalOpen, setDiagnosisModalOpen] = useState(false);
+    const [diagnosisModalList, setDiagnosisModalList] = useState<string[]>([]);
 
     const fetchVersorgungen = React.useCallback(async () => {
         try {
@@ -212,16 +214,28 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                                         <p className='font-bold'>Einlage: <span className='font-normal'>{card.name}</span></p>
                                     </div>
 
-                                    {/* Diagnosis Status - at the bottom */}
+                                    {/* Diagnosis Status - max 3 on card, rest in modal */}
                                     {Array.isArray(card.diagnosis_status) && card.diagnosis_status.length > 0 && (
-                                        <div className='flex flex-col gap-2'>
+                                        <div className='flex flex-col gap-2 min-h-0 flex-1'>
                                             <p className='font-bold'>Diagnose:</p>
                                             <div className='flex flex-wrap gap-2'>
-                                                {card.diagnosis_status.map((status: string, idx: number) => (
-                                                    <span key={idx} className='px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-sm '>
+                                                {card.diagnosis_status.slice(0, 3).map((status: string, idx: number) => (
+                                                    <span key={idx} className='px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-sm'>
                                                         {status}
                                                     </span>
                                                 ))}
+                                                {card.diagnosis_status.length > 3 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setDiagnosisModalList(Array.isArray(card.diagnosis_status) ? card.diagnosis_status : []);
+                                                            setDiagnosisModalOpen(true);
+                                                        }}
+                                                        className='px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300 cursor-pointer'
+                                                    >
+                                                        +{card.diagnosis_status.length - 3} mehr
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -296,6 +310,22 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
                             {deleting ? 'Deleting...' : 'Ja'}
                         </button>
                         <button onClick={handleCancelDelete} className="bg-gray-200 text-black px-6 py-2 rounded-full cursor-pointer">Nein</button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Diagnose list modal */}
+            <Dialog open={diagnosisModalOpen} onOpenChange={setDiagnosisModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Diagnose</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                        {diagnosisModalList.map((status: string, idx: number) => (
+                            <span key={idx} className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">
+                                {status}
+                            </span>
+                        ))}
                     </div>
                 </DialogContent>
             </Dialog>
