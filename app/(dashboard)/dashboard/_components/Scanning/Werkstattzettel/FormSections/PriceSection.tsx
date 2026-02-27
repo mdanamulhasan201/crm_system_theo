@@ -182,7 +182,7 @@ export default function PriceSection({
     : 0
   const total = subtotal - discountAmount
 
-  // Positionsnummer VAT breakdown for summary (using account vat_country, same logic as elsewhere)
+  // Positionsnummer VAT breakdown & insurance/customer split (using account vat_country)
   const { user } = useAuth()
   const vatCountry = user?.accountInfo?.vat_country
   const getVatRate = (): number => {
@@ -195,6 +195,12 @@ export default function PriceSection({
   const positionsnummerNet =
     positionsVatRate > 0 ? positionsnummerGross / (1 + positionsVatRate / 100) : positionsnummerGross
   const positionsnummerVatAmount = positionsnummerGross - positionsnummerNet
+
+  // Simple split: insurance pays Positionsnummer (inkl. MwSt.), customer pays the rest + Eigenanteil (AT)
+  const isInsuranceMode = disabledPaymentType === 'Krankenkasse'
+  const insurancePays = isInsuranceMode ? positionsnummerGross : 0
+  const eigenanteil = isInsuranceMode && vatCountry === 'Österreich (AT)' ? 43 : 0
+  const customerPays = Math.max(total - insurancePays, 0) + eigenanteil
 
   // Generate hours (05-21) for 24-hour format and minutes (00, 10, 20, 30, 40, 50)
   const hours24 = Array.from({ length: 17 }, (_, i) => String(i + 5).padStart(2, '0'))
@@ -505,6 +511,33 @@ export default function PriceSection({
               <div className="flex justify-between items-center gap-2 pt-3 border-t-2 border-gray-400">
                 <span className="text-base font-bold text-gray-900">Gesamt</span>
                 <span className="text-lg sm:text-xl font-bold text-green-600 shrink-0">{formatPrice(total)}</span>
+              </div>
+
+              {/* Insurance vs Customer split */}
+              <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
+                {isInsuranceMode && (
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-sm font-semibold text-sky-700 truncate">
+                      Versicherung zahlt
+                    </span>
+                    <span className="text-sm font-semibold text-sky-700 shrink-0">
+                      {formatPrice(insurancePays)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm font-semibold text-amber-700 truncate">
+                    Kunde zahlt
+                  </span>
+                  <span className="text-sm font-semibold text-amber-700 shrink-0">
+                    {formatPrice(customerPays)}
+                  </span>
+                </div>
+                {eigenanteil > 0 && (
+                  <p className="text-xs text-gray-600">
+                    Enthält Eigenanteil (AT): {formatPrice(eigenanteil)}
+                  </p>
+                )}
               </div>
             </div>
           </div>

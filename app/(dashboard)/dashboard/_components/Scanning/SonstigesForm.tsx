@@ -33,16 +33,16 @@ interface SonstigesFormProps {
 export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefresh, prefillOrderData }: SonstigesFormProps) {
     const { user } = useAuth();
     const vatCountry = user?.accountInfo?.vat_country;
-    
+
     // Get tax rates based on country
     const taxRates = useMemo(() => {
         return getTaxRatesByCountry(vatCountry) || [];
     }, [vatCountry]);
-    
+
     const defaultTaxRate = useMemo(() => {
         return taxRates?.find(rate => rate.isDefault) || { rate: 22, name: 'Standard', description: 'Standard' };
     }, [taxRates]);
-    
+
     // Form state
     const [leistungsname, setLeistungsname] = useState<string>('');
     const [kategorie, setKategorie] = useState<string>('');
@@ -53,7 +53,7 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
     // Use Brutto as the default input mode (standard)
     const [isNetto, setIsNetto] = useState<boolean>(false); // true = Preis ist Netto, false = Preis ist Brutto
     const [leistungsnotiz, setLeistungsnotiz] = useState<string>('');
-    
+
     // Get current selected tax rate details
     const selectedTaxRate = useMemo(() => {
         return taxRates?.find(rate => rate.rate === steuersatz) || defaultTaxRate;
@@ -270,12 +270,12 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                         {/* Kategorie */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Kategorie
+                                Diagnose
                             </label>
                             <div className="relative">
                                 <Input
                                     type="text"
-                                    placeholder="Optional..."
+                                    placeholder="diagnose"
                                     value={kategorie}
                                     onChange={(e) => setKategorie(e.target.value)}
                                     className="w-full h-10 pr-9"
@@ -413,8 +413,8 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Steuersatz
                                 </label>
-                                <Select 
-                                    value={steuersatz.toString()} 
+                                <Select
+                                    value={steuersatz.toString()}
                                     onValueChange={(value) => setSteuersatz(parseFloat(value))}
                                 >
                                     <SelectTrigger className="w-full h-10">
@@ -448,11 +448,10 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                     <button
                                         type="button"
                                         onClick={() => setIsNetto(false)}
-                                        className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                                            !isNetto
+                                        className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${!isNetto
                                                 ? 'bg-[#62A17C] text-white shadow-sm'
                                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         Preis ist Brutto
                                     </button>
@@ -460,11 +459,10 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                     <button
                                         type="button"
                                         onClick={() => setIsNetto(true)}
-                                        className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                                            isNetto
+                                        className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${isNetto
                                                 ? 'bg-[#62A17C] text-white shadow-sm'
                                                 : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                        }`}
+                                            }`}
                                     >
                                         Preis ist Netto
                                     </button>

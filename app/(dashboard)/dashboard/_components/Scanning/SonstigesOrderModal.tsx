@@ -105,6 +105,10 @@ export default function SonstigesOrderModal({
     const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
 
+    // Notiz hinzufügen (same as WerkstattzettelModal) – shown when button clicked, sent as orderNotes
+    const [showNotizTextarea, setShowNotizTextarea] = useState(false);
+    const [orderNotes, setOrderNotes] = useState('');
+
     // Initialize form with customer data when modal opens
     useEffect(() => {
         if (isOpen && customer && formData) {
@@ -324,6 +328,7 @@ export default function SonstigesOrderModal({
                 vatRate: formData.steuersatz,
                 quantity: quantity,
                 versorgung_note: formData.leistungsnotiz || '',
+                orderNotes: orderNotes.trim() || '',
                 discount: formData.rabatt,
                 employeeId: selectedEmployeeId || formData.selectedEmployeeId,
                 total_price: formData.bruttoPreis,
@@ -485,7 +490,8 @@ export default function SonstigesOrderModal({
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none"
+                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none cursor-pointer"
+                                    onClick={() => setShowNotizTextarea((prev) => !prev)}
                                 >
                                     <StickyNote className="w-4 h-4 text-gray-700" />
                                     <span>Notiz hinzufügen</span>
@@ -493,6 +499,20 @@ export default function SonstigesOrderModal({
                             </div>
                         </div>
                     </div>
+
+                    {/* Notiz textarea – shown when "Notiz hinzufügen" is clicked (same as WerkstattzettelModal) */}
+                    {showNotizTextarea && (
+                        <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 mt-6">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">Notiz</label>
+                            <textarea
+                                value={orderNotes}
+                                onChange={(e) => setOrderNotes(e.target.value)}
+                                placeholder="Notiz eingeben..."
+                                rows={3}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#50C878] focus:border-transparent resize-none"
+                            />
+                        </div>
+                    )}
                 </div>
 
                 {/* Action Buttons */}
