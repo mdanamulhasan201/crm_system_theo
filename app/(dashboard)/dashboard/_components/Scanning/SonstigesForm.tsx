@@ -50,7 +50,8 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
     const [nettoPreis, setNettoPreis] = useState<string>('0.00');
     const [rabatt, setRabatt] = useState<string>('0');
     const [steuersatz, setSteuersatz] = useState<number>(defaultTaxRate.rate);
-    const [isNetto, setIsNetto] = useState<boolean>(true); // true = Preis ist Netto, false = Preis ist Brutto
+    // Use Brutto as the default input mode (standard)
+    const [isNetto, setIsNetto] = useState<boolean>(false); // true = Preis ist Netto, false = Preis ist Brutto
     const [leistungsnotiz, setLeistungsnotiz] = useState<string>('');
     
     // Get current selected tax rate details
@@ -130,27 +131,33 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
         const discountPercent = parseFloat(rabatt) || 0;
         const taxRate = steuersatz / 100;
 
-        // Calculate price after discount
-        const priceAfterDiscount = priceInput * (1 - discountPercent / 100);
+        // Rabatt wird immer auf den eingegebenen Basispreis angewendet
+        const discountAmountRaw = priceInput * (discountPercent / 100);
+        const priceAfterDiscount = priceInput - discountAmountRaw;
 
         let netto, mwst, brutto;
 
         if (isNetto) {
-            // Price input is Netto
+            // Eingabepreis wird als Netto interpretiert
             netto = priceAfterDiscount;
             mwst = netto * taxRate;
             brutto = netto + mwst;
         } else {
-            // Price input is Brutto
+            // Eingabepreis wird als Brutto interpretiert (Standard)
             brutto = priceAfterDiscount;
             netto = brutto / (1 + taxRate);
             mwst = brutto - netto;
         }
 
+        const discountAmount = Math.round(discountAmountRaw * 100) / 100;
+
         return {
+            basisPreis: Math.round(priceInput * 100) / 100,
             netto: Math.round(netto * 100) / 100,
             mwst: Math.round(mwst * 100) / 100,
             brutto: Math.round(brutto * 100) / 100,
+            discountPercent,
+            discountAmount,
         };
     }, [nettoPreis, rabatt, steuersatz, isNetto]);
 
@@ -338,10 +345,10 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         {/* Left side - Input fields */}
                         <div className="space-y-4">
-                            {/* Netto-Preis / Brutto-Preis */}
+                            {/* Eingabe-Feld – immer als Brutto-Preis beschriftet */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                                    {isNetto ? 'Netto-Preis (€)' : 'Brutto-Preis (€)'}
+                                    Brutto-Preis (€)
                                 </label>
                                 <div className="relative">
                                     <Input
@@ -437,17 +444,7 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                                 {/* Toggle buttons */}
                                 <div className="flex gap-2 mb-4">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNetto(true)}
-                                        className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                                            isNetto
-                                                ? 'bg-[#62A17C] text-white shadow-sm'
-                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                        }`}
-                                    >
-                                        Preis ist Netto
-                                    </button>
+                                    {/* First: Preis ist Brutto (standard / default) */}
                                     <button
                                         type="button"
                                         onClick={() => setIsNetto(false)}
@@ -459,21 +456,57 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                     >
                                         Preis ist Brutto
                                     </button>
+                                    {/* Second: Preis ist Netto */}
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsNetto(true)}
+                                        className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                                            isNetto
+                                                ? 'bg-[#62A17C] text-white shadow-sm'
+                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                        }`}
+                                    >
+                                        Preis ist Netto
+                                    </button>
                                 </div>
 
                                 {/* Price summary */}
                                 <div className="space-y-2.5">
                                     <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-700">Netto:</span>
-                                        <span className="text-sm font-medium text-gray-900">€{priceCalculations.netto.toFixed(2)}</span>
+                                        <span className="text-sm text-gray-700">
+                                            Basispreis ({isNetto ? 'Netto' : 'Brutto'}):
+                                        </span>
+                                        <span className="text-sm font-medium text-gray-900">
+                                            €{priceCalculations.basisPreis.toFixed(2)}
+                                        </span>
+                                    </div>
+                                    {priceCalculations.discountPercent > 0 && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-700">
+                                                Rabatt ({priceCalculations.discountPercent.toFixed(2)}%):
+                                            </span>
+                                            <span className="text-sm font-medium text-red-600">
+                                                -€{priceCalculations.discountAmount.toFixed(2)}
+                                            </span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-sm text-gray-700">Netto nach Rabatt:</span>
+                                        <span className="text-sm font-medium text-gray-900">
+                                            €{priceCalculations.netto.toFixed(2)}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-sm text-gray-700">MwSt ({steuersatz}%):</span>
-                                        <span className="text-sm font-medium text-gray-900">€{priceCalculations.mwst.toFixed(2)}</span>
+                                        <span className="text-sm font-medium text-gray-900">
+                                            €{priceCalculations.mwst.toFixed(2)}
+                                        </span>
                                     </div>
                                     <div className="flex justify-between items-center pt-2.5 border-t border-gray-300">
-                                        <span className="text-sm font-semibold text-gray-900">Brutto:</span>
-                                        <span className="text-sm font-semibold text-gray-900">€{priceCalculations.brutto.toFixed(2)}</span>
+                                        <span className="text-sm font-semibold text-gray-900">Brutto nach Rabatt:</span>
+                                        <span className="text-sm font-semibold text-gray-900">
+                                            €{priceCalculations.brutto.toFixed(2)}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
