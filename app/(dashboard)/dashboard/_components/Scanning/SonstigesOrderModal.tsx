@@ -324,6 +324,7 @@ export default function SonstigesOrderModal({
             const apiPayload = {
                 service_name: formData.leistungsname,
                 sonstiges_category: formData.kategorie || '',
+                diagnosis: formData.kategorie || '',
                 net_price: formData.nettoPreis,
                 vatRate: formData.steuersatz,
                 quantity: quantity,
