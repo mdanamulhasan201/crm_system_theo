@@ -420,7 +420,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                     orderDates.push(row.latestMassschuheOrder.createdAt ?? null);
                 }
 
-                const newestOrderLabel = orderEntries.length > 0 ? orderEntries.join(' | ') : 'Kein Auftrag';
+                const newestOrderLabel = orderEntries.length > 0 ? orderEntries.join(' | ') : 'Keine Bestellung';
                 const newestOrderDate = orderDates[0];
 
                 return {

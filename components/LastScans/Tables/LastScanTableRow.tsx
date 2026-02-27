@@ -98,11 +98,11 @@ export function LastScanTableRow({
                 </div>
             </TableCell>
             <TableCell className={cn('font-medium', latestScreenerDate ? 'text-gray-700' : 'text-orange-500')}>
-                {latestScreenerDate ? formatDate(latestScreenerDate) : 'No scan'}
+                {latestScreenerDate ? formatDate(latestScreenerDate) : 'Kein Scan'}
             </TableCell>
             <TableCell className="font-medium">
                 {orderEntries.length === 0 ? (
-                    <span className="text-orange-500">No order</span>
+                    <span className="text-orange-500">Keine Bestellung</span>
                 ) : (
                     <div className="flex flex-col gap-1">
                         {orderEntries.map((entry, index) => {
