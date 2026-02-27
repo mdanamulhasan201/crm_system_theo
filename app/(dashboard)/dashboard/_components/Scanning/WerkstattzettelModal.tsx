@@ -81,7 +81,11 @@ export default function WerkstattzettelModal({
   const [locationsLoading, setLocationsLoading] = useState(false)
 
   // Extract Einlagenversorgung price and name from selected versorgung
+  // NOTE: For Krankenkassa-Abrechnung this price should NOT be shown or used.
   const einlagenversorgungPrice = React.useMemo(() => {
+    // Only show / use Versorgung price for Privat billing
+    if (formData?.billingType !== 'Privat') return []
+
     const selectedData = formData?.selectedVersorgungData
     if (!selectedData) return []
 
@@ -93,65 +97,66 @@ export default function WerkstattzettelModal({
     }
 
     return []
-  }, [formData?.selectedVersorgungData])
+  }, [formData?.selectedVersorgungData, formData?.billingType])
 
   // Auto-set Einlagenversorgung price when versorgung is selected
+  // Only for Privat-Abrechnung – Krankenkassa must NOT prefill or calculate this price
   useEffect(() => {
-    if (isOpen && formData?.selectedVersorgungData?.supplyStatus?.price) {
+    if (
+      isOpen &&
+      formData?.billingType === 'Privat' &&
+      formData?.selectedVersorgungData?.supplyStatus?.price
+    ) {
       const price = String(formData.selectedVersorgungData.supplyStatus.price)
       // Always update the price when versorgung changes, even if there's already a value
       if (form.insoleSupplyPrice !== price) {
         form.setInsoleSupplyPrice(price)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, formData?.selectedVersorgungData?.supplyStatus?.price])
+  }, [isOpen, formData, form])
 
-  // Fetch settings data when modal opens
+  // Fetch settings only once when modal opens. Do NOT depend on `form` (new ref every render = infinite calls).
+  const hasFetchedSettingsRef = useRef(false)
   useEffect(() => {
-    const fetchSettings = async () => {
-      if (isOpen) {
-        setPricesLoading(true)
-        try {
-          const response = await getSettingData()
-          if (response?.data?.laser_print_prices && Array.isArray(response.data.laser_print_prices)) {
-            // Handle both old format (numbers) and new format (objects with name and price)
-            const formattedPrices: PriceItem[] = response.data.laser_print_prices
-              .map((item: any) => {
-                // Handle old format (just numbers)
-                if (typeof item === 'number') {
-                  return { name: `Preis ${item}`, price: item };
-                }
-                // Handle new format (objects with name and price)
-                if (item && typeof item === 'object' && item.name && item.price !== undefined) {
-                  return { name: item.name, price: item.price };
-                }
-                return null;
-              })
-              .filter((item: PriceItem | null): item is PriceItem => item !== null);
-            
-            // Ensure "Standard" is always first
-            const standardItem = formattedPrices.find((item) => item.name.toLowerCase() === 'standard');
-            const otherItems = formattedPrices.filter((item) => item.name.toLowerCase() !== 'standard');
-            const sortedOthers = otherItems.sort((a, b) => a.price - b.price);
-            const sortedPrices = standardItem ? [standardItem, ...sortedOthers] : sortedOthers;
-            
-            setLaserPrintPrices(sortedPrices);
-            
-            // Auto-select "Standard" if no price is currently selected
-            if (standardItem && !form.footAnalysisPrice) {
-              form.setFootAnalysisPrice(String(standardItem.price));
-            }
-          }
-        } catch (error) {
+    if (!isOpen) {
+      hasFetchedSettingsRef.current = false
+      return
+    }
+    if (hasFetchedSettingsRef.current) return
+    hasFetchedSettingsRef.current = true
+
+    let cancelled = false
+    setPricesLoading(true)
+    getSettingData()
+      .then((response) => {
+        if (cancelled) return
+        if (response?.data?.laser_print_prices && Array.isArray(response.data.laser_print_prices)) {
+          const formattedPrices: PriceItem[] = response.data.laser_print_prices
+            .map((item: any) => {
+              if (typeof item === 'number') return { name: `Preis ${item}`, price: item }
+              if (item && typeof item === 'object' && item.name && item.price !== undefined) {
+                return { name: item.name, price: item.price }
+              }
+              return null
+            })
+            .filter((item: PriceItem | null): item is PriceItem => item !== null)
+          const standardItem = formattedPrices.find((item) => item.name.toLowerCase() === 'standard')
+          const otherItems = formattedPrices.filter((item) => item.name.toLowerCase() !== 'standard')
+          const sortedOthers = otherItems.sort((a, b) => a.price - b.price)
+          const sortedPrices = standardItem ? [standardItem, ...sortedOthers] : sortedOthers
+          setLaserPrintPrices(sortedPrices)
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
           console.error('Failed to fetch settings:', error)
           toast.error('Fehler beim Laden der Einstellungen')
-        } finally {
-          setPricesLoading(false)
         }
-      }
-    }
-    fetchSettings()
+      })
+      .finally(() => {
+        if (!cancelled) setPricesLoading(false)
+      })
+    return () => { cancelled = true }
   }, [isOpen])
 
   // Fetch locations from API when modal opens
@@ -215,6 +220,38 @@ export default function WerkstattzettelModal({
 
     // ✅ No validation - proceed directly
     try {
+      // Calculate total exactly like PriceSection (Gesamt), with Krankenkassa logic for Versorgung
+      const quantityNum = (() => {
+        if (!form.quantity) return formData?.menge || formData?.quantity || 1
+        const match = form.quantity.match(/^(\d+)\s*paar/i)
+        return match ? parseInt(match[1], 10) : 1
+      })()
+      const versorgungPriceForTotal =
+        formData?.billingType === 'Privat' ? (parseFloat(form.insoleSupplyPrice) || 0) : 0
+      const footPriceForTotal =
+        form.footAnalysisPrice === 'custom'
+          ? (parseFloat(form.customFootPrice) || 0)
+          : (parseFloat(form.footAnalysisPrice) || 0)
+      const addonPricesTotalForTotal = (() => {
+        const raw = form.addonPrices
+        if (!raw || typeof raw !== 'string') return 0
+        const parts = raw.split(/[,\s]+/).filter(Boolean)
+        return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
+      })()
+      const positionsnummerTotalForTotal = formData?.positionsnummerTotal || 0
+      const subtotalForTotal =
+        versorgungPriceForTotal * quantityNum +
+        footPriceForTotal +
+        addonPricesTotalForTotal +
+        positionsnummerTotalForTotal
+      const discountPercent =
+        form.discountType === 'percentage' && form.discountValue
+          ? parseFloat(form.discountValue) || 0
+          : 0
+      const discountAmountForTotal =
+        discountPercent > 0 ? (subtotalForTotal * discountPercent) / 100 : 0
+      const totalPriceOverride = subtotalForTotal - discountAmountForTotal
+
       // Create payload using utility function
       const werkstattzettelPayload = createWerkstattzettelPayload(
         {
@@ -249,6 +286,9 @@ export default function WerkstattzettelModal({
           addonPrices: form.addonPrices || undefined,
           positionsnummerTotal: formData?.positionsnummerTotal,
           selectedVersorgungData: formData?.selectedVersorgungData,
+          // Pass billing type through so pricing logic can respect Krankenkassa vs Privat
+          billingType: formData?.billingType,
+          totalPriceOverride,
         },
         scanData.id
       )

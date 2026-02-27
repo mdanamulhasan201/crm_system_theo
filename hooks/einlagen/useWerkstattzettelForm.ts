@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ScanData } from '@/types/scan'
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee'
 import { initializeFormData } from '../../app/(dashboard)/dashboard/_components/Scanning/utils/formDataUtils'
@@ -68,52 +68,50 @@ export function useWerkstattzettelForm(
   const [isEmployeeDropdownOpen, setIsEmployeeDropdownOpen] = useState(false)
   const [employeeId, setEmployeeId] = useState<string>('')
 
-  // Initialize form data from scanData
+  // Only initialize when modal opens (isOpen becomes true). Do NOT re-run when formData
+  // changes (e.g. after "Weiter" click) so user's selections in the modal are not cleared.
+  const didInitForOpenRef = useRef(false)
   useEffect(() => {
-    if (scanData) {
-      const initialized = initializeFormData(scanData, formData)
-      setVorname(initialized.vorname)
-      setNachname(initialized.nachname)
-      setEmail(initialized.email)
-      setTelefonnummer(initialized.telefonnummer)
-      setWohnort(initialized.wohnort)
-      setMitarbeiter(initialized.mitarbeiter)
-      setVersorgung(initialized.versorgung)
-      setDatumAuftrag(initialized.datumAuftrag)
-      // Initialize geschaeftsstandort - keep as null for now, will be set from locations dropdown
-      setGeschaeftsstandort(null)
-      setBezahlt(initialized.bezahlt)
-      setFootAnalysisPrice(initialized.footAnalysisPrice)
-      setInsoleSupplyPrice(initialized.insoleSupplyPrice)
-
-      // Initialize delivery date
-      const deliveryDate = initializeDeliveryDate(scanData, formData)
-      setFertigstellungBis(deliveryDate)
-
-      // Set employeeId from formData if available
-      if (formData?.employeeId) {
-        setEmployeeId(formData.employeeId)
-      }
+    if (!isOpen) {
+      didInitForOpenRef.current = false
+      return
     }
+    // Run initialization only once per modal open
+    if (!scanData) return
+    if (didInitForOpenRef.current) return
+    didInitForOpenRef.current = true
 
-    // Update from formData when modal opens
-    if (formData && isOpen) {
-      if (formData.employeeName) {
-        setMitarbeiter(formData.employeeName)
-      }
-      if (formData.employeeId) {
-        setEmployeeId(formData.employeeId)
-      }
-      if (formData.versorgung) {
-        setVersorgung(formData.versorgung)
-      }
-      if (formData.menge) {
-        // Handle both number and string format
-        const quantityValue = typeof formData.menge === 'number' 
-          ? `${formData.menge} paar`
-          : formData.menge
-        setQuantity(quantityValue)
-      }
+    const initialized = initializeFormData(scanData, formData)
+    setVorname(initialized.vorname)
+    setNachname(initialized.nachname)
+    setEmail(initialized.email)
+    setTelefonnummer(initialized.telefonnummer)
+    setWohnort(initialized.wohnort)
+    setMitarbeiter(initialized.mitarbeiter)
+    setVersorgung(initialized.versorgung)
+    setDatumAuftrag(initialized.datumAuftrag)
+    setGeschaeftsstandort(null)
+    setBezahlt(initialized.bezahlt)
+    setFootAnalysisPrice(initialized.footAnalysisPrice)
+    setInsoleSupplyPrice(initialized.insoleSupplyPrice)
+
+    const deliveryDate = initializeDeliveryDate(scanData, formData)
+    setFertigstellungBis(deliveryDate)
+
+    if (formData?.employeeId) {
+      setEmployeeId(formData.employeeId)
+    }
+    if (formData?.employeeName) {
+      setMitarbeiter(formData.employeeName)
+    }
+    if (formData?.versorgung) {
+      setVersorgung(formData.versorgung)
+    }
+    if (formData?.menge != null) {
+      const quantityValue = typeof formData.menge === 'number'
+        ? `${formData.menge} paar`
+        : String(formData.menge)
+      setQuantity(quantityValue)
     }
   }, [scanData, isOpen, formData])
 

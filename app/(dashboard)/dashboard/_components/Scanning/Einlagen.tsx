@@ -736,6 +736,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     einlagenversorgungPreis: einlagenversorgungPreis,
                     fußanalyse: fussanalysePreis, 
                     einlagenversorgung: einlagenversorgungPreis,
+                    // Gesamt aus Werkstattzettel ("totalPrice") immer mit senden, falls vorhanden
+                    totalPrice: formDataForOrder.totalPrice !== undefined
+                        ? Number(formDataForOrder.totalPrice)
+                        : undefined,
                     werkstattEmployeeId: formDataForOrder.employeeId || formDataForOrder.werkstattEmployeeId || '',
                     screenerId: formDataForOrder.screenerId || null,
                     discount: formDataForOrder.discount !== undefined && formDataForOrder.discount !== null 

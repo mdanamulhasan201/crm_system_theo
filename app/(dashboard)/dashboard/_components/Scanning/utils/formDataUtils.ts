@@ -27,6 +27,10 @@ export interface WerkstattzettelFormData {
   addonPrices?: string
   positionsnummerTotal?: number
   selectedVersorgungData?: { supplyStatus?: { price?: number }; price?: number }
+  billingType?: 'Krankenkassa' | 'Privat'
+  // Optional: if provided, this precomputed total (from UI "Gesamt")
+  // will be used instead of recalculating here.
+  totalPriceOverride?: number
 }
 
 /**
@@ -36,12 +40,22 @@ export function createWerkstattzettelPayload(
   formData: WerkstattzettelFormData,
   customerId: string
 ) {
+  const billingType = formData.billingType
+
   const parsedFoot = Number(formData.footAnalysisPrice)
-  let parsedInsole = Number(formData.insoleSupplyPrice)
-  // Fallback: use selectedVersorgungData when insoleSupplyPrice is 0 (e.g. from Einlagen flow)
-  if (isNaN(parsedInsole) || parsedInsole === 0) {
-    const fallback = (formData as any).selectedVersorgungData?.supplyStatus?.price ?? (formData as any).selectedVersorgungData?.price
-    if (fallback != null && !isNaN(Number(fallback))) parsedInsole = Number(fallback)
+
+  // For Krankenkassa-Abrechnung we must NOT charge Einlagenversorgung price at all.
+  // Only Privat-Abrechnung is allowed to include this price in calculations and payload.
+  let parsedInsole = 0
+  if (billingType === 'Privat') {
+    parsedInsole = Number(formData.insoleSupplyPrice)
+    // Fallback: use selectedVersorgungData when insoleSupplyPrice is 0 (e.g. from Einlagen flow)
+    if (isNaN(parsedInsole) || parsedInsole === 0) {
+      const fallback =
+        (formData as any).selectedVersorgungData?.supplyStatus?.price ??
+        (formData as any).selectedVersorgungData?.price
+      if (fallback != null && !isNaN(Number(fallback))) parsedInsole = Number(fallback)
+    }
   }
 
   const auftragsIso = formData.datumAuftrag
@@ -82,6 +96,12 @@ export function createWerkstattzettelPayload(
     : 0
   const totalPrice = subtotal - discountAmount
 
+  // If UI (PriceSection) has already calculated a total and passed it in,
+  // prefer that to ensure payload "totalPrice" always matches visible "Gesamt".
+  const overrideTotal = (formData as any).totalPriceOverride
+  const finalTotalPrice =
+    typeof overrideTotal === 'number' && !isNaN(overrideTotal) ? overrideTotal : totalPrice
+
   // Map bezahlt to paymentStatus - keep both for API compatibility
   const bezahltValue = formData.bezahlt && formData.bezahlt.trim() !== '' ? formData.bezahlt : undefined
   const paymentStatus = bezahltValue
@@ -115,7 +135,7 @@ export function createWerkstattzettelPayload(
     discountType: formData.discountType || undefined,
     addonPrices: addonPricesTotal > 0 ? addonPricesTotal : undefined,
     positionsnummerTotal: positionsnummerTotal > 0 ? positionsnummerTotal : undefined,
-    totalPrice: Math.round(totalPrice * 100) / 100,
+    totalPrice: Math.round(finalTotalPrice * 100) / 100,
   }
 }
 
@@ -183,10 +203,8 @@ export function initializeFormData(scanData: any, formData?: any) {
       return ''
     })(),
     employeeId: formData?.employeeId || '',
-    footAnalysisPrice:
-      typeof scanData?.fußanalyse === 'number'
-        ? String(scanData.fußanalyse)
-        : scanData?.fußanalyse || '',
+    // Do not auto-fill Fußanalyse from scan data; leave empty so user or flow sets it explicitly
+    footAnalysisPrice: '',
     insoleSupplyPrice:
       typeof scanData?.einlagenversorgung === 'number'
         ? String(scanData.einlagenversorgung)
