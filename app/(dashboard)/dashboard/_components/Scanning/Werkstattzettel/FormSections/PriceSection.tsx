@@ -264,7 +264,7 @@ export default function PriceSection({
       {/* Main Layout: Left 10/12 (form), Right 2/12 (summary) on lg; stacked on small */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 w-full max-w-full items-stretch overflow-hidden">
         {/* Left Side: Form Fields – 10/12 on lg */}
-        <div className="space-y-4 w-full min-w-0 lg:col-span-7">
+        <div className="space-y-4 w-full min-w-0 lg:col-span-6">
 
             {/* Versorgung & Versorgungsname */}
             <div className="flex items-start gap-3">
@@ -433,7 +433,7 @@ export default function PriceSection({
           </div>
 
           {/* Addon Preise (left half) | Kostenträger (right half) – bottom row */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
+          <div className="grid grid-cols-1 gap-4 w-full">
             <div className="space-y-1.5 min-w-0">
               <Label className="text-sm font-medium text-gray-700">Wirtschaftlicher Aufpreis</Label>
               <Input
@@ -456,7 +456,7 @@ export default function PriceSection({
         </div>
 
         {/* Right Side: Price Summary – 2/12 on lg, full width on small */}
-        <div className="w-full min-w-0 lg:col-span-5">
+        <div className="w-full min-w-0 lg:col-span-6">
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 sm:p-5 space-y-4 h-full min-h-0">
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Preisübersicht</h4>
 
