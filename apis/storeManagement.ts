@@ -93,6 +93,28 @@ export const deleteStorage = async (storageId: string) => {
 };
 
 
+// ======Manufacturer Management===============/store/admin-store/search-brand-store?page=1&limit=10&search=&
+// type=milling_block or rady_insole
+
+// get all manufacturers
+export const getAllManufacturers = async (page: number, limit: number, search: string, type: string) => {
+    try {
+        const response = await axiosClient.get(`/store/admin-store/search-brand-store?page=${page}&limit=${limit}&search=${search}&type=${type}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// get single manufacturer /store/admin-store/get-brand-store/42d5eb66-8d60-4934-ad6a-b772e32c44
+export const getSingleManufacturer = async (id: string) => {
+    try {
+        const response = await axiosClient.get(`/store/admin-store/get-brand-store/${id}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
 
 
 // ==================================

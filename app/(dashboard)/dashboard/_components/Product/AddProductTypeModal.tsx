@@ -1,13 +1,17 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
+import { getAllManufacturers } from '@/apis/storeManagement'
+import useDebounce from '@/hooks/useDebounce'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
+import BrandInfoModal, { GroessenMengenItem } from './BrandInfoModal'
 
 interface SizeData {
     length?: number;
@@ -26,9 +30,9 @@ interface AddProductTypeModalProps {
 
 export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }: AddProductTypeModalProps) {
     const { createNewProduct, isLoading } = useStockManagementSlice()
-    
+
     // Define size columns based on type
-    const sizeColumns = type === 'milling_block' 
+    const sizeColumns = type === 'milling_block'
         ? ['Size 1', 'Size 2', 'Size 3']
         : ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48']
 
@@ -42,6 +46,10 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
         selling_price: 0,
         image: ''
     })
+
+    // Multiple features: add with Enter or comma; display as removable badges
+    const [featuresList, setFeaturesList] = useState<string[]>([])
+    const [featureInputValue, setFeatureInputValue] = useState('')
 
     const [sizeQuantities, setSizeQuantities] = useState<{ [key: string]: SizeData }>(() => {
         const initial: { [key: string]: SizeData } = {}
@@ -63,6 +71,53 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
     const [imageFile, setImageFile] = useState<File | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
 
+    // Hersteller dropdown: brands from API
+    const [herstellerDropdownOpen, setHerstellerDropdownOpen] = useState(false)
+    const [manufacturers, setManufacturers] = useState<{ id: string; brand: string; type: string }[]>([])
+    const [manufacturersTotal, setManufacturersTotal] = useState(0)
+    const [loadingManufacturers, setLoadingManufacturers] = useState(false)
+    const herstellerSearch = formData.Hersteller
+    const debouncedHerstellerSearch = useDebounce(herstellerSearch, 400)
+    const herstellerDropdownRef = useRef<HTMLDivElement>(null)
+    const [brandInfoModalManufacturerId, setBrandInfoModalManufacturerId] = useState<string | null>(null)
+
+    const fetchManufacturers = useCallback(async () => {
+        setLoadingManufacturers(true)
+        try {
+            const res = await getAllManufacturers(1, 10, debouncedHerstellerSearch, type)
+            if (res?.success && res?.data) {
+                setManufacturers(Array.isArray(res.data) ? res.data : [])
+                setManufacturersTotal(res?.pagination?.totalItems ?? 0)
+            } else {
+                setManufacturers([])
+                setManufacturersTotal(0)
+            }
+        } catch {
+            setManufacturers([])
+            setManufacturersTotal(0)
+        } finally {
+            setLoadingManufacturers(false)
+        }
+    }, [debouncedHerstellerSearch, type])
+
+    useEffect(() => {
+        if (herstellerDropdownOpen) {
+            fetchManufacturers()
+        }
+    }, [herstellerDropdownOpen, fetchManufacturers])
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (herstellerDropdownRef.current && !herstellerDropdownRef.current.contains(e.target as Node)) {
+                setHerstellerDropdownOpen(false)
+            }
+        }
+        if (herstellerDropdownOpen) {
+            document.addEventListener('mousedown', handleClickOutside)
+            return () => document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [herstellerDropdownOpen])
+
     // Reset form when modal opens/closes
     useEffect(() => {
         if (!isOpen) {
@@ -76,6 +131,10 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                 selling_price: 0,
                 image: ''
             })
+            setFeaturesList([])
+            setFeatureInputValue('')
+            setHerstellerDropdownOpen(false)
+            setBrandInfoModalManufacturerId(null)
             const resetSizes: { [key: string]: SizeData } = {}
             sizeColumns.forEach(size => {
                 resetSizes[size] = {
@@ -107,12 +166,12 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
 
     const handleSizeChange = (size: string, field: keyof SizeData, value: string | number | undefined) => {
         setSizeQuantities(prev => {
-            const processedValue = value === undefined 
-                ? undefined 
-                : (typeof value === 'string' 
+            const processedValue = value === undefined
+                ? undefined
+                : (typeof value === 'string'
                     ? (value === '' ? (field === 'autoOrderLimit' || field === 'orderQuantity' ? undefined : 0) : parseFloat(value) || 0)
                     : value)
-            
+
             return {
                 ...prev,
                 [size]: {
@@ -231,11 +290,12 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                 purchase_price: formData.purchase_price,
                 selling_price: formData.selling_price,
                 sizeQuantities: convertedSizeQuantities,
-                imageFile: imageFile || undefined // Send file directly, not base64
+                imageFile: imageFile || undefined, // Send file directly, not base64
+                ...(featuresList.length > 0 && { features: featuresList })
             }
 
             const response = await createNewProduct(productData, type)
-            
+
             if (response.success) {
                 toast.success('Produkt erfolgreich erstellt')
                 onClose()
@@ -250,6 +310,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
     }
 
     return (
+        <>
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
@@ -295,7 +356,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                     </Button>
                                 </div>
                             ) : (
-                                <div 
+                                <div
                                     onClick={() => fileInputRef.current?.click()}
                                     className="w-64 h-64 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-[#61A178] hover:bg-gray-50 transition-colors"
                                 >
@@ -328,7 +389,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                             />
                         </div>
 
-                        <div>
+                        <div ref={herstellerDropdownRef} className="relative">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Hersteller <span className="text-red-500">*</span>
                             </label>
@@ -336,10 +397,47 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                 type="text"
                                 value={formData.Hersteller}
                                 onChange={(e) => handleInputChange('Hersteller', e.target.value)}
-                                placeholder="Hersteller eingeben"
+                                onFocus={() => setHerstellerDropdownOpen(true)}
+                                placeholder="Hersteller eingeben oder auswählen"
                                 required
                                 disabled={isLoading}
+                                className="w-full"
                             />
+                            {herstellerDropdownOpen && (
+                                <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-md border border-gray-200 bg-white shadow-lg">
+                                    {loadingManufacturers ? (
+                                        <div className="px-3 py-4 text-sm text-gray-500">Laden...</div>
+                                    ) : (
+                                        <>
+                                            <ul className="max-h-48 overflow-y-auto py-1">
+                                                {manufacturers.map((m) => (
+                                                    <li key={m.id}>
+                                                        <button
+                                                            type="button"
+                                                            className="w-full px-3 py-2 text-left text-sm font-medium text-gray-900 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                                                            onClick={() => {
+                                                                handleInputChange('Hersteller', m.brand)
+                                                                setHerstellerDropdownOpen(false)
+                                                                setBrandInfoModalManufacturerId(m.id)
+                                                            }}
+                                                        >
+                                                            {m.brand}
+                                                        </button>
+                                                    </li>
+                                                ))}
+                                                {!loadingManufacturers && manufacturers.length === 0 && (
+                                                    <li className="px-3 py-2 text-sm text-gray-500">Keine Marken gefunden</li>
+                                                )}
+                                            </ul>
+                                            <div className="border-t border-gray-100 px-3 py-2 text-xs text-gray-500">
+                                                {debouncedHerstellerSearch
+                                                    ? `${manufacturersTotal} Marken gefunden für '${debouncedHerstellerSearch}'`
+                                                    : `${manufacturersTotal} Marken gefunden`}
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div>
@@ -396,6 +494,8 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                             />
                         </div>
 
+                        {/* Same row: Features (left) – multiple tags, Verkaufspreis (right) */}
+
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Verkaufspreis (€)
@@ -408,6 +508,50 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                 onChange={(e) => handleInputChange('selling_price', parseFloat(e.target.value) || 0)}
                                 disabled={isLoading}
                             />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Merkmale
+                            </label>
+                            <div className="flex flex-wrap gap-2 p-2  border rounded-md bg-background ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                {featuresList.map((item, index) => (
+                                    <Badge
+                                        key={`${item}-${index}`}
+                                        variant="secondary"
+                                        className="pl-2 pr-1 py-1 gap-1 font-normal"
+                                    >
+                                        {item}
+                                        <button
+                                            type="button"
+                                            onClick={() => setFeaturesList(prev => prev.filter((_, i) => i !== index))}
+                                            disabled={isLoading}
+                                            className="ml-0.5 cursor-pointer rounded-full hover:bg-muted p-0.5 focus:outline-none"
+                                            aria-label="Entfernen"
+                                        >
+                                            <span className="sr-only">Entfernen</span>
+                                            <span className="text-xs leading-none">×</span>
+                                        </button>
+                                    </Badge>
+                                ))}
+                                <Input
+                                    type="text"
+                                    value={featureInputValue}
+                                    onChange={(e) => setFeatureInputValue(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ',') {
+                                            e.preventDefault()
+                                            const value = featureInputValue.trim()
+                                            if (value) {
+                                                setFeaturesList(prev => [...prev, value])
+                                                setFeatureInputValue('')
+                                            }
+                                        }
+                                    }}
+                                    placeholder="Eingeben + Enter oder Komma"
+                                    disabled={isLoading}
+                                    className="flex-1 border-0 p-0 h-auto focus-visible:ring-0 focus-visible:ring-offset-0"
+                                />
+                            </div>
                         </div>
                     </div>
 
@@ -557,6 +701,32 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                 </form>
             </DialogContent>
         </Dialog>
+
+        <BrandInfoModal
+            isOpen={!!brandInfoModalManufacturerId}
+            onClose={() => setBrandInfoModalManufacturerId(null)}
+            manufacturerId={brandInfoModalManufacturerId}
+            onOkay={(groessenMengen) => {
+                setSizeQuantities(prev => {
+                    const next = { ...prev }
+                    Object.keys(groessenMengen).forEach(apiSize => {
+                        const data: GroessenMengenItem = groessenMengen[apiSize]
+                        const sizeKey = type === 'milling_block' && /^\d+$/.test(apiSize)
+                            ? `Size ${apiSize}`
+                            : apiSize
+                        if (next[sizeKey] != null) {
+                            next[sizeKey] = {
+                                ...next[sizeKey],
+                                length: data.length ?? next[sizeKey].length ?? 0,
+                                mindestmenge: data.quantity ?? next[sizeKey].mindestmenge ?? 0
+                            }
+                        }
+                    })
+                    return next
+                })
+            }}
+        />
+    </>
     )
 }
 

@@ -46,6 +46,7 @@ interface Product {
     sizeQuantities: { [key: string]: number | SizeData }
     Status: string
     image?: string
+    features?: string[]
     inventoryHistory: Array<{
         id: string
         date: string
@@ -81,6 +82,8 @@ interface ProductManagementTableProps {
     onUpdateProduct: (product: Product) => void
     onDeleteProduct: (product: Product) => void
     isLoading?: boolean
+    /** Category label for modal title, e.g. "Einlagenrohlinge" or "Fräsblock" */
+    categoryName?: string
 }
 
 export default function ProductManagementTable({
@@ -91,7 +94,8 @@ export default function ProductManagementTable({
     getLowStockSizes,
     onUpdateProduct,
     onDeleteProduct,
-    isLoading = false
+    isLoading = false,
+    categoryName = 'Einlagenrohlinge'
 }: ProductManagementTableProps) {
     const { getProductById } = useStockManagementSlice();
     const [editId, setEditId] = useState<string | undefined>(undefined)
@@ -301,7 +305,7 @@ export default function ProductManagementTable({
                         try {
                             // Fetch the updated product from API and update only that row
                             const apiProduct: any = await getProductById(editId);
-                            const updatedProduct: Product = {
+                                const updatedProduct: Product = {
                                 id: apiProduct.id,
                                 Produktname: apiProduct.produktname,
                                 Produktkürzel: apiProduct.artikelnummer,
@@ -310,6 +314,8 @@ export default function ProductManagementTable({
                                 minStockLevel: apiProduct.mindestbestand,
                                 sizeQuantities: apiProduct.groessenMengen,
                                 Status: apiProduct.Status,
+                                image: apiProduct.image,
+                                features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
                                 inventoryHistory: []
                             };
                             onUpdateProduct(updatedProduct);
@@ -320,93 +326,56 @@ export default function ProductManagementTable({
                 />
             )}
 
-            {/* Image View Modal with Eigenschaften */}
+            {/* Image View Modal with Eigenschaften – design like reference (image, dynamic header, bullet list, CTA) */}
             <Dialog open={!!selectedProductForImage} onOpenChange={(open) => !open && setSelectedProductForImage(null)}>
-                <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                    <DialogHeader>
-                        <DialogTitle>{selectedProductForImage?.Produktname}</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-6">
-                        {/* Large Image */}
-                        <div className="flex justify-center items-center  p-6">
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 bg-white">
+                    <DialogTitle className="sr-only">
+                        {selectedProductForImage ? `${selectedProductForImage.Produktname} – Produktdetails` : 'Produktdetails'}
+                    </DialogTitle>
+                    <div className="space-y-0">
+                        {/* Product Image – top, prominent */}
+                        <div className="flex justify-center items-center bg-white pt-6 pb-4">
                             {selectedProductForImage?.image ? (
                                 <Image
-                                    width={500}
-                                    height={500}
+                                    width={400}
+                                    height={280}
                                     src={selectedProductForImage.image}
                                     alt={selectedProductForImage.Produktname}
-                                    className="max-w-full max-h-96 rounded-lg object-contain "
+                                    className="max-w-full max-h-72 w-auto h-auto rounded-lg object-contain"
                                 />
                             ) : (
-                                <div className="w-96 h-96 flex items-center justify-center rounded-lg border-2 border-gray-200 bg-white">
-                                    <svg className="w-24 h-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                <div className="w-72 h-48 flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                                    <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                     </svg>
                                 </div>
                             )}
                         </div>
 
-                        {/* Eigenschaften Section */}
-                        <div className=" pt-6">
-                            <h3 className="text-xl font-semibold mb-4 text-gray-900">Eigenschaften</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-gray-500">Artikelbezeichnung</p>
-                                    <p className="text-base text-gray-900">{selectedProductForImage?.Produktname || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-gray-500">Artikelnummer</p>
-                                    <p className="text-base text-gray-900">{selectedProductForImage?.Produktkürzel || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-gray-500">Hersteller</p>
-                                    <p className="text-base text-gray-900">{selectedProductForImage?.Hersteller || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-gray-500">Lagerort</p>
-                                    <p className="text-base text-gray-900">{selectedProductForImage?.Lagerort || '-'}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-gray-500">Mindestbestand</p>
-                                    <p className="text-base text-gray-900">{selectedProductForImage?.minStockLevel || 0}</p>
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-sm font-medium text-gray-500">Status</p>
-                                    <p className="text-base text-gray-900">{selectedProductForImage?.Status || '-'}</p>
-                                </div>
-                            </div>
+                        {/* Dynamic header – category, then product name (e.g. "Einlagenrohlinge, Orthotech Comfort, Shore 45") */}
+                        <div className="px-6 pb-2">
+                            <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                                {categoryName}, {selectedProductForImage?.Produktname || '–'}
+                            </h2>
+                        </div>
 
-                            {/* Size Quantities Summary */}
-                            {selectedProductForImage && Object.keys(selectedProductForImage.sizeQuantities).length > 0 && (
-                                <div className="mt-6 space-y-1">
-                                    <p className="text-sm font-medium text-gray-500 mb-3">Größenbestand</p>
-                                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-7 gap-2">
-                                        {Object.entries(selectedProductForImage.sizeQuantities).map(([size, sizeData]) => {
-                                            const quantity = getQuantity(sizeData);
-                                            const warningStatus = typeof sizeData === 'object' && sizeData !== null ? sizeData.warningStatus : undefined;
-                                            return (
-                                                <div 
-                                                    key={size} 
-                                                    className={`p-2 rounded border text-center ${
-                                                        warningStatus?.includes('Niedriger Bestand')
-                                                            ? 'bg-red-50 border-red-200'
-                                                            : 'bg-gray-50 border-gray-200'
-                                                    }`}
-                                                >
-                                                    <p className="text-xs font-medium text-gray-500">{size}</p>
-                                                    <p className={`text-sm font-semibold ${
-                                                        warningStatus?.includes('Niedriger Bestand')
-                                                            ? 'text-red-600'
-                                                            : 'text-gray-900'
-                                                    }`}>
-                                                        {quantity}
-                                                    </p>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
+                        {/* Bottom section: features list then one button (like reference) */}
+                        <div className="px-6 pt-4 pb-6  border-gray-100">
+                            {selectedProductForImage?.features && selectedProductForImage.features.length > 0 ? (
+                                <ul className="list-disc list-inside space-y-2 text-sm text-gray-900 mb-6">
+                                    {selectedProductForImage.features.map((item, index) => (
+                                        <li key={index}>{item}</li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <p className="text-sm text-gray-500 mb-6">Keine Eigenschaften hinterlegt.</p>
                             )}
+                            <Button
+                                className="w-fit bg-[#65b87c] hover:bg-[#5aa86e] text-white font-medium rounded-lg py-2.5 cursor-pointer"
+                                onClick={() => setSelectedProductForImage(null)}
+                            >
+                                Einlage nachbestellen
+                            </Button>
                         </div>
                     </div>
                 </DialogContent>

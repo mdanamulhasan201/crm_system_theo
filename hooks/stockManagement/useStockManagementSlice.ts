@@ -23,6 +23,8 @@ interface ProductFormData {
     sizeQuantities: { [key: string]: SizeData };
     image?: string;
     imageFile?: File;
+    /** Multiple features as array; sent in payload as JSON */
+    features?: string[];
 }
 
 interface CreateProductPayload {
@@ -37,6 +39,8 @@ interface CreateProductPayload {
     selling_price: number;
     Status: string;
     image?: string;
+    /** Features as JSON string (array of strings) */
+    features?: string;
 }
 
 interface ApiProduct {
@@ -55,6 +59,7 @@ interface ApiProduct {
     createdAt: string;
     updatedAt: string;
     image?: string;
+    features?: string[];
 }
 
 
@@ -141,6 +146,11 @@ export const useStockManagementSlice = () => {
             Status: stockStatus
         };
 
+        // Add features as JSON string if provided
+        if (formData.features && Array.isArray(formData.features) && formData.features.length > 0) {
+            payload.features = JSON.stringify(formData.features);
+        }
+
         // Add image if provided (base64 string - only if no imageFile)
         if (!formData.imageFile && formData.image && formData.image.trim() !== '') {
             payload.image = formData.image;
@@ -222,7 +232,8 @@ export const useStockManagementSlice = () => {
                     userId: item.userId || "",
                     createdAt: item.createdAt,
                     updatedAt: item.updatedAt,
-                    image: item.image || undefined
+                    image: item.image || undefined,
+                    features: Array.isArray(item.features) ? item.features : undefined
                 }));
                 
                 setProducts(products);

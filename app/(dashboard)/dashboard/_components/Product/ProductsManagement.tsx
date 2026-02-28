@@ -52,6 +52,7 @@ interface Product {
     sizeQuantities: { [key: string]: number | SizeData }
     Status: string
     image?: string
+    features?: string[]
     inventoryHistory: Array<{
         id: string
         date: string
@@ -123,6 +124,7 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
             sizeQuantities: apiProduct.groessenMengen,
             Status: apiProduct.Status,
             image: apiProduct.image,
+            features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
             inventoryHistory: [] // API doesn't provide history yet
         };
     };
@@ -334,6 +336,7 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
                     onUpdateProduct={handleUpdateProduct}
                     onDeleteProduct={handleDeleteProduct}
                     isLoading={isLoadingProducts}
+                    categoryName={type === 'rady_insole' ? 'Einlagenrohlinge' : 'Fräsblock'}
                 />
             )}
 
