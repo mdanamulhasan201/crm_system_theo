@@ -1,16 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import { getStatusNote, updateStatusNote } from '@/apis/productsOrder';
-import { FileText, User, Hash, Package, ClipboardList, AlertCircle, Pencil, Check, X } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { getStatusNote, updateStatusNote, deleteNote } from '@/apis/productsOrder';
+import { FileText, User, Hash, Package, ClipboardList, AlertCircle, Pencil, Check, X, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import toast from 'react-hot-toast';
+import AddNotesModal from './AddNotesModal';
+import EditNoteModal from './EditNoteModal';
+
+export interface OrderNoteItem {
+    id: string;
+    note: string;
+    status?: string;
+    createdAt: string;
+}
 
 export interface StatusNoteData {
     versorgung_note?: string;
@@ -18,11 +28,17 @@ export interface StatusNoteData {
     product: {
         name: string;
         versorgung: string;
-    };
+    } | null;
     customer: {
         vorname: string;
         nachname: string;
     };
+}
+
+interface NotesResponse {
+    data: OrderNoteItem[];
+    hasMore: boolean;
+    nextCursor?: string;
 }
 
 interface StatusNoteModalProps {
@@ -56,24 +72,44 @@ export default function StatusNoteModal({
     const [isEditing, setIsEditing] = useState(false);
     const [editVersorgungNote, setEditVersorgungNote] = useState('');
     const [saving, setSaving] = useState(false);
+    const [notesList, setNotesList] = useState<OrderNoteItem[]>([]);
+    const [notesHasMore, setNotesHasMore] = useState(false);
+    const [notesCursor, setNotesCursor] = useState<string | undefined>(undefined);
+    const [loadingMoreNotes, setLoadingMoreNotes] = useState(false);
+    const [addNoteModalOpen, setAddNoteModalOpen] = useState(false);
+    const [editModalNote, setEditModalNote] = useState<{ id: string; note: string } | null>(null);
+    const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+
+    const fetchNotes = useCallback((orderId: string, cursor?: string) => {
+        return getStatusNote(orderId, cursor).then((res: any) => {
+            const notes: NotesResponse = res?.notes ?? { data: [], hasMore: false };
+            return { data: res?.data, notes };
+        });
+    }, []);
 
     useEffect(() => {
         if (!isOpen || !orderId) {
             setData(null);
             setError(null);
+            setNotesList([]);
+            setNotesHasMore(false);
+            setNotesCursor(undefined);
             return;
         }
         let cancelled = false;
         setLoading(true);
         setError(null);
-        getStatusNote(orderId)
-            .then((res: { success?: boolean; data?: StatusNoteData }) => {
+        fetchNotes(orderId)
+            .then(({ data: resData, notes }) => {
                 if (cancelled) return;
-                if (res?.success && res?.data) {
-                    setData(res.data);
+                if (resData) {
+                    setData(resData);
                 } else {
                     setError('Keine Daten erhalten');
                 }
+                setNotesList(notes.data ?? []);
+                setNotesHasMore(notes.hasMore ?? false);
+                setNotesCursor(notes.nextCursor);
             })
             .catch((err) => {
                 if (cancelled) return;
@@ -85,7 +121,42 @@ export default function StatusNoteModal({
         return () => {
             cancelled = true;
         };
-    }, [isOpen, orderId]);
+    }, [isOpen, orderId, fetchNotes]);
+
+    const loadMoreNotes = () => {
+        if (!orderId || !notesCursor || loadingMoreNotes) return;
+        setLoadingMoreNotes(true);
+        fetchNotes(orderId, notesCursor)
+            .then(({ notes }) => {
+                setNotesList((prev) => [...prev, ...(notes.data ?? [])]);
+                setNotesHasMore(notes.hasMore ?? false);
+                setNotesCursor(notes.nextCursor);
+            })
+            .finally(() => setLoadingMoreNotes(false));
+    };
+
+    const refetchNotes = useCallback(() => {
+        if (!orderId) return;
+        fetchNotes(orderId).then(({ notes }) => {
+            setNotesList(notes.data ?? []);
+            setNotesHasMore(notes.hasMore ?? false);
+            setNotesCursor(notes.nextCursor);
+        });
+    }, [orderId, fetchNotes]);
+
+    const handleDeleteNote = async (noteId: string) => {
+        if (!confirm('Notiz wirklich löschen?')) return;
+        setDeletingNoteId(noteId);
+        try {
+            await deleteNote(noteId);
+            toast.success('Notiz gelöscht');
+            refetchNotes();
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Fehler beim Löschen');
+        } finally {
+            setDeletingNoteId(null);
+        }
+    };
 
     useEffect(() => {
         if (data?.versorgung_note != null) setEditVersorgungNote(data.versorgung_note);
@@ -126,7 +197,7 @@ export default function StatusNoteModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-[480px] p-0 gap-0 overflow-hidden rounded-xl border border-gray-200 shadow-lg">
+            <DialogContent className="sm:!max-w-3xl p-0 gap-0 overflow-hidden rounded-xl border border-gray-200 shadow-lg">
                 <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
@@ -174,6 +245,83 @@ export default function StatusNoteModal({
                                     )}
                                 </div>
                             </div>
+
+                            {/* Notes table + Add note button */}
+                            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                                <div className="px-4 py-3 bg-gray-50/80 border-b border-gray-100 flex items-center justify-between gap-2">
+                                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Notizen</p>
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={() => setAddNoteModalOpen(true)}
+                                        className="gap-1.5 cursor-pointer bg-[#62A07C] hover:bg-[#62A07C]/90 text-white"
+                                    >
+                                        <Plus className="w-4 h-4" />
+                                        Notiz hinzufügen
+                                    </Button>
+                                </div>
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow className="bg-gray-50/50">
+                                                <TableHead className="font-medium text-gray-700">Notiz</TableHead>
+                                                <TableHead className="font-medium text-gray-700">Erstellt</TableHead>
+                                                <TableHead className="font-medium text-gray-700 text-right w-[120px]">Aktionen</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {notesList.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={3} className="text-center text-gray-500 py-6 text-sm">
+                                                        Keine Notizen. Klicken Sie auf &quot;Notiz hinzufügen&quot;.
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                notesList.map((item) => (
+                                                    <TableRow key={item.id}>
+                                                        <TableCell className="align-top py-3">
+                                                            <span className="text-sm text-gray-900 whitespace-pre-wrap">{item.note}</span>
+                                                        </TableCell>
+                                                        <TableCell className="text-sm text-gray-500 align-top py-3">
+                                                            {item.createdAt ? new Date(item.createdAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                        </TableCell>
+                                                        <TableCell className="align-top py-3 text-right">
+                                                            <div className="flex items-center justify-end gap-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setEditModalNote({ id: item.id, note: item.note })}
+                                                                    className="p-1.5 rounded text-gray-600 hover:bg-gray-100 cursor-pointer"
+                                                                    title="Bearbeiten"
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleDeleteNote(item.id)}
+                                                                    disabled={deletingNoteId === item.id}
+                                                                    className="p-1.5 rounded text-red-600 hover:bg-red-50 cursor-pointer disabled:opacity-50"
+                                                                    title="Löschen"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                ))
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                                {notesHasMore && (
+                                    <div className="px-4 py-2 border-t border-gray-100">
+                                        <Button type="button" variant="ghost" size="sm" onClick={loadMoreNotes} disabled={loadingMoreNotes} className="cursor-pointer text-emerald-600 hover:text-emerald-700">
+                                            {loadingMoreNotes ? 'Laden...' : 'Weitere laden'}
+                                        </Button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Versorgung Notiz */}
                             <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                                 <div className="px-4 py-3 bg-amber-50/80 border-b border-amber-100/50 flex items-center justify-between gap-2">
                                     <div className="flex items-center gap-2">
@@ -239,6 +387,21 @@ export default function StatusNoteModal({
                     )}
                 </div>
             </DialogContent>
+
+            <AddNotesModal
+                isOpen={addNoteModalOpen}
+                onClose={() => setAddNoteModalOpen(false)}
+                orderId={orderId}
+                orderName={data ? `${data.customer?.vorname ?? ''} ${data.customer?.nachname ?? ''}`.trim() : undefined}
+                onSuccess={refetchNotes}
+            />
+            <EditNoteModal
+                isOpen={!!editModalNote}
+                onClose={() => setEditModalNote(null)}
+                noteId={editModalNote?.id ?? null}
+                initialNote={editModalNote?.note ?? ''}
+                onSuccess={refetchNotes}
+            />
         </Dialog>
     );
 }

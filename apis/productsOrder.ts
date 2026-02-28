@@ -349,15 +349,54 @@ export const getPreviousOrderSingle = async (
 
 
 
-// show the note data }}customer-orders/track/status-note/id
-export const getStatusNote = async (orderId: string) => {
+// create new note v2/order-notes/create?type=insole
+
+export const createNewNote = async (type: string, payload: Record<string, any>) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/track/status-note/${orderId}`);
+        const response = await axiosClient.post(`/v2/order-notes/create?type=${type}`, payload);
         return response.data;
     } catch (error) {
         throw error;
     }
 }
+
+// update note v2/order-notes/update/{{note Id}}
+export const updateNote = async (noteId: string, payload: Record<string, any>) => {
+    try {
+        const response = await axiosClient.patch(`/v2/order-notes/update/${noteId}`, payload);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// delete note v2/order-notes/delete/{{Note Id}}
+export const deleteNote = async (noteId: string) => {
+    try {
+        const response = await axiosClient.delete(`/v2/order-notes/delete/${noteId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
+// show the note data }}customer-orders/track/status-note/id
+// Optional cursor for notes pagination: ?cursor=xxx
+export const getStatusNote = async (orderId: string, notesCursor?: string) => {
+    try {
+        const url = notesCursor
+            ? `/customer-orders/track/status-note/${orderId}?cursor=${encodeURIComponent(notesCursor)}`
+            : `/customer-orders/track/status-note/${orderId}`;
+        const response = await axiosClient.get(url);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
 
 
 // update note customer-orders/update/:orderId
