@@ -281,10 +281,7 @@ export default function AbrechnungsuebersichtModal({
                                             variant="outline"
                                             size="sm"
                                             className="gap-2 cursor-pointer"
-                                            onClick={() => {
-                                                onInvoiceDownload(orderId);
-                                                onClose();
-                                            }}
+                                           
                                         >
                                             <Receipt className="w-4 h-4" />
                                             Rechnung öffnen

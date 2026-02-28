@@ -12,6 +12,8 @@ import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_compone
 import { createSonstiges } from '@/apis/SonstigesApis';
 import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSection';
 import PriceSection from './Werkstattzettel/FormSections/PriceSection';
+import AbholungFilialeModal from './AbholungFilialeModal';
+import VersandAnKundenModal from './VersandAnKundenModal';
 
 interface Customer {
     id: string;
@@ -110,6 +112,10 @@ export default function SonstigesOrderModal({
     // Notiz hinzufügen (same as WerkstattzettelModal) – shown when button clicked, sent as orderNotes
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
     const [orderNotes, setOrderNotes] = useState('');
+
+    // Andere Filiale wählen / Versand an Kunden – same as WerkstattzettelModal
+    const [showFilialeModal, setShowFilialeModal] = useState(false);
+    const [showVersandModal, setShowVersandModal] = useState(false);
 
     // Initialize form with customer data when modal opens
     useEffect(() => {
@@ -342,8 +348,8 @@ export default function SonstigesOrderModal({
                 wohnort: wohnort,
                 auftragsDatum: datumAuftrag,
                 geschaeftsstandort: geschaeftsstandort ? {
-                    title: geschaeftsstandort.description || geschaeftsstandort.address || '',
-                    description: geschaeftsstandort.address || geschaeftsstandort.description || ''
+                    title: geschaeftsstandort.description === 'Versand an Kunden' ? '' : (geschaeftsstandort.description || geschaeftsstandort.address || ''),
+                    description: geschaeftsstandort.description === 'Versand an Kunden' ? geschaeftsstandort.address || '' : (geschaeftsstandort.address || geschaeftsstandort.description || '')
                 } : null,
                 fertigstellungBis: fertigstellungBis,
                 bezahlt: bezahlt,
@@ -368,6 +374,7 @@ export default function SonstigesOrderModal({
     };
 
   return (
+    <>
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="relative">
@@ -485,14 +492,32 @@ export default function SonstigesOrderModal({
                                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#50C878]">
                                     <MapPin className="w-4 h-4" />
                                 </div>
-                                <div className="flex flex-col">
+                                <div className="flex flex-col gap-1.5">
                                     <span className="text-xs font-medium text-gray-500">Abholung</span>
                                     <span className="text-sm font-semibold text-gray-900">
-                                        {geschaeftsstandort 
-                                            ? `${geschaeftsstandort.description || ''}${geschaeftsstandort.description && geschaeftsstandort.address ? ' - ' : ''}${geschaeftsstandort.address || ''}`
+                                        {geschaeftsstandort
+                                            ? geschaeftsstandort.description === 'Versand an Kunden'
+                                                ? geschaeftsstandort.address || '-'
+                                                : `${geschaeftsstandort.description || ''}${geschaeftsstandort.description && geschaeftsstandort.address ? ' - ' : ''}${geschaeftsstandort.address || ''}`
                                             : '-'
                                         }
                                     </span>
+                                    <div className="flex items-center gap-4 pt-0.5">
+                                        <button
+                                            type="button"
+                                            className="text-xs cursor-pointer font-medium text-[#50C878] hover:underline focus:outline-none"
+                                            onClick={() => setShowFilialeModal(true)}
+                                        >
+                                            Andere Filiale wählen
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="text-xs cursor-pointer font-medium text-[#50C878] hover:underline focus:outline-none"
+                                            onClick={() => setShowVersandModal(true)}
+                                        >
+                                            Versand an Kunden
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex flex-wrap gap-3">
@@ -544,5 +569,31 @@ export default function SonstigesOrderModal({
                 </div>
             </DialogContent>
         </Dialog>
+
+        <AbholungFilialeModal
+            open={showFilialeModal}
+            onOpenChange={setShowFilialeModal}
+            locations={locations}
+            locationsLoading={locationsLoading}
+            value={geschaeftsstandort}
+            onConfirm={(loc) => {
+                if (loc) setGeschaeftsstandort(loc);
+            }}
+        />
+
+        <VersandAnKundenModal
+            open={showVersandModal}
+            onOpenChange={setShowVersandModal}
+            value={geschaeftsstandort?.description === 'Versand an Kunden' ? geschaeftsstandort.address : null}
+            onConfirm={(address) => {
+                if (address)
+                    setGeschaeftsstandort({
+                        id: 'versand',
+                        address,
+                        description: 'Versand an Kunden',
+                    });
+            }}
+        />
+    </>
     )
 }

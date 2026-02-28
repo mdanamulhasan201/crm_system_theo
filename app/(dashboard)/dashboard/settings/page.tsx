@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { Phone, Mail, Clock } from 'lucide-react'
 import { getAllLocations } from '@/apis/setting/locationManagementApis'
+import Mentors from '../_components/Settings/Mentors'
 
 type StoreLocation = {
     id: string;
@@ -221,101 +222,38 @@ export default function Settingss() {
             </div>
 
             {/* manager card */}
-            <div className="block mb-8 w-full">
-                <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                    {/* Header Section */}
-                    <div className="mb-4 sm:mb-6">
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">
-                            Ihr Ansprechpartner
-                        </h3>
-                        <p className="text-xs sm:text-sm text-gray-500">
-                            Ihr direkter Kontakt für alle Fragen rund um FeetF1rst
-                        </p>
-                    </div>
-                    
-                    {/* Main Content Section */}
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
-                        {/* Left Section - Contact Person */}
-                        <div className="flex items-center gap-3 sm:gap-4 flex-1">
-                            {/* Manager Avatar */}
-                            <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 border border-[#61A07B]">
-                                <span className="text-lg sm:text-xl font-semibold text-[#61A07B]">
-                                    MM
-                                </span>
-                            </div>
-                            
-                            {/* Manager Information */}
-                            <div className="space-y-0.5 min-w-0 flex-1">
-                                <h4 className="font-bold text-sm sm:text-base text-gray-900 truncate">
-                                    Michael Maier
-                                </h4>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                    Vertriebsleiter
-                                </p>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                    Mo-Fr, 9:00-17:00
-                                </p>
-                            </div>
-                        </div>
-                        
-                        {/* Right Section - Contact Details */}
-                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 lg:ml-6 flex-shrink-0">
-                            {/* Phone Button */}
-                            <a 
-                                href="tel:+436602951239" 
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 bg-gray-50 border border-gray-200 text-gray-900 rounded-lg hover:bg-gray-100 transition-colors font-medium text-xs sm:text-sm whitespace-nowrap"
-                            >
-                                <Phone className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-xs sm:text-sm font-semibold truncate">+43 660 2951239</span>
-                            </a>
-                            
-                            {/* Email Button */}
-                            <a 
-                                href="mailto:m.maier@feetf1rst.com" 
-                                className="flex items-center justify-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 border border-[#61A07B] text-[#61A07B] rounded-lg hover:bg-green-50 transition-colors font-medium text-xs sm:text-sm whitespace-nowrap"
-                            >
-                                <Mail className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-                                <span className="text-xs sm:text-sm truncate max-w-[200px] sm:max-w-none">m.maier@feetf1rst.com</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <Mentors />
 
-{/* settings options */}
+            {/* settings options */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 w-full">
                 {settingsOptions.map((option, index) => {
                     const isLogout = option.label === "Abmelden";
                     const CardContent = (
-                        <div className={`flex items-center gap-4 p-4 sm:p-5 rounded-lg border transition-all duration-200 cursor-pointer group ${
-                            isLogout 
-                                ? "bg-gray-50 border-gray-300 hover:bg-gray-100 hover:border-gray-400" 
-                                : "bg-white border-gray-200 hover:shadow-md"
-                        }`}>
+                        <div className={`flex items-center gap-4 p-4 sm:p-5 rounded-lg border transition-all duration-200 cursor-pointer group ${isLogout
+                            ? "bg-gray-50 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                            : "bg-white border-gray-200 hover:shadow-md"
+                            }`}>
                             {/* Icon */}
                             <div className="flex-shrink-0">
-                                <option.icon className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${
-                                    isLogout ? "text-gray-500 group-hover:text-gray-600" : "text-gray-600 group-hover:text-gray-900"
-                                }`} />
+                                <option.icon className={`w-6 h-6 sm:w-7 sm:h-7 transition-colors ${isLogout ? "text-gray-500 group-hover:text-gray-600" : "text-gray-600 group-hover:text-gray-900"
+                                    }`} />
                             </div>
-                            
+
                             {/* Text Content */}
                             <div className="flex-1 min-w-0">
-                                <h3 className={`font-bold text-sm sm:text-base mb-0.5 ${
-                                    isLogout ? "text-gray-600 group-hover:text-gray-700" : "text-gray-900"
-                                }`}>
+                                <h3 className={`font-bold text-sm sm:text-base mb-0.5 ${isLogout ? "text-gray-600 group-hover:text-gray-700" : "text-gray-900"
+                                    }`}>
                                     {option.label}
                                 </h3>
                                 <p className="text-xs sm:text-sm truncate text-gray-500">
                                     {option.subtitle || ''}
                                 </p>
                             </div>
-                            
+
                             {/* Chevron Icon */}
                             <div className="flex-shrink-0">
-                                <RiArrowRightLine className={`w-5 h-5 transition-colors ${
-                                    isLogout ? "text-gray-400 group-hover:text-gray-500" : "text-gray-400 group-hover:text-gray-600"
-                                }`} />
+                                <RiArrowRightLine className={`w-5 h-5 transition-colors ${isLogout ? "text-gray-400 group-hover:text-gray-500" : "text-gray-400 group-hover:text-gray-600"
+                                    }`} />
                             </div>
                         </div>
                     );
@@ -338,38 +276,38 @@ export default function Settingss() {
 
             {/* Support & Hilfe Footer Section */}
             {/* <div className="mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200"> */}
-                {/* <div className="mb-4 sm:mb-6"> */}
-                    {/* <h2 className="text-lg  font-semibold text-gray-900 mb-2"> */}
-                        {/* Support & Hilfe */}
-                    {/* </h2> */}
-                    {/* <p className="text-xs sm:text-sm text-gray-500"> */}
-                        {/* Unser Team unterstützt Sie gerne persönlich. */}
-                    {/* </p> */}
-                {/* </div> */}
-{/*                  */}
-                {/* <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 lg:gap-8"> */}
-                    {/* Phone */}
-                    {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
-                        {/* <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
-                        {/* <a href="tel:+390471123456" className="text-gray-500"> */}
-                            {/* +39 0471 123 456 */}
-                        {/* </a> */}
-                    {/* </div> */}
-{/*                      */}
-                    {/* Email */}
-                    {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
-                        {/* <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
-                        {/* <a href="mailto:support@example.com" className="text-gray-500"> */}
-                            {/* support@example.com */}
-                        {/* </a> */}
-                    {/* </div> */}
-{/*                      */}
-                    {/* Response Time */}
-                    {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
-                        {/* <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
-                        {/* <span>Antwortzeit: innerhalb 24h</span> */}
-                    {/* </div> */}
-                {/* </div> */}
+            {/* <div className="mb-4 sm:mb-6"> */}
+            {/* <h2 className="text-lg  font-semibold text-gray-900 mb-2"> */}
+            {/* Support & Hilfe */}
+            {/* </h2> */}
+            {/* <p className="text-xs sm:text-sm text-gray-500"> */}
+            {/* Unser Team unterstützt Sie gerne persönlich. */}
+            {/* </p> */}
+            {/* </div> */}
+            {/*                  */}
+            {/* <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6 lg:gap-8"> */}
+            {/* Phone */}
+            {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
+            {/* <Phone className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
+            {/* <a href="tel:+390471123456" className="text-gray-500"> */}
+            {/* +39 0471 123 456 */}
+            {/* </a> */}
+            {/* </div> */}
+            {/*                      */}
+            {/* Email */}
+            {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
+            {/* <Mail className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
+            {/* <a href="mailto:support@example.com" className="text-gray-500"> */}
+            {/* support@example.com */}
+            {/* </a> */}
+            {/* </div> */}
+            {/*                      */}
+            {/* Response Time */}
+            {/* <div className="flex items-center gap-2 text-base text-gray-500"> */}
+            {/* <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-gray-400 flex-shrink-0" /> */}
+            {/* <span>Antwortzeit: innerhalb 24h</span> */}
+            {/* </div> */}
+            {/* </div> */}
             {/* </div> */}
 
             {/* Notfall-Support Section - Bottom */}
@@ -385,7 +323,7 @@ export default function Settingss() {
                     </div>
                     <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                         <div className="flex-1 min-h-[48px] border border-gray-200 rounded-lg bg-white px-4 py-3 flex items-center text-gray-500 text-sm">
-                        0039 366 508 7742
+                            0039 366 508 7742
                         </div>
                         <a
                             href="tel:+00393665087742"
