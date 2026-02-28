@@ -114,7 +114,8 @@ export function createWerkstattzettelPayload(
     email: formData.email || undefined,
     geschaeftsstandort: formData.geschaeftsstandort ? {
       address: formData.geschaeftsstandort.address,
-      description: formData.geschaeftsstandort.description
+      // Versand an Kunden: location API has no description; send blank in payload
+      description: formData.geschaeftsstandort.description === 'Versand an Kunden' ? '' : formData.geschaeftsstandort.description
     } : undefined,
     auftragAngenommenBei: (formData as any).auftragAngenommenBei ? {
       address: (formData as any).auftragAngenommenBei.address,
