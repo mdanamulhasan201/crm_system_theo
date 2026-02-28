@@ -64,6 +64,10 @@ interface PriceSectionProps {
   // Date utils
   datumAuftrag?: string
   completionDays?: string | number
+
+  // Sonstiges: show tax next to Gesamt (selected Steuersatz + MwSt amount)
+  steuersatz?: number
+  mwstAmount?: number
 }
 
 // Helper function to format price in German format
@@ -131,6 +135,8 @@ export default function PriceSection({
   disabledPaymentType,
   datumAuftrag,
   completionDays,
+  steuersatz,
+  mwstAmount,
 }: PriceSectionProps) {
   // Build unique option keys so only ONE item can ever appear selected,
   // even if multiple items share the same numeric price.
@@ -424,7 +430,7 @@ export default function PriceSection({
               <Label className="text-sm font-medium text-gray-700">Wirtschaftlicher Aufpreis</Label>
               <Input
                 type="text"
-                placeholder="Addon Preise eingeben"
+                placeholder=""
                 value={addonPrices}
                 onChange={(e) => onAddonPricesChange?.(e.target.value)}
                 className="py-2 border-gray-300 w-full min-w-0 text-sm"
@@ -464,7 +470,7 @@ export default function PriceSection({
 
               {addonPricesTotal > 0 && (
                 <div className="flex justify-between items-center gap-2">
-                  <span className="text-sm text-gray-600 truncate">Addon Preise</span>
+                  <span className="text-sm text-gray-600 truncate">Wirtschaftlicher Aufpreis</span>
                   <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(addonPricesTotal)}</span>
                 </div>
               )}
@@ -512,6 +518,13 @@ export default function PriceSection({
                 <span className="text-base font-bold text-gray-900">Gesamt</span>
                 <span className="text-lg sm:text-xl font-bold text-green-600 shrink-0">{formatPrice(total)}</span>
               </div>
+              {steuersatz != null && mwstAmount != null && (
+                <div className="flex justify-end">
+                  <span className="text-xs text-gray-500">
+                    MwSt ({steuersatz}%): {formatPrice(mwstAmount)}
+                  </span>
+                </div>
+              )}
 
               {/* Insurance vs Customer split */}
               <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">

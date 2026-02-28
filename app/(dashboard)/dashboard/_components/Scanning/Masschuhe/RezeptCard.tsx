@@ -48,18 +48,23 @@ interface RezeptCardProps {
     kostenvoranschlag: boolean | null;
     onKostenvoranschlagChange: (value: boolean) => void;
 
-    // Privat – PREIS & STEUER (same as SonstigesForm)
+    // Privat – PREIS & STEUER (same as SonstigesForm, Brutto only)
     nettoPreis?: string;
     onNettoPreisChange?: (value: string) => void;
     rabatt?: string;
     onRabattChange?: (value: string) => void;
     steuersatz?: number;
     onSteuersatzChange?: (value: number) => void;
-    isNetto?: boolean;
-    onIsNettoChange?: (value: boolean) => void;
     taxRates?: { rate: number; name: string; description?: string; isDefault?: boolean }[];
     defaultTaxRate?: { rate: number; name: string; description?: string };
-    priceCalculations?: { netto: number; mwst: number; brutto: number };
+    priceCalculations?: {
+        basisPreis?: number;
+        discountPercent?: number;
+        discountAmount?: number;
+        netto: number;
+        mwst: number;
+        brutto: number;
+    };
 }
 
 export default function RezeptCard({
@@ -104,11 +109,9 @@ export default function RezeptCard({
     onRabattChange,
     steuersatz = 22,
     onSteuersatzChange,
-    isNetto = true,
-    onIsNettoChange,
     taxRates = [],
     defaultTaxRate = { rate: 22, name: 'Standard', description: 'Standard' },
-    priceCalculations = { netto: 0, mwst: 0, brutto: 0 },
+    priceCalculations = { basisPreis: 0, discountPercent: 0, discountAmount: 0, netto: 0, mwst: 0, brutto: 0 },
 }: RezeptCardProps) {
     const selectedTaxRate = taxRates?.find((r) => r.rate === steuersatz) || defaultTaxRate;
     // VAT and calculation helpers (match Einlagen RezeptAbrechnungCard)
@@ -413,7 +416,7 @@ export default function RezeptCard({
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        {isNetto ? 'Netto-Preis (€)' : 'Brutto-Preis (€)'}
+                                        Brutto-Preis (€)
                                     </label>
                                     <div className="relative">
                                         <Input
@@ -499,41 +502,43 @@ export default function RezeptCard({
                                     </Select>
                                 </div>
                             </div>
-                            {/* Right – Toggle & Summary */}
+                            {/* Right – Price Summary (same as SonstigesForm, Brutto only) */}
                             <div>
                                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                    <div className="flex gap-2 mb-4">
-                                        <button
-                                            type="button"
-                                            onClick={() => onIsNettoChange?.(true)}
-                                            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                                                isNetto ? 'bg-[#62A17C] text-white shadow-sm' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            Preis ist Netto
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => onIsNettoChange?.(false)}
-                                            className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${
-                                                !isNetto ? 'bg-[#62A17C] text-white shadow-sm' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                        >
-                                            Preis ist Brutto
-                                        </button>
-                                    </div>
                                     <div className="space-y-2.5">
                                         <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-700">Netto:</span>
-                                            <span className="text-sm font-medium text-gray-900">€{priceCalculations.netto.toFixed(2)}</span>
+                                            <span className="text-sm text-gray-700">Basispreis (Brutto):</span>
+                                            <span className="text-sm font-medium text-gray-900">
+                                                €{(priceCalculations.basisPreis ?? 0).toFixed(2)}
+                                            </span>
+                                        </div>
+                                        {(priceCalculations.discountPercent ?? 0) > 0 && (
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-sm text-gray-700">
+                                                    Rabatt ({(priceCalculations.discountPercent ?? 0).toFixed(2)}%):
+                                                </span>
+                                                <span className="text-sm font-medium text-red-600">
+                                                    -€{(priceCalculations.discountAmount ?? 0).toFixed(2)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-700">Netto nach Rabatt:</span>
+                                            <span className="text-sm font-medium text-gray-900">
+                                                €{priceCalculations.netto.toFixed(2)}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between items-center">
                                             <span className="text-sm text-gray-700">MwSt ({steuersatz}%):</span>
-                                            <span className="text-sm font-medium text-gray-900">€{priceCalculations.mwst.toFixed(2)}</span>
+                                            <span className="text-sm font-medium text-gray-900">
+                                                €{priceCalculations.mwst.toFixed(2)}
+                                            </span>
                                         </div>
                                         <div className="flex justify-between items-center pt-2.5 border-t border-gray-300">
-                                            <span className="text-sm font-semibold text-gray-900">Brutto:</span>
-                                            <span className="text-sm font-semibold text-gray-900">€{priceCalculations.brutto.toFixed(2)}</span>
+                                            <span className="text-sm font-semibold text-gray-900">Brutto nach Rabatt:</span>
+                                            <span className="text-sm font-semibold text-gray-900">
+                                                €{priceCalculations.brutto.toFixed(2)}
+                                            </span>
                                         </div>
                                     </div>
                                 </div>

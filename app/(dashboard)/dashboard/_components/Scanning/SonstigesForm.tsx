@@ -275,7 +275,7 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                             <div className="relative">
                                 <Input
                                     type="text"
-                                    placeholder="diagnose"
+                                    placeholder="Diagnose eingeben..."
                                     value={kategorie}
                                     onChange={(e) => setKategorie(e.target.value)}
                                     className="w-full h-10 pr-9"
@@ -442,32 +442,6 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                         {/* Right side - Price Summary Box */}
                         <div>
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                {/* Toggle buttons */}
-                                <div className="flex gap-2 mb-4">
-                                    {/* First: Preis ist Brutto (standard / default) */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNetto(false)}
-                                        className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${!isNetto
-                                                ? 'bg-[#62A17C] text-white shadow-sm'
-                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                    >
-                                        Preis ist Brutto
-                                    </button>
-                                    {/* Second: Preis ist Netto */}
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsNetto(true)}
-                                        className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors ${isNetto
-                                                ? 'bg-[#62A17C] text-white shadow-sm'
-                                                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                            }`}
-                                    >
-                                        Preis ist Netto
-                                    </button>
-                                </div>
-
                                 {/* Price summary */}
                                 <div className="space-y-2.5">
                                     <div className="flex justify-between items-center">

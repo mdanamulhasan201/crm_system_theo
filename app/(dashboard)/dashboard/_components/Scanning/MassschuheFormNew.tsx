@@ -129,33 +129,31 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         [taxRates]
     );
 
-    // Privat billing fields (PREIS & STEUER – same logic as SonstigesForm)
+    // Privat billing fields (PREIS & STEUER – same logic as SonstigesForm, Brutto only)
     const [nettoPreis, setNettoPreis] = useState<string>('0.00');
     const [rabatt, setRabatt] = useState<string>('0');
     const [steuersatz, setSteuersatz] = useState<number>(defaultTaxRate.rate);
-    const [isNetto, setIsNetto] = useState<boolean>(true);
+    const isNetto = false; // Always Brutto (same as SonstigesForm)
 
     const priceCalculations = useMemo(() => {
         const priceInput = parseFloat(nettoPreis) || 0;
         const discountPercent = parseFloat(rabatt) || 0;
         const taxRate = steuersatz / 100;
-        const priceAfterDiscount = priceInput * (1 - discountPercent / 100);
-        let netto, mwst, brutto;
-        if (isNetto) {
-            netto = priceAfterDiscount;
-            mwst = netto * taxRate;
-            brutto = netto + mwst;
-        } else {
-            brutto = priceAfterDiscount;
-            netto = brutto / (1 + taxRate);
-            mwst = brutto - netto;
-        }
+        const discountAmountRaw = priceInput * (discountPercent / 100);
+        const priceAfterDiscount = priceInput - discountAmountRaw;
+        const discountAmount = Math.round(discountAmountRaw * 100) / 100;
+        const brutto = priceAfterDiscount;
+        const netto = brutto / (1 + taxRate);
+        const mwst = brutto - netto;
         return {
+            basisPreis: Math.round(priceInput * 100) / 100,
+            discountPercent,
+            discountAmount,
             netto: Math.round(netto * 100) / 100,
             mwst: Math.round(mwst * 100) / 100,
             brutto: Math.round(brutto * 100) / 100,
         };
-    }, [nettoPreis, rabatt, steuersatz, isNetto]);
+    }, [nettoPreis, rabatt, steuersatz]);
 
     // Billing type state (Krankenkassa/Privat)
     const [billingType, setBillingType] = useState<'Krankenkassa' | 'Privat'>('Krankenkassa');
@@ -170,7 +168,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         if (billingType === 'Krankenkassa') {
             setNettoPreis('0.00');
             setRabatt('0');
-            setIsNetto(true);
         }
     }, [billingType]);
 
@@ -282,7 +279,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         if (prefillOrderData?.net_price !== undefined && prefillOrderData?.net_price !== null) {
             const np = Number(prefillOrderData.net_price);
             setNettoPreis(Number.isFinite(np) ? np.toFixed(2) : String(prefillOrderData.net_price));
-            setIsNetto(true);
         }
         if (prefillOrderData?.discount !== undefined && prefillOrderData?.discount !== null) {
             setRabatt(String(prefillOrderData.discount));
@@ -348,7 +344,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setItemSides({});
             setNettoPreis('0.00');
             setRabatt('0');
-            setIsNetto(true);
             setHalbprobeErforderlich(null);
             setLeistenVorhanden(null);
             setBettungErforderlich(null);
@@ -433,8 +428,6 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     onRabattChange={setRabatt}
                     steuersatz={steuersatz}
                     onSteuersatzChange={setSteuersatz}
-                    isNetto={isNetto}
-                    onIsNettoChange={setIsNetto}
                     taxRates={taxRates}
                     defaultTaxRate={defaultTaxRate}
                     priceCalculations={priceCalculations}

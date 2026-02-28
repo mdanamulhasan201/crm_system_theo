@@ -464,6 +464,8 @@ export default function SonstigesOrderModal({
                             disabledPaymentType={undefined}
                             datumAuftrag={datumAuftrag}
                             completionDays={undefined}
+                            steuersatz={formData?.steuersatz}
+                            mwstAmount={formData?.mwst}
                         />
                     </div>
 
