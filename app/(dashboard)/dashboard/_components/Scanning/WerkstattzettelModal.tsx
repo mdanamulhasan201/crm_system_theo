@@ -192,7 +192,7 @@ export default function WerkstattzettelModal({
 
   // Pass location objects directly to dropdown (no conversion needed)
 
-  // Set primary location as default for Abholung when locations are first loaded (only once - not when user clears)
+  // Set primary location as default for Abholung and "Auftrag angenommen bei" when locations are first loaded (only once - not when user clears)
   const hasSetInitialLocation = useRef(false)
   useEffect(() => {
     if (locations.length > 0 && isOpen && !locationsLoading && !hasSetInitialLocation.current) {
@@ -201,6 +201,7 @@ export default function WerkstattzettelModal({
       const locationToUse = primaryLocation || locations[0]
       if (locationToUse) {
         form.setGeschaeftsstandort(locationToUse)
+        form.setAuftragAngenommenBei(locationToUse)
       }
     }
     // Reset ref when modal closes so next open gets default again
@@ -447,7 +448,7 @@ export default function WerkstattzettelModal({
                 <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#50C878]">
                   <MapPin className="w-4 h-4" />
                 </div>
-                <div className="flex flex-col">
+                <div className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-gray-500">Abholung</span>
                   <span className="text-sm font-semibold text-gray-900">
                     {form.geschaeftsstandort 
@@ -455,6 +456,20 @@ export default function WerkstattzettelModal({
                       : '-'
                     }
                   </span>
+                  <div className="flex items-center gap-4 pt-0.5">
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-[#50C878] hover:underline focus:outline-none"
+                    >
+                      Andere Filiale wählen
+                    </button>
+                    <button
+                      type="button"
+                      className="text-xs font-medium text-[#50C878] hover:underline focus:outline-none"
+                    >
+                      Versand an Kunden
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="flex flex-wrap gap-3">

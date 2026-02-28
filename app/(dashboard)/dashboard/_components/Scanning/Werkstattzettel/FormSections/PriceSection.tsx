@@ -438,7 +438,7 @@ export default function PriceSection({
               <Label className="text-sm font-medium text-gray-700">Wirtschaftlicher Aufpreis</Label>
               <Input
                 type="text"
-                placeholder=""
+                placeholder="Preis eingeben"
                 value={addonPrices}
                 onChange={(e) => onAddonPricesChange?.(e.target.value)}
                 className="py-2 border-gray-300 w-full min-w-0 text-sm"
