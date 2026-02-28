@@ -104,6 +104,8 @@ export default function SonstigesOrderModal({
     const [addonPrices, setAddonPrices] = useState<string>('');
     const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
+    // Gesamt from PriceSection – used as total_price so it always matches displayed total
+    const [calculatedTotal, setCalculatedTotal] = useState<number | null>(null);
 
     // Notiz hinzufügen (same as WerkstattzettelModal) – shown when button clicked, sent as orderNotes
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
@@ -137,6 +139,9 @@ export default function SonstigesOrderModal({
             // Set Einlagenversorgung price from formData
             if (formData?.bruttoPreis) {
                 setInsoleSupplyPrice(String(formData.bruttoPreis));
+                setCalculatedTotal(typeof formData.bruttoPreis === 'number' ? formData.bruttoPreis : null);
+            } else {
+                setCalculatedTotal(null);
             }
             
             // Set discount from formData if available
@@ -332,7 +337,7 @@ export default function SonstigesOrderModal({
                 orderNotes: orderNotes.trim() || '',
                 discount: formData.rabatt,
                 employeeId: selectedEmployeeId || formData.selectedEmployeeId,
-                total_price: formData.bruttoPreis,
+                total_price: calculatedTotal != null ? calculatedTotal : formData.bruttoPreis,
                 customerId: customer.id,
                 wohnort: wohnort,
                 auftragsDatum: datumAuftrag,
@@ -466,6 +471,7 @@ export default function SonstigesOrderModal({
                             completionDays={undefined}
                             steuersatz={formData?.steuersatz}
                             mwstAmount={formData?.mwst}
+                            onTotalChange={setCalculatedTotal}
                         />
                     </div>
 

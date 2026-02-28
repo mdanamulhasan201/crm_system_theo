@@ -68,6 +68,8 @@ interface PriceSectionProps {
   // Sonstiges: show tax next to Gesamt (selected Steuersatz + MwSt amount)
   steuersatz?: number
   mwstAmount?: number
+  // Report calculated Gesamt (total) so parent can use it as total_price
+  onTotalChange?: (total: number) => void
 }
 
 // Helper function to format price in German format
@@ -137,6 +139,7 @@ export default function PriceSection({
   completionDays,
   steuersatz,
   mwstAmount,
+  onTotalChange,
 }: PriceSectionProps) {
   // Build unique option keys so only ONE item can ever appear selected,
   // even if multiple items share the same numeric price.
@@ -187,6 +190,11 @@ export default function PriceSection({
     ? (subtotal * parseFloat(discountValue)) / 100
     : 0
   const total = subtotal - discountAmount
+
+  // Report Gesamt (total) to parent so it can be used as total_price
+  useEffect(() => {
+    onTotalChange?.(total)
+  }, [total, onTotalChange])
 
   // Positionsnummer VAT breakdown & insurance/customer split (using account vat_country)
   const { user } = useAuth()
