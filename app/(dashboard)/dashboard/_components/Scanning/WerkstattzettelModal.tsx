@@ -458,8 +458,10 @@ export default function WerkstattzettelModal({
                 <div className="flex flex-col gap-1.5">
                   <span className="text-xs font-medium text-gray-500">Abholung</span>
                   <span className="text-sm font-semibold text-gray-900">
-                    {form.geschaeftsstandort 
-                      ? `${form.geschaeftsstandort.description || ''}${form.geschaeftsstandort.description && form.geschaeftsstandort.address ? ' - ' : ''}${form.geschaeftsstandort.address || ''}`
+                    {form.geschaeftsstandort
+                      ? form.geschaeftsstandort.description === 'Versand an Kunden'
+                        ? form.geschaeftsstandort.address || '-'
+                        : `${form.geschaeftsstandort.description || ''}${form.geschaeftsstandort.description && form.geschaeftsstandort.address ? ' - ' : ''}${form.geschaeftsstandort.address || ''}`
                       : '-'
                     }
                   </span>
