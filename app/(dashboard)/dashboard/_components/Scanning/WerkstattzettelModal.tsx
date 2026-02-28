@@ -3,7 +3,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button'
 import { ScanData } from '@/types/scan'
 import toast from 'react-hot-toast'
-import { MapPin, FileText, StickyNote } from 'lucide-react'
+import { MapPin, FileText, StickyNote, ChevronDown, Check, X } from 'lucide-react'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Input } from '@/components/ui/input'
 import { useWerkstattzettelForm } from '../../../../../hooks/einlagen/useWerkstattzettelForm'
 import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSection'
 import PriceSection from './Werkstattzettel/FormSections/PriceSection'
@@ -73,6 +75,17 @@ export default function WerkstattzettelModal({
   // Notiz (note) state
   const [showNotizTextarea, setShowNotizTextarea] = useState(false)
   const [notizText, setNotizText] = useState('')
+
+  // Andere Filiale wählen modal – pending selection, apply only on Schließen
+  const [showFilialeModal, setShowFilialeModal] = useState(false)
+  const [filialePopoverOpen, setFilialePopoverOpen] = useState(false)
+  const [filialeSearchText, setFilialeSearchText] = useState('')
+  const [pendingFilialeLocation, setPendingFilialeLocation] = useState<{
+    id: string
+    address: string
+    description: string
+    isPrimary?: boolean
+  } | null>(null)
 
   // Settings data state
   const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([])
@@ -329,8 +342,9 @@ export default function WerkstattzettelModal({
   }
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="sm:max-w-[800px] max-h-[90vh] min-h-[80vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader className="relative">
           <DialogTitle className="text-2xl font-bold">Werkstattzettel</DialogTitle>
         </DialogHeader>
@@ -374,7 +388,7 @@ export default function WerkstattzettelModal({
                 onLocationDropdownChange: form.handleLocationDropdownChange,
                 completionDays,
                 sameAsBusiness,
-                nameError: undefined, // ✅ All validation removed
+                nameError: undefined,
                 versorgungError: undefined,
                 datumAuftragError: undefined,
                 geschaeftsstandortError: undefined,
@@ -459,13 +473,17 @@ export default function WerkstattzettelModal({
                   <div className="flex items-center gap-4 pt-0.5">
                     <button
                       type="button"
-                      className="text-xs font-medium text-[#50C878] hover:underline focus:outline-none"
+                      className="text-xs cursor-pointer font-medium text-[#50C878] hover:underline focus:outline-none"
+                      onClick={() => {
+                        setPendingFilialeLocation(form.geschaeftsstandort)
+                        setShowFilialeModal(true)
+                      }}
                     >
                       Andere Filiale wählen
                     </button>
                     <button
                       type="button"
-                      className="text-xs font-medium text-[#50C878] hover:underline focus:outline-none"
+                      className="text-xs cursor-pointer font-medium text-[#50C878] hover:underline focus:outline-none"
                     >
                       Versand an Kunden
                     </button>
@@ -521,5 +539,178 @@ export default function WerkstattzettelModal({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* Andere Filiale wählen – same style as EmployeeDropdown (Popover + search input + list) */}
+    <Dialog
+      open={showFilialeModal}
+      onOpenChange={(open) => {
+        setShowFilialeModal(open)
+        if (open) {
+          setPendingFilialeLocation(form.geschaeftsstandort)
+        } else {
+          setFilialePopoverOpen(false)
+          setFilialeSearchText('')
+        }
+      }}
+    >
+      <DialogContent className="max-w-md flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold text-gray-900">Abholung bei anderer Filiale</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3 overflow-hidden">
+          {locationsLoading ? (
+            <p className="text-sm text-gray-500 py-4 text-center">Lade Standorte...</p>
+          ) : (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-gray-700">Abholung bei anderer Filiale*</label>
+                <Popover open={filialePopoverOpen} onOpenChange={setFilialePopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={filialePopoverOpen}
+                      className="w-full cursor-pointer justify-between font-normal h-10 bg-white border-gray-300"
+                    >
+                      <span
+                        className={`truncate flex-1 text-left ${
+                          pendingFilialeLocation ? 'text-gray-900' : 'text-gray-400'
+                        }`}
+                      >
+                        {pendingFilialeLocation
+                          ? [pendingFilialeLocation.description, pendingFilialeLocation.address]
+                              .filter(Boolean)
+                              .join(' - ') || pendingFilialeLocation.address || '-'
+                          : 'Standort wählen'}
+                      </span>
+                      <div className="flex items-center gap-1 shrink-0 ml-2">
+                        {pendingFilialeLocation ? (
+                          <span
+                            role="button"
+                            tabIndex={-1}
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              const primary = locations.find((l) => l.isPrimary) || locations[0]
+                              if (primary) setPendingFilialeLocation(primary)
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                const primary = locations.find((l) => l.isPrimary) || locations[0]
+                                if (primary) setPendingFilialeLocation(primary)
+                              }
+                            }}
+                            className="rounded p-0.5 cursor-pointer text-gray-500 hover:text-gray-700 transition-colors hover:bg-gray-200"
+                            aria-label="Zurück zur Standard-Abholung"
+                          >
+                            <X className="h-4 w-4" />
+                          </span>
+                        ) : (
+                          <ChevronDown className="h-4 w-4 opacity-50" />
+                        )}
+                      </div>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+                    <div className="p-2">
+                      <Input
+                        placeholder="Standort suchen..."
+                        value={filialeSearchText}
+                        onChange={(e) => setFilialeSearchText(e.target.value)}
+                        className="w-full"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="max-h-60 overflow-y-auto">
+                      {(() => {
+                        const q = filialeSearchText.trim().toLowerCase()
+                        const filtered = q
+                          ? locations.filter((loc) => {
+                              const text = [loc.description, loc.address].filter(Boolean).join(' ').toLowerCase()
+                              return text.includes(q)
+                            })
+                          : locations
+                        return filtered.length > 0 ? (
+                          <div className="py-1">
+                            {filtered.map((loc) => {
+                              const isSelected = pendingFilialeLocation?.id === loc.id
+                              const displayText = [loc.description, loc.address].filter(Boolean).join(' - ') || loc.address || '-'
+                              return (
+                                <div
+                                  key={loc.id}
+                                  className={`flex items-center justify-between px-3 py-2 cursor-pointer transition-colors duration-150 ${
+                                    isSelected
+                                      ? 'bg-blue-50 hover:bg-blue-100 border-l-2 border-blue-500'
+                                      : 'hover:bg-gray-100'
+                                  }`}
+                                  onClick={() => {
+                                    setPendingFilialeLocation(loc)
+                                    setFilialePopoverOpen(false)
+                                  }}
+                                >
+                                  <div className="flex flex-col min-w-0 flex-1">
+                                    <span
+                                      className={`text-sm font-medium truncate ${
+                                        isSelected ? 'text-blue-900' : 'text-gray-900'
+                                      }`}
+                                    >
+                                      {loc.description || loc.address}
+                                    </span>
+                                    {loc.description && loc.address && (
+                                      <span
+                                        className={`text-xs truncate ${
+                                          isSelected ? 'text-blue-600' : 'text-gray-500'
+                                        }`}
+                                      >
+                                        {loc.address}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {isSelected && <Check className="h-4 w-4 text-blue-600 ml-2 shrink-0" />}
+                                </div>
+                              )
+                            })}
+                            <button
+                              type="button"
+                              className="w-full flex items-center px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 border-t border-gray-100"
+                              onClick={() => {
+                                const primary = locations.find((l) => l.isPrimary) || locations[0]
+                                if (primary) setPendingFilialeLocation(primary)
+                                setFilialePopoverOpen(false)
+                              }}
+                            >
+                              Zurück zur Standard-Abholung
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="p-4 text-center text-sm text-gray-500">
+                            Keine Standorte gefunden
+                          </div>
+                        )
+                      })()}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex justify-end pt-2 border-t border-gray-100">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    if (pendingFilialeLocation) form.setGeschaeftsstandort(pendingFilialeLocation)
+                    setShowFilialeModal(false)
+                  }}
+                >
+                  Schließen
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  </>
   )
 }
