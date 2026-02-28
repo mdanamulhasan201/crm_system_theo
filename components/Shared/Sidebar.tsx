@@ -385,7 +385,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                             </span>
                         </div>
                         <div className="flex flex-col items-center">
-                            <p className="text-sm text-gray-600 mb-1">Welcome back</p>
+                            <p className="text-sm text-gray-600 mb-1">Willkommen zurück</p>
                             <p className="text-base font-semibold text-gray-800 mb-2">
                                 {user?.busnessName || ''}
                                 <span className="ml-2">👋</span>
