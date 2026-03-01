@@ -44,6 +44,7 @@ interface User {
     bankInfo?: {
       bankName: string;
       bankNumber: string;
+      bic?: string;
     };
     barcodeLabel?: string;
     two_factor_auth?: boolean;

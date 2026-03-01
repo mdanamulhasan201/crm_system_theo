@@ -170,7 +170,7 @@ export default function Settingss() {
                                     {/* Customer Number */}
                                     <div>
                                         <span className="text-sm font-semibold">
-                                            Kd.-Nr. {user?.partnerId ?? '001004'}
+                                            Kd.-Nr. #{user?.partnerId ?? '001004'}
                                         </span>
                                     </div>
 
