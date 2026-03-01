@@ -754,6 +754,8 @@ export default function CollectionShaftDetailsPage() {
         }}
         onBodenKonfigurieren={handleBodenKonfigurieren}
         orderPrice={orderPrice}
+        isVersenden={!!versendenData}
+        versandPrice={COURIER_PRICE_DEFAULT}
         passendenSchnursenkel={passendenSchnursenkel}
         osenEinsetzen={osenEinsetzen}
         zipperExtra={zipperExtra}
