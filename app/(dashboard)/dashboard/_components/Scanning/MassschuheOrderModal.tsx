@@ -91,6 +91,7 @@ interface MassschuheOrderModalProps {
         positionsnummerItalyData?: any[];
         billingType?: 'Krankenkassa' | 'Privat';
         price?: string;
+        brutto?: string;
         tax?: string;
         /** Produktionsworkflow – same names as API payload */
         has_trim_strips?: boolean;
@@ -298,22 +299,6 @@ export default function MassschuheOrderModal({
             return;
         }
 
-        if (paymentType === 'privat') {
-            const footPrice = getFußanalysePrice(selectedFußanalyse);
-            if (!selectedFußanalyse && !selectedEinlagenversorgung) {
-                toast.error('Bitte wählen Sie beide Preise aus (Fußanalyse und Einlagenversorgung)');
-                return;
-            }
-            if (!selectedFußanalyse || selectedFußanalyse === '__none__' || footPrice <= 0) {
-                toast.error('Bitte wählen Sie einen Preis für Fußanalyse aus');
-                return;
-            }
-            if (!selectedEinlagenversorgung) {
-                toast.error('Bitte wählen Sie einen Preis für Einlagenversorgung aus');
-                return;
-            }
-        }
-
         // Prepare data for API
         const customerName = `${customer.vorname || ''} ${customer.nachname || ''}`.trim();
         const customerPhone = customer.telefonnummer || customer.telefon || '';
@@ -380,7 +365,8 @@ export default function MassschuheOrderModal({
         let totalPrice: number;
         let insurancePrice: number | undefined;
         if (paymentType === 'privat') {
-            totalPrice = (getFußanalysePrice(selectedFußanalyse) + (parseFloat(selectedEinlagenversorgung) || 0)) * qty;
+            const formBrutto = formData.brutto ? parseFloat(formData.brutto) : 0;
+            totalPrice = formBrutto > 0 ? formBrutto * qty : (getFußanalysePrice(selectedFußanalyse) + (parseFloat(selectedEinlagenversorgung) || 0)) * qty;
         } else {
             const allPosData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
             const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
@@ -631,63 +617,7 @@ export default function MassschuheOrderModal({
                         </div>
                     </div>
 
-                    {/* PREISAUSWAHL Section - first (only when Privat) */}
-                    {formData.billingType === 'Privat' && (
-                        <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
-                            <h3 className="text-lg font-semibold text-gray-800 uppercase mb-4">PREISAUSWAHL</h3>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Fußanalyse</label>
-                                    <Select
-                                        value={selectedFußanalyse || '__none__'}
-                                        onValueChange={(value) => setSelectedFußanalyse(value === '__none__' ? '' : value)}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue
-                                                placeholder={
-                                                    pricesLoading
-                                                        ? 'Lade Preise...'
-                                                        : laserPrintPrices.length > 0
-                                                            ? 'Preis auswählen'
-                                                            : 'Kein Preis verfügbar'
-                                                }
-                                            />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="__none__" className="cursor-pointer">
-                                                {pricesLoading ? 'Lade Preise...' : 'Preis auswählen'}
-                                            </SelectItem>
-                                            {laserPrintPrices.length > 0 ? (
-                                                laserPrintPrices.map((item, index) => (
-                                                    <SelectItem
-                                                        key={`foot-${item.name}-${item.price}-${index}`}
-                                                        value={`${index}__${item.price}`}
-                                                        className="cursor-pointer"
-                                                    >
-                                                        {item.name} - {item.price.toFixed(2).replace(".", ",")}€
-                                                    </SelectItem>
-                                                ))
-                                            ) : null}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-gray-600 mb-2 block">Einlagenversorgung</label>
-                                    <Input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        value={selectedEinlagenversorgung}
-                                        onChange={(e) => setSelectedEinlagenversorgung(e.target.value)}
-                                        placeholder="Standard Einlagen - €180"
-                                        className="w-full"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Preisübersicht - second, below PREISAUSWAHL (always visible) */}
+                    {/* Preisübersicht */}
                     {(() => {
                         const vatCountry = user?.accountInfo?.vat_country;
                         const getVatRate = () => {
@@ -772,37 +702,36 @@ export default function MassschuheOrderModal({
                             );
                         }
 
-                        // Privat: Fußanalyse × Menge + Einlagenversorgung × Menge
+                        // Privat: Brutto nach Rabatt (unit × Menge) → Menge → Gesamt. When Menge changes, Brutto total updates.
                         const qty = quantity || 1;
-                        const foot = getFußanalysePrice(selectedFußanalyse);
-                        const insole = parseFloat(selectedEinlagenversorgung) || 0;
-                        const footTotal = foot * qty;
-                        const insoleTotal = insole * qty;
-                        const privSubtotal = footTotal + insoleTotal;
+                        const bruttoUnit = formData.brutto ? parseFloat(formData.brutto) : 0;
+                        const bruttoTotal = bruttoUnit * qty;
+                        const vatPercent = formData.tax ? parseFloat(formData.tax) : 0;
+                        const gesamtPrivat = bruttoTotal;
                         return (
                             <div className="bg-white rounded-lg border border-gray-200 p-6">
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Preisübersicht</h3>
                                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-3">
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Fußanalyse {qty > 1 ? `(× ${qty})` : ''}</span>
-                                        <span className="text-sm font-semibold text-gray-900">{formatPrice(footTotal)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-sm text-gray-600">Einlagenversorgung {qty > 1 ? `(× ${qty})` : ''}</span>
-                                        <span className="text-sm font-semibold text-gray-900">{formatPrice(insoleTotal)}</span>
-                                    </div>
+                                    {bruttoUnit > 0 && (
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-gray-600">Brutto nach Rabatt{qty > 1 ? ` (× ${qty})` : ''}</span>
+                                            <span className="text-sm font-semibold text-gray-900">{formatPrice(bruttoTotal)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-gray-600">Menge</span>
                                         <span className="font-semibold text-gray-900">{qty} {qty === 1 ? 'Paar' : 'Paare'}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pt-3 border-t border-gray-300">
-                                        <span className="text-sm text-gray-600">Zwischensumme</span>
-                                        <span className="text-sm font-semibold text-gray-900">{formatPrice(privSubtotal)}</span>
-                                    </div>
                                     <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
                                         <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                        <span className="text-xl font-bold text-green-600">{formatPrice(privSubtotal)}</span>
+                                        <span className="text-xl font-bold text-green-600">{formatPrice(gesamtPrivat)}</span>
                                     </div>
+                                    {bruttoUnit > 0 && vatPercent > 0 && (
+                                        <div className="flex justify-between items-center pt-1">
+                                            <span className="text-xs text-gray-500">MwSt. ({vatPercent}%)</span>
+                                            <span className="text-xs text-gray-500">enthalten</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );

@@ -495,6 +495,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     positionsnummerItalyData: positionsnummerItalyData,
                     billingType: billingType,
                     price: billingType === 'Privat' ? String(priceCalculations.netto) : '',
+                    brutto: billingType === 'Privat' ? String(priceCalculations.brutto) : '',
                     tax: billingType === 'Privat' ? String(steuersatz) : '',
                     // Produktionsworkflow – same field names as API payload
                     has_trim_strips: leistenVorhanden === true,
