@@ -27,10 +27,8 @@ import { useBodenkonstruktionCalculations } from "@/hooks/massschuhe/useBodenkon
 import { parseEuroFromText } from "../_components/Massschuhauftraeges/Details/HelperFunctions"
 
 // APIs
-import { 
-    createCustomBodenkonstruktion,
-    getCountDate
-} from "@/apis/MassschuheManagemantApis"
+import { createCustomBodenkonstruktion } from "@/apis/MassschuheManagemantApis"
+import { getDeliveryDates } from "@/apis/deliveryDateCalculation"
 import Image from "next/image"
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 
@@ -94,20 +92,22 @@ export default function BodenkonstruktionPage() {
     // Hooks
     const { soleOptions } = useSoleData()
 
-    // Fetch delivery days count from API
+    // Fetch delivery days from API by category "Bodenkonstruktion"
+    const DELIVERY_CATEGORY = "Bodenkonstruktion"
     React.useEffect(() => {
         const fetchDeliveryDays = async () => {
             try {
-                const response = await getCountDate()
-                // Assuming the API returns { count: number } or similar structure
-                // Adjust based on actual API response
-                const count = response?.count || response?.data?.count || response?.days || 14
-                if (typeof count === 'number' && count > 0) {
-                    setDeliveryDaysCount(count)
+                const response = await getDeliveryDates()
+                const list = response?.data ?? []
+                const match = Array.isArray(list)
+                    ? list.find((item: { category?: string }) => item?.category === DELIVERY_CATEGORY)
+                    : null
+                const days = match && typeof (match as { day?: number }).day === 'number' ? (match as { day: number }).day : 14
+                if (days > 0) {
+                    setDeliveryDaysCount(days)
                 }
             } catch (error) {
                 console.error("Error fetching delivery days count:", error)
-                // Keep default value of 14
             }
         }
         fetchDeliveryDays()
