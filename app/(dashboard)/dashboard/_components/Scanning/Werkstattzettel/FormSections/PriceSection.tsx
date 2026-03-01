@@ -185,20 +185,10 @@ export default function PriceSection({
     return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
   }, [addonPrices])
 
-  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal + (positionsnummerPrice || 0)
-  const discountAmount = discountType === 'percentage' && discountValue
-    ? (subtotal * parseFloat(discountValue)) / 100
-    : 0
-  const total = subtotal - discountAmount
-
-  // Report Gesamt (total) to parent so it can be used as total_price
-  useEffect(() => {
-    onTotalChange?.(total)
-  }, [total, onTotalChange])
-
   // Positionsnummer VAT breakdown & insurance/customer split (using account vat_country)
   const { user } = useAuth()
   const vatCountry = user?.accountInfo?.vat_country
+  const isInsuranceMode = disabledPaymentType === 'Krankenkasse'
   const getVatRate = (): number => {
     if (vatCountry === 'Italien (IT)') return 4
     if (vatCountry === 'Österreich (AT)') return 20
@@ -210,11 +200,23 @@ export default function PriceSection({
     positionsVatRate > 0 ? positionsnummerGross / (1 + positionsVatRate / 100) : positionsnummerGross
   const positionsnummerVatAmount = positionsnummerGross - positionsnummerNet
 
-  // Simple split: insurance pays Positionsnummer (inkl. MwSt.), customer pays the rest + Eigenanteil (AT)
-  const isInsuranceMode = disabledPaymentType === 'Krankenkasse'
+  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal + (positionsnummerPrice || 0)
+  const discountAmount = discountType === 'percentage' && discountValue
+    ? (subtotal * parseFloat(discountValue)) / 100
+    : 0
+  // Krankenkasse + AT: Gesamt includes Eigenanteil 43 (customer pays this; also sent as private_price)
+  const eigenanteilForTotal = isInsuranceMode && vatCountry === 'Österreich (AT)' ? 43 : 0
+  const total = subtotal - discountAmount + eigenanteilForTotal
+
+  // Report Gesamt (total) to parent so it can be used as total_price
+  useEffect(() => {
+    onTotalChange?.(total)
+  }, [total, onTotalChange])
+
+  // Simple split: insurance pays Positionsnummer (inkl. MwSt.); customer pays the rest (total already includes Eigenanteil 43 for AT)
   const insurancePays = isInsuranceMode ? positionsnummerGross : 0
   const eigenanteil = isInsuranceMode && vatCountry === 'Österreich (AT)' ? 43 : 0
-  const customerPays = Math.max(total - insurancePays, 0) + eigenanteil
+  const customerPays = Math.max(total - insurancePays, 0)
 
   // Generate hours (05-21) for 24-hour format and minutes (00, 10, 20, 30, 40, 50)
   const hours24 = Array.from({ length: 17 }, (_, i) => String(i + 5).padStart(2, '0'))
@@ -494,7 +496,7 @@ export default function PriceSection({
                   {positionsVatRate > 0 && (
                     <div className="flex justify-between items-center gap-2">
                       <span className="text-sm text-gray-600 truncate">
-                        + {positionsVatRate}% MwSt. auf Positionsnummer
+                        + {positionsVatRate}% MwSt. 
                       </span>
                       <span className="text-sm font-semibold text-gray-900 shrink-0">
                         {formatPrice(positionsnummerVatAmount)}
@@ -526,17 +528,28 @@ export default function PriceSection({
                 <span className="text-base font-bold text-gray-900">Gesamt</span>
                 <span className="text-lg sm:text-xl font-bold text-green-600 shrink-0">{formatPrice(total)}</span>
               </div>
-              {steuersatz != null && mwstAmount != null && (
+
+              {/* {positionsVatRate > 0 && (
+                    <div className="flex justify-end items-center gap-2">
+                      <span className="text-sm text-gray-600 truncate">
+                        + {positionsVatRate}% MwSt. 
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900 shrink-0">
+                        {formatPrice(positionsnummerVatAmount)}
+                      </span>
+                    </div>
+                  )} */}
+              {/* {steuersatz != null && mwstAmount != null && (
                 <div className="flex justify-end">
                   <span className="text-xs text-gray-500">
                     MwSt ({steuersatz}%): {formatPrice(mwstAmount)}
                   </span>
                 </div>
-              )}
+              )} */}
 
               {/* Insurance vs Customer split */}
               <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
-                {isInsuranceMode && (
+                {/* {isInsuranceMode && (
                   <div className="flex justify-between items-center gap-2">
                     <span className="text-sm font-semibold text-sky-700 truncate">
                       Versicherung zahlt
@@ -545,15 +558,15 @@ export default function PriceSection({
                       {formatPrice(insurancePays)}
                     </span>
                   </div>
-                )}
-                <div className="flex justify-between items-center gap-2">
+                )} */}
+                {/* <div className="flex justify-between items-center gap-2">
                   <span className="text-sm font-semibold text-amber-700 truncate">
                     Kunde zahlt
                   </span>
                   <span className="text-sm font-semibold text-amber-700 shrink-0">
                     {formatPrice(customerPays)}
                   </span>
-                </div>
+                </div> */}
                 {eigenanteil > 0 && (
                   <p className="text-xs text-gray-600">
                     Enthält Eigenanteil (AT): {formatPrice(eigenanteil)}

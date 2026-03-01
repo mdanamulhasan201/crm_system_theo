@@ -800,6 +800,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     insuranceTotalPrice: calculateInsuranceTotalPrice(buildInsurancesArray()),
                     insoleStandards: formDataForOrder.insoleStandards || [],
                     notiz_hinzufügen: formDataForOrder.notiz_hinzufügen || undefined,
+                    ...(formDataForOrder.private_price !== undefined && { private_price: Number(formDataForOrder.private_price) }),
+                    ...(formDataForOrder.vat_rate !== undefined && { vat_rate: Number(formDataForOrder.vat_rate) }),
                 };
 
                 // Add versorgungId OR key based on active tab

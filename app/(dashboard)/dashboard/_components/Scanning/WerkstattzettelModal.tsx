@@ -272,7 +272,18 @@ export default function WerkstattzettelModal({
           : 0
       const discountAmountForTotal =
         discountPercent > 0 ? (subtotalForTotal * discountPercent) / 100 : 0
-      const totalPriceOverride = subtotalForTotal - discountAmountForTotal
+      // Krankenkasse + AT: Gesamt (total_price) includes Eigenanteil 43
+      const vatCountry = user?.accountInfo?.vat_country
+      const isKrankenkasseAt = formData?.billingType === 'Krankenkassa' && vatCountry === 'Österreich (AT)'
+      const eigenanteilForTotal = isKrankenkasseAt ? 43 : 0
+      const totalPriceOverride = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
+
+      // private_price: for Krankenkasse + AT = Eigenanteil 43 + Wirtschaftlicher Aufpreis (addon)
+      const privatePrice = isKrankenkasseAt
+        ? 43 + addonPricesTotalForTotal
+        : undefined
+      // vat_rate: 20% MwSt when Krankenkasse + AT and there is Wirtschaftlicher Aufpreis
+      const vatRate = isKrankenkasseAt && addonPricesTotalForTotal > 0 ? 20 : undefined
 
       // Create payload using utility function
       const werkstattzettelPayload = createWerkstattzettelPayload(
@@ -331,6 +342,8 @@ export default function WerkstattzettelModal({
         })(),
         discountType: form.discountType || undefined,
         notiz_hinzufügen: notizText?.trim() || undefined,
+        ...(privatePrice !== undefined && { private_price: Math.round(privatePrice * 100) / 100 }),
+        ...(vatRate !== undefined && { vat_rate: vatRate }),
       }
 
       // Do NOT close the Werkstattzettel modal here.
