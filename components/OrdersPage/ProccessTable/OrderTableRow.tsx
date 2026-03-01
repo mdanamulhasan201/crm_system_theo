@@ -115,12 +115,21 @@ export default function OrderTableRow({
     onPriceClick,
 }: OrderTableRowProps) {
     const { selectedType } = useOrders();
-    // Helper function to safely get string value
+    // Helper function to safely get string value (supports API format: { address, description })
     const getSafeString = (value: any): string => {
         if (value == null) return '';
         if (typeof value === 'string') return value;
-        // Handle object with title/description properties (e.g., geschaeftsstandort)
+        // Handle object with address/description (API format for geschaeftsstandort)
         if (typeof value === 'object' && value !== null) {
+            const addr = value.address && typeof value.address === 'string' ? value.address.trim() : '';
+            const desc = value.description && typeof value.description === 'string' ? value.description.trim() : '';
+            if (desc === 'Versand an Kunden') {
+                return addr || desc;
+            }
+            if (addr || desc) {
+                return desc ? (addr ? `${desc} - ${addr}` : desc) : addr;
+            }
+            // Legacy: title/description
             if (value.title && typeof value.title === 'string') {
                 return value.title.trim() || (value.description && typeof value.description === 'string' ? value.description.trim() : '');
             }
@@ -135,13 +144,21 @@ export default function OrderTableRow({
         }
     };
 
-    // Get safe geschaeftsstandort string
+    // Get safe geschaeftsstandort string for display in Frist column
     const geschaeftsstandortStr = getSafeString(order.geschaeftsstandort);
     // Ensure it's a string before calling substring
     const safeGeschaeftsstandortStr = typeof geschaeftsstandortStr === 'string' ? geschaeftsstandortStr : '';
     const geschaeftsstandortInitials = safeGeschaeftsstandortStr.length >= 2 
         ? safeGeschaeftsstandortStr.substring(0, 2).toUpperCase() 
         : safeGeschaeftsstandortStr.toUpperCase();
+
+    // Extract address and description for two-line display (API format: { address, description })
+    const gs = order.geschaeftsstandort;
+    const geschaeftsstandortAddress = (typeof gs === 'object' && gs !== null && typeof (gs as any).address === 'string')
+        ? (gs as any).address.trim() : '';
+    const geschaeftsstandortDescription = (typeof gs === 'object' && gs !== null && typeof (gs as any).description === 'string')
+        ? (gs as any).description.trim() : '';
+    const hasGeschaeftsstandortLines = !!(geschaeftsstandortAddress || geschaeftsstandortDescription);
 
     const getStatusBadgeColor = (status: string, type?: string | null) => {
         const normalizedStatus = status.replace(/_/g, ' ');
@@ -375,7 +392,7 @@ export default function OrderTableRow({
             </TableCell>
             <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-3">
-                    <div className="flex flex-col items-start">
+                    <div className="flex flex-col items-start gap-0.5">
                         {dueLabel && (
                             <span
                                 className={`text-sm font-medium ${
@@ -394,13 +411,39 @@ export default function OrderTableRow({
                                 {createdLabel}
                             </span>
                         )}
+                        {hasGeschaeftsstandortLines ? (
+                            <div className="flex flex-col gap-0.5 text-xs text-gray-600 max-w-[140px]">
+                                {geschaeftsstandortAddress && (
+                                    <span className="block truncate" title={geschaeftsstandortAddress}>{geschaeftsstandortAddress}</span>
+                                )}
+                                {geschaeftsstandortDescription && (
+                                    <span className="block truncate" title={geschaeftsstandortDescription}>{geschaeftsstandortDescription}</span>
+                                )}
+                            </div>
+                        ) : safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '' ? (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="text-xs text-gray-600 max-w-[140px] truncate block" title={safeGeschaeftsstandortStr}>
+                                            {safeGeschaeftsstandortStr}
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg max-w-xs">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="font-semibold text-sm">Abholort / Geschäftsstandort</div>
+                                            <div className="text-sm text-gray-200">{safeGeschaeftsstandortStr}</div>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ) : null}
                     </div>
-                    {safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '' && (
+                    {(hasGeschaeftsstandortLines || (safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '')) && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div 
-                                        className="flex items-center justify-center cursor-pointer"
+                                        className="flex items-center justify-center cursor-pointer shrink-0"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <div className="w-8 h-8 rounded-full bg-[#61A175] text-white flex items-center justify-center text-xs font-semibold hover:bg-[#61A175]/80 transition-colors">
@@ -408,9 +451,10 @@ export default function OrderTableRow({
                                         </div>
                                     </div>
                                 </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg">
+                                <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg max-w-xs">
                                     <div className="flex flex-col gap-1">
-                                        <div className="font-semibold text-sm">Abholort: {safeGeschaeftsstandortStr}</div>
+                                        <div className="font-semibold text-sm">Abholort / Geschäftsstandort</div>
+                                        <div className="text-sm text-gray-200">{safeGeschaeftsstandortStr}</div>
                                     </div>
                                 </TooltipContent>
                             </Tooltip>
