@@ -90,13 +90,14 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData, selectedType?: string | n
 
     const werkstattzettel = apiOrder.werkstattzettel;
     const product = apiOrder.product || ({} as any);
+    const customer = apiOrder.customer;
 
     const priority = (apiOrder.priority as 'Dringend' | 'Normal') || 'Normal';
     return {
         id: apiOrder.id,
-        customerId: apiOrder.customer.id,
+        customerId: customer?.id ?? '',
         bestellnummer: apiOrder.orderNumber.toString(),
-        kundenname: `${apiOrder.customer.vorname} ${apiOrder.customer.nachname}`,
+        kundenname: customer ? `${customer.vorname ?? ''} ${customer.nachname ?? ''}`.trim() || '—' : '—',
         status: apiOrder.orderStatus,
         displayStatus: getLabelFromApiStatus(apiOrder.orderStatus, selectedType),
         preis: apiOrder.totalPrice
