@@ -278,11 +278,15 @@ export default function WerkstattzettelModal({
       const eigenanteilForTotal = isKrankenkasseAt ? 43 : 0
       const totalPriceOverride = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
 
-      // private_price: for Krankenkasse + AT = Eigenanteil 43 + Wirtschaftlicher Aufpreis (addon)
+      // private_price: Krankenkasse + AT = Eigenanteil 43 + Wirtschaftlicher Aufpreis; Privat = full total (same as totalPrice), no vat_rate for Privat
+      const isPrivat = formData?.billingType === 'Privat'
+      const totalForPayload = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
       const privatePrice = isKrankenkasseAt
         ? 43 + addonPricesTotalForTotal
-        : undefined
-      // vat_rate: 20% MwSt when Krankenkasse + AT and there is Wirtschaftlicher Aufpreis
+        : isPrivat
+          ? totalForPayload
+          : undefined
+      // vat_rate: only for Krankenkasse + AT when Wirtschaftlicher Aufpreis; Privat = no vat_rate
       const vatRate = isKrankenkasseAt && addonPricesTotalForTotal > 0 ? 20 : undefined
 
       // Create payload using utility function
