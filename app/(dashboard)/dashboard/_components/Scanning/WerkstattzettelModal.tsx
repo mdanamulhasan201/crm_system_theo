@@ -13,6 +13,7 @@ import { createWerkstattzettelPayload } from './utils/formDataUtils'
 import { getSettingData } from '@/apis/einlagenApis'
 import { getAllLocations } from '@/apis/setting/locationManagementApis'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface FormData {
   ausführliche_diagnose?: string
@@ -54,7 +55,21 @@ export default function WerkstattzettelModal({
 
   // Use custom hook for form state management
   const form = useWerkstattzettelForm(scanData, isOpen, formData)
-  
+  const { user } = useAuth()
+
+  // Price summary: Gesamt + MwSt (same as SonstigesOrderModal / PriceSection)
+  const [calculatedTotal, setCalculatedTotal] = useState<number | null>(null)
+  const steuersatz = React.useMemo(() => {
+    const vatCountry = user?.accountInfo?.vat_country
+    if (vatCountry === 'Österreich (AT)') return 20
+    if (vatCountry === 'Italien (IT)') return 4
+    return 0
+  }, [user?.accountInfo?.vat_country])
+  const mwstAmount = React.useMemo(() => {
+    if (calculatedTotal == null || steuersatz <= 0) return undefined
+    return Math.round((calculatedTotal * steuersatz) / (100 + steuersatz) * 100) / 100
+  }, [calculatedTotal, steuersatz])
+
   // Set default bezahlt value based on billingType from formData
   useEffect(() => {
     if (isOpen && formData?.billingType && !form.bezahlt) {
@@ -441,6 +456,9 @@ export default function WerkstattzettelModal({
               disabledPaymentType={formData?.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData?.billingType === 'Privat' ? 'Privat' : undefined}
               datumAuftrag={form.datumAuftrag}
               completionDays={completionDays}
+              steuersatz={steuersatz > 0 ? steuersatz : undefined}
+              mwstAmount={mwstAmount}
+              onTotalChange={setCalculatedTotal}
             />
           </div>
 
