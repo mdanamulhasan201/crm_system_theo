@@ -80,8 +80,10 @@ interface OrdersContextType {
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
 
-// Helper function to map API data to OrderData
-const mapApiDataToOrderData = (apiOrder: ApiOrderData, selectedType?: string | null): OrderData => {
+// Helper function to map API data to OrderData (handles null customer/product from API)
+const mapApiDataToOrderData = (apiOrder: ApiOrderData | null | undefined, selectedType?: string | null): OrderData | null => {
+    if (!apiOrder || apiOrder.id == null) return null;
+
     const formatDate = (dateString?: string | null) => {
         if (!dateString) return '—';
         const date = new Date(dateString);
@@ -89,8 +91,8 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData, selectedType?: string | n
     };
 
     const werkstattzettel = apiOrder.werkstattzettel;
-    const product = apiOrder.product || ({} as any);
-    const customer = apiOrder.customer;
+    const product = apiOrder.product ?? ({} as any);
+    const customer = apiOrder.customer ?? null;
 
     const priority = (apiOrder.priority as 'Dringend' | 'Normal') || 'Normal';
     return {
@@ -185,7 +187,9 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         // Always update orders, even if empty array
-        const mappedOrders = apiOrders.map(order => mapApiDataToOrderData(order, selectedType));
+        const mappedOrders = apiOrders
+            .map(order => mapApiDataToOrderData(order, selectedType))
+            .filter((o): o is OrderData => o != null);
 
         // Update ref
         ordersRef.current = mappedOrders;
@@ -270,6 +274,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
                     if (response && response.success && response.data) {
                         const order = response.data;
                         const mappedOrder = mapApiDataToOrderData(order, selectedType);
+                        if (!mappedOrder) return;
 
                         // Extract only orderNumber (Bestellnummer) for AuftragssuchePage
                         const orderNumber = order.orderNumber?.toString() || '';
@@ -517,9 +522,11 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
             const response = await getSingleOrder(orderId);
             if (response.success) {
                 const updatedOrder = mapApiDataToOrderData(response.data, selectedType);
-                setOrders(prevOrders =>
-                    prevOrders.map(o => o.id === orderId ? updatedOrder : o)
-                );
+                if (updatedOrder) {
+                    setOrders(prevOrders =>
+                        prevOrders.map(o => o.id === orderId ? updatedOrder : o)
+                    );
+                }
                 triggerStatsRefresh();
             }
         } catch (error) {
