@@ -1,6 +1,7 @@
 'use client';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getDeliveryDates } from '@/apis/deliveryDateCalculation';
 
 interface Customer {
   id: string;
@@ -51,7 +52,43 @@ export default function ConfirmationModal({
 }: ConfirmationModalProps) {
   const router = useRouter();
   const [show3DUploadPopup, setShow3DUploadPopup] = React.useState(false);
-  
+  const [deliveryDateText, setDeliveryDateText] = useState<string | null>(null);
+  const [isLoadingDelivery, setIsLoadingDelivery] = useState(false);
+
+  // Fetch delivery date for category "Massschafterstellung" when modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    const category = 'Massschafterstellung';
+    const fetchDeliveryDate = async () => {
+      try {
+        setIsLoadingDelivery(true);
+        const response = await getDeliveryDates() as { success?: boolean; data?: Array<{ id: string; day: number; category: string }> };
+        const list = response?.data;
+        if (Array.isArray(list)) {
+          const match = list.find((d) => (d.category || '').trim() === category);
+          if (match != null && typeof match.day === 'number' && match.day >= 0) {
+            const today = new Date();
+            const delivery = new Date(today);
+            delivery.setDate(today.getDate() + match.day);
+            setDeliveryDateText(
+              delivery.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            );
+          } else {
+            setDeliveryDateText(null);
+          }
+        } else {
+          setDeliveryDateText(null);
+        }
+      } catch (err) {
+        console.error('Error fetching delivery dates:', err);
+        setDeliveryDateText(null);
+      } finally {
+        setIsLoadingDelivery(false);
+      }
+    };
+    fetchDeliveryDate();
+  }, [isOpen]);
+
   // Use specific loading state for "NEIN, WEITER OHNE BODEN" button
   const isLoadingWithoutBoden = isCreatingWithoutBoden || isCreatingOrder;
   
@@ -145,6 +182,15 @@ export default function ConfirmationModal({
               {orderPrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
             </p>
             <p className="text-[10px] text-gray-400 mt-0.5 leading-tight italic">exkl. Zustellung / Versand</p>
+            {(deliveryDateText || isLoadingDelivery) && (
+              <p className="text-xs text-slate-500 mt-2">
+                {isLoadingDelivery ? (
+                  <span>Lieferzeit wird geladen…</span>
+                ) : deliveryDateText ? (
+                  <span>Die voraussichtliche Lieferzeit beträgt ca. <strong className="text-slate-700">{deliveryDateText}</strong></span>
+                ) : null}
+              </p>
+            )}
           </div>
 
           {/* Zusatzoptionen */}
