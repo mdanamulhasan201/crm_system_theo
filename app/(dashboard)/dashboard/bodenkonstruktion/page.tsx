@@ -311,11 +311,11 @@ export default function BodenkonstruktionPage() {
         }
     }, [selected.schlemmaterial, textAreas.schlemmaterial_preferred_colour, sohlenhoeheDifferenziert])
 
-    // Handle final form submission
-    const handleFinalSubmit = async () => {
+    // Handle final form submission (deliveryDate from CompletionPopUp when deliveryCategory is set)
+    const handleFinalSubmit = async (deliveryDate?: string | null) => {
         setIsSubmitting(true)
         try {
-            const formData = await prepareCustomBodenkonstruktionFormData(pdfBlob)
+            const formData = await prepareCustomBodenkonstruktionFormData(pdfBlob, deliveryDate ?? undefined)
             const response = await createCustomBodenkonstruktion(formData)
             
             toast.success(response.message || "Bodenkonstruktion erfolgreich erstellt!", { id: "creating-bodenkonstruktion" })
@@ -396,7 +396,7 @@ export default function BodenkonstruktionPage() {
     }
 
     // Prepare form data for custom bodenkonstruktion API
-    const prepareCustomBodenkonstruktionFormData = async (pdfBlob: Blob | null): Promise<FormData> => {
+    const prepareCustomBodenkonstruktionFormData = async (pdfBlob: Blob | null, deliveryDateFromModal?: string): Promise<FormData> => {
         const formData = new FormData()
 
         // Add customer name
@@ -404,10 +404,15 @@ export default function BodenkonstruktionPage() {
             formData.append('other_customer_name', customerName)
         }
 
-        // Add delivery date (ISO format) - use count from API
-        const deliveryDateObj = new Date()
-        deliveryDateObj.setDate(deliveryDateObj.getDate() + deliveryDaysCount)
-        formData.append('deliveryDate', deliveryDateObj.toISOString())
+        // Add delivery date (ISO format) - from modal when provided (DD.MM.YYYY), else from API count
+        if (deliveryDateFromModal && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(deliveryDateFromModal)) {
+            const [d, m, y] = deliveryDateFromModal.split('.').map(Number)
+            formData.append('deliveryDate', new Date(y, m - 1, d).toISOString())
+        } else {
+            const deliveryDateObj = new Date()
+            deliveryDateObj.setDate(deliveryDateObj.getDate() + deliveryDaysCount)
+            formData.append('deliveryDate', deliveryDateObj.toISOString())
+        }
 
         // Add total price
         formData.append('totalPrice', grandTotal.toFixed(2))

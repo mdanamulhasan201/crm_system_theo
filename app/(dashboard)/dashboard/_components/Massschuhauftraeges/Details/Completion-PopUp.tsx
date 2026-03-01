@@ -34,7 +34,8 @@ interface ShaftConfiguration {
 
 interface CompletionPopUpProps {
   onClose: () => void;
-  onConfirm: () => void;
+  /** Called when user confirms; receives calculated deliveryDate (DD.MM.YYYY) when deliveryCategory is set and API returned a date */
+  onConfirm: (deliveryDate?: string | null) => void;
   productName: string;
   customerName?: string;
   value: string;
@@ -207,7 +208,7 @@ const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value,
           </button>
           <button 
             className="py-2.5 px-6 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 border-none outline-none bg-[#36A866] text-white hover:bg-[#2d8a55] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2" 
-            onClick={onConfirm}
+            onClick={() => onConfirm(deliveryDateText)}
             disabled={isLoading}
           >
             {isLoading && (

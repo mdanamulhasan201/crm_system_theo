@@ -202,7 +202,7 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
   };
 
   // ==================== Form Submission ====================
-  const handleOrderSubmit = async () => {
+  const handleOrderSubmit = async (deliveryDate?: string | null) => {
     if (!orderId) {
       toast.error("Bestellungs-ID fehlt. Bitte versuchen Sie es erneut.");
       setShowModal2(false);
@@ -221,6 +221,11 @@ export default function ShoeDetails({ orderId: orderIdProp }: ShoeDetailsProps) 
         optionInputs,
         grandTotal
       );
+
+      if (deliveryDate && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(deliveryDate)) {
+        const [d, m, y] = deliveryDate.split('.').map(Number);
+        formData.append('deliveryDate', new Date(y, m - 1, d).toISOString());
+      }
 
       console.log("Calling API with orderId:", orderId);
 

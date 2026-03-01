@@ -313,7 +313,7 @@ export default function CustomShoeOrderPage() {
   };
 
   // After PDF is confirmed, proceed with order creation - Optimized function
-  const proceedWithOrderWithoutBoden = async (blobToUse?: Blob | null) => {
+  const proceedWithOrderWithoutBoden = async (blobToUse?: Blob | null, deliveryDate?: string | null) => {
     setIsCreatingOrder(true);
 
     try {
@@ -334,6 +334,12 @@ export default function CustomShoeOrderPage() {
 
       // Prepare form data for API (async operation)
       const formData = await prepareStep1FormData(customShaftData as any);
+
+      // Add delivery date to payload when provided (DD.MM.YYYY from modal -> ISO)
+      if (deliveryDate && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(deliveryDate)) {
+        const [d, m, y] = deliveryDate.split('.').map(Number);
+        formData.append('deliveryDate', new Date(y, m - 1, d).toISOString());
+      }
 
       // Add PDF invoice if available (synchronous)
       if (finalBlob) {
@@ -635,12 +641,12 @@ export default function CustomShoeOrderPage() {
             additionalNotes,
             deliveryMethod,
           }}
-          onConfirm={() => {
+          onConfirm={(deliveryDate) => {
             // Only "ohne-boden" flow uses completion popup now
             // Call function directly (no await - function handles async internally)
             // Modal will be closed after order is successfully completed in proceedWithOrderWithoutBoden
             if (pendingAction === 'ohne-boden') {
-              proceedWithOrderWithoutBoden(pdfBlob);
+              proceedWithOrderWithoutBoden(pdfBlob, deliveryDate);
             }
             // Don't close modal here - let proceedWithOrderWithoutBoden handle it after success
           }}

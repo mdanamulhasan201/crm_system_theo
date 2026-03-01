@@ -1178,12 +1178,19 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     value={grandTotal.toFixed(2)}
                     isLoading={isSubmitting}
                     deliveryCategory="Bodenkonstruktion"
-                    onConfirm={async () => {
+                    onConfirm={async (deliveryDate) => {
                         // Set loading state immediately
                         setIsSubmitting(true)
                         
                         // Use customShaftData or fallback to contextData (for redirect flow)
                         const shaftDataToUse = customShaftData || contextData
+                        
+                        const appendDeliveryDate = (formData: FormData, ddMmYyyy?: string | null) => {
+                            if (ddMmYyyy && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(ddMmYyyy)) {
+                                const [d, m, y] = ddMmYyyy.split('.').map(Number)
+                                formData.append('deliveryDate', new Date(y, m - 1, d).toISOString())
+                            }
+                        }
                         
                         try {
                             if (orderId) {
@@ -1200,6 +1207,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                     
                                     // Prepare FormData (async operation)
                                     const { formData } = await prepareFormDataForAdmin2(shaftDataToUse, pdfBlob)
+                                    appendDeliveryDate(formData, deliveryDate)
                                     
                                     // Make API call (derive isCustomOrder from shaft data)
                                     const isCustomOrderForApi = !!shaftDataToUse?.uploadedImage
@@ -1227,6 +1235,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                                     
                                     // Prepare FormData (async operation)
                                     const { formData } = await prepareFormDataForAdmin2(shaftDataToUse, pdfBlob)
+                                    appendDeliveryDate(formData, deliveryDate)
                                     
                                     // Make API call (derive isCustomOrder from shaft data)
                                     const isCustomOrderForApi = !!shaftDataToUse?.uploadedImage
