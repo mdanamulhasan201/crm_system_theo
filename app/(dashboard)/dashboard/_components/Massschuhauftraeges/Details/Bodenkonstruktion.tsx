@@ -32,6 +32,7 @@ import AbsatzFormModal from "./Bodenkonstruktion/modals/AbsatzFormModal"
 // Hooks
 import { useSoleData } from "@/hooks/massschuhe/useSoleData"
 import { useBodenkonstruktionCalculations } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
+import { useDeliveryDateByCategory } from "@/hooks/useDeliveryDateByCategory"
 
 // Utils
 import { prepareOrderDataForPDF, parseEuroFromText } from "./HelperFunctions"
@@ -100,23 +101,29 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     // Hooks
     const { soleOptions } = useSoleData()
     const { order } = useGetSingleMassschuheOrder(orderId ?? null)
+    const { deliveryDate: deliveryDateKomplettfertigung } = useDeliveryDateByCategory('Komplettfertigung')
 
-    // Prepare order data for PDF
+    // Prepare order data for PDF (this page always shows Komplettfertigung delivery date when from redirect)
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
-        // If no orderId, use context data (custom order from Step 1)
+        let base: OrderDataForPDF
+        // If no orderId, use context data (custom order from Step 1 / redirect)
         if (!orderId && contextData) {
             const { getOrderNumber, getDeliveryDate } = require('@/utils/customShoeOrderHelpers')
-            return {
+            base = {
                 customerName: contextData.customerName || contextData.other_customer_name || 'Kunde',
                 orderNumber: getOrderNumber(),
                 deliveryDate: getDeliveryDate(),
                 productName: contextData.productDescription || 'Custom Made #1000',
                 totalPrice: contextData.totalPrice || 0,
             }
+        } else {
+            base = prepareOrderDataForPDF(order)
         }
-        // Otherwise use order data from API
-        return prepareOrderDataForPDF(order)
-    }, [order, orderId, contextData])
+        return {
+            ...base,
+            deliveryDate: deliveryDateKomplettfertigung ?? base.deliveryDate,
+        }
+    }, [order, orderId, contextData, deliveryDateKomplettfertigung])
 
     // Determine base price: use custom shaft price if available, otherwise use order price
     // Always add default value of 189 to the base price
@@ -1177,7 +1184,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     customerName={orderDataForPDF.customerName}
                     value={grandTotal.toFixed(2)}
                     isLoading={isSubmitting}
-                    deliveryCategory="Bodenkonstruktion"
+                    deliveryCategory="Komplettfertigung"
                     onConfirm={async (deliveryDate) => {
                         // Set loading state immediately
                         setIsSubmitting(true)
@@ -1185,9 +1192,11 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                         // Use customShaftData or fallback to contextData (for redirect flow)
                         const shaftDataToUse = customShaftData || contextData
                         
+                        // Always send date in payload under key "deliveryDate" (ISO string)
                         const appendDeliveryDate = (formData: FormData, ddMmYyyy?: string | null) => {
-                            if (ddMmYyyy && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(ddMmYyyy)) {
-                                const [d, m, y] = ddMmYyyy.split('.').map(Number)
+                            const dateToUse = ddMmYyyy ?? orderDataForPDF.deliveryDate
+                            if (dateToUse && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(dateToUse)) {
+                                const [d, m, y] = dateToUse.split('.').map(Number)
                                 formData.append('deliveryDate', new Date(y, m - 1, d).toISOString())
                             }
                         }

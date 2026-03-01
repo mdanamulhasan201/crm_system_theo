@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useRef } from "react"
+import { useDeliveryDateByCategory } from "@/hooks/useDeliveryDateByCategory"
 
 // Order data interface for dynamic PDF content
 export interface ShaftOrderDataForPDF {
@@ -21,6 +22,8 @@ interface ShaftPDFPopupProps {
   onConfirm: (pdfBlob?: Blob) => void
   orderData: ShaftOrderDataForPDF
   shaftImage: string | null
+  /** When set (e.g. "Komplettfertigung" for JA BODEN KONFIGURIEREN), delivery date is calculated from API by category */
+  deliveryCategory?: string | null
   shaftConfiguration: {
     customCategory?: string
     cadModeling?: '1x' | '2x'
@@ -55,11 +58,16 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
   onConfirm,
   orderData,
   shaftImage,
+  deliveryCategory,
   shaftConfiguration,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
   const [isAbschließenLoading, setIsAbschließenLoading] = React.useState(false)
+
+  const { deliveryDate: deliveryDateByCategory } = useDeliveryDateByCategory(
+    isOpen && deliveryCategory?.trim() ? deliveryCategory.trim() : null
+  )
 
   // Map closureType value to display name (same as in ProductConfiguration)
   const getClosureTypeDisplayName = (closureType: string | undefined): string => {
@@ -118,7 +126,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
   const displayOrderNumber = orderData?.orderNumber || "#000000"
   const displayCustomerName = orderData?.customerName || "Kunde"
   const displayProductName = orderData?.productName || "Maßschaft"
-  const displayDeliveryDate = orderData?.deliveryDate || "-"
+  const displayDeliveryDate = deliveryDateByCategory ?? orderData?.deliveryDate ?? "-"
 
   // Footer data
   const footerPhone = orderData?.footerPhone || "+39 366 5087742"

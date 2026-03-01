@@ -1,7 +1,7 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getDeliveryDates } from '@/apis/deliveryDateCalculation';
+import { useDeliveryDateByCategory } from '@/hooks/useDeliveryDateByCategory';
 
 interface Customer {
   id: string;
@@ -52,42 +52,9 @@ export default function ConfirmationModal({
 }: ConfirmationModalProps) {
   const router = useRouter();
   const [show3DUploadPopup, setShow3DUploadPopup] = React.useState(false);
-  const [deliveryDateText, setDeliveryDateText] = useState<string | null>(null);
-  const [isLoadingDelivery, setIsLoadingDelivery] = useState(false);
-
-  // Fetch delivery date for category "Massschafterstellung" when modal is open
-  useEffect(() => {
-    if (!isOpen) return;
-    const category = 'Massschafterstellung';
-    const fetchDeliveryDate = async () => {
-      try {
-        setIsLoadingDelivery(true);
-        const response = await getDeliveryDates() as { success?: boolean; data?: Array<{ id: string; day: number; category: string }> };
-        const list = response?.data;
-        if (Array.isArray(list)) {
-          const match = list.find((d) => (d.category || '').trim() === category);
-          if (match != null && typeof match.day === 'number' && match.day >= 0) {
-            const today = new Date();
-            const delivery = new Date(today);
-            delivery.setDate(today.getDate() + match.day);
-            setDeliveryDateText(
-              delivery.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
-            );
-          } else {
-            setDeliveryDateText(null);
-          }
-        } else {
-          setDeliveryDateText(null);
-        }
-      } catch (err) {
-        console.error('Error fetching delivery dates:', err);
-        setDeliveryDateText(null);
-      } finally {
-        setIsLoadingDelivery(false);
-      }
-    };
-    fetchDeliveryDate();
-  }, [isOpen]);
+  const { deliveryDate: deliveryDateText, loading: isLoadingDelivery } = useDeliveryDateByCategory(
+    isOpen ? 'Massschafterstellung' : null
+  );
 
   // Use specific loading state for "NEIN, WEITER OHNE BODEN" button
   const isLoadingWithoutBoden = isCreatingWithoutBoden || isCreatingOrder;

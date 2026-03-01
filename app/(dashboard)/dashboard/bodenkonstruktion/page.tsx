@@ -28,7 +28,9 @@ import { parseEuroFromText } from "../_components/Massschuhauftraeges/Details/He
 
 // APIs
 import { createCustomBodenkonstruktion } from "@/apis/MassschuheManagemantApis"
-import { getDeliveryDates } from "@/apis/deliveryDateCalculation"
+
+// Hooks - delivery date by category
+import { useDeliveryDateByCategory } from "@/hooks/useDeliveryDateByCategory"
 import Image from "next/image"
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 
@@ -86,44 +88,14 @@ export default function BodenkonstruktionPage() {
     const [showAbsatzFormModal, setShowAbsatzFormModal] = useState(false)
     const [selectedAbsatzForm, setSelectedAbsatzForm] = useState<string | null>(null)
 
-    // Delivery days count from API
-    const [deliveryDaysCount, setDeliveryDaysCount] = useState<number>(14) // Default to 14 if API fails
-
     // Hooks
     const { soleOptions } = useSoleData()
-
-    // Fetch delivery days from API by category "Bodenkonstruktion"
-    const DELIVERY_CATEGORY = "Bodenkonstruktion"
-    React.useEffect(() => {
-        const fetchDeliveryDays = async () => {
-            try {
-                const response = await getDeliveryDates()
-                const list = response?.data ?? []
-                const match = Array.isArray(list)
-                    ? list.find((item: { category?: string }) => item?.category === DELIVERY_CATEGORY)
-                    : null
-                const days = match && typeof (match as { day?: number }).day === 'number' ? (match as { day: number }).day : 14
-                if (days > 0) {
-                    setDeliveryDaysCount(days)
-                }
-            } catch (error) {
-                console.error("Error fetching delivery days count:", error)
-            }
-        }
-        fetchDeliveryDays()
-    }, [])
-
-    // Calculate delivery date based on count from API
-    const deliveryDate = useMemo(() => {
-        const today = new Date()
-        const delivery = new Date(today)
-        delivery.setDate(today.getDate() + deliveryDaysCount)
-        return delivery.toLocaleDateString('de-DE', { 
-            day: '2-digit', 
-            month: '2-digit', 
-            year: 'numeric' 
-        })
-    }, [deliveryDaysCount])
+    const { deliveryDate: deliveryDateFromApi, days: deliveryDaysCount } = useDeliveryDateByCategory("Bodenkonstruktion")
+    const deliveryDate = deliveryDateFromApi ?? (() => {
+        const d = new Date()
+        d.setDate(d.getDate() + deliveryDaysCount)
+        return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    })()
 
     // Base price - start with 189.99€
     const basePrice = 189.99

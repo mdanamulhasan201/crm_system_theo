@@ -549,6 +549,7 @@ export default function CustomShoeOrderPage() {
           }}
           orderData={orderDataForPDF}
           shaftImage={uploadedImage}
+          deliveryCategory={pendingAction === 'boden' ? 'Komplettfertigung' : pendingAction === 'ohne-boden' ? 'Massschafterstellung' : undefined}
           shaftConfiguration={{
             customCategory,
             cadModeling,

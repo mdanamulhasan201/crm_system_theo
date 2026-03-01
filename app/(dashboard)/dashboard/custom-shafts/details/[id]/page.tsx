@@ -714,6 +714,7 @@ export default function CollectionShaftDetailsPage() {
           }}
           orderData={orderDataForPDF}
           shaftImage={shaft?.image || null}
+          deliveryCategory={pendingAction === 'boden' ? 'Komplettfertigung' : pendingAction === 'ohne-boden' ? 'Massschafterstellung' : undefined}
           shaftConfiguration={{
             customCategory,
             cadModeling,
