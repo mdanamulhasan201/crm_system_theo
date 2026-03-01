@@ -63,6 +63,7 @@ export interface MassschuheOrderV2Payload {
     supply_note?: string;
     quantity?: number;
     total_price?: number;
+    private_price?: number;
     payment_status?: string;
     deposit_provision?: number;
     foot_analysis_price?: number | object;
@@ -434,6 +435,7 @@ export default function MassschuheOrderModal({
             supply_note: formData.versorgungNote || undefined,
             quantity: qty,
             total_price: totalPrice,
+            private_price: vatCountryCode === 'AT' ? 43 : undefined,
             payment_status: bezahlt || undefined,
             foot_analysis_price: paymentType === 'privat' && selectedFußanalyse ? getFußanalysePrice(selectedFußanalyse) : undefined,
             pick_up_location: pickUpLocationJson,
@@ -732,6 +734,12 @@ export default function MassschuheOrderModal({
                                                             <span className="text-base font-bold text-gray-900">Gesamt</span>
                                                             <span className="text-xl font-bold text-green-600">{formatPrice(total)}</span>
                                                         </div>
+                                                        {vatCountry === 'Österreich (AT)' && (
+                                                            <div className="flex justify-between items-center pt-1.5">
+                                                                <span className="text-xs text-gray-500">Enthält Eigenanteil (AT):</span>
+                                                                <span className="text-xs text-gray-600">43,00€</span>
+                                                            </div>
+                                                        )}
                                                     </>
                                                 )}
                                                 {vatRate === 0 && (
@@ -786,6 +794,12 @@ export default function MassschuheOrderModal({
                                         <span className="text-base font-bold text-gray-900">Gesamt</span>
                                         <span className="text-xl font-bold text-green-600">{formatPrice(privSubtotal)}</span>
                                     </div>
+                                    {vatCountry === 'Österreich (AT)' && (
+                                        <div className="flex justify-between items-center pt-1.5">
+                                            <span className="text-xs text-gray-500">Enthält Eigenanteil (AT):</span>
+                                            <span className="text-xs text-gray-600">43,00€</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         );
