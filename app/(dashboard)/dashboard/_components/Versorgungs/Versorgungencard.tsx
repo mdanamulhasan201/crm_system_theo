@@ -20,11 +20,21 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
     const [emblaRef, emblaApi] = useEmblaCarousel({
         slidesToScroll: 1,
         align: 'start',
+        containScroll: 'trimSnaps',
         breakpoints: {
+            '(min-width: 640px)': { slidesToScroll: 1 },
             '(min-width: 768px)': { slidesToScroll: 2 },
             '(min-width: 1024px)': { slidesToScroll: 4 }
         }
     })
+
+    // Re-init carousel on resize so card width updates (tab/tablet/mobile)
+    useEffect(() => {
+        if (!emblaApi) return
+        const handleResize = () => emblaApi.reInit()
+        window.addEventListener('resize', handleResize)
+        return () => window.removeEventListener('resize', handleResize)
+    }, [emblaApi])
 
     const scrollPrev = React.useCallback(() => {
         if (emblaApi) emblaApi.scrollPrev()
@@ -178,82 +188,90 @@ function VersorgungencardSection({ einlageName, einlageId }: { einlageName: stri
     return (
         <div className='flex flex-col gap-4'>
             <h1 className='text-2xl font-bold'>{einlageName}</h1>
-            <div className='relative px-4'>
-                <div className="overflow-hidden" ref={emblaRef}>
-                    <div className="flex">
+            <div className='relative px-2 sm:px-4 w-full max-w-full overflow-hidden'>
+                <div className="overflow-hidden w-full" ref={emblaRef}>
+                    <div className="flex touch-pan-y">
                         {cards.map((card, index) => (
-                            <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] p-2 flex flex-col items-center">
-                                <div className='border border-gray-900 p-5 flex flex-col gap-3 rounded-xl h-[320px] w-full'>
-                                    {/* Versorgung at top */}
-                                    <p className='font-bold text-lg'>Versorgung: <span className='font-normal text-xl'>{card.versorgung}</span></p>
+                            <div key={index} className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] px-1.5 sm:p-2 flex flex-col items-stretch">
+                                {/* Card: content + buttons inside so nothing overflows */}
+                                <div className='border border-gray-900 rounded-xl flex flex-col overflow-hidden w-full min-h-[280px] flex-1'>
+                                    {/* Scrollable content area - prevents data overflow */}
+                                    <div className='p-4 sm:p-5 flex flex-col gap-2 flex-1 min-h-0 overflow-y-auto overflow-x-hidden'>
+                                        <p className='font-bold text-base sm:text-lg shrink-0'>Versorgung: <span className='font-normal text-lg sm:text-xl wrap-break-word'>{card.versorgung}</span></p>
 
-                                    {/* Type Badge */}
-                                    {card.type && (
-                                        <div className='flex items-center gap-2'>
-                                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                                card.type === 'milling_block' 
-                                                    ? 'bg-blue-100 text-blue-800' 
-                                                    : 'bg-green-100 text-green-800'
-                                            }`}>
-                                                {card.type === 'milling_block' ? 'Fräsblock' : 'Einlagenrohlinge'}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {/* Materials + Einlage Name */}
-                                    <div className='flex flex-col gap-2'>
-                                        <p className='font-bold'>Materialien:
-                                            <span className='font-normal ml-2'>
-                                                {Array.isArray(card.materialien)
-                                                    ? card.materialien.join(', ')
-                                                    : card.materialien}
-                                            </span>
-                                        </p>
-                                        {/* Name */}
-                                        {/* <h2 className='text-xl xl:text-2xl font-bold'></h2> */}
-                                        <p className='font-bold'>Einlage: <span className='font-normal'>{card.name}</span></p>
-                                    </div>
-
-                                    {/* Diagnosis Status - max 3 on card, rest in modal */}
-                                    {Array.isArray(card.diagnosis_status) && card.diagnosis_status.length > 0 && (
-                                        <div className='flex flex-col gap-2 min-h-0 flex-1'>
-                                            <p className='font-bold'>Diagnose:</p>
-                                            <div className='flex flex-wrap gap-2'>
-                                                {card.diagnosis_status.slice(0, 3).map((status: string, idx: number) => (
-                                                    <span key={idx} className='px-3 py-1 bg-gray-100 text-gray-500 rounded-full text-sm'>
-                                                        {status}
-                                                    </span>
-                                                ))}
-                                                {card.diagnosis_status.length > 3 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setDiagnosisModalList(Array.isArray(card.diagnosis_status) ? card.diagnosis_status : []);
-                                                            setDiagnosisModalOpen(true);
-                                                        }}
-                                                        className='px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-300 cursor-pointer'
-                                                    >
-                                                        +{card.diagnosis_status.length - 3} mehr
-                                                    </button>
-                                                )}
+                                        {card.type && (
+                                            <div className='flex items-center gap-2 shrink-0'>
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                    card.type === 'milling_block' 
+                                                        ? 'bg-blue-100 text-blue-800' 
+                                                        : 'bg-green-100 text-green-800'
+                                                }`}>
+                                                    {card.type === 'milling_block' ? 'Fräsblock' : 'Einlagenrohlinge'}
+                                                </span>
                                             </div>
+                                        )}
+
+                                        <div className='flex flex-col gap-1 min-w-0'>
+                                            <p className='font-bold text-sm sm:text-base'>
+                                                Materialien:
+                                                <span className='font-normal ml-2 wrap-break-word'>
+                                                    {Array.isArray(card.materialien)
+                                                        ? card.materialien.join(', ')
+                                                        : card.materialien}
+                                                </span>
+                                            </p>
+                                            <p className='font-bold text-sm sm:text-base'>Einlage: <span className='font-normal wrap-break-word'>{card.name}</span></p>
                                         </div>
-                                    )}
-                                </div>
-                                <div className='flex flex-col gap-2 mt-3 w-full items-center'>
-                                    <button className='bg-black text-white px-6 py-2 rounded-full text-lg w-3/4 cursor-pointer' onClick={() => handleEditClick(card)}>Bearbeiten</button>
-                                    <button className='underline text-black w-3/4 cursor-pointer' onClick={() => handleDeleteClick(card.id.toString())}>Entfernen</button>
+
+                                        {Array.isArray(card.diagnosis_status) && card.diagnosis_status.length > 0 && (
+                                            <div className='flex flex-col gap-1.5 min-h-0 flex-1'>
+                                                <p className='font-bold text-sm sm:text-base shrink-0'>Diagnose:</p>
+                                                <div className='flex flex-wrap items-center gap-1.5'>
+                                                    {/* Show only 1 on card; click opens modal with all */}
+                                                    {card.diagnosis_status.slice(0, 1).map((status: string, idx: number) => (
+                                                        <button
+                                                            key={idx}
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setDiagnosisModalList(Array.isArray(card.diagnosis_status) ? card.diagnosis_status : []);
+                                                                setDiagnosisModalOpen(true);
+                                                            }}
+                                                            className='px-2.5 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs sm:text-sm truncate max-w-full text-left hover:bg-gray-200 cursor-pointer'
+                                                        >
+                                                            {status}
+                                                        </button>
+                                                    ))}
+                                                    {card.diagnosis_status.length > 1 && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                setDiagnosisModalList(Array.isArray(card.diagnosis_status) ? card.diagnosis_status : []);
+                                                                setDiagnosisModalOpen(true);
+                                                            }}
+                                                            className='px-2.5 py-0.5 bg-gray-200 text-gray-700 rounded-full text-xs sm:text-sm font-medium hover:bg-gray-300 cursor-pointer shrink-0'
+                                                        >
+                                                            +{card.diagnosis_status.length - 1} mehr
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {/* Buttons inside card - always visible, no overflow */}
+                                    <div className='flex flex-col gap-2 p-4 pt-2 sm:p-5 sm:pt-3 border-t border-gray-100 shrink-0'>
+                                        <button className='bg-black text-white px-4 sm:px-6 py-2 rounded-full text-sm sm:text-lg w-full max-w-[85%] mx-auto cursor-pointer' onClick={() => handleEditClick(card)}>Bearbeiten</button>
+                                        <button className='underline text-black text-sm sm:text-base w-full max-w-[85%] mx-auto cursor-pointer py-1' onClick={() => handleDeleteClick(card.id.toString())}>Entfernen</button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
                         {/* Plus Card */}
-                        <div className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] p-2 flex items-center justify-center">
+                        <div className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] px-1.5 sm:p-2 flex items-center justify-center">
                             <button
                                 onClick={handleAddNew}
-                                className="w-full cursor-pointer h-full border-2 border-dashed border-gray-500 flex flex-col items-center justify-center rounded-lg min-h-[300px] hover:bg-gray-50 transition"
-                                style={{ minHeight: '300px' }}
+                                className="w-full cursor-pointer border-2 border-dashed border-gray-500 flex flex-col items-center justify-center rounded-xl min-h-[280px] hover:bg-gray-50 transition"
                             >
-                                <Plus className="w-16 h-16 text-gray-500 border border-gray-500 rounded-full p-1" />
+                                <Plus className="w-12 h-12 sm:w-16 sm:h-16 text-gray-500 border border-gray-500 rounded-full p-1 shrink-0" />
                             </button>
                         </div>
                     </div>
@@ -373,8 +391,8 @@ export default function Versorgungencard() {
 
     // Shimmer loading component
     const ShimmerCard = () => (
-        <div className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] p-2">
-            <div className='border border-gray-200 p-5 flex flex-col gap-1 rounded-xl min-h-[260px] w-full'>
+        <div className="flex-[0_0_100%] min-w-0 sm:flex-[0_0_50%] lg:flex-[0_0_25%] px-1.5 sm:p-2">
+            <div className='border border-gray-200 p-4 sm:p-5 flex flex-col gap-1 rounded-xl min-h-[280px] w-full'>
                 <div className="h-6 bg-gray-200 rounded animate-pulse mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded animate-pulse mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
