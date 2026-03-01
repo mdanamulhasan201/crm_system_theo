@@ -46,6 +46,7 @@ export interface MassschuheOrderV2Payload {
     kva?: boolean;
     halbprobe?: boolean;
     insurances?: string;
+    insurance_price?: number;
     half_sample_required?: boolean;
     preparation_date?: string;
     notes?: string;
@@ -370,7 +371,9 @@ export default function MassschuheOrderModal({
         };
 
         // Total price (Gesamt): Krankenkassa = positions * qty + VAT; Privat = (foot + insole) * qty
+        // insurance_price: Krankenkassa only = positions subtotal (Zwischensumme, before VAT)
         let totalPrice: number;
+        let insurancePrice: number | undefined;
         if (paymentType === 'privat') {
             totalPrice = (getFußanalysePrice(selectedFußanalyse) + (parseFloat(selectedEinlagenversorgung) || 0)) * qty;
         } else {
@@ -381,7 +384,8 @@ export default function MassschuheOrderModal({
                 return sum + (typeof opt?.price === 'number' ? opt.price : 0);
             }, 0);
             const vatRate = vatCountryCode === 'IT' ? 4 : vatCountryCode === 'AT' ? 20 : 0;
-            totalPrice = positionsSum * qty * (1 + vatRate / 100);
+            insurancePrice = positionsSum * qty;
+            totalPrice = insurancePrice * (1 + vatRate / 100);
         }
 
         const branchLocationJson = JSON.stringify({
@@ -418,6 +422,7 @@ export default function MassschuheOrderModal({
             kva: formData.kostenvoranschlag === true,
             halbprobe: formData.halbprobeGeplant === true,
             insurances: (formData.selectedPositionsnummer?.length && paymentType === 'krankenkasse') ? buildInsurancesForV2() : undefined,
+            insurance_price: paymentType === 'krankenkasse' ? insurancePrice : undefined,
             half_sample_required: halfSampleRequired,
             preparation_date: halfSampleRequired ? (preparationDateWhenHalfSample ?? undefined) : undefined,
             notes: halfSampleRequired ? notesWhenHalfSample : (orderNote || undefined),
