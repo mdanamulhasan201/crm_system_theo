@@ -370,6 +370,11 @@ export default function MassschuheOrderModal({
             return JSON.stringify(arr);
         };
 
+        // VAT rate for payload: Krankenkassa = country-wise (AT 20, IT 4, else 0); Privat = formData.tax (steuersatz)
+        const payloadVatRate = paymentType === 'krankenkasse'
+            ? (vatCountryCode === 'IT' ? 4 : vatCountryCode === 'AT' ? 20 : 0)
+            : (formData.tax ? parseFloat(formData.tax) : undefined);
+
         // Total price (Gesamt): Krankenkassa = positions * qty + VAT; Privat = (foot + insole) * qty
         // insurance_price: Krankenkassa only = positions subtotal (Zwischensumme, before VAT)
         let totalPrice: number;
@@ -415,8 +420,7 @@ export default function MassschuheOrderModal({
             customerId: customer.id,
             medical_diagnosis: formData.arztlicheDiagnose || undefined,
             detailed_diagnosis: formData.ausführlicheDiagnose || undefined,
-            price: paymentType === 'privat' ? parseFloat(formData.price || '0') || undefined : undefined,
-            vat_rate: paymentType === 'privat' && formData.tax ? parseFloat(formData.tax) || undefined : undefined,
+            vat_rate: payloadVatRate,
             branch_location: branchLocationJson,
             employeeId: formData.selectedEmployeeId || undefined,
             kva: formData.kostenvoranschlag === true,
@@ -440,7 +444,7 @@ export default function MassschuheOrderModal({
             supply_note: formData.versorgungNote || undefined,
             quantity: qty,
             total_price: totalPrice,
-            private_price: vatCountryCode === 'AT' ? 43 : undefined,
+            private_price: paymentType === 'privat' ? totalPrice : (paymentType === 'krankenkasse' && vatCountryCode === 'AT' ? 43 : undefined),
             payment_status: bezahlt || undefined,
             foot_analysis_price: paymentType === 'privat' && selectedFußanalyse ? getFußanalysePrice(selectedFußanalyse) : undefined,
             pick_up_location: pickUpLocationJson,
@@ -799,12 +803,6 @@ export default function MassschuheOrderModal({
                                         <span className="text-base font-bold text-gray-900">Gesamt</span>
                                         <span className="text-xl font-bold text-green-600">{formatPrice(privSubtotal)}</span>
                                     </div>
-                                    {vatCountry === 'Österreich (AT)' && (
-                                        <div className="flex justify-between items-center pt-1.5">
-                                            <span className="text-xs text-gray-500">Enthält Eigenanteil (AT):</span>
-                                            <span className="text-xs text-gray-600">43,00€</span>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         );
