@@ -1164,7 +1164,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         onClick={handleSpeichernClick}
                         disabled={isCreating}
                     >
-                        {isCreating ? 'Maßschuhversorgung gestartet...' : 'Maßschuhversorgung gestartet'}
+                        {isCreating ? 'Speichern...' : 'Speichern'}
                     </Button>
             </div>
 

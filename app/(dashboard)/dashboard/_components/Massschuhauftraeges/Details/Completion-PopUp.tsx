@@ -3,6 +3,7 @@
 import { CloseIcon } from './Icons';
 import { useState, useEffect } from 'react';
 import { balanceMassschuheOrder } from '@/apis/MassschuheManagemantApis';
+import { getDeliveryDates } from '@/apis/deliveryDateCalculation';
 
 interface ShaftConfiguration {
   customCategory?: string;
@@ -39,12 +40,16 @@ interface CompletionPopUpProps {
   value: string;
   isLoading?: boolean;
   shaftConfiguration?: ShaftConfiguration;
+  /** e.g. "Bodenkonstruktion", "Halbprobenerstellung", "Massschafterstellung", "Komplettfertigung" – used to show category-wise delivery date */
+  deliveryCategory?: string;
 }
 
-const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value, isLoading, shaftConfiguration }: CompletionPopUpProps) => {
+const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value, isLoading, shaftConfiguration, deliveryCategory }: CompletionPopUpProps) => {
   const value2 = value || null;
   const [availableBalance, setAvailableBalance] = useState<number | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
+  const [deliveryDateText, setDeliveryDateText] = useState<string | null>(null);
+  const [isLoadingDelivery, setIsLoadingDelivery] = useState(false);
 
   // Store the value in localStorage under a unique key for each productName
   if (productName && value2 !== null) {
@@ -72,6 +77,39 @@ const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value,
 
     fetchBalance();
   }, []);
+
+  // Fetch category-wise delivery date (today + days from API)
+  useEffect(() => {
+    if (!deliveryCategory?.trim()) return;
+    const fetchDeliveryDate = async () => {
+      try {
+        setIsLoadingDelivery(true);
+        const response = await getDeliveryDates() as { success?: boolean; data?: Array<{ id: string; day: number; category: string }> };
+        const list = response?.data;
+        if (Array.isArray(list)) {
+          const match = list.find((d) => (d.category || '').trim() === deliveryCategory.trim());
+          if (match != null && typeof match.day === 'number' && match.day >= 0) {
+            const today = new Date();
+            const delivery = new Date(today);
+            delivery.setDate(today.getDate() + match.day);
+            setDeliveryDateText(
+              delivery.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+            );
+          } else {
+            setDeliveryDateText(null);
+          }
+        } else {
+          setDeliveryDateText(null);
+        }
+      } catch (err) {
+        console.error('Error fetching delivery dates:', err);
+        setDeliveryDateText(null);
+      } finally {
+        setIsLoadingDelivery(false);
+      }
+    };
+    fetchDeliveryDate();
+  }, [deliveryCategory]);
 
   const formatBalance = (balance: string | number | null) => {
     if (balance === null || balance === undefined) return "0,00 €";
@@ -141,6 +179,16 @@ const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value,
               </p>
             </div>
             
+            {(deliveryCategory && (deliveryDateText || isLoadingDelivery)) && (
+              <div className="text-xs text-slate-500 mt-2">
+                {isLoadingDelivery ? (
+                  <span>Lieferzeit wird geladen…</span>
+                ) : deliveryDateText ? (
+                  <span>Die voraussichtliche Lieferzeit beträgt ca. <strong className="text-slate-700">{deliveryDateText}</strong></span>
+                ) : null}
+              </div>
+            )}
+
             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
               <p className="text-sm text-amber-700 font-medium m-0">
                 Individuelle Anfertigung – vom Widerruf ausgeschlossen.

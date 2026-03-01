@@ -608,6 +608,7 @@ export default function CustomShoeOrderPage() {
           customerName={selectedCustomer?.name || otherCustomerNumber.trim() || 'Kunde'}
           value={orderPrice.toFixed(2)}
           isLoading={isCreatingOrder}
+          deliveryCategory={customCategory}
           shaftConfiguration={{
             customCategory,
             cadModeling,

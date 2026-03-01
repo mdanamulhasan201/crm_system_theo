@@ -835,6 +835,7 @@ export default function BodenkonstruktionPage() {
                     value={grandTotal.toFixed(2)}
                     isLoading={isSubmitting}
                     onConfirm={handleFinalSubmit}
+                    deliveryCategory="Bodenkonstruktion"
                 />
             )}
 

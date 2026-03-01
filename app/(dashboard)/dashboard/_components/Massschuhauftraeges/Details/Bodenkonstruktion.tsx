@@ -1177,6 +1177,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
                     customerName={orderDataForPDF.customerName}
                     value={grandTotal.toFixed(2)}
                     isLoading={isSubmitting}
+                    deliveryCategory="Bodenkonstruktion"
                     onConfirm={async () => {
                         // Set loading state immediately
                         setIsSubmitting(true)
