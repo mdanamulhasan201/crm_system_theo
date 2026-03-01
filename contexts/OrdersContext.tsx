@@ -15,6 +15,10 @@ export interface OrderData {
     status: string;
     displayStatus: string;
     preis: string;
+    /** Private price in EUR (display only). Shown below total when present. */
+    privatePrice?: number | null;
+    /** Insurance total price in EUR (display only). Shown below total when present. */
+    insuranceTotalPrice?: number | null;
     zahlung: string;
     bezahlt?: string | boolean | null; // Raw payment status value
     beschreibung: string;
@@ -102,11 +106,13 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData | null | undefined, select
         kundenname: customer ? `${customer.vorname ?? ''} ${customer.nachname ?? ''}`.trim() || '—' : '—',
         status: apiOrder.orderStatus,
         displayStatus: getLabelFromApiStatus(apiOrder.orderStatus, selectedType),
-        preis: apiOrder.totalPrice
-            ? `${apiOrder.totalPrice.toFixed(2)} €`
-            : (apiOrder.fußanalyse !== null && apiOrder.einlagenversorgung !== null)
+        preis: apiOrder.totalPrice != null
+            ? `${Number(apiOrder.totalPrice).toFixed(2)} €`
+            : (apiOrder.fußanalyse != null && apiOrder.einlagenversorgung != null)
                 ? `${((apiOrder.fußanalyse || 0) + (apiOrder.einlagenversorgung || 0)).toFixed(2)} €`
                 : '—',
+        privatePrice: apiOrder.privatePrice ?? null,
+        insuranceTotalPrice: apiOrder.insuranceTotalPrice ?? null,
         zahlung: formatPaymentStatus(apiOrder.bezahlt),
         bezahlt: apiOrder.bezahlt || werkstattzettel?.bezahlt || null, // Store raw payment status
         beschreibung: werkstattzettel?.versorgung || product?.versorgung || product?.status || '—',

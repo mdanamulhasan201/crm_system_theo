@@ -7,6 +7,8 @@ export interface ApiOrderData {
     fußanalyse: number;
     einlagenversorgung: number;
     totalPrice?: number;
+    privatePrice?: number | null;
+    insuranceTotalPrice?: number | null;
     bezahlt?: string | boolean | null;
     orderStatus: string;
     statusUpdate: string;

@@ -373,17 +373,29 @@ export default function OrderTableRow({
                 </div>
             </TableCell>
             <TableCell className="py-4 px-6 text-sm whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                {onPriceClick ? (
-                    <button
-                        type="button"
-                        onClick={() => onPriceClick(order.id, order.kundenname, order.bestellnummer)}
-                        className="text-left font-medium text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
-                    >
-                        {order.preis}
-                    </button>
-                ) : (
-                    order.preis
-                )}
+                <div className="flex flex-col items-start gap-0.5">
+                    {onPriceClick ? (
+                        <button
+                            type="button"
+                            onClick={() => onPriceClick(order.id, order.kundenname, order.bestellnummer)}
+                            className="text-left font-semibold text-base text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                        >
+                            {order.preis}
+                        </button>
+                    ) : (
+                        <span className="font-semibold text-base text-gray-900">{order.preis}</span>
+                    )}
+                    {order.insuranceTotalPrice != null && Number(order.insuranceTotalPrice) > 0 && (
+                        <span className="text-xs text-blue-600 font-medium">
+                            KK: {Number(order.insuranceTotalPrice).toFixed(2)} €
+                        </span>
+                    )}
+                    {order.privatePrice != null && Number(order.privatePrice) > 0 && (
+                        <span className="text-xs text-amber-600 font-medium">
+                            Privat: {Number(order.privatePrice).toFixed(2)} €
+                        </span>
+                    )}
+                </div>
             </TableCell>
             <TableCell className="py-4 px-6">
                 <div className="flex flex-col items-center gap-1.5 py-1 px-1">
@@ -393,6 +405,11 @@ export default function OrderTableRow({
             <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-3">
                     <div className="flex flex-col items-start gap-0.5">
+                        {order.fertiggestelltAm && order.fertiggestelltAm !== '—' && (
+                            <span className="text-sm font-medium text-gray-800" title="Lieferdatum / Fertigstellung bis">
+                                {order.fertiggestelltAm}
+                            </span>
+                        )}
                         {dueLabel && (
                             <span
                                 className={`text-sm font-medium ${
