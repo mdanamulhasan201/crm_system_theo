@@ -375,8 +375,11 @@ export default function MassschuheOrderModal({
                 return sum + (typeof opt?.price === 'number' ? opt.price : 0);
             }, 0);
             const vatRate = vatCountryCode === 'IT' ? 4 : vatCountryCode === 'AT' ? 20 : 0;
-            insurancePrice = positionsSum * qty;
-            totalPrice = insurancePrice * (1 + vatRate / 100);
+            const positionsSubtotal = positionsSum * qty;
+            const subtotalWithVat = positionsSubtotal * (1 + vatRate / 100);
+            // AT: insurance_price = with +20% VAT; total_price = that + 43; private_price = 43
+            insurancePrice = subtotalWithVat;
+            totalPrice = vatCountryCode === 'AT' ? subtotalWithVat + 43 : subtotalWithVat;
         }
 
         const branchLocationJson = JSON.stringify({
@@ -669,16 +672,16 @@ export default function MassschuheOrderModal({
                                                             <span className="text-sm text-gray-600">+{vatRate}% MwSt.</span>
                                                             <span className="text-sm font-semibold text-gray-700">{formatPrice(vatAmount)}</span>
                                                         </div>
-                                                        <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
-                                                            <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                                            <span className="text-xl font-bold text-green-600">{formatPrice(total)}</span>
-                                                        </div>
                                                         {vatCountry === 'Österreich (AT)' && (
                                                             <div className="flex justify-between items-center pt-1.5">
                                                                 <span className="text-xs text-gray-500">Enthält Eigenanteil (AT):</span>
                                                                 <span className="text-xs text-gray-600">43,00€</span>
                                                             </div>
                                                         )}
+                                                        <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
+                                                            <span className="text-base font-bold text-gray-900">Gesamt</span>
+                                                            <span className="text-xl font-bold text-green-600">{formatPrice(vatCountry === 'Österreich (AT)' ? total + 43 : total)}</span>
+                                                        </div>
                                                     </>
                                                 )}
                                                 {vatRate === 0 && (
