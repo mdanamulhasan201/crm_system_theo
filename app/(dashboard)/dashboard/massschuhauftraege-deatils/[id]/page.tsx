@@ -10,6 +10,7 @@ export default function MassschuhauftraegeDeatilsPage() {
     const searchParams = useSearchParams();
     const id = params?.id as string;
     const orderId = searchParams?.get('orderId') || null;
+    const productId = searchParams?.get('productId') || null;
     
     return (
         <div>
@@ -17,7 +18,7 @@ export default function MassschuhauftraegeDeatilsPage() {
                 id === "1" ? (
                     <ShoeDetails orderId={orderId} />
                 ) : id === "2" ? (
-                    <Bodenkonstruktion orderId={orderId} />
+                    <Bodenkonstruktion orderId={orderId} productId={productId} />
                 ) : (
                     <div>Invalid ID</div>
                 )

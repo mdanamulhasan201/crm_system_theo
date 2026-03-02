@@ -5,10 +5,14 @@ import { HiUser, HiCalendar } from "react-icons/hi2"
 
 interface ProductHeaderProps {
     orderData: OrderDataForPDF
+    /** When coming from custom-shafts (product card), show this product image instead of default */
+    productImageUrl?: string | null
 }
 
-export default function ProductHeader({ orderData }: ProductHeaderProps) {
+export default function ProductHeader({ orderData, productImageUrl }: ProductHeaderProps) {
     const hasDelivery = !!orderData.deliveryDate?.trim()
+    const imageUrl = productImageUrl ?? shoe2.imageUrl ?? "/placeholder.svg"
+    const imageAlt = orderData.productName || shoe2.name
 
     return (
         <div className="my-8">
@@ -28,8 +32,8 @@ export default function ProductHeader({ orderData }: ProductHeaderProps) {
                     <div className="shrink-0">
                         <div className="relative overflow-hidden rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-sm ring-1 ring-gray-100/80">
                             <img
-                                src={shoe2.imageUrl || "/placeholder.svg"}
-                                alt={shoe2.name}
+                                src={imageUrl}
+                                alt={imageAlt}
                                 className="h-40 w-40 object-contain md:h-48 md:w-48"
                             />
                         </div>

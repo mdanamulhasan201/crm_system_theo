@@ -693,18 +693,21 @@ export default function CollectionShaftDetailsPage() {
             if (pendingAction === 'boden') {
               const collectionShaftData = prepareCollectionShaftData();
               
-              // Store data in context INCLUDING the shaft PDF blob
+              // Store data in context INCLUDING the shaft PDF blob and product image for header
               setContextData({
                 ...collectionShaftData,
                 shaftPdfBlob: blob || null,
+                productImage: shaft?.image || null,
+                productId: shaftId,
               } as any);
 
               setIsLoadingBodenKonfigurieren(false);
               
-              // Redirect to Bodenkonstruktion page (Step 2)
-              const redirectUrl = orderId 
-                ? `/dashboard/massschuhauftraege-deatils/2?orderId=${orderId}`
-                : `/dashboard/massschuhauftraege-deatils/2`;
+              // Redirect to Bodenkonstruktion page (Step 2) with orderId and productId in URL
+              const params = new URLSearchParams();
+              if (orderId) params.set('orderId', orderId);
+              params.set('productId', shaftId);
+              const redirectUrl = `/dashboard/massschuhauftraege-deatils/2?${params.toString()}`;
               
               router.push(redirectUrl);
             } else {

@@ -31,6 +31,10 @@ interface CustomShaftData {
   
   // Collection product ID (for non-custom orders)
   mabschaftKollektionId?: string;
+  /** Product image URL (e.g. from Maßschaft Kollektion) – used in Bodenkonstruktion header */
+  productImage?: string | null;
+  /** Product ID for URL/display when coming from custom-shafts flow */
+  productId?: string;
   
   // CAD modeling
   cadModeling: '1x' | '2x';
