@@ -513,7 +513,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
                   
-                  {/* Anzahl der Ledertypen - Only show selected option */}
+                  {/* Anzahl der Ledertypen + Lederfarben in same section (option select, then colors below) */}
                   {shaftConfiguration.numberOfLeatherColors && (
                     <div className="flex py-3 border-b border-gray-300 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
@@ -529,19 +529,9 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                         {shaftConfiguration.numberOfLeatherColors === '3' && (
                           <ModalCheckbox isSelected={true} label="3" />
                         )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Multiple leather colors - Only show when 2 or 3 colors selected */}
-                  {shaftConfiguration.numberOfLeatherColors && shaftConfiguration.numberOfLeatherColors !== '1' && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Lederfarben
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        {shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
-                          <div className="ml-0 mt-0 text-xs text-slate-600">
+                        {/* Lederfarben list directly under option when 2 or 3 selected */}
+                        {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
+                          <div className="ml-0 mt-2 text-xs text-slate-600">
                             {shaftConfiguration.leatherColors.map((color, idx) => (
                               <div key={idx} className="mb-1">• Farbe {idx + 1}: {color}</div>
                             ))}
@@ -883,7 +873,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   </div>
                 )}
                 
-                {/* Anzahl der Ledertypen - Only show selected option */}
+                {/* Anzahl der Ledertypen + Lederfarben in same section (option select, then colors below) */}
                 {shaftConfiguration.numberOfLeatherColors && (
                   <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
@@ -899,19 +889,9 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       {shaftConfiguration.numberOfLeatherColors === '3' && (
                         <PDFCheckbox isSelected={true} label="3" />
                       )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Multiple leather colors - Only show when 2 or 3 colors selected */}
-                {shaftConfiguration.numberOfLeatherColors && shaftConfiguration.numberOfLeatherColors !== '1' && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Lederfarben
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      {shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
-                        <div style={{ marginLeft: '0', marginTop: '0', fontSize: '11px', color: '#475569' }}>
+                      {/* Lederfarben list directly under option when 2 or 3 selected */}
+                      {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
+                        <div style={{ marginTop: '8px', fontSize: '11px', color: '#475569' }}>
                           {shaftConfiguration.leatherColors.map((color, idx) => (
                             <div key={idx} style={{ marginBottom: '4px' }}>• Farbe {idx + 1}: {color}</div>
                           ))}
