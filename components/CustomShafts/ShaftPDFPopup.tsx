@@ -289,7 +289,13 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `shaft-order-${Date.now()}.pdf`
+      // Filename: customer name only (sanitized for filesystem)
+      const rawName = (orderData?.customerName || '').trim()
+      const safeName = rawName
+        ? rawName.replace(/[/\\:*?"<>|]/g, '-').replace(/\s+/g, '-').slice(0, 80) || ''
+        : ''
+      const baseName = safeName || `order-${Date.now()}`
+      a.download = `${baseName}.pdf`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
