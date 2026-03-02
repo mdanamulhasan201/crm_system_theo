@@ -11,7 +11,7 @@ export type LeistentypValue = typeof LEISTENTYP_OPTIONS[number];
 
 export interface Step2Data {
     material: string;
-    leistentyp: string;
+    leistentyp?: string;
     notes: string;
 }
 export interface Step3Data {
@@ -261,14 +261,14 @@ export default function FilterCard({
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        Leistentyp
+                                        Leistentyp <span className="text-gray-400 font-normal">(optional)</span>
                                     </label>
                                     <Select
                                         value={lastData.leistentyp || undefined}
                                         onValueChange={(value) => onLastDataChange({ ...lastData, leistentyp: value })}
                                     >
                                         <SelectTrigger className="w-full h-10 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#61A178] focus:border-transparent">
-                                            <SelectValue placeholder="Leistentyp wählen" />
+                                            <SelectValue placeholder="Leistentyp wählen (optional)" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {LEISTENTYP_OPTIONS.map((opt) => (
