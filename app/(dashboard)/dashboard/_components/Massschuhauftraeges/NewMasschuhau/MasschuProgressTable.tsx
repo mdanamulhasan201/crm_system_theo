@@ -548,11 +548,18 @@ export default function MasschuProgressTable({
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            filteredData.map((row) => (
+                            filteredData.map((row) => {
+                                const isDringend = urgentOrderIds.has(row.id);
+                                return (
                                 <TableRow
                                     key={row.id}
-                                    className={`border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${row.isOverdue ? 'bg-red-50/40' : ''
-                                        }`}
+                                    className={`border-b border-gray-100 transition-colors cursor-pointer ${
+                                        isDringend
+                                            ? 'bg-red-100 hover:bg-red-200/90'
+                                            : row.isOverdue
+                                                ? 'bg-red-50/40 hover:bg-gray-50'
+                                                : 'hover:bg-gray-50'
+                                    }`}
                                     onClick={(e) => handleRowClick(e, row.currentStepIndex)}
                                 >
                                     <TableCell className="py-4 px-4">
@@ -658,7 +665,8 @@ export default function MasschuProgressTable({
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))
+                            );
+                            })
                         )}
                     </TableBody>
                 </Table>
