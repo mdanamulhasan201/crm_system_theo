@@ -1061,6 +1061,8 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   </div>
                 )}
                 
+                {/* Keep Extras + Sonstige Notizen + Gesamtpreis together (no half-half split across pages) */}
+                <div className="pdf-page-break-avoid" style={{ pageBreakInside: 'avoid', pageBreakAfter: 'avoid' }}>
                 {/* Add-ons - Only show if at least one is selected */}
                 {(shaftConfiguration.passendenSchnursenkel !== undefined || shaftConfiguration.osenEinsetzen !== undefined || shaftConfiguration.zipperExtra !== undefined) && (
                   <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '2px solid #d1d5db' }}>
@@ -1119,7 +1121,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 )}
 
                 {/* Total Price */}
-                <div className="pdf-page-break-avoid pdf-total-price-section" style={{ 
+                <div className="pdf-total-price-section" style={{ 
                   marginTop: '24px', 
                   marginBottom: '20px', // Reduced from 60px to prevent extra page
                   paddingTop: '20px', 
@@ -1168,6 +1170,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       </tr>
                     </tbody>
                   </table>
+                </div>
                 </div>
               </div>
             </div>
