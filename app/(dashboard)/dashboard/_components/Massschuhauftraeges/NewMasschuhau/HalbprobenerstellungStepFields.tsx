@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { CalendarIcon, FileText, Factory, ExternalLink, SkipForward } from 'lucide-react';
+import ExternFertigenModal from './ExternFertigenModal';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -70,6 +71,13 @@ export default function HalbprobenerstellungStepFields({
     onHalbprobeDurchfuehrungChange,
     onChecklisteHalbprobeChange,
 }: HalbprobenerstellungStepFieldsProps) {
+    const [externModalOpen, setExternModalOpen] = useState(false);
+
+    const handleExternFertigenClick = () => {
+        onHalbprobeDurchfuehrungChange('Extern fertigen');
+        setExternModalOpen(true);
+    };
+
     return (
         <div className="mb-6 space-y-6">
             {/* Vorbereitungsdatum – shadcn Calendar + Popover */}
@@ -152,17 +160,21 @@ export default function HalbprobenerstellungStepFields({
                             <button
                                 key={opt.value}
                                 type="button"
-                                onClick={() => onHalbprobeDurchfuehrungChange(opt.value)}
+                                onClick={() =>
+                                    opt.value === 'Extern fertigen'
+                                        ? handleExternFertigenClick()
+                                        : onHalbprobeDurchfuehrungChange(opt.value)
+                                }
                                 className={cn(
-                                    'flex w-full items-start gap-4 rounded-xl border-2 p-4 text-left transition-all',
+                                    'flex cursor-pointer w-full items-start gap-4 rounded-xl border-2 p-4 text-left transition-all',
                                     isSelected
-                                        ? 'border-blue-600 bg-blue-50/50'
+                                        ? 'border-[#62A07C] bg-[#62A07C]/50'
                                         : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
                                 )}
                             >
                                 <span className={cn(
                                     'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2',
-                                    isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-400 bg-white'
+                                    isSelected ? 'border-[#62A07C] bg-[#62A07C]' : 'border-gray-400 bg-white'
                                 )}>
                                     {isSelected && (
                                         <span className="h-2 w-2 rounded-full bg-white" />
@@ -195,6 +207,11 @@ export default function HalbprobenerstellungStepFields({
                     className="h-10 w-full rounded-lg border-gray-300 bg-gray-50/80 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                 />
             </div> */}
+
+            <ExternFertigenModal
+                open={externModalOpen}
+                onOpenChange={setExternModalOpen}
+            />
         </div>
     );
 }
