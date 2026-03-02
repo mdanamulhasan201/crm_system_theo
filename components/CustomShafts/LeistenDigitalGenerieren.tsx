@@ -23,7 +23,7 @@ export default function LeistenDigitalGenerieren() {
     }
 
     return (
-        <div className="w-full bg-white p-6 md:p-8 lg:p-10 border-t border-gray-200 mt-10">
+        <div className="w-full bg-gray-50 mt-5 border-t border-gray-200 ">
             <div className="flex flex-col lg:flex-row items-start lg:items-center gap-8 lg:gap-12">
                 {/* Left Side - Text Content */}
                 <div className="flex-1 space-y-2 ">
@@ -33,15 +33,15 @@ export default function LeistenDigitalGenerieren() {
                     </h2>
 
                     {/* Description Paragraph 1 */}
-                    <p className="text-base  text-gray-600 ">
+                    <p className="text-sm  text-gray-600 ">
                         Der Leisten entsteht direkt aus deinem 3D-Scan.
                     </p>
-                    <p className="text-base  text-gray-600 ">
+                    <p className="text-sm  text-gray-600 ">
                         Vollständig digital. Präzise. Reproduzierbar.
                     </p>
 
                     {/* Description Paragraph 2 */}
-                    <p className="text-sm md:text-base text-gray-400 ">
+                    <p className="text-sm  text-gray-400 ">
                         Verfügbar ausschließlich für freigeschaltete Kunden mit aktivem FeetFirst 3D-Scanner.
                     </p>
 

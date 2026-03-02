@@ -8,7 +8,7 @@ import Leistentyp, { LeistentypRef } from '../_components/Leistenkonfigurator/le
 import AllgemeineOptionen, { AllgemeineOptionenRef } from '../_components/Leistenkonfigurator/allgemeine-optionen';
 import KorrekturenModellierung, { KorrekturenModellierungRef } from '../_components/Leistenkonfigurator/korrekturen-modellierung';
 import Bemerkungen, { BemerkungenRef } from '../_components/Leistenkonfigurator/bemerkungen';
-import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
+// import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
 
 export default function LeistenKonfiguratorPage() {
   const kopfdatenRef = useRef<KopfdatenRef>(null);
@@ -23,10 +23,10 @@ export default function LeistenKonfiguratorPage() {
   const handleLeistentypChange = () => {
     const basePrice = 169.99;
     const knoechelhoherLeistenPrice = 19.99;
-    
+
     const leistentypData = leistentypRef.current?.getData();
     const hasKnoechelhoherLeisten = leistentypData?.knoechelhoherLeistenLinks || leistentypData?.knoechelhoherLeistenRechts;
-    
+
     const calculatedPrice = basePrice + (hasKnoechelhoherLeisten ? knoechelhoherLeistenPrice : 0);
     setTotalPrice(calculatedPrice);
   };
@@ -42,15 +42,15 @@ export default function LeistenKonfiguratorPage() {
       price: `${totalPrice.toFixed(2).replace('.', ',')}€`,
     };
 
-    console.log('=== Leistenkonfigurator Data ===');
-    console.log(JSON.stringify(allData, null, 2));
-    console.log('==============================');
+    // console.log('=== Leistenkonfigurator Data ===');
+    // console.log(JSON.stringify(allData, null, 2));
+    // console.log('==============================');
   };
 
   return (
     <div className="relative w-full min-h-screen bg-gray-50 px-4 py-8 md:px-8 pb-24">
       {/* Sticky Price Summary - bottom-right, price only (no button) */}
-      <StickyPriceSummary price={totalPrice} />
+      {/* <StickyPriceSummary price={totalPrice} /> */}
       {/* Header */}
       <header className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
@@ -58,6 +58,13 @@ export default function LeistenKonfiguratorPage() {
         </h1>
         <p className="text-sm md:text-base text-gray-500">
           Datenblatt zur individuellen Leistenerstellung
+        </p>
+        <p className="text-sm md:text-base text-gray-500">
+          Hinweis zum Ablauf
+          Vor der Leistenfräsung erhalten Sie einen Probeschuh (Halbprobe).
+          Erst nach Ihrer Bestätigung, dass die Passform stimmt, starten wir mit der finalen Leistenfräsung.
+          Die Produktionsdauer für die Halbprobe beträgt 10 Werktage,
+          anschließend erfolgt der Versand.
         </p>
       </header>
 
@@ -72,7 +79,7 @@ export default function LeistenKonfiguratorPage() {
       </main>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-4 mt-8 pb-8">
+      <div className="flex justify-end gap-4 mt-8">
         <Button
           variant="outline"
           onClick={() => {

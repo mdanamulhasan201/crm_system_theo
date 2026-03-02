@@ -67,7 +67,7 @@ const Kopfdaten = forwardRef<KopfdatenRef>((props, ref) => {
   return (
     <section className="relative w-full rounded-2xl border border-gray-200 bg-white px-6 py-6 md:px-8 md:py-8 shadow-sm overflow-hidden">
       {/* Left blue accent bar */}
-      <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-[#2563eb] rounded-r-full" />
+      <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-[#6B9B87] rounded-r-full" />
 
       {/* Section title */}
       <h2 className="text-lg font-semibold text-gray-900 mb-4">
@@ -124,7 +124,7 @@ const Kopfdaten = forwardRef<KopfdatenRef>((props, ref) => {
             <span className="truncate">
               {leftFileName
                 ? leftFileName
-                : 'Upload 3D-Datei Linker Leisten (.stl)'}
+                : 'Upload 3D-Datei Linker Fuß'}
             </span>
           </Button>
         </div>
@@ -148,7 +148,7 @@ const Kopfdaten = forwardRef<KopfdatenRef>((props, ref) => {
             <span className="truncate">
               {rightFileName
                 ? rightFileName
-                : 'Upload 3D-Datei Rechter Leisten (.stl)'}
+                : 'Upload 3D-Datei Rechter Fuß'}
             </span>
           </Button>
         </div>
