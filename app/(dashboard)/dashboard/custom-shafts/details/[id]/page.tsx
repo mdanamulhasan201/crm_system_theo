@@ -332,9 +332,9 @@ export default function CollectionShaftDetailsPage() {
       polsterung_text: polsterungText,
       verstarkungen_text: verstarkungenText,
 
-      // Seam and closure
-      nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
-      nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
+      // Seam and closure – send selected Nahtfarbe option (default | personal | custom value)
+      nahtfarbe: nahtfarbeOption === 'custom' ? (customNahtfarbe?.trim() || '') : (nahtfarbeOption || 'default'),
+      nahtfarbe_text: nahtfarbeOption === 'custom' ? (customNahtfarbe?.trim() || '') : '',
       closureType,
 
       // Add-ons

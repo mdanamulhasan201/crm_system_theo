@@ -711,6 +711,22 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
         return subOption?.price || 0
     }
 
+    // Helper to get option label by id (for human-readable JSON)
+    const getOptionLabel = (groupId: string, optionId: string | null): string => {
+        if (!optionId) return ""
+        const group = GROUPS2.find(g => g.id === groupId)
+        const option = group?.options?.find((o: { id: string; label: string }) => o.id === optionId)
+        return (option as { label: string } | undefined)?.label ?? optionId
+    }
+
+    // Helper to get sub-option (leder) label by id
+    const getSubOptionLabel = (groupId: string, subOptionId: string | null): string => {
+        if (!subOptionId) return ""
+        const group = GROUPS2.find(g => g.id === groupId)
+        const subOption = group?.subOptions?.leder?.find((o: { id: string; label: string }) => o.id === subOptionId)
+        return (subOption as { label: string } | undefined)?.label ?? subOptionId
+    }
+
     // Helper to remove null from payload
     const removeNulls = (obj: any): any => {
         if (obj === null) return ""
@@ -805,6 +821,56 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             "möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price": 0.0,
             "besondere_hinweise": textAreas.besondere_hinweise || "",
             "Besondere_Hinweise": textAreas.besondere_hinweise || ""
+        }
+
+        // Human-readable sections so JSON is easy to understand (part-by-part)
+        // 1. Hinterkappe Muster Auswahlbereich – Beidseitig gleich/unterschiedlich + selected labels
+        const musterMode = hinterkappeMusterSide?.mode
+        if (musterMode) {
+            json.Hinterkappe_Muster_Auswahlbereich = {
+                Auswahlbereich: musterMode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich",
+                ...(musterMode === "gleich"
+                    ? { "Hinterkappe (beide Seiten)": hinterkappeMusterSide?.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein" }
+                    : {
+                        "Hinterkappe links": hinterkappeMusterSide?.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein",
+                        "Hinterkappe rechts": hinterkappeMusterSide?.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein",
+                    }),
+            }
+        } else {
+            json.Hinterkappe_Muster_Auswahlbereich = { Auswahlbereich: "", "Hinterkappe (beide Seiten)": "", "Hinterkappe links": "", "Hinterkappe rechts": "" }
+        }
+
+        // 2. Hinterkappe Auswahlbereich – Material/Leder selection with labels (Beidseitig gleich/unterschiedlich + dropdown values)
+        if (hinterkappeSide && hinterkappeSide.mode) {
+            const hMode = hinterkappeSide.mode
+            const sameVal = hinterkappeSide.sameValue ?? ""
+            const sameSub = hinterkappeSide.sameSubValue ?? ""
+            const leftVal = hinterkappeSide.leftValue ?? ""
+            const leftSub = hinterkappeSide.leftSubValue ?? ""
+            const rightVal = hinterkappeSide.rightValue ?? ""
+            const rightSub = hinterkappeSide.rightSubValue ?? ""
+            json.Hinterkappe_Auswahlbereich = {
+                Auswahlbereich: hMode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich",
+                ...(hMode === "gleich"
+                    ? {
+                        "Hinterkappe (beide Seiten)": getOptionLabel("hinterkappe", sameVal || null),
+                        ...(sameVal === "leder" && sameSub ? { "Leder Auswahl (beide Seiten)": getSubOptionLabel("hinterkappe", sameSub) } : {}),
+                    }
+                    : {
+                        "Hinterkappe links": getOptionLabel("hinterkappe", leftVal || null),
+                        ...(leftVal === "leder" && leftSub ? { "Leder Auswahl links": getSubOptionLabel("hinterkappe", leftSub) } : {}),
+                        "Hinterkappe rechts": getOptionLabel("hinterkappe", rightVal || null),
+                        ...(rightVal === "leder" && rightSub ? { "Leder Auswahl rechts": getSubOptionLabel("hinterkappe", rightSub) } : {}),
+                    }),
+            }
+        } else {
+            const simpleVal = getSelectedValue(selected.hinterkappe)
+            const simpleSub = selected.hinterkappe === "leder" && selected.hinterkappe_sub ? (typeof selected.hinterkappe_sub === "string" ? selected.hinterkappe_sub : null) : null
+            json.Hinterkappe_Auswahlbereich = {
+                Auswahlbereich: "Hinterkappe (beide Seiten)",
+                "Hinterkappe (beide Seiten)": getOptionLabel("hinterkappe", simpleVal || null),
+                ...(simpleSub ? { "Leder Auswahl (beide Seiten)": getSubOptionLabel("hinterkappe", simpleSub) } : {}),
+            }
         }
 
         // Get leder_auswahl and prices from hinterkappeSide (mode: gleich | unterschiedlich)
