@@ -559,23 +559,18 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                           </div>
                         </div>
                       )}
-                      {shaftConfiguration.schafthoheLinks && (
+                      {(shaftConfiguration.schafthoheLinks || shaftConfiguration.schafthoheRechts) && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                            Schafthöhe Links
+                            Schafthöhe Links / Rechts
                           </div>
-                          <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={true} label={`${shaftConfiguration.schafthoheLinks} cm`} />
-                          </div>
-                        </div>
-                      )}
-                      {shaftConfiguration.schafthoheRechts && (
-                        <div className="flex py-3 border-b border-gray-300 items-start">
-                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                            Schafthöhe Rechts
-                          </div>
-                          <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={true} label={`${shaftConfiguration.schafthoheRechts} cm`} />
+                          <div className="flex-1 leading-loose flex flex-wrap items-center gap-x-6 gap-y-1">
+                            {shaftConfiguration.schafthoheLinks && (
+                              <ModalCheckbox isSelected={true} label={`Links: ${shaftConfiguration.schafthoheLinks} cm`} />
+                            )}
+                            {shaftConfiguration.schafthoheRechts && (
+                              <ModalCheckbox isSelected={true} label={`Rechts: ${shaftConfiguration.schafthoheRechts} cm`} />
+                            )}
                           </div>
                         </div>
                       )}
@@ -904,23 +899,18 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   </div>
                 )}
-                {shaftConfiguration.schafthoheLinks && (
+                {(shaftConfiguration.schafthoheLinks || shaftConfiguration.schafthoheRechts) && (
                   <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Schafthöhe Links
+                      Schafthöhe Links / Rechts
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      <PDFCheckbox isSelected={true} label={`${shaftConfiguration.schafthoheLinks} cm`} />
-                    </div>
-                  </div>
-                )}
-                {shaftConfiguration.schafthoheRechts && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Schafthöhe Rechts
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      <PDFCheckbox isSelected={true} label={`${shaftConfiguration.schafthoheRechts} cm`} />
+                    <div style={{ flex: 1, lineHeight: 1.8, display: 'flex', flexWrap: 'wrap', gap: '0 24px', alignItems: 'center' }}>
+                      {shaftConfiguration.schafthoheLinks && (
+                        <PDFCheckbox isSelected={true} label={`Links: ${shaftConfiguration.schafthoheLinks} cm`} />
+                      )}
+                      {shaftConfiguration.schafthoheRechts && (
+                        <PDFCheckbox isSelected={true} label={`Rechts: ${shaftConfiguration.schafthoheRechts} cm`} />
+                      )}
                     </div>
                   </div>
                 )}
