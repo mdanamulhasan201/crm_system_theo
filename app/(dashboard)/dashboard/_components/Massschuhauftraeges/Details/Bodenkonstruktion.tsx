@@ -106,8 +106,8 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
     const { order } = useGetSingleMassschuheOrder(orderId ?? null)
     const { deliveryDate: deliveryDateKomplettfertigung } = useDeliveryDateByCategory('Komplettfertigung')
     const { data: productById } = useSingleCustomShaft(productId || '')
-    // Product image: from context (when from redirect) or from API (e.g. when opened with productId in URL)
-    const productImageUrl = contextData?.productImage ?? (productId && productById?.data?.image) ?? null
+    // Product image: collection product image | custom uploaded image (product-order) | API by productId
+    const productImageUrl = contextData?.productImage ?? contextData?.uploadedImage ?? (productId && productById?.data?.image) ?? null
 
     // Prepare order data for PDF (this page always shows Komplettfertigung delivery date when from redirect)
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
