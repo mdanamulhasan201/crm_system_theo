@@ -31,7 +31,6 @@ import { createCustomBodenkonstruktion } from "@/apis/MassschuheManagemantApis"
 
 // Hooks - delivery date by category
 import { useDeliveryDateByCategory } from "@/hooks/useDeliveryDateByCategory"
-import Image from "next/image"
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 
 export default function BodenkonstruktionPage() {
@@ -682,44 +681,42 @@ export default function BodenkonstruktionPage() {
               isSubmitting={isSubmitting}
             />
 
-            {/* Product Header with Customer Input */}
+            {/* Header: product name + customer + delivery (no product image for standalone order) */}
             <div className="my-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h1 className="text-3xl font-bold text-black">FeetF1rst Massschuhpartner</h1>
+                <div className="mb-6">
+                    <h1 className="text-2xl font-semibold tracking-tight text-gray-800 md:text-3xl">
+                        FeetF1rst Massschuhpartner
+                    </h1>
                 </div>
 
-                <div className="bg-gray-100 rounded-2xl p-4">
-                    <div className="flex justify-center items-center gap-6">
-                        <div className="bg-white rounded-lg p-4 flex-shrink-0">
-                            <Image
-                                width={96}
-                                height={96}
-                                src={shoe2.imageUrl || "/placeholder.svg"}
-                                alt={shoe2.name}
-                                className="w-48 h-48 object-contain"
-                            />
-                        </div>
-
-                        <div className="flex-1">
-                            <h2 className="text-2xl font-bold text-black mb-2">
-                                {shoe2.name || ""}
-                            </h2>
-                            <div className="mb-2">
-                                <label className="text-lg text-black mr-2">Kunde:</label>
-                                <input
-                                    type="text"
-                                    value={customerName}
-                                    onChange={(e) => setCustomerName(e.target.value)}
-                                    placeholder="Kundenname eingeben"
-                                    className="px-3 py-1 border border-gray-300 rounded-md focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                />
+                <section className="relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white ">
+                    <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full " />
+                    <div className="p-6 md:p-8 pl-8 md:pl-10">
+                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-8">
+                            <div className="min-w-0 flex-1 space-y-4">
+                                <h2 className="text-xl font-semibold text-gray-900 md:text-2xl">
+                                    {shoe2.name || "Bodenkonstruktion"}
+                                </h2>
+                                <div className="flex flex-col gap-2 text-sm">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="text-gray-600 shrink-0">Kunde:</span>
+                                        <input
+                                            type="text"
+                                            value={customerName}
+                                            onChange={(e) => setCustomerName(e.target.value)}
+                                            placeholder="Kundenname eingeben"
+                                            className="min-w-[200px] rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-[#6B9B87] focus:ring-1 focus:ring-[#6B9B87] focus:outline-none"
+                                        />
+                                    </div>
+                                    <p className="text-gray-600">
+                                        Vorauss. Liefertermin:{" "}
+                                        <span className="font-medium text-gray-900">{deliveryDate}</span>
+                                    </p>
+                                </div>
                             </div>
-                            <p className="text-base text-black mb-4">
-                                Voraussichtlicher Liefertermin: <span className="font-medium">{deliveryDate}</span>
-                            </p>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
 
             {/* Sole Selection Section */}
