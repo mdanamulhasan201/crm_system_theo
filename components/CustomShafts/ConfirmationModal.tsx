@@ -157,10 +157,10 @@ export default function ConfirmationModal({
             </p>
             {isVersenden ? (
               <p className="text-xs text-green-700 mt-0.5 leading-tight">
-                inkl. Versand (+{versandPrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})
+                inkl. Versand  (+{versandPrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})
               </p>
             ) : (
-              <p className="text-[10px] text-gray-400 mt-0.5 leading-tight italic">exkl. Zustellung / Versand</p>
+              <p className="text-[10px] text-gray-400 mt-0.5 leading-tight italic">exkl. Zustellung / Versand (13€)</p>
             )}
             {(deliveryDateText || isLoadingDelivery) && (
               <p className="text-xs text-slate-500 mt-2">
