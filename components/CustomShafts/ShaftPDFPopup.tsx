@@ -171,7 +171,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
     });
 
     const opt = {
-      margin: [40, 40, 80, 40], // Reduced bottom margin from 90 to 80 to prevent extra page
+      margin: [40, 40, 45, 40], // Smaller bottom margin to avoid blank second page
       filename: "document.pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
@@ -469,15 +469,14 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
                   
-                  {/* CAD-Modellierung */}
+                  {/* CAD-Modellierung - only selected option */}
                   {shaftConfiguration.cadModeling && (
                     <div className="flex py-3 border-b border-gray-300 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                         CAD-Modellierung
                       </div>
                       <div className="flex-1 leading-loose">
-                        <ModalCheckbox isSelected={shaftConfiguration.cadModeling === '1x'} label="1x" />
-                        <ModalCheckbox isSelected={shaftConfiguration.cadModeling === '2x'} label="2x (+6.99€)" />
+                        <ModalCheckbox isSelected={true} label={shaftConfiguration.cadModeling === '2x' ? '2x (+6.99€)' : '1x'} />
                       </div>
                     </div>
                   )}
@@ -691,39 +690,36 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       <div className="text-base font-bold text-slate-800 mb-3">
                         Extras
                       </div>
-                      {/* Passende Schnürsenkel - Only show if selected (true or false) */}
+                      {/* Passende Schnürsenkel - only selected option */}
                       {shaftConfiguration.passendenSchnursenkel !== undefined && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                             Passende Schnürsenkel
                           </div>
                           <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={shaftConfiguration.passendenSchnursenkel === true} label="Ja (+4.49€)" />
-                            <ModalCheckbox isSelected={shaftConfiguration.passendenSchnursenkel === false} label="Nein" />
+                            <ModalCheckbox isSelected={true} label={shaftConfiguration.passendenSchnursenkel === true ? 'Ja (+4.49€)' : 'Nein'} />
                           </div>
                         </div>
                       )}
-                      {/* Ösen einsetzen - Only show if selected (true or false) */}
+                      {/* Ösen einsetzen - only selected option */}
                       {shaftConfiguration.osenEinsetzen !== undefined && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                             Ösen einsetzen
                           </div>
                           <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={shaftConfiguration.osenEinsetzen === true} label="Ja (+8.99€)" />
-                            <ModalCheckbox isSelected={shaftConfiguration.osenEinsetzen === false} label="Nein" />
+                            <ModalCheckbox isSelected={true} label={shaftConfiguration.osenEinsetzen === true ? 'Ja (+8.99€)' : 'Nein'} />
                           </div>
                         </div>
                       )}
-                      {/* Zusätzlicher Reißverschluss - Only show if selected (true or false) */}
+                      {/* Zusätzlicher Reißverschluss - only selected option */}
                       {shaftConfiguration.zipperExtra !== undefined && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                             Zusätzlicher Reißverschluss
                           </div>
                           <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={shaftConfiguration.zipperExtra === true} label="Ja (+9.99€)" />
-                            <ModalCheckbox isSelected={shaftConfiguration.zipperExtra === false} label="Nein" />
+                            <ModalCheckbox isSelected={true} label={shaftConfiguration.zipperExtra === true ? 'Ja (+9.99€)' : 'Nein'} />
                           </div>
                         </div>
                       )}
@@ -794,7 +790,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
             </div>
 
             {/* Body */}
-            <div style={{ padding: '6px 40px 12px 40px', flex: 1, background: '#ffffff', pageBreakInside: 'auto', overflow: 'visible' }}>
+            <div style={{ padding: '6px 40px 12px 40px', background: '#ffffff', pageBreakInside: 'auto', overflow: 'visible' }}>
               <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>Checkliste</div>
 
               {/* Configuration Details - PDF Version - Show ALL options */}
@@ -811,15 +807,14 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   </div>
                 )}
                 
-                {/* CAD-Modellierung */}
+                {/* CAD-Modellierung - only selected option */}
                 {shaftConfiguration.cadModeling && (
                   <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       CAD-Modellierung
                     </div>
                     <div style={{ flex: 1, lineHeight: 1.4 }}>
-                      <PDFCheckbox isSelected={shaftConfiguration.cadModeling === '1x'} label="1x" />
-                      <PDFCheckbox isSelected={shaftConfiguration.cadModeling === '2x'} label="2x (+6.99€)" />
+                      <PDFCheckbox isSelected={true} label={shaftConfiguration.cadModeling === '2x' ? '2x (+6.99€)' : '1x'} />
                     </div>
                   </div>
                 )}
@@ -1019,39 +1014,36 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     <div style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', marginBottom: '6px' }}>
                       Extras
                     </div>
-                    {/* Passende Schnürsenkel - Only show if selected (true or false) */}
+                    {/* Passende Schnürsenkel - only selected option */}
                     {shaftConfiguration.passendenSchnursenkel !== undefined && (
                       <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                         <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                           Passende Schnürsenkel
                         </div>
                         <div style={{ flex: 1, lineHeight: 1.4 }}>
-                          <PDFCheckbox isSelected={shaftConfiguration.passendenSchnursenkel === true} label="Ja (+4.49€)" />
-                          <PDFCheckbox isSelected={shaftConfiguration.passendenSchnursenkel === false} label="Nein" />
+                          <PDFCheckbox isSelected={true} label={shaftConfiguration.passendenSchnursenkel === true ? 'Ja (+4.49€)' : 'Nein'} />
                         </div>
                       </div>
                     )}
-                    {/* Ösen einsetzen - Only show if selected (true or false) */}
+                    {/* Ösen einsetzen - only selected option */}
                     {shaftConfiguration.osenEinsetzen !== undefined && (
                       <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                         <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                           Ösen einsetzen
                         </div>
                         <div style={{ flex: 1, lineHeight: 1.4 }}>
-                          <PDFCheckbox isSelected={shaftConfiguration.osenEinsetzen === true} label="Ja (+8.99€)" />
-                          <PDFCheckbox isSelected={shaftConfiguration.osenEinsetzen === false} label="Nein" />
+                          <PDFCheckbox isSelected={true} label={shaftConfiguration.osenEinsetzen === true ? 'Ja (+8.99€)' : 'Nein'} />
                         </div>
                       </div>
                     )}
-                    {/* Zusätzlicher Reißverschluss - Only show if selected (true or false) */}
+                    {/* Zusätzlicher Reißverschluss - only selected option */}
                     {shaftConfiguration.zipperExtra !== undefined && (
                       <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                         <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                           Zusätzlicher Reißverschluss
                         </div>
                         <div style={{ flex: 1, lineHeight: 1.4 }}>
-                          <PDFCheckbox isSelected={shaftConfiguration.zipperExtra === true} label="Ja (+9.99€)" />
-                          <PDFCheckbox isSelected={shaftConfiguration.zipperExtra === false} label="Nein" />
+                          <PDFCheckbox isSelected={true} label={shaftConfiguration.zipperExtra === true ? 'Ja (+9.99€)' : 'Nein'} />
                         </div>
                       </div>
                     )}
