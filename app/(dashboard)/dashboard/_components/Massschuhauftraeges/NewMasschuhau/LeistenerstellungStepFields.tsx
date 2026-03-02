@@ -112,24 +112,27 @@ export default function LeistenerstellungStepFields({
                         </span>
                         Intern
                     </button>
-                    <button
-                        type="button"
-                        onClick={handleÜberF1rstClick}
-                        className={cn(
-                            'flex items-center justify-center cursor-pointer gap-3 rounded-xl border-2 px-5 py-2 text-sm font-medium transition-all duration-200',
-                            leistenfertigung === 'Über F1rst'
-                                ? 'border-[#62A07C] bg-[#62A07C] text-white shadow-md shadow-[#62A07C]/20'
-                                : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-[#62A07C] hover:bg-[#62A07C]/40'
-                        )}
-                    >
-                        <span className={cn(
-                            'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
-                            leistenfertigung === 'Über F1rst' ? 'bg-white/20' : 'bg-gray-200/70'
-                        )}>
-                            <UserCog className="h-5 w-5" />
-                        </span>
-                        Über F1rst
-                    </button>
+                    <div className="flex flex-col items-center gap-1">
+                        <button
+                            type="button"
+                            onClick={handleÜberF1rstClick}
+                            className={cn(
+                                'flex items-center capitalize justify-center cursor-pointer gap-3 rounded-xl border-2 px-5 py-2 text-sm font-medium transition-all duration-200',
+                                leistenfertigung === 'Über F1rst'
+                                    ? 'border-[#62A07C] bg-[#62A07C] text-white shadow-md shadow-[#62A07C]/20'
+                                    : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-[#62A07C] hover:bg-[#62A07C]/40'
+                            )}
+                        >
+                            <span className={cn(
+                                'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
+                                leistenfertigung === 'Über F1rst' ? 'bg-white/20' : 'bg-gray-200/70'
+                            )}>
+                                <UserCog className="h-5 w-5" />
+                            </span>
+                            über FeetF1rst
+                        </button>
+                        <span className="text-xs text-gray-500">Nur mit 3D Scan möglich</span>
+                    </div>
                 </div>
             </div>
         </div>
