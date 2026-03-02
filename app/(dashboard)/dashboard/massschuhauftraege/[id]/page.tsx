@@ -26,8 +26,8 @@ const STEP_SHORT_NAMES = [
     'Scan',           // Auftragserstellung
     'Leisten',        // Leistenerstellung
     'Bettung',        // Bettungserstellung
-    'Halbprobe',      // Halbprobenerstellung
-    'Schaft',         // Halbprobe durchführen
+    'Halbprobenerstellung',      // Halbprobenerstellung
+    'Halbprobe durchführen',         // Halbprobe durchführen
     'Schaft Prod.',   // Schaft fertigen
     'Boden',          // Bodenerstellen
     'Finish',         // Qualitätskontrolle
