@@ -517,7 +517,7 @@ export default function MasschuProgressTable({
                             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6">
                                 Aktueller Schritt
                             </TableHead>
-                            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6">
+                            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6 w-[140px] max-w-[180px]">
                                 Location
                             </TableHead>
                             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6">
@@ -591,10 +591,20 @@ export default function MasschuProgressTable({
                                             {row.currentStep}
                                         </div>
                                     </TableCell>
-                                    <TableCell className="py-4 px-6">
-                                        <div className="text-gray-700 text-sm whitespace-nowrap">
-                                            {row.location || '-'}
-                                        </div>
+                                    <TableCell className="py-4 px-6 w-[140px] max-w-[180px]">
+                                        <Tooltip>
+                                            <TooltipTrigger asChild>
+                                                <div
+                                                    className="text-gray-700 text-sm truncate cursor-default"
+                                                    title={row.location || '-'}
+                                                >
+                                                    {row.location || '-'}
+                                                </div>
+                                            </TooltipTrigger>
+                                            <TooltipContent side="top" className="max-w-[320px] wrap-break-word">
+                                                {row.location || '-'}
+                                            </TooltipContent>
+                                        </Tooltip>
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
                                         <div className="text-gray-700 text-sm whitespace-nowrap">

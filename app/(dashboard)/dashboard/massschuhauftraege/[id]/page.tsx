@@ -29,7 +29,7 @@ const STEP_SHORT_NAMES = [
     'Bettung',        // Bettungserstellung
     'Halbprobenerstellung',      // Halbprobenerstellung
     'Halbprobe durchführen',         // Halbprobe durchführen
-    'Schaft Prod.',   // Schaft fertigen
+    'Schaft fertigen.',   // Schaft fertigen
     'Boden',          // Bodenerstellen
     'Finish',         // Qualitätskontrolle
     'Abholen',        // Abholbereit

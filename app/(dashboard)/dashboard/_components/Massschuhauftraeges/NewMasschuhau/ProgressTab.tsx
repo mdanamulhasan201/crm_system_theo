@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import MasschuProgressTable, { SHOE_STEPS } from './MasschuProgressTable';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, LayoutGrid } from 'lucide-react';
 import SchnellAuftragModal from './SchnellAuftragModal';
 
 export default function ProgressTab() {
@@ -26,15 +26,25 @@ export default function ProgressTab() {
         <div className="mt-8">
             <div className='flex flex-col sm:flex-row items-center justify-between mb-6'>
                 <h2 className="text-xl font-semibold text-gray-900 ">Fortschritt</h2>
-                <Button
-                    variant="outline"
-                    size="default"
-                    className='cursor-pointer bg-[#61A175] hover:bg-[#61A175]/80 text-white font-semibold rounded-lg px-6 py-2.5 flex items-center gap-2'
-                    onClick={() => setSchnellModalOpen(true)}
-                >
-                    <PlusIcon className='w-4 h-4' />
-                    Schnell Auftrag
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="default"
+                        className="cursor-pointer bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold rounded-lg px-6 py-2.5 flex items-center gap-2"
+                    >
+                        <LayoutGrid className="w-4 h-4" />
+                        Alle Aufträge
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="default"
+                        className='cursor-pointer bg-[#61A175] hover:bg-[#61A175]/80 text-white font-semibold rounded-lg px-6 py-2.5 flex items-center gap-2'
+                        onClick={() => setSchnellModalOpen(true)}
+                    >
+                        <PlusIcon className='w-4 h-4' />
+                        Schnell Auftrag
+                    </Button>
+                </div>
             </div>
 
             {/* Horizontal Progress Stepper */}
