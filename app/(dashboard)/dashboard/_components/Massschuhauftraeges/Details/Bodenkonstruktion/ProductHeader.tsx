@@ -29,7 +29,7 @@ export default function ProductHeader({ orderData, productImageUrl }: ProductHea
 
                 <div className="flex flex-col gap-6 p-6 md:flex-row md:items-center md:gap-8 md:p-8">
                     {/* Product image */}
-                    <div className="shrink-0">
+                    {/* <div className="shrink-0">
                         <div className="relative overflow-hidden rounded-xl border border-gray-100 bg-gray-50 p-4 shadow-sm ring-1 ring-gray-100/80">
                             <img
                                 src={imageUrl}
@@ -37,7 +37,7 @@ export default function ProductHeader({ orderData, productImageUrl }: ProductHea
                                 className="h-40 w-40 object-contain md:h-48 md:w-48"
                             />
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Product & order info */}
                     <div className="min-w-0 flex-1 space-y-4">
