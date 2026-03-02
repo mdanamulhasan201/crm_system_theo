@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText, X, Loader2 } from 'lucide-react';
+import { Check, Camera, CheckCircle2, ArrowRight, Clock, FileText, X, Loader2, ArrowLeft } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import { Button } from '@/components/ui/button';
 import {
@@ -94,11 +94,10 @@ function ProgressIndicator({
                     <React.Fragment key={index}>
                         {index > 0 && (
                             <span
-                                className={`font-semibold mx-5 shrink-0 leading-none select-none mb-3 ${
-                                    isCompleted || isCurrent ? 'text-emerald-400' : 'text-gray-300'
-                                }`}
+                                className={`font-semibold mx-5 shrink-0 leading-none select-none mb-3 ${isCompleted || isCurrent ? 'text-emerald-400' : 'text-gray-300'
+                                    }`}
                             >
-                                <BsDash className='text-4xl'/>
+                                <BsDash className='text-4xl' />
                             </span>
                         )}
                         <div className="flex flex-col items-center shrink-0 py-2 px-2">
@@ -137,9 +136,8 @@ function ProgressIndicator({
                                         <span className="leading-none">{index + 1}</span>
                                     )}
                                 </div>
-                                <span className={`text-xs font-medium text-center leading-tight ${
-                                    isCurrent ? 'text-emerald-700 font-semibold' : 'text-gray-600'
-                                }`}>
+                                <span className={`text-xs font-medium text-center leading-tight ${isCurrent ? 'text-emerald-700 font-semibold' : 'text-gray-600'
+                                    }`}>
                                     {STEP_SHORT_NAMES[index] || step}
                                 </span>
                             </button>
@@ -484,385 +482,399 @@ export default function MassschuhauftraegePage() {
         uploadedFiles.length > 0;
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Progress Bar – steps clickable to view that step's data; current = active step from URL */}
-            <div className="bg-white border border-gray-200 px-4 py-4">
-                <div className="overflow-x-auto">
-                    <ProgressIndicator
-                        currentStepIndex={activeStepIndex}
-                        stepsCompleted={stepsCompletedForProgress}
-                        stepsAutoPrint={stepsAutoPrintForProgress}
-                        orderId={id}
-                        onStepClick={(index) => {
-                            const status = getStatusParamFromStepIndex(index);
-                            router.push(`/dashboard/massschuhauftraege/${id}?status=${encodeURIComponent(status)}`);
-                        }}
-                    />
-                </div>
+
+        <>
+            {/* back button need to be on the top left /dashboard/massschuhauftraege*/}
+            <div className="pb-2">
+                <Button className='cursor-pointer' variant="outline" size="icon" onClick={() => router.push('/dashboard/massschuhauftraege')}>
+                    <ArrowLeft className="w-4 h-4" />
+                </Button>
             </div>
 
-            {/* Main Content */}
-            <div className="flex gap-6 mt-5">
-                <div className="flex-1">
-                    <div className="bg-white rounded-lg border border-red-200 p-6">
-                        {loading ? (
-                            <div className="py-16 flex items-center justify-center">
-                                <p className="text-gray-500">Laden...</p>
-                            </div>
-                        ) : (
-                            <>
-                        {/* Header: step number circle (green when completed, red when waiting) + title + status */}
-                        <div className="mb-6 flex items-center gap-3">
-                            <div className="relative shrink-0">
-                                <div
-                                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                                        isCurrentStepCompleted ? 'bg-emerald-600' : 'bg-red-600'
-                                    }`}
-                                >
-                                    {isCurrentStepCompleted ? (
-                                        <Check className="w-6 h-6 text-white" />
-                                    ) : (
-                                        <span className="text-white text-base font-bold">
-                                            {activeStepIndex + 1}
-                                        </span>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="flex-1">
-                                <h2 className="text-xl font-bold text-gray-900 mb-1">
-                                    {SHOE_STEPS[activeStepIndex]}
-                                </h2>
-                                <div className="flex items-center gap-3 flex-wrap">
-                                    {isCurrentStepCompleted ? (
-                                        <span className="text-sm font-medium text-emerald-700">
-                                           Schritt wurde von Mitarbeiter {employeeDisplayName} 
-                                        </span>
-                                    ) : (
-                                        <>
-                                            <span className="text-sm text-gray-400">
-                                                Verantwortlich: <span className="text-gray-400">{orderData?.responsible ?? '–'}</span>
-                                            </span>
-                                            {orderData?.isOverdue && (
-                                                <span className="text-sm text-red-600 font-medium">
-                                                    • {orderData.days}d überfällig
-                                                </span>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
+            <div className="min-h-screen bg-gray-50">
 
-                        {/* Instruction: only show "waiting for processing" when not completed; completed message is in header only */}
-                        {!isCurrentStepCompleted && (
-                            <div className="mb-6 p-3 bg-gray-50 rounded-lg ">
-                                <p className="text-sm text-gray-500">
-                                    {activeStepIndex === 2
-                                        ? 'Dieser Schritt wartet auf Bearbeitung.'
-                                        : 'Dieser Schritt wartet auf Bearbeitung. Laden Sie relevante Bilder hoch und fügen Sie Notizen hinzu.'}
-                                </p>
-                            </div>
-                        )}
-
-                      
-
-                        {/* Bilder Section */}
-                        <div className="mb-6">
-                            <div className="flex items-center gap-2 mb-3">
-                                <Camera className="w-5 h-5 text-gray-600" />
-                                <h3 className="text-lg font-semibold text-gray-900">Bilder</h3>
-                            </div>
-
-                            {/* Existing files for this step (from API) – visible in real time, with delete */}
-                            {stepFilesFromApi.length > 0 && (
-                                <div className="mb-4">
-                                    <p className="text-sm font-medium text-gray-700 mb-2">Vorhandene Dateien (dieser Schritt)</p>
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                        {stepFilesFromApi.map((f) => {
-                                            const isImage = (f.fileType || '').startsWith('image/') || /\.(png|jpg|jpeg|gif|webp)$/i.test(f.fileName || '');
-                                            const isDeleting = deletingFileId === f.id;
-                                            return (
-                                                <div
-                                                    key={f.id}
-                                                    className="relative group rounded-lg border border-gray-200 bg-gray-50 overflow-hidden hover:border-emerald-400 hover:shadow-sm transition-all"
-                                                >
-                                                    <button
-                                                        type="button"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setDeleteFileConfirmId(f.id);
-                                                        }}
-                                                        disabled={!!deletingFileId}
-                                                        className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity disabled:opacity-50"
-                                                        aria-label="Datei löschen"
-                                                    >
-                                                        {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-                                                    </button>
-                                                    <a
-                                                        href={f.fileUrl}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="block"
-                                                    >
-                                                        {isImage ? (
-                                                            <div className="aspect-square relative bg-gray-100">
-                                                                <img
-                                                                    src={f.fileUrl}
-                                                                    alt={f.fileName || 'Bild'}
-                                                                    className="w-full h-full object-cover"
-                                                                />
-                                                            </div>
-                                                        ) : (
-                                                            <div className="aspect-square flex flex-col items-center justify-center p-3">
-                                                                <FileText className="h-8 w-8 text-gray-400 mb-1" />
-                                                                <span className="text-xs text-gray-600 text-center truncate w-full">{f.fileName}</span>
-                                                            </div>
-                                                        )}
-                                                        <p className="p-2 text-xs text-gray-600 truncate border-t border-gray-100" title={f.fileName}>
-                                                            {f.fileName}
-                                                        </p>
-                                                    </a>
-                                                </div>
-                                            );
-                                        })}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Confirm delete step file modal */}
-                            <Dialog open={!!deleteFileConfirmId} onOpenChange={(open) => !open && setDeleteFileConfirmId(null)}>
-                                <DialogContent className="sm:max-w-md">
-                                    <DialogHeader>
-                                        <DialogTitle>Datei löschen</DialogTitle>
-                                        <DialogDescription>
-                                            Möchten Sie diese Datei wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
-                                        </DialogDescription>
-                                    </DialogHeader>
-                                    <DialogFooter>
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={() => setDeleteFileConfirmId(null)}
-                                            disabled={!!deletingFileId}
-                                        >
-                                            Abbrechen
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            className="bg-red-600 hover:bg-red-700"
-                                            disabled={!!deletingFileId}
-                                            onClick={() => deleteFileConfirmId && handleDeleteStepFile(deleteFileConfirmId)}
-                                        >
-                                            {deletingFileId ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Löschen'}
-                                        </Button>
-                                    </DialogFooter>
-                                </DialogContent>
-                            </Dialog>
-                            
-                            {/* File Upload Area */}
-                            <div
-                                className={`border-2 border-dashed rounded-lg p-12 flex flex-col items-center justify-center transition-colors cursor-pointer ${
-                                    isDragging 
-                                        ? 'border-emerald-500 bg-emerald-50' 
-                                        : 'border-gray-300 hover:border-emerald-400'
-                                }`}
-                                onDragOver={(e) => {
-                                    e.preventDefault();
-                                    setIsDragging(true);
-                                }}
-                                onDragLeave={() => setIsDragging(false)}
-                                onDrop={(e) => {
-                                    e.preventDefault();
-                                    setIsDragging(false);
-                                    const files = Array.from(e.dataTransfer.files);
-                                    handleFileUpload(files);
-                                }}
-                                onClick={() => document.getElementById('file-upload')?.click()}
-                            >
-                                <input
-                                    id="file-upload"
-                                    type="file"
-                                    multiple
-                                    accept="image/*,.pdf,.doc,.docx"
-                                    className="hidden"
-                                    onChange={(e) => {
-                                        if (e.target.files) {
-                                            handleFileUpload(Array.from(e.target.files));
-                                        }
-                                    }}
-                                />
-                                <Camera className="w-10 h-10 text-gray-400 mb-3" />
-                                <p className="text-gray-600 font-medium">Bilder hochladen</p>
-                                <p className="text-xs text-gray-500 mt-1">Klicken Sie hier oder ziehen Sie Dateien hierher</p>
-                            </div>
-
-                            {/* Uploaded Files Preview */}
-                            {uploadedFiles.length > 0 && (
-                                <div className="mt-4 grid grid-cols-3 gap-4">
-                                    {uploadedFiles.map((file, index) => (
-                                        <div key={index} className="relative group">
-                                            {file.type.startsWith('image/') ? (
-                                                <div className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
-                                                    <img
-                                                        src={URL.createObjectURL(file)}
-                                                        alt={file.name}
-                                                        className="w-full h-full object-cover"
-                                                    />
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveFile(index);
-                                                        }}
-                                                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div className="relative aspect-square rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-2">
-                                                    <FileText className="w-8 h-8 text-gray-400 mb-1" />
-                                                    <p className="text-xs text-gray-600 text-center truncate w-full">
-                                                        {file.name}
-                                                    </p>
-                                                    <button
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            handleRemoveFile(index);
-                                                        }}
-                                                        className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Notiz Section */}
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Notiz</h3>
-                            <textarea
-                                value={notes}
-                                onChange={(e) => setNotes(e.target.value)}
-                                placeholder="Anmerkungen..."
-                                className="w-full min-h-[120px] p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
-                            />
-                        </div>
-                          {/* Step 2: Leistenerstellung – Material & Leistentyp (only when this step) */}
-                          {activeStepIndex === 1 && (
-                            <LeistenerstellungStepFields
-                                material={material}
-                                leistentyp={leistentyp}
-                                leistenfertigung={leistenfertigung}
-                                onMaterialChange={setMaterial}
-                                onLeistentypChange={setLeistentyp}
-                                onLeistenfertigungChange={setLeistenfertigung}
-                            />
-                        )}
-
-                        {/* Step 3: Bettungserstellung – Material & Dicke (only when this step) */}
-                        {activeStepIndex === 2 && (
-                            <BettungserstellungStepFields
-                                material={material}
-                                thickness={thickness}
-                                onMaterialChange={setMaterial}
-                                onThicknessChange={setThickness}
-                            />
-                        )}
-
-                        {/* Step 4: Halbprobenerstellung – Vorbereitungsdatum, Anmerkungen, Halbprobe Durchführung, Checkliste */}
-                        {activeStepIndex === 3 && (
-                            <HalbprobenerstellungStepFields
-                                preparation_date={preparation_date}
-                                anmerkungen_halbprobe={anmerkungen_halbprobe}
-                                halbprobe_durchfuehrung={halbprobe_durchfuehrung}
-                                checkliste_halbprobe={checkliste_halbprobe}
-                                onPreparationDateChange={setPreparation_date}
-                                onAnmerkungenHalbprobeChange={setAnmerkungen_halbprobe}
-                                onHalbprobeDurchfuehrungChange={setHalbprobe_durchfuehrung}
-                                onChecklisteHalbprobeChange={setCheckliste_halbprobe}
-                            />
-                        )}
-
-                        {/* Step 5: Halbprobe durchführen – Probenergebnis & Schafttyp */}
-                        {activeStepIndex === 4 && (
-                            <HalbprobeDurchfuehrungStepFields
-                                orderId={id}
-                                probenergebnis={probenergebnis}
-                                schafttyp={schafttyp}
-                                fitting_date={fitting_date}
-                                adjustments={adjustments}
-                                customer_reviews={customer_reviews}
-                                checklisteHalbprobe={checkliste_halbprobe}
-                                onProbenergebnisChange={setProbenergebnis}
-                                onSchafttypChange={setSchafttyp}
-                                onFittingDateChange={setFitting_date}
-                                onAdjustmentsChange={setAdjustments}
-                                onCustomerReviewsChange={setCustomer_reviews}
-                                onChecklisteHalbprobeChange={setCheckliste_halbprobe}
-                            />
-                        )}
-
-                        {/* Complete Button */}
-                        <Button
-                            type="button"
-                            disabled={submitting}
-                            onClick={() => setConfirmOpen(true)}
-                            className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
-                        >
-                            {submitting ? (
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                            ) : (
-                                <CheckCircle2 className="w-5 h-5" />
-                            )}
-                            Schritt abschließen & weiterleiten
-                            <ArrowRight className="w-5 h-5" />
-                        </Button>
-
-                        {/* Confirm Modal */}
-                        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-                            <DialogContent className="sm:max-w-md">
-                                <DialogHeader>
-                                    <DialogTitle>Schritt abschließen</DialogTitle>
-                                    <DialogDescription>
-                                        Möchten Sie diesen Schritt wirklich abschließen und weiterleiten? Die Änderung wird gespeichert.
-                                    </DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter className="flex gap-2 sm:gap-0">
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        onClick={() => setConfirmOpen(false)}
-                                        disabled={submitting}
-                                    >
-                                        Abbrechen
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        className="bg-emerald-600 hover:bg-emerald-700"
-                                        onClick={handleCompleteStep}
-                                        disabled={submitting}
-                                    >
-                                        {submitting ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            'Bestätigen'
-                                        )}
-                                    </Button>
-                                </DialogFooter>
-                            </DialogContent>
-                        </Dialog>
-                            </>
-                        )}
+                {/* Progress Bar – steps clickable to view that step's data; current = active step from URL */}
+                <div className="bg-white border border-gray-200 px-4 py-4">
+                    <div className="overflow-x-auto">
+                        <ProgressIndicator
+                            currentStepIndex={activeStepIndex}
+                            stepsCompleted={stepsCompletedForProgress}
+                            stepsAutoPrint={stepsAutoPrintForProgress}
+                            orderId={id}
+                            onStepClick={(index) => {
+                                const status = getStatusParamFromStepIndex(index);
+                                router.push(`/dashboard/massschuhauftraege/${id}?status=${encodeURIComponent(status)}`);
+                            }}
+                        />
                     </div>
                 </div>
 
-                {/* Right Side - Sidebar */}
-                <FertigungsweisungSidebar orderId={id} />
+
+
+
+                {/* Main Content */}
+                <div className="flex gap-6 mt-5">
+                    <div className="flex-1">
+                        <div className="bg-white rounded-lg border border-red-200 p-6">
+                            {loading ? (
+                                <div className="py-16 flex items-center justify-center">
+                                    <p className="text-gray-500">Laden...</p>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Header: step number circle (green when completed, red when waiting) + title + status */}
+                                    <div className="mb-6 flex items-center gap-3">
+                                        <div className="relative shrink-0">
+                                            <div
+                                                className={`w-10 h-10 rounded-full flex items-center justify-center ${isCurrentStepCompleted ? 'bg-emerald-600' : 'bg-red-600'
+                                                    }`}
+                                            >
+                                                {isCurrentStepCompleted ? (
+                                                    <Check className="w-6 h-6 text-white" />
+                                                ) : (
+                                                    <span className="text-white text-base font-bold">
+                                                        {activeStepIndex + 1}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex-1">
+                                            <h2 className="text-xl font-bold text-gray-900 mb-1">
+                                                {SHOE_STEPS[activeStepIndex]}
+                                            </h2>
+                                            <div className="flex items-center gap-3 flex-wrap">
+                                                {isCurrentStepCompleted ? (
+                                                    <span className="text-sm font-medium text-emerald-700">
+                                                        Schritt wurde von Mitarbeiter {employeeDisplayName}
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        <span className="text-sm text-gray-400">
+                                                            Verantwortlich: <span className="text-gray-400">{orderData?.responsible ?? '–'}</span>
+                                                        </span>
+                                                        {orderData?.isOverdue && (
+                                                            <span className="text-sm text-red-600 font-medium">
+                                                                • {orderData.days}d überfällig
+                                                            </span>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Instruction: only show "waiting for processing" when not completed; completed message is in header only */}
+                                    {!isCurrentStepCompleted && (
+                                        <div className="mb-6 p-3 bg-gray-50 rounded-lg ">
+                                            <p className="text-sm text-gray-500">
+                                                {activeStepIndex === 2
+                                                    ? 'Dieser Schritt wartet auf Bearbeitung.'
+                                                    : 'Dieser Schritt wartet auf Bearbeitung. Laden Sie relevante Bilder hoch und fügen Sie Notizen hinzu.'}
+                                            </p>
+                                        </div>
+                                    )}
+
+
+
+                                    {/* Bilder Section */}
+                                    <div className="mb-6">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Camera className="w-5 h-5 text-gray-600" />
+                                            <h3 className="text-lg font-semibold text-gray-900">Bilder</h3>
+                                        </div>
+
+                                        {/* Existing files for this step (from API) – visible in real time, with delete */}
+                                        {stepFilesFromApi.length > 0 && (
+                                            <div className="mb-4">
+                                                <p className="text-sm font-medium text-gray-700 mb-2">Vorhandene Dateien (dieser Schritt)</p>
+                                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                                    {stepFilesFromApi.map((f) => {
+                                                        const isImage = (f.fileType || '').startsWith('image/') || /\.(png|jpg|jpeg|gif|webp)$/i.test(f.fileName || '');
+                                                        const isDeleting = deletingFileId === f.id;
+                                                        return (
+                                                            <div
+                                                                key={f.id}
+                                                                className="relative group rounded-lg border border-gray-200 bg-gray-50 overflow-hidden hover:border-emerald-400 hover:shadow-sm transition-all"
+                                                            >
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        setDeleteFileConfirmId(f.id);
+                                                                    }}
+                                                                    disabled={!!deletingFileId}
+                                                                    className="absolute top-2 right-2 z-10 w-7 h-7 rounded-full bg-red-500 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity disabled:opacity-50"
+                                                                    aria-label="Datei löschen"
+                                                                >
+                                                                    {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
+                                                                </button>
+                                                                <a
+                                                                    href={f.fileUrl}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="block"
+                                                                >
+                                                                    {isImage ? (
+                                                                        <div className="aspect-square relative bg-gray-100">
+                                                                            <img
+                                                                                src={f.fileUrl}
+                                                                                alt={f.fileName || 'Bild'}
+                                                                                className="w-full h-full object-cover"
+                                                                            />
+                                                                        </div>
+                                                                    ) : (
+                                                                        <div className="aspect-square flex flex-col items-center justify-center p-3">
+                                                                            <FileText className="h-8 w-8 text-gray-400 mb-1" />
+                                                                            <span className="text-xs text-gray-600 text-center truncate w-full">{f.fileName}</span>
+                                                                        </div>
+                                                                    )}
+                                                                    <p className="p-2 text-xs text-gray-600 truncate border-t border-gray-100" title={f.fileName}>
+                                                                        {f.fileName}
+                                                                    </p>
+                                                                </a>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Confirm delete step file modal */}
+                                        <Dialog open={!!deleteFileConfirmId} onOpenChange={(open) => !open && setDeleteFileConfirmId(null)}>
+                                            <DialogContent className="sm:max-w-md">
+                                                <DialogHeader>
+                                                    <DialogTitle>Datei löschen</DialogTitle>
+                                                    <DialogDescription>
+                                                        Möchten Sie diese Datei wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <DialogFooter>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        onClick={() => setDeleteFileConfirmId(null)}
+                                                        disabled={!!deletingFileId}
+                                                    >
+                                                        Abbrechen
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        className="bg-red-600 hover:bg-red-700"
+                                                        disabled={!!deletingFileId}
+                                                        onClick={() => deleteFileConfirmId && handleDeleteStepFile(deleteFileConfirmId)}
+                                                    >
+                                                        {deletingFileId ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Löschen'}
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
+
+                                        {/* File Upload Area */}
+                                        <div
+                                            className={`border-2 border-dashed rounded-lg p-12 flex flex-col items-center justify-center transition-colors cursor-pointer ${isDragging
+                                                ? 'border-emerald-500 bg-emerald-50'
+                                                : 'border-gray-300 hover:border-emerald-400'
+                                                }`}
+                                            onDragOver={(e) => {
+                                                e.preventDefault();
+                                                setIsDragging(true);
+                                            }}
+                                            onDragLeave={() => setIsDragging(false)}
+                                            onDrop={(e) => {
+                                                e.preventDefault();
+                                                setIsDragging(false);
+                                                const files = Array.from(e.dataTransfer.files);
+                                                handleFileUpload(files);
+                                            }}
+                                            onClick={() => document.getElementById('file-upload')?.click()}
+                                        >
+                                            <input
+                                                id="file-upload"
+                                                type="file"
+                                                multiple
+                                                accept="image/*,.pdf,.doc,.docx"
+                                                className="hidden"
+                                                onChange={(e) => {
+                                                    if (e.target.files) {
+                                                        handleFileUpload(Array.from(e.target.files));
+                                                    }
+                                                }}
+                                            />
+                                            <Camera className="w-10 h-10 text-gray-400 mb-3" />
+                                            <p className="text-gray-600 font-medium">Bilder hochladen</p>
+                                            <p className="text-xs text-gray-500 mt-1">Klicken Sie hier oder ziehen Sie Dateien hierher</p>
+                                        </div>
+
+                                        {/* Uploaded Files Preview */}
+                                        {uploadedFiles.length > 0 && (
+                                            <div className="mt-4 grid grid-cols-3 gap-4">
+                                                {uploadedFiles.map((file, index) => (
+                                                    <div key={index} className="relative group">
+                                                        {file.type.startsWith('image/') ? (
+                                                            <div className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
+                                                                <img
+                                                                    src={URL.createObjectURL(file)}
+                                                                    alt={file.name}
+                                                                    className="w-full h-full object-cover"
+                                                                />
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleRemoveFile(index);
+                                                                    }}
+                                                                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="relative aspect-square rounded-lg border border-gray-200 bg-gray-50 flex flex-col items-center justify-center p-2">
+                                                                <FileText className="w-8 h-8 text-gray-400 mb-1" />
+                                                                <p className="text-xs text-gray-600 text-center truncate w-full">
+                                                                    {file.name}
+                                                                </p>
+                                                                <button
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        handleRemoveFile(index);
+                                                                    }}
+                                                                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                                                >
+                                                                    <X className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Notiz Section */}
+                                    <div className="mb-6">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Notiz</h3>
+                                        <textarea
+                                            value={notes}
+                                            onChange={(e) => setNotes(e.target.value)}
+                                            placeholder="Anmerkungen..."
+                                            className="w-full min-h-[120px] p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
+                                        />
+                                    </div>
+                                    {/* Step 2: Leistenerstellung – Material & Leistentyp (only when this step) */}
+                                    {activeStepIndex === 1 && (
+                                        <LeistenerstellungStepFields
+                                            material={material}
+                                            leistentyp={leistentyp}
+                                            leistenfertigung={leistenfertigung}
+                                            onMaterialChange={setMaterial}
+                                            onLeistentypChange={setLeistentyp}
+                                            onLeistenfertigungChange={setLeistenfertigung}
+                                        />
+                                    )}
+
+                                    {/* Step 3: Bettungserstellung – Material & Dicke (only when this step) */}
+                                    {activeStepIndex === 2 && (
+                                        <BettungserstellungStepFields
+                                            material={material}
+                                            thickness={thickness}
+                                            onMaterialChange={setMaterial}
+                                            onThicknessChange={setThickness}
+                                        />
+                                    )}
+
+                                    {/* Step 4: Halbprobenerstellung – Vorbereitungsdatum, Anmerkungen, Halbprobe Durchführung, Checkliste */}
+                                    {activeStepIndex === 3 && (
+                                        <HalbprobenerstellungStepFields
+                                            preparation_date={preparation_date}
+                                            anmerkungen_halbprobe={anmerkungen_halbprobe}
+                                            halbprobe_durchfuehrung={halbprobe_durchfuehrung}
+                                            checkliste_halbprobe={checkliste_halbprobe}
+                                            onPreparationDateChange={setPreparation_date}
+                                            onAnmerkungenHalbprobeChange={setAnmerkungen_halbprobe}
+                                            onHalbprobeDurchfuehrungChange={setHalbprobe_durchfuehrung}
+                                            onChecklisteHalbprobeChange={setCheckliste_halbprobe}
+                                        />
+                                    )}
+
+                                    {/* Step 5: Halbprobe durchführen – Probenergebnis & Schafttyp */}
+                                    {activeStepIndex === 4 && (
+                                        <HalbprobeDurchfuehrungStepFields
+                                            orderId={id}
+                                            probenergebnis={probenergebnis}
+                                            schafttyp={schafttyp}
+                                            fitting_date={fitting_date}
+                                            adjustments={adjustments}
+                                            customer_reviews={customer_reviews}
+                                            checklisteHalbprobe={checkliste_halbprobe}
+                                            onProbenergebnisChange={setProbenergebnis}
+                                            onSchafttypChange={setSchafttyp}
+                                            onFittingDateChange={setFitting_date}
+                                            onAdjustmentsChange={setAdjustments}
+                                            onCustomerReviewsChange={setCustomer_reviews}
+                                            onChecklisteHalbprobeChange={setCheckliste_halbprobe}
+                                        />
+                                    )}
+
+                                    {/* Complete Button */}
+                                    <Button
+                                        type="button"
+                                        disabled={submitting}
+                                        onClick={() => setConfirmOpen(true)}
+                                        className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
+                                    >
+                                        {submitting ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <CheckCircle2 className="w-5 h-5" />
+                                        )}
+                                        Schritt abschließen & weiterleiten
+                                        <ArrowRight className="w-5 h-5" />
+                                    </Button>
+
+                                    {/* Confirm Modal */}
+                                    <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                                        <DialogContent className="sm:max-w-md">
+                                            <DialogHeader>
+                                                <DialogTitle>Schritt abschließen</DialogTitle>
+                                                <DialogDescription>
+                                                    Möchten Sie diesen Schritt wirklich abschließen und weiterleiten? Die Änderung wird gespeichert.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <DialogFooter className="flex gap-2 sm:gap-0">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    onClick={() => setConfirmOpen(false)}
+                                                    disabled={submitting}
+                                                >
+                                                    Abbrechen
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                                    onClick={handleCompleteStep}
+                                                    disabled={submitting}
+                                                >
+                                                    {submitting ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        'Bestätigen'
+                                                    )}
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right Side - Sidebar */}
+                    <FertigungsweisungSidebar orderId={id} />
+                </div>
             </div>
-        </div>
+
+        </>
+
     );
 }
