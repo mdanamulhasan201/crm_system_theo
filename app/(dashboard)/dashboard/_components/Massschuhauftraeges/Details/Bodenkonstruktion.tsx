@@ -726,24 +726,20 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
         return obj
     }
 
-    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - same structure as bodenkonstruktion/page.tsx
+    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - full structure so all conditional data is in payload
     const prepareMassschafterstellungJson2 = () => {
         const json: any = {
             "Mehr_ansehen_title": selectedSole?.name || "",
             "Mehr_ansehen_description": selectedSole?.description || "",
-            "hinterkappe_muster": hinterkappeMusterSide ? {
-                mode: hinterkappeMusterSide.mode ?? "",
-                sameValue: hinterkappeMusterSide.sameValue ?? "",
-                leftValue: hinterkappeMusterSide.leftValue ?? "",
-                rightValue: hinterkappeMusterSide.rightValue ?? "",
-                ...(hinterkappeMusterSide.mode === "gleich" && {
-                    samePrice: hinterkappeMusterSide.sameValue === "ja" ? 4.99 : 0,
-                }),
-                ...(hinterkappeMusterSide.mode === "unterschiedlich" && {
-                    leftPrice: hinterkappeMusterSide.leftValue === "ja" ? 2.49 : 0,
-                    rightPrice: hinterkappeMusterSide.rightValue === "ja" ? 2.49 : 0,
-                }),
-            } : {},
+            "hinterkappe_muster": {
+                mode: hinterkappeMusterSide?.mode ?? "",
+                sameValue: hinterkappeMusterSide?.sameValue ?? "",
+                leftValue: hinterkappeMusterSide?.leftValue ?? "",
+                rightValue: hinterkappeMusterSide?.rightValue ?? "",
+                samePrice: hinterkappeMusterSide?.mode === "gleich" ? (hinterkappeMusterSide?.sameValue === "ja" ? 4.99 : 0) : 0,
+                leftPrice: hinterkappeMusterSide?.mode === "unterschiedlich" ? (hinterkappeMusterSide?.leftValue === "ja" ? 2.49 : 0) : 0,
+                rightPrice: hinterkappeMusterSide?.mode === "unterschiedlich" ? (hinterkappeMusterSide?.rightValue === "ja" ? 2.49 : 0) : 0,
+            },
             "hinterkappe": hinterkappeSide && hinterkappeSide.mode ? {
                 mode: hinterkappeSide.mode,
                 sameValue: hinterkappeSide.sameValue ?? "",
@@ -760,26 +756,34 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             "leder_auswahl_links_price": 0.0,
             "leder_auswahl_rechts": "",
             "leder_auswahl_rechts_price": 0.0,
-            "vorderkappe": vorderkappeSide && vorderkappeSide.mode ? {
-                mode: vorderkappeSide.mode,
-                sameMaterial: vorderkappeSide.sameMaterial || "",
-                leftMaterial: vorderkappeSide.leftMaterial || "",
-                rightMaterial: vorderkappeSide.rightMaterial || "",
-            } : {},
-            "rahmen": rahmen && rahmen.type ? { type: rahmen.type, color: rahmen.color || "" } : {},
+            "vorderkappe": {
+                mode: vorderkappeSide?.mode ?? "",
+                sameMaterial: vorderkappeSide?.sameMaterial ?? "",
+                leftMaterial: vorderkappeSide?.leftMaterial ?? "",
+                rightMaterial: vorderkappeSide?.rightMaterial ?? "",
+            },
+            "rahmen": {
+                type: rahmen?.type ?? "",
+                color: rahmen?.color ?? "",
+            },
             "Rahmenfarbe": rahmen?.color || "",
-            "sohlenhoehe_differenziert": sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze) ? {
-                ferse: sohlenhoeheDifferenziert.ferse || 0,
-                ballen: sohlenhoeheDifferenziert.ballen || 0,
-                spitze: sohlenhoeheDifferenziert.spitze || 0,
-            } : {},
+            "sohlenhoehe_differenziert": {
+                ferse: sohlenhoeheDifferenziert?.ferse ?? 0,
+                ballen: sohlenhoeheDifferenziert?.ballen ?? 0,
+                spitze: sohlenhoeheDifferenziert?.spitze ?? 0,
+            },
             "Verbindungsleder": getSelectedValue(selected.verbindungsleder) || "",
             "Konstruktionsart": getSelectedValue(selected.Konstruktionsart) || "",
             "Konstruktionsart_price": 0.0,
             "brandsohle": getSelectedValue(selected.brandsohle) || "",
             "brandsohle_price": 0.0,
             "Seite_wählen": brandsohleSide?.mode || "",
-            "brandsohleSide": brandsohleSide ? { mode: brandsohleSide.mode, sameValues: brandsohleSide.sameValues || [], leftValues: brandsohleSide.leftValues || [], rightValues: brandsohleSide.rightValues || [] } : {},
+            "brandsohleSide": {
+                mode: brandsohleSide?.mode ?? "",
+                sameValues: brandsohleSide?.sameValues ?? [],
+                leftValues: brandsohleSide?.leftValues ?? [],
+                rightValues: brandsohleSide?.rightValues ?? [],
+            },
             "Sohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
             "Bevorzugte_Farbe": textAreas.schlemmaterial_preferred_colour || "",
             "Sohlenerhöhung": soleElevation?.enabled ? "ja" : "nein",

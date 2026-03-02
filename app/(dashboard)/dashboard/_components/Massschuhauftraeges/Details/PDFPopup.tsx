@@ -296,6 +296,13 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     }
   }
 
+  const getPDFFilename = (): string => {
+    const name = (orderData?.customerName ?? "").trim()
+    const base = name || "Kunde"
+    const sanitized = base.replace(/[^\p{L}\p{N}\s\-_.]/gu, "").replace(/\s+/g, "-").slice(0, 80)
+    return `${sanitized || "Kunde"}.pdf`
+  }
+
   const handleDownloadPDF = async () => {
     const blob = await generatePDFBlob()
     if (blob) {
@@ -303,7 +310,9 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = "document.pdf"
+      const filename = getPDFFilename()
+      a.setAttribute("download", filename)
+      a.download = filename
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -1484,10 +1493,10 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
 
         {/* Modal Footer */}
         <div className="p-6 border-t border-slate-200 flex justify-end gap-3 bg-white z-10 sticky bottom-0 left-0 right-0">
-          <div className="w-full flex justify-between items-center pt-4">
-            <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onClose}>
+          <div className="w-full flex justify-end items-center pt-4">
+            {/* <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium cursor-pointer transition-colors hover:bg-slate-50" onClick={onClose}>
               Zurück
-            </button>
+            </button> */}
             <div className="flex gap-3">
               <button className="py-4 px-14 rounded-lg border border-slate-300 bg-white text-slate-700 text-sm  font-medium flex items-center gap-2 cursor-pointer transition-colors hover:bg-slate-50" onClick={handleDownloadPDF}>
                 Herunterladen
