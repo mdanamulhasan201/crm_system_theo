@@ -267,7 +267,13 @@ export default function OrderTableRow({
 
     return (
         <TableRow
-            className={`border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${isRowSelected ? 'bg-gray-50' : ''}`}
+            className={`border-b border-gray-100 transition-colors cursor-pointer ${
+                order.priority === 'Dringend'
+                    ? 'bg-red-100 hover:bg-red-200/90'
+                    : isRowSelected
+                        ? 'bg-gray-50 hover:bg-gray-50'
+                        : 'hover:bg-gray-50'
+            }`}
             onClick={handleRowClick}
         >
             <TableCell className="py-4 px-4">
