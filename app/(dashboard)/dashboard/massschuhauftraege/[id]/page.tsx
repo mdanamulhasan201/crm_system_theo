@@ -20,6 +20,7 @@ import BettungserstellungStepFields from '@/app/(dashboard)/dashboard/_component
 import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobenerstellungStepFields';
 import HalbprobeDurchfuehrungStepFields, { type ProbenergebnisValue, type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobeDurchfuehrungStepFields';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Short names for progress indicator (matching the image design)
 const STEP_SHORT_NAMES = [
@@ -258,9 +259,13 @@ export default function MassschuhauftraegePage() {
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
+    const { user } = useAuth();
     const id = params?.id as string;
     const statusFromUrl = searchParams?.get('status') || 'Auftragserstellung';
     const activeStepIndex = getActiveStepIndexFromStatus(statusFromUrl);
+    // Display name from auth: prefer employee/business name so we don't show generic "partner"
+    const employeeDisplayName =
+        user?.employeeName || user?.busnessName || user?.partner?.name || user?.name || 'Mitarbeiter';
 
     const [orderData, setOrderData] = useState<OrderDetailData | null>(null);
     const [shoeOrderStep, setShoeOrderStep] = useState<Array<{ status: string; isCompleted?: boolean; auto_print?: boolean }> | null>(null);
@@ -472,6 +477,12 @@ export default function MassschuhauftraegePage() {
     const stepsCompletedForProgress = orderData?.stepsCompleted ?? progressFromSteps?.stepsCompleted;
     const stepsAutoPrintForProgress = orderData?.stepsAutoPrint ?? progressFromSteps?.stepsAutoPrint;
 
+    // Status indicator: green + "Schritt wurde von Mitarbeiter X abgeschlossen" when step is completed (backend) or at least one image uploaded
+    const isCurrentStepCompleted =
+        stepsCompletedForProgress?.[activeStepIndex] === true ||
+        stepFilesFromApi.length > 0 ||
+        uploadedFiles.length > 0;
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Progress Bar – steps clickable to view that step's data; current = active step from URL */}
@@ -500,40 +511,58 @@ export default function MassschuhauftraegePage() {
                             </div>
                         ) : (
                             <>
-                        {/* Header: immer den angezeigten Schritt (aus URL/active) anzeigen */}
+                        {/* Header: step number circle (green when completed, red when waiting) + title + status */}
                         <div className="mb-6 flex items-center gap-3">
                             <div className="relative shrink-0">
-                                <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center ">
-                                    <span className="text-white text-base font-bold">
-                                        {activeStepIndex + 1}
-                                    </span>
+                                <div
+                                    className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                                        isCurrentStepCompleted ? 'bg-emerald-600' : 'bg-red-600'
+                                    }`}
+                                >
+                                    {isCurrentStepCompleted ? (
+                                        <Check className="w-6 h-6 text-white" />
+                                    ) : (
+                                        <span className="text-white text-base font-bold">
+                                            {activeStepIndex + 1}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex-1">
                                 <h2 className="text-xl font-bold text-gray-900 mb-1">
                                     {SHOE_STEPS[activeStepIndex]}
                                 </h2>
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm text-gray-400">
-                                        Verantwortlich: <span className="text-gray-400">{orderData?.responsible ?? '–'}</span>
-                                    </span>
-                                    {orderData?.isOverdue && (
-                                        <span className="text-sm text-red-600 font-medium">
-                                            • {orderData.days}d überfällig
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    {isCurrentStepCompleted ? (
+                                        <span className="text-sm font-medium text-emerald-700">
+                                           Schritt wurde von Mitarbeiter {employeeDisplayName} 
                                         </span>
+                                    ) : (
+                                        <>
+                                            <span className="text-sm text-gray-400">
+                                                Verantwortlich: <span className="text-gray-400">{orderData?.responsible ?? '–'}</span>
+                                            </span>
+                                            {orderData?.isOverdue && (
+                                                <span className="text-sm text-red-600 font-medium">
+                                                    • {orderData.days}d überfällig
+                                                </span>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
                         </div>
 
-                        {/* Instruction Text – Step 3 (Bettungserstellung): only first line; other steps: full text */}
-                        <div className="mb-6 p-3 bg-gray-50 rounded-lg ">
-                            <p className="text-sm text-gray-500">
-                                {activeStepIndex === 2
-                                    ? 'Dieser Schritt wartet auf Bearbeitung.'
-                                    : 'Dieser Schritt wartet auf Bearbeitung. Laden Sie relevante Bilder hoch und fügen Sie Notizen hinzu.'}
-                            </p>
-                        </div>
+                        {/* Instruction: only show "waiting for processing" when not completed; completed message is in header only */}
+                        {!isCurrentStepCompleted && (
+                            <div className="mb-6 p-3 bg-gray-50 rounded-lg ">
+                                <p className="text-sm text-gray-500">
+                                    {activeStepIndex === 2
+                                        ? 'Dieser Schritt wartet auf Bearbeitung.'
+                                        : 'Dieser Schritt wartet auf Bearbeitung. Laden Sie relevante Bilder hoch und fügen Sie Notizen hinzu.'}
+                                </p>
+                            </div>
+                        )}
 
                       
 
