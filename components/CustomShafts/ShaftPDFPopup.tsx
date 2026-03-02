@@ -434,7 +434,12 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     <img src={footerImage || "/images/logo.png"} alt="Logo" className="w-full h-full object-contain aspect-square" />
                   </div>
                   <div>
-                    <div className="text-lg font-semibold text-slate-800 mb-2">{displayProductName}</div>
+                    <div className="text-lg font-semibold text-slate-800 mb-2">
+                      {displayProductName}
+                      {shaftConfiguration.customCategory && (
+                        <span className="text-sm font-medium text-slate-500 ml-3">· Kategorie: {shaftConfiguration.customCategory}</span>
+                      )}
+                    </div>
                     <div className="text-sm text-slate-800 leading-relaxed">
                       <div><span className="font-medium">{displayCustomerName}</span></div>
                       {orderData?.orderNumber && (
@@ -460,24 +465,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       </div>
                       <div className="flex-1 leading-loose">
                         <ModalCheckbox isSelected={true} label={shaftConfiguration.deliveryMethod} />
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Kategorie */}
-                  {shaftConfiguration.customCategory && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Kategorie
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        <ModalCheckbox isSelected={shaftConfiguration.customCategory === 'Halbschuhe'} label="Halbschuhe" />
-                        <ModalCheckbox isSelected={shaftConfiguration.customCategory === 'Stiefel'} label="Stiefel" />
-                        <ModalCheckbox isSelected={shaftConfiguration.customCategory === 'Sandalen'} label="Sandalen" />
-                        <ModalCheckbox isSelected={shaftConfiguration.customCategory === 'Stiefeletten'} label="Stiefeletten" />
-                        {!['Halbschuhe', 'Stiefel', 'Sandalen', 'Stiefeletten'].includes(shaftConfiguration.customCategory) && (
-                          <ModalCheckbox isSelected={true} label={shaftConfiguration.customCategory} />
-                        )}
                       </div>
                     </div>
                   )}
@@ -794,7 +781,12 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   <img src={footerImage || "/images/logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', aspectRatio: '1/1' }} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>{displayProductName}</div>
+                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>
+                    {displayProductName}
+                    {shaftConfiguration.customCategory && (
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b', marginLeft: '12px' }}> · Kategorie: {shaftConfiguration.customCategory}</span>
+                    )}
+                  </div>
                   <div style={{ fontSize: '13px', color: '#1e293b', lineHeight: 1.6 }}>
                     <div><span style={{ fontWeight: 500 }}>{displayCustomerName}</span></div>
                     {orderData?.orderNumber && (
@@ -820,24 +812,6 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                     <div style={{ flex: 1, lineHeight: 1.8 }}>
                       <PDFCheckbox isSelected={true} label={shaftConfiguration.deliveryMethod} />
-                    </div>
-                  </div>
-                )}
-                
-                {/* Kategorie */}
-                {shaftConfiguration.customCategory && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Kategorie
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      <PDFCheckbox isSelected={shaftConfiguration.customCategory === 'Halbschuhe'} label="Halbschuhe" />
-                      <PDFCheckbox isSelected={shaftConfiguration.customCategory === 'Stiefel'} label="Stiefel" />
-                      <PDFCheckbox isSelected={shaftConfiguration.customCategory === 'Sandalen'} label="Sandalen" />
-                      <PDFCheckbox isSelected={shaftConfiguration.customCategory === 'Stiefeletten'} label="Stiefeletten" />
-                      {!['Halbschuhe', 'Stiefel', 'Sandalen', 'Stiefeletten'].includes(shaftConfiguration.customCategory) && (
-                        <PDFCheckbox isSelected={true} label={shaftConfiguration.customCategory} />
-                      )}
                     </div>
                   </div>
                 )}
