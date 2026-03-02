@@ -64,6 +64,18 @@ export const getAllMassschuheOrders = async (limit: number = 10, status: string 
     }
 }
 
+
+// update priority (toggle): PATCH v2/shoe-orders/update-priority/:id — no body
+// response: { success, message, data: { priority, id, status } }
+export const updateMassschuheOrderPriority = async (id: string) => {
+    try {
+        const response = await axiosClient.patch(`/v2/shoe-orders/update-priority/${id}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
 // get single massschuhe by id and status /v2/shoe-orders/get-status/:id?status=Auftragserstellung
 export const getMassschuheOrderById = async (id: string, status: string) => {
     try {

@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import MasschuhauNoteModal from './MasschuhauNoteModal';
 import PriorityModal from './PriorityModal';
 import MasschuHistorySidebar from './MasschuHistorySidebar';
-import { getAllMassschuheOrders } from '@/apis/MassschuheAddedApis';
+import { getAllMassschuheOrders, updateMassschuheOrderPriority } from '@/apis/MassschuheAddedApis';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -94,13 +94,14 @@ function mapOrderToProgressData(order: ShoeOrderApi): ProgressData {
     const nextAction = currentStepIndex < SHOE_STEPS.length ? nextStepLabel : 'Abgeschlossen';
     const currentStepDisplay = order.status ? normalizeStepName(order.status) : (currentStepIndex < SHOE_STEPS.length ? SHOE_STEPS[currentStepIndex] : 'Ausgeführt');
 
+    const priority = order.priority ?? 'Normal';
     return {
         id: order.id,
         auftrag: {
             name: [order.customer?.vorname, order.customer?.nachname].filter(Boolean).join(' ') || '-',
             orderNumber: `#${order.orderNumber}`,
             product: 'Massschuhe',
-            isUrgent: order.priority === 'Dringend' || order.priority === 'Urgent',
+            isUrgent: priority === 'Dringend' || priority === 'Urgent',
         },
         currentStep: currentStepDisplay,
         location: order.branch_location?.title || order.branch_location?.description || '-',
@@ -114,6 +115,7 @@ function mapOrderToProgressData(order: ShoeOrderApi): ProgressData {
         responsible: order.payment_status || undefined,
         payment_status: order.payment_status,
         total_price: order.total_price ?? null,
+        priority,
     };
 }
 
@@ -152,6 +154,7 @@ export interface ProgressData {
     payment_status?: string;
     total_price?: number | null;
     notes?: string;
+    priority?: string;
 }
 
 // Custom Checkbox Component with light green border
@@ -345,15 +348,17 @@ const PAGE_LIMIT = 10;
 
 interface MasschuProgressTableProps {
     selectedStepIndex?: number | null;
+    showAllOrders?: boolean;
     onRowClick?: (stepIndex: number) => void;
 }
 
 export default function MasschuProgressTable({
     selectedStepIndex = null,
+    showAllOrders = false,
     onRowClick
 }: MasschuProgressTableProps = {}) {
     const router = useRouter();
-    const status = SHOE_STEPS[selectedStepIndex ?? 0];
+    const status = showAllOrders ? '' : SHOE_STEPS[selectedStepIndex ?? 0];
 
     const [orders, setOrders] = useState<ProgressData[]>([]);
     const [cursor, setCursor] = useState<string>('');
@@ -367,7 +372,7 @@ export default function MasschuProgressTable({
         const setLoader = isLoadMore ? setLoadingMore : setLoading;
         try {
             setLoader(true);
-            const statusParam = status.replace(/\s+/g, '_');
+            const statusParam = status ? status.replace(/\s+/g, '_') : '';
             const response = await getAllMassschuheOrders(PAGE_LIMIT, statusParam, cursorVal, search);
             const list = (response?.data ?? []).map((o: ShoeOrderApi) => mapOrderToProgressData(o));
             const pagination = response?.pagination ?? {};
@@ -377,7 +382,6 @@ export default function MasschuProgressTable({
                 setOrders(prev => [...prev, ...list]);
             } else {
                 setOrders(list);
-                setUrgentOrderIds(new Set(list.filter((r: ProgressData) => r.auftrag.isUrgent).map((r: ProgressData) => r.id)));
             }
             setHasMore(hasMorePages);
             // Cursor for next page: use API nextCursor if returned, else last item id
@@ -415,7 +419,7 @@ export default function MasschuProgressTable({
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
     const [priorityModalOrderId, setPriorityModalOrderId] = useState<string | null>(null);
     const [historySidebarOrderId, setHistorySidebarOrderId] = useState<string | null>(null);
-    const [urgentOrderIds, setUrgentOrderIds] = useState<Set<string>>(new Set());
+    const [updatingPriorityId, setUpdatingPriorityId] = useState<string | null>(null);
 
     const allSelected = filteredData.length > 0 && filteredData.every(row => selectedIds.has(row.id));
     const someSelected = filteredData.some(row => selectedIds.has(row.id));
@@ -438,18 +442,25 @@ export default function MasschuProgressTable({
         setSelectedIds(newSelected);
     };
 
-    const handleToggleUrgent = (id: string) => {
-        const newUrgent = new Set(urgentOrderIds);
-        const isCurrentlyUrgent = newUrgent.has(id);
-        
-        if (isCurrentlyUrgent) {
-            newUrgent.delete(id);
-            toast.success('Priorität erfolgreich entfernt');
-        } else {
-            newUrgent.add(id);
-            toast.success('Auftrag erfolgreich als dringend markiert');
+    const isUrgent = (row: ProgressData) => row.priority === 'Dringend' || row.priority === 'Urgent';
+
+    const handleToggleUrgent = async (id: string) => {
+        const row = filteredData.find((r) => r.id === id);
+        if (!row) return;
+        setUpdatingPriorityId(id);
+        try {
+            const res = await updateMassschuheOrderPriority(id);
+            const updatedPriority = res?.data?.priority ?? (isUrgent(row) ? 'Normal' : 'Dringend');
+            setOrders((prev) =>
+                prev.map((o) => (o.id === id ? { ...o, priority: updatedPriority, auftrag: { ...o.auftrag, isUrgent: updatedPriority === 'Dringend' || updatedPriority === 'Urgent' } } : o))
+            );
+            toast.success(updatedPriority === 'Dringend' ? 'Auftrag erfolgreich als dringend markiert' : 'Priorität erfolgreich entfernt');
+            setPriorityModalOrderId(null);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Priorität konnte nicht aktualisiert werden');
+        } finally {
+            setUpdatingPriorityId(null);
         }
-        setUrgentOrderIds(newUrgent);
     };
 
     const handleOpenPriorityModal = (id: string) => {
@@ -459,7 +470,6 @@ export default function MasschuProgressTable({
     const handleConfirmPriority = () => {
         if (priorityModalOrderId) {
             handleToggleUrgent(priorityModalOrderId);
-            setPriorityModalOrderId(null);
         }
     };
 
@@ -478,6 +488,7 @@ export default function MasschuProgressTable({
     };
 
     return (
+        <TooltipProvider delayDuration={300}>
         <div className="mt-8 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
             {/* Search - right aligned, debounced */}
             <div className="p-4 border-b border-gray-100 flex justify-end">
@@ -549,7 +560,7 @@ export default function MasschuProgressTable({
                             </TableRow>
                         ) : (
                             filteredData.map((row) => {
-                                const isDringend = urgentOrderIds.has(row.id);
+                                const isDringend = isUrgent(row);
                                 return (
                                 <TableRow
                                     key={row.id}
@@ -584,7 +595,7 @@ export default function MasschuProgressTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
-                                        <AuftragCell auftrag={row.auftrag} isUrgent={urgentOrderIds.has(row.id)} />
+                                        <AuftragCell auftrag={row.auftrag} isUrgent={isDringend} />
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
                                         <div className="font-medium text-gray-900 text-sm whitespace-nowrap">
@@ -643,13 +654,14 @@ export default function MasschuProgressTable({
                                                     handleOpenPriorityModal(row.id);
                                                 }}
                                                 className={`w-8 h-8 cursor-pointer flex items-center justify-center rounded transition-colors ${
-                                                    urgentOrderIds.has(row.id)
+                                                    isDringend
                                                         ? 'bg-red-100 text-red-600 hover:bg-red-200'
                                                         : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                                                 }`}
-                                                title={urgentOrderIds.has(row.id) ? 'Priorität entfernen' : 'Als Dringend markieren'}
+                                                title={isDringend ? 'Priorität entfernen' : 'Als Dringend markieren'}
+                                                disabled={updatingPriorityId === row.id}
                                             >
-                                                <AlertCircle className="w-4 h-4" />
+                                                {updatingPriorityId === row.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
                                             </button>
                                             <button
                                                 onClick={(e) => {
@@ -733,7 +745,7 @@ export default function MasschuProgressTable({
                         onConfirm={handleConfirmPriority}
                         orderName={selectedRow?.auftrag.name}
                         orderNumber={selectedRow?.auftrag.orderNumber}
-                        isUrgent={urgentOrderIds.has(priorityModalOrderId)}
+                        isUrgent={selectedRow ? isUrgent(selectedRow) : false}
                     />
                 );
             })()}
@@ -755,5 +767,6 @@ export default function MasschuProgressTable({
                 );
             })()}
         </div>
+        </TooltipProvider>
     );
 }
