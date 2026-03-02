@@ -34,6 +34,8 @@ interface FormData {
   isCustomVersorgung?: boolean // Flag to indicate if using custom versorgung (Einmalige Versorgung)
   versorgungsname?: string
   positionsnummerTotal?: number
+  selectedPositionsnummer?: string[]
+  positionsnummerOptions?: Array<{ positionsnummer?: string; description?: string | Record<string, unknown>; price?: number }>
   notiz_hinzufügen?: string
 }
 
@@ -119,6 +121,37 @@ export default function WerkstattzettelModal({
 
     return []
   }, [formData?.selectedVersorgungData, formData?.billingType])
+
+  // Full Versorgung display for "Auftragsdetails & Preise": supply name + add-ons (Positionsnummer)
+  const { einlageDisplayName, versorgungFullDisplay } = React.useMemo(() => {
+    const einlage = formData?.einlagentyp || ''
+    const supplyName =
+      formData?.versorgungsname ||
+      formData?.selectedVersorgungData?.supplyStatus?.name ||
+      formData?.selectedVersorgungData?.name ||
+      formData?.versorgung ||
+      ''
+    const selectedPos = formData?.selectedPositionsnummer || []
+    const options = formData?.positionsnummerOptions || []
+    const getPosNum = (o: any) => o?.positionsnummer ?? (typeof o?.description === 'object' && o?.description?.positionsnummer ? o.description.positionsnummer : '')
+    const getDesc = (o: any): string => {
+      if (typeof o?.description === 'string') return o.description
+      if (o?.description && typeof o.description === 'object') {
+        const t = (o.description as any).title ?? ''
+        const s = (o.description as any).subtitle ?? ''
+        return t && s ? `${t} - ${s}` : t || s || ''
+      }
+      return ''
+    }
+    const addonLabels = selectedPos
+      .map((posNum) => {
+        const opt = options.find((o) => getPosNum(o) === posNum)
+        return opt ? getDesc(opt) || posNum : posNum
+      })
+      .filter(Boolean)
+    const fullSupply = addonLabels.length > 0 ? `${supplyName} (${addonLabels.join(', ')})` : supplyName
+    return { einlageDisplayName: einlage, versorgungFullDisplay: fullSupply }
+  }, [formData?.einlagentyp, formData?.versorgung, formData?.versorgungsname, formData?.selectedVersorgungData, formData?.selectedPositionsnummer, formData?.positionsnummerOptions])
 
   // Auto-set Einlagenversorgung price when versorgung is selected
   // Only for Privat-Abrechnung – Krankenkassa must NOT prefill or calculate this price
@@ -436,6 +469,8 @@ export default function WerkstattzettelModal({
               }}
               versorgung={form.versorgung}
               versorgungsname={formData?.versorgungsname}
+              einlageDisplayName={einlageDisplayName}
+              versorgungFullDisplay={versorgungFullDisplay}
               onVersorgungChange={form.setVersorgung}
               quantity={form.quantity}
               onQuantityChange={form.setQuantity}

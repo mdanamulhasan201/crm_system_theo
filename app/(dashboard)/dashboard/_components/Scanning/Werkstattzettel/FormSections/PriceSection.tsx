@@ -23,6 +23,10 @@ interface PriceSectionProps {
   // Versorgung, Menge, Fertigstellung bis
   versorgung: string
   versorgungsname?: string
+  /** Einlage type name for "Auftragsdetails & Preise" (e.g. from formData.einlagentyp) */
+  einlageDisplayName?: string
+  /** Full supply name including add-ons (Positionsnummer) for display */
+  versorgungFullDisplay?: string
   onVersorgungChange: (value: string) => void
   quantity: string
   onQuantityChange: (value: string) => void
@@ -100,6 +104,8 @@ export default function PriceSection({
   onAuftragAngenommenBeiClear,
   versorgung,
   versorgungsname,
+  versorgungFullDisplay,
+  einlageDisplayName,
   onVersorgungChange,
   quantity,
   onQuantityChange,
@@ -268,15 +274,20 @@ export default function PriceSection({
         {/* Left Side: Form Fields – 10/12 on lg */}
         <div className="space-y-4 w-full min-w-0 lg:col-span-6">
 
-            {/* Versorgung & Versorgungsname */}
+            {/* Versorgung – full details: Einlage + supply name with add-ons */}
             <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Versorgung</p>
-              <p className="text-[15px] font-semibold text-gray-700">
-                {versorgung || '-'}
+              <p className="text-xs  text-gray-400 uppercase tracking-wide mb-1.5">Versorgung</p>
+              {einlageDisplayName ? (
+                <p className="text-[14px]  text-gray-700 mb-1">
+                  <span className=" text-gray-600">Einlage:</span> {einlageDisplayName}
+                </p>
+              ) : null}
+              <p className="text-[14px] text-gray-700">
+                {(versorgungFullDisplay ?? versorgung) || '-'}
               </p>
-              {versorgungsname ? (
+              {!versorgungFullDisplay && versorgungsname ? (
                 <p className="text-xs text-gray-500 mt-1">
                   <span className="font-medium text-gray-600">Versorgungsname:</span> {versorgungsname}
                 </p>
