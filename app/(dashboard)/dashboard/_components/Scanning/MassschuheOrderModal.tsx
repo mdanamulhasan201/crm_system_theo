@@ -89,10 +89,25 @@ interface MassschuheOrderModalProps {
         selectedPositionsnummer?: string[];
         positionsnummerAustriaData?: any[];
         positionsnummerItalyData?: any[];
+        /** Per-position side: L, R, or BDS (BDS = price × 2) */
+        itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
         billingType?: 'Krankenkassa' | 'Privat';
         price?: string;
         brutto?: string;
         tax?: string;
+        /** Privat: discount % (e.g. "10") */
+        rabatt?: string;
+        /** Privat: basis price (Brutto before discount) */
+        nettoPreis?: string;
+        /** Privat: full breakdown for display */
+        priceCalculations?: {
+            basisPreis?: number;
+            discountPercent?: number;
+            discountAmount?: number;
+            netto: number;
+            mwst: number;
+            brutto: number;
+        };
         /** Produktionsworkflow – same names as API payload */
         has_trim_strips?: boolean;
         step2_material?: string;
@@ -334,8 +349,9 @@ export default function MassschuheOrderModal({
             return '';
         };
 
-        // Build insurances array for v2 (with vat_country), then JSON string
+        // Build insurances array for v2 (with vat_country), then JSON string. BDS = price × 2.
         const vatCountryCode = user?.accountInfo?.vat_country === 'Österreich (AT)' ? 'AT' : user?.accountInfo?.vat_country === 'Italien (IT)' ? 'IT' : 'DE';
+        const itemSides = formData.itemSides || {};
         const buildInsurancesForV2 = (): string => {
             if (!formData.selectedPositionsnummer || formData.selectedPositionsnummer.length === 0) {
                 return '[]';
@@ -344,8 +360,11 @@ export default function MassschuheOrderModal({
             const arr = formData.selectedPositionsnummer.map(posNum => {
                 const option = allData.find(opt => getPositionsnummer(opt) === posNum);
                 if (option) {
+                    const basePrice = typeof option.price === 'number' ? option.price : 0;
+                    const side = itemSides[posNum] || 'R';
+                    const finalPrice = side === 'BDS' ? basePrice * 2 : basePrice;
                     return {
-                        price: option.price,
+                        price: finalPrice,
                         description: typeof option.description === 'object' ? option.description : {},
                         vat_country: vatCountryCode,
                     };
@@ -360,8 +379,8 @@ export default function MassschuheOrderModal({
             ? (vatCountryCode === 'IT' ? 4 : vatCountryCode === 'AT' ? 20 : 0)
             : (formData.tax ? parseFloat(formData.tax) : undefined);
 
-        // Total price (Gesamt): Krankenkassa = positions * qty + VAT; Privat = (foot + insole) * qty
-        // insurance_price: Krankenkassa only = positions subtotal (Zwischensumme, before VAT)
+        // Total price (Gesamt): Krankenkassa = positions (with BDS ×2) * qty + VAT; Privat = brutto * qty
+        // insurance_price: Krankenkassa only = positions subtotal with VAT
         let totalPrice: number;
         let insurancePrice: number | undefined;
         if (paymentType === 'privat') {
@@ -370,9 +389,12 @@ export default function MassschuheOrderModal({
         } else {
             const allPosData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
             const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
+            // BDS = price × 2 per position
             const positionsSum = (formData.selectedPositionsnummer || []).reduce((sum, posNum) => {
                 const opt = allPosData.find((o: any) => getPosNum(o) === posNum);
-                return sum + (typeof opt?.price === 'number' ? opt.price : 0);
+                const basePrice = typeof opt?.price === 'number' ? opt.price : 0;
+                const side = itemSides[posNum] || 'R';
+                return sum + (side === 'BDS' ? basePrice * 2 : basePrice);
             }, 0);
             const vatRate = vatCountryCode === 'IT' ? 4 : vatCountryCode === 'AT' ? 20 : 0;
             const positionsSubtotal = positionsSum * qty;
@@ -633,9 +655,13 @@ export default function MassschuheOrderModal({
                         if (formData.billingType === 'Krankenkassa') {
                             const allPosData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
                             const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
+                            const itemSides = formData.itemSides || {};
+                            // BDS = price × 2 per position
                             const positionsSum = (formData.selectedPositionsnummer || []).reduce((sum, posNum) => {
                                 const opt = allPosData.find((o: any) => getPosNum(o) === posNum);
-                                return sum + (typeof opt?.price === 'number' ? opt.price : 0);
+                                const basePrice = typeof opt?.price === 'number' ? opt.price : 0;
+                                const side = itemSides[posNum] || 'R';
+                                return sum + (side === 'BDS' ? basePrice * 2 : basePrice);
                             }, 0);
                             const qty = quantity || 1;
                             const positionsSubtotal = positionsSum * qty;
@@ -650,11 +676,19 @@ export default function MassschuheOrderModal({
                                             <>
                                                 {(formData.selectedPositionsnummer || []).map((posNum) => {
                                                     const opt = allPosData.find((o: any) => getPosNum(o) === posNum);
-                                                    const price = typeof opt?.price === 'number' ? opt.price : 0;
+                                                    const basePrice = typeof opt?.price === 'number' ? opt.price : 0;
+                                                    const side = itemSides[posNum] || 'R';
+                                                    const linePrice = side === 'BDS' ? basePrice * 2 : basePrice;
+                                                    const sideLabel = side === 'BDS' ? 'Beide (BDS)' : side === 'L' ? 'Links (L)' : 'Rechts (R)';
                                                     return (
                                                         <div key={posNum} className="flex justify-between items-center text-sm">
-                                                            <span className="text-gray-600">{posNum}</span>
-                                                            <span className="font-semibold text-gray-900">{formatPrice(price)}</span>
+                                                            <span className="text-gray-600">
+                                                                {posNum}
+                                                                {side !== 'R' && (
+                                                                    <span className="ml-1.5 text-xs text-gray-500">Seite: {sideLabel}</span>
+                                                                )}
+                                                            </span>
+                                                            <span className="font-semibold text-gray-900">{formatPrice(linePrice)}</span>
                                                         </div>
                                                     );
                                                 })}
@@ -705,9 +739,13 @@ export default function MassschuheOrderModal({
                             );
                         }
 
-                        // Privat: Brutto nach Rabatt (unit × Menge) → Menge → Gesamt. When Menge changes, Brutto total updates.
+                        // Privat: Basispreis (Add-on) → Rabatt (%) → Brutto nach Rabatt → Menge → Gesamt
                         const qty = quantity || 1;
-                        const bruttoUnit = formData.brutto ? parseFloat(formData.brutto) : 0;
+                        const pc = formData.priceCalculations;
+                        const basisPreis = pc?.basisPreis ?? (formData.nettoPreis ? parseFloat(formData.nettoPreis) : 0);
+                        const rabattPercent = formData.rabatt ? parseFloat(formData.rabatt) : 0;
+                        const discountAmount = pc?.discountAmount ?? (rabattPercent > 0 ? (basisPreis * rabattPercent) / 100 : 0);
+                        const bruttoUnit = formData.brutto ? parseFloat(formData.brutto) : (basisPreis - discountAmount);
                         const bruttoTotal = bruttoUnit * qty;
                         const vatPercent = formData.tax ? parseFloat(formData.tax) : 0;
                         const gesamtPrivat = bruttoTotal;
@@ -715,15 +753,27 @@ export default function MassschuheOrderModal({
                             <div className="bg-white rounded-lg border border-gray-200 p-6">
                                 <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Preisübersicht</h3>
                                 <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-3">
+                                    {basisPreis > 0 && (
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-600">Basispreis (Brutto)</span>
+                                            <span className="font-semibold text-gray-900">{formatPrice(basisPreis)}</span>
+                                        </div>
+                                    )}
+                                    {rabattPercent > 0 && (
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-600">Rabatt ({rabattPercent.toFixed(0)}%)</span>
+                                            <span className="font-semibold text-red-600">-{formatPrice(discountAmount)}</span>
+                                        </div>
+                                    )}
                                     {bruttoUnit > 0 && (
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-gray-600">Brutto nach Rabatt{qty > 1 ? ` (× ${qty})` : ''}</span>
-                                            <span className="text-sm font-semibold text-gray-900">{formatPrice(bruttoTotal)}</span>
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-600">Brutto nach Rabatt</span>
+                                            <span className="font-semibold text-gray-900">{formatPrice(bruttoUnit)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between items-center text-sm">
                                         <span className="text-gray-600">Menge</span>
-                                        <span className="font-semibold text-gray-900">{qty} {qty === 1 ? 'Paar' : 'Paare'}</span>
+                                        <span className="font-semibold text-gray-900">{qty} {qty === 1 ? 'Paar' : 'Paare'}{qty > 1 ? ` × ${formatPrice(bruttoUnit)}` : ''}</span>
                                     </div>
                                     <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
                                         <span className="text-base font-bold text-gray-900">Gesamt</span>
