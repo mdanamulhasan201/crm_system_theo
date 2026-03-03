@@ -261,7 +261,7 @@ export default function FilterCard({
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        Leistentyp <span className="text-gray-400 font-normal">(optional)</span>
+                                        Leistentyp 
                                     </label>
                                     <Select
                                         value={lastData.leistentyp || undefined}
