@@ -80,3 +80,66 @@ export const getAllKrankenkasseData = async (
     );
     return response.data;
 }
+
+
+
+
+
+
+/** Single prescription item from get-all (id-based, for linking to order) */
+export interface KrankenkassePrescriptionListItem {
+    id: string;
+    insurance_provider: string;
+    insurance_number: string;
+    medical_diagnosis: string;
+    prescription_date: string;
+    proved_number: string | null;
+    referencen_number: string | null;
+    validity_weeks: number;
+    createdAt: string;
+}
+
+export interface GetAllKrankenkassePrescriptionResponse {
+    success: boolean;
+    message: string;
+    data: KrankenkassePrescriptionListItem[];
+    hasMore: boolean;
+    prescription_date_3week: string;
+}
+
+// v2/insurance/prescription/get-all?customerId=...&prescriptionDate3Week=yes|no&limit=5&cursor=...
+export const getAllKrankenkassePrescription = async (
+    customerId: string,
+    prescriptionDate3Week: boolean,
+    limit: number,
+    cursor: string
+): Promise<GetAllKrankenkassePrescriptionResponse> => {
+    const params = new URLSearchParams({
+        customerId,
+        prescriptionDate3Week: prescriptionDate3Week ? 'yes' : 'no',
+        limit: String(limit),
+        ...(cursor ? { cursor } : {}),
+    });
+    const response = await axiosClient.get<GetAllKrankenkassePrescriptionResponse>(
+        `/v2/insurance/prescription/get-all?${params.toString()}`
+    );
+    return response.data;
+}
+
+
+// v2/insurance/manage-prescription
+
+// body:
+// {
+//     "type": "insole",
+//     "orderId": "6a0aede9-bcac-46db-b8f0-19a4eeb00a0e",
+//     "prescriptionId": "cmmafu55v0001kuq74qk210na"
+// }
+export const manageKrankenkassePrescription = async (type: string, orderId: string, prescriptionId: string) => {
+    try {
+        const response = await axiosClient.post(`/v2/insurance/manage-prescription`, { type, orderId, prescriptionId });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

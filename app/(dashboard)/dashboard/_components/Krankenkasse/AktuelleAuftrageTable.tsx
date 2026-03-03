@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { ArrowUpDown, FileText, Loader2 } from 'lucide-react'
+import { ArrowUpDown, FileText, Loader2, Database, Upload } from 'lucide-react'
 import {
     Table,
     TableBody,
@@ -15,7 +15,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import SearchFilter from './SearchFilter'
-import { getAllKrankenkasseData, type KrankenkasseOrderItem } from '@/apis/krankenkasseApis'
+import UpdateDataList from './UpdateDataList'
+import FileUploadModal from './FileUploadModal'
+import { getAllKrankenkasseData, type KrankenkasseOrderItem, type KrankenkassePrescriptionListItem } from '@/apis/krankenkasseApis'
 
 const TYPE_FILTERS = ['Alle', 'Insole', 'Shoes'] as const
 const API_TYPE_MAP = { Alle: '', Insole: 'insole', Shoes: 'shoes' } as const
@@ -33,6 +35,8 @@ const PAGE_SIZE = 10
 
 type OrderRow = {
     id: string
+    customerId: string
+    insuranceType: string
     status: string
     verordnungVornr: string
     penr: string
@@ -62,6 +66,8 @@ function mapOrderToRow(item: KrankenkasseOrderItem): OrderRow {
     const c = item.customer
     return {
         id: item.id,
+        customerId: c?.id ?? '',
+        insuranceType: item.insuranceType ?? 'insole',
         status: item.insurance_status ?? '–',
         verordnungVornr: p?.prescription_number ?? '–',
         penr: p?.proved_number ?? '–',
@@ -131,6 +137,12 @@ export default function AktuelleAuftrage() {
     const [loading, setLoading] = useState(true)
     const [loadingMore, setLoadingMore] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [updateModalOrder, setUpdateModalOrder] = useState<{
+        orderId: string
+        customerId: string
+        type: string
+    } | null>(null)
+    const [fileUploadModalOpen, setFileUploadModalOpen] = useState(false)
 
     const fetchOrders = useCallback(
         (cursorValue: string, append: boolean) => {
@@ -208,9 +220,24 @@ export default function AktuelleAuftrage() {
                     />
                 </div>
                 <div className="flex flex-col gap-4 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-5 sm:pb-5 mt-5">
-                    <h3 className="text-lg font-bold text-gray-900">
-                        Aktuelle Aufträge
-                    </h3>
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2 w-full">
+                        <div>
+                            <h3 className="text-lg font-bold text-gray-900">
+                                Aktuelle Aufträge
+                            </h3>
+                        </div>
+                        <div>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="cursor-pointer bg-[#61A175] hover:bg-[#61A175]/90 text-white"
+                                onClick={() => setFileUploadModalOpen(true)}
+                            >
+                                <Upload className="size-4" />
+                                Upload
+                            </Button>
+                        </div>
+                    </div>
                     {/* Alle / Insole / Shoes type filter - uncomment when needed
                     <div className="flex flex-wrap gap-2">
                         {TYPE_FILTERS.map((t) => (
@@ -259,25 +286,26 @@ export default function AktuelleAuftrage() {
                                 </TableHead>
                                 <TableHead className="text-gray-600 font-medium">Auftrag</TableHead>
                                 <TableHead className="text-gray-600 font-medium">Importlauf</TableHead>
+                                <TableHead className="text-gray-600 font-medium w-[80px]">Aktion</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {loading ? (
                                 <TableRow className="hover:bg-transparent border-0">
-                                    <TableCell colSpan={9} className="h-32 text-center text-gray-500">
+                                    <TableCell colSpan={10} className="h-32 text-center text-gray-500">
                                         <Loader2 className="mx-auto mb-2 size-8 animate-spin text-gray-400" />
                                         <p className="text-sm">Laden...</p>
                                     </TableCell>
                                 </TableRow>
                             ) : error ? (
                                 <TableRow className="hover:bg-transparent border-0">
-                                    <TableCell colSpan={9} className="h-32 text-center text-red-600">
+                                    <TableCell colSpan={10} className="h-32 text-center text-red-600">
                                         <p className="text-sm">{error}</p>
                                     </TableCell>
                                 </TableRow>
                             ) : sortedOrders.length === 0 ? (
                                 <TableRow className="hover:bg-transparent border-0">
-                                    <TableCell colSpan={9} className="h-32 text-center text-gray-500">
+                                    <TableCell colSpan={10} className="h-32 text-center text-gray-500">
                                         <FileText className="mx-auto mb-2 size-8 text-gray-300" />
                                         <p className="text-sm">Keine Aufträge gefunden</p>
                                         <p className="text-xs mt-1">Filter nach Typ ändern</p>
@@ -300,6 +328,26 @@ export default function AktuelleAuftrage() {
                                         <TableCell className="text-gray-600">{order.betrag}</TableCell>
                                         <TableCell className="text-gray-600">{order.auftrag}</TableCell>
                                         <TableCell className="text-gray-600">{order.importlauf}</TableCell>
+                                        <TableCell className="text-center">
+                                            <button
+                                                type="button"
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    if (order.customerId) {
+                                                        setUpdateModalOrder({
+                                                            orderId: order.id,
+                                                            customerId: order.customerId,
+                                                            type: order.insuranceType || 'insole',
+                                                        })
+                                                    }
+                                                }}
+                                                disabled={!order.customerId}
+                                                className="inline-flex cursor-pointer items-center justify-center size-9 rounded-md text-gray-500 hover:bg-gray-100 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                title="Rezeptdaten aktualisieren"
+                                            >
+                                                <Database className="size-5" />
+                                            </button>
+                                        </TableCell>
                                     </TableRow>
                                 ))
                             )}
@@ -312,7 +360,7 @@ export default function AktuelleAuftrage() {
                                 size="sm"
                                 onClick={loadMore}
                                 disabled={loadingMore}
-                                className="border-gray-300"
+                                className="border-gray-300 cursor-pointer"
                             >
                                 {loadingMore ? (
                                     <>
@@ -326,6 +374,35 @@ export default function AktuelleAuftrage() {
                         </div>
                     )}
                 </div>
+                <FileUploadModal
+                    isOpen={fileUploadModalOpen}
+                    onClose={() => setFileUploadModalOpen(false)}
+                />
+                {updateModalOrder && (
+                    <UpdateDataList
+                        isOpen={!!updateModalOrder}
+                        onClose={() => setUpdateModalOrder(null)}
+                        customerId={updateModalOrder.customerId}
+                        orderId={updateModalOrder.orderId}
+                        type={updateModalOrder.type}
+                        onSuccess={(prescription: KrankenkassePrescriptionListItem) => {
+                            const orderId = updateModalOrder.orderId
+                            setOrders((prev) =>
+                                prev.map((row) =>
+                                    row.id !== orderId
+                                        ? row
+                                        : {
+                                            ...row,
+                                            insurance_provider: prescription.insurance_provider ?? row.insurance_provider,
+                                            leistungsdatum: prescription.prescription_date ? formatLeistungsdatum(prescription.prescription_date) : row.leistungsdatum,
+                                            penr: prescription.proved_number ?? row.penr,
+                                            verordnungVornr: prescription.referencen_number ?? row.verordnungVornr,
+                                        }
+                                )
+                            )
+                        }}
+                    />
+                )}
             </CardContent>
         </Card>
     )

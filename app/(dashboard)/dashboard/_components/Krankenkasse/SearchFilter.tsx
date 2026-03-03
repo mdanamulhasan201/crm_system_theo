@@ -25,7 +25,7 @@ export default function SearchFilter({
     placeholder,
 }: SearchFilterProps) {
     return (
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-4 xl:flex-row sm:items-center sm:justify-between">
             {showSearch ? (
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-gray-400" />
