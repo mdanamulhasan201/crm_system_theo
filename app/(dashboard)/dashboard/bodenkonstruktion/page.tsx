@@ -723,6 +723,15 @@ export default function BodenkonstruktionPage() {
             <SoleSelectionSection
                 selectedSole={selectedSole}
                 onOpenModal={() => setShowSoleModal(true)}
+                onClearSole={() => {
+                    setSelectedSole(null)
+                    setSole4Thickness(null)
+                    setSole4Color(null)
+                    setSole5Thickness(null)
+                    setSole5Color(null)
+                    setSole6Thickness(null)
+                    setSole6Color(null)
+                }}
                 sole4Thickness={sole4Thickness}
                 sole4Color={sole4Color}
                 onSole4ThicknessChange={setSole4Thickness}
