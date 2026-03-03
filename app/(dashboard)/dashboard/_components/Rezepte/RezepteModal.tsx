@@ -19,7 +19,12 @@ import {
 } from '@/components/ui/popover'
 import { Check, CalendarIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { createRecipe, type CreateRecipeBody } from '@/apis/rezepteApis'
+import {
+    createRecipe,
+    updateRecipe,
+    type CreateRecipeBody,
+    type Prescription,
+} from '@/apis/rezepteApis'
 
 function formatDateDE(date: Date): string {
     const d = date.getDate().toString().padStart(2, '0')
@@ -46,11 +51,45 @@ function parseValidityWeeks(gueltigkeit: string): number {
     return match ? parseInt(match[1], 10) : 0
 }
 
+/** ISO date -> dd.mm.yyyy */
+function isoToDDMMYYYY(iso?: string): string {
+    if (!iso) return ''
+    try {
+        const d = new Date(iso)
+        if (Number.isNaN(d.getTime())) return ''
+        return formatDateDE(d)
+    } catch {
+        return ''
+    }
+}
+
+/** Map Prescription to form state */
+function prescriptionToForm(p: Prescription) {
+    return {
+        kostentraeger: p.insurance_provider ?? '',
+        versicherungsnummer: p.insurance_number ?? '',
+        rezeptdatum: isoToDDMMYYYY(p.prescription_date) || formatDateDE(new Date()),
+        arzt: p.prescription_number ?? '',
+        ortArzt: p.doctor_location ?? '',
+        arztnummer: p.doctor_name ?? '',
+        betriebsstaettennummer: p.establishment_number ?? '',
+        diagnose: p.medical_diagnosis ?? '',
+        artEinlage: p.type_of_deposit ?? '',
+        gueltigkeit: p.validity_weeks != null ? String(p.validity_weeks) : '',
+        kostentraegererkennung: p.cost_bearer_id ?? '',
+        statusnummer: p.status_number ?? '',
+        bvhCode: p.aid_code ?? '',
+        arbeitsunfall: !!p.is_work_accident,
+    }
+}
+
 interface RezepteModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     customerId: string
     onSuccess?: () => void
+    /** When set, modal is in edit mode (prefill + update instead of create) */
+    editRecipe?: Prescription | null
 }
 
 const initialForm = {
@@ -75,11 +114,14 @@ export default function RezepteModal({
     onOpenChange,
     customerId,
     onSuccess,
+    editRecipe = null,
 }: RezepteModalProps) {
-    const [form, setForm] = useState(() => ({
-        ...initialForm,
-        rezeptdatum: formatDateDE(new Date()),
-    }))
+    const isEdit = !!editRecipe?.id
+    const [form, setForm] = useState(() =>
+        editRecipe
+            ? prescriptionToForm(editRecipe)
+            : { ...initialForm, rezeptdatum: formatDateDE(new Date()) }
+    )
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitError, setSubmitError] = useState<string | null>(null)
 
@@ -98,6 +140,18 @@ export default function RezepteModal({
         })
         setSubmitError(null)
     }, [])
+
+    React.useEffect(() => {
+        if (!open) return
+        if (editRecipe?.id) {
+            setForm(prescriptionToForm(editRecipe))
+        } else {
+            setForm({
+                ...initialForm,
+                rezeptdatum: formatDateDE(new Date()),
+            })
+        }
+    }, [open, editRecipe])
 
     const handleOpenChange = useCallback(
         (next: boolean) => {
@@ -129,7 +183,11 @@ export default function RezepteModal({
                 aid_code: form.bvhCode,
                 is_work_accident: form.arbeitsunfall,
             }
-            await createRecipe(body)
+            if (isEdit && editRecipe?.id) {
+                await updateRecipe(editRecipe.id, body)
+            } else {
+                await createRecipe(body)
+            }
             handleOpenChange(false)
             onSuccess?.()
         } catch (err: unknown) {
@@ -157,7 +215,7 @@ export default function RezepteModal({
             <DialogContent className='sm:max-w-2xl max-h-[90vh] overflow-y-auto font-sans'>
                 <DialogHeader>
                     <DialogTitle className='text-xl font-bold tracking-tight text-gray-900 antialiased'>
-                        Neues Rezept
+                        {isEdit ? 'Rezept bearbeiten' : 'Neues Rezept'}
                     </DialogTitle>
                 </DialogHeader>
 

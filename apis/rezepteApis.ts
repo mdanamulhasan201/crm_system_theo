@@ -29,9 +29,59 @@ export const createRecipe = async (recipeData: CreateRecipeBody) => {
     }
 }
 
+/** Single prescription from get-all or get-details */
+export interface Prescription {
+    id: string;
+    customerId?: string;
+    insurance_provider?: string;
+    insurance_number?: string;
+    prescription_date?: string;
+    prescription_number?: string;
+    doctor_location?: string;
+    doctor_name?: string;
+    establishment_number?: string;
+    medical_diagnosis?: string;
+    type_of_deposit?: string;
+    validity_weeks?: number;
+    cost_bearer_id?: string;
+    status_number?: string;
+    aid_code?: string;
+    is_work_accident?: boolean;
+    createdAt?: string;
+    [key: string]: unknown;
+}
 
-// update recipe v2/insurance/prescription/update/cmma3nz6t0001kuxei9p4fm4b
-export const updateRecipe = async (recipeId: string, recipeData: any) => {
+/** Backend response for get-all (v2/insurance/prescription/get-all) */
+export interface GetRecipeResponse {
+    success?: boolean;
+    message?: string;
+    data: Prescription[];
+    hasMore?: boolean;
+    nextCursor?: string;
+}
+
+// get all prescriptions — v2/insurance/prescription/get-all?customerId=...&cursor=...&limit=...
+export const getRecipe = async (
+    customerId: string,
+    cursor?: string | null,
+    limit?: number
+): Promise<GetRecipeResponse> => {
+    const params = new URLSearchParams({ customerId });
+    if (cursor != null && cursor !== '') params.set('cursor', cursor);
+    if (limit != null) params.set('limit', String(limit));
+    const response = await axiosClient.get<GetRecipeResponse>(
+        `/v2/insurance/prescription/get-all?${params.toString()}`
+    );
+    return response.data;
+}
+
+
+
+
+
+
+// update recipe v2/insurance/prescription/update/:recipeId
+export const updateRecipe = async (recipeId: string, recipeData: Partial<CreateRecipeBody>) => {
     try {
         const response = await axiosClient.put(`/v2/insurance/prescription/update/${recipeId}`, recipeData);
         return response.data;
@@ -41,7 +91,7 @@ export const updateRecipe = async (recipeId: string, recipeData: any) => {
 }
 
 
-// delete recipe v2/insurance/prescription/delete/cmma3nz6t0001kuxei9p4fm4b
+// delete recipe v2/insurance/prescription/delete/:recipeId
 export const deleteRecipe = async (recipeId: string) => {
     try {
         const response = await axiosClient.delete(`/v2/insurance/prescription/delete/${recipeId}`);
@@ -52,21 +102,19 @@ export const deleteRecipe = async (recipeId: string) => {
 }
 
 
-// get single recipe v2/insurance/prescription/get-all?customerId=8316981a-496d-4207-ac7e-925a5473bf05
-export const getRecipe = async (customerId: string) => {
-    try {
-        const response = await axiosClient.get(`/v2/insurance/prescription/get-all?customerId=${customerId}`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
+
+
+/** Backend response for get-details (v2/insurance/prescription/get-details/:id) */
+export interface GetSingleRecipeResponse {
+    success?: boolean;
+    message?: string;
+    data: Prescription;
 }
 
-
-// v2/insurance/prescription/get-details/cmma3vnnf0003kuxeg445hrlp
-export const getSingleRecipe = async (recipeId: string) => {
+// get single prescription details v2/insurance/prescription/get-details/:recipeId
+export const getSingleRecipe = async (recipeId: string): Promise<GetSingleRecipeResponse> => {
     try {
-        const response = await axiosClient.get(`/v2/insurance/prescription/get-details/${recipeId}`);
+        const response = await axiosClient.get<GetSingleRecipeResponse>(`/v2/insurance/prescription/get-details/${recipeId}`);
         return response.data;
     } catch (error) {
         throw error;
