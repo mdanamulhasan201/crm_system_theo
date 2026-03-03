@@ -690,36 +690,33 @@ export default function BodenkonstruktionPage() {
                     </h1>
                 </div> */}
 
-                {/* header section  */}
-                <section className="relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-                    <div className="absolute left-0 top-5 bottom-5 w-1 rounded-r-full bg-[#6B9B87]" />
-                    <div className="p-6 md:p-8 pl-8 md:pl-10">
-                        <div className="flex flex-col gap-5 md:flex-row md:items-stretch md:gap-8">
-                            <div className="min-w-0 flex-1 space-y-5">
-                                <h2 className="text-xl font-semibold tracking-tight text-gray-900 md:text-2xl">
-                                    {shoe2.name || "Bodenkonstruktion"}
-                                </h2>
-                                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="flex items-center gap-1.5 text-sm font-medium text-gray-500 shrink-0">
-                                            <User className="size-4 text-gray-400" />
-                                            Kunde
-                                        </span>
-                                        <input
-                                            type="text"
-                                            value={customerName}
-                                            onChange={(e) => setCustomerName(e.target.value)}
-                                            placeholder="Kundenname eingeben"
-                                            className="flex-1 min-w-0 max-w-xs rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#6B9B87] focus:bg-white focus:ring-1 focus:ring-[#6B9B87] focus:outline-none"
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <CalendarDays className="size-4 text-gray-400" />
-                                        <span className="text-sm text-gray-500">Vorauss. Liefertermin:</span>
-                                        <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-sm font-medium text-gray-800">
-                                            {deliveryDate}
-                                        </span>
-                                    </div>
+                {/* header section — card layout */}
+                <section className="rounded-2xl bg-white ring-1 ring-gray-200/80 shadow-[0_1px_3px_0_rgba(0,0,0,0.04)]">
+                    <div className="p-5 sm:p-6 md:p-7">
+                        <h2 className="text-lg font-bold text-gray-900 sm:text-xl md:text-2xl mb-5 md:mb-6">
+                            {shoe2.name || "Bodenkonstruktion"}
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+                            <div className="space-y-1.5">
+                                <label className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <User className="size-3.5" />
+                                    Kunde
+                                </label>
+                                <input
+                                    type="text"
+                                    value={customerName}
+                                    onChange={(e) => setCustomerName(e.target.value)}
+                                    placeholder="Kundenname eingeben"
+                                    className="w-full rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#6B9B87] focus:bg-white focus:ring-2 focus:ring-[#6B9B87]/20 focus:outline-none transition-all"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-gray-500">
+                                    <CalendarDays className="size-3.5" />
+                                    Vorauss. Liefertermin
+                                </label>
+                                <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm font-medium text-gray-800">
+                                    {deliveryDate}
                                 </div>
                             </div>
                         </div>
