@@ -199,8 +199,8 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [halbprobeErforderlich, setHalbprobeErforderlich] = useState<boolean | null>(null);
     const [leistenVorhanden, setLeistenVorhanden] = useState<boolean | null>(null);
     const [bettungErforderlich, setBettungErforderlich] = useState<boolean | null>(null);
-    const [lastData, setLastData] = useState<Step2Data>({ material: '', leistentyp: '', notes: '' });
-    const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '' });
+    const [lastData, setLastData] = useState<Step2Data>({ material: '', leistentyp: '', leistengroesse: '', notes: '' });
+    const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel: '', thickness_ball: '', thickness_toe: '' });
     const [internalPrepData, setInternalPrepData] = useState<InternalPrepData>({ notes: '', preparationDate: undefined });
     const [customerFittingData, setCustomerFittingData] = useState<CustomerFittingData>({ fittingDate: undefined, adjustments: '', customerNotes: '' });
 
@@ -347,8 +347,8 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setHalbprobeErforderlich(null);
             setLeistenVorhanden(null);
             setBettungErforderlich(null);
-            setLastData({ material: '', leistentyp: '', notes: '' });
-            setFootbedData({ material: '', thickness: '', notes: '' });
+            setLastData({ material: '', leistentyp: '', leistengroesse: '', notes: '' });
+            setFootbedData({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel: '', thickness_ball: '', thickness_toe: '' });
             setInternalPrepData({ notes: '', preparationDate: undefined });
             setCustomerFittingData({ fittingDate: undefined, adjustments: '', customerNotes: '' });
             if (onDataRefresh) onDataRefresh();
@@ -505,8 +505,14 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     has_trim_strips: leistenVorhanden === true,
                     step2_material: lastData.material,
                     leistentyp: lastData.leistentyp,
+                    leistengroesse: lastData.leistengroesse ?? '',
                     step2_notes: lastData.notes,
                     bedding_required: bettungErforderlich === true,
+                    bettung_type: footbedData.bettung_type ?? undefined,
+                    bettung_notes: footbedData.bettung_notes ?? '',
+                    thickness_heel: footbedData.thickness_heel ?? '',
+                    thickness_ball: footbedData.thickness_ball ?? '',
+                    thickness_toe: footbedData.thickness_toe ?? '',
                     step3_material: footbedData.material,
                     step3_thickness: footbedData.thickness,
                     step3_notes: footbedData.notes,

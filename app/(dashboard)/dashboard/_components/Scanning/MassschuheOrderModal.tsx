@@ -56,8 +56,14 @@ export interface MassschuheOrderV2Payload {
     has_trim_strips?: boolean;
     step2_material?: string;
     leistentyp?: string;
+    leistengroesse?: string;
     step2_notes?: string;
     bedding_required?: boolean;
+    bettung_type?: 'on_last' | 'built_up' | null;
+    bettung_notes?: string;
+    thickness_heel?: string;
+    thickness_ball?: string;
+    thickness_toe?: string;
     step3_material?: string;
     step3_thickness?: string;
     step3_notes?: string;
@@ -112,8 +118,14 @@ interface MassschuheOrderModalProps {
         has_trim_strips?: boolean;
         step2_material?: string;
         leistentyp?: string;
+        leistengroesse?: string;
         step2_notes?: string;
         bedding_required?: boolean;
+        bettung_type?: 'on_last' | 'built_up' | null;
+        bettung_notes?: string;
+        thickness_heel?: string;
+        thickness_ball?: string;
+        thickness_toe?: string;
         step3_material?: string;
         step3_thickness?: string;
         step3_notes?: string;
@@ -447,8 +459,14 @@ export default function MassschuheOrderModal({
             has_trim_strips: formData.has_trim_strips ?? false,
             step2_material: formData.step2_material ?? '',
             leistentyp: formData.leistentyp ?? '',
+            leistengroesse: formData.leistengroesse || undefined,
             step2_notes: formData.step2_notes ?? '',
             bedding_required: formData.bedding_required ?? false,
+            bettung_type: formData.bedding_required ? (formData.bettung_type ?? undefined) : undefined,
+            bettung_notes: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
+            thickness_heel: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel ?? '') : undefined,
+            thickness_ball: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball ?? '') : undefined,
+            thickness_toe: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe ?? '') : undefined,
             step3_material: formData.bedding_required ? (formData.step3_material ?? '') : undefined,
             step3_thickness: formData.bedding_required ? (formData.step3_thickness ?? '') : undefined,
             step3_notes: formData.bedding_required ? (formData.step3_notes ?? '') : undefined,
@@ -465,6 +483,28 @@ export default function MassschuheOrderModal({
 
         await onSubmit(v2Payload);
     };
+
+    const isBettungValid = (): boolean => {
+        if (!formData.bedding_required) return true;
+        const type = formData.bettung_type;
+        if (type == null) return false;
+        if (type === 'on_last') {
+            return (formData.bettung_notes?.trim() ?? '') !== '';
+        }
+        if (type === 'built_up') {
+            const parse = (s: string | undefined) => {
+                if (s == null || s.trim() === '') return NaN;
+                return parseFloat(String(s).replace(',', '.'));
+            };
+            const h = parse(formData.thickness_heel);
+            const b = parse(formData.thickness_ball);
+            const t = parse(formData.thickness_toe);
+            return Number.isFinite(h) && h > 0 && Number.isFinite(b) && b > 0 && Number.isFinite(t) && t > 0;
+        }
+        return false;
+    };
+
+    const weiterDisabled = isLoading || (formData.bedding_required === true && !isBettungValid());
 
     return (
         <>
@@ -879,8 +919,8 @@ export default function MassschuheOrderModal({
                         <Button
                             type="button"
                             onClick={() => setShowConfirmModal(true)}
-                            disabled={isLoading}
-                            className="flex-1 bg-[#62A07C] hover:bg-[#4A8A5F] text-white min-w-[140px] flex items-center justify-center gap-2"
+                            disabled={weiterDisabled}
+                            className="flex-1 bg-[#62A07C] hover:bg-[#4A8A5F] text-white min-w-[140px] flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? (
                                 <>
