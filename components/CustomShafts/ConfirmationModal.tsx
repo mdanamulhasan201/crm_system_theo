@@ -167,7 +167,7 @@ export default function ConfirmationModal({
                 {isLoadingDelivery ? (
                   <span>Lieferzeit wird geladen…</span>
                 ) : deliveryDateText ? (
-                  <span>Die voraussichtliche Lieferzeit beträgt ca. <strong className="text-slate-700">{deliveryDateText}</strong></span>
+                  <span>Die voraussichtliche Lieferzeit beträgt  <strong className="text-slate-700">{deliveryDateText}</strong></span>
                 ) : null}
               </p>
             )}

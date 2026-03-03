@@ -1,6 +1,7 @@
 "use client"
 import React, { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
+import { CalendarDays, User } from "lucide-react"
 import { GROUPS2, shoe2 } from "../_components/Massschuhauftraeges/Details/ShoeData"
 import PDFPopup, { OrderDataForPDF } from "../_components/Massschuhauftraeges/Details/PDFPopup"
 import CompletionPopUp from "../_components/Massschuhauftraeges/Details/Completion-PopUp"
@@ -35,10 +36,10 @@ import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSumma
 
 export default function BodenkonstruktionPage() {
     const router = useRouter()
-    
+
     // Customer name state
     const [customerName, setCustomerName] = useState<string>("")
-    
+
     // Form states
     const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff" })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
@@ -47,42 +48,42 @@ export default function BodenkonstruktionPage() {
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
     const [soleElevation, setSoleElevation] = useState<SoleElevationData | null>(null)
-    
+
     // Orthopedic fields
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
     const [rahmen, setRahmen] = useState<RahmenData | null>(null)
     const [sohlenhoeheDifferenziert, setSohlenhoeheDifferenziert] = useState<SohlenhoeheDifferenziertData | null>(null)
-    
+
     // Left/Right selection fields
     const [hinterkappeMusterSide, setHinterkappeMusterSide] = useState<HinterkappeMusterSideData | null>(null)
     const [hinterkappeSide, setHinterkappeSide] = useState<HinterkappeSideData | null>(null)
     const [brandsohleSide, setBrandsohleSide] = useState<BrandsohleSideData | null>(null)
-    
+
     // Modal states
     const [showModal, setShowModal] = useState(false)
     const [showModal2, setShowModal2] = useState(false)
     const [checkboxError, setCheckboxError] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [pdfBlob, setPdfBlob] = useState<Blob | null>(null)
-    
+
     // Sole selection states
     const [selectedSole, setSelectedSole] = useState<SoleType | null>(null)
     const [showSoleModal, setShowSoleModal] = useState(false)
     const [showSoleDetailModal, setShowSoleDetailModal] = useState(false)
     const [selectedSoleForDetail, setSelectedSoleForDetail] = useState<SoleType | null>(null)
-    
+
     // Sole id "4" specific options
     const [sole4Thickness, setSole4Thickness] = useState<string | null>(null)
     const [sole4Color, setSole4Color] = useState<string | null>(null)
-    
+
     // Sole id "5" specific options
     const [sole5Thickness, setSole5Thickness] = useState<string | null>(null)
     const [sole5Color, setSole5Color] = useState<string | null>(null)
-    
+
     // Sole id "6" specific options
     const [sole6Thickness, setSole6Thickness] = useState<string | null>(null)
     const [sole6Color, setSole6Color] = useState<string | null>(null)
-    
+
     // Absatz Form popup states
     const [showAbsatzFormModal, setShowAbsatzFormModal] = useState(false)
     const [selectedAbsatzForm, setSelectedAbsatzForm] = useState<string | null>(null)
@@ -135,7 +136,7 @@ export default function BodenkonstruktionPage() {
         if (selected.absatzform) {
             const absatzformValue = selected.absatzform
             let shouldDeselect = false
-            
+
             if (selectedSole?.id === "1" && (absatzformValue === "Keilabsatz" || absatzformValue === "Stegkeil")) {
                 shouldDeselect = true
             } else if ((selectedSole?.id === "2" || selectedSole?.id === "3") && absatzformValue === "Absatzkeil") {
@@ -145,7 +146,7 @@ export default function BodenkonstruktionPage() {
             } else if ((selectedSole?.id === "9" || selectedSole?.id === "10" || selectedSole?.id === "11" || selectedSole?.id === "12") && (absatzformValue === "Keilabsatz" || absatzformValue === "Stegkeil")) {
                 shouldDeselect = true
             }
-            
+
             if (shouldDeselect) {
                 setSelected((prev) => ({
                     ...prev,
@@ -153,12 +154,12 @@ export default function BodenkonstruktionPage() {
                 }))
             }
         }
-        
+
         if (selected.abrollhilfe && (selectedSole?.id === "9" || selectedSole?.id === "10" || selectedSole?.id === "11" || selectedSole?.id === "12")) {
             const abrollhilfeValue = selected.abrollhilfe
             const isArray = Array.isArray(abrollhilfeValue)
             const currentArray = isArray ? abrollhilfeValue : [abrollhilfeValue]
-            
+
             if (currentArray.includes("abzezzolle")) {
                 const filteredArray = currentArray.filter((id: string) => id !== "abzezzolle")
                 setSelected((prev) => ({
@@ -172,16 +173,16 @@ export default function BodenkonstruktionPage() {
     // Handlers
     const setGroup = (groupId: string, optId: string | null) => {
         const group = GROUPS2.find(g => g.id === groupId)
-        
+
         if (group?.multiSelect) {
             setSelected((prev) => {
                 const currentValue = prev[groupId]
                 const currentArray = Array.isArray(currentValue) ? currentValue : (currentValue ? [currentValue] : [])
-                
+
                 if (optId === null) {
                     return { ...prev, [groupId]: null }
                 }
-                
+
                 if (currentArray.includes(optId)) {
                     const newArray = currentArray.filter(id => id !== optId)
                     return { ...prev, [groupId]: newArray.length > 0 ? newArray : null }
@@ -226,7 +227,7 @@ export default function BodenkonstruktionPage() {
             return
         }
         setCheckboxError(false)
-        
+
         // Validate sole selections
         if (selectedSole?.id === "4") {
             if (!sole4Thickness || !sole4Color) {
@@ -234,21 +235,21 @@ export default function BodenkonstruktionPage() {
                 return
             }
         }
-        
+
         if (selectedSole?.id === "5") {
             if (!sole5Thickness || !sole5Color) {
                 toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
                 return
             }
         }
-        
+
         if (selectedSole?.id === "6") {
             if (!sole6Thickness || !sole6Color) {
                 toast.error("Bitte wählen Sie Sohlenstärke und Farbe für die ausgewählte Sohle aus.")
                 return
             }
         }
-        
+
         setShowModal(true)
         localStorage.setItem("currentBalance", String(grandTotal.toFixed(2)))
     }
@@ -269,7 +270,7 @@ export default function BodenkonstruktionPage() {
         const hasSelection = schlemmaterialValue && (
             Array.isArray(schlemmaterialValue) ? schlemmaterialValue.length > 0 : true
         )
-        
+
         if (!hasSelection) {
             // Clear color field
             if (textAreas.schlemmaterial_preferred_colour) {
@@ -288,9 +289,9 @@ export default function BodenkonstruktionPage() {
         try {
             const formData = await prepareCustomBodenkonstruktionFormData(pdfBlob, deliveryDate ?? undefined)
             const response = await createCustomBodenkonstruktion(formData)
-            
+
             toast.success(response.message || "Bodenkonstruktion erfolgreich erstellt!", { id: "creating-bodenkonstruktion" })
-            
+
             setShowModal2(false)
             router.push("/dashboard/balance-dashboard")
         } catch (error) {
@@ -313,13 +314,13 @@ export default function BodenkonstruktionPage() {
     const convertImageToFile = async (imageString: string, fileName: string = 'custom_model.png'): Promise<File | null> => {
         try {
             if (!imageString) return null
-            
+
             if (imageString.startsWith('data:')) {
                 const response = await fetch(imageString)
                 const blob = await response.blob()
                 return new File([blob], fileName, { type: blob.type })
             }
-            
+
             if (imageString.startsWith('http')) {
                 const response = await fetch(imageString)
                 if (response.ok) {
@@ -327,7 +328,7 @@ export default function BodenkonstruktionPage() {
                     return new File([blob], fileName, { type: blob.type })
                 }
             }
-            
+
             if (imageString.startsWith('/')) {
                 const response = await fetch(imageString)
                 if (response.ok) {
@@ -335,7 +336,7 @@ export default function BodenkonstruktionPage() {
                     return new File([blob], fileName, { type: blob.type })
                 }
             }
-            
+
             return null
         } catch (error) {
             return null
@@ -345,23 +346,23 @@ export default function BodenkonstruktionPage() {
     // Helper to get option price
     const getOptionPrice = (groupId: string, optionId: string | null): number => {
         if (!optionId) return 0
-        
+
         const group = GROUPS2.find(g => g.id === groupId)
         if (!group) return 0
-        
+
         const option = group.options.find(opt => opt.id === optionId)
         if (!option) return 0
-        
+
         return parseEuroFromText(option.label)
     }
 
     // Helper to get sub-option price
     const getSubOptionPrice = (groupId: string, subOptionId: string | null): number => {
         if (!subOptionId) return 0
-        
+
         const group = GROUPS2.find(g => g.id === groupId)
         if (!group || !group.subOptions?.leder) return 0
-        
+
         const subOption = group.subOptions.leder.find(opt => opt.id === subOptionId)
         return subOption?.price || 0
     }
@@ -393,31 +394,31 @@ export default function BodenkonstruktionPage() {
             formData.append('invoice', pdfBlob, 'invoice.pdf')
         }
 
-    // Helper to remove null from payload - use "" or {} so no data goes as null
-    const removeNulls = (obj: any): any => {
-        if (obj === null) return ""
-        if (Array.isArray(obj)) return obj.map(removeNulls)
-        if (typeof obj === "object") {
-            const cleaned: any = {}
-            for (const [k, v] of Object.entries(obj)) {
-                const val = removeNulls(v)
-                if (val !== undefined) cleaned[k] = val
+        // Helper to remove null from payload - use "" or {} so no data goes as null
+        const removeNulls = (obj: any): any => {
+            if (obj === null) return ""
+            if (Array.isArray(obj)) return obj.map(removeNulls)
+            if (typeof obj === "object") {
+                const cleaned: any = {}
+                for (const [k, v] of Object.entries(obj)) {
+                    const val = removeNulls(v)
+                    if (val !== undefined) cleaned[k] = val
+                }
+                return cleaned
             }
-            return cleaned
+            return obj
         }
-        return obj
-    }
 
-    // Prepare bodenkonstruktion_json - Include ALL form fields (no null, prices included)
+        // Prepare bodenkonstruktion_json - Include ALL form fields (no null, prices included)
         const bodenkonstruktionJson: any = {
             // Customer & delivery
             customerName: customerName || "",
-            
+
             // Sole information
             Mehr_ansehen_image: selectedSole?.image || "",
             Mehr_ansehen_title: selectedSole?.name || "",
             Mehr_ansehen_description: selectedSole?.description || "",
-            
+
             // === 1. Hinterkappe - Muster wird bereitgestellt (mode: gleich | unterschiedlich) ===
             hinterkappe_muster: {
                 mode: hinterkappeMusterSide?.mode ?? "",
@@ -432,7 +433,7 @@ export default function BodenkonstruktionPage() {
                     rightPrice: hinterkappeMusterSide?.rightValue === "ja" ? 2.49 : 0,
                 }),
             },
-            
+
             // === 2. Hinterkappe (Material, Leder Auswahl - mode: gleich | unterschiedlich) ===
             hinterkappe: hinterkappeSide && hinterkappeSide.mode ? {
                 mode: hinterkappeSide.mode,
@@ -449,50 +450,50 @@ export default function BodenkonstruktionPage() {
             leder_auswahl_links_price: 0,
             leder_auswahl_rechts: "",
             leder_auswahl_rechts_price: 0,
-            
+
             // === 3. Vorderkappe ===
             vorderkappe: {} as any,
-            
+
             // === 4. Brandsohle ===
             brandsohle: "" as any,
             brandsohle_price: 0,
-            
+
             // === 5. Verbindungsleder ===
             verbindungsleder: getSelectedValue(selected.verbindungsleder) || "",
-            
+
             // === 6. Konstruktionsart ===
             Konstruktionsart: getSelectedValue(selected.Konstruktionsart) || "",
             Konstruktionsart_price: 0,
-            
+
             // === 7. Rahmen ===
             rahmen: {} as any,
             Rahmenfarbe: "",
-            
+
             // === 8. Sohlenmaterial ===
             Sohlenmaterial: getSelectedValue(selected.schlemmaterial) || "",
             ohlenmaterial: getSelectedValue(selected.schlemmaterial) || "",
-            
+
             // === 9. Bevorzugte Farbe ===
             Bevorzugte_Farbe: textAreas.schlemmaterial_preferred_colour || "",
             schlemmaterial_preferred_colour: textAreas.schlemmaterial_preferred_colour || "",
-            
+
             // === 10. Sohlenhöhe gesamt – Differenziert (Ferse, Ballen, Spitze mm) ===
             sohlenhoehe_differenziert: {} as any,
-            
+
             // === 11. Sohlenerhöhung ===
             Sohlenerhöhung: soleElevation?.enabled ? "ja" : "nein",
             Seite_der_Sohlenerhöhung: soleElevation?.side || "",
             Höhe_der_Sohlenerhöhung_mm: soleElevation?.height_mm ?? "",
             sole_elevation: (soleElevation && soleElevation.enabled) ? soleElevation : {},
-            
+
             // === 12. Absatz Form ===
             absatz_form: getSelectedValue(selected.absatzform) || "",
             absatz_höhe_am_besten_wie_bei_leisten_beachten: getSelectedValue(selected.absatzhoehe) || "",
             absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich: getSelectedValue(selected.absatzform) || "",
-            
+
             // === 13. Abrollhilfe (Rolle) ===
             abrollhilfe_Rolle: getSelectedValue(selected.abrollhilfe) || "",
-            
+
             // === 14. Absatzbreite anpassen (mm) ===
             Absatzbreite_anpassen: heelWidthAdjustment ? JSON.stringify(heelWidthAdjustment) : "",
             Linker_Schuh_innen_medial: heelWidthAdjustment?.leftMedial ? `${heelWidthAdjustment.leftMedial.op || ""} ${heelWidthAdjustment.leftMedial.mm || 0}mm` : "",
@@ -500,18 +501,18 @@ export default function BodenkonstruktionPage() {
             Rechter_Schuh_innen_medial: heelWidthAdjustment?.rightMedial ? `${heelWidthAdjustment.rightMedial.op || ""} ${heelWidthAdjustment.rightMedial.mm || 0}mm` : "",
             Rechter_Schuh_außen_lateral: heelWidthAdjustment?.rightLateral ? `${heelWidthAdjustment.rightLateral.op || ""} ${heelWidthAdjustment.rightLateral.mm || 0}mm` : "",
             heel_width_adjustment: heelWidthAdjustment || {},
-            
+
             // === 15. Möchten Sie die Laufsohle lose der Bestellung beilegen? ===
             möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen: getSelectedValue(selected.laufsohle_lose_beilegen) || "",
             möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price: 0,
-            
+
             // === 16. Leisten im Schuh belassen oder ausleisten? ===
             leisten_belassen: getSelectedValue(selected.leisten_belassen) || "",
-            
+
             // === 17. Besondere Hinweise ===
             besondere_hinweise: textAreas.besondere_hinweise || "",
             Besondere_Hinweise: textAreas.besondere_hinweise || "",
-            
+
             // Legacy / extra
             farbauswahl: getSelectedValue(selected.farbauswahl) || "",
             laufkohle: getSelectedValue(selected.laufkohle) || "",
@@ -525,7 +526,7 @@ export default function BodenkonstruktionPage() {
         if (konstruktionsartValue) {
             bodenkonstruktionJson.Konstruktionsart_price = getOptionPrice("Konstruktionsart", konstruktionsartValue)
         }
-        
+
         // Note: hinterkappe and brandsohle are now handled in the left/right section below
 
         // Get laufsohle_lose_beilegen price
@@ -675,43 +676,50 @@ export default function BodenkonstruktionPage() {
         <div className="relative bg-white ">
             {/* Sticky Price Summary - bottom-right with Abbrechen + Weiter buttons */}
             <StickyPriceSummary
-              price={grandTotal}
-              onWeiterClick={handleWeiterClick}
-              onCancel={() => router.back()}
-              isSubmitting={isSubmitting}
+                price={grandTotal}
+                onWeiterClick={handleWeiterClick}
+                onCancel={() => router.back()}
+                isSubmitting={isSubmitting}
             />
 
             {/* Header: product name + customer + delivery (no product image for standalone order) */}
             <div className="my-8">
-                <div className="mb-6">
+                {/* <div className="mb-6">
                     <h1 className="text-2xl font-semibold tracking-tight text-gray-800 md:text-3xl">
                         FeetF1rst Massschuhpartner
                     </h1>
-                </div>
+                </div> */}
 
-                <section className="relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white ">
-                    <div className="absolute left-0 top-4 bottom-4 w-[3px] rounded-r-full " />
+                {/* header section  */}
+                <section className="relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                    <div className="absolute left-0 top-5 bottom-5 w-1 rounded-r-full bg-[#6B9B87]" />
                     <div className="p-6 md:p-8 pl-8 md:pl-10">
-                        <div className="flex flex-col gap-4 md:flex-row md:items-center md:gap-8">
-                            <div className="min-w-0 flex-1 space-y-4">
-                                <h2 className="text-xl font-semibold text-gray-900 md:text-2xl">
+                        <div className="flex flex-col gap-5 md:flex-row md:items-stretch md:gap-8">
+                            <div className="min-w-0 flex-1 space-y-5">
+                                <h2 className="text-xl font-semibold tracking-tight text-gray-900 md:text-2xl">
                                     {shoe2.name || "Bodenkonstruktion"}
                                 </h2>
-                                <div className="flex flex-col gap-2 text-sm">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="text-gray-600 shrink-0">Kunde:</span>
+                                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="flex items-center gap-1.5 text-sm font-medium text-gray-500 shrink-0">
+                                            <User className="size-4 text-gray-400" />
+                                            Kunde
+                                        </span>
                                         <input
                                             type="text"
                                             value={customerName}
                                             onChange={(e) => setCustomerName(e.target.value)}
                                             placeholder="Kundenname eingeben"
-                                            className="min-w-[200px] rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-gray-900 placeholder:text-gray-400 focus:border-[#6B9B87] focus:ring-1 focus:ring-[#6B9B87] focus:outline-none"
+                                            className="flex-1 min-w-0 max-w-xs rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900 placeholder:text-gray-400 transition-colors focus:border-[#6B9B87] focus:bg-white focus:ring-1 focus:ring-[#6B9B87] focus:outline-none"
                                         />
                                     </div>
-                                    <p className="text-gray-600">
-                                        Vorauss. Liefertermin:{" "}
-                                        <span className="font-medium text-gray-900">{deliveryDate}</span>
-                                    </p>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <CalendarDays className="size-4 text-gray-400" />
+                                        <span className="text-sm text-gray-500">Vorauss. Liefertermin:</span>
+                                        <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-1 text-sm font-medium text-gray-800">
+                                            {deliveryDate}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
