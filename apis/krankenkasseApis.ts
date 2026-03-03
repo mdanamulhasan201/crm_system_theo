@@ -143,3 +143,36 @@ export const manageKrankenkassePrescription = async (type: string, orderId: stri
         throw error;
     }
 }
+
+
+/** Rejected item from validate-insurance-changelog */
+export interface ValidateChangelogRejectedItem {
+    rowIndex: number;
+    orderNumber: number;
+    type: string | null;
+    reason: string;
+    message: string;
+    excelData?: { orderNumber: number; betrag?: number | null };
+    excelPrice?: number;
+    dbPrice?: number;
+    order?: KrankenkasseOrderItem;
+}
+
+export interface ValidateChangelogResponse {
+    success: boolean;
+    message: string;
+    approved: KrankenkasseOrderItem[];
+    rejected: ValidateChangelogRejectedItem[];
+    summary: { total: number; approved: number; rejected: number };
+}
+
+// file upload v2/insurance/validate-insurance-changelog (multipart/form-data)
+export const validateInsuranceChangelog = async (file: File): Promise<ValidateChangelogResponse> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await axiosClient.post<ValidateChangelogResponse>(
+        '/v2/insurance/validate-insurance-changelog',
+        formData
+    );
+    return response.data;
+}

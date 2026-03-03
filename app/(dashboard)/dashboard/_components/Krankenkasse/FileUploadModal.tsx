@@ -10,6 +10,10 @@ import {
 import { Button } from '@/components/ui/button'
 import { FileSpreadsheet, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import toast from 'react-hot-toast'
+import { validateInsuranceChangelog } from '@/apis/krankenkasseApis'
+import type { ValidateChangelogResponse } from '@/apis/krankenkasseApis'
+import FileUploadResultModal from './FileUploadResultModal'
 
 const EXCEL_ACCEPT = [
     '.xlsx',
@@ -38,6 +42,8 @@ export default function FileUploadModal({ isOpen, onClose }: FileUploadModalProp
     const [file, setFile] = useState<File | null>(null)
     const [dragActive, setDragActive] = useState(false)
     const [uploading, setUploading] = useState(false)
+    const [resultData, setResultData] = useState<ValidateChangelogResponse | null>(null)
+    const [resultModalOpen, setResultModalOpen] = useState(false)
     const inputRef = useRef<HTMLInputElement>(null)
 
     const setSelectedFile = useCallback((newFiles: FileList | File[] | null) => {
@@ -74,11 +80,16 @@ export default function FileUploadModal({ isOpen, onClose }: FileUploadModalProp
         if (!file) return
         setUploading(true)
         try {
-            // TODO: Replace with your Krankenkasse Excel upload API
-            // await uploadKrankenkasseExcel(file)
-            await new Promise((r) => setTimeout(r, 800))
+            const data = await validateInsuranceChangelog(file)
             setFile(null)
             onClose()
+            setResultData(data)
+            setResultModalOpen(true)
+        } catch (err: unknown) {
+            const msg = err && typeof err === 'object' && 'message' in err
+                ? String((err as { message: unknown }).message)
+                : 'Upload fehlgeschlagen.'
+            toast.error(msg)
         } finally {
             setUploading(false)
         }
@@ -91,7 +102,13 @@ export default function FileUploadModal({ isOpen, onClose }: FileUploadModalProp
         onClose()
     }
 
+    const closeResultModal = () => {
+        setResultModalOpen(false)
+        setResultData(null)
+    }
+
     return (
+    <>
         <Dialog open={isOpen} onOpenChange={(open) => !open && resetOnClose()}>
             <DialogContent className="sm:max-w-md">
                 <DialogHeader>
@@ -169,5 +186,11 @@ export default function FileUploadModal({ isOpen, onClose }: FileUploadModalProp
                 </div>
             </DialogContent>
         </Dialog>
+        <FileUploadResultModal
+            open={resultModalOpen}
+            onClose={closeResultModal}
+            data={resultData}
+        />
+    </>
     )
 }
