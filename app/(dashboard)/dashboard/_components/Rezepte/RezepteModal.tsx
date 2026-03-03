@@ -70,6 +70,8 @@ function prescriptionToForm(p: Prescription) {
         versicherungsnummer: p.insurance_number ?? '',
         rezeptdatum: isoToDDMMYYYY(p.prescription_date) || formatDateDE(new Date()),
         arzt: p.prescription_number ?? '',
+        proved_number: p.proved_number ?? '',
+        referencen_number: p.referencen_number ?? '',
         ortArzt: p.doctor_location ?? '',
         arztnummer: p.doctor_name ?? '',
         betriebsstaettennummer: p.establishment_number ?? '',
@@ -97,6 +99,8 @@ const initialForm = {
     versicherungsnummer: '',
     rezeptdatum: '',
     arzt: '',
+    proved_number: '',
+    referencen_number: '',
     ortArzt: '',
     arztnummer: '',
     betriebsstaettennummer: '',
@@ -172,6 +176,8 @@ export default function RezepteModal({
                 insurance_number: form.versicherungsnummer,
                 prescription_date: rezeptdatumToISO(form.rezeptdatum),
                 prescription_number: form.arzt,
+                proved_number: form.proved_number,
+                referencen_number: form.referencen_number,
                 doctor_location: form.ortArzt,
                 doctor_name: form.arztnummer,
                 establishment_number: form.betriebsstaettennummer,
@@ -204,10 +210,10 @@ export default function RezepteModal({
     const rezeptdatumDate =
         form.rezeptdatum && /^\d{1,2}\.\d{1,2}\.\d{4}$/.test(form.rezeptdatum.trim())
             ? (() => {
-                  const [d, m, y] = form.rezeptdatum.trim().split('.').map(Number)
-                  const date = new Date(y, m - 1, d)
-                  return isNaN(date.getTime()) ? undefined : date
-              })()
+                const [d, m, y] = form.rezeptdatum.trim().split('.').map(Number)
+                const date = new Date(y, m - 1, d)
+                return isNaN(date.getTime()) ? undefined : date
+            })()
             : undefined
 
     return (
@@ -249,6 +255,30 @@ export default function RezepteModal({
                                         update('versicherungsnummer', e.target.value)
                                     }
                                     placeholder='A123456789'
+                                    className='w-full'
+                                />
+                            </div>
+                            {/*  PeNr. */}
+                            <div>
+                                <label className='block text-sm font-medium text-gray-700 mb-2 antialiased'>
+                                    PeNr.
+                                </label>
+                                <Input
+                                    value={form.proved_number}
+                                    onChange={(e) => update('proved_number', e.target.value)}
+                                    placeholder='123456789'
+                                    className='w-full'
+                                />
+                            </div>
+                            {/* Rezeptnummer */}
+                            <div>
+                                <label className='block text-sm font-medium text-gray-700 mb-2 antialiased'>
+                                    Rezeptnummer
+                                </label>
+                                <Input
+                                    value={form.referencen_number}
+                                    onChange={(e) => update('referencen_number', e.target.value)}
+                                    placeholder='123456789'
                                     className='w-full'
                                 />
                             </div>

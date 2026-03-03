@@ -6,6 +6,7 @@ import { ArrowLeft, Plus, Download, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TopNavigation from '../../../_components/Kundenordner/TopNavigation'
 import RezepteModal from '../../../_components/Rezepte/RezepteModal'
+import RezepteDetailsModal from '../../../_components/Rezepte/RezepteDetailsModal'
 import RezepteData from '../../../_components/Rezepte/RezepteData'
 import { getSingleRecipe } from '@/apis/rezepteApis'
 import type { Prescription } from '@/apis/rezepteApis'
@@ -20,6 +21,7 @@ export default function RezeptePage() {
     const [editRecipe, setEditRecipe] = useState<Prescription | null>(null)
     const [editingRecipeId, setEditingRecipeId] = useState<string | null>(null)
     const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null)
+    const [detailsRecipeId, setDetailsRecipeId] = useState<string | null>(null)
     const [exportLoading, setExportLoading] = useState(false)
 
     const handleModalOpenChange = useCallback((open: boolean) => {
@@ -38,6 +40,13 @@ export default function RezeptePage() {
             setEditingRecipeId(null)
         } finally {
             setEditingRecipeId(null)
+        }
+    }, [])
+
+    const handleSelectRecipe = useCallback((recipeId: string | null) => {
+        setSelectedRecipeId(recipeId)
+        if (recipeId) {
+            setDetailsRecipeId(recipeId)
         }
     }, [])
 
@@ -69,6 +78,8 @@ export default function RezeptePage() {
                 'Versicherungsnummer': d.insurance_number ?? '',
                 'Rezeptdatum': formatDateForExcel(d.prescription_date),
                 'Rezeptnummer': d.prescription_number ?? '',
+                'PeNr.': d.proved_number ?? '',
+                'Rezeptnummer (Referenz)': d.referencen_number ?? '',
                 'Arzt Ort': d.doctor_location ?? '',
                 'Arzt Name': d.doctor_name ?? '',
                 'Betriebsnummer': d.establishment_number ?? '',
@@ -146,7 +157,7 @@ export default function RezeptePage() {
                     onEdit={handleEdit}
                     editingRecipeId={editingRecipeId}
                     selectedRecipeId={selectedRecipeId}
-                    onSelectRecipe={setSelectedRecipeId}
+                    onSelectRecipe={handleSelectRecipe}
                 />
             </div>
 
@@ -156,6 +167,12 @@ export default function RezeptePage() {
                 customerId={customerId}
                 onSuccess={() => setRefetchTrigger((t) => t + 1)}
                 editRecipe={editRecipe}
+            />
+
+            <RezepteDetailsModal
+                open={detailsRecipeId !== null}
+                onOpenChange={(open) => !open && setDetailsRecipeId(null)}
+                recipeId={detailsRecipeId}
             />
         </>
     )

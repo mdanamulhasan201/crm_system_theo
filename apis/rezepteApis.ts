@@ -7,6 +7,8 @@ export interface CreateRecipeBody {
     insurance_number: string;
     prescription_date: string; // ISO e.g. "2026-03-01T00:00:00.000Z"
     prescription_number: string;
+    proved_number: string;
+    referencen_number: string;
     doctor_location: string;
     doctor_name: string;
     establishment_number: string;
@@ -37,6 +39,8 @@ export interface Prescription {
     insurance_number?: string;
     prescription_date?: string;
     prescription_number?: string;
+    proved_number?: string;
+    referencen_number?: string;
     doctor_location?: string;
     doctor_name?: string;
     establishment_number?: string;
@@ -83,7 +87,7 @@ export const getRecipe = async (
 // update recipe v2/insurance/prescription/update/:recipeId
 export const updateRecipe = async (recipeId: string, recipeData: Partial<CreateRecipeBody>) => {
     try {
-        const response = await axiosClient.put(`/v2/insurance/prescription/update/${recipeId}`, recipeData);
+        const response = await axiosClient.patch(`/v2/insurance/prescription/update/${recipeId}`, recipeData);
         return response.data;
     } catch (error) {
         throw error;
