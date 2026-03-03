@@ -24,6 +24,8 @@ export interface PriceDetailsData {
     fussanalysePreis?: number;
     einlagenversorgungPreis?: number;
     quantity?: number;
+    /** VAT rate in percent (e.g. 19, 20). Used for net/MwSt calculation. */
+    vatRate?: number | null;
     Versorgungen?: {
         supplyStatus?: { price?: number; vatRate?: number };
     };
@@ -122,7 +124,9 @@ export default function AbrechnungsuebersichtModal({
         return () => { cancelled = true; };
     }, [isOpen, orderId]);
 
-    const netto = data ? data.totalPrice / 1.19 : 0;
+    const vatRate = data?.vatRate != null ? data.vatRate : 19;
+    const vatDivisor = 1 + vatRate / 100;
+    const netto = data ? data.totalPrice / vatDivisor : 0;
     const mwst = data ? data.totalPrice - netto : 0;
     const isPaid = data?.bezahlt === 'Privat_Bezahlt' || data?.bezahlt === 'Krankenkasse_Genehmigt';
     const paidAmount = data && isPaid ? data.totalPrice : 0;
@@ -225,7 +229,7 @@ export default function AbrechnungsuebersichtModal({
                                         const posNum = getPositionsnummerFromDescription(row.description) ?? (idx + 1).toString().padStart(2, '0');
                                         const desc = formatDescription(row.description);
                                         const seite = getSeiteFromDescription(row.description);
-                                        const rowNetto = row.price / 1.19;
+                                        const rowNetto = row.price / vatDivisor;
                                         const rowMwst = row.price - rowNetto;
                                         return (
                                             <div
@@ -252,7 +256,7 @@ export default function AbrechnungsuebersichtModal({
                                                         </span>
                                                     )}
                                                     <span className="text-gray-600">Netto: {formatEuroLeading(rowNetto)}</span>
-                                                    <span className="text-gray-600">+ 19% MwSt.: {formatEuroLeading(rowMwst)}</span>
+                                                    {/* <span className="text-gray-600">+ 19% MwSt.: {formatEuroLeading(rowMwst)}</span> */}
                                                     <span className="font-bold text-emerald-600">Gesamt: {formatEuroLeading(row.price)}</span>
                                                 </div>
                                             </div>
@@ -265,7 +269,7 @@ export default function AbrechnungsuebersichtModal({
                                         <span>{formatEuroLeading(netto)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm text-gray-600">
-                                        <span>+ 19% MwSt.:</span>
+                                        <span>+ {vatRate}% MwSt.:</span>
                                         <span>{formatEuroLeading(mwst)}</span>
                                     </div>
                                     <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
