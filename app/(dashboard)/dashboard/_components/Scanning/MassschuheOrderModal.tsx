@@ -150,7 +150,7 @@ export default function MassschuheOrderModal({
     const [quantity, setQuantity] = useState<number>(1);
     const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
-    const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([]);
+    const [locations, setLocations] = useState<Array<{ id: string; address: string; description: string; isPrimary: boolean }>>([]);
     const [locationsLoading, setLocationsLoading] = useState(false);
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -233,10 +233,10 @@ export default function MassschuheOrderModal({
     useEffect(() => {
         if (locations.length > 0 && isOpen && !locationsLoading) {
             const primaryLocation = locations.find(loc => loc.isPrimary);
-            const locationValue = primaryLocation 
+            const locationValue = primaryLocation
                 ? (primaryLocation.description || primaryLocation.address)
                 : (locations[0].description || locations[0].address);
-            
+
             // Always set both filiale and selectedLocation to primary (or first if no primary)
             setFiliale(locationValue);
             setSelectedLocation(locationValue);
@@ -248,7 +248,7 @@ export default function MassschuheOrderModal({
         if (!isOpen) return;
         if (locationsLoading) return; // Wait for API to finish
         if (locations.length > 0) return; // Don't use fallback if API locations exist
-        
+
         // Only use fallback if no API locations available
         if (customer?.wohnort) {
             setFiliale(customer.wohnort);
@@ -283,7 +283,7 @@ export default function MassschuheOrderModal({
             } else {
                 setPaymentType(null);
             }
-            
+
             // Reset price selections only if not Privat
             if (formData.billingType !== 'Privat') {
                 setSelectedFußanalyse('');
@@ -322,7 +322,7 @@ export default function MassschuheOrderModal({
         const qty = quantity || 1;
 
         // Find the selected location object to get both address and description
-        const selectedLoc = locations.find(loc => 
+        const selectedLoc = locations.find(loc =>
             (loc.description || loc.address) === selectedLocation ||
             loc.description === selectedLocation ||
             loc.address === selectedLocation ||
@@ -468,463 +468,468 @@ export default function MassschuheOrderModal({
 
     return (
         <>
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold">Neuer Auftrag erstellen</DialogTitle>
-                </DialogHeader>
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold">Neuer Auftrag erstellen</DialogTitle>
+                    </DialogHeader>
 
-                <div className="space-y-6 py-4">
-                    {/* AUFTRAGSÜBERSICHT Section */}
-                    <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
-                        <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase mb-2">
-                            AUFTRAGSÜBERSICHT
-                        </h3>
+                    <div className="space-y-6 py-4">
+                        {/* AUFTRAGSÜBERSICHT Section */}
+                        <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+                            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase mb-2">
+                                AUFTRAGSÜBERSICHT
+                            </h3>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-4">
-                            <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Kunde</label>
-                                <p className="text-gray-900 font-semibold text-sm">
-                                    {customer?.vorname || ''} {customer?.nachname || ''}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Telefon</label>
-                                <p className="text-gray-900 font-semibold text-sm">
-                                    {customer?.telefonnummer || customer?.telefon || '-'}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">E-Mail</label>
-                                <p className="text-gray-900 text-sm">{customer?.email || '-'}</p>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Datum des Auftrags</label>
-                                <p className="text-gray-900 text-sm">
-                                    {orderDate ? new Date(orderDate).toLocaleDateString('de-DE') : '-'}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Fertigstellung bis</label>
-                                <p className="text-gray-900 text-sm">
-                                    {fertigstellungDate ? new Date(fertigstellungDate).toLocaleDateString('de-DE') : '-'}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Filiale</label>
-                                {(() => {
-                                    const currentLocation = locations.find(loc => 
-                                        (loc.description || loc.address) === filiale || 
-                                        loc.description === filiale || 
-                                        loc.address === filiale
-                                    );
-                                    if (currentLocation) {
-                                        return (
-                                            <div className="flex flex-col">
-                                                <p className="text-gray-900 text-sm font-semibold">{currentLocation.description || currentLocation.address}</p>
-                                                {currentLocation.description && currentLocation.address && currentLocation.description !== currentLocation.address && (
-                                                    <p className="text-gray-600 text-xs mt-0.5">{currentLocation.address}</p>
-                                                )}
-                                            </div>
-                                        );
-                                    }
-                                    return <p className="text-gray-900 text-sm">{filiale || customer?.wohnort || '-'}</p>;
-                                })()}
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-medium text-gray-500 mb-1 block">Versorgung</label>
-                                <p className="text-gray-900 text-sm">
-                                    {formData.arztlicheDiagnose ? formData.arztlicheDiagnose.slice(0, 40) + (formData.arztlicheDiagnose.length > 40 ? '…' : '') : '-'}
-                                </p>
-                            </div>
-
-                            <div>
-                                <PaymentStatusSection
-                                    value={bezahlt}
-                                    onChange={setBezahlt}
-                                    disabledPaymentType={formData.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData.billingType === 'Privat' ? 'Privat' : undefined}
-                                />
-                            </div>
-                        </div>
-
-                        {/* Standort auswählen + Menge */}
-                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {(locations.length > 0 || (user?.hauptstandort && user.hauptstandort.length > 0)) && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-4">
                                 <div>
-                                    <label className="text-sm font-medium text-gray-600 mb-1 block">Standort auswählen</label>
-                                    <Select
-                                        value={selectedLocation}
-                                        onValueChange={(value) => {
-                                            setSelectedLocation(value);
-                                            // Also update filiale when location changes
-                                            const selectedLoc = locations.find(loc => 
-                                                (loc.description || loc.address) === value
-                                            );
-                                            if (selectedLoc) {
-                                                setFiliale(selectedLoc.description || selectedLoc.address);
-                                            } else {
-                                                setFiliale(value);
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-full">
-                                            <SelectValue placeholder={locationsLoading ? "Lade Standorte..." : "Standort wählen"}>
-                                                {selectedLocation && locations.length > 0 ? (() => {
-                                                    const selectedLoc = locations.find(loc => 
-                                                        (loc.description || loc.address) === selectedLocation
-                                                    );
-                                                    if (selectedLoc) {
-                                                        return selectedLoc.description || selectedLoc.address;
-                                                    }
-                                                    return selectedLocation;
-                                                })() : selectedLocation}
-                                            </SelectValue>
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {locations.length > 0 ? (
-                                                locations.map((location) => (
-                                                    <SelectItem 
-                                                        key={location.id} 
-                                                        value={location.description || location.address}
-                                                    >
-                                                        <div className="flex flex-col items-start w-full">
-                                                            <div className="flex items-center gap-2">
-                                                                <span className="font-medium">{location.description || location.address}</span>
-                                                                {location.isPrimary && (
-                                                                    <span className="px-1.5 py-0.5 text-xs text-blue-600 bg-blue-50 rounded">Primary</span>
-                                                                )}
-                                                            </div>
-                                                            {location.description && location.address && (
-                                                                <span className="text-xs text-gray-500 mt-0.5">{location.address}</span>
-                                                            )}
-                                                        </div>
-                                                    </SelectItem>
-                                                ))
-                                            ) : user?.hauptstandort && user.hauptstandort.length > 0 ? (
-                                                user.hauptstandort.map((location) => (
-                                                    <SelectItem key={location} value={location}>
-                                                        {location}
-                                                    </SelectItem>
-                                                ))
-                                            ) : (
-                                                <SelectItem value="no-location" disabled>
-                                                    Kein Standort verfügbar
-                                                </SelectItem>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Kunde</label>
+                                    <p className="text-gray-900 font-semibold text-sm">
+                                        {customer?.vorname || ''} {customer?.nachname || ''}
+                                    </p>
                                 </div>
-                            )}
-                            <div>
-                                <label className="text-sm font-medium text-gray-600 mb-1 block">Menge</label>
-                                <Select
-                                    value={quantity.toString()}
-                                    onValueChange={(value) => setQuantity(parseInt(value, 10))}
-                                >
-                                    <SelectTrigger className="w-full rounded-2xl border border-[#dde3ee] bg-white h-11 px-4">
-                                        <SelectValue placeholder="Menge wählen" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="1">1 Paar</SelectItem>
-                                        <SelectItem value="2">2 Paare</SelectItem>
-                                        <SelectItem value="3">3 Paare</SelectItem>
-                                        <SelectItem value="4">4 Paare</SelectItem>
-                                        <SelectItem value="5">5 Paare</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
-                    </div>
 
-                    {/* Preisübersicht */}
-                    {(() => {
-                        const vatCountry = user?.accountInfo?.vat_country;
-                        const getVatRate = () => {
-                            if (vatCountry === 'Italien (IT)') return 4;
-                            if (vatCountry === 'Österreich (AT)') return 20;
-                            return 0;
-                        };
-                        const formatPrice = (n: number) => n.toFixed(2).replace('.', ',') + '€';
-
-                        if (formData.billingType === 'Krankenkassa') {
-                            const allPosData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
-                            const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
-                            const itemSides = formData.itemSides || {};
-                            // BDS = price × 2 per position
-                            const positionsSum = (formData.selectedPositionsnummer || []).reduce((sum, posNum) => {
-                                const opt = allPosData.find((o: any) => getPosNum(o) === posNum);
-                                const basePrice = typeof opt?.price === 'number' ? opt.price : 0;
-                                const side = itemSides[posNum] || 'R';
-                                return sum + (side === 'BDS' ? basePrice * 2 : basePrice);
-                            }, 0);
-                            const qty = quantity || 1;
-                            const positionsSubtotal = positionsSum * qty;
-                            const vatRate = getVatRate();
-                            const vatAmount = (positionsSubtotal * vatRate) / 100;
-                            const total = positionsSubtotal + vatAmount;
-                            return (
-                                <div className="bg-white rounded-lg border border-gray-200 p-6">
-                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Preisübersicht</h3>
-                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-3">
-                                        {(formData.selectedPositionsnummer || []).length > 0 ? (
-                                            <>
-                                                {(formData.selectedPositionsnummer || []).map((posNum) => {
-                                                    const opt = allPosData.find((o: any) => getPosNum(o) === posNum);
-                                                    const basePrice = typeof opt?.price === 'number' ? opt.price : 0;
-                                                    const side = itemSides[posNum] || 'R';
-                                                    const linePrice = side === 'BDS' ? basePrice * 2 : basePrice;
-                                                    const sideLabel = side === 'BDS' ? 'Beide (BDS)' : side === 'L' ? 'Links (L)' : 'Rechts (R)';
-                                                    return (
-                                                        <div key={posNum} className="flex justify-between items-center text-sm">
-                                                            <span className="text-gray-600">
-                                                                {posNum}
-                                                                {side !== 'R' && (
-                                                                    <span className="ml-1.5 text-xs text-gray-500">Seite: {sideLabel}</span>
-                                                                )}
-                                                            </span>
-                                                            <span className="font-semibold text-gray-900">{formatPrice(linePrice)}</span>
-                                                        </div>
-                                                    );
-                                                })}
-                                                <div className="flex justify-between items-center text-sm">
-                                                    <span className="text-gray-600">Menge</span>
-                                                    <span className="font-semibold text-gray-900">× {qty}</span>
-                                                </div>
-                                                <div className="flex justify-between items-center pt-3 border-t border-gray-300">
-                                                    <span className="text-sm text-gray-600">Zwischensumme</span>
-                                                    <span className="text-sm font-semibold text-gray-900">{formatPrice(positionsSubtotal)}</span>
-                                                </div>
-                                                {vatRate > 0 && (
-                                                    <>
-                                                        <div className="flex justify-between items-center">
-                                                            <span className="text-sm text-gray-600">+{vatRate}% MwSt.</span>
-                                                            <span className="text-sm font-semibold text-gray-700">{formatPrice(vatAmount)}</span>
-                                                        </div>
-                                                        {vatCountry === 'Österreich (AT)' && (
-                                                            <div className="flex justify-between items-center pt-1.5">
-                                                                <span className="text-xs text-gray-500">Enthält Eigenanteil (AT):</span>
-                                                                <span className="text-xs text-gray-600">43,00€</span>
-                                                            </div>
-                                                        )}
-                                                        <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
-                                                            <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                                            <span className="text-xl font-bold text-green-600">{formatPrice(vatCountry === 'Österreich (AT)' ? total + 43 : total)}</span>
-                                                        </div>
-                                                    </>
-                                                )}
-                                                {vatRate === 0 && (
-                                                    <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
-                                                        <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                                        <span className="text-xl font-bold text-green-600">{formatPrice(positionsSubtotal)}</span>
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="text-sm text-gray-500">Keine Positionen ausgewählt</div>
-                                                <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
-                                                    <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                                    <span className="text-xl font-bold text-green-600">0,00€</span>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
+                                <div>
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Telefon</label>
+                                    <p className="text-gray-900 font-semibold text-sm">
+                                        {customer?.telefonnummer || customer?.telefon || '-'}
+                                    </p>
                                 </div>
-                            );
-                        }
 
-                        // Privat: Basispreis (Add-on) → Rabatt (%) → Brutto nach Rabatt → Menge → Gesamt
-                        const qty = quantity || 1;
-                        const pc = formData.priceCalculations;
-                        const basisPreis = pc?.basisPreis ?? (formData.nettoPreis ? parseFloat(formData.nettoPreis) : 0);
-                        const rabattPercent = formData.rabatt ? parseFloat(formData.rabatt) : 0;
-                        const discountAmount = pc?.discountAmount ?? (rabattPercent > 0 ? (basisPreis * rabattPercent) / 100 : 0);
-                        const bruttoUnit = formData.brutto ? parseFloat(formData.brutto) : (basisPreis - discountAmount);
-                        const bruttoTotal = bruttoUnit * qty;
-                        const vatPercent = formData.tax ? parseFloat(formData.tax) : 0;
-                        const gesamtPrivat = bruttoTotal;
-                        return (
-                            <div className="bg-white rounded-lg border border-gray-200 p-6">
-                                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Preisübersicht</h3>
-                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-3">
-                                    {basisPreis > 0 && (
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-gray-600">Basispreis (Brutto)</span>
-                                            <span className="font-semibold text-gray-900">{formatPrice(basisPreis)}</span>
-                                        </div>
-                                    )}
-                                    {rabattPercent > 0 && (
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-gray-600">Rabatt ({rabattPercent.toFixed(0)}%)</span>
-                                            <span className="font-semibold text-red-600">-{formatPrice(discountAmount)}</span>
-                                        </div>
-                                    )}
-                                    {bruttoUnit > 0 && (
-                                        <div className="flex justify-between items-center text-sm">
-                                            <span className="text-gray-600">Brutto nach Rabatt</span>
-                                            <span className="font-semibold text-gray-900">{formatPrice(bruttoUnit)}</span>
-                                        </div>
-                                    )}
-                                    <div className="flex justify-between items-center text-sm">
-                                        <span className="text-gray-600">Menge</span>
-                                        <span className="font-semibold text-gray-900">{qty} {qty === 1 ? 'Paar' : 'Paare'}{qty > 1 ? ` × ${formatPrice(bruttoUnit)}` : ''}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
-                                        <span className="text-base font-bold text-gray-900">Gesamt</span>
-                                        <span className="text-xl font-bold text-green-600">{formatPrice(gesamtPrivat)}</span>
-                                    </div>
-                                    {bruttoUnit > 0 && vatPercent > 0 && (
-                                        <div className="flex justify-between items-center pt-1">
-                                            <span className="text-xs text-gray-500">MwSt. ({vatPercent}%)</span>
-                                            <span className="text-xs text-gray-500">enthalten</span>
-                                        </div>
-                                    )}
+                                <div>
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">E-Mail</label>
+                                    <p className="text-gray-900 text-sm">{customer?.email || '-'}</p>
                                 </div>
-                            </div>
-                        );
-                    })()}
 
-                    {/* KONTROLLE & AKTIONEN Section */}
-                    <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
-                        <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
-                            KONTROLLE & AKTIONEN
-                        </h3>
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#1E76FF]">
-                                    <MapPin className="w-4 h-4" />
+                                <div>
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Wohnort</label>
+                                    <p className="text-gray-900 text-sm">{customer?.wohnort || '-'}</p>
                                 </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs font-medium text-gray-500">Abholung</span>
+
+                                <div>
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Datum des Auftrags</label>
+                                    <p className="text-gray-900 text-sm">
+                                        {orderDate ? new Date(orderDate).toLocaleDateString('de-DE') : '-'}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Fertigstellung bis</label>
+                                    <p className="text-gray-900 text-sm">
+                                        {fertigstellungDate ? new Date(fertigstellungDate).toLocaleDateString('de-DE') : '-'}
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Filiale</label>
                                     {(() => {
-                                        const currentLocation = locations.find(loc => 
-                                            (loc.description || loc.address) === filiale || 
-                                            loc.description === filiale || 
-                                            loc.address === filiale ||
-                                            (loc.description || loc.address) === selectedLocation
+                                        const currentLocation = locations.find(loc =>
+                                            (loc.description || loc.address) === filiale ||
+                                            loc.description === filiale ||
+                                            loc.address === filiale
                                         );
                                         if (currentLocation) {
                                             return (
                                                 <div className="flex flex-col">
-                                                    <span className="text-sm font-semibold text-gray-900">
-                                                        {currentLocation.description || currentLocation.address}
-                                                    </span>
+                                                    <p className="text-gray-900 text-sm font-semibold">{currentLocation.description || currentLocation.address}</p>
                                                     {currentLocation.description && currentLocation.address && currentLocation.description !== currentLocation.address && (
-                                                        <span className="text-xs text-gray-500 mt-0.5">
-                                                            {currentLocation.address}
-                                                        </span>
+                                                        <p className="text-gray-600 text-xs mt-0.5">{currentLocation.address}</p>
                                                     )}
                                                 </div>
                                             );
                                         }
-                                        return (
-                                            <span className="text-sm font-semibold text-gray-900">
-                                                {filiale || customer?.wohnort || selectedLocation || '-'}
-                                            </span>
-                                        );
+                                        return <p className="text-gray-900 text-sm">{filiale || customer?.wohnort || '-'}</p>;
                                     })()}
                                 </div>
+
+                                <div>
+                                    <label className="text-xs font-medium text-gray-500 mb-1 block">Versorgung</label>
+                                    <p className="text-gray-900 text-sm">
+                                        {formData.arztlicheDiagnose ? formData.arztlicheDiagnose.slice(0, 40) + (formData.arztlicheDiagnose.length > 40 ? '…' : '') : '-'}
+                                    </p>
+                                </div>
+                                {/* Standort auswählen + Menge */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {(locations.length > 0 || (user?.hauptstandort && user.hauptstandort.length > 0)) && (
+                                        <div>
+                                            <label className="text-sm font-medium text-gray-600 mb-1 block">Standort auswählen</label>
+                                            <Select
+                                                value={selectedLocation}
+                                                onValueChange={(value) => {
+                                                    setSelectedLocation(value);
+                                                    // Also update filiale when location changes
+                                                    const selectedLoc = locations.find(loc =>
+                                                        (loc.description || loc.address) === value
+                                                    );
+                                                    if (selectedLoc) {
+                                                        setFiliale(selectedLoc.description || selectedLoc.address);
+                                                    } else {
+                                                        setFiliale(value);
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-full">
+                                                    <SelectValue placeholder={locationsLoading ? "Lade Standorte..." : "Standort wählen"}>
+                                                        {selectedLocation && locations.length > 0 ? (() => {
+                                                            const selectedLoc = locations.find(loc =>
+                                                                (loc.description || loc.address) === selectedLocation
+                                                            );
+                                                            if (selectedLoc) {
+                                                                return selectedLoc.description || selectedLoc.address;
+                                                            }
+                                                            return selectedLocation;
+                                                        })() : selectedLocation}
+                                                    </SelectValue>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {locations.length > 0 ? (
+                                                        locations.map((location) => (
+                                                            <SelectItem
+                                                                key={location.id}
+                                                                value={location.description || location.address}
+                                                            >
+                                                                <div className="flex flex-col items-start w-full">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="font-medium">{location.description || location.address}</span>
+                                                                        {location.isPrimary && (
+                                                                            <span className="px-1.5 py-0.5 text-xs text-blue-600 bg-blue-50 rounded">Primary</span>
+                                                                        )}
+                                                                    </div>
+                                                                    {location.description && location.address && (
+                                                                        <span className="text-xs text-gray-500 mt-0.5">{location.address}</span>
+                                                                    )}
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))
+                                                    ) : user?.hauptstandort && user.hauptstandort.length > 0 ? (
+                                                        user.hauptstandort.map((location) => (
+                                                            <SelectItem key={location} value={location}>
+                                                                {location}
+                                                            </SelectItem>
+                                                        ))
+                                                    ) : (
+                                                        <SelectItem value="no-location" disabled>
+                                                            Kein Standort verfügbar
+                                                        </SelectItem>
+                                                    )}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="text-sm font-medium text-gray-600 mb-1 block">Menge</label>
+                                        <Select
+                                            value={quantity.toString()}
+                                            onValueChange={(value) => setQuantity(parseInt(value, 10))}
+                                        >
+                                            <SelectTrigger className="w-full rounded-2xl border border-[#dde3ee] bg-white h-11 px-4">
+                                                <SelectValue placeholder="Menge wählen" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="1">1 Paar</SelectItem>
+                                                <SelectItem value="2">2 Paare</SelectItem>
+                                                <SelectItem value="3">3 Paare</SelectItem>
+                                                <SelectItem value="4">4 Paare</SelectItem>
+                                                <SelectItem value="5">5 Paare</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <PaymentStatusSection
+                                        value={bezahlt}
+                                        onChange={setBezahlt}
+                                        disabledPaymentType={formData.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData.billingType === 'Privat' ? 'Privat' : undefined}
+                                    />
+                                </div>
                             </div>
-                            <div className="flex flex-wrap gap-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none cursor-pointer"
-                                    onClick={() => setShowNotizTextarea(!showNotizTextarea)}
-                                >
-                                    <StickyNote className="w-4 h-4 text-gray-700" />
-                                    <span>Notiz hinzufügen</span>
-                                </Button>
+
+
+                        </div>
+
+                        {/* Preisübersicht */}
+                        {(() => {
+                            const vatCountry = user?.accountInfo?.vat_country;
+                            const getVatRate = () => {
+                                if (vatCountry === 'Italien (IT)') return 4;
+                                if (vatCountry === 'Österreich (AT)') return 20;
+                                return 0;
+                            };
+                            const formatPrice = (n: number) => n.toFixed(2).replace('.', ',') + '€';
+
+                            if (formData.billingType === 'Krankenkassa') {
+                                const allPosData = [...(formData.positionsnummerAustriaData || []), ...(formData.positionsnummerItalyData || [])];
+                                const getPosNum = (o: any) => o?.positionsnummer || o?.description?.positionsnummer || '';
+                                const itemSides = formData.itemSides || {};
+                                // BDS = price × 2 per position
+                                const positionsSum = (formData.selectedPositionsnummer || []).reduce((sum, posNum) => {
+                                    const opt = allPosData.find((o: any) => getPosNum(o) === posNum);
+                                    const basePrice = typeof opt?.price === 'number' ? opt.price : 0;
+                                    const side = itemSides[posNum] || 'R';
+                                    return sum + (side === 'BDS' ? basePrice * 2 : basePrice);
+                                }, 0);
+                                const qty = quantity || 1;
+                                const positionsSubtotal = positionsSum * qty;
+                                const vatRate = getVatRate();
+                                const vatAmount = (positionsSubtotal * vatRate) / 100;
+                                const total = positionsSubtotal + vatAmount;
+                                return (
+                                    <div className="bg-white rounded-lg border border-gray-200 p-6">
+                                        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Preisübersicht</h3>
+                                        <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-3">
+                                            {(formData.selectedPositionsnummer || []).length > 0 ? (
+                                                <>
+                                                    {(formData.selectedPositionsnummer || []).map((posNum) => {
+                                                        const opt = allPosData.find((o: any) => getPosNum(o) === posNum);
+                                                        const basePrice = typeof opt?.price === 'number' ? opt.price : 0;
+                                                        const side = itemSides[posNum] || 'R';
+                                                        const linePrice = side === 'BDS' ? basePrice * 2 : basePrice;
+                                                        const sideLabel = side === 'BDS' ? 'Beide (BDS)' : side === 'L' ? 'Links (L)' : 'Rechts (R)';
+                                                        return (
+                                                            <div key={posNum} className="flex justify-between items-center text-sm">
+                                                                <span className="text-gray-600">
+                                                                    {posNum}
+                                                                    {side !== 'R' && (
+                                                                        <span className="ml-1.5 text-xs text-gray-500">Seite: {sideLabel}</span>
+                                                                    )}
+                                                                </span>
+                                                                <span className="font-semibold text-gray-900">{formatPrice(linePrice)}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    <div className="flex justify-between items-center text-sm">
+                                                        <span className="text-gray-600">Menge</span>
+                                                        <span className="font-semibold text-gray-900">× {qty}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center pt-3 border-t border-gray-300">
+                                                        <span className="text-sm text-gray-600">Zwischensumme</span>
+                                                        <span className="text-sm font-semibold text-gray-900">{formatPrice(positionsSubtotal)}</span>
+                                                    </div>
+                                                    {vatRate > 0 && (
+                                                        <>
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-sm text-gray-600">+{vatRate}% MwSt.</span>
+                                                                <span className="text-sm font-semibold text-gray-700">{formatPrice(vatAmount)}</span>
+                                                            </div>
+                                                            {vatCountry === 'Österreich (AT)' && (
+                                                                <div className="flex justify-between items-center pt-1.5">
+                                                                    <span className="text-xs text-gray-500">Enthält Eigenanteil (AT):</span>
+                                                                    <span className="text-xs text-gray-600">43,00€</span>
+                                                                </div>
+                                                            )}
+                                                            <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
+                                                                <span className="text-base font-bold text-gray-900">Gesamt</span>
+                                                                <span className="text-xl font-bold text-green-600">{formatPrice(vatCountry === 'Österreich (AT)' ? total + 43 : total)}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                    {vatRate === 0 && (
+                                                        <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
+                                                            <span className="text-base font-bold text-gray-900">Gesamt</span>
+                                                            <span className="text-xl font-bold text-green-600">{formatPrice(positionsSubtotal)}</span>
+                                                        </div>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="text-sm text-gray-500">Keine Positionen ausgewählt</div>
+                                                    <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
+                                                        <span className="text-base font-bold text-gray-900">Gesamt</span>
+                                                        <span className="text-xl font-bold text-green-600">0,00€</span>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            }
+
+                            // Privat: Basispreis (Add-on) → Rabatt (%) → Brutto nach Rabatt → Menge → Gesamt
+                            const qty = quantity || 1;
+                            const pc = formData.priceCalculations;
+                            const basisPreis = pc?.basisPreis ?? (formData.nettoPreis ? parseFloat(formData.nettoPreis) : 0);
+                            const rabattPercent = formData.rabatt ? parseFloat(formData.rabatt) : 0;
+                            const discountAmount = pc?.discountAmount ?? (rabattPercent > 0 ? (basisPreis * rabattPercent) / 100 : 0);
+                            const bruttoUnit = formData.brutto ? parseFloat(formData.brutto) : (basisPreis - discountAmount);
+                            const bruttoTotal = bruttoUnit * qty;
+                            const vatPercent = formData.tax ? parseFloat(formData.tax) : 0;
+                            const gesamtPrivat = bruttoTotal;
+                            return (
+                                <div className="bg-white rounded-lg border border-gray-200 p-6">
+                                    <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Preisübersicht</h3>
+                                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-5 space-y-3">
+                                        {basisPreis > 0 && (
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-gray-600">Basispreis (Brutto)</span>
+                                                <span className="font-semibold text-gray-900">{formatPrice(basisPreis)}</span>
+                                            </div>
+                                        )}
+                                        {rabattPercent > 0 && (
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-gray-600">Rabatt ({rabattPercent.toFixed(0)}%)</span>
+                                                <span className="font-semibold text-red-600">-{formatPrice(discountAmount)}</span>
+                                            </div>
+                                        )}
+                                        {bruttoUnit > 0 && (
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-gray-600">Brutto nach Rabatt</span>
+                                                <span className="font-semibold text-gray-900">{formatPrice(bruttoUnit)}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between items-center text-sm">
+                                            <span className="text-gray-600">Menge</span>
+                                            <span className="font-semibold text-gray-900">{qty} {qty === 1 ? 'Paar' : 'Paare'}{qty > 1 ? ` × ${formatPrice(bruttoUnit)}` : ''}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center pt-3 border-t-2 border-gray-400">
+                                            <span className="text-base font-bold text-gray-900">Gesamt</span>
+                                            <span className="text-xl font-bold text-green-600">{formatPrice(gesamtPrivat)}</span>
+                                        </div>
+                                        {bruttoUnit > 0 && vatPercent > 0 && (
+                                            <div className="flex justify-between items-center pt-1">
+                                                <span className="text-xs text-gray-500">MwSt. ({vatPercent}%)</span>
+                                                <span className="text-xs text-gray-500">enthalten</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })()}
+
+                        {/* KONTROLLE & AKTIONEN Section */}
+                        <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+                            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
+                                KONTROLLE & AKTIONEN
+                            </h3>
+                            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#f3f6ff] text-[#1E76FF]">
+                                        <MapPin className="w-4 h-4" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-xs font-medium text-gray-500">Abholung</span>
+                                        {(() => {
+                                            const currentLocation = locations.find(loc =>
+                                                (loc.description || loc.address) === filiale ||
+                                                loc.description === filiale ||
+                                                loc.address === filiale ||
+                                                (loc.description || loc.address) === selectedLocation
+                                            );
+                                            if (currentLocation) {
+                                                return (
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-semibold text-gray-900">
+                                                            {currentLocation.description || currentLocation.address}
+                                                        </span>
+                                                        {currentLocation.description && currentLocation.address && currentLocation.description !== currentLocation.address && (
+                                                            <span className="text-xs text-gray-500 mt-0.5">
+                                                                {currentLocation.address}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                );
+                                            }
+                                            return (
+                                                <span className="text-sm font-semibold text-gray-900">
+                                                    {filiale || customer?.wohnort || selectedLocation || '-'}
+                                                </span>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="rounded-full px-5 py-2 text-sm font-medium border-[#dde3ee] bg-white flex items-center gap-2 shadow-none cursor-pointer"
+                                        onClick={() => setShowNotizTextarea(!showNotizTextarea)}
+                                    >
+                                        <StickyNote className="w-4 h-4 text-gray-700" />
+                                        <span>Notiz hinzufügen</span>
+                                    </Button>
+                                </div>
                             </div>
                         </div>
+
+                        {/* Notiz textarea - shown when "Notiz hinzufügen" is clicked (same as WerkstattzettelModal) */}
+                        {showNotizTextarea && (
+                            <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">Notiz</label>
+                                <textarea
+                                    value={orderNote}
+                                    onChange={(e) => setOrderNote(e.target.value)}
+                                    placeholder="Notiz eingeben..."
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
+                                />
+                            </div>
+                        )}
+
                     </div>
 
-                    {/* Notiz textarea - shown when "Notiz hinzufügen" is clicked (same as WerkstattzettelModal) */}
-                    {showNotizTextarea && (
-                        <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">Notiz</label>
-                            <textarea
-                                value={orderNote}
-                                onChange={(e) => setOrderNote(e.target.value)}
-                                placeholder="Notiz eingeben..."
-                                rows={3}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
-                            />
-                        </div>
-                    )}
+                    <DialogFooter className="flex gap-2 sm:gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={onClose}
+                            disabled={isLoading}
+                            className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={() => setShowConfirmModal(true)}
+                            disabled={isLoading}
+                            className="flex-1 bg-[#62A07C] hover:bg-[#4A8A5F] text-white min-w-[140px] flex items-center justify-center gap-2"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Wird gespeichert...</span>
+                                </>
+                            ) : (
+                                'Weiter'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
-                </div>
-
-                <DialogFooter className="flex gap-2 sm:gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={onClose}
-                        disabled={isLoading}
-                        className="flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Abbrechen
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={() => setShowConfirmModal(true)}
-                        disabled={isLoading}
-                        className="flex-1 bg-[#62A07C] hover:bg-[#4A8A5F] text-white min-w-[140px] flex items-center justify-center gap-2"
-                    >
-                        {isLoading ? (
-                            <>
-                                <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                                <span>Wird gespeichert...</span>
-                            </>
-                        ) : (
-                            'Weiter'
-                        )}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-
-        {/* Confirmation modal: show before submitting order */}
-        <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Auftrag bestätigen</DialogTitle>
-                </DialogHeader>
-                <p className="text-sm text-gray-600 py-2">
-                    Möchten Sie den Auftrag wirklich erstellen?
-                </p>
-                <DialogFooter className="flex gap-2 sm:gap-2">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setShowConfirmModal(false)}
-                        disabled={isLoading}
-                    >
-                        Abbrechen
-                    </Button>
-                    <Button
-                        type="button"
-                        onClick={async () => {
-                            setShowConfirmModal(false);
-                            await handleSubmit();
-                        }}
-                        disabled={isLoading}
-                        className="bg-[#62A07C] hover:bg-[#4A8A5F] text-white"
-                    >
-                        OK
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            {/* Confirmation modal: show before submitting order */}
+            <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Auftrag bestätigen</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-gray-600 py-2">
+                        Möchten Sie den Auftrag wirklich erstellen?
+                    </p>
+                    <DialogFooter className="flex gap-2 sm:gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowConfirmModal(false)}
+                            disabled={isLoading}
+                        >
+                            Abbrechen
+                        </Button>
+                        <Button
+                            type="button"
+                            onClick={async () => {
+                                setShowConfirmModal(false);
+                                await handleSubmit();
+                            }}
+                            disabled={isLoading}
+                            className="bg-[#62A07C] hover:bg-[#4A8A5F] text-white"
+                        >
+                            OK
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
