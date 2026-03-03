@@ -344,8 +344,11 @@ export default function RezeptCard({
                                         const sideLabel =
                                             side === 'BDS' ? 'Beide (BDS)' : side === 'L' ? 'Links (L)' : 'Rechts (R)';
                                         const basePrice = typeof option?.price === 'number' ? option.price : 0;
-                                        const itemPrice = side === 'BDS' ? basePrice * 2 : basePrice;
-                                        const priceStr = `€ ${itemPrice.toFixed(2).replace('.', ',')}`;
+                                        // Netto pro Position (BDS = doppelter Preis)
+                                        const itemNetPrice = side === 'BDS' ? basePrice * 2 : basePrice;
+                                        const itemVatAmount = calculateVatAmount(itemNetPrice);
+                                        const itemGrossPrice = itemNetPrice + itemVatAmount;
+
                                         return (
                                             <li
                                                 key={posNum}
@@ -355,13 +358,21 @@ export default function RezeptCard({
                                                     <span className="font-semibold text-gray-900">{posNum}</span>
                                                     <span className="text-gray-600 ml-1.5">— {desc}</span>
                                                 </div>
-                                                <div className="shrink-0 flex items-center gap-2">
+                                                <div className="shrink-0 flex flex-col items-end gap-1">
                                                     <span className="inline-flex items-center px-2.5 py-1 rounded text-xs font-medium bg-[#61A178]/15 text-[#61A178] border border-[#61A178]/30">
                                                         Seite: {sideLabel}
                                                     </span>
-                                                    <span className="font-semibold text-green-600 whitespace-nowrap">
-                                                        {priceStr}
-                                                    </span>
+                                                    <div className="text-xs text-gray-600 whitespace-nowrap">
+                                                        Netto: € {itemNetPrice.toFixed(2).replace('.', ',')}
+                                                    </div>
+                                                    {getVatRate() > 0 && (
+                                                        <div className="text-xs text-gray-600 whitespace-nowrap">
+                                                            + {getVatRate()}% MwSt.: € {itemVatAmount.toFixed(2).replace('.', ',')}
+                                                        </div>
+                                                    )}
+                                                    <div className="text-sm font-semibold text-green-600 whitespace-nowrap">
+                                                        Gesamt: € {itemGrossPrice.toFixed(2).replace('.', ',')}
+                                                    </div>
                                                 </div>
                                             </li>
                                         );
