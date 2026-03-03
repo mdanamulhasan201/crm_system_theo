@@ -64,7 +64,7 @@ export interface MassschuheOrderV2Payload {
     supply_note?: string;
     quantity?: number;
     total_price?: number;
-    private_price?: number;
+    privatePrice?: number;
     payment_status?: string;
     deposit_provision?: number;
     foot_analysis_price?: number | object;
@@ -377,7 +377,7 @@ export default function MassschuheOrderModal({
             const vatRate = vatCountryCode === 'IT' ? 4 : vatCountryCode === 'AT' ? 20 : 0;
             const positionsSubtotal = positionsSum * qty;
             const subtotalWithVat = positionsSubtotal * (1 + vatRate / 100);
-            // AT: insurance_price = with +20% VAT; total_price = that + 43; private_price = 43
+            // AT: insurance_price = with +20% VAT; total_price = that + 43; privatePrice = 43
             insurancePrice = subtotalWithVat;
             totalPrice = vatCountryCode === 'AT' ? subtotalWithVat + 43 : subtotalWithVat;
         }
@@ -433,7 +433,7 @@ export default function MassschuheOrderModal({
             supply_note: formData.versorgungNote || undefined,
             quantity: qty,
             total_price: totalPrice,
-            private_price: paymentType === 'privat' ? totalPrice : (paymentType === 'krankenkasse' && vatCountryCode === 'AT' ? 43 : undefined),
+            privatePrice: paymentType === 'privat' ? totalPrice : (paymentType === 'krankenkasse' && vatCountryCode === 'AT' ? 43 : undefined),
             payment_status: bezahlt || undefined,
             foot_analysis_price: paymentType === 'privat' && selectedFußanalyse ? getFußanalysePrice(selectedFußanalyse) : undefined,
             pick_up_location: pickUpLocationJson,

@@ -256,7 +256,7 @@ export default function AbrechnungsuebersichtModal({
                                                         </span>
                                                     )}
                                                     <span className="text-gray-600">Netto: {formatEuroLeading(rowNetto)}</span>
-                                                    {/* <span className="text-gray-600">+ 19% MwSt.: {formatEuroLeading(rowMwst)}</span> */}
+                                                    <span className="text-gray-600">+ {vatRate}% MwSt.: {formatEuroLeading(rowMwst)}</span>
                                                     <span className="font-bold text-emerald-600">Gesamt: {formatEuroLeading(row.price)}</span>
                                                 </div>
                                             </div>
