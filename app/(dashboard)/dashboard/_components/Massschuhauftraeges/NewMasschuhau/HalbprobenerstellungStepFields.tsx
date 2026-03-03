@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 import { CalendarIcon, FileText, Factory, ExternalLink, SkipForward } from 'lucide-react';
 import ExternFertigenModal from './ExternFertigenModal';
+import HalbprobeBestellenModal from './HalbprobeBestellenModal';
+import BestellungPruefenModal from './BestellungPruefenModal';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -72,6 +74,9 @@ export default function HalbprobenerstellungStepFields({
     onChecklisteHalbprobeChange,
 }: HalbprobenerstellungStepFieldsProps) {
     const [externModalOpen, setExternModalOpen] = useState(false);
+    const [halbprobeBestellenModalOpen, setHalbprobeBestellenModalOpen] = useState(false);
+    const [bestellungPruefenModalOpen, setBestellungPruefenModalOpen] = useState(false);
+    const [reviewModalData, setReviewModalData] = useState<{ fileLeftName: string; fileRightName: string }>({ fileLeftName: '', fileRightName: '' });
 
     const handleExternFertigenClick = () => {
         onHalbprobeDurchfuehrungChange('Extern fertigen');
@@ -211,6 +216,29 @@ export default function HalbprobenerstellungStepFields({
             <ExternFertigenModal
                 open={externModalOpen}
                 onOpenChange={setExternModalOpen}
+                onLeistenUndHalbprobeBestellen={() => {
+                    setExternModalOpen(false);
+                    setHalbprobeBestellenModalOpen(true);
+                }}
+            />
+            <HalbprobeBestellenModal
+                open={halbprobeBestellenModalOpen}
+                onOpenChange={setHalbprobeBestellenModalOpen}
+                onWeiterZurBestellung={(data) => {
+                    setReviewModalData(data);
+                    setBestellungPruefenModalOpen(true);
+                }}
+            />
+            <BestellungPruefenModal
+                open={bestellungPruefenModalOpen}
+                onOpenChange={setBestellungPruefenModalOpen}
+                fileLeftName={reviewModalData.fileLeftName}
+                fileRightName={reviewModalData.fileRightName}
+                onBack={() => setHalbprobeBestellenModalOpen(true)}
+                onVerbindlichBestellen={() => {
+                    setBestellungPruefenModalOpen(false);
+                    // TODO: submit order API
+                }}
             />
         </div>
     );

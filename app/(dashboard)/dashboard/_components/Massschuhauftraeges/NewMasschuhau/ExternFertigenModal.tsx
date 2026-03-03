@@ -36,12 +36,11 @@ export default function ExternFertigenModal({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent
-                className="overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-xl sm:max-w-xl! [&>button]:right-4 [&>button]:top-4 [&>button]:text-gray-500 [&>button]:hover:text-gray-700"
+                className="overflow-hidden rounded-2xl border-0 bg-white p-0 shadow-2xl ring-1 ring-gray-200/90 sm:max-w-xl [&>button]:right-5 [&>button]:top-5 [&>button]:text-gray-400 [&>button]:hover:text-gray-600 [&>button]:hover:bg-gray-100 [&>button]:rounded-full"
             >
-                <div className="p-6 pt-10 pb-8">
-                    {/* Image – no circle */}
+                <div className="bg-gradient-to-b from-gray-50/50 to-white p-6 pt-10 pb-8">
                     <div className="flex justify-center">
-                        <div className="w-48">
+                        <div className="rounded-2xl bg-white p-4 shadow-md ring-1 ring-gray-100">
                             <Image
                                 src={legImage}
                                 alt="Leisten"
@@ -52,25 +51,22 @@ export default function ExternFertigenModal({
                         </div>
                     </div>
 
-                    <DialogTitle className="mt-6 text-center text-xl font-bold tracking-tight text-[#62A07C]">
+                    <DialogTitle className="mt-7 text-center text-xl font-bold tracking-tight text-gray-900 sm:text-2xl">
                         Möchten Sie die Halbprobe jetzt direkt beauftragen?
                     </DialogTitle>
                     <DialogDescription asChild>
-                        <div className="mt-4 space-y-3 text-center text-sm text-gray-600">
-                            
-                            <p>Die Fertigung startet anschließend ohne Verzögerung.“</p>
-                            
-                        </div>
+                        <p className="mt-3 text-center text-sm leading-relaxed text-gray-600">
+                            Die Fertigung startet anschließend ohne Verzögerung.
+                        </p>
                     </DialogDescription>
 
-                    {/* CTA Buttons – green, rounded, same design */}
-                    <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center sm:gap-5">
+                    <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
                         <button
                             type="button"
                             onClick={handleLeistenJetzt}
                             className={cn(
-                                'flex flex-1 items-center cursor-pointer justify-center rounded-lg py-3.5 px-6 text-xs font-semibold uppercase tracking-wide text-white',
-                                'bg-[#62A07C] hover:bg-[#4A8A5F] transition-all duration-200'
+                                'flex flex-1 items-center justify-center rounded-xl py-3.5 px-6 text-sm font-semibold transition-all cursor-pointer',
+                                'bg-white text-gray-700 border border-gray-200 shadow-sm hover:bg-gray-50 hover:border-gray-300'
                             )}
                         >
                             Später bestellen
@@ -79,11 +75,11 @@ export default function ExternFertigenModal({
                             type="button"
                             onClick={handleLeistenUndHalbprobe}
                             className={cn(
-                                'flex flex-1 items-center cursor-pointer justify-center rounded-lg py-3.5 px-6 text-xs font-semibold uppercase tracking-wide text-white',
-                                'bg-[#62A07C] hover:bg-[#4A8A5F] transition-all duration-200'
+                                'flex flex-1 items-center justify-center rounded-xl py-3.5 px-6 text-sm font-semibold text-white shadow-md transition-all cursor-pointer',
+                                'bg-[#62A07C] hover:bg-[#4A8A5F] hover:shadow-lg hover:-translate-y-0.5'
                             )}
                         >
-                            Leisten + Halbprobe bestellen
+                            Halbprobe bestellen
                         </button>
                     </div>
                 </div>
