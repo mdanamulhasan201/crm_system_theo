@@ -17,6 +17,7 @@ export interface PriceDetailsData {
     discount?: number;
     addonPrices?: number;
     insuranceTotalPrice?: number;
+    privatePrice?: number | null;
     bezahlt?: string;
     orderStatus?: string;
     orderCategory?: string;
@@ -26,6 +27,11 @@ export interface PriceDetailsData {
     quantity?: number;
     /** VAT rate in percent (e.g. 19, 20). Used for net/MwSt calculation. */
     vatRate?: number | null;
+    /** API may return paymnentType (typo). Values: broth | private | insurance */
+    paymnentType?: string | null;
+    paymentType?: string | null;
+    insurance_payed?: boolean | null;
+    private_payed?: boolean | null;
     Versorgungen?: {
         supplyStatus?: { price?: number; vatRate?: number };
     };
@@ -128,9 +134,19 @@ export default function AbrechnungsuebersichtModal({
     const vatDivisor = 1 + vatRate / 100;
     const netto = data ? data.totalPrice / vatDivisor : 0;
     const mwst = data ? data.totalPrice - netto : 0;
-    const isPaid = data?.bezahlt === 'Privat_Bezahlt' || data?.bezahlt === 'Krankenkasse_Genehmigt';
-    const paidAmount = data && isPaid ? data.totalPrice : 0;
-    const restOffen = data ? data.totalPrice - paidAmount : 0;
+
+    // Payment done: broth → both paid; private → private_payed; insurance → insurance_payed
+    const paymentType = data?.paymnentType ?? data?.paymentType ?? '';
+    const insurancePayed = !!data?.insurance_payed;
+    const privatePayed = !!data?.private_payed;
+    const isPaymentDone =
+        paymentType === 'broth' ? (insurancePayed && privatePayed)
+        : paymentType === 'private' ? privatePayed
+        : paymentType === 'insurance' ? insurancePayed
+        : false;
+
+    const privatePrice = data?.privatePrice ?? 0;
+    const insuranceTotalPrice = data?.insuranceTotalPrice ?? 0;
 
     const categoryLabel = data?.orderCategory === 'insole' ? 'Einlage' : data?.orderCategory === 'milling_block' ? 'Fräsblock' : data?.orderCategory || '';
     const paymentTag = data?.bezahlt?.includes('Privat') ? 'Privat' : data?.bezahlt?.includes('Krankenkasse') ? 'Krankenkasse' : '';
@@ -195,24 +211,38 @@ export default function AbrechnungsuebersichtModal({
                             </div>
 
                             {/* ZAHLUNGSAUFTEILUNG */}
-                            <div className="rounded-xl border border-gray-200 p-4">
+                            <div className={`rounded-xl border p-4 ${isPaymentDone ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-200'}`}>
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                                     Zahlungsaufteilung
                                 </h3>
                                 <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Kunde zahlt gesamt</span>
-                                        <span className="font-medium">{formatEuro(data.totalPrice)}</span>
+                                    {privatePrice > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-600">Privat (Kunde)</span>
+                                            <span className="font-medium">{formatEuro(privatePrice)}</span>
+                                        </div>
+                                    )}
+                                    {insuranceTotalPrice > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-600">Versicherung</span>
+                                            <span className="font-medium">{formatEuro(insuranceTotalPrice)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between pt-2 border-t border-gray-200">
+                                        <span className="text-gray-700 font-medium">Gesamt</span>
+                                        <span className="font-bold text-gray-900">{formatEuro(data.totalPrice)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Bereits bezahlt</span>
-                                        <span className={`font-medium ${paidAmount > 0 ? 'text-emerald-600' : 'text-gray-900'}`}>
-                                            {formatEuro(paidAmount)}
+                                    <div className={`flex justify-between items-center pt-3 mt-2 rounded-lg px-3 py-2 ${isPaymentDone ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                                        <span className="text-sm font-medium">
+                                            {isPaymentDone ? 'Zahlung abgeschlossen' : 'Zahlung offen'}
                                         </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Rest offen</span>
-                                        <span className="font-medium">{formatEuro(restOffen)}</span>
+                                        {isPaymentDone && (
+                                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
