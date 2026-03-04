@@ -123,7 +123,7 @@ export default function NoteProcess() {
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={cn(
-                'px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+                'px-3 py-1.5 cursor-pointer rounded-md text-sm font-medium transition-colors',
                 activeTab === tab.key
                   ? 'text-[#62A17B] bg-emerald-50'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
@@ -205,7 +205,7 @@ export default function NoteProcess() {
                               <div className="flex flex-wrap items-baseline gap-2">
                                 <span
                                   className={cn(
-                                    'inline-flex px-2.5 py-1 rounded-md text-xs font-semibold uppercase tracking-wide shrink-0',
+                                    'inline-flex px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wide shrink-0',
                                     tag.className
                                   )}
                                 >
