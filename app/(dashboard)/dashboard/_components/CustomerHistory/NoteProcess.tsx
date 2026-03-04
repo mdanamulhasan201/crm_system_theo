@@ -96,7 +96,7 @@ export default function NoteProcess() {
   const hasAnyNotes = filteredDates.length > 0;
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white  overflow-hidden">
       {/* Header */}
       <div className="p-4 md:p-5 border-b border-gray-100">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

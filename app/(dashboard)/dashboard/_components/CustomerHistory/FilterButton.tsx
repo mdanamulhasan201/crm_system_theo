@@ -94,7 +94,7 @@ function FilterButtonZettel({
         <PopoverTrigger asChild>
           <button
             type="button"
-            className="w-full bg-emerald-50/80 border border-emerald-200/60 shadow-sm rounded-xl p-4 flex flex-col items-center gap-3 hover:bg-emerald-100/80 transition cursor-pointer"
+            className="w-full bg-emerald-50/80 border border-emerald-200/60  rounded-xl p-4 flex flex-col items-center gap-3 hover:bg-emerald-100/80 transition cursor-pointer"
           >
             <div className="w-14 h-14 rounded-lg bg-emerald-100 flex items-center justify-center">
               <FileText className="w-7 h-7 text-emerald-700" strokeWidth={2} />

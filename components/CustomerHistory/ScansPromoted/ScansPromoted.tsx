@@ -4,6 +4,8 @@ import Image from "next/image";
 import legImage from "@/public/Kunden/legs.png";
 import { ScanData } from "@/types/scan";
 import { useRouter } from "next/navigation";
+import { ScanLine } from "lucide-react";
+import EmptyState from "@/app/(dashboard)/dashboard/_components/CustomerHistory/EmptyState";
 
 interface ScansPromotedProps {
     customerData: ScanData | null;
@@ -34,10 +36,11 @@ export default function ScansPromoted({ customerData }: ScansPromotedProps) {
 
     if (!customerData) {
         return (
-            <div className="py-8 px-4 md:px-10">
-                <h1 className="text-2xl font-bold capitalize">DURCHGEFÜHRTE SCANS</h1>
-                <p className="text-gray-600 mt-4">No customer data available</p>
-            </div>
+            <EmptyState
+                icon={<ScanLine className="w-8 h-8 text-gray-400" strokeWidth={2} />}
+                title="Keine Durchgeführte Scans vorhanden"
+                subtitle="Hier werden zukünftige Durchgeführte Scans angezeigt."
+            />
         );
     }
 
@@ -46,10 +49,11 @@ export default function ScansPromoted({ customerData }: ScansPromotedProps) {
 
     if (screenerFiles.length === 0) {
         return (
-            <div className="py-8 px-4 md:px-10">
-                <h1 className="text-2xl font-bold capitalize">DURCHGEFÜHRTE SCANS</h1>
-                <p className="text-gray-600 mt-4">No scans available</p>
-            </div>
+            <EmptyState
+                icon={<ScanLine className="w-8 h-8 text-gray-400" strokeWidth={2} />}
+                title="Keine Durchgeführte Scans vorhanden"
+                subtitle="Hier werden zukünftige Durchgeführte Scans angezeigt."
+            />
         );
     }
 

@@ -25,6 +25,7 @@ import CustomerHistoryShimmer from '@/components/ShimmerEffect/Customer/Customer
 import CustomerHeader from '../../_components/CustomerHistory/CustomerHeader';
 import CustomerDetailsPage from '../../_components/CustomerHistory/CustomerDetailsPage';
 import FilterButton from '../../_components/CustomerHistory/FilterButton';
+import CardFilterTab from '../../_components/CustomerHistory/CardFilterTab';
 
 export default function CustomerHistory() {
     const params = useParams();
@@ -319,47 +320,29 @@ export default function CustomerHistory() {
             <NoteProcess />
 
 
-            {/* Responsive Button Group */}
-            <div className="-mx-4">
-                <div className="overflow-x-auto flex-nowrap py-6 px-4 w-full min-w-0 scrollbar-hide">
-                    <div className="flex gap-4 min-w-max mx-auto md:justify-center">
-                        <button
-                            className={`min-w-[220px] cursor-pointer px-6 py-2 border border-black font-semibold text-center text-sm md:text-base rounded transition-all shadow-sm ${activeTab === 'scans' ? 'bg-white' : 'bg-gray-200'}`}
-                            onClick={() => setActiveTab('scans')}
-                        >
-                            DURCHGEFÜHRTE SCANS
-                        </button>
-                        <button
-                            className={`min-w-[220px] cursor-pointer px-6 py-2 border border-black font-semibold text-center text-sm md:text-base rounded transition-all ${activeTab === 'shoes' ? 'bg-white' : 'bg-gray-200'}`}
-                            // onClick={() => setActiveTab('shoes')}
-                            onClick={handleShowPopUp}
-                        >
-                            DURCHGEFÜHRTE SCHUHKÄUFE
-                        </button>
-                        <button
-                            className={`min-w-[220px] cursor-pointer px-6 py-2 border border-black font-semibold text-center text-sm md:text-base rounded transition-all ${activeTab === 'versorgungen' ? 'bg-white' : 'bg-gray-200'}`}
-                            onClick={() => setActiveTab('versorgungen')}
-                        >
-                            DURCHGEFÜHRTE VERSORGUNGEN
-                        </button>
-                        <button
-                            className={`min-w-[220px] cursor-pointer px-6 py-2 border border-black font-semibold text-center text-sm md:text-base rounded transition-all ${activeTab === 'reviews' ? 'bg-white' : 'bg-gray-200'}`}
-                            // onClick={() => setActiveTab('reviews')}
-                            onClick={handleShowPopUp}
-                        >
-                            BEWERTUNGEN
-                        </button>
-                        <div className="min-w-[16px]" />
-                    </div>
-                </div>
-            </div>
 
-            {/* Tab content */}
-            <div>
-                {activeTab === 'scans' && <ScansPromoted customerData={scanData} />}
-                {activeTab === 'shoes' && <ShoePurchasesMade />}
-                {activeTab === 'versorgungen' && <TreatmentsCarriedOut customerId={scanData.id} />}
-                {activeTab === 'reviews' && <Reviews />}
+
+
+            {/* Tab navigation — new design with icon + label, green active state + underline */}
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+                <CardFilterTab
+                    activeTab={activeTab}
+                    onTabChange={(tab) => {
+                        if (tab === 'shoes' || tab === 'reviews') {
+                            handleShowPopUp();
+                        } else {
+                            setActiveTab(tab);
+                        }
+                    }}
+                />
+
+                {/* Tab content */}
+                <div>
+                    {activeTab === 'scans' && <ScansPromoted customerData={scanData} />}
+                    {activeTab === 'shoes' && <ShoePurchasesMade />}
+                    {activeTab === 'versorgungen' && <TreatmentsCarriedOut customerId={scanData.id} />}
+                    {activeTab === 'reviews' && <Reviews />}
+                </div>
             </div>
 
             <Dialog open={isPopUpOpen} onOpenChange={setIsPopUpOpen}>
