@@ -5,21 +5,15 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import legs from '@/public/Kunden/leg.png'
 import { useRouter } from 'next/navigation'
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-} from '@/components/ui/dialog'
+
 
 export default function LeistenDigitalGenerieren() {
     const router = useRouter()
-    const [isDialogOpen, setIsDialogOpen] = useState(false)
+    // const [isDialogOpen, setIsDialogOpen] = useState(false)
 
     const handleGenerate = () => {
-        setIsDialogOpen(true)
-        // router.push('/dashboard/leistenkonfigurator')
+        // setIsDialogOpen(true)
+        router.push('/dashboard/leistenkonfigurator')
     }
 
     return (
@@ -83,7 +77,7 @@ export default function LeistenDigitalGenerieren() {
             </div>
 
             {/* Dialog Popup */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            {/* <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Bald verfügbar</DialogTitle>
@@ -92,7 +86,7 @@ export default function LeistenDigitalGenerieren() {
                         </DialogDescription>
                     </DialogHeader>
                 </DialogContent>
-            </Dialog>
+            </Dialog> */}
         </div>
     )
 }
