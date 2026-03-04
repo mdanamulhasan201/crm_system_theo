@@ -5,9 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { UploadCloud } from 'lucide-react';
 
+export type LeistenmaterialType = 'holz' | 'plastik';
+
 export interface KopfdatenData {
   patient: string;
   auftraggeber: string;
+  leistenmaterial: LeistenmaterialType;
   leftStlFile: string | null;
   rightStlFile: string | null;
   pdfFile: string | null;
@@ -17,9 +20,14 @@ export interface KopfdatenRef {
   getData: () => KopfdatenData;
 }
 
-const Kopfdaten = forwardRef<KopfdatenRef>((props, ref) => {
+interface KopfdatenProps {
+  onChange?: () => void;
+}
+
+const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange }, ref) => {
   const [patient, setPatient] = useState<string>('');
   const [auftraggeber, setAuftraggeber] = useState<string>('');
+  const [leistenmaterial, setLeistenmaterial] = useState<LeistenmaterialType>('plastik');
   const [leftFileName, setLeftFileName] = useState<string | null>(null);
   const [rightFileName, setRightFileName] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
@@ -31,6 +39,7 @@ const Kopfdaten = forwardRef<KopfdatenRef>((props, ref) => {
     getData: () => ({
       patient,
       auftraggeber,
+      leistenmaterial,
       leftStlFile: leftFileName,
       rightStlFile: rightFileName,
       pdfFile: pdfFileName,
@@ -173,6 +182,47 @@ const Kopfdaten = forwardRef<KopfdatenRef>((props, ref) => {
               {pdfFileName ? pdfFileName : 'Upload PDF'}
             </span>
           </Button>
+        </div>
+      </div>
+
+      {/* Leistenmaterial - bottom */}
+      <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50/50 p-4">
+        <h3 className="text-base font-semibold text-gray-900 mb-1">
+          Leistenmaterial
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">
+          Aus welchem Material soll der Leisten gefertigt werden?
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <label className="flex items-center gap-3 cursor-pointer rounded-lg border-2 border-gray-200 bg-white px-4 py-3 transition-colors hover:border-[#6B9B87]/50 has-[:checked]:border-[#6B9B87] has-[:checked]:bg-[#6B9B87]/5">
+            <input
+              type="radio"
+              name="leistenmaterial"
+              value="holz"
+              checked={leistenmaterial === 'holz'}
+              onChange={() => {
+                setLeistenmaterial('holz');
+                onChange?.();
+              }}
+              className="h-4 w-4 border-gray-300 text-[#6B9B87] focus:ring-[#6B9B87]"
+            />
+            <span className="text-sm font-medium text-gray-800">Holzleisten</span>
+            <span className="text-sm text-emerald-600 font-medium">+ 30 €</span>
+          </label>
+          <label className="flex items-center gap-3 cursor-pointer rounded-lg border-2 border-gray-200 bg-white px-4 py-3 transition-colors hover:border-[#6B9B87]/50 has-[:checked]:border-[#6B9B87] has-[:checked]:bg-[#6B9B87]/5">
+            <input
+              type="radio"
+              name="leistenmaterial"
+              value="plastik"
+              checked={leistenmaterial === 'plastik'}
+              onChange={() => {
+                setLeistenmaterial('plastik');
+                onChange?.();
+              }}
+              className="h-4 w-4 border-gray-300 text-[#6B9B87] focus:ring-[#6B9B87]"
+            />
+            <span className="text-sm font-medium text-gray-800">Plastikleisten</span>
+          </label>
         </div>
       </div>
     </section>

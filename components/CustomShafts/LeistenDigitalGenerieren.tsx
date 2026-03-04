@@ -43,9 +43,9 @@ export default function LeistenDigitalGenerieren() {
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-2">
                         {/* Status Indicator */}
                         <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
+                            <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
                             <span className="text-sm md:text-base text-gray-700 font-normal">
-                                Digitale Leistenerstellung aktiv
+                                Digitale Leistenerstellung nicht aktiv
                             </span>
                         </div>
 

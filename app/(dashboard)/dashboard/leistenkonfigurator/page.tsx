@@ -17,19 +17,30 @@ export default function LeistenKonfiguratorPage() {
   const allgemeineOptionenRef = useRef<AllgemeineOptionenRef>(null);
   const korrekturenRef = useRef<KorrekturenModellierungRef>(null);
   const bemerkungenRef = useRef<BemerkungenRef>(null);
-  const [totalPrice, setTotalPrice] = useState(169.99);
+  const basePrice = 179.99;
+  const knoechelhoherLeistenPrice = 19.99;
+  const holzleistenPrice = 30;
 
-  // Recalculate price when leistentyp changes
-  const handleLeistentypChange = () => {
-    const basePrice = 169.99;
-    const knoechelhoherLeistenPrice = 19.99;
+  const [totalPrice, setTotalPrice] = useState(basePrice);
 
+  // Recalculate price when leistentyp or kopfdaten (Leistenmaterial) changes
+  const handlePriceUpdate = () => {
+    const kopfdatenData = kopfdatenRef.current?.getData();
     const leistentypData = leistentypRef.current?.getData();
     const hasKnoechelhoherLeisten = leistentypData?.knoechelhoherLeistenLinks || leistentypData?.knoechelhoherLeistenRechts;
+    const hasHolzleisten = kopfdatenData?.leistenmaterial === 'holz';
 
-    const calculatedPrice = basePrice + (hasKnoechelhoherLeisten ? knoechelhoherLeistenPrice : 0);
+    const calculatedPrice =
+      basePrice +
+      (hasKnoechelhoherLeisten ? knoechelhoherLeistenPrice : 0) +
+      (hasHolzleisten ? holzleistenPrice : 0);
     setTotalPrice(calculatedPrice);
   };
+
+  const formatPrice = (value: number) =>
+    value.toFixed(2).replace('.', ',') + ' €';
+
+  const handleLeistentypChange = handlePriceUpdate;
 
   const handleContinue = () => {
     const allData = {
@@ -70,7 +81,7 @@ export default function LeistenKonfiguratorPage() {
 
       {/* Main content sections */}
       <main className="space-y-6 md:space-y-8">
-        <Kopfdaten ref={kopfdatenRef} />
+        <Kopfdaten ref={kopfdatenRef} onChange={handlePriceUpdate} />
         <SprengungSpitzenzugabe ref={sprengungRef} />
         <Leistentyp ref={leistentypRef} onChange={handleLeistentypChange} />
         <AllgemeineOptionen ref={allgemeineOptionenRef} />
@@ -94,7 +105,7 @@ export default function LeistenKonfiguratorPage() {
           onClick={handleContinue}
           className="px-6 py-2 bg-[#61A178] hover:bg-[#61A178]/80 text-white"
         >
-          Weiter {totalPrice.toFixed(2).replace('.', ',')}€ exkl. Lieferkosten
+          Weiter {formatPrice(totalPrice)} excl. Lieferung
         </Button>
       </div>
     </div>
