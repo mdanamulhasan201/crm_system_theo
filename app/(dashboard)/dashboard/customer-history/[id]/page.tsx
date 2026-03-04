@@ -2,7 +2,7 @@
 import React, { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
-import NoteAdd from '@/components/CustomerHistory/NoteAdd/NoteAdd';
+import NoteProcess from '../../_components/CustomerHistory/NoteProcess';
 import Link from 'next/link';
 import ShoePurchasesMade from '@/components/CustomerHistory/ShoePurchasesMade/ShoePurchasesMade';
 import TreatmentsCarriedOut from '@/components/CustomerHistory/TreatmentsCarriedOut/TreatmentsCarriedOut';
@@ -315,8 +315,8 @@ export default function CustomerHistory() {
                 onDocumentPopoverOpenChange={setIsDocumentPopoverOpen}
             />
 
-            {/* note Table */}
-            <NoteAdd />
+            {/* Aktivitäten timeline */}
+            <NoteProcess />
 
 
             {/* Responsive Button Group */}
