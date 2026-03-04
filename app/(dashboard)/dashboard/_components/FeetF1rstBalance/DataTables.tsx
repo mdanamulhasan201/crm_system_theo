@@ -6,6 +6,7 @@ import ReusableBalanceTable, { BalanceTableColumn, TableAction } from '@/compone
 import { getAllOrderData, cancelOrder, getDeadlineDate } from '@/apis/MassschuheManagemantApis'
 import toast from 'react-hot-toast'
 import ConfirmModal from '@/components/OrdersPage/ConfirmModal/ConfirmModal'
+import HalbprobenerstellungModal from './HalbprobenerstellungModal'
 
 
 export interface TransactionData {
@@ -109,6 +110,8 @@ export default function DataTables({
     const [selectedOrder, setSelectedOrder] = useState<TransactionData | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [halbprobeModalOpen, setHalbprobeModalOpen] = useState(false);
+    const [halbprobeOrderId, setHalbprobeOrderId] = useState<string | null>(null);
 
     // Format date as "26. Feb. 2026"
     const formatLieferdatumDate = (date: Date): string => {
@@ -387,6 +390,9 @@ export default function DataTables({
         if (statusLower === 'neu') {
             return 'bg-purple-100 text-purple-700 border border-purple-200';
         }
+        if (statusLower === 'ausgeführt') {
+            return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
+        }
 
         return 'bg-gray-100 text-gray-700 border border-gray-200';
     };
@@ -486,17 +492,36 @@ export default function DataTables({
             header: 'Status',
             render: (value, row) => {
                 // If order is canceled, show "Storniert"
-                let displayStatus = row.custom_shafts_order_status === 'canceled' 
-                    ? 'Storniert' 
+                let displayStatus = row.custom_shafts_order_status === 'canceled'
+                    ? 'Storniert'
                     : (row.custom_shafts_status || value);
-                
+
                 // Normalize "panding" to "Pending" with capital P
                 if (displayStatus && displayStatus.toLowerCase() === 'panding') {
                     displayStatus = 'Pending';
                 }
-                
+
+                const isHalbprobeAusgefuehrt =
+                    row.custom_shafts_status === 'Ausgeführt' && row.beschreibung === 'Halbprobenerstellung';
+                const badgeClass = `inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(displayStatus)}`;
+
+                if (isHalbprobeAusgefuehrt && row.custom_shafts_id) {
+                    return (
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setHalbprobeOrderId(row.custom_shafts_id!);
+                                setHalbprobeModalOpen(true);
+                            }}
+                            className={`${badgeClass} cursor-pointer hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500`}
+                        >
+                            {displayStatus || '-'}
+                        </button>
+                    );
+                }
+
                 return (
-                    <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${getStatusColor(displayStatus)}`}>
+                    <span className={badgeClass}>
                         {displayStatus || '-'}
                     </span>
                 );
@@ -668,6 +693,17 @@ export default function DataTables({
                 cancelText="Abbrechen"
                 isDeleteAction={true}
                 isLoading={isCancelling}
+            />
+
+            {/* Halbprobe Checkliste Modal - when status is Ausgeführt and category is Halbprobenerstellung */}
+            <HalbprobenerstellungModal
+                isOpen={halbprobeModalOpen}
+                onClose={() => {
+                    setHalbprobeModalOpen(false);
+                    setHalbprobeOrderId(null);
+                }}
+                orderId={halbprobeOrderId}
+                onSuccess={() => fetchData(searchQuery)}
             />
         </div>
     );

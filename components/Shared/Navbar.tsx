@@ -3,17 +3,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HiMenuAlt2, HiSearch, HiArrowLeft } from 'react-icons/hi';
 import NotificationPage from './Notification';
 import { useRouter } from 'next/navigation';
-import { HiOutlineChatBubbleLeftRight, HiOutlineChatBubbleOvalLeft } from 'react-icons/hi2';
+import { HiOutlineChatBubbleOvalLeft } from 'react-icons/hi2';
+import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
 
 interface NavbarProps {
     onMenuClick: () => void;
     isSidebarOpen: boolean;
 }
 
+const TEAMCHAT_PATH = '/dashboard/teamchat';
+
 export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
     const [isSearchVisible, setIsSearchVisible] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const { isPathAllowed } = useFeatureAccess();
+    const showTeamchat = isPathAllowed(TEAMCHAT_PATH);
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -57,8 +62,14 @@ export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
 
                 <div className="flex items-center space-x-2 md:space-x-4">
 
-                    {/* chat icon */}
-                    <HiOutlineChatBubbleOvalLeft onClick={() => router.push('/dashboard/teamchat')} className="text-2xl text-gray-600 hover:text-gray-800 cursor-pointer" />
+                    {/* Chat icon – only when Teamchat is allowed (same feature access as sidebar) */}
+                    {showTeamchat && (
+                        <HiOutlineChatBubbleOvalLeft
+                            onClick={() => router.push(TEAMCHAT_PATH)}
+                            className="text-2xl text-gray-600 hover:text-gray-800 cursor-pointer"
+                            aria-label="Teamchat"
+                        />
+                    )}
                     <NotificationPage />
                         
                     {/* search icon */}
