@@ -211,18 +211,22 @@ export default function PriceSection({
     ? (subtotal * parseFloat(discountValue)) / 100
     : 0
   // Krankenkasse + AT: Gesamt includes Eigenanteil 43 (customer pays this; also sent as privatePrice)
-  const eigenanteilForTotal = isInsuranceMode && vatCountry === 'Österreich (AT)' ? 43 : 0
-  const total = subtotal - discountAmount + eigenanteilForTotal
+  const eigenanteil = isInsuranceMode && vatCountry === 'Österreich (AT)' ? 43 : 0
+  const total = subtotal - discountAmount + eigenanteil
 
   // Report Gesamt (total) to parent so it can be used as total_price
   useEffect(() => {
     onTotalChange?.(total)
   }, [total, onTotalChange])
 
-  // Simple split: insurance pays Positionsnummer (inkl. MwSt.); customer pays the rest (total already includes Eigenanteil 43 for AT)
-  const insurancePays = isInsuranceMode ? positionsnummerGross : 0
-  const eigenanteil = isInsuranceMode && vatCountry === 'Österreich (AT)' ? 43 : 0
-  const customerPays = Math.max(total - insurancePays, 0)
+  // Split for summary: Privat = Fußanalyse + Eigenanteil + Wirtschaftlicher Aufpreis, Rest = Versicherung
+  const isAtInsuranceSplit = isInsuranceMode && vatCountry === 'Österreich (AT)'
+  const privateTotal = isAtInsuranceSplit
+    ? Math.max(eigenanteil + footPrice + addonPricesTotal, 0)
+    : 0
+  const insuranceTotal = isAtInsuranceSplit
+    ? Math.max(total - privateTotal, 0)
+    : 0
 
   // Generate hours (05-21) for 24-hour format and minutes (00, 10, 20, 30, 40, 50)
   const hours24 = Array.from({ length: 17 }, (_, i) => String(i + 5).padStart(2, '0'))
@@ -474,28 +478,6 @@ export default function PriceSection({
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Preisübersicht</h4>
 
             <div className="space-y-3 min-w-0">
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-sm text-gray-600 truncate">Versorgung</span>
-                <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(versorgungPrice)}</span>
-              </div>
-
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-sm text-gray-600 truncate">Menge</span>
-                <span className="text-sm font-semibold text-gray-900 shrink-0">× {quantityNum}</span>
-              </div>
-
-              <div className="flex justify-between items-center gap-2">
-                <span className="text-sm text-gray-600 truncate">Fußanalyse</span>
-                <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(footPrice)}</span>
-              </div>
-
-              {addonPricesTotal > 0 && (
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-sm text-gray-600 truncate">Wirtschaftlicher Aufpreis</span>
-                  <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(addonPricesTotal)}</span>
-                </div>
-              )}
-
               {(positionsnummerPrice || 0) > 0 && (
                 <div className="space-y-1">
                   <div className="flex justify-between items-center gap-2">
@@ -520,6 +502,37 @@ export default function PriceSection({
                       {formatPrice(positionsnummerPrice || 0)}
                     </span>
                   </div>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm text-gray-600 truncate">Versorgung</span>
+                <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(versorgungPrice)}</span>
+              </div>
+
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm text-gray-600 truncate">Menge</span>
+                <span className="text-sm font-semibold text-gray-900 shrink-0">× {quantityNum}</span>
+              </div>
+
+              <div className="flex justify-between items-center gap-2">
+                <span className="text-sm text-gray-600 truncate">Fußanalyse</span>
+                <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(footPrice)}</span>
+              </div>
+
+              {eigenanteil > 0 && (
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm text-gray-600 truncate">Enthält Eigenanteil (AT)</span>
+                  <span className="text-sm font-semibold text-gray-900 shrink-0">
+                    {formatPrice(eigenanteil)}
+                  </span>
+                </div>
+              )}
+
+              {addonPricesTotal > 0 && (
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm text-gray-600 truncate">Wirtschaftlicher Aufpreis</span>
+                  <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(addonPricesTotal)}</span>
                 </div>
               )}
 
@@ -558,32 +571,21 @@ export default function PriceSection({
                 </div>
               )} */}
 
-              {/* Insurance vs Customer split */}
-              <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
-                {/* {isInsuranceMode && (
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-sm font-semibold text-sky-700 truncate">
-                      Versicherung zahlt
+              {/* Insurance vs Customer split summary */}
+              {isAtInsuranceSplit && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                    <span className="inline-flex items-center gap-1.5 text-xs">
+                      <span className="text-amber-600 font-medium">Privat</span>
+                      <span className="text-amber-700 font-semibold tabular-nums">{formatPrice(privateTotal)}</span>
                     </span>
-                    <span className="text-sm font-semibold text-sky-700 shrink-0">
-                      {formatPrice(insurancePays)}
+                    <span className="inline-flex items-center gap-1.5 text-xs">
+                      <span className="text-emerald-600 font-medium">Versicherung</span>
+                      <span className="text-emerald-700 font-semibold tabular-nums">{formatPrice(insuranceTotal)}</span>
                     </span>
                   </div>
-                )} */}
-                {/* <div className="flex justify-between items-center gap-2">
-                  <span className="text-sm font-semibold text-amber-700 truncate">
-                    Kunde zahlt
-                  </span>
-                  <span className="text-sm font-semibold text-amber-700 shrink-0">
-                    {formatPrice(customerPays)}
-                  </span>
-                </div> */}
-                {eigenanteil > 0 && (
-                  <p className="text-xs text-gray-600">
-                    Enthält Eigenanteil (AT): {formatPrice(eigenanteil)}
-                  </p>
-                )}
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

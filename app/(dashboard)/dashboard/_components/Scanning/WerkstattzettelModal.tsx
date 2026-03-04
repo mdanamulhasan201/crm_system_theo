@@ -37,6 +37,10 @@ interface FormData {
   selectedPositionsnummer?: string[]
   positionsnummerOptions?: Array<{ positionsnummer?: string; description?: string | Record<string, unknown>; price?: number }>
   notiz_hinzufügen?: string
+  totalPrice?: number
+  privatePrice?: number
+  insuranceTotalPrice?: number
+  vat_rate?: number
 }
 
 interface UserInfoUpdateModalProps {
@@ -311,14 +315,16 @@ export default function WerkstattzettelModal({
       const eigenanteilForTotal = isKrankenkasseAt ? 43 : 0
       const totalPriceOverride = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
 
-      // privatePrice: Krankenkasse + AT = Eigenanteil 43 + Wirtschaftlicher Aufpreis; Privat = full total (same as totalPrice), no vat_rate for Privat
+      // privatePrice: Krankenkasse + AT = Fußanalyse + Eigenanteil (43) + Wirtschaftlicher Aufpreis; Privat = full total
       const isPrivat = formData?.billingType === 'Privat'
       const totalForPayload = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
       const privatePrice = isKrankenkasseAt
-        ? 43 + addonPricesTotalForTotal
+        ? footPriceForTotal + eigenanteilForTotal + addonPricesTotalForTotal
         : isPrivat
           ? totalForPayload
           : undefined
+      // insuranceTotalPrice (Krankenkassa AT): rest = Positionsnummer (inkl. MwSt.) = what insurance pays
+      const insuranceTotalPrice = isKrankenkasseAt ? positionsnummerTotalForTotal : undefined
       // vat_rate: only for Krankenkasse + AT when Wirtschaftlicher Aufpreis; Privat = no vat_rate
       const vatRate = isKrankenkasseAt && addonPricesTotalForTotal > 0 ? 20 : undefined
 
@@ -380,6 +386,7 @@ export default function WerkstattzettelModal({
         discountType: form.discountType || undefined,
         notiz_hinzufügen: notizText?.trim() || undefined,
         ...(privatePrice !== undefined && { privatePrice: Math.round(privatePrice * 100) / 100 }),
+        ...(insuranceTotalPrice !== undefined && { insuranceTotalPrice: Math.round(insuranceTotalPrice * 100) / 100 }),
         ...(vatRate !== undefined && { vat_rate: vatRate }),
       }
 

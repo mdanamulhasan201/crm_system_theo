@@ -800,7 +800,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         : undefined,
                     discountType: formDataForOrder.discountType || undefined,
                     insurances: buildInsurancesArray(),
-                    insuranceTotalPrice: calculateInsuranceTotalPrice(buildInsurancesArray()),
+                    insuranceTotalPrice: formDataForOrder.insuranceTotalPrice !== undefined && formDataForOrder.insuranceTotalPrice !== null
+                        ? Number(formDataForOrder.insuranceTotalPrice)
+                        : calculateInsuranceTotalPrice(buildInsurancesArray()),
                     insoleStandards: formDataForOrder.insoleStandards || [],
                     notiz_hinzufügen: formDataForOrder.notiz_hinzufügen || undefined,
                     ...(privatePrice !== undefined && { privatePrice: Number(privatePrice) }),
