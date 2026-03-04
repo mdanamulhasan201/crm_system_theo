@@ -57,13 +57,21 @@ export interface MassschuheOrderV2Payload {
     step2_material?: string;
     leistentyp?: string;
     leistengroesse?: string;
+    /** Payload key when Leisten = Nein (Leistengröße optional field) */
+    leistengröße?: string;
     step2_notes?: string;
     bedding_required?: boolean;
     bettung_type?: 'on_last' | 'built_up' | null;
     bettung_notes?: string;
+    /** Payload key for "Zusätzliche Notizen zur Bettung" (Step 3, on_last) */
+    zusätzliche_notizen?: string;
     thickness_heel?: string;
     thickness_ball?: string;
     thickness_toe?: string;
+    /** Payload keys when Bettung wird brutto aufgebaut */
+    dicke_ferse?: string;
+    dicke_ballen?: string;
+    dicke_spitze?: string;
     step3_material?: string;
     step3_thickness?: string;
     step3_notes?: string;
@@ -460,13 +468,18 @@ export default function MassschuheOrderModal({
             step2_material: formData.step2_material ?? '',
             leistentyp: formData.leistentyp ?? '',
             leistengroesse: formData.leistengroesse || undefined,
+            leistengröße: formData.has_trim_strips === false ? (formData.leistengroesse?.trim() || undefined) : undefined,
             step2_notes: formData.step2_notes ?? '',
             bedding_required: formData.bedding_required ?? false,
             bettung_type: formData.bedding_required ? (formData.bettung_type ?? undefined) : undefined,
             bettung_notes: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
+            zusätzliche_notizen: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
             thickness_heel: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel ?? '') : undefined,
             thickness_ball: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball ?? '') : undefined,
             thickness_toe: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe ?? '') : undefined,
+            dicke_ferse: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel?.trim() || undefined) : undefined,
+            dicke_ballen: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball?.trim() || undefined) : undefined,
+            dicke_spitze: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe?.trim() || undefined) : undefined,
             step3_material: formData.bedding_required ? (formData.step3_material ?? '') : undefined,
             step3_thickness: formData.bedding_required ? (formData.step3_thickness ?? '') : undefined,
             step3_notes: formData.bedding_required ? (formData.step3_notes ?? '') : undefined,
