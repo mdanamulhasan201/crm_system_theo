@@ -224,6 +224,19 @@ export default function OrderTableRow({
     const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
     const hasInvoice = !!order.invoice;
 
+    // Payment success: broth → both paid; private → private_payed; insurance → insurance_payed
+    const paymentType = order.paymentType ?? '';
+    const insurancePayed = !!order.insurance_payed;
+    const privatePayed = !!order.private_payed;
+    const isPaymentSuccess =
+        paymentType === 'broth' ? (insurancePayed && privatePayed)
+        : paymentType === 'private' ? privatePayed
+        : paymentType === 'insurance' ? insurancePayed
+        : false;
+
+    const isAusgefuehrtPaid = isAusgefuehrt && isPaymentSuccess;
+    const isAusgefuehrtUnpaid = isAusgefuehrt && !isPaymentSuccess;
+
     const parseGermanDateString = (dateStr?: string | null): Date | null => {
         if (!dateStr || dateStr === '—') return null;
         const parts = dateStr.split('.');
@@ -276,9 +289,13 @@ export default function OrderTableRow({
             className={`border-b border-gray-100 transition-colors cursor-pointer ${
                 order.priority === 'Dringend'
                     ? 'bg-red-100 hover:bg-red-200/90'
-                    : isRowSelected
-                        ? 'bg-gray-50 hover:bg-gray-50'
-                        : 'hover:bg-gray-50'
+                    : isAusgefuehrtPaid
+                        ? 'bg-emerald-50 hover:bg-emerald-100/90 border-l-4 border-l-emerald-500'
+                        : isAusgefuehrtUnpaid
+                            ? 'bg-orange-50 hover:bg-orange-100/90 border-l-4 border-l-orange-500'
+                            : isRowSelected
+                                ? 'bg-gray-50 hover:bg-gray-50'
+                                : 'hover:bg-gray-50'
             }`}
             onClick={handleRowClick}
         >

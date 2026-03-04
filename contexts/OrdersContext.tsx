@@ -38,6 +38,10 @@ export interface OrderData {
         employeeName: string;
         email: string;
     } | null;
+    /** "broth" | "private" | "insurance" – from API paymnentType/paymentType */
+    paymentType?: string | null;
+    insurance_payed?: boolean | null;
+    private_payed?: boolean | null;
 }
 
 interface OrdersContextType {
@@ -128,6 +132,9 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData | null | undefined, select
         KrankenkasseStatus: apiOrder.KrankenkasseStatus || null,
         geschaeftsstandort: apiOrder.geschaeftsstandort || null,
         employee: apiOrder.employee || null,
+        paymentType: (apiOrder as any).paymnentType ?? (apiOrder as any).paymentType ?? null,
+        insurance_payed: (apiOrder as any).insurance_payed ?? null,
+        private_payed: (apiOrder as any).private_payed ?? null,
     };
 };
 

@@ -54,6 +54,11 @@ export interface ApiOrderData {
         employeeName: string;
         email: string;
     } | null;
+    /** API may return "paymnentType" (typo); values: "broth" | "private" | "insurance" */
+    paymnentType?: string | null;
+    paymentType?: string | null;
+    insurance_payed?: boolean | null;
+    private_payed?: boolean | null;
 }
 
 export interface PaginationData {
