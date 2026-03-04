@@ -119,10 +119,17 @@ export const updateMassschuheOrderStatus = async (
 
 
 
-// get note v2/shoe-orders/get-status-note/:id
-export const getMassschuheOrderNote = async (id: string) => {
+// =================== Massschuhe Added APIs  Notes ======================
+
+//create note apis  v2/order-notes/create?type=shoes
+
+// body:{
+//     "orderId": "041fbcf1-d2f3-4522-ace6-5123ff10101a",
+//     "note": "test note dgfdgd"
+// }
+export const createMassschuheOrderNote = async (orderId: string, note: string) => {
     try {
-        const response = await axiosClient.get(`/v2/shoe-orders/get-status-note/${id}`);
+        const response = await axiosClient.post(`/v2/order-notes/create?type=shoes`, { orderId, note });
         return response.data;
     } catch (error: any) {
         throw error;
@@ -130,10 +137,22 @@ export const getMassschuheOrderNote = async (id: string) => {
 }
 
 
-// update note v2/shoe-orders/update-order/:id "status_note": "Hello"
-export const updateMassschuheOrderNote = async (id: string, status_note: string) => {
+
+// get note v2/shoe-orders/get-notes/{{order Id}}
+export const getMassschuheOrderNote = async (orderId: string) => {
     try {
-        const response = await axiosClient.patch(`/v2/shoe-orders/update-order/${id}`, { status_note });
+        const response = await axiosClient.get(`/v2/shoe-orders/get-notes/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// update note v2/shoe-orders/update-order/:id "supply_note": "Hello"
+export const updateMassschuheOrderNote = async (orderId: string, supply_note: string) => {
+    try {
+        const response = await axiosClient.patch(`/v2/shoe-orders/update-order/${orderId}`, { supply_note });
         return response.data.success;
     } catch (error: any) {
         throw error;

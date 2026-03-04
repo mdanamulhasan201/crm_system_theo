@@ -730,7 +730,6 @@ export default function MasschuProgressTable({
                             orderNumber: selectedRow.auftrag.orderNumber,
                             product: selectedRow.auftrag.product
                         } : undefined}
-                        notes={selectedRow?.notes}
                     />
                 );
             })()}
