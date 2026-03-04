@@ -86,9 +86,8 @@ function ProgressIndicator({
                     : index < currentStepIndex;
                 const isAutoPrint = isCompleted && (stepsAutoPrint?.[index] === true);
                 const isCurrent = index === currentStepIndex;
-                const nextStepToDo = stepsCompleted ? stepsCompleted.findIndex((c) => !c) : 0;
-                const isNextStepToDo = nextStepToDo >= 0 && index === nextStepToDo;
-                const isClickable = !!orderId && !!onStepClick && (isCompleted || isNextStepToDo);
+                // All steps clickable so user can view any step; current = the one selected (from URL)
+                const isClickable = !!orderId && !!onStepClick;
 
                 return (
                     <React.Fragment key={index}>
@@ -289,6 +288,9 @@ export default function MassschuhauftraegePage() {
     const [customer_reviews, setCustomer_reviews] = useState('');
     const [deleteFileConfirmId, setDeleteFileConfirmId] = useState<string | null>(null);
     const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
+    // Completed-by from API for current step (partner or employee who completed this step)
+    const [stepCompletedByPartner, setStepCompletedByPartner] = useState<{ name?: string; busnessName?: string } | null>(null);
+    const [stepCompletedByEmployee, setStepCompletedByEmployee] = useState<{ employeeName?: string; accountName?: string } | null>(null);
 
     useEffect(() => {
         if (!id) {
@@ -309,6 +311,8 @@ export default function MassschuhauftraegePage() {
                 setOrderData(mapApiOrderToDetailData(res));
                 const data = res?.data;
                 if (data) {
+                    setStepCompletedByPartner(data.partner ?? null);
+                    setStepCompletedByEmployee(data.employee ?? null);
                     setNotes(data.notes != null ? String(data.notes) : '');
                     if (data.material != null && data.material !== '') setMaterial(String(data.material));
                     if (data.leistentyp != null && data.leistentyp !== '') setLeistentyp(String(data.leistentyp));
@@ -335,6 +339,8 @@ export default function MassschuhauftraegePage() {
                         fileType: f.fileType,
                     })) : []);
                 } else {
+                    setStepCompletedByPartner(null);
+                    setStepCompletedByEmployee(null);
                     setNotes('');
                     setStepFilesFromApi([]);
                     setMaterial('');
@@ -492,6 +498,26 @@ export default function MassschuhauftraegePage() {
         stepFilesFromApi.length > 0 ||
         uploadedFiles.length > 0;
 
+    // Only the "next step to complete" can use "Schritt abschließen & weiterleiten"; other steps show disabled button
+    const isStepActionable = activeStepIndex === currentStepForProgress;
+
+    // "Completed by" display from API: partner (busnessName/name) or employee (employeeName, accountName)
+    const stepCompletedByDisplay = (() => {
+        if (stepCompletedByPartner) {
+            const bus = (stepCompletedByPartner.busnessName || '').trim();
+            const name = (stepCompletedByPartner.name || '').trim();
+            if (bus && name && bus !== name) return { primary: bus, secondary: name };
+            return { primary: bus || name || '' };
+        }
+        if (stepCompletedByEmployee) {
+            const en = (stepCompletedByEmployee.employeeName || '').trim();
+            const ac = (stepCompletedByEmployee.accountName || '').trim();
+            if (en && ac) return { primary: en, secondary: ac };
+            return { primary: en || ac || 'Mitarbeiter' };
+        }
+        return { primary: employeeDisplayName };
+    })() as { primary: string; secondary?: string };
+
     return (
 
         <>
@@ -524,8 +550,8 @@ export default function MassschuhauftraegePage() {
 
 
                 {/* Main Content */}
-                <div className="flex gap-6 mt-5">
-                    <div className="flex-1">
+                <div className="flex flex-col lg:flex-row gap-6 mt-5 w-full">
+                    <div className="flex-1 w-full lg:w-8/12">
                         <div className="bg-white rounded-lg border border-red-200 p-6">
                             {loading ? (
                                 <div className="py-16 flex items-center justify-center">
@@ -556,7 +582,17 @@ export default function MassschuhauftraegePage() {
                                             <div className="flex items-center gap-3 flex-wrap">
                                                 {isCurrentStepCompleted ? (
                                                     <span className="text-sm font-medium text-emerald-700">
-                                                        Schritt wurde von Mitarbeiter {employeeDisplayName}
+                                                        Schritt wurde von{' '}
+                                                        {stepCompletedByDisplay.secondary != null ? (
+                                                            <>
+                                                                {stepCompletedByDisplay.primary}
+                                                                <span className="ml-1 text-xs font-normal text-emerald-600/90">
+                                                                    ({stepCompletedByDisplay.secondary})
+                                                                </span>
+                                                            </>
+                                                        ) : (
+                                                            stepCompletedByDisplay.primary
+                                                        )}
                                                     </span>
                                                 ) : (
                                                     <>
@@ -826,12 +862,21 @@ export default function MassschuhauftraegePage() {
                                         />
                                     )}
 
-                                    {/* Complete Button */}
+                                    {/* Complete Button – only active on the current step to complete; other steps show disabled + hint */}
+                                    {!isStepActionable && (
+                                        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/80 px-4 py-3">
+                                            <p className="text-sm text-amber-800">
+                                                {activeStepIndex < currentStepForProgress
+                                                    ? 'Dieser Schritt ist bereits abgeschlossen.'
+                                                    : 'Bitte zuerst den vorherigen Schritt abschließen.'}
+                                            </p>
+                                        </div>
+                                    )}
                                     <Button
                                         type="button"
-                                        disabled={submitting}
-                                        onClick={() => setConfirmOpen(true)}
-                                        className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70"
+                                        disabled={submitting || !isStepActionable}
+                                        onClick={() => isStepActionable && setConfirmOpen(true)}
+                                        className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
                                         {submitting ? (
                                             <Loader2 className="w-5 h-5 animate-spin" />
@@ -881,7 +926,9 @@ export default function MassschuhauftraegePage() {
                     </div>
 
                     {/* Right Side - Sidebar */}
-                    <FertigungsweisungSidebar orderId={id} />
+                    <div className="w-full lg:w-4/12">
+                        <FertigungsweisungSidebar orderId={id} />
+                    </div>
                 </div>
             </div>
 

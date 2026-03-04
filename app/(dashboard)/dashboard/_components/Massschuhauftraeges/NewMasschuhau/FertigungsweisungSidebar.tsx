@@ -212,7 +212,7 @@ export default function FertigungsweisungSidebar({ orderId }: FertigungsweisungS
     const items = zeitverlauf;
 
     return (
-        <div className="w-96 space-y-6">
+        <div className="w-full space-y-6">
             {/* Fertigungsweisung */}
             <div className="bg-white rounded-lg border border-green-200 p-6">
                 <div className="flex items-center justify-between border-b pb-4 mb-4">
@@ -233,59 +233,59 @@ export default function FertigungsweisungSidebar({ orderId }: FertigungsweisungS
                 <div className="space-y-4 text-xs">
                     {orderDetails ? (
                         <>
-                            {/* Diagnose / ärztliche Diagnose */}
+                            {/* 1. Erstellt am (createdAt) */}
                             <div>
-                                <div className="font-semibold text-gray-600 mb-1">Diagnose</div>
-                                <div className="font-medium text-gray-500 mb-0.5">ärztliche Diagnose</div>
-                                <div className="text-gray-700">
-                                    {orderDetails.medical_diagnosis || '–'}
-                                </div>
-                                {orderDetails.detailed_diagnosis ? (
-                                    <div className="text-gray-700 mt-1">
-                                        {orderDetails.detailed_diagnosis}
-                                    </div>
-                                ) : null}
-                            </div>
-
-                            {/* When created */}
-                            <div>
-                                <div className="font-semibold text-gray-600 mb-1">When created</div>
+                                <div className="font-semibold text-gray-600 mb-1">Erstellt am</div>
                                 <div className="text-gray-700">
                                     {formatCreatedAt(orderDetails.createdAt)}
                                 </div>
                             </div>
 
-                            {/* Location of Business */}
+                            {/* 2. Standort (branch_location) */}
                             <div>
-                                <div className="font-semibold text-gray-600 mb-1">Location of Business</div>
+                                <div className="font-semibold text-gray-600 mb-1">Standort</div>
                                 <div className="text-gray-700">
                                     {orderDetails.branch_location?.title || '–'}
                                 </div>
-                                {orderDetails.branch_location?.description ? (
-                                    <div className="text-gray-500 mt-0.5">
-                                        {orderDetails.branch_location.description}
-                                    </div>
-                                ) : null}
-                            </div>
-
-                            {/* Notes as on insole */}
-                            <div>
-                                <div className="font-semibold text-gray-600 mb-1">Notes as on insole</div>
-                                <div className="text-gray-700 space-y-1">
-                                    {orderDetails.order_note ? (
-                                        <div>{orderDetails.order_note}</div>
-                                    ) : null}
-                                    {orderDetails.supply_note ? (
-                                        <div>{orderDetails.supply_note}</div>
-                                    ) : null}
-                                    {orderDetails.status_note ? (
-                                        <div>{orderDetails.status_note}</div>
-                                    ) : null}
-                                    {!orderDetails.order_note && !orderDetails.supply_note && !orderDetails.status_note ? (
-                                        <span className="text-gray-400">–</span>
-                                    ) : null}
+                                <div className="text-gray-500 mt-0.5">
+                                    {orderDetails.branch_location?.description || '–'}
                                 </div>
                             </div>
+
+                            {/* 3. Lieferhinweis (supply_note) */}
+                            <div>
+                                <div className="font-semibold text-gray-600 mb-1">Lieferhinweis</div>
+                                <div className="text-gray-700">
+                                    {orderDetails.supply_note || '–'}
+                                </div>
+                            </div>
+
+                            {/* 4. Ärztliche Diagnose (medical_diagnosis) */}
+                            <div>
+                                <div className="font-semibold text-gray-600 mb-1">Ärztliche Diagnose</div>
+                                <div className="text-gray-700">
+                                    {orderDetails.medical_diagnosis || '–'}
+                                </div>
+                            </div>
+
+                            {/* 5. Detaillierte Diagnose (detailed_diagnosis) */}
+                            <div>
+                                <div className="font-semibold text-gray-600 mb-1">Detaillierte Diagnose</div>
+                                <div className="text-gray-700">
+                                    {orderDetails.detailed_diagnosis || '–'}
+                                </div>
+                            </div>
+
+                            {/* Weitere Notizen (order_note, status_note) */}
+                            {(orderDetails.order_note || orderDetails.status_note) ? (
+                                <div>
+                                    <div className="font-semibold text-gray-600 mb-1">Weitere Notizen</div>
+                                    <div className="text-gray-700 space-y-1">
+                                        {orderDetails.order_note ? <div>{orderDetails.order_note}</div> : null}
+                                        {orderDetails.status_note ? <div>{orderDetails.status_note}</div> : null}
+                                    </div>
+                                </div>
+                            ) : null}
 
                             {/* Kundendaten / Zu Kundenseite / Scanansehen */}
                             <div>
