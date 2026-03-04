@@ -93,12 +93,12 @@ export default function LeistenerstellungStepFields({
                 <p className="mt-1 text-sm text-gray-500">
                     Wie soll der Leisten gefertigt werden?
                 </p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4">
                     <button
                         type="button"
                         onClick={() => onLeistenfertigungChange('Extern')}
                         className={cn(
-                            'flex items-center cursor-pointer justify-center gap-3 rounded-xl border-2 px-5 py-2 text-sm font-medium transition-all duration-200',
+                            'flex h-12 w-full cursor-pointer min-w-0 items-center justify-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-4',
                             leistenfertigung === 'Extern'
                                 ? 'border-[#62A07C] bg-[#62A07C] text-white shadow-md shadow-[#62A07C]/20'
                                 : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-[#62A07C] hover:bg-[#62A07C]/40'
@@ -108,16 +108,16 @@ export default function LeistenerstellungStepFields({
                             'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
                             leistenfertigung === 'Extern' ? 'bg-white/20' : 'bg-gray-200/70'
                         )}>
-                            <ExternalLink className="h-5 w-5" />
+                            <ExternalLink className="h-4 w-4 sm:h-5 sm:w-5" />
                         </span>
-                        Intern
+                        <span className="truncate">Intern</span>
                     </button>
-                    <div className="flex flex-col items-center gap-1">
+                    <div className="flex min-w-0 flex-col items-stretch gap-1">
                         <button
                             type="button"
                             onClick={handleÜberF1rstClick}
                             className={cn(
-                                'flex items-center capitalize justify-center cursor-pointer gap-3 rounded-xl border-2 px-5 py-2 text-sm font-medium transition-all duration-200',
+                                'flex h-12 w-full cursor-pointer min-w-0 items-center justify-center gap-2 rounded-xl border-2 px-3 py-3 text-sm font-medium transition-all duration-200 sm:gap-3 sm:px-4',
                                 leistenfertigung === 'Über F1rst'
                                     ? 'border-[#62A07C] bg-[#62A07C] text-white shadow-md shadow-[#62A07C]/20'
                                     : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-[#62A07C] hover:bg-[#62A07C]/40'
@@ -127,11 +127,11 @@ export default function LeistenerstellungStepFields({
                                 'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg',
                                 leistenfertigung === 'Über F1rst' ? 'bg-white/20' : 'bg-gray-200/70'
                             )}>
-                                <UserCog className="h-5 w-5" />
+                                <UserCog className="h-4 w-4 sm:h-5 sm:w-5" />
                             </span>
-                            über FeetF1rst
+                            <span className="truncate">über FeetF1rst</span>
                         </button>
-                        <span className="text-xs text-gray-500">Nur mit 3D Scan möglich</span>
+                        <span className="text-center text-xs text-gray-500">Nur mit 3D Scan möglich</span>
                     </div>
                 </div>
             </div>

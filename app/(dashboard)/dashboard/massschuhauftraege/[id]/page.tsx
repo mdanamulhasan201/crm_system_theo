@@ -419,15 +419,21 @@ export default function MassschuhauftraegePage() {
             const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
             if (success) {
                 setUploadedFiles([]);
-                // Stay on same page – no redirect to list; refetch and show updated data
+                // Refetch to get updated steps; then auto-activate next step in URL
                 const res: any = await MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl);
                 if (res?.success === false && typeof res?.message === 'string' && res.message.toLowerCase().includes('no step')) {
-                    router.replace(`/dashboard/massschuhauftraege/${id}?status=Auftragserstellung`);
+                    // After completing a step, advance to next step if any
+                    const nextIndex = activeStepIndex + 1;
+                    const nextStatus = nextIndex < SHOE_STEPS.length
+                        ? getStatusParamFromStepIndex(nextIndex)
+                        : 'Auftragserstellung';
+                    router.replace(`/dashboard/massschuhauftraege/${id}?status=${encodeURIComponent(nextStatus)}`);
                     return;
                 }
                 const steps = res?.shoeOrderStep ?? null;
                 setShoeOrderStep(Array.isArray(steps) ? steps : null);
-                setOrderData(mapApiOrderToDetailData(res));
+                const updated = mapApiOrderToDetailData(res);
+                setOrderData(updated);
                 const data = res?.data;
                 if (data) {
                     setNotes(data.notes != null ? String(data.notes) : '');
@@ -457,6 +463,11 @@ export default function MassschuhauftraegePage() {
                     })) : []);
                 } else {
                     setStepFilesFromApi([]);
+                }
+                // Auto-activate next step: navigate so the next step is shown (e.g. Auftragserstellung done → Leistenerstellung active)
+                if (updated && updated.currentStepIndex < SHOE_STEPS.length) {
+                    const nextStatus = getStatusParamFromStepIndex(updated.currentStepIndex);
+                    router.push(`/dashboard/massschuhauftraege/${id}?status=${encodeURIComponent(nextStatus)}`);
                 }
             }
         } catch (err: any) {
@@ -851,7 +862,7 @@ export default function MassschuhauftraegePage() {
                                                 </Button>
                                                 <Button
                                                     type="button"
-                                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                                    className="bg-[#61A178] hover:bg-[#4A8A5F]"
                                                     onClick={handleCompleteStep}
                                                     disabled={submitting}
                                                 >
