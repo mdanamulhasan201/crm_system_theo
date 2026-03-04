@@ -56,24 +56,27 @@ export default function HalbprobenerstellungModal({
         setFetchError(null)
         try {
             const res = await getHalbprobenerstellungCheckliste(orderId)
-            const data = res?.data ?? res
-            if (data && typeof data === 'object') {
-                const halbprobe = data.checkliste_halbprobe ?? data.checklisteHalbprobe
-                if (halbprobe == null) {
-                    setChecklist(emptyChecklist())
-                    return
-                }
-                const next = { ...emptyChecklist() }
-                CHECKLIST_QUESTIONS.forEach((q) => {
-                    const item = halbprobe[q.id] ?? halbprobe[q.id.replace(/_/g, '-')]
-                    if (item && (item.answer === 'Ja' || item.answer === 'Nein')) {
-                        const answer = item.answer === 'Nein' ? 'Nein' : 'Ja'
-                        const details = typeof item.details === 'string' ? item.details : ''
-                        next[q.id] = { answer, details }
-                    }
-                })
-                setChecklist(next)
+            // API response: { success, message, data: { checkliste_halbprobe: { ferse_stabil: { answer, details }, ... } } }
+            const inner = res?.data ?? res
+            const halbprobe = (inner && typeof inner === 'object')
+                ? (inner.checkliste_halbprobe ?? inner.checklisteHalbprobe)
+                : null
+
+            if (halbprobe == null || typeof halbprobe !== 'object') {
+                setChecklist(emptyChecklist())
+                return
             }
+
+            const next = emptyChecklist()
+            CHECKLIST_QUESTIONS.forEach((q) => {
+                const item = halbprobe[q.id] ?? halbprobe[q.id.replace(/_/g, '-')]
+                if (item && typeof item === 'object') {
+                    const answer = item.answer === 'Nein' ? 'Nein' : item.answer === 'Ja' ? 'Ja' : null
+                    const details = typeof item.details === 'string' ? item.details : ''
+                    next[q.id] = { answer: answer ?? null, details }
+                }
+            })
+            setChecklist(next)
         } catch (err: unknown) {
             setFetchError('Checkliste konnte nicht geladen werden.')
             setChecklist(emptyChecklist())
@@ -99,10 +102,7 @@ export default function HalbprobenerstellungModal({
         if (!orderId) return
         setSaving(true)
         try {
-            const checklist_halbprobe = checklist
-            const formData = new FormData()
-            formData.append('checkliste_halbprobe', JSON.stringify(checklist_halbprobe))
-            await updateHalbprobenerstellungCheckliste(orderId, formData)
+            await updateHalbprobenerstellungCheckliste(orderId, checklist)
             toast.success('Checkliste gespeichert')
             onSuccess?.()
             onClose()

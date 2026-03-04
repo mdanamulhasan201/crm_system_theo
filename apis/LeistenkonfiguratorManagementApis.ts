@@ -31,9 +31,14 @@ export const getHalbprobenerstellungCheckliste = async (id: string) => {
 //           JSON AS YOU WANT TO UPLOADE
 //     }
 // }
-export const updateHalbprobenerstellungCheckliste = async (id: string, formData: FormData) => {
+// Backend expects JSON body: req.body.checkliste_halbprobe
+export const updateHalbprobenerstellungCheckliste = async (id: string, checkliste_halbprobe: Record<string, { answer: string | null; details: string }>) => {
     try {
-        const response = await axiosClient.post(`/massschuhe-order/admin-order/halbprobenerstellung/upload-checkliste/${id}`, formData);
+        const response = await axiosClient.post(
+            `/massschuhe-order/admin-order/halbprobenerstellung/upload-checkliste/${id}`,
+            { checkliste_halbprobe },
+            { headers: { 'Content-Type': 'application/json' } }
+        );
         return response.data;
     } catch (error) {
         throw error;
