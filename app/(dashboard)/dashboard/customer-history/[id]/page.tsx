@@ -4,16 +4,10 @@ import { useParams, useRouter } from 'next/navigation'
 import { useSingleCustomer } from '@/hooks/customer/useSingleCustomer'
 import NoteAdd from '@/components/CustomerHistory/NoteAdd/NoteAdd';
 import Link from 'next/link';
-import Image from 'next/image';
-// import emailImg from '@/public/CustomerHistory/email.png';
-import folderImg from '@/public/CustomerHistory/folder.png';
-// import LegImg from '@/public/CustomerHistory/leg.png';
 import ShoePurchasesMade from '@/components/CustomerHistory/ShoePurchasesMade/ShoePurchasesMade';
 import TreatmentsCarriedOut from '@/components/CustomerHistory/TreatmentsCarriedOut/TreatmentsCarriedOut';
 import ScansPromoted from '@/components/CustomerHistory/ScansPromoted/ScansPromoted';
 import Reviews from '@/components/CustomerHistory/Reviews/Reviews';
-import userload from '@/public/images/scanning/userload.png'
-import scanImg from '@/public/images/history/scan.png'
 import KostenvoranschlagDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KostenvoranschlagDialog'
 import RechnungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/RechnungDialog'
 import RechnungErstellenDialog from '@/app/(dashboard)/dashboard/_components/Receipts/RechnungErstellenDialog'
@@ -21,17 +15,16 @@ import DatenschutzDialog from '@/app/(dashboard)/dashboard/_components/Receipts/
 import GebrauchsanweisungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/GebrauchsanweisungDialog'
 import KonformitatDialog from '@/app/(dashboard)/dashboard/_components/Receipts/KonformitatDialog'
 import MehrkostenVereinbarungDialog from '@/app/(dashboard)/dashboard/_components/Receipts/MehrkostenVereinbarungDialog'
-import { Edit, X, Loader2, Trash, AlertTriangle, ArrowLeft, FileText } from 'lucide-react'
+import { Edit, X, Loader2, Trash, AlertTriangle, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-
 // import { Input } from '@/components/ui/input'
 // import { Label } from '@/components/ui/label'
 import toast from 'react-hot-toast'
 import CustomerHistoryShimmer from '@/components/ShimmerEffect/Customer/CustomerHistoryShimmer';
 import CustomerHeader from '../../_components/CustomerHistory/CustomerHeader';
 import CustomerDetailsPage from '../../_components/CustomerHistory/CustomerDetailsPage';
+import FilterButton from '../../_components/CustomerHistory/FilterButton';
 
 export default function CustomerHistory() {
     const params = useParams();
@@ -312,114 +305,15 @@ export default function CustomerHistory() {
                 normalizeGender={normalizeGender}
             />
 
-            <div className="flex  items-center gap-10 my-10 flex-wrap">
-                {/* Versorgung starten */}
-                <div className="flex flex-col items-center">
-                    <button
-                        onClick={handleVersorgung}
-                        className="p-2 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer"
-                    >
-                        <Image src={userload} alt="Versorgung starten" width={70} height={70} />
-                    </button>
-                    <span className="mt-2 text-center text-sm font-normal">Scans & Versorgung</span>
-                    {/* <span className="text-center text-sm font-normal"> Versorgung starten</span> */}
-                </div>
-                {/* Kundendaten -historie */}
-                <div className="flex flex-col items-center">
-                    <button
-                        className="p-2 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer"
-                    >
-                        <Image src={scanImg} alt="Versorgung starten" width={60} height={60} />
-                    </button>
-                    <span className="mt-2 text-center text-sm font-normal">Scan durchführen</span>
-                </div>
 
-                {/* <div className="flex flex-col items-center">
-                        <Link href="/dashboard/email" className="p-3 bg-gray-100 hover:bg-gray-200 cursor-pointer rounded-full  relative transition-all duration-300">
-                            <Image src={emailImg} alt="Kundenordner" width={50} height={50} className='w-11 h-auto' />
-
-                        </Link>
-                        <span className="text-sm">Schuh reservieren</span>
-                    </div> */}
-                <div className="flex flex-col items-center">
-
-                    <button
-                        onClick={handleKundenordner}
-                        className="p-2 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer"
-                    >
-                        <Image src={folderImg} alt="Kundenordner" width={60} height={60} />
-                    </button>
-                    <span className="mt-2 text-center text-sm font-normal">Kundenordner</span>
-                </div>
-
-                {/* Zettel anschaffen Dropdown */}
-                <div className="flex flex-col items-center">
-                    <Popover open={isDocumentPopoverOpen} onOpenChange={setIsDocumentPopoverOpen}>
-                        <PopoverTrigger asChild>
-                            <button
-                                className="p-2 flex items-center justify-center rounded-2xl bg-[#FF7B3D] hover:bg-[#FF6A28] transition cursor-pointer shadow-md"
-                            >
-                                <div className="w-[60px] h-[60px] flex items-center justify-center">
-                                    <FileText className="w-9 h-9 text-white" strokeWidth={2} />
-                                </div>
-                            </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-64 p-0 bg-white shadow-lg" align="start">
-                            <div className="flex flex-col">
-                                <button
-                                    onClick={() => handleDocumentClick('Kostenvoranschlag (Codex)')}
-                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                    Kostenvoranschlag (Codex)
-                                </button>
-                                <button
-                                    onClick={() => handleDocumentClick('Rechnung (Firma)')}
-                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                    Rechnung (Firma)
-                                </button>
-                                <button
-                                    onClick={() => handleDocumentClick('Datenschutzerklärung')}
-                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                    Datenschutzerklärung
-                                </button>
-                                <button
-                                    onClick={() => handleDocumentClick('Gebrauchsanweisung')}
-                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                    Gebrauchsanweisung
-                                </button>
-                                <button
-                                    onClick={() => handleDocumentClick('Konformitätserklärung')}
-                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                    Konformitätserklärung
-                                </button>
-                                <button
-                                    onClick={() => handleDocumentClick('Mehrkosten-Vereinbarung')}
-                                    className="px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors text-sm"
-                                >
-                                    Mehrkosten-Vereinbarung
-                                </button>
-                            </div>
-                        </PopoverContent>
-                    </Popover>
-                    <span className="mt-2 text-center text-sm font-normal">Zettel anschaffen</span>
-                </div>
-
-
-                {/* <div className="flex flex-col items-center">
-
-                    <button
-                        className="p-2 flex items-center justify-center rounded-2xl border border-black bg-white hover:bg-gray-100 transition cursor-pointer"
-                    >
-                        <Image src={LegImg} alt="Einlagenherstellung" width={60} height={60} />
-                    </button>
-                    <span className="mt-2 text-center text-sm font-normal">Einlagenherstellung</span>
-                </div> */}
-            </div>
-
+            {/* Filter / action cards – design matching Figma */}
+            <FilterButton
+                onVersorgung={handleVersorgung}
+                onKundenordner={handleKundenordner}
+                onDocumentClick={handleDocumentClick}
+                isDocumentPopoverOpen={isDocumentPopoverOpen}
+                onDocumentPopoverOpenChange={setIsDocumentPopoverOpen}
+            />
 
             {/* note Table */}
             <NoteAdd />
