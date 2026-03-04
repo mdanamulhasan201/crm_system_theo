@@ -265,6 +265,12 @@ export default function OrderTableRow({
             ? `Erstellt ${order.erstelltAm}`
             : null;
 
+    // For Ausgeführt orders, show completed date (updatedAt / deliveryDate) instead of due/created info
+    const completedLabel =
+        isAusgefuehrt && order.deliveryDate && order.deliveryDate !== '—'
+            ? `Ausgeführt am ${order.deliveryDate}`
+            : null;
+
     return (
         <TableRow
             className={`border-b border-gray-100 transition-colors cursor-pointer ${
@@ -411,28 +417,38 @@ export default function OrderTableRow({
             <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-3">
                     <div className="flex flex-col items-start gap-0.5">
-                        {order.fertiggestelltAm && order.fertiggestelltAm !== '—' && (
-                            <span className="text-sm font-medium text-gray-800" title="Lieferdatum / Fertigstellung bis">
-                                {order.fertiggestelltAm}
-                            </span>
-                        )}
-                        {dueLabel && (
-                            <span
-                                className={`text-sm font-medium ${
-                                    dueLabel.includes('überfällig') || dueLabel === 'Heute fällig'
-                                        ? dueLabel.includes('überfällig')
-                                            ? 'text-red-600'
-                                            : 'text-orange-500'
-                                        : 'text-gray-700'
-                                }`}
-                            >
-                                {dueLabel}
-                            </span>
-                        )}
-                        {createdLabel && (
-                            <span className="text-xs text-gray-500">
-                                {createdLabel}
-                            </span>
+                        {isAusgefuehrt ? (
+                            completedLabel && (
+                                <span className="text-sm font-medium text-gray-800" title="Ausgeführt am">
+                                    {completedLabel}
+                                </span>
+                            )
+                        ) : (
+                            <>
+                                {order.fertiggestelltAm && order.fertiggestelltAm !== '—' && (
+                                    <span className="text-sm font-medium text-gray-800" title="Lieferdatum / Fertigstellung bis">
+                                        {order.fertiggestelltAm}
+                                    </span>
+                                )}
+                                {dueLabel && (
+                                    <span
+                                        className={`text-sm font-medium ${
+                                            dueLabel.includes('überfällig') || dueLabel === 'Heute fällig'
+                                                ? dueLabel.includes('überfällig')
+                                                    ? 'text-red-600'
+                                                    : 'text-orange-500'
+                                                : 'text-gray-700'
+                                        }`}
+                                    >
+                                        {dueLabel}
+                                    </span>
+                                )}
+                                {createdLabel && (
+                                    <span className="text-xs text-gray-500">
+                                        {createdLabel}
+                                    </span>
+                                )}
+                            </>
                         )}
                         {hasGeschaeftsstandortLines ? (
                             <div className="flex flex-col gap-0.5 text-xs text-gray-600 max-w-[140px]">
