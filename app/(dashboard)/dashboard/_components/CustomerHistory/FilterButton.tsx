@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ScanLine, FolderOpen, FileText } from 'lucide-react';
+import { ScanSearch, ScanLine, FolderOpen, FileText } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const DOCUMENT_OPTIONS = [
@@ -57,7 +57,7 @@ export default function FilterButton({
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full my-10">
       <ActionCard
         label="Scans & Versorgung"
-        icon={ScanLine}
+        icon={ScanSearch}
         onClick={onVersorgung}
       />
       <ActionCard
