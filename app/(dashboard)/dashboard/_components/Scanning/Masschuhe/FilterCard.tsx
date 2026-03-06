@@ -437,7 +437,7 @@ export default function FilterCard({
                                 {/* Zusätzliche Notizen – normal field, NOT inside accordion */}
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        Zusätzliche Notizen zur Bettung (Pflichtfeld)
+                                        Zusätzliche Notizen (Pflichtfeld)
                                     </label>
                                     <textarea
                                         value={footbedData.bettung_notes ?? ''}

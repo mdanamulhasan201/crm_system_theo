@@ -107,6 +107,49 @@ export interface MassschuheOrderV2Payload {
     pick_up_location?: string;
     store_location?: string;
     order_note?: string;
+    step3_json?: {
+        step2?: {
+            material?: string;
+            leistentyp?: string;
+            leistengroesse?: string;
+            notes?: string;
+        };
+        step3?: {
+            material?: string;
+            thickness?: string;
+            notes?: string;
+            bettung_type?: 'on_last' | 'built_up' | null;
+            zusätzliche_notizen?: string;
+            schicht1_material?: string;
+            schicht1_starke?: string;
+            schicht2_material?: string;
+            schicht2_starke?: string;
+            decksohle_material?: string;
+            decksohle_starke?: string;
+            versteifung?: boolean | null;
+            versteifung_material?: string;
+            versteifung_zone?: string;
+            pelotte?: boolean | null;
+            pelotte_hoehe_l?: string;
+            pelotte_hoehe_r?: string;
+            thickness_heel_l?: string;
+            thickness_heel_r?: string;
+            thickness_ball_l?: string;
+            thickness_ball_r?: string;
+            thickness_toe_l?: string;
+            thickness_toe_r?: string;
+            bettung_built_up_notes?: string;
+        };
+        step4?: {
+            preparation_date?: string;
+            notes?: string;
+        };
+        step5?: {
+            fitting_date?: string;
+            adjustments?: string;
+            customer_reviews?: string;
+        };
+    };
 }
 
 /** Form data passed into the order modal (from MassschuheFormNew) */
@@ -166,6 +209,49 @@ export interface MassschuheOrderModalFormData {
     step4_preparation_date?: string;
     step4_notes?: string;
     step5_fitting_date?: string;
+    step3_json?: {
+        step2?: {
+            material?: string;
+            leistentyp?: string;
+            leistengroesse?: string;
+            notes?: string;
+        };
+        step3?: {
+            material?: string;
+            thickness?: string;
+            notes?: string;
+            bettung_type?: 'on_last' | 'built_up' | null;
+            zusätzliche_notizen?: string;
+            schicht1_material?: string;
+            schicht1_starke?: string;
+            schicht2_material?: string;
+            schicht2_starke?: string;
+            decksohle_material?: string;
+            decksohle_starke?: string;
+            versteifung?: boolean | null;
+            versteifung_material?: string;
+            versteifung_zone?: string;
+            pelotte?: boolean | null;
+            pelotte_hoehe_l?: string;
+            pelotte_hoehe_r?: string;
+            thickness_heel_l?: string;
+            thickness_heel_r?: string;
+            thickness_ball_l?: string;
+            thickness_ball_r?: string;
+            thickness_toe_l?: string;
+            thickness_toe_r?: string;
+            bettung_built_up_notes?: string;
+        };
+        step4?: {
+            preparation_date?: string;
+            notes?: string;
+        };
+        step5?: {
+            fitting_date?: string;
+            adjustments?: string;
+            customer_reviews?: string;
+        };
+    };
 }
 
 interface MassschuheOrderModalProps {
@@ -502,6 +588,7 @@ export default function MassschuheOrderModal({
             bettung_type: formData.bedding_required ? (formData.bettung_type ?? undefined) : undefined,
             bettung_notes: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
             zusätzliche_notizen: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
+            // Only send built_up thickness fields when type is 'built_up'
             thickness_heel_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_l?.trim() || undefined) : undefined,
             thickness_heel_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_r?.trim() || undefined) : undefined,
             thickness_ball_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_l?.trim() || undefined) : undefined,
@@ -515,6 +602,7 @@ export default function MassschuheOrderModal({
             dicke_spitze_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_l?.trim() || undefined) : undefined,
             dicke_spitze_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_r?.trim() || undefined) : undefined,
             bettung_built_up_notes: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.bettung_built_up_notes?.trim() || undefined) : undefined,
+            // Only send on_last fields when type is 'on_last'
             schicht1_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht1_material?.trim() || undefined) : undefined,
             schicht1_starke: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht1_starke?.trim() || undefined) : undefined,
             schicht2_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht2_material?.trim() || undefined) : undefined,
@@ -539,6 +627,7 @@ export default function MassschuheOrderModal({
             pick_up_location: pickUpLocationJson,
             store_location: storeLocationJson,
             order_note: orderNote || undefined,
+            step3_json: formData.bedding_required ? formData.step3_json : undefined,
         };
 
         await onSubmit(v2Payload);
@@ -546,12 +635,46 @@ export default function MassschuheOrderModal({
 
     const isBettungValid = (): boolean => {
         if (!formData.bedding_required) return true;
+        
+        // Check step3_json structure first (new format)
+        if (formData.step3_json?.step3) {
+            const step3 = formData.step3_json.step3;
+            const type = step3.bettung_type;
+            if (type == null) return false;
+            
+            if (type === 'on_last') {
+                // For on_last: zusätzliche_notizen is required
+                return (step3.zusätzliche_notizen?.trim() ?? '') !== '';
+            }
+            if (type === 'built_up') {
+                // For built_up: only thickness fields are required, notes are optional
+                const parse = (s: string | undefined) => {
+                    if (s == null || s.trim() === '') return NaN;
+                    return parseFloat(String(s).replace(',', '.'));
+                };
+                const hl = parse(step3.thickness_heel_l);
+                const hr = parse(step3.thickness_heel_r);
+                const bl = parse(step3.thickness_ball_l);
+                const br = parse(step3.thickness_ball_r);
+                const tl = parse(step3.thickness_toe_l);
+                const tr = parse(step3.thickness_toe_r);
+                return Number.isFinite(hl) && hl > 0 && Number.isFinite(hr) && hr > 0
+                    && Number.isFinite(bl) && bl > 0 && Number.isFinite(br) && br > 0
+                    && Number.isFinite(tl) && tl > 0 && Number.isFinite(tr) && tr > 0;
+            }
+            return false;
+        }
+        
+        // Fallback to old format for backward compatibility
         const type = formData.bettung_type;
         if (type == null) return false;
+        
         if (type === 'on_last') {
+            // For on_last: bettung_notes is required
             return (formData.bettung_notes?.trim() ?? '') !== '';
         }
         if (type === 'built_up') {
+            // For built_up: only thickness fields are required, notes are optional
             const parse = (s: string | undefined) => {
                 if (s == null || s.trim() === '') return NaN;
                 return parseFloat(String(s).replace(',', '.'));
