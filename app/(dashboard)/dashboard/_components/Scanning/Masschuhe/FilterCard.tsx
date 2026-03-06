@@ -650,61 +650,7 @@ export default function FilterCard({
                         )}
                         {footbedData.bettung_type === 'built_up' && (
                             <div className="space-y-4">
-                                <p className="text-xs text-gray-600 mb-2">Alle Felder sind Pflichtfelder (Links und Rechts getrennt).</p>
-                                {[
-                                    { label: 'Dicke Ferse (mm)', keyL: 'thickness_heel_l' as const, keyR: 'thickness_heel_r' as const },
-                                    { label: 'Dicke Ballen (mm)', keyL: 'thickness_ball_l' as const, keyR: 'thickness_ball_r' as const },
-                                    { label: 'Dicke Spitze (mm)', keyL: 'thickness_toe_l' as const, keyR: 'thickness_toe_r' as const },
-                                ].map(({ label, keyL, keyR }) => {
-                                    const valL = footbedData[keyL] ?? '';
-                                    const valR = footbedData[keyR] ?? '';
-                                    const numL = valL === '' ? NaN : parseFloat(String(valL).replace(',', '.'));
-                                    const numR = valR === '' ? NaN : parseFloat(String(valR).replace(',', '.'));
-                                    const isEmptyL = valL.trim() === '';
-                                    const isEmptyR = valR.trim() === '';
-                                    const invalidL = !isEmptyL && (Number.isNaN(numL) || numL <= 0);
-                                    const invalidR = !isEmptyR && (Number.isNaN(numR) || numR <= 0);
-                                    const errMsg = (empty: boolean, invalid: boolean, num: number) => {
-                                        if (empty) return 'Dieses Feld ist erforderlich.';
-                                        if (invalid) return num <= 0 ? 'Wert muss größer als 0 sein.' : 'Bitte einen gültigen Wert in mm eingeben.';
-                                        return null;
-                                    };
-                                    return (
-                                        <div key={label} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">{label} – Links</label>
-                                                <input
-                                                    type="text"
-                                                    inputMode="decimal"
-                                                    value={valL}
-                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, [keyL]: e.target.value })}
-                                                    placeholder="mm"
-                                                    className={cn(
-                                                        "w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent",
-                                                        (isEmptyL || invalidL) ? "border-red-400" : "border-gray-300"
-                                                    )}
-                                                />
-                                                {(isEmptyL || invalidL) && <p className="text-xs text-red-600 mt-1">{errMsg(isEmptyL, invalidL, numL)}</p>}
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">{label} – Rechts</label>
-                                                <input
-                                                    type="text"
-                                                    inputMode="decimal"
-                                                    value={valR}
-                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, [keyR]: e.target.value })}
-                                                    placeholder="mm"
-                                                    className={cn(
-                                                        "w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent",
-                                                        (isEmptyR || invalidR) ? "border-red-400" : "border-gray-300"
-                                                    )}
-                                                />
-                                                {(isEmptyR || invalidR) && <p className="text-xs text-red-600 mt-1">{errMsg(isEmptyR, invalidR, numR)}</p>}
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                                <div className="pt-2 border-t border-gray-200">
+                                <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                         Zusätzliche Notizen (optional)
                                     </label>
@@ -715,6 +661,63 @@ export default function FilterCard({
                                         rows={3}
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
                                     />
+                                </div>
+                                <p className="text-xs text-gray-600 mb-2">Alle Felder sind Pflichtfelder (Links und Rechts getrennt).</p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {[
+                                        { label: 'Dicke Ferse (mm)', keyL: 'thickness_heel_l' as const, keyR: 'thickness_heel_r' as const },
+                                        { label: 'Dicke Ballen (mm)', keyL: 'thickness_ball_l' as const, keyR: 'thickness_ball_r' as const },
+                                        { label: 'Dicke Spitze (mm)', keyL: 'thickness_toe_l' as const, keyR: 'thickness_toe_r' as const },
+                                    ].map(({ label, keyL, keyR }) => {
+                                        const valL = footbedData[keyL] ?? '';
+                                        const valR = footbedData[keyR] ?? '';
+                                        const numL = valL === '' ? NaN : parseFloat(String(valL).replace(',', '.'));
+                                        const numR = valR === '' ? NaN : parseFloat(String(valR).replace(',', '.'));
+                                        const isEmptyL = valL.trim() === '';
+                                        const isEmptyR = valR.trim() === '';
+                                        const invalidL = !isEmptyL && (Number.isNaN(numL) || numL <= 0);
+                                        const invalidR = !isEmptyR && (Number.isNaN(numR) || numR <= 0);
+                                        const errMsg = (empty: boolean, invalid: boolean, num: number) => {
+                                            if (empty) return 'Dieses Feld ist erforderlich.';
+                                            if (invalid) return num <= 0 ? 'Wert muss größer als 0 sein.' : 'Bitte einen gültigen Wert in mm eingeben.';
+                                            return null;
+                                        };
+                                        return (
+                                            <div key={label} className="space-y-3">
+                                                <p className="text-xs font-medium text-gray-700">{label}</p>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">Links</label>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={valL}
+                                                        onChange={(e) => onFootbedDataChange({ ...footbedData, [keyL]: e.target.value })}
+                                                        placeholder="mm"
+                                                        className={cn(
+                                                            "w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent",
+                                                            (isEmptyL || invalidL) ? "border-red-400" : "border-gray-300"
+                                                        )}
+                                                    />
+                                                    {(isEmptyL || invalidL) && <p className="text-xs text-red-600 mt-1">{errMsg(isEmptyL, invalidL, numL)}</p>}
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs text-gray-600 mb-1">Rechts</label>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={valR}
+                                                        onChange={(e) => onFootbedDataChange({ ...footbedData, [keyR]: e.target.value })}
+                                                        placeholder="mm"
+                                                        className={cn(
+                                                            "w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent",
+                                                            (isEmptyR || invalidR) ? "border-red-400" : "border-gray-300"
+                                                        )}
+                                                    />
+                                                    {(isEmptyR || invalidR) && <p className="text-xs text-red-600 mt-1">{errMsg(isEmptyR, invalidR, numR)}</p>}
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
                             </div>
                         )}
