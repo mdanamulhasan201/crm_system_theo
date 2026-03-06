@@ -1,22 +1,15 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Check, ClipboardList, Pencil } from 'lucide-react';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import ChecklisteHalbprobeModal, { type ChecklisteHalbprobeData } from './ChecklisteHalbprobeModal';
+import SchafttypFieldText, { type SchafttypValue } from './SchafttypFieldText';
+import BodenkonstruktionFiledText from './BodenkonstruktionFiledText';
 
 function formatDateForDisplay(isoDate: string): string {
     if (!isoDate) return '';
@@ -38,13 +31,8 @@ export const PROBENERGEBNIS_OPTIONS = [
     { value: 'Instabil', label: 'große Nacharbeiten', colorClass: 'border-red-500 text-red-700 hover:bg-red-50 data-[selected=true]:bg-red-50 data-[selected=true]:ring-2 data-[selected=true]:ring-red-500' },
 ] as const;
 
-export const SCHAFTTYP_OPTIONS = [
-    { value: 'Intern', label: 'Intern' },
-    { value: 'Extern', label: 'Extern' },
-] as const;
-
 export type ProbenergebnisValue = (typeof PROBENERGEBNIS_OPTIONS)[number]['value'] | '';
-export type SchafttypValue = (typeof SCHAFTTYP_OPTIONS)[number]['value'] | '';
+export type { SchafttypValue };
 
 export interface HalbprobeDurchfuehrungStepFieldsProps {
     probenergebnis: ProbenergebnisValue;
@@ -89,9 +77,7 @@ export default function HalbprobeDurchfuehrungStepFields({
     onCustomerReviewsChange,
     onChecklisteHalbprobeChange,
 }: HalbprobeDurchfuehrungStepFieldsProps) {
-    const router = useRouter();
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
-    const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
     const initialChecklistData = parseChecklisteHalbprobe(checklisteHalbprobe);
     const hasChecklistData = initialChecklistData != null && initialChecklistData.length > 0;
 
@@ -250,107 +236,17 @@ export default function HalbprobeDurchfuehrungStepFields({
                 onWeiter={(data) => onChecklisteHalbprobeChange?.(JSON.stringify(data))}
             />
 
-            {/* Schafttyp * */}
+            <SchafttypFieldText
+                schafttyp={schafttyp}
+                customer_reviews={customer_reviews}
+                onSchafttypChange={onSchafttypChange}
+                onCustomerReviewsChange={onCustomerReviewsChange}
+            />
+
+            {/* Bodenkonstruktion */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
-                <Label className="text-sm font-medium text-gray-800 mb-3 block">
-                    Schafttyp <span className="text-red-500">*</span>
-                </Label>
-                <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full min-w-0">
-                    {SCHAFTTYP_OPTIONS.map((opt) => {
-                        const isSelected = schafttyp === opt.value;
-                        return (
-                            <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => {
-                                    onSchafttypChange(opt.value);
-                                }}
-                                className={cn(
-                                    'relative flex cursor-pointer min-w-0 flex-1 basis-[calc(50%-0.375rem)] items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
-                                    'border-gray-300 bg-gray-50/80 text-gray-800 hover:border-gray-400 hover:bg-gray-100',
-                                    isSelected && 'border-emerald-500 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500 ring-offset-2'
-                                )}
-                            >
-                                {isSelected && <Check className="h-4 w-4 shrink-0" strokeWidth={2.5} />}
-                                <span>{opt.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
-                {schafttyp === 'Intern' && (
-                    <div className="mt-4 pt-4 border-t border-gray-200/80">
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                                Hinweise zur internen Schaftfertigung
-                            </Label>
-                            <Button type="button" variant="outline" size="sm" className="text-gray-700 border-gray-400 hover:bg-gray-100">
-                                erweitert
-                            </Button>
-                        </div>
-                        <textarea
-                            value={customer_reviews}
-                            onChange={(e) => onCustomerReviewsChange(e.target.value)}
-                            placeholder="Details, Besonderheiten oder Wünsche für den internen Schaft..."
-                            rows={3}
-                            className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
-                        />
-                    </div>
-                )}
-                {schafttyp === 'Extern' && (
-                    <div className="mt-4 pt-4 border-t border-gray-200/80">
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                                Hinweise zur externen Schaftfertigung
-                            </Label>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="text-gray-700 border-gray-400 hover:bg-gray-100"
-                                onClick={() => setExternOrderDialogOpen(true)}
-                            >
-                                erweitert
-                            </Button>
-                        </div>
-                        <textarea
-                            value={customer_reviews}
-                            onChange={(e) => onCustomerReviewsChange(e.target.value)}
-                            placeholder="Notizen für die externe Schaftfertigung..."
-                            rows={3}
-                            className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
-                        />
-                    </div>
-                )}
+                <BodenkonstruktionFiledText />
             </div>
-            <Dialog open={externOrderDialogOpen} onOpenChange={setExternOrderDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Externe Schaft-Bestellung</DialogTitle>
-                        <DialogDescription>
-                            Möchten Sie jetzt die externe Schaftfertigung bestellen?
-                        </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter className="flex gap-2 sm:gap-0">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setExternOrderDialogOpen(false)}
-                        >
-                            Abbrechen
-                        </Button>
-                        <Button
-                            type="button"
-                            className="bg-[#61A178] hover:bg-[#4A8A5F]"
-                            onClick={() => {
-                                setExternOrderDialogOpen(false);
-                                router.push('/dashboard/custom-shafts');
-                            }}
-                        >
-                            Jetzt bestellen
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
         </div>
     );
 }
