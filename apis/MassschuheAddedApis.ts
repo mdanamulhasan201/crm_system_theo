@@ -99,6 +99,8 @@ export const getMassschuheOrderDetails = async (id: string) => {
 }
 
 
+
+
 // v2/shoe-orders/update-status/:id?status=Auftragserstellung
 // body: FormData with "notes" (string) and "files" (multiple files). Only for Auftragserstellung send notes + files.
 export const updateMassschuheOrderStatus = async (

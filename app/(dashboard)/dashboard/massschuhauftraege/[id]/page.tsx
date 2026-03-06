@@ -554,8 +554,32 @@ export default function MassschuhauftraegePage() {
                     <div className="flex-1 w-full lg:w-8/12">
                         <div className="bg-white rounded-lg border border-red-200 p-6">
                             {loading ? (
-                                <div className="py-16 flex items-center justify-center">
-                                    <p className="text-gray-500">Laden...</p>
+                                <div className="p-6 space-y-6">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse shrink-0" />
+                                        <div className="flex-1 space-y-2">
+                                            <div className="h-6 bg-gray-200 rounded w-48 animate-pulse" />
+                                            <div className="h-4 bg-gray-200 rounded w-32 animate-pulse" />
+                                        </div>
+                                    </div>
+                                    <div className="h-14 bg-gray-100 rounded-lg animate-pulse" />
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <div className="w-5 h-5 bg-gray-200 rounded animate-pulse" />
+                                            <div className="h-5 bg-gray-200 rounded w-16 animate-pulse" />
+                                        </div>
+                                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                            {[1, 2, 3].map((i) => (
+                                                <div key={i} className="aspect-square bg-gray-200 rounded-lg animate-pulse" />
+                                            ))}
+                                        </div>
+                                        <div className="mt-4 h-32 border-2 border-dashed border-gray-200 rounded-lg animate-pulse" />
+                                    </div>
+                                    <div>
+                                        <div className="h-5 bg-gray-200 rounded w-12 mb-3 animate-pulse" />
+                                        <div className="h-28 bg-gray-100 rounded-lg animate-pulse" />
+                                    </div>
+                                    <div className="h-11 bg-gray-200 rounded w-56 animate-pulse" />
                                 </div>
                             ) : (
                                 <>
@@ -925,9 +949,9 @@ export default function MassschuhauftraegePage() {
                         </div>
                     </div>
 
-                    {/* Right Side - Sidebar */}
+                    {/* Right Side - Sidebar: refetches per step when status changes */}
                     <div className="w-full lg:w-4/12">
-                        <FertigungsweisungSidebar orderId={id} />
+                        <FertigungsweisungSidebar orderId={id} statusParam={statusFromUrl} />
                     </div>
                 </div>
             </div>
