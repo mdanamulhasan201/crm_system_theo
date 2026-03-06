@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -14,10 +14,24 @@ const BODEN_OPTIONS = [
 
 type BodenOption = (typeof BODEN_OPTIONS)[number]['value'] | '';
 
-export default function BodenkonstruktionFiledText() {
+export interface BodenkonstruktionFiledTextProps {
+    bodenOption?: BodenOption;
+    bodenkonstruktionInternNote?: string;
+    bodenkonstruktionExternNote?: string;
+    onBodenOptionChange?: (value: BodenOption) => void;
+    onBodenkonstruktionInternNoteChange?: (value: string) => void;
+    onBodenkonstruktionExternNoteChange?: (value: string) => void;
+}
+
+export default function BodenkonstruktionFiledText({
+    bodenOption = '',
+    bodenkonstruktionInternNote = '',
+    bodenkonstruktionExternNote = '',
+    onBodenOptionChange = () => {},
+    onBodenkonstruktionInternNoteChange = () => {},
+    onBodenkonstruktionExternNoteChange = () => {},
+}: BodenkonstruktionFiledTextProps) {
     const router = useRouter();
-    const [bodenOption, setBodenOption] = useState<BodenOption>('');
-    const [value, setValue] = useState('');
 
     return (
         <div>
@@ -31,7 +45,7 @@ export default function BodenkonstruktionFiledText() {
                         <button
                             key={opt.value}
                             type="button"
-                            onClick={() => setBodenOption(opt.value)}
+                            onClick={() => onBodenOptionChange(opt.value)}
                             className={cn(
                                 'relative flex cursor-pointer min-w-0 flex-1 basis-[calc(50%-0.375rem)] items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
                                 'border-gray-300 bg-gray-50/80 text-gray-800 hover:border-gray-400 hover:bg-gray-100',
@@ -65,8 +79,12 @@ export default function BodenkonstruktionFiledText() {
                         )}
                     </div>
                     <textarea
-                        value={value}
-                        onChange={(e) => setValue(e.target.value)}
+                        value={bodenOption === 'Intern' ? bodenkonstruktionInternNote : bodenkonstruktionExternNote}
+                        onChange={(e) =>
+                            bodenOption === 'Intern'
+                                ? onBodenkonstruktionInternNoteChange(e.target.value)
+                                : onBodenkonstruktionExternNoteChange(e.target.value)
+                        }
                         placeholder={
                             bodenOption === 'Intern'
                                 ? 'Details zur internen Bodenkonstruktion...'

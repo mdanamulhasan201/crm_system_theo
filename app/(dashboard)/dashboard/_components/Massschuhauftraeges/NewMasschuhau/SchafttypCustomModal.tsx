@@ -42,11 +42,14 @@ const VERSTAERKUNGEN_OPTIONS = ['Standard', 'Fersenverstärkung', 'Innen-Außenk
 export interface SchafttypCustomModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** Step 5: pass modal data as massschafterstellung_image (file) + massschafterstellung_json */
+    onSave?: (data: { file: File | null; json: string }) => void;
 }
 
-export default function SchafttypCustomModal({ open, onOpenChange }: SchafttypCustomModalProps) {
+export default function SchafttypCustomModal({ open, onOpenChange, onSave }: SchafttypCustomModalProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+    const [uploadedFile, setUploadedFile] = useState<File | null>(null);
     const [cadModeling, setCadModeling] = useState<'1x' | '2x'>('1x');
     const [kategorie, setKategorie] = useState('');
     const [anzahlLedertypen, setAnzahlLedertypen] = useState('');
@@ -66,6 +69,7 @@ export default function SchafttypCustomModal({ open, onOpenChange }: SchafttypCu
     useEffect(() => {
         if (open) {
             setUploadedImage(null);
+            setUploadedFile(null);
             setCadModeling('1x');
             setKategorie('');
             setAnzahlLedertypen('');
@@ -87,6 +91,7 @@ export default function SchafttypCustomModal({ open, onOpenChange }: SchafttypCu
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file?.type.startsWith('image/')) return;
+        setUploadedFile(file);
         const reader = new FileReader();
         reader.onload = () => typeof reader.result === 'string' && setUploadedImage(reader.result);
         reader.readAsDataURL(file);
@@ -100,6 +105,23 @@ export default function SchafttypCustomModal({ open, onOpenChange }: SchafttypCu
     };
 
     const handleAbschliessen = () => {
+        const json = JSON.stringify({
+            cadModeling,
+            kategorie,
+            anzahlLedertypen,
+            innenfutter,
+            nahtfarbe,
+            schafthoheLinks,
+            schafthoheRechts,
+            polsterung,
+            polsterungText,
+            verstarkungen,
+            verstarkungenText,
+            verschlussart,
+            zipperExtra,
+            sonstigeNotizen,
+        });
+        onSave?.({ file: uploadedFile, json });
         onOpenChange(false);
     };
 

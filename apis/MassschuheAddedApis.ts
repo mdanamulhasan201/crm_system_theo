@@ -120,26 +120,33 @@ export const getMassschuheOrderDetails = async (id: string) => {
 
 // v2/shoe-orders/update-status/:id?status=Auftragserstellung
 // body: FormData with "notes" (string) and "files" (multiple files). Only for Auftragserstellung send notes + files.
+// Returns full response so Step 5 can read data.orderId and then call update-step-5.
+export interface UpdateMassschuheOrderStatusResponse {
+    success: boolean;
+    message?: string;
+    data?: { orderId?: string; id?: string; [key: string]: any };
+}
 export const updateMassschuheOrderStatus = async (
     id: string,
     status: string,
     data: FormData
-): Promise<boolean> => {
+): Promise<UpdateMassschuheOrderStatusResponse> => {
     try {
         const response = await axiosClient.patch(
             `/v2/shoe-orders/update-status/${id}?status=${encodeURIComponent(status)}`,
             data
         );
-        return response.data?.success ?? false;
+        const body = response.data ?? {};
+        return { success: body.success ?? false, message: body.message, data: body.data };
     } catch (error: any) {
         throw error;
     }
 };
 
-// step5update only, /v2/shoe-orders/order-step/update-step-5/{{status id}}
-export const updateMassschuheOrderStep5 = async (id: string, data: any) => {
+// Step 5 only: id = step record id from update-status response (data.id), not orderId
+export const updateMassschuheOrderStep5 = async (stepId: string, data: FormData) => {
     try {
-        const response = await axiosClient.patch(`/v2/shoe-orders/order-step/update-step-5/${id}`, data);
+        const response = await axiosClient.post(`/v2/shoe-orders/order-step/update-step-5/${stepId}`, data);
         return response.data;
     } catch (error: any) {
         throw error;

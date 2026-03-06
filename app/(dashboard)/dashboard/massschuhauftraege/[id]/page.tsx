@@ -286,6 +286,13 @@ export default function MassschuhauftraegePage() {
     const [fitting_date, setFitting_date] = useState('');
     const [adjustments, setAdjustments] = useState('');
     const [customer_reviews, setCustomer_reviews] = useState('');
+    // Step 5: Bodenkonstruktion notes (lifted from BodenkonstruktionFiledText)
+    const [bodenkonstruktionInternNote, setBodenkonstruktionInternNote] = useState('');
+    const [bodenkonstruktionExternNote, setBodenkonstruktionExternNote] = useState('');
+    const [bodenOption, setBodenOption] = useState<'Intern' | 'Extern' | ''>('');
+    // Step 5: Schafttyp Intern erweitert modal → massschafterstellung_image + massschafterstellung_json
+    const [massschafterstellungFile, setMassschafterstellungFile] = useState<File | null>(null);
+    const [massschafterstellungJson, setMassschafterstellungJson] = useState<string>('');
     const [deleteFileConfirmId, setDeleteFileConfirmId] = useState<string | null>(null);
     const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
     // Completed-by from API for current step (partner or employee who completed this step)
@@ -422,8 +429,39 @@ export default function MassschuhauftraegePage() {
                 if (adjustments) formData.append('adjustments', adjustments);
                 if (customer_reviews) formData.append('customer_reviews', customer_reviews);
             }
-            const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
-            if (success) {
+            const statusResult = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
+            if (statusResult.success) {
+                // Step 5 only: after status update, call step-5 API with orderId and full step-5 payload
+                if (statusFromUrl === 'Halbprobe_durchführen') {
+                    const stepId = statusResult.data?.id ?? id;
+                    const step5Form = new FormData();
+                    step5Form.append('notiz', notes);
+                    if (fitting_date) step5Form.append('fitting_date', fitting_date);
+                    const feedbackStatusMap: Record<string, string> = {
+                        Gut: 'Freigeben',
+                        Druckstellen: 'Kleine_Nacharbeit',
+                        Instabil: 'große_Nacharbeiten',
+                    };
+                    const feedbackStatus = probenergebnis ? (feedbackStatusMap[probenergebnis] ?? probenergebnis) : '';
+                    if (feedbackStatus) step5Form.append('feedback_status', feedbackStatus);
+                    if (probenergebnis === 'Gut' || probenergebnis === 'Instabil') {
+                        if (adjustments) step5Form.append('feedback_notes', adjustments);
+                    }
+                    if (probenergebnis === 'Druckstellen' && checkliste_halbprobe) {
+                        step5Form.append('Kleine_Nacharbeit', checkliste_halbprobe);
+                    }
+                    if (massschafterstellungFile) {
+                        step5Form.append('massschafterstellung_image', massschafterstellungFile);
+                    } else if (uploadedFiles.length > 0) {
+                        step5Form.append('massschafterstellung_image', uploadedFiles[0]);
+                    }
+                    step5Form.append('schafttyp_intem_note', schafttyp === 'Intern' ? customer_reviews : '');
+                    step5Form.append('schafttyp_extem_note', schafttyp === 'Extern' ? customer_reviews : '');
+                    if (massschafterstellungJson) step5Form.append('massschafterstellung_json', massschafterstellungJson);
+                    step5Form.append('bodenkonstruktion_intem_note', bodenkonstruktionInternNote);
+                    step5Form.append('bodenkonstruktion_extem_note', bodenkonstruktionExternNote);
+                    await MassschuheAddedApis.updateMassschuheOrderStep5(stepId, step5Form);
+                }
                 setUploadedFiles([]);
                 // Refetch to get updated steps; then auto-activate next step in URL
                 const res: any = await MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl);
@@ -878,6 +916,16 @@ export default function MassschuhauftraegePage() {
                                             adjustments={adjustments}
                                             customer_reviews={customer_reviews}
                                             checklisteHalbprobe={checkliste_halbprobe}
+                                            bodenOption={bodenOption}
+                                            bodenkonstruktionInternNote={bodenkonstruktionInternNote}
+                                            bodenkonstruktionExternNote={bodenkonstruktionExternNote}
+                                            onBodenOptionChange={setBodenOption}
+                                            onBodenkonstruktionInternNoteChange={setBodenkonstruktionInternNote}
+                                            onBodenkonstruktionExternNoteChange={setBodenkonstruktionExternNote}
+                                            onMassschafterstellungSave={({ file, json }) => {
+                                                setMassschafterstellungFile(file);
+                                                setMassschafterstellungJson(json);
+                                            }}
                                             onProbenergebnisChange={setProbenergebnis}
                                             onSchafttypChange={setSchafttyp}
                                             onFittingDateChange={setFitting_date}

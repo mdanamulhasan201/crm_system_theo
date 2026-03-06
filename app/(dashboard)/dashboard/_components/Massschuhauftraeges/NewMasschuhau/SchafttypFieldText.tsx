@@ -28,6 +28,8 @@ export interface SchafttypFieldTextProps {
     customer_reviews: string;
     onSchafttypChange: (value: SchafttypValue) => void;
     onCustomerReviewsChange: (value: string) => void;
+    /** Step 5: save Intern erweitert modal data as massschafterstellung_image + massschafterstellung_json */
+    onMassschafterstellungSave?: (data: { file: File | null; json: string }) => void;
 }
 
 export default function SchafttypFieldText({
@@ -35,6 +37,7 @@ export default function SchafttypFieldText({
     customer_reviews,
     onSchafttypChange,
     onCustomerReviewsChange,
+    onMassschafterstellungSave,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
@@ -150,6 +153,7 @@ export default function SchafttypFieldText({
             <SchafttypCustomModal
                 open={internCustomModalOpen}
                 onOpenChange={setInternCustomModalOpen}
+                onSave={onMassschafterstellungSave}
             />
         </>
     );

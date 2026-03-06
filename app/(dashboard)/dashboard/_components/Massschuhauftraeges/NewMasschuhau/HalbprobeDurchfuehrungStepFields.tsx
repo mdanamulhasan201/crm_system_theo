@@ -44,6 +44,15 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     orderId?: string;
     /** JSON string of checklist answers (checkliste_halbprobe) */
     checklisteHalbprobe?: string;
+    /** Bodenkonstruktion: option + notes for step-5 payload (bodenkonstruktion_intem_note, bodenkonstruktion_extem_note) */
+    bodenOption?: 'Intern' | 'Extern' | '';
+    bodenkonstruktionInternNote?: string;
+    bodenkonstruktionExternNote?: string;
+    onBodenOptionChange?: (value: 'Intern' | 'Extern' | '') => void;
+    onBodenkonstruktionInternNoteChange?: (value: string) => void;
+    onBodenkonstruktionExternNoteChange?: (value: string) => void;
+    /** Schafttyp Intern erweitert modal: save as massschafterstellung_image + massschafterstellung_json */
+    onMassschafterstellungSave?: (data: { file: File | null; json: string }) => void;
     onProbenergebnisChange: (value: ProbenergebnisValue) => void;
     onSchafttypChange: (value: SchafttypValue) => void;
     onFittingDateChange: (value: string) => void;
@@ -70,6 +79,13 @@ export default function HalbprobeDurchfuehrungStepFields({
     customer_reviews,
     orderId,
     checklisteHalbprobe,
+    bodenOption = '',
+    bodenkonstruktionInternNote = '',
+    bodenkonstruktionExternNote = '',
+    onBodenOptionChange,
+    onBodenkonstruktionInternNoteChange,
+    onBodenkonstruktionExternNoteChange,
+    onMassschafterstellungSave,
     onProbenergebnisChange,
     onSchafttypChange,
     onFittingDateChange,
@@ -236,11 +252,19 @@ export default function HalbprobeDurchfuehrungStepFields({
                 customer_reviews={customer_reviews}
                 onSchafttypChange={onSchafttypChange}
                 onCustomerReviewsChange={onCustomerReviewsChange}
+                onMassschafterstellungSave={onMassschafterstellungSave}
             />
 
             {/* Bodenkonstruktion */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
-                <BodenkonstruktionFiledText />
+                <BodenkonstruktionFiledText
+                    bodenOption={bodenOption}
+                    bodenkonstruktionInternNote={bodenkonstruktionInternNote}
+                    bodenkonstruktionExternNote={bodenkonstruktionExternNote}
+                    onBodenOptionChange={onBodenOptionChange ?? (() => {})}
+                    onBodenkonstruktionInternNoteChange={onBodenkonstruktionInternNoteChange ?? (() => {})}
+                    onBodenkonstruktionExternNoteChange={onBodenkonstruktionExternNoteChange ?? (() => {})}
+                />
             </div>
         </div>
     );
