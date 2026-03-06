@@ -19,6 +19,7 @@ import LeistenerstellungStepFields, { type LeistenfertigungValue } from '@/app/(
 import BettungserstellungStepFields from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/BettungserstellungStepFields';
 import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobenerstellungStepFields';
 import HalbprobeDurchfuehrungStepFields, { type ProbenergebnisValue, type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobeDurchfuehrungStepFields';
+import SchafttypConfiguratorPage from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/SchafttypConfiguratorPage';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -291,6 +292,7 @@ export default function MassschuhauftraegePage() {
     // Completed-by from API for current step (partner or employee who completed this step)
     const [stepCompletedByPartner, setStepCompletedByPartner] = useState<{ name?: string; busnessName?: string } | null>(null);
     const [stepCompletedByEmployee, setStepCompletedByEmployee] = useState<{ employeeName?: string; accountName?: string } | null>(null);
+    const [showSchafttypConfigurator, setShowSchafttypConfigurator] = useState(false);
 
     useEffect(() => {
         if (!id) {
@@ -603,7 +605,7 @@ export default function MassschuhauftraegePage() {
                                         </div>
                                         <div className="flex-1">
                                             <h2 className="text-xl font-bold text-gray-900 mb-1">
-                                                {SHOE_STEPS[activeStepIndex]}
+                                                {activeStepIndex === 7 ? 'Qualitätskontrolle/Enddokumentation' : SHOE_STEPS[activeStepIndex]}
                                             </h2>
                                             <div className="flex items-center gap-3 flex-wrap">
                                                 {isCurrentStepCompleted ? (
@@ -871,21 +873,26 @@ export default function MassschuhauftraegePage() {
 
                                     {/* Step 5: Halbprobe durchführen – Probenergebnis & Schafttyp */}
                                     {activeStepIndex === 4 && (
-                                        <HalbprobeDurchfuehrungStepFields
-                                            orderId={id}
-                                            probenergebnis={probenergebnis}
-                                            schafttyp={schafttyp}
-                                            fitting_date={fitting_date}
-                                            adjustments={adjustments}
-                                            customer_reviews={customer_reviews}
-                                            checklisteHalbprobe={checkliste_halbprobe}
-                                            onProbenergebnisChange={setProbenergebnis}
-                                            onSchafttypChange={setSchafttyp}
-                                            onFittingDateChange={setFitting_date}
-                                            onAdjustmentsChange={setAdjustments}
-                                            onCustomerReviewsChange={setCustomer_reviews}
-                                            onChecklisteHalbprobeChange={setCheckliste_halbprobe}
-                                        />
+                                        showSchafttypConfigurator ? (
+                                            <SchafttypConfiguratorPage onClose={() => setShowSchafttypConfigurator(false)} />
+                                        ) : (
+                                            <HalbprobeDurchfuehrungStepFields
+                                                orderId={id}
+                                                probenergebnis={probenergebnis}
+                                                schafttyp={schafttyp}
+                                                fitting_date={fitting_date}
+                                                adjustments={adjustments}
+                                                customer_reviews={customer_reviews}
+                                                checklisteHalbprobe={checkliste_halbprobe}
+                                                onProbenergebnisChange={setProbenergebnis}
+                                                onSchafttypChange={setSchafttyp}
+                                                onFittingDateChange={setFitting_date}
+                                                onAdjustmentsChange={setAdjustments}
+                                                onCustomerReviewsChange={setCustomer_reviews}
+                                                onChecklisteHalbprobeChange={setCheckliste_halbprobe}
+                                                onOpenSchafttypConfigurator={() => setShowSchafttypConfigurator(true)}
+                                            />
+                                        )
                                     )}
 
                                     {/* Complete Button – only active on the current step to complete; other steps show disabled + hint */}
