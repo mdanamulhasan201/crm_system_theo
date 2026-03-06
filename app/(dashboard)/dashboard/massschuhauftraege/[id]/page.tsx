@@ -327,7 +327,8 @@ export default function MassschuhauftraegePage() {
                     }
                     const hd = data.halbprobe_durchfuehrung;
                     if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
-                    if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch' || data.probenergebnis === 'Änderungen') setProbenergebnis(data.probenergebnis);
+                    if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch') setProbenergebnis(data.probenergebnis);
+                    else if (data.probenergebnis === 'Änderungen') setProbenergebnis('Druckstellen');
                     if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
                     if (data.fitting_date) setFitting_date(String(data.fitting_date).slice(0, 10));
                     if (data.adjustments != null) setAdjustments(String(data.adjustments));
@@ -456,7 +457,8 @@ export default function MassschuhauftraegePage() {
                     }
                     const hd = data.halbprobe_durchfuehrung;
                     if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
-                    if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch' || data.probenergebnis === 'Änderungen') setProbenergebnis(data.probenergebnis);
+                    if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch') setProbenergebnis(data.probenergebnis);
+                    else if (data.probenergebnis === 'Änderungen') setProbenergebnis('Druckstellen');
                     if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
                     if (data.fitting_date) setFitting_date(String(data.fitting_date).slice(0, 10));
                     if (data.adjustments != null) setAdjustments(String(data.adjustments));
