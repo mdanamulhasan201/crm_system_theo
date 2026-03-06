@@ -11,22 +11,15 @@ import {
 } from 'recharts';
 import { getMassschuheOrderData } from '@/apis/MassschuheManagemantApis';
 
+// New API response: /v2/shoe-orders/statistic/get-calculations
+interface StatCardItem {
+    count: number;
+    changePercent: number;
+}
 interface StatsData {
-    completed: {
-        current: number;
-        previous: number;
-        changePercent: number;
-    };
-    waitingToStart: {
-        current: number;
-        previous: number;
-        changePercent: number;
-    };
-    active: {
-        current: number;
-        previous: number;
-        changePercent: number;
-    };
+    activeMassShoeOrders: StatCardItem;
+    ordersWaitingForSupplyStart: StatCardItem;
+    completedOrders: StatCardItem;
 }
 
 // Static chart data - same for all cards
@@ -80,8 +73,9 @@ export default function CardStatistik({ onRefetchReady }: { onRefetchReady?: (re
             setLoading(true);
             setError(null);
             const response = await getMassschuheOrderData();
-            if (response.success && response.data) {
-                setStatsData(response.data);
+            const data = (response as { success?: boolean; data?: StatsData })?.data;
+            if (response?.success && data) {
+                setStatsData(data);
             } else {
                 setError('Failed to fetch stats data');
             }
@@ -103,41 +97,44 @@ export default function CardStatistik({ onRefetchReady }: { onRefetchReady?: (re
         }
     }, [onRefetchReady, fetchStats]);
 
-    // Generate cards from API data
-    // Chart is static, but color/arrow based on current vs previous comparison
-    const cards = statsData ? [
-        {
-            id: 'active',
-            title: 'Aktive Masschuhaufträge',
-            count: statsData.waitingToStart.current,
-            trendLabel: `${Math.abs(statsData.waitingToStart.changePercent).toFixed(2)}%`,
-            // current > previous = high (green/up), current < previous = low (red/down)
-            trendColor: statsData.waitingToStart.current > statsData.waitingToStart.previous ? 'text-emerald-500' : 'text-rose-500',
-            isUp: statsData.waitingToStart.current > statsData.waitingToStart.previous,
-            data: statsData.waitingToStart.current > statsData.waitingToStart.previous ? staticGreenData : staticRedData,
-            stroke: statsData.waitingToStart.current > statsData.waitingToStart.previous ? '#22c55e' : '#ef4444',
-        },
-        {
-            id: 'waiting',
-            title: 'Aufträge warten auf Versorgungstart',
-            count: statsData.active.current,
-            trendLabel: `${Math.abs(statsData.active.changePercent).toFixed(2)}%`,
-            trendColor: statsData.active.current > statsData.active.previous ? 'text-emerald-500' : 'text-rose-500',
-            isUp: statsData.active.current > statsData.active.previous,
-            data: statsData.active.current > statsData.active.previous ? staticGreenData : staticRedData,
-            stroke: statsData.active.current > statsData.active.previous ? '#22c55e' : '#ef4444',
-        },
-        {
-            id: 'completed',
-            title: 'Abgeschlossene Aufträge',
-            count: statsData.completed.current,
-            trendLabel: `${Math.abs(statsData.completed.changePercent).toFixed(2)}%`,
-            trendColor: statsData.completed.current > statsData.completed.previous ? 'text-emerald-500' : 'text-rose-500',
-            isUp: statsData.completed.current > statsData.completed.previous,
-            data: statsData.completed.current > statsData.completed.previous ? staticGreenData : staticRedData,
-            stroke: statsData.completed.current > statsData.completed.previous ? '#22c55e' : '#ef4444',
-        },
-    ] : [];
+    // Generate cards from API data (count + changePercent per card)
+    const cards = statsData
+        ? [
+              {
+                  id: 'active',
+                  title: 'Aktive Masschuhaufträge',
+                  count: statsData.activeMassShoeOrders.count,
+                  changePercent: statsData.activeMassShoeOrders.changePercent,
+                  trendLabel: `${Math.abs(statsData.activeMassShoeOrders.changePercent)}%`,
+                  isUp: statsData.activeMassShoeOrders.changePercent >= 0,
+                  trendColor: statsData.activeMassShoeOrders.changePercent >= 0 ? 'text-emerald-500' : 'text-rose-500',
+                  data: statsData.activeMassShoeOrders.changePercent >= 0 ? staticGreenData : staticRedData,
+                  stroke: statsData.activeMassShoeOrders.changePercent >= 0 ? '#22c55e' : '#ef4444',
+              },
+              {
+                  id: 'waiting',
+                  title: 'Aufträge warten auf Versorgungstart',
+                  count: statsData.ordersWaitingForSupplyStart.count,
+                  changePercent: statsData.ordersWaitingForSupplyStart.changePercent,
+                  trendLabel: `${Math.abs(statsData.ordersWaitingForSupplyStart.changePercent)}%`,
+                  isUp: statsData.ordersWaitingForSupplyStart.changePercent >= 0,
+                  trendColor: statsData.ordersWaitingForSupplyStart.changePercent >= 0 ? 'text-emerald-500' : 'text-rose-500',
+                  data: statsData.ordersWaitingForSupplyStart.changePercent >= 0 ? staticGreenData : staticRedData,
+                  stroke: statsData.ordersWaitingForSupplyStart.changePercent >= 0 ? '#22c55e' : '#ef4444',
+              },
+              {
+                  id: 'completed',
+                  title: 'Abgeschlossene Aufträge',
+                  count: statsData.completedOrders.count,
+                  changePercent: statsData.completedOrders.changePercent,
+                  trendLabel: `${Math.abs(statsData.completedOrders.changePercent)}%`,
+                  isUp: statsData.completedOrders.changePercent >= 0,
+                  trendColor: statsData.completedOrders.changePercent >= 0 ? 'text-emerald-500' : 'text-rose-500',
+                  data: statsData.completedOrders.changePercent >= 0 ? staticGreenData : staticRedData,
+                  stroke: statsData.completedOrders.changePercent >= 0 ? '#22c55e' : '#ef4444',
+              },
+          ]
+        : [];
 
     return (
         <>

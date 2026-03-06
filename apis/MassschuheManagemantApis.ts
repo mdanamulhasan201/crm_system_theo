@@ -80,7 +80,7 @@ export const updateMassschuheOrderStatus = async (orderIds: string[], status: st
 // get massschuhe order status data /massschuhe-order/stats
 export const getMassschuheOrderData = async () => {
     try {
-        const response = await axiosClient.get(`/massschuhe-order/stats`);
+        const response = await axiosClient.get(`/v2/shoe-orders/statistic/get-calculations`);
         return response.data;
     } catch (error) {
         throw error;
