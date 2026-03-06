@@ -177,14 +177,9 @@ export default function HalbprobeDurchfuehrungStepFields({
                 {/* Text field when Freigeben or große Nacharbeiten is selected – inside same card */}
                 {(probenergebnis === 'Gut' || probenergebnis === 'Instabil') && (
                     <div className="mt-4 pt-4 border-t border-gray-200/80">
-                        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-                            <Label className="text-sm font-medium text-gray-800">
-                                {probenergebnis === 'Gut' ? 'Anmerkungen zur Freigabe' : 'Anmerkungen zu großen Nacharbeiten'}
-                            </Label>
-                            <Button type="button" variant="outline" size="sm" className="text-gray-700 border-gray-400 hover:bg-gray-100">
-                                erweitert
-                            </Button>
-                        </div>
+                        <Label className="text-sm font-medium text-gray-800 mb-2 block">
+                            {probenergebnis === 'Gut' ? 'Anmerkungen zur Freigabe' : 'Anmerkungen zu großen Nacharbeiten'}
+                        </Label>
                         <textarea
                             value={adjustments}
                             onChange={(e) => onAdjustmentsChange(e.target.value)}

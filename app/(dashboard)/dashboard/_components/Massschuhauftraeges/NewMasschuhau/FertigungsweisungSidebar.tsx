@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Check, Clock, FileText, MessageSquare } from 'lucide-react';
 import { getMassschuheOrderDetails, getMassschuheOrderNote } from '@/apis/MassschuheAddedApis';
 import { SHOE_STEPS } from './MasschuProgressTable';
@@ -492,12 +493,15 @@ export default function FertigungsweisungSidebar({ orderId, statusParam }: Ferti
                                 );
                             })()}
 
-                            {/* Kundendaten / Zu Kundenseite / Scanansehen */}
+                            {/* Kundendaten – clickable → scanning-data/[customer.id] */}
                             <div>
-                                <div className="font-semibold text-gray-600 mb-1">Kundendaten</div>
-                                <div className="text-gray-700">
-                                    {orderDetails.customer ? (
-                                        <>
+                                {orderDetails.customer?.id ? (
+                                    <Link
+                                        href={`/dashboard/scanning-data/${orderDetails.customer.id}`}
+                                        className="block rounded-lg border border-gray-200 bg-gray-50/50 p-3 transition-colors hover:border-emerald-300 hover:bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                                    >
+                                        <div className="font-semibold text-gray-600 mb-1">Kundendaten</div>
+                                        <div className="text-gray-700">
                                             <span>
                                                 {[orderDetails.customer.vorname, orderDetails.customer.nachname]
                                                     .filter(Boolean)
@@ -508,12 +512,34 @@ export default function FertigungsweisungSidebar({ orderId, statusParam }: Ferti
                                                     (Nr. {orderDetails.customer.customerNumber})
                                                 </span>
                                             )}
-                                        </>
-                                    ) : (
-                                        '–'
-                                    )}
-                                </div>
-                               
+                                        </div>
+                                        <div className="text-xs text-emerald-600 font-medium mt-1.5">
+                                            Scanansehen →
+                                        </div>
+                                    </Link>
+                                ) : (
+                                    <div className="rounded-lg border border-gray-200 bg-gray-50/50 p-3">
+                                        <div className="font-semibold text-gray-600 mb-1">Kundendaten</div>
+                                        <div className="text-gray-700">
+                                            {orderDetails.customer ? (
+                                                <>
+                                                    <span>
+                                                        {[orderDetails.customer.vorname, orderDetails.customer.nachname]
+                                                            .filter(Boolean)
+                                                            .join(' ') || '–'}
+                                                    </span>
+                                                    {orderDetails.customer.customerNumber != null && (
+                                                        <span className="text-gray-500 ml-1">
+                                                            (Nr. {orderDetails.customer.customerNumber})
+                                                        </span>
+                                                    )}
+                                                </>
+                                            ) : (
+                                                '–'
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </>
                     ) : (

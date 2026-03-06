@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -14,6 +15,7 @@ const BODEN_OPTIONS = [
 type BodenOption = (typeof BODEN_OPTIONS)[number]['value'] | '';
 
 export default function BodenkonstruktionFiledText() {
+    const router = useRouter();
     const [bodenOption, setBodenOption] = useState<BodenOption>('');
     const [value, setValue] = useState('');
 
@@ -50,14 +52,17 @@ export default function BodenkonstruktionFiledText() {
                                 ? 'Hinweise zur internen Bodenkonstruktion'
                                 : 'Hinweise zur externen Bodenkonstruktion'}
                         </Label>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="text-gray-700 border-gray-400 hover:bg-gray-100"
-                        >
-                            erweitert
-                        </Button>
+                        {bodenOption === 'Intern' && (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="text-gray-700 border-gray-400 hover:bg-gray-100"
+                                onClick={() => router.push('/dashboard/bodenkonstruktion-customer-order')}
+                            >
+                                erweitert
+                            </Button>
+                        )}
                     </div>
                     <textarea
                         value={value}
