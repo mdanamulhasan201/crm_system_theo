@@ -17,15 +17,21 @@ export interface Step2Data {
     notes: string;
 }
 export type BettungType = 'on_last' | 'built_up';
+/** Thickness fields for "built_up" – separate for left (Links) and right (Rechts) */
 export interface Step3Data {
     material: string;
     thickness: string;
     notes: string;
     bettung_type?: BettungType | null;
     bettung_notes?: string;
-    thickness_heel?: string;
-    thickness_ball?: string;
-    thickness_toe?: string;
+    thickness_heel_l?: string;
+    thickness_heel_r?: string;
+    thickness_ball_l?: string;
+    thickness_ball_r?: string;
+    thickness_toe_l?: string;
+    thickness_toe_r?: string;
+    /** Notes when bettung_type === 'built_up' (shown at bottom of section) */
+    bettung_built_up_notes?: string;
 }
 export interface CustomerFittingData {
     fittingDate: Date | undefined;
@@ -276,7 +282,7 @@ export default function FilterCard({
                                         onValueChange={(value) => onLastDataChange({ ...lastData, leistentyp: value })}
                                     >
                                         <SelectTrigger className="w-full h-10 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-[#61A178] focus:border-transparent">
-                                            <SelectValue placeholder="Leistentyp wählen (optional)" />
+                                            <SelectValue placeholder="Leistentyp wählen" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {LEISTENTYP_OPTIONS.map((opt) => (
@@ -285,7 +291,7 @@ export default function FilterCard({
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div>
+                                {/* <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                         Leistengröße (optional)
                                     </label>
@@ -296,7 +302,7 @@ export default function FilterCard({
                                         placeholder="Leistengröße..."
                                         className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
-                                </div>
+                                </div> */}
                             </div>
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -355,17 +361,19 @@ export default function FilterCard({
                                     ...footbedData,
                                     bettung_type: 'on_last',
                                     bettung_notes: footbedData.bettung_notes ?? '',
-                                    thickness_heel: '',
-                                    thickness_ball: '',
-                                    thickness_toe: '',
+                                    thickness_heel_l: '', thickness_heel_r: '',
+                                    thickness_ball_l: '', thickness_ball_r: '',
+                                    thickness_toe_l: '', thickness_toe_r: '',
+                                    bettung_built_up_notes: '',
                                 })}
-                                className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 ${
+                                className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 text-left ${
                                     footbedData.bettung_type === 'on_last'
                                         ? 'bg-green-50 text-[#61A178] border-2 border-green-400'
                                         : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                                 }`}
                             >
-                                Bettung wird auf dem Leisten erstellt
+                                <span className="block">Bettung wird auf dem Leisten erstellt</span>
+                                <span className="block text-xs font-normal text-gray-500 mt-0.5">(Form wird direkt in den Leisten eingeschliffen)</span>
                             </button>
                             <button
                                 type="button"
@@ -373,17 +381,22 @@ export default function FilterCard({
                                     ...footbedData,
                                     bettung_type: 'built_up',
                                     bettung_notes: '',
-                                    thickness_heel: footbedData.thickness_heel ?? '',
-                                    thickness_ball: footbedData.thickness_ball ?? '',
-                                    thickness_toe: footbedData.thickness_toe ?? '',
+                                    thickness_heel_l: footbedData.thickness_heel_l ?? '',
+                                    thickness_heel_r: footbedData.thickness_heel_r ?? '',
+                                    thickness_ball_l: footbedData.thickness_ball_l ?? '',
+                                    thickness_ball_r: footbedData.thickness_ball_r ?? '',
+                                    thickness_toe_l: footbedData.thickness_toe_l ?? '',
+                                    thickness_toe_r: footbedData.thickness_toe_r ?? '',
+                                    bettung_built_up_notes: footbedData.bettung_built_up_notes ?? '',
                                 })}
-                                className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 ${
+                                className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 text-left ${
                                     footbedData.bettung_type === 'built_up'
                                         ? 'bg-green-50 text-[#61A178] border-2 border-green-400'
                                         : 'bg-white text-gray-700 border-gray-300 hover:border-gray-400'
                                 }`}
                             >
-                                Bettung wird brutto aufgebaut
+                                <span className="block">Bettung wird brutto aufgebaut</span>
+                                <span className="block text-xs font-normal text-gray-500 mt-0.5">(Einlage wird gefräst oder separat ergänzt)</span>
                             </button>
                         </div>
                         {footbedData.bettung_type == null && (
@@ -412,41 +425,72 @@ export default function FilterCard({
                             </div>
                         )}
                         {footbedData.bettung_type === 'built_up' && (
-                            <div className="space-y-3">
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                    {[
-                                        { key: 'thickness_heel' as const, label: 'Dicke Ferse (mm)' },
-                                        { key: 'thickness_ball' as const, label: 'Dicke Ballen (mm)' },
-                                        { key: 'thickness_toe' as const, label: 'Dicke Spitze (mm)' },
-                                    ].map(({ key, label }) => {
-                                        const val = footbedData[key] ?? '';
-                                        const num = val === '' ? NaN : parseFloat(val.replace(',', '.'));
-                                        const isEmpty = val.trim() === '';
-                                        const invalid = !isEmpty && (Number.isNaN(num) || num <= 0);
-                                        const showRequired = isEmpty;
-                                        const showInvalid = invalid;
-                                        return (
-                                            <div key={key}>
-                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                                    {label}
-                                                </label>
+                            <div className="space-y-4">
+                                <p className="text-xs text-gray-600 mb-2">Alle Felder sind Pflichtfelder (Links und Rechts getrennt).</p>
+                                {[
+                                    { label: 'Dicke Ferse (mm)', keyL: 'thickness_heel_l' as const, keyR: 'thickness_heel_r' as const },
+                                    { label: 'Dicke Ballen (mm)', keyL: 'thickness_ball_l' as const, keyR: 'thickness_ball_r' as const },
+                                    { label: 'Dicke Spitze (mm)', keyL: 'thickness_toe_l' as const, keyR: 'thickness_toe_r' as const },
+                                ].map(({ label, keyL, keyR }) => {
+                                    const valL = footbedData[keyL] ?? '';
+                                    const valR = footbedData[keyR] ?? '';
+                                    const numL = valL === '' ? NaN : parseFloat(String(valL).replace(',', '.'));
+                                    const numR = valR === '' ? NaN : parseFloat(String(valR).replace(',', '.'));
+                                    const isEmptyL = valL.trim() === '';
+                                    const isEmptyR = valR.trim() === '';
+                                    const invalidL = !isEmptyL && (Number.isNaN(numL) || numL <= 0);
+                                    const invalidR = !isEmptyR && (Number.isNaN(numR) || numR <= 0);
+                                    const errMsg = (empty: boolean, invalid: boolean, num: number) => {
+                                        if (empty) return 'Dieses Feld ist erforderlich.';
+                                        if (invalid) return num <= 0 ? 'Wert muss größer als 0 sein.' : 'Bitte einen gültigen Wert in mm eingeben.';
+                                        return null;
+                                    };
+                                    return (
+                                        <div key={label} className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">{label} – Links</label>
                                                 <input
                                                     type="text"
                                                     inputMode="decimal"
-                                                    value={val}
-                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, [key]: e.target.value })}
+                                                    value={valL}
+                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, [keyL]: e.target.value })}
                                                     placeholder="mm"
-                                                    step={0.1}
                                                     className={cn(
                                                         "w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent",
-                                                        (showRequired || showInvalid) ? "border-red-400" : "border-gray-300"
+                                                        (isEmptyL || invalidL) ? "border-red-400" : "border-gray-300"
                                                     )}
                                                 />
-                                                {showRequired && <p className="text-xs text-red-600 mt-1">Dieses Feld ist erforderlich.</p>}
-                                                {showInvalid && <p className="text-xs text-red-600 mt-1">{num <= 0 ? 'Wert muss größer als 0 sein.' : 'Bitte einen gültigen Wert in mm eingeben.'}</p>}
+                                                {(isEmptyL || invalidL) && <p className="text-xs text-red-600 mt-1">{errMsg(isEmptyL, invalidL, numL)}</p>}
                                             </div>
-                                        );
-                                    })}
+                                            <div>
+                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">{label} – Rechts</label>
+                                                <input
+                                                    type="text"
+                                                    inputMode="decimal"
+                                                    value={valR}
+                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, [keyR]: e.target.value })}
+                                                    placeholder="mm"
+                                                    className={cn(
+                                                        "w-full px-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent",
+                                                        (isEmptyR || invalidR) ? "border-red-400" : "border-gray-300"
+                                                    )}
+                                                />
+                                                {(isEmptyR || invalidR) && <p className="text-xs text-red-600 mt-1">{errMsg(isEmptyR, invalidR, numR)}</p>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                                <div className="pt-2 border-t border-gray-200">
+                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                        Zusätzliche Notizen (optional)
+                                    </label>
+                                    <textarea
+                                        value={footbedData.bettung_built_up_notes ?? ''}
+                                        onChange={(e) => onFootbedDataChange({ ...footbedData, bettung_built_up_notes: e.target.value })}
+                                        placeholder="Besondere Vorgaben zur Form oder Bearbeitung angeben"
+                                        rows={3}
+                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
+                                    />
                                 </div>
                             </div>
                         )}

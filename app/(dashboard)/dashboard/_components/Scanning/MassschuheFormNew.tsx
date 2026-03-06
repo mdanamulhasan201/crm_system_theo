@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import { useCreateMassschuhe } from '@/hooks/massschuhe/useCreateMassschuhe';
 import toast from 'react-hot-toast';
-import MassschuheOrderModal from './MassschuheOrderModal';
+import MassschuheOrderModal, { type MassschuheOrderModalFormData } from './MassschuheOrderModal';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import RezeptCard from './Masschuhe/RezeptCard';
@@ -200,7 +200,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [leistenVorhanden, setLeistenVorhanden] = useState<boolean | null>(null);
     const [bettungErforderlich, setBettungErforderlich] = useState<boolean | null>(null);
     const [lastData, setLastData] = useState<Step2Data>({ material: '', leistentyp: '', leistengroesse: '', notes: '' });
-    const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel: '', thickness_ball: '', thickness_toe: '' });
+    const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel_l: '', thickness_heel_r: '', thickness_ball_l: '', thickness_ball_r: '', thickness_toe_l: '', thickness_toe_r: '', bettung_built_up_notes: '' });
     const [internalPrepData, setInternalPrepData] = useState<InternalPrepData>({ notes: '', preparationDate: undefined });
     const [customerFittingData, setCustomerFittingData] = useState<CustomerFittingData>({ fittingDate: undefined, adjustments: '', customerNotes: '' });
 
@@ -305,6 +305,32 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         setShowSuggestions(open);
     };
 
+    // Bettung section valid when required: type selected + conditional fields filled
+    const isBettungValid = useMemo(() => {
+        if (bettungErforderlich !== true) return true;
+        const type = footbedData.bettung_type;
+        if (type == null) return false;
+        if (type === 'on_last') {
+            return (footbedData.bettung_notes?.trim() ?? '') !== '';
+        }
+        if (type === 'built_up') {
+            const parse = (s: string | undefined) => {
+                if (s == null || String(s).trim() === '') return NaN;
+                return parseFloat(String(s).replace(',', '.'));
+            };
+            const hl = parse(footbedData.thickness_heel_l);
+            const hr = parse(footbedData.thickness_heel_r);
+            const bl = parse(footbedData.thickness_ball_l);
+            const br = parse(footbedData.thickness_ball_r);
+            const tl = parse(footbedData.thickness_toe_l);
+            const tr = parse(footbedData.thickness_toe_r);
+            return Number.isFinite(hl) && hl > 0 && Number.isFinite(hr) && hr > 0
+                && Number.isFinite(bl) && bl > 0 && Number.isFinite(br) && br > 0
+                && Number.isFinite(tl) && tl > 0 && Number.isFinite(tr) && tr > 0;
+        }
+        return false;
+    }, [bettungErforderlich, footbedData.bettung_type, footbedData.bettung_notes, footbedData.thickness_heel_l, footbedData.thickness_heel_r, footbedData.thickness_ball_l, footbedData.thickness_ball_r, footbedData.thickness_toe_l, footbedData.thickness_toe_r]);
+
     // Handle form submission - Show order creation modal
     const handleSubmit = () => {
         // Validation
@@ -320,6 +346,11 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
 
         if (!ärztlicheDiagnose.trim()) {
             toast.error('Bitte geben Sie eine ärztliche Diagnose ein');
+            return;
+        }
+
+        if (bettungErforderlich === true && !isBettungValid) {
+            toast.error('Bitte eine Ausführungsart wählen und alle Pflichtfelder zur Bettung ausfüllen.');
             return;
         }
 
@@ -348,7 +379,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setLeistenVorhanden(null);
             setBettungErforderlich(null);
             setLastData({ material: '', leistentyp: '', leistengroesse: '', notes: '' });
-            setFootbedData({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel: '', thickness_ball: '', thickness_toe: '' });
+            setFootbedData({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel_l: '', thickness_heel_r: '', thickness_ball_l: '', thickness_ball_r: '', thickness_toe_l: '', thickness_toe_r: '', bettung_built_up_notes: '' });
             setInternalPrepData({ notes: '', preparationDate: undefined });
             setCustomerFittingData({ fittingDate: undefined, adjustments: '', customerNotes: '' });
             if (onDataRefresh) onDataRefresh();
@@ -462,7 +493,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     <Button
                         type="button"
                         onClick={handleSubmit}
-                        disabled={isLoading}
+                        disabled={isLoading || (bettungErforderlich === true && !isBettungValid)}
                         className="bg-[#61A178] cursor-pointer transform duration-300 text-white rounded-full px-12 py-2 text-sm font-semibold focus:outline-none hover:bg-[#4A8A5F] transition-colors flex items-center justify-center min-w-[160px] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? (
@@ -509,10 +540,15 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     step2_notes: lastData.notes,
                     bedding_required: bettungErforderlich === true,
                     bettung_type: footbedData.bettung_type ?? undefined,
-                    bettung_notes: footbedData.bettung_notes ?? '',
-                    thickness_heel: footbedData.thickness_heel ?? '',
-                    thickness_ball: footbedData.thickness_ball ?? '',
-                    thickness_toe: footbedData.thickness_toe ?? '',
+                    // Only pass active branch: do not submit hidden field values (L/R separate for built_up)
+                    bettung_notes: footbedData.bettung_type === 'on_last' ? (footbedData.bettung_notes ?? '') : '',
+                    thickness_heel_l: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_heel_l ?? '') : '',
+                    thickness_heel_r: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_heel_r ?? '') : '',
+                    thickness_ball_l: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_ball_l ?? '') : '',
+                    thickness_ball_r: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_ball_r ?? '') : '',
+                    thickness_toe_l: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_toe_l ?? '') : '',
+                    thickness_toe_r: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_toe_r ?? '') : '',
+                    bettung_built_up_notes: footbedData.bettung_type === 'built_up' ? (footbedData.bettung_built_up_notes ?? '') : '',
                     step3_material: footbedData.material,
                     step3_thickness: footbedData.thickness,
                     step3_notes: footbedData.notes,
@@ -527,7 +563,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     step5_fitting_date: customerFittingData.fittingDate
                         ? customerFittingData.fittingDate.toISOString()
                         : undefined,
-                }}
+                } as MassschuheOrderModalFormData}
                 onSubmit={handleOrderSubmit}
                 isLoading={isLoading}
             />

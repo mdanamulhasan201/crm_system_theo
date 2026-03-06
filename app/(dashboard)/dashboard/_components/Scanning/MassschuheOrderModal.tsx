@@ -65,13 +65,22 @@ export interface MassschuheOrderV2Payload {
     bettung_notes?: string;
     /** Payload key for "Zusätzliche Notizen zur Bettung" (Step 3, on_last) */
     zusätzliche_notizen?: string;
-    thickness_heel?: string;
-    thickness_ball?: string;
-    thickness_toe?: string;
-    /** Payload keys when Bettung wird brutto aufgebaut */
-    dicke_ferse?: string;
-    dicke_ballen?: string;
-    dicke_spitze?: string;
+    /** Built-up Bettung: thickness per side (Links/Rechts) */
+    thickness_heel_l?: string;
+    thickness_heel_r?: string;
+    thickness_ball_l?: string;
+    thickness_ball_r?: string;
+    thickness_toe_l?: string;
+    thickness_toe_r?: string;
+    /** Payload keys when Bettung wird brutto aufgebaut (per side) */
+    dicke_ferse_l?: string;
+    dicke_ferse_r?: string;
+    dicke_ballen_l?: string;
+    dicke_ballen_r?: string;
+    dicke_spitze_l?: string;
+    dicke_spitze_r?: string;
+    /** Notes when Bettung wird brutto aufgebaut */
+    bettung_built_up_notes?: string;
     step3_material?: string;
     step3_thickness?: string;
     step3_notes?: string;
@@ -87,64 +96,58 @@ export interface MassschuheOrderV2Payload {
     order_note?: string;
 }
 
+/** Form data passed into the order modal (from MassschuheFormNew) */
+export interface MassschuheOrderModalFormData {
+    arztlicheDiagnose: string;
+    ausführlicheDiagnose: string;
+    rezeptnummer?: string;
+    versorgungNote: string;
+    halbprobeGeplant: boolean | null;
+    kostenvoranschlag: boolean | null;
+    selectedEmployee: string;
+    selectedEmployeeId: string;
+    selectedPositionsnummer?: string[];
+    positionsnummerAustriaData?: any[];
+    positionsnummerItalyData?: any[];
+    itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
+    billingType?: 'Krankenkassa' | 'Privat';
+    price?: string;
+    brutto?: string;
+    tax?: string;
+    rabatt?: string;
+    nettoPreis?: string;
+    priceCalculations?: { basisPreis?: number; discountPercent?: number; discountAmount?: number; netto: number; mwst: number; brutto: number };
+    has_trim_strips?: boolean;
+    step2_material?: string;
+    leistentyp?: string;
+    leistengroesse?: string;
+    step2_notes?: string;
+    bedding_required?: boolean;
+    bettung_type?: 'on_last' | 'built_up' | null;
+    bettung_notes?: string;
+    thickness_heel_l?: string;
+    thickness_heel_r?: string;
+    thickness_ball_l?: string;
+    thickness_ball_r?: string;
+    thickness_toe_l?: string;
+    thickness_toe_r?: string;
+    bettung_built_up_notes?: string;
+    step3_material?: string;
+    step3_thickness?: string;
+    step3_notes?: string;
+    adjustments?: string;
+    customer_reviews?: string;
+    halbprobeErforderlich?: boolean | null;
+    step4_preparation_date?: string;
+    step4_notes?: string;
+    step5_fitting_date?: string;
+}
+
 interface MassschuheOrderModalProps {
     isOpen: boolean;
     onClose: () => void;
     customer?: Customer;
-    formData: {
-        arztlicheDiagnose: string;
-        ausführlicheDiagnose: string;
-        rezeptnummer?: string;
-        versorgungNote: string;
-        halbprobeGeplant: boolean | null;
-        kostenvoranschlag: boolean | null;
-        selectedEmployee: string;
-        selectedEmployeeId: string;
-        selectedPositionsnummer?: string[];
-        positionsnummerAustriaData?: any[];
-        positionsnummerItalyData?: any[];
-        /** Per-position side: L, R, or BDS (BDS = price × 2) */
-        itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
-        billingType?: 'Krankenkassa' | 'Privat';
-        price?: string;
-        brutto?: string;
-        tax?: string;
-        /** Privat: discount % (e.g. "10") */
-        rabatt?: string;
-        /** Privat: basis price (Brutto before discount) */
-        nettoPreis?: string;
-        /** Privat: full breakdown for display */
-        priceCalculations?: {
-            basisPreis?: number;
-            discountPercent?: number;
-            discountAmount?: number;
-            netto: number;
-            mwst: number;
-            brutto: number;
-        };
-        /** Produktionsworkflow – same names as API payload */
-        has_trim_strips?: boolean;
-        step2_material?: string;
-        leistentyp?: string;
-        leistengroesse?: string;
-        step2_notes?: string;
-        bedding_required?: boolean;
-        bettung_type?: 'on_last' | 'built_up' | null;
-        bettung_notes?: string;
-        thickness_heel?: string;
-        thickness_ball?: string;
-        thickness_toe?: string;
-        step3_material?: string;
-        step3_thickness?: string;
-        step3_notes?: string;
-        adjustments?: string;
-        customer_reviews?: string;
-        /** Halbprobe from Produktionsworkflow – when true, send Step 4 & 5 data */
-        halbprobeErforderlich?: boolean | null;
-        step4_preparation_date?: string;
-        step4_notes?: string;
-        step5_fitting_date?: string;
-    };
+    formData: MassschuheOrderModalFormData;
     onSubmit: (orderData: MassschuheOrderV2Payload) => Promise<void>;
     isLoading?: boolean;
 }
@@ -474,12 +477,19 @@ export default function MassschuheOrderModal({
             bettung_type: formData.bedding_required ? (formData.bettung_type ?? undefined) : undefined,
             bettung_notes: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
             zusätzliche_notizen: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
-            thickness_heel: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel ?? '') : undefined,
-            thickness_ball: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball ?? '') : undefined,
-            thickness_toe: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe ?? '') : undefined,
-            dicke_ferse: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel?.trim() || undefined) : undefined,
-            dicke_ballen: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball?.trim() || undefined) : undefined,
-            dicke_spitze: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe?.trim() || undefined) : undefined,
+            thickness_heel_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_l?.trim() || undefined) : undefined,
+            thickness_heel_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_r?.trim() || undefined) : undefined,
+            thickness_ball_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_l?.trim() || undefined) : undefined,
+            thickness_ball_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_r?.trim() || undefined) : undefined,
+            thickness_toe_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_l?.trim() || undefined) : undefined,
+            thickness_toe_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_r?.trim() || undefined) : undefined,
+            dicke_ferse_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_l?.trim() || undefined) : undefined,
+            dicke_ferse_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_r?.trim() || undefined) : undefined,
+            dicke_ballen_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_l?.trim() || undefined) : undefined,
+            dicke_ballen_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_r?.trim() || undefined) : undefined,
+            dicke_spitze_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_l?.trim() || undefined) : undefined,
+            dicke_spitze_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_r?.trim() || undefined) : undefined,
+            bettung_built_up_notes: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.bettung_built_up_notes?.trim() || undefined) : undefined,
             step3_material: formData.bedding_required ? (formData.step3_material ?? '') : undefined,
             step3_thickness: formData.bedding_required ? (formData.step3_thickness ?? '') : undefined,
             step3_notes: formData.bedding_required ? (formData.step3_notes ?? '') : undefined,
@@ -509,10 +519,15 @@ export default function MassschuheOrderModal({
                 if (s == null || s.trim() === '') return NaN;
                 return parseFloat(String(s).replace(',', '.'));
             };
-            const h = parse(formData.thickness_heel);
-            const b = parse(formData.thickness_ball);
-            const t = parse(formData.thickness_toe);
-            return Number.isFinite(h) && h > 0 && Number.isFinite(b) && b > 0 && Number.isFinite(t) && t > 0;
+            const hl = parse(formData.thickness_heel_l);
+            const hr = parse(formData.thickness_heel_r);
+            const bl = parse(formData.thickness_ball_l);
+            const br = parse(formData.thickness_ball_r);
+            const tl = parse(formData.thickness_toe_l);
+            const tr = parse(formData.thickness_toe_r);
+            return Number.isFinite(hl) && hl > 0 && Number.isFinite(hr) && hr > 0
+                && Number.isFinite(bl) && bl > 0 && Number.isFinite(br) && br > 0
+                && Number.isFinite(tl) && tl > 0 && Number.isFinite(tr) && tr > 0;
         }
         return false;
     };
