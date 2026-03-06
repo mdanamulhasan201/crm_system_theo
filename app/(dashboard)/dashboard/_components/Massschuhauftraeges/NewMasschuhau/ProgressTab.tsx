@@ -7,8 +7,9 @@ import { PlusIcon, LayoutGrid } from 'lucide-react';
 import SchnellAuftragModal from './SchnellAuftragModal';
 
 export default function ProgressTab() {
-    const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(0);
-    const [showAllOrders, setShowAllOrders] = useState(false);
+    // On load: "Alle Aufträge" active, all data shown; no progress tab selected
+    const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
+    const [showAllOrders, setShowAllOrders] = useState(true);
     const [schnellModalOpen, setSchnellModalOpen] = useState(false);
 
     const handleStepClick = (stepIndex: number) => {

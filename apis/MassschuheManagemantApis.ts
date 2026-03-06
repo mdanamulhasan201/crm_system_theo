@@ -88,10 +88,12 @@ export const getMassschuheOrderData = async () => {
 }
 
 
-// get chart data /massschuhe-order/stats/chart
-export const getMassschuheOrderChartData = async () => {
+// get chart data /v2/shoe-orders/statistic/get-revenue-chart-data?
+// month=3
+// &year=2026
+export const getMassschuheOrderChartData = async (month: number, year: number) => {
     try {
-        const response = await axiosClient.get(`/massschuhe-order/stats/revenue`);
+        const response = await axiosClient.get(`/v2/shoe-orders/statistic/get-revenue-chart-data?month=${month}&year=${year}`);
         return response.data;
     } catch (error) {
         throw error;
