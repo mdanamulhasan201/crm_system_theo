@@ -661,9 +661,6 @@ export default function MasschuProgressTable({
                                 Fortschritt
                             </TableHead>
                             <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6">
-                                Nächste Aktion
-                            </TableHead>
-                            <TableHead className="font-semibold text-gray-600 text-sm py-4 px-6">
                                 Aktion
                             </TableHead>
                         </TableRow>
@@ -671,7 +668,7 @@ export default function MasschuProgressTable({
                     <TableBody>
                         {filteredData.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={10} className="py-8 text-center text-gray-500">
+                                <TableCell colSpan={9} className="py-8 text-center text-gray-500">
                                     Keine Daten für diesen Schritt verfügbar
                                 </TableCell>
                             </TableRow>
@@ -756,11 +753,6 @@ export default function MasschuProgressTable({
                                     <TableCell className="py-4 px-6">
                                         <div className="overflow-x-auto">
                                             <ProgressIndicator currentStepIndex={row.currentStepIndex} completedStepIndices={row.completedStepIndices} completedStepsInfo={row.completedStepsInfo} />
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="py-4 px-6">
-                                        <div className="text-gray-700 text-sm whitespace-nowrap">
-                                            {row.nextAction}
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
