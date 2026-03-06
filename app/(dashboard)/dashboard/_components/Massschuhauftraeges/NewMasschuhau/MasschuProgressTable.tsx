@@ -473,7 +473,7 @@ export default function MasschuProgressTable({
         }
     };
 
-    const handleRowClick = (e: React.MouseEvent, stepIndex: number) => {
+    const handleRowClick = (e: React.MouseEvent, row: ProgressData) => {
         // Don't trigger row click if clicking on checkbox, note button, or action buttons
         if ((e.target as HTMLElement).closest('[type="checkbox"]') ||
             (e.target as HTMLElement).closest('.checkbox-container') ||
@@ -484,7 +484,9 @@ export default function MasschuProgressTable({
             (e.target as HTMLElement).closest('button[title="Priorität entfernen"]')) {
             return;
         }
-        onRowClick?.(stepIndex);
+        const statusParam = SHOE_STEPS[row.currentStepIndex]?.replace(/\s+/g, '_') ?? 'Auftragserstellung';
+        router.push(`/dashboard/massschuhauftraege/${row.id}?status=${encodeURIComponent(statusParam)}`);
+        onRowClick?.(row.currentStepIndex);
     };
 
     return (
@@ -571,7 +573,7 @@ export default function MasschuProgressTable({
                                                 ? 'bg-red-50/40 hover:bg-gray-50'
                                                 : 'hover:bg-gray-50'
                                     }`}
-                                    onClick={(e) => handleRowClick(e, row.currentStepIndex)}
+                                    onClick={(e) => handleRowClick(e, row)}
                                 >
                                     <TableCell className="py-4 px-4">
                                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
