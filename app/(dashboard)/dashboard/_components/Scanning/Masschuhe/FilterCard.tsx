@@ -3,6 +3,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,21 @@ export interface Step3Data {
     thickness_toe_r?: string;
     /** Notes when bettung_type === 'built_up' (shown at bottom of section) */
     bettung_built_up_notes?: string;
+    /** Erweiterte Daten (on_last): AUFBAU + ZUSATZELEMENTE */
+    schicht1_material?: string;
+    schicht1_starke?: string;
+    schicht2_material?: string;
+    schicht2_starke?: string;
+    decksohle_material?: string;
+    decksohle_starke?: string;
+    versteifung?: boolean | null;
+    /** Shown when Versteifung === Ja */
+    versteifung_material?: string;
+    versteifung_zone?: string;
+    pelotte?: boolean | null;
+    /** Höhe (mm) when Pelotte === Ja – left and right */
+    pelotte_hoehe_l?: string;
+    pelotte_hoehe_r?: string;
 }
 export interface CustomerFittingData {
     fittingDate: Date | undefined;
@@ -365,6 +381,18 @@ export default function FilterCard({
                                     thickness_ball_l: '', thickness_ball_r: '',
                                     thickness_toe_l: '', thickness_toe_r: '',
                                     bettung_built_up_notes: '',
+                                    schicht1_material: footbedData.schicht1_material ?? '',
+                                    schicht1_starke: footbedData.schicht1_starke ?? '',
+                                    schicht2_material: footbedData.schicht2_material ?? '',
+                                    schicht2_starke: footbedData.schicht2_starke ?? '',
+                                    decksohle_material: footbedData.decksohle_material ?? '',
+                                    decksohle_starke: footbedData.decksohle_starke ?? '',
+                                    versteifung: footbedData.versteifung ?? null,
+                                    versteifung_material: footbedData.versteifung_material ?? '',
+                                    versteifung_zone: footbedData.versteifung_zone ?? '',
+                                    pelotte: footbedData.pelotte ?? null,
+                                    pelotte_hoehe_l: footbedData.pelotte_hoehe_l ?? '',
+                                    pelotte_hoehe_r: footbedData.pelotte_hoehe_r ?? '',
                                 })}
                                 className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 text-left ${
                                     footbedData.bettung_type === 'on_last'
@@ -388,6 +416,8 @@ export default function FilterCard({
                                     thickness_toe_l: footbedData.thickness_toe_l ?? '',
                                     thickness_toe_r: footbedData.thickness_toe_r ?? '',
                                     bettung_built_up_notes: footbedData.bettung_built_up_notes ?? '',
+                                    schicht1_material: '', schicht1_starke: '', schicht2_material: '', schicht2_starke: '',
+                                    decksohle_material: '', decksohle_starke: '', versteifung: null, versteifung_material: '', versteifung_zone: '', pelotte: null, pelotte_hoehe_l: '', pelotte_hoehe_r: '',
                                 })}
                                 className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-all cursor-pointer border-2 text-left ${
                                     footbedData.bettung_type === 'built_up'
@@ -403,7 +433,8 @@ export default function FilterCard({
                             <p className="text-xs text-red-600 mb-2">Bitte eine Ausführungsart wählen.</p>
                         )}
                         {footbedData.bettung_type === 'on_last' && (
-                            <div className="space-y-3">
+                            <div className="space-y-4">
+                                {/* Zusätzliche Notizen – normal field, NOT inside accordion */}
                                 <div>
                                     <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                         Zusätzliche Notizen zur Bettung (Pflichtfeld)
@@ -422,6 +453,199 @@ export default function FilterCard({
                                         <p className="text-xs text-red-600 mt-1">Dieses Feld ist erforderlich.</p>
                                     )}
                                 </div>
+                                {/* Erweiterte Daten – shadcn accordion with new fields */}
+                                <Accordion type="single" collapsible defaultValue="erweiterte-daten" className="rounded-md border border-gray-200 bg-white">
+                                    <AccordionItem value="erweiterte-daten" className="border-none">
+                                        <AccordionTrigger className="px-4 py-3 text-sm font-medium text-gray-700 hover:no-underline hover:bg-gray-50 rounded-t-md data-[state=open]:rounded-b-none">
+                                            Erweiterte Daten ausblenden
+                                        </AccordionTrigger>
+                                        <AccordionContent className="px-4 pb-4 pt-0">
+                                            <div className="space-y-5">
+                                                {/* AUFBAU */}
+                                                <div>
+                                                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">AUFBAU</h4>
+                                                    <div className="space-y-3">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Schicht 1 – Material</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={footbedData.schicht1_material ?? ''}
+                                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, schicht1_material: e.target.value })}
+                                                                    placeholder="z.B. EVA"
+                                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Schicht 1 – Stärke (mm)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    inputMode="decimal"
+                                                                    value={footbedData.schicht1_starke ?? ''}
+                                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, schicht1_starke: e.target.value })}
+                                                                    placeholder="mm"
+                                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Schicht 2 – Material</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={footbedData.schicht2_material ?? ''}
+                                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, schicht2_material: e.target.value })}
+                                                                    placeholder="z.B. Kork"
+                                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Schicht 2 – Stärke (mm)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    inputMode="decimal"
+                                                                    value={footbedData.schicht2_starke ?? ''}
+                                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, schicht2_starke: e.target.value })}
+                                                                    placeholder="mm"
+                                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {/* ZUSATZELEMENTE */}
+                                                <div className="pt-3 border-t border-gray-200">
+                                                    <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-3">ZUSATZELEMENTE</h4>
+                                                    <div className="space-y-3">
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Decksohle – Material</label>
+                                                                <input
+                                                                    type="text"
+                                                                    value={footbedData.decksohle_material ?? ''}
+                                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, decksohle_material: e.target.value })}
+                                                                    placeholder="z.B. Leder"
+                                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Decksohle – Stärke (mm)</label>
+                                                                <input
+                                                                    type="text"
+                                                                    inputMode="decimal"
+                                                                    value={footbedData.decksohle_starke ?? ''}
+                                                                    onChange={(e) => onFootbedDataChange({ ...footbedData, decksohle_starke: e.target.value })}
+                                                                    placeholder="mm"
+                                                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700 mb-1.5">Versteifung</label>
+                                                            <div className="flex gap-3 mt-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => onFootbedDataChange({ ...footbedData, versteifung: true })}
+                                                                    className={cn(
+                                                                        "flex-1 px-4 py-2.5 rounded-md text-sm font-medium border-2 cursor-pointer transition-all",
+                                                                        footbedData.versteifung === true ? "bg-green-50 text-[#61A178] border-green-400" : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+                                                                    )}
+                                                                >
+                                                                    Ja
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => onFootbedDataChange({ ...footbedData, versteifung: false, versteifung_material: '', versteifung_zone: '' })}
+                                                                    className={cn(
+                                                                        "flex-1 px-4 py-2.5 rounded-md text-sm font-medium border-2 cursor-pointer transition-all",
+                                                                        footbedData.versteifung === false ? "bg-green-50 text-[#61A178] border-green-400" : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+                                                                    )}
+                                                                >
+                                                                    Nein
+                                                                </button>
+                                                            </div>
+                                                            {footbedData.versteifung === true && (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Material</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={footbedData.versteifung_material ?? ''}
+                                                                            onChange={(e) => onFootbedDataChange({ ...footbedData, versteifung_material: e.target.value })}
+                                                                            placeholder="z.B. Carbonfaser"
+                                                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Zone</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            value={footbedData.versteifung_zone ?? ''}
+                                                                            onChange={(e) => onFootbedDataChange({ ...footbedData, versteifung_zone: e.target.value })}
+                                                                            placeholder="z.B. Mittelfuß"
+                                                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-medium text-gray-700 mb-1.5">Pelotte</label>
+                                                            <div className="flex gap-3 mt-1">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => onFootbedDataChange({ ...footbedData, pelotte: true })}
+                                                                    className={cn(
+                                                                        "flex-1 px-4 py-2.5 rounded-md text-sm font-medium border-2 cursor-pointer transition-all",
+                                                                        footbedData.pelotte === true ? "bg-green-50 text-[#61A178] border-green-400" : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+                                                                    )}
+                                                                >
+                                                                    Ja
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => onFootbedDataChange({ ...footbedData, pelotte: false, pelotte_hoehe_l: '', pelotte_hoehe_r: '' })}
+                                                                    className={cn(
+                                                                        "flex-1 px-4 py-2.5 rounded-md text-sm font-medium border-2 cursor-pointer transition-all",
+                                                                        footbedData.pelotte === false ? "bg-green-50 text-[#61A178] border-green-400" : "bg-white text-gray-700 border-gray-300 hover:border-gray-400"
+                                                                    )}
+                                                                >
+                                                                    Nein
+                                                                </button>
+                                                            </div>
+                                                            {footbedData.pelotte === true && (
+                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Höhe – Links (mm)</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            inputMode="decimal"
+                                                                            value={footbedData.pelotte_hoehe_l ?? ''}
+                                                                            onChange={(e) => onFootbedDataChange({ ...footbedData, pelotte_hoehe_l: e.target.value })}
+                                                                            placeholder="mm"
+                                                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                        />
+                                                                    </div>
+                                                                    <div>
+                                                                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Höhe – Rechts (mm)</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            inputMode="decimal"
+                                                                            value={footbedData.pelotte_hoehe_r ?? ''}
+                                                                            onChange={(e) => onFootbedDataChange({ ...footbedData, pelotte_hoehe_r: e.target.value })}
+                                                                            placeholder="mm"
+                                                                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
                             </div>
                         )}
                         {footbedData.bettung_type === 'built_up' && (

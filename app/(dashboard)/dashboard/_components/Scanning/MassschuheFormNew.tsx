@@ -200,7 +200,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [leistenVorhanden, setLeistenVorhanden] = useState<boolean | null>(null);
     const [bettungErforderlich, setBettungErforderlich] = useState<boolean | null>(null);
     const [lastData, setLastData] = useState<Step2Data>({ material: '', leistentyp: '', leistengroesse: '', notes: '' });
-    const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel_l: '', thickness_heel_r: '', thickness_ball_l: '', thickness_ball_r: '', thickness_toe_l: '', thickness_toe_r: '', bettung_built_up_notes: '' });
+    const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel_l: '', thickness_heel_r: '', thickness_ball_l: '', thickness_ball_r: '', thickness_toe_l: '', thickness_toe_r: '', bettung_built_up_notes: '', schicht1_material: '', schicht1_starke: '', schicht2_material: '', schicht2_starke: '', decksohle_material: '', decksohle_starke: '', versteifung: null, versteifung_material: '', versteifung_zone: '', pelotte: null, pelotte_hoehe_l: '', pelotte_hoehe_r: '' });
     const [internalPrepData, setInternalPrepData] = useState<InternalPrepData>({ notes: '', preparationDate: undefined });
     const [customerFittingData, setCustomerFittingData] = useState<CustomerFittingData>({ fittingDate: undefined, adjustments: '', customerNotes: '' });
 
@@ -379,7 +379,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setLeistenVorhanden(null);
             setBettungErforderlich(null);
             setLastData({ material: '', leistentyp: '', leistengroesse: '', notes: '' });
-            setFootbedData({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel_l: '', thickness_heel_r: '', thickness_ball_l: '', thickness_ball_r: '', thickness_toe_l: '', thickness_toe_r: '', bettung_built_up_notes: '' });
+            setFootbedData({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel_l: '', thickness_heel_r: '', thickness_ball_l: '', thickness_ball_r: '', thickness_toe_l: '', thickness_toe_r: '', bettung_built_up_notes: '', schicht1_material: '', schicht1_starke: '', schicht2_material: '', schicht2_starke: '', decksohle_material: '', decksohle_starke: '', versteifung: null, versteifung_material: '', versteifung_zone: '', pelotte: null, pelotte_hoehe_l: '', pelotte_hoehe_r: '' });
             setInternalPrepData({ notes: '', preparationDate: undefined });
             setCustomerFittingData({ fittingDate: undefined, adjustments: '', customerNotes: '' });
             if (onDataRefresh) onDataRefresh();
@@ -542,6 +542,18 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     bettung_type: footbedData.bettung_type ?? undefined,
                     // Only pass active branch: do not submit hidden field values (L/R separate for built_up)
                     bettung_notes: footbedData.bettung_type === 'on_last' ? (footbedData.bettung_notes ?? '') : '',
+                    schicht1_material: footbedData.bettung_type === 'on_last' ? (footbedData.schicht1_material ?? '') : '',
+                    schicht1_starke: footbedData.bettung_type === 'on_last' ? (footbedData.schicht1_starke ?? '') : '',
+                    schicht2_material: footbedData.bettung_type === 'on_last' ? (footbedData.schicht2_material ?? '') : '',
+                    schicht2_starke: footbedData.bettung_type === 'on_last' ? (footbedData.schicht2_starke ?? '') : '',
+                    decksohle_material: footbedData.bettung_type === 'on_last' ? (footbedData.decksohle_material ?? '') : '',
+                    decksohle_starke: footbedData.bettung_type === 'on_last' ? (footbedData.decksohle_starke ?? '') : '',
+                    versteifung: footbedData.bettung_type === 'on_last' ? footbedData.versteifung ?? undefined : undefined,
+                    versteifung_material: footbedData.bettung_type === 'on_last' ? (footbedData.versteifung_material ?? '') : '',
+                    versteifung_zone: footbedData.bettung_type === 'on_last' ? (footbedData.versteifung_zone ?? '') : '',
+                    pelotte: footbedData.bettung_type === 'on_last' ? footbedData.pelotte ?? undefined : undefined,
+                    pelotte_hoehe_l: footbedData.bettung_type === 'on_last' ? (footbedData.pelotte_hoehe_l ?? '') : '',
+                    pelotte_hoehe_r: footbedData.bettung_type === 'on_last' ? (footbedData.pelotte_hoehe_r ?? '') : '',
                     thickness_heel_l: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_heel_l ?? '') : '',
                     thickness_heel_r: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_heel_r ?? '') : '',
                     thickness_ball_l: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_ball_l ?? '') : '',

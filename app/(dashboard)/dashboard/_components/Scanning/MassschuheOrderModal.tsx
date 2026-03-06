@@ -81,6 +81,19 @@ export interface MassschuheOrderV2Payload {
     dicke_spitze_r?: string;
     /** Notes when Bettung wird brutto aufgebaut */
     bettung_built_up_notes?: string;
+    /** Erweiterte Daten (on_last) */
+    schicht1_material?: string;
+    schicht1_starke?: string;
+    schicht2_material?: string;
+    schicht2_starke?: string;
+    decksohle_material?: string;
+    decksohle_starke?: string;
+    versteifung?: boolean | null;
+    versteifung_material?: string;
+    versteifung_zone?: string;
+    pelotte?: boolean | null;
+    pelotte_hoehe_l?: string;
+    pelotte_hoehe_r?: string;
     step3_material?: string;
     step3_thickness?: string;
     step3_notes?: string;
@@ -132,6 +145,18 @@ export interface MassschuheOrderModalFormData {
     thickness_toe_l?: string;
     thickness_toe_r?: string;
     bettung_built_up_notes?: string;
+    schicht1_material?: string;
+    schicht1_starke?: string;
+    schicht2_material?: string;
+    schicht2_starke?: string;
+    decksohle_material?: string;
+    decksohle_starke?: string;
+    versteifung?: boolean | null;
+    versteifung_material?: string;
+    versteifung_zone?: string;
+    pelotte?: boolean | null;
+    pelotte_hoehe_l?: string;
+    pelotte_hoehe_r?: string;
     step3_material?: string;
     step3_thickness?: string;
     step3_notes?: string;
@@ -490,6 +515,18 @@ export default function MassschuheOrderModal({
             dicke_spitze_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_l?.trim() || undefined) : undefined,
             dicke_spitze_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_r?.trim() || undefined) : undefined,
             bettung_built_up_notes: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.bettung_built_up_notes?.trim() || undefined) : undefined,
+            schicht1_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht1_material?.trim() || undefined) : undefined,
+            schicht1_starke: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht1_starke?.trim() || undefined) : undefined,
+            schicht2_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht2_material?.trim() || undefined) : undefined,
+            schicht2_starke: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht2_starke?.trim() || undefined) : undefined,
+            decksohle_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.decksohle_material?.trim() || undefined) : undefined,
+            decksohle_starke: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.decksohle_starke?.trim() || undefined) : undefined,
+            versteifung: formData.bedding_required && formData.bettung_type === 'on_last' ? formData.versteifung ?? undefined : undefined,
+            versteifung_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.versteifung_material?.trim() || undefined) : undefined,
+            versteifung_zone: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.versteifung_zone?.trim() || undefined) : undefined,
+            pelotte: formData.bedding_required && formData.bettung_type === 'on_last' ? formData.pelotte ?? undefined : undefined,
+            pelotte_hoehe_l: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.pelotte_hoehe_l?.trim() || undefined) : undefined,
+            pelotte_hoehe_r: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.pelotte_hoehe_r?.trim() || undefined) : undefined,
             step3_material: formData.bedding_required ? (formData.step3_material ?? '') : undefined,
             step3_thickness: formData.bedding_required ? (formData.step3_thickness ?? '') : undefined,
             step3_notes: formData.bedding_required ? (formData.step3_notes ?? '') : undefined,
