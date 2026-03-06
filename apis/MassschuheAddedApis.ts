@@ -136,6 +136,16 @@ export const updateMassschuheOrderStatus = async (
     }
 };
 
+// step5update only, /v2/shoe-orders/order-step/update-step-5/{{status id}}
+export const updateMassschuheOrderStep5 = async (id: string, data: any) => {
+    try {
+        const response = await axiosClient.patch(`/v2/shoe-orders/order-step/update-step-5/${id}`, data);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
 
 
 // =================== Massschuhe Added APIs  Notes ======================
