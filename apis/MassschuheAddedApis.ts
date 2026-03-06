@@ -52,12 +52,29 @@ export const createMassschuheOrderV2 = async (massschuheOrderData: any) => {
 }
 
 
-// massschuhe all order get – cursor pagination: v2/shoe-orders/get-all?limit=2&status=Auftragserstellung&cursor=&search=
-// cursor: empty for first page, then use last item id or response.pagination.nextCursor for next page
-export const getAllMassschuheOrders = async (limit: number = 10, status: string = 'Auftragserstellung', cursor: string = '', search: string = '') => {
+// massschuhe all order get – cursor pagination
+// priority: blank = all, or Dringend | Normal (do not send "Alle" in payload)
+// paymentType: blank = all, or insurance | private | broth (do not send "Alle" in payload)
+// branchLocationTitle: location title from getAllLocations (description or title)
+export const getAllMassschuheOrders = async (
+    limit: number = 10,
+    status: string = '',
+    cursor: string = '',
+    search: string = '',
+    priority: string = '',
+    paymentType: string = '',
+    branchLocationTitle: string = ''
+) => {
     try {
-        const cursorParam = cursor ? encodeURIComponent(cursor) : '';
-        const response = await axiosClient.get(`/v2/shoe-orders/get-all?limit=${limit}&status=${status}&cursor=${cursorParam}&search=${encodeURIComponent(search || '')}`);
+        const params = new URLSearchParams();
+        params.set('limit', String(limit));
+        params.set('status', status || '');
+        params.set('cursor', cursor ? encodeURIComponent(cursor) : '');
+        params.set('search', search || '');
+        if (priority) params.set('priority', priority);
+        if (paymentType) params.set('paymentType', paymentType);
+        if (branchLocationTitle) params.set('branchLocationTitle', encodeURIComponent(branchLocationTitle));
+        const response = await axiosClient.get(`/v2/shoe-orders/get-all?${params.toString()}`);
         return response.data;
     } catch (error: any) {
         throw error;

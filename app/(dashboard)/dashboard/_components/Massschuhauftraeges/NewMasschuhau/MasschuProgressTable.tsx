@@ -10,7 +10,9 @@ import MasschuhauNoteModal from './MasschuhauNoteModal';
 import PriorityModal from './PriorityModal';
 import MasschuHistorySidebar from './MasschuHistorySidebar';
 import { getAllMassschuheOrders, updateMassschuheOrderPriority } from '@/apis/MassschuheAddedApis';
+import { getAllLocations } from '@/apis/setting/locationManagementApis';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // API response types
@@ -157,6 +159,19 @@ export interface ProgressData {
     priority?: string;
 }
 
+// Filter dropdown options: value (for API) and label (for display)
+const PRIORITY_OPTIONS: { value: string; label: string }[] = [
+    { value: '__all__', label: 'Alle' },
+    { value: 'Dringend', label: 'Dringend' },
+    { value: 'Normal', label: 'Normal' },
+];
+// paymentType: only insurance | private | broth; when Alle selected → send blank (no param)
+const PAYMENT_TYPE_OPTIONS: { value: string; label: string }[] = [
+    { value: '__all__', label: 'Alle' },
+    { value: 'insurance', label: 'Krankenkassa' },
+    { value: 'private', label: 'Privat' },
+    { value: 'broth', label: 'Brutto' },
+];
 // Custom Checkbox Component with light green border
 function CustomCheckbox({
     checked,
@@ -367,13 +382,41 @@ export default function MasschuProgressTable({
     const [loadingMore, setLoadingMore] = useState(false);
     const [search, setSearch] = useState('');
     const [searchInput, setSearchInput] = useState('');
+    const [priority, setPriority] = useState<string>('');
+    const [paymentType, setPaymentType] = useState<string>('');
+    const [selectedLocationId, setSelectedLocationId] = useState<string>(''); // blank = all
+    const [locations, setLocations] = useState<Array<{ id: string; description?: string; address?: string; isPrimary?: boolean }>>([]);
+    const [locationsLoading, setLocationsLoading] = useState(false);
+
+    useEffect(() => {
+        const loadLocations = async () => {
+            setLocationsLoading(true);
+            try {
+                const res = await getAllLocations(1, 100);
+                const data = res?.data ?? res;
+                const list = Array.isArray(data) ? data : (data?.data ? (Array.isArray(data.data) ? data.data : []) : []);
+                setLocations(list);
+            } catch {
+                setLocations([]);
+            } finally {
+                setLocationsLoading(false);
+            }
+        };
+        loadLocations();
+    }, []);
 
     const fetchOrders = useCallback(async (cursorVal: string, isLoadMore: boolean) => {
         const setLoader = isLoadMore ? setLoadingMore : setLoading;
         try {
             setLoader(true);
             const statusParam = status ? status.replace(/\s+/g, '_') : '';
-            const response = await getAllMassschuheOrders(PAGE_LIMIT, statusParam, cursorVal, search);
+            const branchLocationTitle =
+                selectedLocationId && selectedLocationId !== '__alle__'
+                    ? (locations.find((l) => l.id === selectedLocationId)?.description ||
+                        locations.find((l) => l.id === selectedLocationId)?.address ||
+                        '')
+                    : '';
+            const response = await getAllMassschuheOrders(PAGE_LIMIT, statusParam, cursorVal, search, priority, paymentType, branchLocationTitle);
             const list = (response?.data ?? []).map((o: ShoeOrderApi) => mapOrderToProgressData(o));
             const pagination = response?.pagination ?? {};
             const hasMorePages = !!pagination.hasMore;
@@ -393,13 +436,13 @@ export default function MasschuProgressTable({
         } finally {
             setLoader(false);
         }
-    }, [status, search]);
+    }, [status, search, priority, paymentType, selectedLocationId, locations]);
 
     useEffect(() => {
         setCursor('');
         setHasMore(true);
         fetchOrders('', false);
-    }, [status, search, fetchOrders]);
+    }, [status, search, priority, paymentType, selectedLocationId, fetchOrders]);
 
     const loadMore = () => {
         if (!hasMore || loadingMore || loading) return;
@@ -492,17 +535,89 @@ export default function MasschuProgressTable({
     return (
         <TooltipProvider delayDuration={300}>
         <div className="mt-8 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            {/* Search - right aligned, debounced */}
-            <div className="p-4 border-b border-gray-100 flex justify-end">
-                <div className="relative w-full max-w-xs">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                    <Input
-                        type="text"
-                        placeholder="Suchen (Auftrag, Kunde, …)"
-                        value={searchInput}
-                        onChange={(e) => setSearchInput(e.target.value)}
-                        className="pl-9"
-                    />
+            {/* Filters (left) + Search (right) – with labels above each dropdown */}
+            <div className="p-4 border-b border-gray-100 flex flex-wrap items-end gap-4">
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-gray-600">Priorität</label>
+                    <Select value={priority || '__all__'} onValueChange={(v) => setPriority(v === '__all__' ? '' : v)}>
+                        <SelectTrigger className="w-[140px] h-9 text-sm">
+                            <SelectValue placeholder="Priorität" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {PRIORITY_OPTIONS.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-gray-600">Kostenträger</label>
+                    <Select value={paymentType || '__all__'} onValueChange={(v) => setPaymentType(v === '__all__' ? '' : v)}>
+                        <SelectTrigger className="w-[140px] h-9 text-sm">
+                            <SelectValue placeholder="Kostenträger" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {PAYMENT_TYPE_OPTIONS.map((opt) => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-medium text-gray-600">Standort</label>
+                    <Select
+                        value={selectedLocationId || '__alle__'}
+                        onValueChange={(v) => setSelectedLocationId(v === '__alle__' ? '' : v)}
+                    >
+                        <SelectTrigger className="w-[200px] min-w-0 h-9 text-sm" disabled={locationsLoading}>
+                            {selectedLocationId && selectedLocationId !== '__alle__' ? (
+                                <span className="truncate block text-left">
+                                    {(() => {
+                                        const loc = locations.find((l) => l.id === selectedLocationId);
+                                        const addr = loc?.address?.trim() || loc?.description?.trim() || '–';
+                                        return addr.length > 36 ? `${addr.slice(0, 36)}…` : addr;
+                                    })()}
+                                </span>
+                            ) : (
+                                <SelectValue placeholder={locationsLoading ? "Laden…" : "Standort"} />
+                            )}
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__alle__">Alle Standorte</SelectItem>
+                            {locations.map((loc) => {
+                                const primaryTag = loc.isPrimary ? ' (Hauptstandort)' : '';
+                                return (
+                                    <SelectItem key={loc.id} value={loc.id}>
+                                        <div className="flex flex-col gap-0.5">
+                                            <div className="text-sm font-medium text-gray-800">
+                                                {(loc.description || 'Ohne Beschreibung') + primaryTag}
+                                            </div>
+                                            {loc.address ? (
+                                                <div className="text-xs text-gray-500 line-clamp-2">{loc.address}</div>
+                                            ) : null}
+                                        </div>
+                                    </SelectItem>
+                                );
+                            })}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="flex-1 min-w-[200px] flex flex-col gap-1.5 items-end">
+                    <label className="text-xs font-medium text-gray-600">Suchen</label>
+                    <div className="relative w-full max-w-xs">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Input
+                            type="text"
+                            placeholder="Auftrag, Kunde, …"
+                            value={searchInput}
+                            onChange={(e) => setSearchInput(e.target.value)}
+                            className="pl-9"
+                        />
+                    </div>
                 </div>
             </div>
 
