@@ -14,11 +14,30 @@ const BODEN_OPTIONS = [
 
 type BodenOption = (typeof BODEN_OPTIONS)[number]['value'] | '';
 
-export default function BodenkonstruktionFiledText() {
+export interface BodenkonstruktionFiledTextProps {
+    /** Controlled internal note (e.g. for step 5 payload) */
+    bodenkonstruktionInternNote?: string;
+    bodenkonstruktionExternNote?: string;
+    onBodenkonstruktionInternNoteChange?: (value: string) => void;
+    onBodenkonstruktionExternNoteChange?: (value: string) => void;
+}
+
+export default function BodenkonstruktionFiledText({
+    bodenkonstruktionInternNote,
+    bodenkonstruktionExternNote,
+    onBodenkonstruktionInternNoteChange,
+    onBodenkonstruktionExternNoteChange,
+}: BodenkonstruktionFiledTextProps = {}) {
     const router = useRouter();
     const [bodenOption, setBodenOption] = useState<BodenOption>('');
-    const [internNote, setInternNote] = useState('');
-    const [externNote, setExternNote] = useState('');
+    const [internNoteLocal, setInternNoteLocal] = useState('');
+    const [externNoteLocal, setExternNoteLocal] = useState('');
+    const internControlled = onBodenkonstruktionInternNoteChange != null;
+    const externControlled = onBodenkonstruktionExternNoteChange != null;
+    const internNote = internControlled ? (bodenkonstruktionInternNote ?? '') : internNoteLocal;
+    const externNote = externControlled ? (bodenkonstruktionExternNote ?? '') : externNoteLocal;
+    const setInternNote = internControlled ? (v: string) => onBodenkonstruktionInternNoteChange?.(v) : setInternNoteLocal;
+    const setExternNote = externControlled ? (v: string) => onBodenkonstruktionExternNoteChange?.(v) : setExternNoteLocal;
 
     return (
         <div>

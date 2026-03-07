@@ -50,6 +50,11 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     orderId?: string;
     /** JSON string of checklist answers (checkliste_halbprobe) */
     checklisteHalbprobe?: string;
+    /** Bodenkonstruktion notes for step 5 payload */
+    bodenkonstruktionInternNote?: string;
+    bodenkonstruktionExternNote?: string;
+    onBodenkonstruktionInternNoteChange?: (value: string) => void;
+    onBodenkonstruktionExternNoteChange?: (value: string) => void;
     onProbenergebnisChange: (value: ProbenergebnisValue) => void;
     onSchafttypChange: (value: SchafttypValue) => void;
     onFittingDateChange: (value: string) => void;
@@ -80,6 +85,10 @@ export default function HalbprobeDurchfuehrungStepFields({
     schafttypExternNote,
     orderId,
     checklisteHalbprobe,
+    bodenkonstruktionInternNote,
+    bodenkonstruktionExternNote,
+    onBodenkonstruktionInternNoteChange,
+    onBodenkonstruktionExternNoteChange,
     onProbenergebnisChange,
     onSchafttypChange,
     onFittingDateChange,
@@ -264,7 +273,12 @@ export default function HalbprobeDurchfuehrungStepFields({
 
             {/* Bodenkonstruktion */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
-                <BodenkonstruktionFiledText />
+                <BodenkonstruktionFiledText
+                    bodenkonstruktionInternNote={bodenkonstruktionInternNote}
+                    bodenkonstruktionExternNote={bodenkonstruktionExternNote}
+                    onBodenkonstruktionInternNoteChange={onBodenkonstruktionInternNoteChange}
+                    onBodenkonstruktionExternNoteChange={onBodenkonstruktionExternNoteChange}
+                />
             </div>
         </div>
     );
