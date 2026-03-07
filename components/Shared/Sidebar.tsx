@@ -18,7 +18,7 @@ import { TbActivityHeartbeat, TbUsers, TbUserCircle, TbChartBar } from 'react-ic
 
 import type { IconType } from 'react-icons';
 import type { StaticImageData } from 'next/image';
-import { FiBarChart, FiUserPlus } from 'react-icons/fi';
+import { FiUserPlus } from 'react-icons/fi';
 
 import { FiDollarSign } from 'react-icons/fi';
 import { BsCashStack } from 'react-icons/bs';
@@ -135,7 +135,6 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                         
                         // { icon: HiOutlineDocumentText, label: 'Einnahmen & Rechnungen', href: '/dashboard/einnahmen' },
 
-                        { icon: FiBarChart, label: 'Monatsstatistik', href: '/dashboard/monatsstatistik' },
                         { icon: MdInventory, label: 'Warenwirtschaft', href: '/dashboard/warenwirtschaft' },
                         { icon: TbUsers, label: 'Mitarbeitercontrolling', href: '/dashboard/mitarbeitercontrolling' },
                         { icon: TbActivityHeartbeat, label: 'Krankenkasse', href: '/dashboard/einlagencontrolling' },
