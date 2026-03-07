@@ -25,9 +25,9 @@ export default function LeistenKonfiguratorPage() {
   const allgemeineOptionenRef = useRef<AllgemeineOptionenRef>(null);
   const korrekturenRef = useRef<KorrekturenModellierungRef>(null);
   const bemerkungenRef = useRef<BemerkungenRef>(null);
-  const basePrice = 179.99;
+  const basePrice = 199.99;
   const knoechelhoherLeistenPrice = 19.99;
-  const holzleistenPrice = 30;
+  const plastikleistenDiscount = 20;
 
   const [totalPrice, setTotalPrice] = useState(basePrice);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
@@ -47,13 +47,14 @@ export default function LeistenKonfiguratorPage() {
     const leistenmaterial = leistenmaterialOverride ?? kopfdatenData?.leistenmaterial;
     const knoechelhoherLinks = leistentypData?.knoechelhoherLeistenLinks ? knoechelhoherLeistenPrice : 0;
     const knoechelhoherRechts = leistentypData?.knoechelhoherLeistenRechts ? knoechelhoherLeistenPrice : 0;
-    const hasHolzleisten = leistenmaterial === 'holz';
+    const hasPlastikleisten = leistenmaterial === 'plastik';
+    const materialAdjust = hasPlastikleisten ? -plastikleistenDiscount : 0;
 
     const calculatedPrice =
       basePrice +
       knoechelhoherLinks +
       knoechelhoherRechts +
-      (hasHolzleisten ? holzleistenPrice : 0);
+      materialAdjust;
     setTotalPrice(calculatedPrice);
   };
 

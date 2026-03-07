@@ -43,7 +43,7 @@ interface KopfdatenProps {
 
 const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange, errors, sectionId = 'section-kopfdaten', onClearValidationErrors }, ref) => {
   const [patient, setPatient] = useState<string>('');
-  const [leistenmaterial, setLeistenmaterial] = useState<LeistenmaterialType>('plastik');
+  const [leistenmaterial, setLeistenmaterial] = useState<LeistenmaterialType>('holz');
   const [leftFileName, setLeftFileName] = useState<string | null>(null);
   const [rightFileName, setRightFileName] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
@@ -233,7 +233,6 @@ const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange, errors, 
               className="h-4 w-4 border-gray-300 text-[#6B9B87] focus:ring-[#6B9B87]"
             />
             <span className="text-sm font-medium text-gray-800">Holzleisten</span>
-            <span className="text-sm text-emerald-600 font-medium">+ 30 €</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer rounded-lg border-2 border-gray-200 bg-white px-4 py-3 transition-colors hover:border-[#6B9B87]/50 has-[:checked]:border-[#6B9B87] has-[:checked]:bg-[#6B9B87]/5">
             <input
@@ -248,6 +247,7 @@ const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange, errors, 
               className="h-4 w-4 border-gray-300 text-[#6B9B87] focus:ring-[#6B9B87]"
             />
             <span className="text-sm font-medium text-gray-800">Plastikleisten</span>
+            <span className="text-sm text-emerald-600 font-medium">- 20 €</span>
           </label>
         </div>
       </div>

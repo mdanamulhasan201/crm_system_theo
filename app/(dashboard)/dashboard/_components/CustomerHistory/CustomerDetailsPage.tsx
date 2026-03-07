@@ -174,8 +174,8 @@ export default function CustomerDetailsPage({
   const currentGender = isEditing ? editFormData.gender : normalizeGender(data.gender ?? undefined);
   const genderValue = currentGender || 'keine';
   const genderOptions = [
-    { value: 'MALE', label: 'Männlich' },
-    { value: 'frau', label: 'Weiblich' },
+    { value: 'MALE', label: 'Herr' },
+    { value: 'frau', label: 'Frau' },
     { value: 'keine', label: 'Keine Angabe' },
   ] as const;
 
@@ -189,7 +189,7 @@ export default function CustomerDetailsPage({
       >
         <TabsList
           className={cn(
-            'h-9 rounded-lg bg-gray-100 p-[3px]',
+            'h-9 rounded-lg bg-gray-100 p-[3px] ',
             !isEditing && 'pointer-events-none opacity-90'
           )}
         >
@@ -197,7 +197,7 @@ export default function CustomerDetailsPage({
             <TabsTrigger
               key={opt.value}
               value={opt.value}
-              className="px-4 py-1.5 text-sm font-medium text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
+              className="px-4 py-1.5 cursor-pointer  text-sm font-medium text-gray-600 data-[state=active]:bg-white data-[state=active]:text-gray-900 data-[state=active]:shadow-sm"
             >
               {opt.label}
             </TabsTrigger>
