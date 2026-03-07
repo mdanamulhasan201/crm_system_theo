@@ -12,6 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import WohnortInput from '@/app/(dashboard)/dashboard/_components/Customers/WohnortInput';
 
 function formatDateForDisplay(dateString: string | undefined | null): string {
   if (!dateString) return '—';
@@ -261,16 +262,25 @@ export default function CustomerDetailsPage({
             }}
             placeholder="Telefon"
           />
-          <Field
-            label="Adresse"
-            value={isEditing ? addressEdit : addressDisplay}
-            isEditing={isEditing}
-            onChange={(v) => {
-              onInputChange('wohnort', v);
-              onInputChange('straße', v);
-            }}
-            placeholder="Stadt, PLZ, Adresse"
-          />
+          {/* Adresse: when editing use same location API / select as create (WohnortInput) */}
+          <div className="space-y-1">
+            <Label className="text-[11px] font-medium text-gray-500">Adresse</Label>
+            {isEditing ? (
+              <WohnortInput
+                value={addressEdit}
+                onChange={(v) => {
+                  onInputChange('wohnort', v);
+                  onInputChange('straße', v);
+                }}
+                hideLabel
+                placeholder="Stadt, PLZ, Adresse (z.B. Musterstraße 123, Berlin, DE)"
+              />
+            ) : (
+              <p className="text-sm font-semibold text-gray-900 min-h-7 flex items-center">
+                {addressDisplay || '—'}
+              </p>
+            )}
+          </div>
         </Card>
 
         {/* 3. VERSICHERUNG */}
