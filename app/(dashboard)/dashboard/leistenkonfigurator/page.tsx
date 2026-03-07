@@ -15,6 +15,7 @@ import HalbprobeInvoicePDFPopup, { type ChecklistItem } from '../_components/Lei
 import CompletionPopUp from '../_components/Massschuhauftraeges/Details/Completion-PopUp';
 import { createLeistenkonfigurator } from '@/apis/LeistenkonfiguratorManagementApis';
 import { useDeliveryDateByCategory } from '@/hooks/useDeliveryDateByCategory';
+import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
 
 export default function LeistenKonfiguratorPage() {
   const router = useRouter();
@@ -44,12 +45,14 @@ export default function LeistenKonfiguratorPage() {
     const kopfdatenData = kopfdatenRef.current?.getData();
     const leistentypData = leistentypRef.current?.getData();
     const leistenmaterial = leistenmaterialOverride ?? kopfdatenData?.leistenmaterial;
-    const hasKnoechelhoherLeisten = leistentypData?.knoechelhoherLeistenLinks || leistentypData?.knoechelhoherLeistenRechts;
+    const knoechelhoherLinks = leistentypData?.knoechelhoherLeistenLinks ? knoechelhoherLeistenPrice : 0;
+    const knoechelhoherRechts = leistentypData?.knoechelhoherLeistenRechts ? knoechelhoherLeistenPrice : 0;
     const hasHolzleisten = leistenmaterial === 'holz';
 
     const calculatedPrice =
       basePrice +
-      (hasKnoechelhoherLeisten ? knoechelhoherLeistenPrice : 0) +
+      knoechelhoherLinks +
+      knoechelhoherRechts +
       (hasHolzleisten ? holzleistenPrice : 0);
     setTotalPrice(calculatedPrice);
   };
@@ -94,7 +97,8 @@ export default function LeistenKonfiguratorPage() {
     if (a) {
       if (a.gleicheLaenge) items.push({ label: 'Gleiche Länge', value: a.gleicheLaenge === 'ja' ? 'Ja' : 'Nein' });
       if (a.spitzenform) items.push({ label: 'Spitzenform', value: a.spitzenform });
-      if (a.leistenteilung) items.push({ label: 'Leistenteilung', value: a.leistenteilung });
+      if (a.modelNr?.trim()) items.push({ label: 'Modell-Nr.', value: a.modelNr.trim() });
+      if (a.leistenteilung) items.push({ label: 'Leistenteilung', value: a.leistenteilung === 'falte-knickschnitt' ? 'Falte/Knickschnitt' : a.leistenteilung });
     }
     if (kor) {
       if (kor.beinkorrekturLinks || kor.beinkorrekturRechts) items.push({ label: 'Beinkorrektur Links / Rechts', value: `Links: ${kor.beinkorrekturLinks || '–'}, Rechts: ${kor.beinkorrekturRechts || '–'}` });
@@ -202,7 +206,7 @@ export default function LeistenKonfiguratorPage() {
   return (
     <div className="relative w-full min-h-screen bg-gray-50 px-4 py-8 md:px-8 ">
       {/* Sticky Price Summary - bottom-right, price only (no button) */}
-      {/* <StickyPriceSummary price={totalPrice} /> */}
+      <StickyPriceSummary onWeiterClick={handleContinue} price={totalPrice} />
       {/* Header */}
       <header className="mb-8">
         <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-1">
@@ -231,14 +235,14 @@ export default function LeistenKonfiguratorPage() {
       </main>
 
       {/* Action Buttons */}
-      <div className="flex justify-end gap-4 mt-8">
+      {/* <div className="flex justify-end gap-4 mt-8">
         <Button
           onClick={handleContinue}
           className="px-6 cursor-pointer py-2 bg-[#61A178] hover:bg-[#61A178]/80 text-white"
         >
           Weiter {formatPrice(totalPrice)} excl. Lieferung
         </Button>
-      </div>
+      </div> */}
 
       {/* Confirmation Modal */}
       <LeistenkonfiguratorConfirmationModal

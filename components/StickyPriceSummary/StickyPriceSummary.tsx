@@ -29,7 +29,8 @@ export default function StickyPriceSummary({
 }: StickyPriceSummaryProps) {
   const formatPrice = (val: number) => val.toFixed(2).replace(".", ",")
   const showBreakdown = subtotal !== undefined || additions !== undefined
-  const showButtons = typeof onWeiterClick === "function" && typeof onCancel === "function"
+  const showWeiterButton = typeof onWeiterClick === "function"
+  const showCancelButton = typeof onCancel === "function"
 
   return (
     <div
@@ -64,27 +65,31 @@ export default function StickyPriceSummary({
         <div className="mt-1 text-xs text-gray-400">
           exkl. Zustellungsversand
         </div>
-        {showButtons && (
+        {(showWeiterButton || showCancelButton) && (
           <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-200">
-            {/* <button
-              type="button"
-              className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium"
-              onClick={onCancel}
-            >
-              Abbrechen
-            </button> */}
-            <button
-              type="button"
-              className={`w-full px-4 py-2 bg-[#61A178] cursor-pointer text-white rounded-md hover:bg-[#61A178]/80 font-semibold text-sm flex items-center justify-center gap-2 ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={onWeiterClick}
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? (
-                "Wird gesendet..."
-              ) : (
-                <>Weiter €{formatPrice(price)}</>
-              )}
-            </button>
+            {showCancelButton && onCancel && (
+              <button
+                type="button"
+                className="w-full px-4 py-2 border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 text-sm font-medium"
+                onClick={onCancel}
+              >
+                Abbrechen
+              </button>
+            )}
+            {showWeiterButton && onWeiterClick && (
+              <button
+                type="button"
+                className={`w-full px-4 py-2 bg-[#61A178] cursor-pointer text-white rounded-md hover:bg-[#61A178]/80 font-semibold text-sm flex items-center justify-center gap-2 ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+                onClick={onWeiterClick}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? (
+                  "Wird gesendet..."
+                ) : (
+                  <>Weiter €{formatPrice(price)}</>
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>
