@@ -13,6 +13,8 @@ export interface StickyPriceSummaryProps {
   onWeiterClick?: () => void
   onCancel?: () => void
   isSubmitting?: boolean
+  /** Optional: custom label for primary button (e.g. "Abschließen" when saving order step) */
+  weiterLabel?: React.ReactNode
 }
 
 /**
@@ -26,6 +28,7 @@ export default function StickyPriceSummary({
   onWeiterClick,
   onCancel,
   isSubmitting = false,
+  weiterLabel,
 }: StickyPriceSummaryProps) {
   const formatPrice = (val: number) => val.toFixed(2).replace(".", ",")
   const showBreakdown = subtotal !== undefined || additions !== undefined
@@ -86,7 +89,7 @@ export default function StickyPriceSummary({
                 {isSubmitting ? (
                   "Wird gesendet..."
                 ) : (
-                  <>Weiter €{formatPrice(price)}</>
+                  weiterLabel ?? <>Weiter €{formatPrice(price)}</>
                 )}
               </button>
             )}

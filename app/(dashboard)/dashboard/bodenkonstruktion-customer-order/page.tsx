@@ -300,6 +300,12 @@ export default function BodenkonstruktionCustomerOrderPage() {
             }
         }
 
+        // When from order step (orderId): no modal – save directly and redirect to main page
+        if (orderId) {
+            await handleFinalSubmit()
+            return
+        }
+
         setShowModal(true)
         localStorage.setItem("currentBalance", String(grandTotal.toFixed(2)))
     }
@@ -428,6 +434,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 onWeiterClick={handleWeiterClick}
                 onCancel={() => router.back()}
                 isSubmitting={isSubmitting}
+                weiterLabel={orderId ? "Abschließen" : undefined}
             />
 
             {/* Header: product name + customer + delivery (no product image for standalone order) */}
