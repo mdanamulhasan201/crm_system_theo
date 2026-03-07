@@ -10,9 +10,12 @@ export interface SprengungSpitzenzugabeData {
   spitzensprengungRechts: string;
   spitzenzugabeLinks: string;
   spitzenzugabeRechts: string;
-  dickeFerse: string;
-  dickeBallen: string;
-  dickeSpitze: string;
+  dickeFerseLinks: string;
+  dickeFerseRechts: string;
+  dickeBallenLinks: string;
+  dickeBallenRechts: string;
+  dickeSpitzeLinks: string;
+  dickeSpitzeRechts: string;
 }
 
 export interface SprengungSpitzenzugabeRef {
@@ -27,9 +30,12 @@ const SprengungSpitzenzugabe = forwardRef<SprengungSpitzenzugabeRef>((props, ref
     spitzensprengungRechts: '',
     spitzenzugabeLinks: '',
     spitzenzugabeRechts: '',
-    dickeFerse: '',
-    dickeBallen: '',
-    dickeSpitze: '',
+    dickeFerseLinks: '',
+    dickeFerseRechts: '',
+    dickeBallenLinks: '',
+    dickeBallenRechts: '',
+    dickeSpitzeLinks: '',
+    dickeSpitzeRechts: '',
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -170,7 +176,7 @@ const SprengungSpitzenzugabe = forwardRef<SprengungSpitzenzugabeRef>((props, ref
         </div>
       </div>
 
-      {/* Bettung – Dicke Einlagendecke */}
+      {/* Bettung – Dicke Einlagendecke (Links + Rechts für beide Füße) */}
       <div className="mt-8 pt-6 border-t border-gray-200">
         <h3 className="text-base font-semibold text-gray-900 mb-1">
           Bettung wird brutto aufgebaut
@@ -178,40 +184,79 @@ const SprengungSpitzenzugabe = forwardRef<SprengungSpitzenzugabeRef>((props, ref
         <p className="text-sm text-gray-500 mb-4">
           Bitte geben Sie die Dicke der Einlagendecke in Millimetern an:
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Dicke Ferse (mm)</label>
+        <div className="space-y-4">
+          {/* Dicke Ferse */}
+          <div className="grid grid-cols-3 gap-4 items-center">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Dicke Ferse (mm)</label>
+            </div>
             <div className="relative">
               <Input
                 type="number"
-                value={formData.dickeFerse}
-                onChange={(e) => handleInputChange('dickeFerse', e.target.value)}
+                value={formData.dickeFerseLinks}
+                onChange={(e) => handleInputChange('dickeFerseLinks', e.target.value)}
+                className="h-11 rounded-lg border-gray-200 bg-gray-50 text-sm focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-300 pr-10"
+                placeholder="0"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">mm</span>
+            </div>
+            <div className="relative">
+              <Input
+                type="number"
+                value={formData.dickeFerseRechts}
+                onChange={(e) => handleInputChange('dickeFerseRechts', e.target.value)}
                 className="h-11 rounded-lg border-gray-200 bg-gray-50 text-sm focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-300 pr-10"
                 placeholder="0"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">mm</span>
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Dicke Ballen (mm)</label>
+          {/* Dicke Ballen */}
+          <div className="grid grid-cols-3 gap-4 items-center">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Dicke Ballen (mm)</label>
+            </div>
             <div className="relative">
               <Input
                 type="number"
-                value={formData.dickeBallen}
-                onChange={(e) => handleInputChange('dickeBallen', e.target.value)}
+                value={formData.dickeBallenLinks}
+                onChange={(e) => handleInputChange('dickeBallenLinks', e.target.value)}
+                className="h-11 rounded-lg border-gray-200 bg-gray-50 text-sm focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-300 pr-10"
+                placeholder="0"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">mm</span>
+            </div>
+            <div className="relative">
+              <Input
+                type="number"
+                value={formData.dickeBallenRechts}
+                onChange={(e) => handleInputChange('dickeBallenRechts', e.target.value)}
                 className="h-11 rounded-lg border-gray-200 bg-gray-50 text-sm focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-300 pr-10"
                 placeholder="0"
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">mm</span>
             </div>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-700">Dicke Spitze (mm)</label>
+          {/* Dicke Spitze */}
+          <div className="grid grid-cols-3 gap-4 items-center">
+            <div>
+              <label className="text-sm font-medium text-gray-700">Dicke Spitze (mm)</label>
+            </div>
             <div className="relative">
               <Input
                 type="number"
-                value={formData.dickeSpitze}
-                onChange={(e) => handleInputChange('dickeSpitze', e.target.value)}
+                value={formData.dickeSpitzeLinks}
+                onChange={(e) => handleInputChange('dickeSpitzeLinks', e.target.value)}
+                className="h-11 rounded-lg border-gray-200 bg-gray-50 text-sm focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-300 pr-10"
+                placeholder="0"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">mm</span>
+            </div>
+            <div className="relative">
+              <Input
+                type="number"
+                value={formData.dickeSpitzeRechts}
+                onChange={(e) => handleInputChange('dickeSpitzeRechts', e.target.value)}
                 className="h-11 rounded-lg border-gray-200 bg-gray-50 text-sm focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-300 pr-10"
                 placeholder="0"
               />

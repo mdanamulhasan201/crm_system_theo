@@ -9,7 +9,6 @@ export type LeistenmaterialType = 'holz' | 'plastik';
 
 export interface KopfdatenData {
   patient: string;
-  auftraggeber: string;
   leistenmaterial: LeistenmaterialType;
   leftStlFile: string | null;
   rightStlFile: string | null;
@@ -29,7 +28,6 @@ export interface KopfdatenRef {
 
 export interface KopfdatenValidationErrors {
   patient?: boolean;
-  auftraggeber?: boolean;
   leftStlFile?: boolean;
   rightStlFile?: boolean;
   pdfFile?: boolean;
@@ -45,7 +43,6 @@ interface KopfdatenProps {
 
 const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange, errors, sectionId = 'section-kopfdaten', onClearValidationErrors }, ref) => {
   const [patient, setPatient] = useState<string>('');
-  const [auftraggeber, setAuftraggeber] = useState<string>('');
   const [leistenmaterial, setLeistenmaterial] = useState<LeistenmaterialType>('plastik');
   const [leftFileName, setLeftFileName] = useState<string | null>(null);
   const [rightFileName, setRightFileName] = useState<string | null>(null);
@@ -60,7 +57,6 @@ const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange, errors, 
   useImperativeHandle(ref, () => ({
     getData: () => ({
       patient,
-      auftraggeber,
       leistenmaterial,
       leftStlFile: leftFileName,
       rightStlFile: rightFileName,
@@ -110,7 +106,7 @@ const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange, errors, 
   };
 
   return (
-    <section id={sectionId} className={`relative w-full rounded-2xl border bg-white px-6 py-6 md:px-8 md:py-8 shadow-sm overflow-hidden ${errors && (errors.patient || errors.auftraggeber || errors.leftStlFile || errors.rightStlFile || errors.pdfFile) ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-200'}`}>
+    <section id={sectionId} className={`relative w-full rounded-2xl border bg-white px-6 py-6 md:px-8 md:py-8 shadow-sm overflow-hidden ${errors && (errors.patient || errors.leftStlFile || errors.rightStlFile || errors.pdfFile) ? 'border-red-400 ring-1 ring-red-200' : 'border-gray-200'}`}>
       {/* Left blue accent bar */}
       <div className="absolute left-0 top-4 bottom-4 w-[3px] bg-[#6B9B87] rounded-r-full" />
 
@@ -119,10 +115,10 @@ const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange, errors, 
         Kopfdaten
       </h2>
 
-      {/* Two-column grid for the basic fields */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 mb-6">
+      {/* Patient field – full width */}
+      <div className="mb-6">
         {/* Patient / Kommission */}
-        <div className="space-y-2">
+        <div className="space-y-2 w-full">
           <label className="block text-sm font-medium text-gray-700">
             Patient <span className="text-red-500">*</span>
           </label>
@@ -136,23 +132,6 @@ const Kopfdaten = forwardRef<KopfdatenRef, KopfdatenProps>(({ onChange, errors, 
             className={`h-11 rounded-lg bg-gray-50 text-sm focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-300 ${errors?.patient ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200'}`}
           />
           {errors?.patient && <p className="text-xs text-red-600">Bitte geben Sie den Namen des Patienten ein.</p>}
-        </div>
-
-        {/* Firma und Ansprechpartner */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-          Auftraggeber <span className="text-red-500">*</span>
-          </label>
-          <Input
-            value={auftraggeber}
-            onChange={(e) => {
-              setAuftraggeber(e.target.value);
-              onClearValidationErrors?.();
-            }}
-            placeholder="Firmenname und Kontaktperson"
-            className={`h-11 rounded-lg bg-gray-50 text-sm focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-300 ${errors?.auftraggeber ? 'border-red-500 ring-1 ring-red-200' : 'border-gray-200'}`}
-          />
-          {errors?.auftraggeber && <p className="text-xs text-red-600">Bitte geben Sie den Auftraggeber ein.</p>}
         </div>
       </div>
 

@@ -71,16 +71,15 @@ export default function LeistenKonfiguratorPage() {
 
     if (k) {
       if (k.patient?.trim()) items.push({ label: 'Patient', value: k.patient.trim() });
-      if (k.auftraggeber?.trim()) items.push({ label: 'Auftraggeber', value: k.auftraggeber.trim() });
       items.push({ label: 'Leistenmaterial', value: k.leistenmaterial === 'holz' ? 'Holzleisten' : 'Plastikleisten' });
     }
     if (s) {
       if (s.fersensprengungLinks || s.fersensprengungRechts) items.push({ label: 'Fersensprengung Links / Rechts', value: `Links: ${s.fersensprengungLinks || '–'}, Rechts: ${s.fersensprengungRechts || '–'}` });
       if (s.spitzensprengungLinks || s.spitzensprengungRechts) items.push({ label: 'Spitzensprengung Links / Rechts', value: `Links: ${s.spitzensprengungLinks || '–'}, Rechts: ${s.spitzensprengungRechts || '–'}` });
       if (s.spitzenzugabeLinks || s.spitzenzugabeRechts) items.push({ label: 'Spitzenzugabe Links / Rechts', value: `Links: ${s.spitzenzugabeLinks || '–'}, Rechts: ${s.spitzenzugabeRechts || '–'}` });
-      if (s.dickeFerse?.trim()) items.push({ label: 'Dicke Ferse', value: s.dickeFerse });
-      if (s.dickeBallen?.trim()) items.push({ label: 'Dicke Ballen', value: s.dickeBallen });
-      if (s.dickeSpitze?.trim()) items.push({ label: 'Dicke Spitze', value: s.dickeSpitze });
+      if (s.dickeFerseLinks?.trim() || s.dickeFerseRechts?.trim()) items.push({ label: 'Dicke Ferse Links / Rechts', value: `Links: ${s.dickeFerseLinks || '–'}, Rechts: ${s.dickeFerseRechts || '–'}` });
+      if (s.dickeBallenLinks?.trim() || s.dickeBallenRechts?.trim()) items.push({ label: 'Dicke Ballen Links / Rechts', value: `Links: ${s.dickeBallenLinks || '–'}, Rechts: ${s.dickeBallenRechts || '–'}` });
+      if (s.dickeSpitzeLinks?.trim() || s.dickeSpitzeRechts?.trim()) items.push({ label: 'Dicke Spitze Links / Rechts', value: `Links: ${s.dickeSpitzeLinks || '–'}, Rechts: ${s.dickeSpitzeRechts || '–'}` });
     }
     if (l) {
       const leisten: string[] = [];
@@ -138,10 +137,6 @@ export default function LeistenKonfiguratorPage() {
     if (!kopfdaten?.patient?.trim()) {
       errors.push('Patient');
       fieldErrors.patient = true;
-    }
-    if (!kopfdaten?.auftraggeber?.trim()) {
-      errors.push('Auftraggeber');
-      fieldErrors.auftraggeber = true;
     }
     if (!files?.leftStlFile) {
       errors.push('3D-Datei Linker Fuß');
@@ -202,7 +197,7 @@ export default function LeistenKonfiguratorPage() {
   };
 
   const kopfdatenData = kopfdatenRef.current?.getData();
-  const customerDisplayName = kopfdatenData ? [kopfdatenData.auftraggeber, kopfdatenData.patient].filter(Boolean).join(' / ') || undefined : undefined;
+  const customerDisplayName = kopfdatenData?.patient?.trim() || undefined;
 
   return (
     <div className="relative w-full min-h-screen bg-gray-50 px-4 py-8 md:px-8 ">
