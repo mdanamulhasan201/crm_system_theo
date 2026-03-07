@@ -9,6 +9,7 @@ import { useRevenueOverview } from '@/hooks/orders/useRevenueOverview';
 import OrdersHeaderShimmer from '@/components/ShimmerEffect/Orders/OrdersHeaderShimmer';
 import AuftragssuchePage from '@/components/OrdersPage/AuftragssuchePage/AuftragssuchePage';
 import SearchBarIWithFilterInsole from '@/components/OrdersPage/ProccessTable/SearchBarIWithFilterInsole';
+import { getWaitingForVersorgungsStartCount } from '@/apis/productsOrder';
 // import { Button } from '@/components/ui/button';
 
 export default function Orders() {
@@ -28,6 +29,20 @@ function OrdersPageContent() {
         shouldFilter ? selectedYear : undefined,
         shouldFilter ? selectedMonth : undefined
     );
+
+    // New API: waiting-for-versorgungsstart count ({ success, data: number })
+    const [waitingCount, setWaitingCount] = React.useState<number | null>(null);
+    React.useEffect(() => {
+        let cancelled = false;
+        getWaitingForVersorgungsStartCount()
+            .then((res: { success?: boolean; data?: number }) => {
+                if (!cancelled && res && typeof res.data === 'number') setWaitingCount(res.data);
+            })
+            .catch(() => {
+                if (!cancelled) setWaitingCount(null);
+            });
+        return () => { cancelled = true; };
+    }, []);
 
     const formatEuro = (amount: number) =>
         amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -146,11 +161,15 @@ function OrdersPageContent() {
 
                 {/* card bottom  */}
                 <div className="flex flex-col md:flex-row justify-between items-stretch w-full gap-0">
-                    {/* Einlagen in Produktion */}
-                    <div className="flex-1 flex flex-col items-center justify-center  border-gray-300 py-6">
-                        <div className="text-lg font-bold text-[#1E1F6D] mb-2 text-center">Einlagen in Produktion</div>
-                        <div className="text-4xl font-extrabold">
-                            {data?.count ?? '-'}
+                    {/* Einlagen in Produktion – old data (above) + new API data (below) */}
+                    <div className="flex-1 flex flex-col items-center justify-center border-gray-300 py-6 gap-4">
+                        <div className="flex flex-col items-center">
+                            <div className="text-lg font-bold text-[#1E1F6D] mb-2 text-center">Einlagen in Produktion</div>
+                            <div className="text-4xl font-extrabold">{data?.count ?? '-'}</div>
+                        </div>
+                        <div className="flex flex-col items-center pt-2 border-t border-gray-200 w-full">
+                            <div className="text-sm font-semibold text-gray-600 mb-1 text-center">Warten auf Versorgungsstart</div>
+                            <div className="text-2xl font-extrabold">{waitingCount !== null ? waitingCount : '-'}</div>
                         </div>
                     </div>
                     <div className='border-r border-gray-300 hidden md:block'></div>
