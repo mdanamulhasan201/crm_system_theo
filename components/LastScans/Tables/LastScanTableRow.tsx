@@ -146,17 +146,17 @@ export function LastScanTableRow({
                 )}
             </TableCell>
             <TableCell className="text-right">
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end items-center">
                     {latestScreenerDate ? (
                         <Button
-                            className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
+                            className="cursor-pointer bg-[#61A175] hover:bg-[#61A175]/90 text-white min-w-[160px] py-1.5 text-sm rounded-lg"
                             onClick={() => onNeuerAuftrag(row.id)}
                         >
                             Neuer Auftrag
                         </Button>
                     ) : (
                         <Button
-                            className="cursor-pointer bg-[#2F7D5C] hover:bg-[#2f7d5cce] text-white px-3.5 py-1.5 text-sm rounded-lg"
+                            className="cursor-pointer bg-[#61A175] hover:bg-[#61A175]/90 text-white min-w-[160px] py-1.5 text-sm rounded-lg"
                             onClick={() => onScanDurchführen(row.id)}
                         >
                             Scan durchführen
@@ -164,7 +164,7 @@ export function LastScanTableRow({
                     )}
                     <Button
                         variant="outline"
-                        className="cursor-pointer border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 px-3 py-1.5 text-sm rounded-lg"
+                        className="cursor-pointer border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 px-3 py-1.5 text-sm rounded-lg shrink-0"
                         onClick={() => onDelete(row)}
                     >
                         <Trash2 className="h-4 w-4" />
