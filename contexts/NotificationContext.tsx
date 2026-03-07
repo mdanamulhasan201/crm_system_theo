@@ -178,8 +178,8 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       return;
     }
 
-    // Initialise socket with userId - it will emit "join" event after connection
-    initSocket(user?.id ?? null);
+    // Initialise socket with userId and role - it will emit "join" event after connection
+    initSocket(user?.id ?? null, user?.role ?? null);
 
     const socket = getSocket();
     if (!socket) return;
