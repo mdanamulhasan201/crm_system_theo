@@ -97,8 +97,8 @@ export default function BodenkonstruktionPage() {
         return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
     })()
 
-    // Base price - start with 189.99€
-    const basePrice = 189.99
+    // Base price - start with 194,99€
+    const basePrice = 194.99
 
     // Calculations (include hinterkappeSide so Leder options e.g. Leder Dünn +4,99 € update sticky price)
     const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide)
@@ -781,6 +781,7 @@ export default function BodenkonstruktionPage() {
                 sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
+                hinterkappeMusterSimple={true}
                 onHinterkappeChange={setHinterkappeSide}
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}
