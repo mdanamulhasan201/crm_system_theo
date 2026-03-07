@@ -184,7 +184,7 @@ export default function SettingsProfileLayout({
             items.push({
                 id: "scheduling-config",
                 icon: Calendar,
-                label: "Scheduling Konfiguration",
+                label: "Terminkalender Einstellungen",
                 href: "/dashboard/settings-profile/scheduling-config",
             });
         }

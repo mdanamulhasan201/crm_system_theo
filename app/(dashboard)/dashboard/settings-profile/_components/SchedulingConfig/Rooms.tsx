@@ -32,8 +32,8 @@ interface Room {
 const INITIAL_ROOMS: Room[] = [
   { id: "1", name: "Scan 1", active: true },
   { id: "2", name: "Scan 2", active: true },
-  { id: "3", name: "Consultation", active: true },
-  { id: "4", name: "Lab", active: false },
+  { id: "3", name: "Beratung", active: true },
+  { id: "4", name: "Labor", active: false },
 ];
 
 export default function Rooms() {
@@ -97,10 +97,10 @@ export default function Rooms() {
       {/* Header: title, subtitle, Add Room button */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Rooms</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Räume</h2>
           <p className="text-sm text-gray-500 mt-1">
-            Manage rooms for appointment scheduling. Room selection is optional
-            when creating appointments.
+            Räume für die Terminplanung verwalten. Die Raumauswahl ist bei der
+            Erstellung von Terminen optional.
           </p>
         </div>
         <Button
@@ -108,7 +108,7 @@ export default function Rooms() {
           className="shrink-0 bg-[#61A07B] hover:bg-[#4A8A6A] text-white cursor-pointer"
         >
           <Plus className="h-4 w-4" />
-          Add Room
+          Raum hinzufügen
         </Button>
       </div>
 
@@ -118,13 +118,13 @@ export default function Rooms() {
           <TableHeader>
             <TableRow className="border-gray-200 hover:bg-transparent bg-gray-50/50">
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-gray-600 py-4 px-4">
-                Room Name
+                Raumbeschreibung
               </TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-gray-600 text-center py-4 px-4">
                 Status
               </TableHead>
               <TableHead className="text-xs font-semibold uppercase tracking-wider text-gray-600 text-right py-4 px-4">
-                Actions
+                Aktionen
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -154,7 +154,7 @@ export default function Rooms() {
                       type="button"
                       className="p-2 cursor-pointer text-gray-500 hover:text-gray-700 rounded transition-colors"
                       onClick={() => openEditModal(room)}
-                      aria-label="Edit room"
+                      aria-label="Raum bearbeiten"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
@@ -162,7 +162,7 @@ export default function Rooms() {
                       type="button"
                       className="p-2 cursor-pointer text-gray-500 hover:text-red-600 rounded transition-colors"
                       onClick={() => handleDelete(room.id)}
-                      aria-label="Delete room"
+                      aria-label="Raum löschen"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -179,22 +179,22 @@ export default function Rooms() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingRoom ? "Edit Room" : "Add Room"}
+              {editingRoom ? "Raum bearbeiten" : "Raum hinzufügen"}
             </DialogTitle>
             <DialogDescription>
               {editingRoom
-                ? "Update the room name and status."
-                : "Create a new room for appointment scheduling. You can change the name and status later."}
+                ? "Name und Status des Raums aktualisieren."
+                : "Neuen Raum für die Terminplanung anlegen. Name und Status können später geändert werden."}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSaveRoom} className="grid gap-4 py-2">
             <div className="grid gap-2">
-              <Label htmlFor="room-name">Room name</Label>
+              <Label htmlFor="room-name">Raumbeschreibung</Label>
               <Input
                 id="room-name"
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
-                placeholder="e.g. Consultation"
+                placeholder="z. B. Beratung"
                 className="border-gray-200"
               />
             </div>
@@ -206,7 +206,7 @@ export default function Rooms() {
                 className="data-[state=checked]:bg-[#61A07B] cursor-pointer"
               />
               <Label htmlFor="room-active" className="text-sm font-normal">
-                Active (room available for booking)
+                Aktiv (Raum buchbar)
               </Label>
             </div>
             <DialogFooter className="gap-2 sm:gap-5">
@@ -215,14 +215,14 @@ export default function Rooms() {
                 variant="outline"
                 onClick={() => handleCloseModal(false)}
               >
-                Cancel
+                Abbrechen
               </Button>
               <Button
                 type="submit"
                 className="bg-[#61A07B] hover:bg-[#4A8A6A] cursor-pointer"
                 disabled={!newRoomName.trim()}
               >
-                {editingRoom ? "Update room" : "Create room"}
+                {editingRoom ? "Raum aktualisieren" : "Raum anlegen"}
               </Button>
             </DialogFooter>
           </form>

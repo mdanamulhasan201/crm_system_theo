@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 export type SchedulingTab = "staff-availability" | "rooms" | "booking-rules";
 
 const TABS: { value: SchedulingTab; label: string }[] = [
-  { value: "staff-availability", label: "Staff Availability" },
-  { value: "rooms", label: "Rooms" },
-  { value: "booking-rules", label: "Booking Rules" },
+  { value: "staff-availability", label: "Mitarbeiter-Verfügbarkeit" },
+  { value: "rooms", label: "Räume" },
+  { value: "booking-rules", label: "Buchungsregeln" },
 ];
 
 interface TabConfigProps {

@@ -20,9 +20,9 @@ export default function BookingRules() {
     <div className="flex flex-col gap-6 pt-4">
       {/* Header */}
       <div>
-        <h2 className="text-xl font-semibold text-gray-900">Booking Rules</h2>
+        <h2 className="text-xl font-semibold text-gray-900">Buchungsregeln</h2>
         <p className="text-sm text-gray-500 mt-1">
-          Configure global rules that apply to all appointment bookings.
+          Globale Regeln für alle Terminbuchungen festlegen.
         </p>
       </div>
 
@@ -35,10 +35,10 @@ export default function BookingRules() {
             </div>
             <div className="flex-1 min-w-0 space-y-2">
               <Label className="text-sm font-semibold text-gray-900">
-                Minimum Notice Time
+                Mindestvorlaufzeit
               </Label>
               <p className="text-sm text-gray-500">
-                Appointments must be booked at least this many hours in advance.
+                Termine müssen mindestens so viele Stunden im Voraus gebucht werden.
               </p>
               <div className="flex items-center gap-2 pt-1">
                 <Input
@@ -48,7 +48,7 @@ export default function BookingRules() {
                   onChange={(e) => setMinNoticeHours(e.target.value)}
                   className="h-9 w-24 rounded-md border-gray-200 bg-white"
                 />
-                <span className="text-sm text-gray-600">hours</span>
+                <span className="text-sm text-gray-600">Stunden</span>
               </div>
             </div>
           </div>
@@ -62,11 +62,10 @@ export default function BookingRules() {
             </div>
             <div className="flex-1 min-w-0 space-y-2">
               <Label className="text-sm font-semibold text-gray-900">
-                Cancellation Deadline
+                Stornierungsfrist
               </Label>
               <p className="text-sm text-gray-500">
-                Appointments can be cancelled up to this many hours before the
-                start time.
+                Termine können bis zu so vielen Stunden vor Beginn storniert werden.
               </p>
               <div className="flex items-center gap-2 pt-1">
                 <Input
@@ -76,7 +75,7 @@ export default function BookingRules() {
                   onChange={(e) => setCancellationHours(e.target.value)}
                   className="h-9 w-24 rounded-md border-gray-200 bg-white"
                 />
-                <span className="text-sm text-gray-600">hours</span>
+                <span className="text-sm text-gray-600">Stunden</span>
               </div>
             </div>
           </div>
@@ -90,20 +89,20 @@ export default function BookingRules() {
             </div>
             <div className="flex-1 min-w-0 space-y-1">
               <Label className="text-sm font-semibold text-gray-900">
-                Slot Length
+                Slot-Länge
               </Label>
               <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                <span className="font-medium text-gray-700">30 minutes</span>
+                <span className="font-medium text-gray-700">30 Minuten</span>
                 <span
                   className="text-gray-400"
-                  title="All appointment slots are fixed at 30 minutes. Duration can be adjusted when creating appointments."
+                  title="Alle Terminslots sind auf 30 Minuten festgelegt. Die Dauer kann bei der Erstellung von Terminen angepasst werden."
                 >
                   <Info className="h-4 w-4 shrink-0" />
                 </span>
               </p>
               <p className="text-xs text-gray-500">
-                All appointment slots are fixed at 30 minutes. Duration can be
-                adjusted when creating appointments.
+                Alle Terminslots sind auf 30 Minuten festgelegt. Die Dauer kann
+                bei der Erstellung von Terminen angepasst werden.
               </p>
             </div>
           </div>
@@ -117,7 +116,7 @@ export default function BookingRules() {
             className="bg-[#61A07B] hover:bg-[#4A8A6A] text-white cursor-pointer"
           >
             <Check className="h-4 w-4" />
-            {saving ? "Saving…" : "Save Changes"}
+            {saving ? "Wird gespeichert…" : "Änderungen speichern"}
           </Button>
         </div>
       </div>

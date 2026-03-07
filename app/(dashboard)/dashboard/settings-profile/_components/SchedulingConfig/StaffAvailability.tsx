@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const;
+const DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"] as const;
 
 interface BreakSlot {
   id: string;
@@ -115,7 +115,7 @@ export default function StaffAvailability() {
         {/* Staff members list */}
         <div className="md:col-span-1">
           <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 mb-4">
-            Staff Members
+            Mitarbeiter
           </h3>
           <div className="flex flex-col gap-2">
             {STAFF_MEMBERS.map((staff) => (
@@ -139,7 +139,7 @@ export default function StaffAvailability() {
         {/* Weekly working hours */}
         <div className="md:col-span-2">
           <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 mb-4">
-            Weekly Working Hours
+            Wöchentliche Arbeitszeiten
           </h3>
           <div className="flex flex-col gap-4">
             {DAYS.map((day) => {
@@ -167,7 +167,7 @@ export default function StaffAvailability() {
                     {/* Hours row: label + 09:00 - 17:00 */}
                     <div className="flex flex-row flex-wrap items-center gap-3">
                       <span className="text-sm font-normal text-gray-500 w-14 shrink-0">
-                        Hours:
+                        Stunden:
                       </span>
                       <TimeInput
                         value={dayData.start}
@@ -184,7 +184,7 @@ export default function StaffAvailability() {
                     {dayData.breaks.map((br, idx) => (
                       <div key={br.id} className="flex flex-row flex-wrap items-center gap-3">
                         <span className="text-sm font-normal text-gray-500 w-14 shrink-0">
-                          {idx === 0 ? "Breaks:" : ""}
+                          {idx === 0 ? "Pausen:" : ""}
                         </span>
                         <TimeInput
                           value={br.start}
@@ -199,7 +199,7 @@ export default function StaffAvailability() {
                           type="button"
                           className="p-1.5 cursor-pointer text-gray-400 hover:text-red-600 rounded transition-colors shrink-0"
                           onClick={() => removeBreak(day, br.id)}
-                          aria-label="Remove break"
+                          aria-label="Pause entfernen"
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
@@ -212,7 +212,7 @@ export default function StaffAvailability() {
                         onClick={() => addBreak(day)}
                         className="text-sm font-medium cursor-pointer text-blue-600 hover:text-blue-700 hover:underline"
                       >
-                        + Add break
+                        + Pause hinzufügen
                       </button>
                     </div>
                   </div>
