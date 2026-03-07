@@ -643,8 +643,8 @@ export default function MassschuheOrderModal({
             if (type == null) return false;
             
             if (type === 'on_last') {
-                // For on_last: zusätzliche_notizen is required
-                return (step3.zusätzliche_notizen?.trim() ?? '') !== '';
+                // For on_last: only type is required, Zusätzliche Notizen is optional
+                return true;
             }
             if (type === 'built_up') {
                 // For built_up: only thickness fields are required, notes are optional
@@ -670,8 +670,8 @@ export default function MassschuheOrderModal({
         if (type == null) return false;
         
         if (type === 'on_last') {
-            // For on_last: bettung_notes is required
-            return (formData.bettung_notes?.trim() ?? '') !== '';
+            // For on_last: only type is required, Zusätzliche Notizen is optional
+            return true;
         }
         if (type === 'built_up') {
             // For built_up: only thickness fields are required, notes are optional

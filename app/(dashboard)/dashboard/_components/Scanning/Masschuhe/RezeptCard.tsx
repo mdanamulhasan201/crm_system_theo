@@ -141,7 +141,7 @@ export default function RezeptCard({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
-                        Ärztliche Diagnose
+                        Ärztliche Diagnose *
                     </label>
                     <div className="relative">
                         <input
@@ -201,7 +201,7 @@ export default function RezeptCard({
                         {/* Positionsnummer */}
                         <div className="lg:col-span-6">
                             <PositionsnummerDropdown
-                                label="Positionsnummer"
+                                label="Positionsnummer *"
                                 value={selectedPositionsnummer}
                                 placeholder="Pos.-Nr."
                                 options={positionsnummerOptions}
@@ -238,7 +238,7 @@ export default function RezeptCard({
                         {/* Durchgeführt von */}
                         <div className="lg:col-span-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Durchgeführt von
+                                Durchgeführt von *
                             </label>
                             <EmployeeDropdown
                                 selectedEmployee={selectedEmployee}
@@ -581,7 +581,7 @@ export default function RezeptCard({
                         {/* Durchgeführt von */}
                         <div className="lg:col-span-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Durchgeführt von
+                                Durchgeführt von *
                             </label>
                             <EmployeeDropdown
                                 selectedEmployee={selectedEmployee}
