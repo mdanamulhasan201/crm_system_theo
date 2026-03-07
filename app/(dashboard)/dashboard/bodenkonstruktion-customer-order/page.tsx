@@ -1,7 +1,7 @@
 "use client"
-import React, { useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
-import { CalendarDays, User } from "lucide-react"
+import React, { useMemo, useState, useEffect, useRef } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { CalendarDays, User, Upload } from "lucide-react"
 import { GROUPS2, shoe2 } from "../_components/Massschuhauftraeges/Details/ShoeData"
 import PDFPopup, { OrderDataForPDF } from "../_components/Massschuhauftraeges/Details/PDFPopup"
 import CompletionPopUp from "../_components/Massschuhauftraeges/Details/Completion-PopUp"
@@ -28,9 +28,15 @@ import { useBodenkonstruktionCalculations } from "@/hooks/massschuhe/useBodenkon
 import { parseEuroFromText } from "../_components/Massschuhauftraeges/Details/HelperFunctions"
 
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
+import { updateMassschuheOrderStepBodenkonstruktion, getMassschuheOrderStepBodenkonstruktion } from "@/apis/MassschuheAddedApis"
+
+const BODEN_STEP_STATUS = "Halbprobe_durchführen"
 
 export default function BodenkonstruktionCustomerOrderPage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const orderId = searchParams.get("orderId")
+    const prefillDoneRef = useRef(false)
 
     // Customer name state
     const [customerName, setCustomerName] = useState<string>("")
@@ -83,6 +89,11 @@ export default function BodenkonstruktionCustomerOrderPage() {
     const [showAbsatzFormModal, setShowAbsatzFormModal] = useState(false)
     const [selectedAbsatzForm, setSelectedAbsatzForm] = useState<string | null>(null)
 
+    // Order-step: image upload (when orderId present) + prefill loading
+    const [bodenkonstruktionImageFile, setBodenkonstruktionImageFile] = useState<File | null>(null)
+    const [bodenkonstruktionImagePreview, setBodenkonstruktionImagePreview] = useState<string | null>(null)
+    const [prefillLoading, setPrefillLoading] = useState(!!orderId)
+
     // Hooks
     const { soleOptions } = useSoleData()
     const deliveryDate = useMemo(() => {
@@ -107,6 +118,51 @@ export default function BodenkonstruktionCustomerOrderPage() {
             totalPrice: grandTotal,
         }
     }, [customerName, deliveryDate, grandTotal])
+
+    // Prefill from GET when orderId present (step 5)
+    useEffect(() => {
+        if (!orderId || prefillDoneRef.current) return
+        prefillDoneRef.current = true
+        getMassschuheOrderStepBodenkonstruktion(orderId, BODEN_STEP_STATUS)
+            .then((res: any) => {
+                const data = res?.data ?? res
+                const raw = data?.bodenkonstruktion_json
+                if (!raw) {
+                    setPrefillLoading(false)
+                    return
+                }
+                const json = typeof raw === "string" ? (() => { try { return JSON.parse(raw) } catch { return null } })() : raw
+                if (!json || typeof json !== "object") {
+                    setPrefillLoading(false)
+                    return
+                }
+                if (json.selected && typeof json.selected === "object") setSelected(json.selected as SelectedState)
+                if (json.optionInputs && typeof json.optionInputs === "object") setOptionInputs(json.optionInputs as OptionInputsState)
+                if (json.textAreas && typeof json.textAreas === "object") setTextAreas((prev) => ({ ...prev, ...json.textAreas } as TextAreasState))
+                if (typeof json.customerName === "string") setCustomerName(json.customerName)
+                if (json.heelWidthAdjustment != null) setHeelWidthAdjustment(json.heelWidthAdjustment as HeelWidthAdjustmentData | null)
+                if (json.soleElevation != null) setSoleElevation(json.soleElevation as SoleElevationData | null)
+                if (json.vorderkappeSide != null) setVorderkappeSide(json.vorderkappeSide as VorderkappeSideData | null)
+                if (json.rahmen != null) setRahmen(json.rahmen as RahmenData | null)
+                if (json.sohlenhoeheDifferenziert != null) setSohlenhoeheDifferenziert(json.sohlenhoeheDifferenziert as SohlenhoeheDifferenziertData | null)
+                if (json.hinterkappeMusterSide != null) setHinterkappeMusterSide(json.hinterkappeMusterSide as HinterkappeMusterSideData | null)
+                if (json.hinterkappeSide != null) setHinterkappeSide(json.hinterkappeSide as HinterkappeSideData | null)
+                if (json.brandsohleSide != null) setBrandsohleSide(json.brandsohleSide as BrandsohleSideData | null)
+                if (json.selectedSoleId != null && Array.isArray(soleOptions)) {
+                    const sole = soleOptions.find((s: SoleType) => s.id === json.selectedSoleId)
+                    if (sole) setSelectedSole(sole)
+                }
+                if (json.sole4Thickness != null) setSole4Thickness(json.sole4Thickness)
+                if (json.sole4Color != null) setSole4Color(json.sole4Color)
+                if (json.sole5Thickness != null) setSole5Thickness(json.sole5Thickness)
+                if (json.sole5Color != null) setSole5Color(json.sole5Color)
+                if (json.sole6Thickness != null) setSole6Thickness(json.sole6Thickness)
+                if (json.sole6Color != null) setSole6Color(json.sole6Color)
+                if (data?.bodenkonstruktion_image) setBodenkonstruktionImagePreview(data.bodenkonstruktion_image)
+            })
+            .catch(() => {})
+            .finally(() => setPrefillLoading(false))
+    }, [orderId, soleOptions])
 
     // Reset sole options when sole changes
     React.useEffect(() => {
@@ -277,13 +333,53 @@ export default function BodenkonstruktionCustomerOrderPage() {
         }
     }, [selected.schlemmaterial, textAreas.schlemmaterial_preferred_colour, sohlenhoeheDifferenziert])
 
-    // Handle final form submission (no API call - customer order only)
+    // Build bodenkonstruktion_json payload (all form data except image)
+    const buildBodenkonstruktionJson = () => ({
+        selected,
+        optionInputs,
+        textAreas,
+        customerName,
+        heelWidthAdjustment,
+        soleElevation,
+        vorderkappeSide,
+        rahmen,
+        sohlenhoeheDifferenziert,
+        hinterkappeMusterSide,
+        hinterkappeSide,
+        brandsohleSide,
+        selectedSoleId: selectedSole?.id ?? null,
+        sole4Thickness,
+        sole4Color,
+        sole5Thickness,
+        sole5Color,
+        sole6Thickness,
+        sole6Color,
+    })
+
+    // Handle final form submission: if orderId → POST order-step then redirect to order; else balance-dashboard
     const handleFinalSubmit = async (_deliveryDate?: string | null) => {
         setIsSubmitting(true)
-        toast.success("Bodenkonstruktion erfolgreich erstellt!", { id: "creating-bodenkonstruktion" })
-        setShowModal2(false)
-        setIsSubmitting(false)
-        router.push("/dashboard/balance-dashboard")
+        if (orderId) {
+            try {
+                const formData = new FormData()
+                formData.append("bodenkonstruktion_json", JSON.stringify(buildBodenkonstruktionJson()))
+                if (bodenkonstruktionImageFile) formData.append("bodenkonstruktion_image", bodenkonstruktionImageFile)
+                await updateMassschuheOrderStepBodenkonstruktion(orderId, formData)
+                toast.success("Bodenkonstruktion gespeichert!", { id: "bodenkonstruktion-saved" })
+                setShowModal2(false)
+                router.push(`/dashboard/massschuhauftraege/${orderId}?status=${encodeURIComponent(BODEN_STEP_STATUS)}`)
+            } catch (e) {
+                console.error(e)
+                toast.error("Speichern fehlgeschlagen.")
+            } finally {
+                setIsSubmitting(false)
+            }
+        } else {
+            toast.success("Bodenkonstruktion erfolgreich erstellt!", { id: "creating-bodenkonstruktion" })
+            setShowModal2(false)
+            setIsSubmitting(false)
+            router.push("/dashboard/balance-dashboard")
+        }
     }
 
     // Helper function to convert selected value to string
@@ -321,6 +417,11 @@ export default function BodenkonstruktionCustomerOrderPage() {
 
     return (
         <div className="relative bg-white ">
+            {prefillLoading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/80">
+                    <p className="text-sm font-medium text-gray-700">Lade Bodenkonstruktion...</p>
+                </div>
+            )}
             {/* Sticky Price Summary - bottom-right with Abbrechen + Weiter buttons */}
             <StickyPriceSummary
                 price={grandTotal}
@@ -367,6 +468,38 @@ export default function BodenkonstruktionCustomerOrderPage() {
                                 </div>
                             </div>
                         </div>
+                        {orderId && (
+                            <div className="mt-4 pt-4 border-t border-gray-200/80">
+                                <label className="block text-xs font-medium uppercase tracking-wider text-gray-500 mb-2">Bild (optional)</label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    id="bodenkonstruktion-image"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0]
+                                        if (file?.type.startsWith("image/")) {
+                                            setBodenkonstruktionImageFile(file)
+                                            const url = URL.createObjectURL(file)
+                                            setBodenkonstruktionImagePreview(url)
+                                        }
+                                    }}
+                                />
+                                <label
+                                    htmlFor="bodenkonstruktion-image"
+                                    className="flex flex-col items-center justify-center gap-2 w-full max-w-xs border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50 hover:bg-gray-100 cursor-pointer"
+                                >
+                                    {bodenkonstruktionImagePreview ? (
+                                        <img src={bodenkonstruktionImagePreview} alt="Bodenkonstruktion" className="max-h-24 object-contain rounded" />
+                                    ) : (
+                                        <>
+                                            <Upload className="w-8 h-8 text-gray-400" />
+                                            <span className="text-xs text-gray-500">Bild hochladen</span>
+                                        </>
+                                    )}
+                                </label>
+                            </div>
+                        )}
                     </div>
                 </section>
             </div>

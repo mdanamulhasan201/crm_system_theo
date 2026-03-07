@@ -46,8 +46,10 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     schafttypInternNote: string;
     /** Schafttyp Extern – Hinweise zur externen Schaftfertigung */
     schafttypExternNote: string;
-    /** Order ID for navigation when "Intern" is clicked (go to step Schaft_fertigen) */
+    /** Order ID for navigation when "Intern" is clicked (go to step Schaft_fertigen). Also used for step 5 massschafterstellung GET/POST. */
     orderId?: string;
+    /** Step 5 status for massschafterstellung API (e.g. "Halbprobe_durchführen") */
+    stepStatus?: string;
     /** JSON string of checklist answers (checkliste_halbprobe) */
     checklisteHalbprobe?: string;
     /** Bodenkonstruktion notes for step 5 payload */
@@ -84,6 +86,7 @@ export default function HalbprobeDurchfuehrungStepFields({
     schafttypInternNote,
     schafttypExternNote,
     orderId,
+    stepStatus,
     checklisteHalbprobe,
     bodenkonstruktionInternNote,
     bodenkonstruktionExternNote,
@@ -266,6 +269,8 @@ export default function HalbprobeDurchfuehrungStepFields({
                 schafttyp={schafttyp}
                 schafttypInternNote={schafttypInternNote}
                 schafttypExternNote={schafttypExternNote}
+                orderId={orderId}
+                stepStatus={stepStatus}
                 onSchafttypChange={onSchafttypChange}
                 onSchafttypInternNoteChange={onSchafttypInternNoteChange}
                 onSchafttypExternNoteChange={onSchafttypExternNoteChange}
@@ -276,6 +281,8 @@ export default function HalbprobeDurchfuehrungStepFields({
                 <BodenkonstruktionFiledText
                     bodenkonstruktionInternNote={bodenkonstruktionInternNote}
                     bodenkonstruktionExternNote={bodenkonstruktionExternNote}
+                    orderId={orderId}
+                    stepStatus={stepStatus}
                     onBodenkonstruktionInternNoteChange={onBodenkonstruktionInternNoteChange}
                     onBodenkonstruktionExternNoteChange={onBodenkonstruktionExternNoteChange}
                 />

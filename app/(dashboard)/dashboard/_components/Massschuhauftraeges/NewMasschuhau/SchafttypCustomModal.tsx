@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Info } from 'lucide-react';
+import { Upload, Info, Loader2 } from 'lucide-react';
 
 const CATEGORY_OPTIONS = [
     { value: 'Halbschuhe', label: 'Halbschuhe' },
@@ -39,14 +39,39 @@ const VERSCHLUSS_OPTIONS = [
 const POLSTERUNG_OPTIONS = ['Standard', 'Lasche', 'Ferse', 'Innen-Außenknöchel', 'Vorderfuß'];
 const VERSTAERKUNGEN_OPTIONS = ['Standard', 'Fersenverstärkung', 'Innen-Außenknöchel', 'Vorderfuß'];
 
+/** JSON payload for massschafterstellung (all modal fields except image) */
+export interface MassschafterstellungJson {
+    cadModeling?: string;
+    kategorie?: string;
+    anzahlLedertypen?: string;
+    innenfutter?: string;
+    nahtfarbe?: string;
+    schafthoheLinks?: string;
+    schafthoheRechts?: string;
+    polsterung?: string[];
+    polsterungText?: string;
+    verstarkungen?: string[];
+    verstarkungenText?: string;
+    verschlussart?: string;
+    zipperExtra?: boolean;
+    sonstigeNotizen?: string;
+}
+
 export interface SchafttypCustomModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
+    /** Prefill form when opening (e.g. from GET massschafterstellung) */
+    initialData?: MassschafterstellungJson | null;
+    /** URL of saved image to show (e.g. from API) */
+    initialImageUrl?: string | null;
+    /** Called on Abschließen with image file + JSON (for POST massschafterstellung). Can return Promise for loading state. */
+    onSubmit?: (payload: { imageFile?: File; massschafterstellung_json: MassschafterstellungJson }) => void | Promise<void>;
 }
 
-export default function SchafttypCustomModal({ open, onOpenChange }: SchafttypCustomModalProps) {
+export default function SchafttypCustomModal({ open, onOpenChange, initialData, initialImageUrl, onSubmit }: SchafttypCustomModalProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
     const [cadModeling, setCadModeling] = useState<'1x' | '2x'>('1x');
     const [kategorie, setKategorie] = useState('');
     const [anzahlLedertypen, setAnzahlLedertypen] = useState('');
@@ -61,32 +86,51 @@ export default function SchafttypCustomModal({ open, onOpenChange }: SchafttypCu
     const [verschlussart, setVerschlussart] = useState('');
     const [zipperExtra, setZipperExtra] = useState<boolean>(false);
     const [sonstigeNotizen, setSonstigeNotizen] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
-    // Reset all fields when modal opens so only placeholders show (no default text)
     useEffect(() => {
         if (open) {
-            setUploadedImage(null);
-            setCadModeling('1x');
-            setKategorie('');
-            setAnzahlLedertypen('');
-            setInnenfutter('');
-            setNahtfarbe('');
-            setSchafthoheLinks('');
-            setSchafthoheRechts('');
-            setPolsterung([]);
-            setPolsterungText('');
-            setVerstarkungen([]);
-            setVerstarkungenText('');
-            setVerschlussart('');
-            setZipperExtra(false);
-            setSonstigeNotizen('');
+            if (initialData) {
+                setCadModeling((initialData.cadModeling as '1x' | '2x') || '1x');
+                setKategorie(initialData.kategorie ?? '');
+                setAnzahlLedertypen(initialData.anzahlLedertypen ?? '');
+                setInnenfutter(initialData.innenfutter ?? '');
+                setNahtfarbe(initialData.nahtfarbe ?? '');
+                setSchafthoheLinks(initialData.schafthoheLinks ?? '');
+                setSchafthoheRechts(initialData.schafthoheRechts ?? '');
+                setPolsterung(Array.isArray(initialData.polsterung) ? initialData.polsterung : []);
+                setPolsterungText(initialData.polsterungText ?? '');
+                setVerstarkungen(Array.isArray(initialData.verstarkungen) ? initialData.verstarkungen : []);
+                setVerstarkungenText(initialData.verstarkungenText ?? '');
+                setVerschlussart(initialData.verschlussart ?? '');
+                setZipperExtra(initialData.zipperExtra ?? false);
+                setSonstigeNotizen(initialData.sonstigeNotizen ?? '');
+            } else {
+                setCadModeling('1x');
+                setKategorie('');
+                setAnzahlLedertypen('');
+                setInnenfutter('');
+                setNahtfarbe('');
+                setSchafthoheLinks('');
+                setSchafthoheRechts('');
+                setPolsterung([]);
+                setPolsterungText('');
+                setVerstarkungen([]);
+                setVerstarkungenText('');
+                setVerschlussart('');
+                setZipperExtra(false);
+                setSonstigeNotizen('');
+            }
+            setUploadedImage(initialImageUrl || null);
+            setImageFile(null);
         }
-    }, [open]);
+    }, [open, initialData, initialImageUrl]);
 
     const handleImageClick = () => fileInputRef.current?.click();
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file?.type.startsWith('image/')) return;
+        setImageFile(file);
         const reader = new FileReader();
         reader.onload = () => typeof reader.result === 'string' && setUploadedImage(reader.result);
         reader.readAsDataURL(file);
@@ -99,8 +143,33 @@ export default function SchafttypCustomModal({ open, onOpenChange }: SchafttypCu
         setVerstarkungen((prev) => (prev.includes(opt) ? prev.filter((x) => x !== opt) : [...prev, opt]));
     };
 
-    const handleAbschliessen = () => {
-        onOpenChange(false);
+    const handleAbschliessen = async () => {
+        const massschafterstellung_json: MassschafterstellungJson = {
+            cadModeling,
+            kategorie: kategorie || undefined,
+            anzahlLedertypen: anzahlLedertypen || undefined,
+            innenfutter: innenfutter || undefined,
+            nahtfarbe: nahtfarbe || undefined,
+            schafthoheLinks: schafthoheLinks || undefined,
+            schafthoheRechts: schafthoheRechts || undefined,
+            polsterung: polsterung.length ? polsterung : undefined,
+            polsterungText: polsterungText || undefined,
+            verstarkungen: verstarkungen.length ? verstarkungen : undefined,
+            verstarkungenText: verstarkungenText || undefined,
+            verschlussart: verschlussart || undefined,
+            zipperExtra,
+            sonstigeNotizen: sonstigeNotizen || undefined,
+        };
+        setSubmitting(true);
+        try {
+            const result = onSubmit?.({ imageFile: imageFile ?? undefined, massschafterstellung_json });
+            if (result && typeof (result as Promise<unknown>).then === 'function') {
+                await (result as Promise<void>);
+            }
+            onOpenChange(false);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     return (
@@ -357,8 +426,16 @@ export default function SchafttypCustomModal({ open, onOpenChange }: SchafttypCu
                             type="button"
                             className="w-full bg-gray-900 hover:bg-gray-800 text-white"
                             onClick={handleAbschliessen}
+                            disabled={submitting}
                         >
-                            Abschließen
+                            {submitting ? (
+                                <>
+                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    Wird gespeichert...
+                                </>
+                            ) : (
+                                'Abschließen'
+                            )}
                         </Button>
                     </div>
                 </div>

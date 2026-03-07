@@ -52,6 +52,48 @@ export const createMassschuheOrderV2 = async (massschuheOrderData: any) => {
 }
 
 
+// v2/shoe-orders/order-step/massschafterstellung/cmmfxmk4o0001kuovio6a7z8z
+export const updateMassschuheOrderStepMassschafterstellung = async (orderId: string, data: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/shoe-orders/order-step/massschafterstellung/${orderId}`, data);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// get data v2/shoe-orders/order-step/massschafterstellung/cmmfxmk4o0001kuovio6a7z8z?status=Schaft_fertigen
+export const getMassschuheOrderStepMassschafterstellung = async (orderId: string, status: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/order-step/massschafterstellung/${orderId}?status=${status}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// v2/shoe-orders/order-step/bodenkonstruktion/cmmfxmk4o0001kuovio6a7z8z
+export const updateMassschuheOrderStepBodenkonstruktion = async (orderId: string, data: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/shoe-orders/order-step/bodenkonstruktion/${orderId}`, data);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// v2/shoe-orders/order-step/bodenkonstruktion/cmmfxmk4o0001kuovio6a7z8z?status=Bodenerstellen
+export const getMassschuheOrderStepBodenkonstruktion = async (orderId: string, status: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/order-step/bodenkonstruktion/${orderId}?status=${status}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
 
 
 

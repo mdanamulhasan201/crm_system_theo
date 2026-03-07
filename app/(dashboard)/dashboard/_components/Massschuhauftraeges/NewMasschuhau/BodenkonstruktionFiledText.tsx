@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
+import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 const BODEN_OPTIONS = [
     { value: 'Intern', label: 'Intern' },
@@ -20,6 +21,9 @@ export interface BodenkonstruktionFiledTextProps {
     bodenkonstruktionExternNote?: string;
     onBodenkonstruktionInternNoteChange?: (value: string) => void;
     onBodenkonstruktionExternNoteChange?: (value: string) => void;
+    /** Step 5: orderId + step status for bodenkonstruktion GET (erweitert green + link) */
+    orderId?: string;
+    stepStatus?: string;
 }
 
 export default function BodenkonstruktionFiledText({
@@ -27,17 +31,49 @@ export default function BodenkonstruktionFiledText({
     bodenkonstruktionExternNote,
     onBodenkonstruktionInternNoteChange,
     onBodenkonstruktionExternNoteChange,
+    orderId,
+    stepStatus,
 }: BodenkonstruktionFiledTextProps = {}) {
     const router = useRouter();
     const [bodenOption, setBodenOption] = useState<BodenOption>('');
     const [internNoteLocal, setInternNoteLocal] = useState('');
     const [externNoteLocal, setExternNoteLocal] = useState('');
+    const [hasBodenkonstruktionData, setHasBodenkonstruktionData] = useState(false);
+    const [bodenLoading, setBodenLoading] = useState(false);
     const internControlled = onBodenkonstruktionInternNoteChange != null;
     const externControlled = onBodenkonstruktionExternNoteChange != null;
     const internNote = internControlled ? (bodenkonstruktionInternNote ?? '') : internNoteLocal;
     const externNote = externControlled ? (bodenkonstruktionExternNote ?? '') : externNoteLocal;
     const setInternNote = internControlled ? (v: string) => onBodenkonstruktionInternNoteChange?.(v) : setInternNoteLocal;
     const setExternNote = externControlled ? (v: string) => onBodenkonstruktionExternNoteChange?.(v) : setExternNoteLocal;
+    const isStep5 = Boolean(orderId && stepStatus);
+
+    const fetchBodenkonstruktion = useCallback(async () => {
+        if (!orderId || !stepStatus) return;
+        setBodenLoading(true);
+        try {
+            const res: any = await MassschuheAddedApis.getMassschuheOrderStepBodenkonstruktion(orderId, stepStatus);
+            const data = res?.data ?? res;
+            const hasData = data && (data.bodenkonstruktion_json != null || data.bodenkonstruktion_image != null);
+            setHasBodenkonstruktionData(!!hasData);
+        } catch {
+            setHasBodenkonstruktionData(false);
+        } finally {
+            setBodenLoading(false);
+        }
+    }, [orderId, stepStatus]);
+
+    useEffect(() => {
+        if (isStep5) fetchBodenkonstruktion();
+    }, [isStep5, fetchBodenkonstruktion]);
+
+    const handleErweitertClick = () => {
+        if (orderId) {
+            router.push(`/dashboard/bodenkonstruktion-customer-order?orderId=${encodeURIComponent(orderId)}`);
+        } else {
+            router.push('/dashboard/bodenkonstruktion-customer-order');
+        }
+    };
 
     return (
         <div>
@@ -74,9 +110,18 @@ export default function BodenkonstruktionFiledText({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="text-gray-700 border-gray-400 hover:bg-gray-100"
-                            onClick={() => router.push('/dashboard/bodenkonstruktion-customer-order')}
+                            className={cn(
+                                'text-gray-700 border-gray-400 hover:bg-gray-100',
+                                isStep5 && hasBodenkonstruktionData && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                            )}
+                            onClick={handleErweitertClick}
+                            disabled={bodenLoading}
                         >
+                            {bodenLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                            ) : isStep5 && hasBodenkonstruktionData ? (
+                                <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                            ) : null}
                             erweitert
                         </Button>
                     </div>

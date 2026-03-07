@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Check } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import {
     Dialog,
     DialogContent,
@@ -14,7 +14,8 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
-import SchafttypCustomModal from './SchafttypCustomModal';
+import SchafttypCustomModal, { type MassschafterstellungJson } from './SchafttypCustomModal';
+import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 
 export const SCHAFTTYP_OPTIONS = [
     { value: 'Intern', label: 'Intern' },
@@ -32,6 +33,9 @@ export interface SchafttypFieldTextProps {
     onSchafttypChange: (value: SchafttypValue) => void;
     onSchafttypInternNoteChange: (value: string) => void;
     onSchafttypExternNoteChange: (value: string) => void;
+    /** Step 5: orderId + step status for massschafterstellung GET/POST (erweitert modal) */
+    orderId?: string;
+    stepStatus?: string;
 }
 
 export default function SchafttypFieldText({
@@ -41,10 +45,76 @@ export default function SchafttypFieldText({
     onSchafttypChange,
     onSchafttypInternNoteChange,
     onSchafttypExternNoteChange,
+    orderId,
+    stepStatus,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
     const [internCustomModalOpen, setInternCustomModalOpen] = useState(false);
+    const [massschafterstellungData, setMassschafterstellungData] = useState<{
+        json?: MassschafterstellungJson;
+        imageUrl?: string;
+    } | null>(null);
+    const [massschafterstellungLoading, setMassschafterstellungLoading] = useState(false);
+    const isStep5 = Boolean(orderId && stepStatus);
+
+    const fetchMassschafterstellung = useCallback(async () => {
+        if (!orderId || !stepStatus) return null;
+        setMassschafterstellungLoading(true);
+        try {
+            const res: any = await MassschuheAddedApis.getMassschuheOrderStepMassschafterstellung(orderId, stepStatus);
+            const data = res?.data ?? res;
+            if (data && (data.massschafterstellung_json || data.massschafterstellung_image)) {
+                const json = typeof data.massschafterstellung_json === 'string'
+                    ? (() => { try { return JSON.parse(data.massschafterstellung_json); } catch { return data.massschafterstellung_json; } })()
+                    : data.massschafterstellung_json;
+                setMassschafterstellungData({
+                    json: json ?? undefined,
+                    imageUrl: data.massschafterstellung_image ?? undefined,
+                });
+                return { json, imageUrl: data.massschafterstellung_image };
+            }
+            setMassschafterstellungData(null);
+            return null;
+        } catch {
+            setMassschafterstellungData(null);
+            return null;
+        } finally {
+            setMassschafterstellungLoading(false);
+        }
+    }, [orderId, stepStatus]);
+
+    const handleErweitertClick = async () => {
+        if (isStep5) {
+            await fetchMassschafterstellung();
+            setInternCustomModalOpen(true);
+        } else {
+            setInternCustomModalOpen(true);
+        }
+    };
+
+    const handleMassschafterstellungSubmit = async (payload: {
+        imageFile?: File;
+        massschafterstellung_json: MassschafterstellungJson;
+    }) => {
+        if (!orderId) return;
+        const formData = new FormData();
+        if (payload.imageFile) formData.append('massschafterstellung_image', payload.imageFile);
+        formData.append('massschafterstellung_json', JSON.stringify(payload.massschafterstellung_json));
+        try {
+            await MassschuheAddedApis.updateMassschuheOrderStepMassschafterstellung(orderId, formData);
+            setMassschafterstellungData({
+                json: payload.massschafterstellung_json,
+                imageUrl: payload.imageFile ? undefined : massschafterstellungData?.imageUrl,
+            });
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    useEffect(() => {
+        if (isStep5) fetchMassschafterstellung();
+    }, [isStep5, fetchMassschafterstellung]);
 
     return (
         <>
@@ -82,9 +152,18 @@ export default function SchafttypFieldText({
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="text-gray-700 border-gray-400 hover:bg-gray-100"
-                                onClick={() => setInternCustomModalOpen(true)}
+                                className={cn(
+                                    'text-gray-700 border-gray-400 hover:bg-gray-100',
+                                    isStep5 && massschafterstellungData && 'border-emerald-500 bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
+                                )}
+                                onClick={handleErweitertClick}
+                                disabled={massschafterstellungLoading}
                             >
+                                {massschafterstellungLoading ? (
+                                    <Loader2 className="w-4 h-4 animate-spin mr-1.5" />
+                                ) : isStep5 && massschafterstellungData ? (
+                                    <Check className="w-4 h-4 mr-1.5 text-emerald-600" />
+                                ) : null}
                                 erweitert
                             </Button>
                         </div>
@@ -156,6 +235,9 @@ export default function SchafttypFieldText({
             <SchafttypCustomModal
                 open={internCustomModalOpen}
                 onOpenChange={setInternCustomModalOpen}
+                initialData={isStep5 ? massschafterstellungData?.json : undefined}
+                initialImageUrl={isStep5 ? massschafterstellungData?.imageUrl : undefined}
+                onSubmit={isStep5 ? handleMassschafterstellungSubmit : undefined}
             />
         </>
     );

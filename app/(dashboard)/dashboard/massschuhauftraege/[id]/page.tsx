@@ -581,9 +581,6 @@ export default function MassschuhauftraegePage() {
         stepFilesFromApi.length > 0 ||
         uploadedFiles.length > 0;
 
-    // Only the "next step to complete" can use "Schritt abschließen & weiterleiten"; other steps show disabled button
-    const isStepActionable = activeStepIndex === currentStepForProgress;
-
     // "Completed by" display from API: partner (busnessName/name) or employee (employeeName, accountName)
     const stepCompletedByDisplay = (() => {
         if (stepCompletedByPartner) {
@@ -954,6 +951,7 @@ export default function MassschuhauftraegePage() {
                                     {activeStepIndex === 4 && (
                                         <HalbprobeDurchfuehrungStepFields
                                             orderId={id}
+                                            stepStatus="Halbprobe_durchführen"
                                             probenergebnis={probenergebnis}
                                             schafttyp={schafttyp}
                                             fitting_date={fitting_date}
@@ -977,20 +975,11 @@ export default function MassschuhauftraegePage() {
                                         />
                                     )}
 
-                                    {/* Complete Button – only active on the current step to complete; other steps show disabled + hint */}
-                                    {!isStepActionable && (
-                                        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50/80 px-4 py-3">
-                                            <p className="text-sm text-amber-800">
-                                                {activeStepIndex < currentStepForProgress
-                                                    ? 'Dieser Schritt ist bereits abgeschlossen.'
-                                                    : 'Bitte zuerst den vorherigen Schritt abschließen.'}
-                                            </p>
-                                        </div>
-                                    )}
+                                    {/* Complete Button – always enabled so user can re-submit or complete any step */}
                                     <Button
                                         type="button"
-                                        disabled={submitting || !isStepActionable}
-                                        onClick={() => isStepActionable && setConfirmOpen(true)}
+                                        disabled={submitting}
+                                        onClick={() => setConfirmOpen(true)}
                                         className="w-fit bg-emerald-600 hover:bg-emerald-700 text-white py-4 text-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                                     >
                                         {submitting ? (
