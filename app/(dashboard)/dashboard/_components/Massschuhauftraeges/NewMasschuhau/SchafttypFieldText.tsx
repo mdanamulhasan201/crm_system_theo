@@ -25,19 +25,22 @@ export type SchafttypValue = (typeof SCHAFTTYP_OPTIONS)[number]['value'] | '';
 
 export interface SchafttypFieldTextProps {
     schafttyp: SchafttypValue;
-    customer_reviews: string;
+    /** Intern – Hinweise zur internen Schaftfertigung */
+    schafttypInternNote: string;
+    /** Extern – Hinweise zur externen Schaftfertigung */
+    schafttypExternNote: string;
     onSchafttypChange: (value: SchafttypValue) => void;
-    onCustomerReviewsChange: (value: string) => void;
-    /** Step 5: save Intern erweitert modal data as massschafterstellung_image + massschafterstellung_json */
-    onMassschafterstellungSave?: (data: { file: File | null; json: string }) => void;
+    onSchafttypInternNoteChange: (value: string) => void;
+    onSchafttypExternNoteChange: (value: string) => void;
 }
 
 export default function SchafttypFieldText({
     schafttyp,
-    customer_reviews,
+    schafttypInternNote,
+    schafttypExternNote,
     onSchafttypChange,
-    onCustomerReviewsChange,
-    onMassschafterstellungSave,
+    onSchafttypInternNoteChange,
+    onSchafttypExternNoteChange,
 }: SchafttypFieldTextProps) {
     const router = useRouter();
     const [externOrderDialogOpen, setExternOrderDialogOpen] = useState(false);
@@ -86,8 +89,8 @@ export default function SchafttypFieldText({
                             </Button>
                         </div>
                         <textarea
-                            value={customer_reviews}
-                            onChange={(e) => onCustomerReviewsChange(e.target.value)}
+                            value={schafttypInternNote}
+                            onChange={(e) => onSchafttypInternNoteChange(e.target.value)}
                             placeholder="Details, Besonderheiten oder Wünsche für den internen Schaft..."
                             rows={3}
                             className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
@@ -111,8 +114,8 @@ export default function SchafttypFieldText({
                             </Button>
                         </div>
                         <textarea
-                            value={customer_reviews}
-                            onChange={(e) => onCustomerReviewsChange(e.target.value)}
+                            value={schafttypExternNote}
+                            onChange={(e) => onSchafttypExternNoteChange(e.target.value)}
                             placeholder="Notizen für die externe Schaftfertigung..."
                             rows={3}
                             className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
@@ -153,7 +156,6 @@ export default function SchafttypFieldText({
             <SchafttypCustomModal
                 open={internCustomModalOpen}
                 onOpenChange={setInternCustomModalOpen}
-                onSave={onMassschafterstellungSave}
             />
         </>
     );

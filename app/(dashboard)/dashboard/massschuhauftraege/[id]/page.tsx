@@ -285,14 +285,9 @@ export default function MassschuhauftraegePage() {
     const [schafttyp, setSchafttyp] = useState<SchafttypValue>('');
     const [fitting_date, setFitting_date] = useState('');
     const [adjustments, setAdjustments] = useState('');
-    const [customer_reviews, setCustomer_reviews] = useState('');
-    // Step 5: Bodenkonstruktion notes (lifted from BodenkonstruktionFiledText)
-    const [bodenkonstruktionInternNote, setBodenkonstruktionInternNote] = useState('');
-    const [bodenkonstruktionExternNote, setBodenkonstruktionExternNote] = useState('');
-    const [bodenOption, setBodenOption] = useState<'Intern' | 'Extern' | ''>('');
-    // Step 5: Schafttyp Intern erweitert modal → massschafterstellung_image + massschafterstellung_json
-    const [massschafterstellungFile, setMassschafterstellungFile] = useState<File | null>(null);
-    const [massschafterstellungJson, setMassschafterstellungJson] = useState<string>('');
+    const [adjustmentsGrosseNacharbeit, setAdjustmentsGrosseNacharbeit] = useState('');
+    const [schafttypInternNote, setSchafttypInternNote] = useState('');
+    const [schafttypExternNote, setSchafttypExternNote] = useState('');
     const [deleteFileConfirmId, setDeleteFileConfirmId] = useState<string | null>(null);
     const [deletingFileId, setDeletingFileId] = useState<string | null>(null);
     // Completed-by from API for current step (partner or employee who completed this step)
@@ -337,8 +332,16 @@ export default function MassschuhauftraegePage() {
                     else if (data.probenergebnis === 'Änderungen') setProbenergebnis('Druckstellen');
                     if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
                     if (data.fitting_date) setFitting_date(String(data.fitting_date).slice(0, 10));
-                    if (data.adjustments != null) setAdjustments(String(data.adjustments));
-                    if (data.customer_reviews != null) setCustomer_reviews(String(data.customer_reviews));
+                    if (data.adjustments != null) {
+                        if (data.probenergebnis === 'Gut') setAdjustments(String(data.adjustments));
+                        else if (data.probenergebnis === 'Instabil') setAdjustmentsGrosseNacharbeit(String(data.adjustments));
+                        else setAdjustments(String(data.adjustments));
+                    }
+                    if (data.customer_reviews != null) {
+                        if (data.schafttyp === 'Intern') setSchafttypInternNote(String(data.customer_reviews));
+                        else if (data.schafttyp === 'Extern') setSchafttypExternNote(String(data.customer_reviews));
+                        else setSchafttypInternNote(String(data.customer_reviews));
+                    }
                     setStepFilesFromApi(Array.isArray(data.files) ? data.files.map((f: any) => ({
                         id: f.id || '',
                         fileName: f.fileName || 'Datei',
@@ -362,7 +365,9 @@ export default function MassschuhauftraegePage() {
                     setSchafttyp('');
                     setFitting_date('');
                     setAdjustments('');
-                    setCustomer_reviews('');
+                    setAdjustmentsGrosseNacharbeit('');
+                    setSchafttypInternNote('');
+                    setSchafttypExternNote('');
                 }
                 setLoading(false);
             })
@@ -426,42 +431,13 @@ export default function MassschuhauftraegePage() {
                 if (probenergebnis) formData.append('probenergebnis', probenergebnis);
                 if (schafttyp) formData.append('schafttyp', schafttyp);
                 if (fitting_date) formData.append('fitting_date', fitting_date);
-                if (adjustments) formData.append('adjustments', adjustments);
-                if (customer_reviews) formData.append('customer_reviews', customer_reviews);
+                const adjustmentsValue = probenergebnis === 'Gut' ? adjustments : probenergebnis === 'Instabil' ? adjustmentsGrosseNacharbeit : '';
+                if (adjustmentsValue) formData.append('adjustments', adjustmentsValue);
+                const customerReviewsValue = schafttyp === 'Intern' ? schafttypInternNote : schafttyp === 'Extern' ? schafttypExternNote : '';
+                if (customerReviewsValue) formData.append('customer_reviews', customerReviewsValue);
             }
-            const statusResult = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
-            if (statusResult.success) {
-                // Step 5 only: after status update, call step-5 API with orderId and full step-5 payload
-                if (statusFromUrl === 'Halbprobe_durchführen') {
-                    const stepId = statusResult.data?.id ?? id;
-                    const step5Form = new FormData();
-                    step5Form.append('notiz', notes);
-                    if (fitting_date) step5Form.append('fitting_date', fitting_date);
-                    const feedbackStatusMap: Record<string, string> = {
-                        Gut: 'Freigeben',
-                        Druckstellen: 'Kleine_Nacharbeit',
-                        Instabil: 'große_Nacharbeiten',
-                    };
-                    const feedbackStatus = probenergebnis ? (feedbackStatusMap[probenergebnis] ?? probenergebnis) : '';
-                    if (feedbackStatus) step5Form.append('feedback_status', feedbackStatus);
-                    if (probenergebnis === 'Gut' || probenergebnis === 'Instabil') {
-                        if (adjustments) step5Form.append('feedback_notes', adjustments);
-                    }
-                    if (probenergebnis === 'Druckstellen' && checkliste_halbprobe) {
-                        step5Form.append('Kleine_Nacharbeit', checkliste_halbprobe);
-                    }
-                    if (massschafterstellungFile) {
-                        step5Form.append('massschafterstellung_image', massschafterstellungFile);
-                    } else if (uploadedFiles.length > 0) {
-                        step5Form.append('massschafterstellung_image', uploadedFiles[0]);
-                    }
-                    step5Form.append('schafttyp_intem_note', schafttyp === 'Intern' ? customer_reviews : '');
-                    step5Form.append('schafttyp_extem_note', schafttyp === 'Extern' ? customer_reviews : '');
-                    if (massschafterstellungJson) step5Form.append('massschafterstellung_json', massschafterstellungJson);
-                    step5Form.append('bodenkonstruktion_intem_note', bodenkonstruktionInternNote);
-                    step5Form.append('bodenkonstruktion_extem_note', bodenkonstruktionExternNote);
-                    await MassschuheAddedApis.updateMassschuheOrderStep5(stepId, step5Form);
-                }
+            const success = await MassschuheAddedApis.updateMassschuheOrderStatus(id, statusFromUrl, formData);
+            if (success) {
                 setUploadedFiles([]);
                 // Refetch to get updated steps; then auto-activate next step in URL
                 const res: any = await MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl);
@@ -498,8 +474,16 @@ export default function MassschuhauftraegePage() {
                     else if (data.probenergebnis === 'Änderungen') setProbenergebnis('Druckstellen');
                     if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
                     if (data.fitting_date) setFitting_date(String(data.fitting_date).slice(0, 10));
-                    if (data.adjustments != null) setAdjustments(String(data.adjustments));
-                    if (data.customer_reviews != null) setCustomer_reviews(String(data.customer_reviews));
+                    if (data.adjustments != null) {
+                        if (data.probenergebnis === 'Gut') setAdjustments(String(data.adjustments));
+                        else if (data.probenergebnis === 'Instabil') setAdjustmentsGrosseNacharbeit(String(data.adjustments));
+                        else setAdjustments(String(data.adjustments));
+                    }
+                    if (data.customer_reviews != null) {
+                        if (data.schafttyp === 'Intern') setSchafttypInternNote(String(data.customer_reviews));
+                        else if (data.schafttyp === 'Extern') setSchafttypExternNote(String(data.customer_reviews));
+                        else setSchafttypInternNote(String(data.customer_reviews));
+                    }
                     setStepFilesFromApi(Array.isArray(data.files) ? data.files.map((f: any) => ({
                         id: f.id || '',
                         fileName: f.fileName || 'Datei',
@@ -914,23 +898,17 @@ export default function MassschuhauftraegePage() {
                                             schafttyp={schafttyp}
                                             fitting_date={fitting_date}
                                             adjustments={adjustments}
-                                            customer_reviews={customer_reviews}
+                                            adjustmentsGrosseNacharbeit={adjustmentsGrosseNacharbeit}
+                                            schafttypInternNote={schafttypInternNote}
+                                            schafttypExternNote={schafttypExternNote}
                                             checklisteHalbprobe={checkliste_halbprobe}
-                                            bodenOption={bodenOption}
-                                            bodenkonstruktionInternNote={bodenkonstruktionInternNote}
-                                            bodenkonstruktionExternNote={bodenkonstruktionExternNote}
-                                            onBodenOptionChange={setBodenOption}
-                                            onBodenkonstruktionInternNoteChange={setBodenkonstruktionInternNote}
-                                            onBodenkonstruktionExternNoteChange={setBodenkonstruktionExternNote}
-                                            onMassschafterstellungSave={({ file, json }) => {
-                                                setMassschafterstellungFile(file);
-                                                setMassschafterstellungJson(json);
-                                            }}
                                             onProbenergebnisChange={setProbenergebnis}
                                             onSchafttypChange={setSchafttyp}
                                             onFittingDateChange={setFitting_date}
                                             onAdjustmentsChange={setAdjustments}
-                                            onCustomerReviewsChange={setCustomer_reviews}
+                                            onAdjustmentsGrosseNacharbeitChange={setAdjustmentsGrosseNacharbeit}
+                                            onSchafttypInternNoteChange={setSchafttypInternNote}
+                                            onSchafttypExternNoteChange={setSchafttypExternNote}
                                             onChecklisteHalbprobeChange={setCheckliste_halbprobe}
                                         />
                                     )}

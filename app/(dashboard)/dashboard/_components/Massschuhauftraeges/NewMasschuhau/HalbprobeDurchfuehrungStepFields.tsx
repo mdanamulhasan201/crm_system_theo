@@ -38,26 +38,25 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     probenergebnis: ProbenergebnisValue;
     schafttyp: SchafttypValue;
     fitting_date: string;
+    /** Freigeben (Gut) – Anmerkungen zur Freigabe */
     adjustments: string;
-    customer_reviews: string;
+    /** große Nacharbeiten (Instabil) – Anmerkungen zu großen Nacharbeiten */
+    adjustmentsGrosseNacharbeit: string;
+    /** Schafttyp Intern – Hinweise zur internen Schaftfertigung */
+    schafttypInternNote: string;
+    /** Schafttyp Extern – Hinweise zur externen Schaftfertigung */
+    schafttypExternNote: string;
     /** Order ID for navigation when "Intern" is clicked (go to step Schaft_fertigen) */
     orderId?: string;
     /** JSON string of checklist answers (checkliste_halbprobe) */
     checklisteHalbprobe?: string;
-    /** Bodenkonstruktion: option + notes for step-5 payload (bodenkonstruktion_intem_note, bodenkonstruktion_extem_note) */
-    bodenOption?: 'Intern' | 'Extern' | '';
-    bodenkonstruktionInternNote?: string;
-    bodenkonstruktionExternNote?: string;
-    onBodenOptionChange?: (value: 'Intern' | 'Extern' | '') => void;
-    onBodenkonstruktionInternNoteChange?: (value: string) => void;
-    onBodenkonstruktionExternNoteChange?: (value: string) => void;
-    /** Schafttyp Intern erweitert modal: save as massschafterstellung_image + massschafterstellung_json */
-    onMassschafterstellungSave?: (data: { file: File | null; json: string }) => void;
     onProbenergebnisChange: (value: ProbenergebnisValue) => void;
     onSchafttypChange: (value: SchafttypValue) => void;
     onFittingDateChange: (value: string) => void;
     onAdjustmentsChange: (value: string) => void;
-    onCustomerReviewsChange: (value: string) => void;
+    onAdjustmentsGrosseNacharbeitChange: (value: string) => void;
+    onSchafttypInternNoteChange: (value: string) => void;
+    onSchafttypExternNoteChange: (value: string) => void;
     onChecklisteHalbprobeChange?: (jsonString: string) => void;
 }
 
@@ -76,21 +75,18 @@ export default function HalbprobeDurchfuehrungStepFields({
     schafttyp,
     fitting_date,
     adjustments,
-    customer_reviews,
+    adjustmentsGrosseNacharbeit,
+    schafttypInternNote,
+    schafttypExternNote,
     orderId,
     checklisteHalbprobe,
-    bodenOption = '',
-    bodenkonstruktionInternNote = '',
-    bodenkonstruktionExternNote = '',
-    onBodenOptionChange,
-    onBodenkonstruktionInternNoteChange,
-    onBodenkonstruktionExternNoteChange,
-    onMassschafterstellungSave,
     onProbenergebnisChange,
     onSchafttypChange,
     onFittingDateChange,
     onAdjustmentsChange,
-    onCustomerReviewsChange,
+    onAdjustmentsGrosseNacharbeitChange,
+    onSchafttypInternNoteChange,
+    onSchafttypExternNoteChange,
     onChecklisteHalbprobeChange,
 }: HalbprobeDurchfuehrungStepFieldsProps) {
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
@@ -191,19 +187,29 @@ export default function HalbprobeDurchfuehrungStepFields({
                     })}
                 </div>
                 {/* Text field when Freigeben or große Nacharbeiten is selected – inside same card */}
-                {(probenergebnis === 'Gut' || probenergebnis === 'Instabil') && (
+                {probenergebnis === 'Gut' && (
                     <div className="mt-4 pt-4 border-t border-gray-200/80">
                         <Label className="text-sm font-medium text-gray-800 mb-2 block">
-                            {probenergebnis === 'Gut' ? 'Anmerkungen zur Freigabe' : 'Anmerkungen zu großen Nacharbeiten'}
+                            Anmerkungen zur Freigabe
                         </Label>
                         <textarea
                             value={adjustments}
                             onChange={(e) => onAdjustmentsChange(e.target.value)}
-                            placeholder={
-                                probenergebnis === 'Gut'
-                                    ? 'Optionale Notizen zur Freigabe...'
-                                    : 'Beschreibung der notwendigen großen Nacharbeiten...'
-                            }
+                            placeholder="Optionale Notizen zur Freigabe..."
+                            rows={3}
+                            className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
+                        />
+                    </div>
+                )}
+                {probenergebnis === 'Instabil' && (
+                    <div className="mt-4 pt-4 border-t border-gray-200/80">
+                        <Label className="text-sm font-medium text-gray-800 mb-2 block">
+                            Anmerkungen zu großen Nacharbeiten
+                        </Label>
+                        <textarea
+                            value={adjustmentsGrosseNacharbeit}
+                            onChange={(e) => onAdjustmentsGrosseNacharbeitChange(e.target.value)}
+                            placeholder="Beschreibung der notwendigen großen Nacharbeiten..."
                             rows={3}
                             className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
                         />
@@ -249,22 +255,16 @@ export default function HalbprobeDurchfuehrungStepFields({
 
             <SchafttypFieldText
                 schafttyp={schafttyp}
-                customer_reviews={customer_reviews}
+                schafttypInternNote={schafttypInternNote}
+                schafttypExternNote={schafttypExternNote}
                 onSchafttypChange={onSchafttypChange}
-                onCustomerReviewsChange={onCustomerReviewsChange}
-                onMassschafterstellungSave={onMassschafterstellungSave}
+                onSchafttypInternNoteChange={onSchafttypInternNoteChange}
+                onSchafttypExternNoteChange={onSchafttypExternNoteChange}
             />
 
             {/* Bodenkonstruktion */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
-                <BodenkonstruktionFiledText
-                    bodenOption={bodenOption}
-                    bodenkonstruktionInternNote={bodenkonstruktionInternNote}
-                    bodenkonstruktionExternNote={bodenkonstruktionExternNote}
-                    onBodenOptionChange={onBodenOptionChange ?? (() => {})}
-                    onBodenkonstruktionInternNoteChange={onBodenkonstruktionInternNoteChange ?? (() => {})}
-                    onBodenkonstruktionExternNoteChange={onBodenkonstruktionExternNoteChange ?? (() => {})}
-                />
+                <BodenkonstruktionFiledText />
             </div>
         </div>
     );

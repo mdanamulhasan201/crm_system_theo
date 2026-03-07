@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -14,24 +14,11 @@ const BODEN_OPTIONS = [
 
 type BodenOption = (typeof BODEN_OPTIONS)[number]['value'] | '';
 
-export interface BodenkonstruktionFiledTextProps {
-    bodenOption?: BodenOption;
-    bodenkonstruktionInternNote?: string;
-    bodenkonstruktionExternNote?: string;
-    onBodenOptionChange?: (value: BodenOption) => void;
-    onBodenkonstruktionInternNoteChange?: (value: string) => void;
-    onBodenkonstruktionExternNoteChange?: (value: string) => void;
-}
-
-export default function BodenkonstruktionFiledText({
-    bodenOption = '',
-    bodenkonstruktionInternNote = '',
-    bodenkonstruktionExternNote = '',
-    onBodenOptionChange = () => {},
-    onBodenkonstruktionInternNoteChange = () => {},
-    onBodenkonstruktionExternNoteChange = () => {},
-}: BodenkonstruktionFiledTextProps) {
+export default function BodenkonstruktionFiledText() {
     const router = useRouter();
+    const [bodenOption, setBodenOption] = useState<BodenOption>('');
+    const [internNote, setInternNote] = useState('');
+    const [externNote, setExternNote] = useState('');
 
     return (
         <div>
@@ -45,7 +32,7 @@ export default function BodenkonstruktionFiledText({
                         <button
                             key={opt.value}
                             type="button"
-                            onClick={() => onBodenOptionChange(opt.value)}
+                            onClick={() => setBodenOption(opt.value)}
                             className={cn(
                                 'relative flex cursor-pointer min-w-0 flex-1 basis-[calc(50%-0.375rem)] items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
                                 'border-gray-300 bg-gray-50/80 text-gray-800 hover:border-gray-400 hover:bg-gray-100',
@@ -58,38 +45,42 @@ export default function BodenkonstruktionFiledText({
                     );
                 })}
             </div>
-            {(bodenOption === 'Intern' || bodenOption === 'Extern') && (
+            {bodenOption === 'Intern' && (
                 <div className="mt-4 pt-4 border-t border-gray-200/80">
                     <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
                         <Label className="text-sm font-medium text-gray-800">
-                            {bodenOption === 'Intern'
-                                ? 'Hinweise zur internen Bodenkonstruktion'
-                                : 'Hinweise zur externen Bodenkonstruktion'}
+                            Hinweise zur internen Bodenkonstruktion
                         </Label>
-                        {bodenOption === 'Intern' && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="text-gray-700 border-gray-400 hover:bg-gray-100"
-                                onClick={() => router.push('/dashboard/bodenkonstruktion-customer-order')}
-                            >
-                                erweitert
-                            </Button>
-                        )}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="text-gray-700 border-gray-400 hover:bg-gray-100"
+                            onClick={() => router.push('/dashboard/bodenkonstruktion-customer-order')}
+                        >
+                            erweitert
+                        </Button>
                     </div>
                     <textarea
-                        value={bodenOption === 'Intern' ? bodenkonstruktionInternNote : bodenkonstruktionExternNote}
-                        onChange={(e) =>
-                            bodenOption === 'Intern'
-                                ? onBodenkonstruktionInternNoteChange(e.target.value)
-                                : onBodenkonstruktionExternNoteChange(e.target.value)
-                        }
-                        placeholder={
-                            bodenOption === 'Intern'
-                                ? 'Details zur internen Bodenkonstruktion...'
-                                : 'Details zur externen Bodenkonstruktion...'
-                        }
+                        value={internNote}
+                        onChange={(e) => setInternNote(e.target.value)}
+                        placeholder="Details zur internen Bodenkonstruktion..."
+                        rows={3}
+                        className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
+                    />
+                </div>
+            )}
+            {bodenOption === 'Extern' && (
+                <div className="mt-4 pt-4 border-t border-gray-200/80">
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                        <Label className="text-sm font-medium text-gray-800">
+                            Hinweise zur externen Bodenkonstruktion
+                        </Label>
+                    </div>
+                    <textarea
+                        value={externNote}
+                        onChange={(e) => setExternNote(e.target.value)}
+                        placeholder="Details zur externen Bodenkonstruktion..."
                         rows={3}
                         className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
                     />
