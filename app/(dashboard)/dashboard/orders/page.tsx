@@ -1,5 +1,5 @@
 'use client'
-import LineChartComponent from '@/components/OrdersPage/LineChart';
+import LineChartComponent, { type ChartTimeRange } from '@/components/OrdersPage/LineChart';
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // import HighPriorityCard from '@/components/OrdersPage/HighPriorityCard/HighPriorityCard';
@@ -26,6 +26,7 @@ function OrdersPageContent() {
     const now = React.useMemo(() => new Date(), []);
     const [selectedMonth, setSelectedMonth] = React.useState<string>(String(now.getMonth() + 1).padStart(2, '0'));
     const [selectedYear, setSelectedYear] = React.useState<string>(String(now.getFullYear()));
+    const [chartTimeRange, setChartTimeRange] = React.useState<ChartTimeRange>('Monat');
     const shouldFilter = selectedYear !== '' && selectedMonth !== '';
     const { data, processedChartData, loading, error, isRefetching } = useRevenueOverview(
         shouldFilter ? selectedYear : undefined,
@@ -107,65 +108,40 @@ function OrdersPageContent() {
             <UmsatzübersichtCard />
 
             <div className='py-5 px-8 bg-white rounded-xl shadow mt-4'>
-                <h1 className="text-2xl font-bold mb-5">Umsatzübersicht</h1>
+                <div className="flex flex-wrap items-center justify-end gap-2 mb-2">
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger className="w-[140px] cursor-pointer h-9 text-sm">
+                            <SelectValue placeholder="Monat" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {months.map((m) => (
+                                <SelectItem key={m.value} value={m.value} className='cursor-pointer'>{m.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger className="w-[100px] cursor-pointer h-9 text-sm">
+                            <SelectValue placeholder="Jahr" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {years.map((y) => (
+                                <SelectItem key={y} value={String(y)} className='cursor-pointer'>{y}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {isRefetching && <span className="text-xs text-gray-500">Updating…</span>}
+                </div>
 
-                <>
-                    <div className='flex flex-col xl:flex-row items-stretch w-full gap-6'>
-                        {/* left side card  */}
-                        <div className="bg-white rounded-lg p-8 flex flex-col items-center justify-center min-w-[250px] border mb-4 md:mb-0 xl:w-4/12">
-                            <div className="text-2xl font-bold text-center mb-2">Geschäftsumsatz<br /></div>
-                            <div className="text-4xl font-extrabold mt-4">
-                                {data?.statistics?.totalRevenue ? formatEuro(data.statistics.totalRevenue) : '-€'}
-                            </div>
-                        </div>
+                <div style={{ minWidth: 0 }} className='overflow-x-auto'>
+                    <LineChartComponent
+                        chartData={processedChartData}
+                        previousChartData={[]}
+                        timeRange={chartTimeRange}
+                        onTimeRangeChange={setChartTimeRange}
+                    />
+                </div>
 
-                        {/* right side line chart */}
-                        <div className="w-full xl:w-8/12" >
-
-                            <div className='flex flex-col items-end justify-end'>
-                                {/* filter need date and year wise  */}
-                                <div className="flex flex-col items-center justify-end">
-                                    <div className="flex flex-col sm:flex-row gap-3 mb-2">
-                                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                            <SelectTrigger className="w-[200px] cursor-pointer">
-                                                <SelectValue placeholder="Monat auswählen" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {months.map((m) => (
-                                                    <SelectItem key={m.value} value={m.value} className='cursor-pointer'>
-                                                        {m.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-
-                                        <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                            <SelectTrigger className="w-[200px] cursor-pointer">
-                                                <SelectValue placeholder="Jahr auswählen" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {years.map((y) => (
-                                                    <SelectItem key={y} value={String(y)} className='cursor-pointer'>{y}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="h-5 mb-2 text-xs text-gray-500">
-                                        {isRefetching && <span>Updating…</span>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={{ minWidth: 0 }} className='overflow-x-auto'>
-                                <LineChartComponent chartData={processedChartData} />
-                            </div>
-
-
-                        </div>
-                    </div>
-
-                    <hr className='my-5 border-gray-200 border' />
-                </>
+                <hr className='my-5 border-gray-200 border' />
 
                 <div className="mt-6">
                     <EinlagenCardSection
