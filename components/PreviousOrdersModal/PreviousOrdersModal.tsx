@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getPreviousOrders, getPreviousOrdersByProductType, getPreviousOrderSingle } from '@/apis/productsOrder'
+import legImage from '@/public/images/customerHistory/legs.png'
 // import Loading from '@/components/Shared/Loading'
 
 interface PreviousOrdersModalProps {
@@ -228,7 +229,13 @@ export default function PreviousOrdersModal({
                                 }}
                             >
                                 <div className="w-full h-40 bg-gray-100">
-                                    {order.Versorgungen?.supplyStatus?.image ? (
+                                    {String(order.orderCategory ?? '').trim().toLowerCase() === 'sonstiges' ? (
+                                        <img
+                                            src={legImage.src}
+                                            alt="Sonstiges"
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : order.Versorgungen?.supplyStatus?.image ? (
                                         <img
                                             src={order.Versorgungen.supplyStatus.image}
                                             alt={order.Versorgungen.supplyStatus.name || 'Versorgung'}
