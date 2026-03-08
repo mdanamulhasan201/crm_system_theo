@@ -65,6 +65,10 @@ export interface HalbprobeDurchfuehrungStepFieldsProps {
     onSchafttypInternNoteChange: (value: string) => void;
     onSchafttypExternNoteChange: (value: string) => void;
     onChecklisteHalbprobeChange?: (jsonString: string) => void;
+    /** Called when user clicks "Kleine Nacharbeit freigeben" in ChecklisteHalbprobeModal */
+    onApproveMinorRework?: () => void;
+    /** Called when user clicks "Komplett neu" in ChecklisteHalbprobeModal */
+    onCompletelyNew?: () => void;
 }
 
 function parseChecklisteHalbprobe(json: string | undefined): ChecklisteHalbprobeData | undefined {
@@ -100,6 +104,8 @@ export default function HalbprobeDurchfuehrungStepFields({
     onSchafttypInternNoteChange,
     onSchafttypExternNoteChange,
     onChecklisteHalbprobeChange,
+    onApproveMinorRework,
+    onCompletelyNew,
 }: HalbprobeDurchfuehrungStepFieldsProps) {
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
     const initialChecklistData = parseChecklisteHalbprobe(checklisteHalbprobe);
@@ -263,6 +269,8 @@ export default function HalbprobeDurchfuehrungStepFields({
                 onOpenChange={setChecklistModalOpen}
                 initialData={initialChecklistData}
                 onWeiter={(data) => onChecklisteHalbprobeChange?.(JSON.stringify(data))}
+                onApproveMinorRework={onApproveMinorRework}
+                onCompletelyNew={onCompletelyNew}
             />
 
             <SchafttypFieldText

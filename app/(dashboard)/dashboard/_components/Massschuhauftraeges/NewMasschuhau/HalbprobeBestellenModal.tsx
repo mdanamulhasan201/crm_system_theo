@@ -60,7 +60,7 @@ function UploadBlock({
 
     if (file) {
         return (
-            <div className="space-y-2">
+            <div className="min-w-0 space-y-2">
                 <label className="text-sm font-bold text-gray-900">
                     {label} <span className="text-red-500">*</span>
                 </label>
@@ -71,7 +71,7 @@ function UploadBlock({
                     className="hidden"
                     onChange={handleInputChange}
                 />
-                <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-200/80 bg-emerald-50/90 py-3.5 pl-4 pr-4 shadow-sm ring-1 ring-emerald-100/50">
+                <div className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-emerald-200/80 bg-emerald-50/90 py-3.5 pl-4 pr-4 shadow-sm ring-1 ring-emerald-100/50">
                     <div className="flex min-w-0 flex-1 items-center gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-sm">
                             <Check className="size-5" aria-hidden />
@@ -159,8 +159,8 @@ export default function HalbprobeBestellenModal({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="overflow-y-auto rounded-2xl border-0 bg-white p-0 shadow-2xl ring-1 ring-gray-200/90 sm:max-w-2xl [&>button]:right-5 [&>button]:top-5 [&>button]:text-gray-400 [&>button]:hover:text-gray-600 [&>button]:hover:bg-gray-100 [&>button]:rounded-full">
-                <div className="bg-gradient-to-b from-gray-50/50 to-white p-6 sm:p-8">
+            <DialogContent className="overflow-x-hidden overflow-y-auto rounded-2xl border-0 bg-white p-0 shadow-2xl ring-1 ring-gray-200/90 sm:max-w-2xl [&>button]:right-5 [&>button]:top-5 [&>button]:text-gray-400 [&>button]:hover:text-gray-600 [&>button]:hover:bg-gray-100 [&>button]:rounded-full">
+                <div className="min-w-0 overflow-hidden bg-gradient-to-b from-gray-50/50 to-white p-6 sm:p-8">
                     <DialogHeader className="space-y-3">
                         <div className="flex items-start gap-4">
                             <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#62A07C]/15 text-[#62A07C] shadow-sm ring-1 ring-[#62A07C]/10">
@@ -172,7 +172,7 @@ export default function HalbprobeBestellenModal({
                                 </DialogTitle>
                                 <DialogDescription asChild>
                                     <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                                        Bitte laden Sie die linke und rechte Leiste als 3D-Datei hoch. Erst danach können Sie fortfahren.
+                                    Bitte laden Sie den linken und Rechten Leisten als 3D Datei hoch. Erst danach können Sie fortfahren...
                                     </p>
                                 </DialogDescription>
                             </div>

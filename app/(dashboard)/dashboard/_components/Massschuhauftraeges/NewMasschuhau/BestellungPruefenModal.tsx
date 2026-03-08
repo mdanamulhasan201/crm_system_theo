@@ -107,7 +107,7 @@ export default function BestellungPruefenModal({
                     </div>
 
                     {/* Lieferinformationen */}
-                    <div className="mt-6">
+                    {/* <div className="mt-6">
                         <div className="flex items-center gap-2.5 mb-3">
                             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#62A07C]/10 text-[#62A07C] shadow-sm ring-1 ring-blue-100">
                                 <MapPin className="size-4" aria-hidden />
@@ -127,7 +127,7 @@ export default function BestellungPruefenModal({
                                 </span>
                             </div>
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Checkbox */}
                     <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 hover:bg-gray-50 transition-colors">

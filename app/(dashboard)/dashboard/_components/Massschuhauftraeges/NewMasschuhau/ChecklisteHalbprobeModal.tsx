@@ -10,7 +10,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Printer, Check } from 'lucide-react';
+import { Printer, Check, ThumbsUp, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const CHECKLIST_QUESTIONS = [
@@ -33,6 +33,10 @@ export interface ChecklisteHalbprobeModalProps {
     initialData?: ChecklisteHalbprobeData;
     /** Called when user clicks Weiter – pass the checklist answers to save */
     onWeiter?: (data: ChecklisteHalbprobeData) => void;
+    /** Called when user clicks "Kleine Nacharbeit freigeben" (approve minor rework) */
+    onApproveMinorRework?: () => void;
+    /** Called when user clicks "Komplett neu" (completely new) */
+    onCompletelyNew?: () => void;
 }
 
 const emptyAnswers: ('Ja' | 'Nein' | null)[] = Array(7).fill(null);
@@ -42,6 +46,8 @@ export default function ChecklisteHalbprobeModal({
     onOpenChange,
     initialData,
     onWeiter,
+    onApproveMinorRework,
+    onCompletelyNew,
 }: ChecklisteHalbprobeModalProps) {
     const [answers, setAnswers] = useState<('Ja' | 'Nein' | null)[]>(emptyAnswers);
 
@@ -83,6 +89,34 @@ export default function ChecklisteHalbprobeModal({
                         </p>
                     </DialogDescription>
                 </DialogHeader>
+
+                {/* button */}
+                <div className="flex flex-wrap items-center gap-3 px-6 pb-4">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 rounded-xl border-emerald-300 bg-emerald-50/80 text-emerald-800 hover:bg-emerald-100 hover:border-emerald-400 hover:text-emerald-900"
+                        onClick={() => {
+                            onApproveMinorRework?.();
+                            onOpenChange(false);
+                        }}
+                    >
+                        <ThumbsUp className="h-4 w-4 mr-2 shrink-0" />
+                        Kleine Nacharbeit freigeben
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 rounded-xl border-amber-300 bg-amber-50/80 text-amber-800 hover:bg-amber-100 hover:border-amber-400 hover:text-amber-900"
+                        onClick={() => {
+                            onCompletelyNew?.();
+                            onOpenChange(false);
+                        }}
+                    >
+                        <RefreshCw className="h-4 w-4 mr-2 shrink-0" />
+                        Komplett neu
+                    </Button>
+                </div>
 
                 <div className="px-6 pb-6">
                     {CHECKLIST_QUESTIONS.map((question, index) => (
