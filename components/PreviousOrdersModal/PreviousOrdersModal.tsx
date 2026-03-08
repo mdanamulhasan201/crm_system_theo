@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getPreviousOrders, getPreviousOrdersByProductType, getPreviousOrderSingle } from '@/apis/productsOrder'
 import legImage from '@/public/images/customerHistory/legs.png'
+import shoesImage from '@/public/images/customerHistory/massschuhe.png'
 // import Loading from '@/components/Shared/Loading'
 
 interface PreviousOrdersModalProps {
@@ -50,6 +51,8 @@ interface OrderData {
     totalPrice?: number
     orderCategory?: string
     type?: string
+    /** Insole API: product image URL when available */
+    productImage?: string | null
     insoleStandards?: Array<{
         name: string
         left: number
@@ -228,21 +231,33 @@ export default function PreviousOrdersModal({
                                     }
                                 }}
                             >
-                                <div className="w-full h-40 bg-gray-100">
-                                    {String(order.orderCategory ?? '').trim().toLowerCase() === 'sonstiges' ? (
+                                <div className="w-40 mx-auto h-auto flex items-center justify-center overflow-hidden">
+                                    {productType === 'sonstiges' || String(order.orderCategory ?? order.type ?? '').trim().toLowerCase() === 'sonstiges' ? (
                                         <img
                                             src={legImage.src}
                                             alt="Sonstiges"
-                                            className="w-full h-full object-cover"
+                                            className="max-w-full max-h-full w-auto h-auto object-contain"
+                                        />
+                                    ) : productType === 'shoes' || String(order.orderCategory ?? order.type ?? '').trim().toLowerCase() === 'shoes' ? (
+                                        <img
+                                            src={shoesImage.src}
+                                            alt="Maßschuhe"
+                                            className="max-w-full max-h-full w-auto h-auto object-contain"
+                                        />
+                                    ) : (order.productImage ?? (order as any).productImage) ? (
+                                        <img
+                                            src={order.productImage ?? (order as any).productImage}
+                                            alt={(order as any).productName ?? order.Versorgungen?.supplyStatus?.name ?? 'Einlage'}
+                                            className="max-w-full max-h-full w-auto h-auto object-contain"
                                         />
                                     ) : order.Versorgungen?.supplyStatus?.image ? (
                                         <img
                                             src={order.Versorgungen.supplyStatus.image}
                                             alt={order.Versorgungen.supplyStatus.name || 'Versorgung'}
-                                            className="w-full h-full object-cover"
+                                            className="max-w-full max-h-full w-auto h-auto object-contain"
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
+                                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm min-h-[8rem]">
                                             Kein Bild
                                         </div>
                                     )}
@@ -250,7 +265,7 @@ export default function PreviousOrdersModal({
 
                                 <div className="p-4 space-y-2">
                                     <div className="text-sm text-gray-500">
-                                        {order.createdAt ? formatDate(order.createdAt) : ''}
+                                        {(order as any).createdAtFormatted ?? (order.createdAt ? formatDate(order.createdAt) : '')}
                                     </div>
 
                                     {selectingOrderId === order.id && (
@@ -258,7 +273,8 @@ export default function PreviousOrdersModal({
                                     )}
 
                                     <div className="font-semibold text-gray-900 line-clamp-2">
-                                        {order.Versorgungen?.supplyStatus?.name ||
+                                        {(order as any).productName ||
+                                            order.Versorgungen?.supplyStatus?.name ||
                                             order.versorgung ||
                                             order.einlagentyp ||
                                             order.schuhmodell_wählen ||
@@ -270,19 +286,19 @@ export default function PreviousOrdersModal({
                                             <span className="font-medium">Bestellnummer:</span>{' '}
                                             <span>{order.orderNumber}</span>
                                         </div>
-                                        {(order.kundenName || order.kunde) && (
+                                        {((order as any).customerName ?? order.kundenName ?? order.kunde) && (
                                             <div className="truncate">
                                                 <span className="font-medium">Kunde:</span>{' '}
-                                                <span>{order.kundenName || order.kunde}</span>
+                                                <span>{(order as any).customerName ?? order.kundenName ?? order.kunde}</span>
                                             </div>
                                         )}
-                                        {order.quantity !== undefined && (
+                                        {(order.quantity !== undefined && order.quantity != null) && (
                                             <div>
                                                 <span className="font-medium">Menge:</span>{' '}
                                                 <span>{order.quantity}</span>
                                             </div>
                                         )}
-                                        {order.totalPrice !== undefined && (
+                                        {(order.totalPrice !== undefined && order.totalPrice != null) && (
                                             <div>
                                                 <span className="font-medium">Gesamt:</span>{' '}
                                                 <span>{order.totalPrice} €</span>
