@@ -60,6 +60,8 @@ interface ApiProduct {
     updatedAt: string;
     image?: string;
     features?: string[];
+    create_status?: string;
+    adminStoreId?: string | null;
 }
 
 
@@ -233,7 +235,9 @@ export const useStockManagementSlice = () => {
                     createdAt: item.createdAt,
                     updatedAt: item.updatedAt,
                     image: item.image || undefined,
-                    features: Array.isArray(item.features) ? item.features : undefined
+                    features: Array.isArray(item.features) ? item.features : undefined,
+                    create_status: item.create_status,
+                    adminStoreId: item.adminStoreId ?? null
                 }));
                 
                 setProducts(products);

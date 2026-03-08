@@ -24,6 +24,9 @@ interface MillingBlock {
     image?: string
     purchase_price?: number
     selling_price?: number
+    features?: string[]
+    create_status?: string
+    adminStoreId?: string | null
 }
 
 // Size columns - only 3 sizes
@@ -134,6 +137,9 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
             image: apiProduct.image,
             purchase_price: apiProduct.purchase_price,
             selling_price: apiProduct.selling_price,
+            features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+            create_status: apiProduct.create_status,
+            adminStoreId: apiProduct.adminStoreId ?? null,
         }
     }
 
@@ -216,6 +222,15 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
                 onUpdateProduct={handleUpdateProduct}
                 onDeleteProduct={handleDeleteProduct}
                 isLoading={isLoadingProducts}
+                onOrderSuccess={async () => {
+                    try {
+                        const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
+                        const convertedProducts = apiProducts.map(convertApiProductToLocal)
+                        setProducts(convertedProducts)
+                    } catch (err) {
+                        console.error('Failed to refresh products after order:', err)
+                    }
+                }}
             />
 
             {/* Add Product Modal */}

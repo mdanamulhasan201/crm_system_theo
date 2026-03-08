@@ -2,10 +2,10 @@ import React from 'react'
 import {
     Dialog,
     DialogContent,
-    DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog"
 import Image from 'next/image'
+import { Button } from "@/components/ui/button"
 
 interface MillingBlock {
     id: string
@@ -19,111 +19,103 @@ interface MillingBlock {
     image?: string
     purchase_price?: number
     selling_price?: number
+    features?: string[]
+    create_status?: string
+    adminStoreId?: string | null
 }
 
 interface MillingBlockImageModalProps {
     product: MillingBlock | null
     isOpen: boolean
     onClose: () => void
+    /** Show loading spinner inside modal (e.g. while fetching single product) */
+    isLoading?: boolean
+    /** Category label for modal header, e.g. "Fräsblock" – same design as Einlagenrohlinge modal */
+    categoryName?: string
+    /** Called when "Einlage nachbestellen" is clicked (only when create_status === 'by_admin'). Opens order modal. */
+    onOrderClick?: (adminStoreId: string) => void
 }
 
 export default function MillingBlockImageModal({
     product,
     isOpen,
-    onClose
+    onClose,
+    isLoading = false,
+    categoryName = 'Fräsblock',
+    onOrderClick
 }: MillingBlockImageModalProps) {
-    if (!product) return null;
+    if (!isOpen) return null;
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle>{product.Produktname}</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-6">
-                    {/* Large Image */}
-                    <div className="flex justify-center items-center bg-gray-50 rounded-lg p-6">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 bg-white">
+                {isLoading ? (
+                    <div className="flex justify-center items-center py-16">
+                        <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-[#61A178]" />
+                    </div>
+                ) : product ? (
+                <>
+                <DialogTitle className="sr-only">
+                    {product.Produktname} – Produktdetails
+                </DialogTitle>
+                <div className="space-y-0">
+                    {/* Product Image – top, prominent (same as Einlagenrohlinge modal) */}
+                    <div className="flex justify-center items-center bg-white pt-6 pb-4">
                         {product.image ? (
                             <Image
-                                width={500}
-                                height={500}
+                                width={400}
+                                height={280}
                                 src={product.image}
                                 alt={product.Produktname}
-                                className="max-w-full max-h-96 rounded-lg object-contain shadow-lg"
+                                className="max-w-full max-h-72 w-auto h-auto rounded-lg object-contain"
                             />
                         ) : (
-                            <div className="w-96 h-96 flex items-center justify-center rounded-lg border-2 border-gray-200 bg-white">
-                                <svg className="w-24 h-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            <div className="w-72 h-48 flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
+                                <svg className="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
                             </div>
                         )}
                     </div>
 
-                    {/* Eigenschaften Section */}
-                    <div className="border-t pt-6">
-                        <h3 className="text-xl font-semibold mb-4 text-gray-900">Eigenschaften</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Artikelbezeichnung</p>
-                                <p className="text-base text-gray-900">{product.Produktname || '-'}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Artikelnummer</p>
-                                <p className="text-base text-gray-900">{product.Produktkürzel || '-'}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Hersteller</p>
-                                <p className="text-base text-gray-900">{product.Hersteller || '-'}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Lagerort</p>
-                                <p className="text-base text-gray-900">{product.Lagerort || '-'}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Mindestbestand</p>
-                                <p className="text-base text-gray-900">{product.minStockLevel || 0}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-gray-500">Status</p>
-                                <p className="text-base text-gray-900">{product.Status || '-'}</p>
-                            </div>
-                        </div>
+                    {/* Dynamic header – category, then product name (same as Einlagenrohlinge) */}
+                    <div className="px-6 pb-2">
+                        <h2 className="text-xl font-bold text-gray-900 leading-tight">
+                            {categoryName}, {product.Produktname || '–'}
+                        </h2>
+                    </div>
 
-                        {/* Size Quantities Summary */}
-                        {product && Object.keys(product.sizeQuantities).length > 0 && (
-                            <div className="mt-6 space-y-1">
-                                <p className="text-sm font-medium text-gray-500 mb-3">Größenbestand</p>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {Object.entries(product.sizeQuantities).map(([size, quantity]) => {
-                                        const isLowStock = quantity <= product.minStockLevel && quantity > 0;
-                                        return (
-                                            <div 
-                                                key={size} 
-                                                className={`p-2 rounded border text-center ${
-                                                    isLowStock
-                                                        ? 'bg-red-50 border-red-200'
-                                                        : 'bg-gray-50 border-gray-200'
-                                                }`}
-                                            >
-                                                <p className="text-xs font-medium text-gray-500">{size}</p>
-                                                <p className={`text-sm font-semibold ${
-                                                    isLowStock
-                                                        ? 'text-red-600'
-                                                        : 'text-gray-900'
-                                                }`}>
-                                                    {quantity}
-                                                </p>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                    {/* Bottom section: features list then one button (same design as Einlagenrohlinge) */}
+                    <div className="px-6 pt-4 pb-6 border-gray-100">
+                        {product.features && product.features.length > 0 ? (
+                            <ul className="list-disc list-inside space-y-2 text-sm text-gray-900 mb-6">
+                                {product.features.map((item, index) => (
+                                    <li key={index}>{item}</li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-sm text-gray-500 mb-6">Keine Eigenschaften hinterlegt.</p>
+                        )}
+                        {product.create_status === 'by_admin' && product.adminStoreId ? (
+                            <Button
+                                className="w-fit bg-[#65b87c] hover:bg-[#5aa86e] text-white font-medium rounded-lg py-2.5 cursor-pointer"
+                                onClick={() => onOrderClick?.(product.adminStoreId!)}
+                            >
+                                Einlage nachbestellen
+                            </Button>
+                        ) : (
+                            <Button
+                                className="w-fit bg-[#65b87c] text-white font-medium rounded-lg py-2.5 opacity-50 cursor-not-allowed"
+                                disabled
+                            >
+                                Einlage nachbestellen
+                            </Button>
                         )}
                     </div>
                 </div>
+                </>
+                ) : null}
             </DialogContent>
         </Dialog>
     )
 }
-
