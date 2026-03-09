@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from '@/components/ui/input'
-import { buyStore, getSingleAdminStore } from '@/apis/storeManagement'
+import { buyStore, buySingleStore, getSingleAdminStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 
@@ -40,9 +40,12 @@ interface EinlagenNachbestellenModalProps {
     onClose: () => void
     adminStoreId: string | null
     productType: 'rady_insole' | 'milling_block'
-    onOrderSuccess?: () => void
-    /** When true (e.g. opened from Lagerort "Einlage nachbestellen"): all quantity inputs 0, labels show Größe X (0) */
+    /** Called after successful order; pass storeId to update only that row instead of full table reload */
+    onOrderSuccess?: (storeId?: string) => void
+    /** When true (e.g. opened from Lagerort "Einlage nachbestellen"): use buySingleStore only */
     initialQuantitiesZero?: boolean
+    /** Optional storage/store id – sent in buy body when ordering with groessenMengen */
+    storeId?: string | null
 }
 
 function normalizeGroessenMengen(groessenMengen: AdminStoreData['groessenMengen'], type: string) {
@@ -64,7 +67,8 @@ export default function EinlagenNachbestellenModal({
     adminStoreId,
     productType,
     onOrderSuccess,
-    initialQuantitiesZero = false
+    initialQuantitiesZero = false,
+    storeId = null
 }: EinlagenNachbestellenModalProps) {
     const [quantities, setQuantities] = useState<{ [key: string]: number }>({})
     const [productData, setProductData] = useState<AdminStoreData | null>(null)
@@ -131,20 +135,44 @@ export default function EinlagenNachbestellenModal({
     const totalQuantity = Object.values(quantities).reduce((sum, qty) => sum + qty, 0)
     const totalPrice = productData ? productData.price * totalQuantity : 0
 
+    const buildGroessenMengen = (): Record<string, { length: number; quantity: number }> => {
+        const groessenMengen: Record<string, { length: number; quantity: number }> = {}
+        sizeColumns.forEach(size => {
+            const sizeData = productData!.groessenMengen?.[size]
+            const length = typeof sizeData === 'object' && sizeData != null && 'length' in sizeData
+                ? (sizeData.length ?? 0)
+                : 0
+            const quantity = quantities[size] ?? 0
+            groessenMengen[size] = { length, quantity }
+        })
+        return groessenMengen
+    }
+
     const handleOrder = async () => {
         if (!productData || !adminStoreId) return
-        if (totalQuantity === 0) {
+        if (!initialQuantitiesZero && totalQuantity === 0) {
             toast.error('Bitte wählen Sie mindestens eine Menge aus')
+            return
+        }
+        if (!storeId) {
+            toast.error('storeId ist erforderlich')
             return
         }
 
         setIsSubmitting(true)
         try {
-            const response = await buyStore({ admin_store_id: adminStoreId })
+            const groessenMengen = buildGroessenMengen()
+            const body = {
+                storeId,
+                admin_store_id: adminStoreId,
+                groessenMengen
+            }
+            const apiCall = initialQuantitiesZero ? buySingleStore : buyStore
+            const response = await apiCall(body)
             if (response.success) {
                 toast.success(response.message || 'Bestellung erfolgreich')
                 onClose()
-                onOrderSuccess?.()
+                onOrderSuccess?.(storeId ?? undefined)
             } else {
                 toast.error(response.message || 'Bestellung fehlgeschlagen')
             }
@@ -270,7 +298,7 @@ export default function EinlagenNachbestellenModal({
                     </Button>
                     <Button
                         onClick={handleOrder}
-                        disabled={isLoading || !productData || totalQuantity === 0 || isSubmitting}
+                        disabled={isLoading || !productData || (!initialQuantitiesZero && totalQuantity === 0) || isSubmitting}
                         className="bg-[#61A178] hover:bg-[#61A178]/80 text-white"
                     >
                         {isSubmitting ? 'Bestellen...' : 'Bestellen'}

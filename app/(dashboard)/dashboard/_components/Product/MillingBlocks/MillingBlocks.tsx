@@ -8,7 +8,7 @@ import { IoSearch } from 'react-icons/io5'
 import MillingBlocksTable from './MillingBlocksTable'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import useDebounce from '@/hooks/useDebounce'
-import { deleteStorage } from '@/apis/storeManagement'
+import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import AddProductTypeModal from '../AddProductTypeModal'
 
@@ -222,8 +222,16 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
                 onUpdateProduct={handleUpdateProduct}
                 onDeleteProduct={handleDeleteProduct}
                 isLoading={isLoadingProducts}
-                onOrderSuccess={async () => {
+                onOrderSuccess={async (storeId) => {
                     try {
+                        if (storeId) {
+                            const res: any = await getSingleStorage(storeId)
+                            if (res?.success && res?.data) {
+                                const updated = convertApiProductToLocal(res.data)
+                                setProducts(prev => prev.map(p => p.id === storeId ? updated : p))
+                                return
+                            }
+                        }
                         const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
                         const convertedProducts = apiProducts.map(convertApiProductToLocal)
                         setProducts(convertedProducts)

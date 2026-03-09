@@ -91,8 +91,8 @@ interface ProductManagementTableProps {
     categoryName?: string
     /** API type for order modal, e.g. "rady_insole" or "milling_block" */
     apiType?: 'rady_insole' | 'milling_block'
-    /** Called after successful order (e.g. refresh product list) */
-    onOrderSuccess?: () => void
+    /** Called after successful order; receives storeId to update only that row (no full reload) */
+    onOrderSuccess?: (storeId?: string) => void
 }
 
 export default function ProductManagementTable({
@@ -116,6 +116,7 @@ export default function ProductManagementTable({
     const [isModalLoading, setIsModalLoading] = useState(false)
     const [orderModalOpen, setOrderModalOpen] = useState(false)
     const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
+    const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
 
     // Convert API single-storage response to Product (for modal)
     const apiDataToProduct = (data: any): Product => ({
@@ -447,6 +448,7 @@ export default function ProductManagementTable({
                                 <Button
                                     className="w-fit bg-[#65b87c] hover:bg-[#5aa86e] text-white font-medium rounded-lg py-2.5 cursor-pointer"
                                     onClick={() => {
+                                        setOrderStoreId(selectedProductForImage.id)
                                         setOrderAdminStoreId(selectedProductForImage.adminStoreId!)
                                         setOrderModalOpen(true)
                                         setSelectedProductForImage(null)
@@ -474,11 +476,13 @@ export default function ProductManagementTable({
                 onClose={() => {
                     setOrderModalOpen(false)
                     setOrderAdminStoreId(null)
+                    setOrderStoreId(null)
                 }}
                 adminStoreId={orderAdminStoreId}
                 productType={apiType}
                 onOrderSuccess={onOrderSuccess}
                 initialQuantitiesZero
+                storeId={orderStoreId}
             />
         </>
     )

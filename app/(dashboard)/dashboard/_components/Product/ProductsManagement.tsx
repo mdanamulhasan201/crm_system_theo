@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import InventoryHistory, { InventoryHistoryRef } from './InventoryHistory'
-import { deleteStorage } from '@/apis/storeManagement'
+import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 import useDebounce from '@/hooks/useDebounce'
@@ -342,8 +342,16 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
                     isLoading={isLoadingProducts}
                     categoryName={type === 'rady_insole' ? 'Einlagenrohlinge' : 'Fräsblock'}
                     apiType={type}
-                    onOrderSuccess={async () => {
+                    onOrderSuccess={async (storeId) => {
                         try {
+                            if (storeId) {
+                                const res: any = await getSingleStorage(storeId);
+                                if (res?.success && res?.data) {
+                                    const updated = convertApiProductToLocal(res.data);
+                                    setProductsData(prev => prev.map(p => p.id === storeId ? updated : p));
+                                    return;
+                                }
+                            }
                             const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type);
                             const convertedProducts = apiProducts.map(convertApiProductToLocal);
                             setProductsData(convertedProducts);

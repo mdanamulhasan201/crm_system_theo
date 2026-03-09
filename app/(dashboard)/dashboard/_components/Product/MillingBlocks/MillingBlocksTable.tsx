@@ -65,7 +65,7 @@ interface MillingBlocksTableProps {
     onUpdateProduct: (product: MillingBlock) => void
     onDeleteProduct: (product: MillingBlock) => void
     isLoading?: boolean
-    onOrderSuccess?: () => void
+    onOrderSuccess?: (storeId?: string) => void
 }
 
 export default function MillingBlocksTable({
@@ -84,6 +84,7 @@ export default function MillingBlocksTable({
     const [isModalLoading, setIsModalLoading] = useState(false)
     const [orderModalOpen, setOrderModalOpen] = useState(false)
     const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
+    const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
     const [selectedProductForEdit, setSelectedProductForEdit] = useState<MillingBlock | null>(null)
 
     // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
@@ -328,8 +329,9 @@ export default function MillingBlocksTable({
                 }}
                 isLoading={!!selectedProductIdForModal}
                 categoryName="Fräsblock"
-                onOrderClick={(adminStoreId) => {
+                onOrderClick={(adminStoreId, storeId) => {
                     setOrderAdminStoreId(adminStoreId)
+                    setOrderStoreId(storeId)
                     setSelectedProductForImage(null)
                     setSelectedProductIdForModal(null)
                     setOrderModalOpen(true)
@@ -342,11 +344,13 @@ export default function MillingBlocksTable({
                 onClose={() => {
                     setOrderModalOpen(false)
                     setOrderAdminStoreId(null)
+                    setOrderStoreId(null)
                 }}
                 adminStoreId={orderAdminStoreId}
                 productType="milling_block"
                 onOrderSuccess={onOrderSuccess}
                 initialQuantitiesZero
+                storeId={orderStoreId}
             />
 
             {/* Edit Modal */}
