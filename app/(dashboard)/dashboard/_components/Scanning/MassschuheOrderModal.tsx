@@ -55,6 +55,8 @@ export interface MassschuheOrderV2Payload {
     customer_reviews?: string;
     has_trim_strips?: boolean;
     step2_material?: string;
+    /** Required when has_trim_strips is false */
+    step2_leistentyp?: string;
     leistentyp?: string;
     leistengroesse?: string;
     /** Payload key when Leisten = Nein (Leistengröße optional field) */
@@ -81,6 +83,9 @@ export interface MassschuheOrderV2Payload {
     dicke_spitze_r?: string;
     /** Notes when Bettung wird brutto aufgebaut */
     bettung_built_up_notes?: string;
+    /** Built-up: Einlage aus Fräsblock / Einlagenrohling */
+    einlage_rohling_type?: 'frasblock' | 'einlagenrohling' | null;
+    einlagenrohling_frasblock?: string;
     /** Erweiterte Daten (on_last) */
     schicht1_material?: string;
     schicht1_starke?: string;
@@ -188,6 +193,8 @@ export interface MassschuheOrderModalFormData {
     thickness_toe_l?: string;
     thickness_toe_r?: string;
     bettung_built_up_notes?: string;
+    einlage_rohling_type?: 'frasblock' | 'einlagenrohling' | null;
+    einlagenrohling_frasblock?: string;
     schicht1_material?: string;
     schicht1_starke?: string;
     schicht2_material?: string;
@@ -241,6 +248,8 @@ export interface MassschuheOrderModalFormData {
             thickness_toe_l?: string;
             thickness_toe_r?: string;
             bettung_built_up_notes?: string;
+            einlage_rohling_type?: 'frasblock' | 'einlagenrohling' | null;
+            einlagenrohling_frasblock?: string;
         };
         step4?: {
             preparation_date?: string;
@@ -546,21 +555,19 @@ export default function MassschuheOrderModal({
         const storeLocationJson = JSON.stringify({ title: selectedLoc?.description || filiale, description: selectedLoc?.address || '' });
 
         const halfSampleRequired = formData.halbprobeErforderlich === true;
-        const preparationDateIso = orderDate ? new Date(orderDate + 'T12:00:00.000Z').toISOString() : undefined;
-        const fittingDateIso = fertigstellungDate ? new Date(fertigstellungDate + 'T12:00:00.000Z').toISOString() : undefined;
+        const hasTrimStrips = formData.has_trim_strips ?? false;
+        const beddingRequired = formData.bedding_required ?? false;
+        const bettungType = formData.bettung_type ?? formData.step3_json?.step3?.bettung_type;
 
-        // When half_sample_required is true: use Step 4 (preparation_date, notes) and Step 5 (fitting_date, adjustments, customer_reviews)
-        const preparationDateWhenHalfSample = halfSampleRequired && formData.step4_preparation_date
-            ? formData.step4_preparation_date
-            : undefined;
-        const notesWhenHalfSample = halfSampleRequired ? (formData.step4_notes ?? orderNote ?? undefined) : (orderNote || undefined);
-        const fittingDateWhenHalfSample = halfSampleRequired && formData.step5_fitting_date
-            ? formData.step5_fitting_date
-            : undefined;
-        const adjustmentsWhenHalfSample = halfSampleRequired ? (formData.adjustments ?? '') : undefined;
-        const customerReviewsWhenHalfSample = halfSampleRequired ? (formData.customer_reviews ?? '') : undefined;
+        // Derive Step 4 & 5 from step3_json when not passed flat (Halbprobe: only Anprobedatum + Notizen)
+        const step4Notes = formData.step4_notes ?? formData.step3_json?.step4?.notes ?? '';
+        const step5FittingDate = formData.step5_fitting_date ?? formData.step3_json?.step5?.fitting_date;
+        const step2Material = formData.step2_material ?? formData.step3_json?.step2?.material ?? '';
+        const leistentypVal = formData.leistentyp ?? formData.step3_json?.step2?.leistentyp ?? '';
+        const step2Notes = formData.step2_notes ?? formData.step3_json?.step2?.notes ?? '';
+        const leistengroesseVal = formData.leistengroesse?.trim() || formData.step3_json?.step2?.leistengroesse?.trim() || undefined;
 
-        // Build v2 payload: use null for empty optional strings so keys are always in JSON (same names as API)
+        // Base payload (always sent)
         const v2Payload: MassschuheOrderV2Payload = {
             customerId: customer.id,
             medical_diagnosis: formData.arztlicheDiagnose || undefined,
@@ -572,52 +579,6 @@ export default function MassschuheOrderModal({
             halbprobe: formData.halbprobeGeplant === true,
             insurances: (formData.selectedPositionsnummer?.length && paymentType === 'krankenkasse') ? buildInsurancesForV2() : undefined,
             insurance_price: paymentType === 'krankenkasse' ? insurancePrice : undefined,
-            half_sample_required: halfSampleRequired,
-            preparation_date: halfSampleRequired ? (preparationDateWhenHalfSample ?? undefined) : undefined,
-            notes: halfSampleRequired ? notesWhenHalfSample : (orderNote || undefined),
-            fitting_date: halfSampleRequired ? (fittingDateWhenHalfSample ?? undefined) : undefined,
-            adjustments: adjustmentsWhenHalfSample,
-            customer_reviews: customerReviewsWhenHalfSample,
-            has_trim_strips: formData.has_trim_strips ?? false,
-            step2_material: formData.step2_material ?? '',
-            leistentyp: formData.leistentyp ?? '',
-            leistengroesse: formData.leistengroesse || undefined,
-            leistengröße: formData.has_trim_strips === false ? (formData.leistengroesse?.trim() || undefined) : undefined,
-            step2_notes: formData.step2_notes ?? '',
-            bedding_required: formData.bedding_required ?? false,
-            bettung_type: formData.bedding_required ? (formData.bettung_type ?? undefined) : undefined,
-            bettung_notes: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
-            zusätzliche_notizen: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.bettung_notes?.trim() || undefined) : undefined,
-            // Only send built_up thickness fields when type is 'built_up'
-            thickness_heel_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_l?.trim() || undefined) : undefined,
-            thickness_heel_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_r?.trim() || undefined) : undefined,
-            thickness_ball_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_l?.trim() || undefined) : undefined,
-            thickness_ball_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_r?.trim() || undefined) : undefined,
-            thickness_toe_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_l?.trim() || undefined) : undefined,
-            thickness_toe_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_r?.trim() || undefined) : undefined,
-            dicke_ferse_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_l?.trim() || undefined) : undefined,
-            dicke_ferse_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_heel_r?.trim() || undefined) : undefined,
-            dicke_ballen_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_l?.trim() || undefined) : undefined,
-            dicke_ballen_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_ball_r?.trim() || undefined) : undefined,
-            dicke_spitze_l: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_l?.trim() || undefined) : undefined,
-            dicke_spitze_r: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.thickness_toe_r?.trim() || undefined) : undefined,
-            bettung_built_up_notes: formData.bedding_required && formData.bettung_type === 'built_up' ? (formData.bettung_built_up_notes?.trim() || undefined) : undefined,
-            // Only send on_last fields when type is 'on_last'
-            schicht1_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht1_material?.trim() || undefined) : undefined,
-            schicht1_starke: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht1_starke?.trim() || undefined) : undefined,
-            schicht2_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht2_material?.trim() || undefined) : undefined,
-            schicht2_starke: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.schicht2_starke?.trim() || undefined) : undefined,
-            decksohle_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.decksohle_material?.trim() || undefined) : undefined,
-            decksohle_starke: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.decksohle_starke?.trim() || undefined) : undefined,
-            versteifung: formData.bedding_required && formData.bettung_type === 'on_last' ? formData.versteifung ?? undefined : undefined,
-            versteifung_material: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.versteifung_material?.trim() || undefined) : undefined,
-            versteifung_zone: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.versteifung_zone?.trim() || undefined) : undefined,
-            pelotte: formData.bedding_required && formData.bettung_type === 'on_last' ? formData.pelotte ?? undefined : undefined,
-            pelotte_hoehe_l: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.pelotte_hoehe_l?.trim() || undefined) : undefined,
-            pelotte_hoehe_r: formData.bedding_required && formData.bettung_type === 'on_last' ? (formData.pelotte_hoehe_r?.trim() || undefined) : undefined,
-            step3_material: formData.bedding_required ? (formData.step3_material ?? '') : undefined,
-            step3_thickness: formData.bedding_required ? (formData.step3_thickness ?? '') : undefined,
-            step3_notes: formData.bedding_required ? (formData.step3_notes ?? '') : undefined,
             supply_note: formData.versorgungNote || undefined,
             quantity: qty,
             total_price: totalPrice,
@@ -627,8 +588,100 @@ export default function MassschuheOrderModal({
             pick_up_location: pickUpLocationJson,
             store_location: storeLocationJson,
             order_note: orderNote || undefined,
-            step3_json: formData.bedding_required ? formData.step3_json : undefined,
         };
+
+        // Halbprobe Ja: only Step 4 (Anprobedatum + Notizen) – no step2, no bedding
+        if (halfSampleRequired) {
+            v2Payload.half_sample_required = true;
+            v2Payload.notes = (step4Notes?.trim() || orderNote?.trim()) || undefined;
+            v2Payload.fitting_date = step5FittingDate || undefined;
+            v2Payload.has_trim_strips = false;
+            v2Payload.step2_material = undefined;
+            v2Payload.leistentyp = undefined;
+            v2Payload.leistengroesse = undefined;
+            v2Payload.step2_notes = undefined;
+            v2Payload.bedding_required = false;
+            v2Payload.step3_json = undefined;
+        } else {
+            v2Payload.half_sample_required = false;
+            v2Payload.notes = orderNote || undefined;
+            v2Payload.fitting_date = undefined;
+            v2Payload.has_trim_strips = hasTrimStrips;
+            // Leisten Nein (has_trim_strips false): payload uses step2_material, step2_leistentyp, step2_notes (always send keys so API receives them)
+            if (!hasTrimStrips) {
+                v2Payload.step2_material = step2Material?.trim() ?? '';
+                v2Payload.step2_leistentyp = leistentypVal?.trim() ?? '';
+                v2Payload.step2_notes = step2Notes?.trim() ?? '';
+            } else {
+                v2Payload.step2_material = step2Material || '';
+                v2Payload.leistentyp = leistentypVal || '';
+                v2Payload.leistengroesse = leistengroesseVal;
+                v2Payload.step2_notes = step2Notes || '';
+            }
+            // Bettung: only when not Halbprobe
+            if (beddingRequired && bettungType) {
+                v2Payload.bedding_required = true;
+                v2Payload.bettung_type = bettungType;
+                v2Payload.step3_json = formData.step3_json ?? undefined;
+                const bt = formData.bettung_notes?.trim() ?? formData.step3_json?.step3?.zusätzliche_notizen?.trim();
+                v2Payload.bettung_notes = bettungType === 'on_last' ? (bt || undefined) : undefined;
+                v2Payload.zusätzliche_notizen = bettungType === 'on_last' ? (bt || undefined) : undefined;
+                // on_last: Zusätzliche Notizen, Schicht 1/2, Decksohle, Versteifung, Pelotte
+                if (bettungType === 'on_last') {
+                    v2Payload.schicht1_material = (formData.schicht1_material ?? formData.step3_json?.step3?.schicht1_material)?.trim() || undefined;
+                    v2Payload.schicht1_starke = (formData.schicht1_starke ?? formData.step3_json?.step3?.schicht1_starke)?.trim() || undefined;
+                    v2Payload.schicht2_material = (formData.schicht2_material ?? formData.step3_json?.step3?.schicht2_material)?.trim() || undefined;
+                    v2Payload.schicht2_starke = (formData.schicht2_starke ?? formData.step3_json?.step3?.schicht2_starke)?.trim() || undefined;
+                    v2Payload.decksohle_material = (formData.decksohle_material ?? formData.step3_json?.step3?.decksohle_material)?.trim() || undefined;
+                    v2Payload.decksohle_starke = (formData.decksohle_starke ?? formData.step3_json?.step3?.decksohle_starke)?.trim() || undefined;
+                    v2Payload.versteifung = formData.versteifung ?? formData.step3_json?.step3?.versteifung ?? undefined;
+                    v2Payload.versteifung_material = (formData.versteifung_material ?? formData.step3_json?.step3?.versteifung_material)?.trim() || undefined;
+                    v2Payload.versteifung_zone = (formData.versteifung_zone ?? formData.step3_json?.step3?.versteifung_zone)?.trim() || undefined;
+                    v2Payload.pelotte = formData.pelotte ?? formData.step3_json?.step3?.pelotte ?? undefined;
+                    v2Payload.pelotte_hoehe_l = (formData.pelotte_hoehe_l ?? formData.step3_json?.step3?.pelotte_hoehe_l)?.trim() || undefined;
+                    v2Payload.pelotte_hoehe_r = (formData.pelotte_hoehe_r ?? formData.step3_json?.step3?.pelotte_hoehe_r)?.trim() || undefined;
+                }
+                // built_up: Zusätzliche Notizen, Einlage Fräsblock/Einlagenrohling, Dicke Ferse/Ballen/Spitze, Decksohle, Versteifung, Pelotte
+                if (bettungType === 'built_up') {
+                    const thl = (formData.thickness_heel_l ?? formData.step3_json?.step3?.thickness_heel_l)?.trim();
+                    const thr = (formData.thickness_heel_r ?? formData.step3_json?.step3?.thickness_heel_r)?.trim();
+                    const tbl = (formData.thickness_ball_l ?? formData.step3_json?.step3?.thickness_ball_l)?.trim();
+                    const tbr = (formData.thickness_ball_r ?? formData.step3_json?.step3?.thickness_ball_r)?.trim();
+                    const ttl = (formData.thickness_toe_l ?? formData.step3_json?.step3?.thickness_toe_l)?.trim();
+                    const ttr = (formData.thickness_toe_r ?? formData.step3_json?.step3?.thickness_toe_r)?.trim();
+                    v2Payload.thickness_heel_l = thl || undefined;
+                    v2Payload.thickness_heel_r = thr || undefined;
+                    v2Payload.thickness_ball_l = tbl || undefined;
+                    v2Payload.thickness_ball_r = tbr || undefined;
+                    v2Payload.thickness_toe_l = ttl || undefined;
+                    v2Payload.thickness_toe_r = ttr || undefined;
+                    v2Payload.dicke_ferse_l = thl || undefined;
+                    v2Payload.dicke_ferse_r = thr || undefined;
+                    v2Payload.dicke_ballen_l = tbl || undefined;
+                    v2Payload.dicke_ballen_r = tbr || undefined;
+                    v2Payload.dicke_spitze_l = ttl || undefined;
+                    v2Payload.dicke_spitze_r = ttr || undefined;
+                    v2Payload.bettung_built_up_notes = (formData.bettung_built_up_notes ?? formData.step3_json?.step3?.bettung_built_up_notes)?.trim() || undefined;
+                    v2Payload.einlage_rohling_type = formData.einlage_rohling_type ?? formData.step3_json?.step3?.einlage_rohling_type ?? undefined;
+                    v2Payload.einlagenrohling_frasblock = (formData.einlagenrohling_frasblock ?? formData.step3_json?.step3?.einlagenrohling_frasblock)?.trim() || undefined;
+                    // Erweiterte Daten for built_up
+                    v2Payload.decksohle_material = (formData.decksohle_material ?? formData.step3_json?.step3?.decksohle_material)?.trim() || undefined;
+                    v2Payload.decksohle_starke = (formData.decksohle_starke ?? formData.step3_json?.step3?.decksohle_starke)?.trim() || undefined;
+                    v2Payload.versteifung = formData.versteifung ?? formData.step3_json?.step3?.versteifung ?? undefined;
+                    v2Payload.versteifung_material = (formData.versteifung_material ?? formData.step3_json?.step3?.versteifung_material)?.trim() || undefined;
+                    v2Payload.versteifung_zone = (formData.versteifung_zone ?? formData.step3_json?.step3?.versteifung_zone)?.trim() || undefined;
+                    v2Payload.pelotte = formData.pelotte ?? formData.step3_json?.step3?.pelotte ?? undefined;
+                    v2Payload.pelotte_hoehe_l = (formData.pelotte_hoehe_l ?? formData.step3_json?.step3?.pelotte_hoehe_l)?.trim() || undefined;
+                    v2Payload.pelotte_hoehe_r = (formData.pelotte_hoehe_r ?? formData.step3_json?.step3?.pelotte_hoehe_r)?.trim() || undefined;
+                }
+                v2Payload.step3_material = (formData.step3_material ?? formData.step3_json?.step3?.material) ?? '';
+                v2Payload.step3_thickness = (formData.step3_thickness ?? formData.step3_json?.step3?.thickness) ?? '';
+                v2Payload.step3_notes = (formData.step3_notes ?? formData.step3_json?.step3?.notes) ?? '';
+            } else {
+                v2Payload.bedding_required = false;
+                v2Payload.step3_json = undefined;
+            }
+        }
 
         await onSubmit(v2Payload);
     };

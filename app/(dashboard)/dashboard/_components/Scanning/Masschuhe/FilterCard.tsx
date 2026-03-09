@@ -128,31 +128,10 @@ export default function FilterCard({
                     </button>
                 </div>
 
-                {/* Step 4: Internal Preparation - Only show if Halbprobe = Yes */}
+                {/* Step 4: Internal Preparation (Anprobedatum + Notizen) - Only show if Halbprobe = Yes */}
                 {halbprobeErforderlich === true && (
                     <div className="mt-4 pt-4 border-t border-gray-200">
                         <h4 className="text-xs font-semibold text-gray-600 mb-3">Schritt 4</h4>
-                        <div className="space-y-3">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                    Notizen
-                                </label>
-                                <textarea
-                                    value={internalPrepData.notes}
-                                    onChange={(e) => onInternalPrepDataChange({ ...internalPrepData, notes: e.target.value })}
-                                    placeholder="Interne Vorbereitungsnotizen..."
-                                    rows={2}
-                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 5: Customer Fitting - Only show if Halbprobe = Yes */}
-                {halbprobeErforderlich === true && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                        <h4 className="text-xs font-semibold text-gray-600 mb-3">Schritt 5</h4>
                         <div className="space-y-3">
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -184,6 +163,18 @@ export default function FilterCard({
                                         />
                                     </PopoverContent>
                                 </Popover>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                    Notizen
+                                </label>
+                                <textarea
+                                    value={internalPrepData.notes}
+                                    onChange={(e) => onInternalPrepDataChange({ ...internalPrepData, notes: e.target.value })}
+                                    placeholder="Interne Vorbereitungsnotizen..."
+                                    rows={2}
+                                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
+                                />
                             </div>
                         </div>
                     </div>
