@@ -1,7 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { CalendarIcon, FileText, Factory, ExternalLink, SkipForward } from 'lucide-react';
+import ExternFertigenModal from './ExternFertigenModal';
+import HalbprobeBestellenModal from './HalbprobeBestellenModal';
+import BestellungPruefenModal from './BestellungPruefenModal';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -14,7 +17,7 @@ import { cn } from '@/lib/utils';
 
 function formatDateForDisplay(isoDate: string): string {
     if (!isoDate) return '';
-    const d = new Date(isoDate + 'T00:00:00');
+    const d = isoDate.includes('T') ? new Date(isoDate) : new Date(isoDate + 'T00:00:00');
     if (Number.isNaN(d.getTime())) return isoDate;
     return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
 }
@@ -51,31 +54,50 @@ export type HalbprobeDurchfuehrungValue = (typeof HALBPROBE_DURCHFUEHRUNG_OPTION
 
 export interface HalbprobenerstellungStepFieldsProps {
     preparation_date: string;
+    /** When provided, Anprobedatum field shows and edits this (from API fitting_date). */
+    fitting_date?: string;
     anmerkungen_halbprobe: string;
     halbprobe_durchfuehrung: HalbprobeDurchfuehrungValue;
     checkliste_halbprobe: string;
     onPreparationDateChange: (value: string) => void;
+    onFittingDateChange?: (value: string) => void;
     onAnmerkungenHalbprobeChange: (value: string) => void;
     onHalbprobeDurchfuehrungChange: (value: HalbprobeDurchfuehrungValue) => void;
     onChecklisteHalbprobeChange: (value: string) => void;
+    onSkipHalbprobe?: () => void;
 }
 
 export default function HalbprobenerstellungStepFields({
     preparation_date,
+    fitting_date,
     anmerkungen_halbprobe,
     halbprobe_durchfuehrung,
     checkliste_halbprobe,
     onPreparationDateChange,
+    onFittingDateChange,
     onAnmerkungenHalbprobeChange,
     onHalbprobeDurchfuehrungChange,
     onChecklisteHalbprobeChange,
+    onSkipHalbprobe,
 }: HalbprobenerstellungStepFieldsProps) {
+    const anprobeDate = fitting_date ?? preparation_date;
+    const onAnprobeDateChange = onFittingDateChange ?? onPreparationDateChange;
+    const [externModalOpen, setExternModalOpen] = useState(false);
+    const [halbprobeBestellenModalOpen, setHalbprobeBestellenModalOpen] = useState(false);
+    const [bestellungPruefenModalOpen, setBestellungPruefenModalOpen] = useState(false);
+    const [reviewModalData, setReviewModalData] = useState<{ fileLeftName: string; fileRightName: string }>({ fileLeftName: '', fileRightName: '' });
+
+    const handleExternFertigenClick = () => {
+        onHalbprobeDurchfuehrungChange('Extern fertigen');
+        setExternModalOpen(true);
+    };
+
     return (
         <div className="mb-6 space-y-6">
-            {/* Vorbereitungsdatum – shadcn Calendar + Popover */}
+            {/* Anprobedatum – show fitting_date when it exists from API */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
                 <Label className="text-sm font-medium text-gray-800 mb-2 block">
-                    Vorbereitungsdatum
+                Anprobedatum
                 </Label>
                 <Popover>
                     <PopoverTrigger asChild>
@@ -83,12 +105,12 @@ export default function HalbprobenerstellungStepFields({
                             variant="outline"
                             className={cn(
                                 'h-14 w-full min-w-[280px] max-w-md justify-start gap-3 rounded-xl border-gray-300 bg-gray-50/80 pl-4 text-left text-base font-normal hover:bg-gray-100 hover:border-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400',
-                                !preparation_date && 'text-muted-foreground'
+                                !anprobeDate && 'text-muted-foreground'
                             )}
                         >
                             <CalendarIcon className="h-5 w-5 shrink-0 text-gray-500" />
-                            {preparation_date ? (
-                                formatDateForDisplay(preparation_date)
+                            {anprobeDate ? (
+                                formatDateForDisplay(anprobeDate)
                             ) : (
                                 <span>Datum wählen</span>
                             )}
@@ -98,14 +120,12 @@ export default function HalbprobenerstellungStepFields({
                         <Calendar
                             mode="single"
                             selected={
-                                preparation_date
-                                    ? new Date(preparation_date + 'T00:00:00')
+                                anprobeDate
+                                    ? (anprobeDate.includes('T') ? new Date(anprobeDate) : new Date(anprobeDate + 'T00:00:00'))
                                     : undefined
                             }
                             onSelect={(date) => {
-                                if (date) {
-                                    onPreparationDateChange(toISODateString(date));
-                                }
+                                if (date) onAnprobeDateChange(toISODateString(date));
                             }}
                             initialFocus
                             captionLayout="dropdown"
@@ -152,17 +172,28 @@ export default function HalbprobenerstellungStepFields({
                             <button
                                 key={opt.value}
                                 type="button"
-                                onClick={() => onHalbprobeDurchfuehrungChange(opt.value)}
+                                onClick={() => {
+                                    if (opt.value === 'Extern fertigen') {
+                                        handleExternFertigenClick();
+                                    } else if (opt.value === 'Überspringen') {
+                                        onHalbprobeDurchfuehrungChange(opt.value);
+                                        if (onSkipHalbprobe) {
+                                            onSkipHalbprobe();
+                                        }
+                                    } else {
+                                        onHalbprobeDurchfuehrungChange(opt.value);
+                                    }
+                                }}
                                 className={cn(
-                                    'flex w-full items-start gap-4 rounded-xl border-2 p-4 text-left transition-all',
+                                    'flex cursor-pointer w-full items-start gap-4 rounded-xl border-2 p-4 text-left transition-all',
                                     isSelected
-                                        ? 'border-blue-600 bg-blue-50/50'
+                                        ? 'border-[#62A07C] bg-[#62A07C]/50'
                                         : 'border-gray-200 bg-gray-50/50 hover:border-gray-300'
                                 )}
                             >
                                 <span className={cn(
                                     'mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2',
-                                    isSelected ? 'border-blue-600 bg-blue-600' : 'border-gray-400 bg-white'
+                                    isSelected ? 'border-[#62A07C] bg-[#62A07C]' : 'border-gray-400 bg-white'
                                 )}>
                                     {isSelected && (
                                         <span className="h-2 w-2 rounded-full bg-white" />
@@ -195,6 +226,34 @@ export default function HalbprobenerstellungStepFields({
                     className="h-10 w-full rounded-lg border-gray-300 bg-gray-50/80 placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400"
                 />
             </div> */}
+
+            <ExternFertigenModal
+                open={externModalOpen}
+                onOpenChange={setExternModalOpen}
+                onLeistenUndHalbprobeBestellen={() => {
+                    setExternModalOpen(false);
+                    setHalbprobeBestellenModalOpen(true);
+                }}
+            />
+            <HalbprobeBestellenModal
+                open={halbprobeBestellenModalOpen}
+                onOpenChange={setHalbprobeBestellenModalOpen}
+                onWeiterZurBestellung={(data) => {
+                    setReviewModalData(data);
+                    setBestellungPruefenModalOpen(true);
+                }}
+            />
+            <BestellungPruefenModal
+                open={bestellungPruefenModalOpen}
+                onOpenChange={setBestellungPruefenModalOpen}
+                fileLeftName={reviewModalData.fileLeftName}
+                fileRightName={reviewModalData.fileRightName}
+                onBack={() => setHalbprobeBestellenModalOpen(true)}
+                onVerbindlichBestellen={() => {
+                    setBestellungPruefenModalOpen(false);
+                    // TODO: submit order API
+                }}
+            />
         </div>
     );
 }

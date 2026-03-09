@@ -15,13 +15,14 @@ export default function Krankenkasse() {
         <div className="space-y-8">
             <HeadingSection />
             <Finanzubersicht />
+            <AktuelleAuftrageTable />
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 <FalligkeitsstrukturBarChart />
                 <UmasatzstrukturPieChart />
                 <BassenperformanceData />
             </section>
             <PriceCardData />
-            <AktuelleAuftrageTable />
+     
 
             <section className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Umsatzverteilung />

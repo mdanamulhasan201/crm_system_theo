@@ -136,8 +136,8 @@ export default function ZusatzeSection({
             <div className="mb-4">
                 {/* Header Row - Links/Rechts Labels */}
                 <div className="flex items-center gap-3 mb-2">
-                    <div className="w-8 shrink-0"></div> {/* Spacer for star button */}
-                    <div className="w-48"></div> {/* Spacer for name */}
+                    <div className="w-8 shrink-0"></div>
+                    <div className="w-48"></div>
                     <div className="grid grid-cols-2 gap-3 flex-1">
                         <div className="text-xs text-gray-600 text-center font-medium">Links</div>
                         <div className="text-xs text-gray-600 text-center font-medium">Rechts</div>
@@ -148,15 +148,15 @@ export default function ZusatzeSection({
                     {/* Default Fields */}
                     {DEFAULT_FIELDS.map((defaultField) => {
                         const fieldValue = getFieldValue(defaultField.name);
-                        const isFavorite = fieldValue.isFavorite !== false; // Default to true for default fields
+                        const isFavorite = fieldValue.isFavorite !== false;
                         return (
                             <div key={defaultField.name} className="flex items-center gap-3">
                                 <button
                                     type="button"
                                     onClick={() => onToggleFavorite?.(defaultField.name)}
                                     className={`cursor-pointer text-lg shrink-0 w-8 transition-colors ${
-                                        isFavorite 
-                                            ? 'text-orange-500 hover:text-orange-600' 
+                                        isFavorite
+                                            ? 'text-orange-500 hover:text-orange-600'
                                             : 'text-gray-300 hover:text-gray-400'
                                     }`}
                                     title={isFavorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
@@ -170,15 +170,17 @@ export default function ZusatzeSection({
                                     <input
                                         type="number"
                                         step="0.1"
-                                        value={fieldValue.left}
+                                        value={fieldValue.left === 0 ? '' : fieldValue.left}
                                         onChange={(e) => handleFieldValueChange(defaultField.name, 'left', parseFloat(e.target.value) || 0)}
+                                        placeholder="0"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
                                     <input
                                         type="number"
                                         step="0.1"
-                                        value={fieldValue.right}
+                                        value={fieldValue.right === 0 ? '' : fieldValue.right}
                                         onChange={(e) => handleFieldValueChange(defaultField.name, 'right', parseFloat(e.target.value) || 0)}
+                                        placeholder="0"
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
                                     />
                                 </div>
@@ -199,7 +201,7 @@ export default function ZusatzeSection({
                     <span>Weitere Zusätze anzeigen {additionalFields.length > 0 && `(${additionalFields.length})`}</span>
                 </button>
 
-                {/* Custom Fields - Accordion Content */}
+                {/* Custom Fields - Accordion */}
                 {showCustomFields && (
                     <div className="w-full space-y-3 pl-0">
                         {additionalFields.length === 0 ? (
@@ -208,48 +210,50 @@ export default function ZusatzeSection({
                             additionalFields.map((field) => {
                                 const isFavorite = field.isFavorite === true;
                                 return (
-                                <div key={field.name} className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => onToggleFavorite?.(field.name)}
-                                        className={`cursor-pointer text-lg shrink-0 w-8 transition-colors ${
-                                            isFavorite 
-                                                ? 'text-orange-500 hover:text-orange-600' 
-                                                : 'text-gray-300 hover:text-gray-400'
-                                        }`}
-                                        title={isFavorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
-                                    >
-                                        {isFavorite ? '★' : '☆'}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onDeleteField(field.name)}
-                                        className="text-red-500 hover:text-red-600 cursor-pointer text-lg shrink-0 w-8"
-                                        title="Remove field"
-                                    >
-                                        ×
-                                    </button>
-                                    <div className="flex items-center gap-2 w-48">
-                                        <span className="text-sm font-medium text-gray-700">{field.name}</span>
+                                    <div key={field.name} className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => onToggleFavorite?.(field.name)}
+                                            className={`cursor-pointer text-lg shrink-0 w-8 transition-colors ${
+                                                isFavorite
+                                                    ? 'text-orange-500 hover:text-orange-600'
+                                                    : 'text-gray-300 hover:text-gray-400'
+                                            }`}
+                                            title={isFavorite ? 'Als Favorit entfernen' : 'Als Favorit markieren'}
+                                        >
+                                            {isFavorite ? '★' : '☆'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => onDeleteField(field.name)}
+                                            className="text-red-500 hover:text-red-600 cursor-pointer text-lg shrink-0 w-8"
+                                            title="Remove field"
+                                        >
+                                            ×
+                                        </button>
+                                        <div className="flex items-center gap-2 w-48">
+                                            <span className="text-sm font-medium text-gray-700">{field.name}</span>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3 flex-1">
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={field.left === 0 ? '' : field.left}
+                                                onChange={(e) => handleFieldValueChange(field.name, 'left', parseFloat(e.target.value) || 0)}
+                                                placeholder="0"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                            />
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                value={field.right === 0 ? '' : field.right}
+                                                onChange={(e) => handleFieldValueChange(field.name, 'right', parseFloat(e.target.value) || 0)}
+                                                placeholder="0"
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                                            />
+                                        </div>
                                     </div>
-                                    <div className="grid grid-cols-2 gap-3 flex-1">
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            value={field.left}
-                                            onChange={(e) => handleFieldValueChange(field.name, 'left', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                                        />
-                                        <input
-                                            type="number"
-                                            step="0.1"
-                                            value={field.right}
-                                            onChange={(e) => handleFieldValueChange(field.name, 'right', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
-                                        />
-                                    </div>
-                                </div>
-                            );
+                                );
                             })
                         )}
                     </div>

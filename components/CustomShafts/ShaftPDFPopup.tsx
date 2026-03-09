@@ -171,7 +171,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
     });
 
     const opt = {
-      margin: [40, 40, 80, 40], // Reduced bottom margin from 90 to 80 to prevent extra page
+      margin: [40, 40, 45, 40], // Smaller bottom margin to avoid blank second page
       filename: "document.pdf",
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
@@ -289,7 +289,13 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `shaft-order-${Date.now()}.pdf`
+      // Filename: customer name only (sanitized for filesystem)
+      const rawName = (orderData?.customerName || '').trim()
+      const safeName = rawName
+        ? rawName.replace(/[/\\:*?"<>|]/g, '-').replace(/\s+/g, '-').slice(0, 80) || ''
+        : ''
+      const baseName = safeName || `order-${Date.now()}`
+      a.download = `${baseName}.pdf`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -375,7 +381,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
   const renderConfigField = (label: string, value: string | undefined | null, isChecked: boolean = true) => {
     if (!value) return null
     return (
-      <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
         <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
           {label}
         </div>
@@ -428,7 +434,12 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     <img src={footerImage || "/images/logo.png"} alt="Logo" className="w-full h-full object-contain aspect-square" />
                   </div>
                   <div>
-                    <div className="text-lg font-semibold text-slate-800 mb-2">{displayProductName}</div>
+                    <div className="text-lg font-semibold text-slate-800 mb-2">
+                      {displayProductName}
+                      {shaftConfiguration.customCategory && (
+                        <span className="text-sm font-medium text-slate-500 ml-3">· Kategorie: {shaftConfiguration.customCategory}</span>
+                      )}
+                    </div>
                     <div className="text-sm text-slate-800 leading-relaxed">
                       <div><span className="font-medium">{displayCustomerName}</span></div>
                       {orderData?.orderNumber && (
@@ -458,33 +469,14 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
                   
-                  {/* Kategorie */}
-                  {shaftConfiguration.customCategory && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Kategorie
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        <ModalCheckbox isSelected={shaftConfiguration.customCategory === 'Halbschuhe'} label="Halbschuhe" />
-                        <ModalCheckbox isSelected={shaftConfiguration.customCategory === 'Stiefel'} label="Stiefel" />
-                        <ModalCheckbox isSelected={shaftConfiguration.customCategory === 'Sandalen'} label="Sandalen" />
-                        <ModalCheckbox isSelected={shaftConfiguration.customCategory === 'Stiefeletten'} label="Stiefeletten" />
-                        {!['Halbschuhe', 'Stiefel', 'Sandalen', 'Stiefeletten'].includes(shaftConfiguration.customCategory) && (
-                          <ModalCheckbox isSelected={true} label={shaftConfiguration.customCategory} />
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* CAD-Modellierung */}
+                  {/* CAD-Modellierung - only selected option */}
                   {shaftConfiguration.cadModeling && (
                     <div className="flex py-3 border-b border-gray-300 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                         CAD-Modellierung
                       </div>
                       <div className="flex-1 leading-loose">
-                        <ModalCheckbox isSelected={shaftConfiguration.cadModeling === '1x'} label="1x" />
-                        <ModalCheckbox isSelected={shaftConfiguration.cadModeling === '2x'} label="2x (+6.99€)" />
+                        <ModalCheckbox isSelected={true} label={shaftConfiguration.cadModeling === '2x' ? '2x (+6.99€)' : '1x'} />
                       </div>
                     </div>
                   )}
@@ -513,7 +505,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
                   
-                  {/* Anzahl der Ledertypen - Only show selected option */}
+                  {/* Anzahl der Ledertypen + Lederfarben in same section (option select, then colors below) */}
                   {shaftConfiguration.numberOfLeatherColors && (
                     <div className="flex py-3 border-b border-gray-300 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
@@ -529,19 +521,9 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                         {shaftConfiguration.numberOfLeatherColors === '3' && (
                           <ModalCheckbox isSelected={true} label="3" />
                         )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Multiple leather colors - Only show when 2 or 3 colors selected */}
-                  {shaftConfiguration.numberOfLeatherColors && shaftConfiguration.numberOfLeatherColors !== '1' && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
-                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                        Lederfarben
-                      </div>
-                      <div className="flex-1 leading-loose">
-                        {shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
-                          <div className="ml-0 mt-0 text-xs text-slate-600">
+                        {/* Lederfarben list directly under option when 2 or 3 selected */}
+                        {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
+                          <div className="ml-0 mt-2 text-xs text-slate-600">
                             {shaftConfiguration.leatherColors.map((color, idx) => (
                               <div key={idx} className="mb-1">• Farbe {idx + 1}: {color}</div>
                             ))}
@@ -576,23 +558,18 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                           </div>
                         </div>
                       )}
-                      {shaftConfiguration.schafthoheLinks && (
+                      {(shaftConfiguration.schafthoheLinks || shaftConfiguration.schafthoheRechts) && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                            Schafthöhe Links
+                            Schafthöhe Links / Rechts
                           </div>
-                          <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={true} label={`${shaftConfiguration.schafthoheLinks} cm`} />
-                          </div>
-                        </div>
-                      )}
-                      {shaftConfiguration.schafthoheRechts && (
-                        <div className="flex py-3 border-b border-gray-300 items-start">
-                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
-                            Schafthöhe Rechts
-                          </div>
-                          <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={true} label={`${shaftConfiguration.schafthoheRechts} cm`} />
+                          <div className="flex-1 leading-loose flex flex-wrap items-center gap-x-6 gap-y-1">
+                            {shaftConfiguration.schafthoheLinks && (
+                              <ModalCheckbox isSelected={true} label={`Links: ${shaftConfiguration.schafthoheLinks} cm`} />
+                            )}
+                            {shaftConfiguration.schafthoheRechts && (
+                              <ModalCheckbox isSelected={true} label={`Rechts: ${shaftConfiguration.schafthoheRechts} cm`} />
+                            )}
                           </div>
                         </div>
                       )}
@@ -695,9 +672,9 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
                   
-                  {/* Verschlussart - Only show selected option */}
+                  {/* Verschlussart - Only show selected option (no border so no line above Extras in modal) */}
                   {shaftConfiguration.closureType && (
-                    <div className="flex py-3 border-b border-gray-300 items-start">
+                    <div className="flex py-3 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                         Verschlussart
                       </div>
@@ -713,39 +690,36 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       <div className="text-base font-bold text-slate-800 mb-3">
                         Extras
                       </div>
-                      {/* Passende Schnürsenkel - Only show if selected (true or false) */}
+                      {/* Passende Schnürsenkel - only selected option */}
                       {shaftConfiguration.passendenSchnursenkel !== undefined && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                             Passende Schnürsenkel
                           </div>
                           <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={shaftConfiguration.passendenSchnursenkel === true} label="Ja (+4.49€)" />
-                            <ModalCheckbox isSelected={shaftConfiguration.passendenSchnursenkel === false} label="Nein" />
+                            <ModalCheckbox isSelected={true} label={shaftConfiguration.passendenSchnursenkel === true ? 'Ja (+4.49€)' : 'Nein'} />
                           </div>
                         </div>
                       )}
-                      {/* Ösen einsetzen - Only show if selected (true or false) */}
+                      {/* Ösen einsetzen - only selected option */}
                       {shaftConfiguration.osenEinsetzen !== undefined && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                             Ösen einsetzen
                           </div>
                           <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={shaftConfiguration.osenEinsetzen === true} label="Ja (+8.99€)" />
-                            <ModalCheckbox isSelected={shaftConfiguration.osenEinsetzen === false} label="Nein" />
+                            <ModalCheckbox isSelected={true} label={shaftConfiguration.osenEinsetzen === true ? 'Ja (+8.99€)' : 'Nein'} />
                           </div>
                         </div>
                       )}
-                      {/* Zusätzlicher Reißverschluss - Only show if selected (true or false) */}
+                      {/* Zusätzlicher Reißverschluss - only selected option */}
                       {shaftConfiguration.zipperExtra !== undefined && (
                         <div className="flex py-3 border-b border-gray-300 items-start">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                             Zusätzlicher Reißverschluss
                           </div>
                           <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={shaftConfiguration.zipperExtra === true} label="Ja (+9.99€)" />
-                            <ModalCheckbox isSelected={shaftConfiguration.zipperExtra === false} label="Nein" />
+                            <ModalCheckbox isSelected={true} label={shaftConfiguration.zipperExtra === true ? 'Ja (+9.99€)' : 'Nein'} />
                           </div>
                         </div>
                       )}
@@ -798,7 +772,12 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   <img src={footerImage || "/images/logo.png"} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', aspectRatio: '1/1' }} />
                 </div>
                 <div>
-                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>{displayProductName}</div>
+                  <div style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>
+                    {displayProductName}
+                    {shaftConfiguration.customCategory && (
+                      <span style={{ fontSize: '14px', fontWeight: 500, color: '#64748b', marginLeft: '12px' }}> · Kategorie: {shaftConfiguration.customCategory}</span>
+                    )}
+                  </div>
                   <div style={{ fontSize: '13px', color: '#1e293b', lineHeight: 1.6 }}>
                     <div><span style={{ fontWeight: 500 }}>{displayCustomerName}</span></div>
                     {orderData?.orderNumber && (
@@ -811,61 +790,42 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
             </div>
 
             {/* Body */}
-            <div style={{ padding: '8px 40px 20px 40px', flex: 1, background: '#ffffff', pageBreakInside: 'auto', overflow: 'visible' }}>
-              <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '8px' }}>Checkliste</div>
+            <div style={{ padding: '6px 40px 12px 40px', background: '#ffffff', pageBreakInside: 'auto', overflow: 'visible' }}>
+              <div style={{ fontSize: '18px', fontWeight: 700, color: '#1e293b', marginBottom: '6px' }}>Checkliste</div>
 
               {/* Configuration Details - PDF Version - Show ALL options */}
-              <div style={{ marginTop: '16px' }}>
+              <div style={{ marginTop: '8px' }}>
                 {/* Liefermethode (Delivery Method) */}
                 {shaftConfiguration.deliveryMethod && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Liefermethode
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={shaftConfiguration.deliveryMethod} />
                     </div>
                   </div>
                 )}
                 
-                {/* Kategorie */}
-                {shaftConfiguration.customCategory && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Kategorie
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      <PDFCheckbox isSelected={shaftConfiguration.customCategory === 'Halbschuhe'} label="Halbschuhe" />
-                      <PDFCheckbox isSelected={shaftConfiguration.customCategory === 'Stiefel'} label="Stiefel" />
-                      <PDFCheckbox isSelected={shaftConfiguration.customCategory === 'Sandalen'} label="Sandalen" />
-                      <PDFCheckbox isSelected={shaftConfiguration.customCategory === 'Stiefeletten'} label="Stiefeletten" />
-                      {!['Halbschuhe', 'Stiefel', 'Sandalen', 'Stiefeletten'].includes(shaftConfiguration.customCategory) && (
-                        <PDFCheckbox isSelected={true} label={shaftConfiguration.customCategory} />
-                      )}
-                    </div>
-                  </div>
-                )}
-                
-                {/* CAD-Modellierung */}
+                {/* CAD-Modellierung - only selected option */}
                 {shaftConfiguration.cadModeling && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       CAD-Modellierung
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      <PDFCheckbox isSelected={shaftConfiguration.cadModeling === '1x'} label="1x" />
-                      <PDFCheckbox isSelected={shaftConfiguration.cadModeling === '2x'} label="2x (+6.99€)" />
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
+                      <PDFCheckbox isSelected={true} label={shaftConfiguration.cadModeling === '2x' ? '2x (+6.99€)' : '1x'} />
                     </div>
                   </div>
                 )}
                 
                 {/* Ledertyp */}
                 {shaftConfiguration.lederType && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Ledertyp
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={shaftConfiguration.lederType} />
                     </div>
                   </div>
@@ -873,23 +833,23 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 
                 {/* Lederfarbe (single) */}
                 {shaftConfiguration.numberOfLeatherColors === '1' && shaftConfiguration.lederfarbe && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Lederfarbe
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={shaftConfiguration.lederfarbe} />
                     </div>
                   </div>
                 )}
                 
-                {/* Anzahl der Ledertypen - Only show selected option */}
+                {/* Anzahl der Ledertypen + Lederfarben in same section (option select, then colors below) */}
                 {shaftConfiguration.numberOfLeatherColors && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Anzahl der Ledertypen
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       {shaftConfiguration.numberOfLeatherColors === '1' && (
                         <PDFCheckbox isSelected={true} label="1" />
                       )}
@@ -899,21 +859,11 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       {shaftConfiguration.numberOfLeatherColors === '3' && (
                         <PDFCheckbox isSelected={true} label="3" />
                       )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Multiple leather colors - Only show when 2 or 3 colors selected */}
-                {shaftConfiguration.numberOfLeatherColors && shaftConfiguration.numberOfLeatherColors !== '1' && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Lederfarben
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      {shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
-                        <div style={{ marginLeft: '0', marginTop: '0', fontSize: '11px', color: '#475569' }}>
+                      {/* Lederfarben list directly under option when 2 or 3 selected */}
+                      {shaftConfiguration.numberOfLeatherColors !== '1' && shaftConfiguration.leatherColors && shaftConfiguration.leatherColors.length > 0 && (
+                        <div style={{ marginTop: '4px', fontSize: '11px', color: '#475569' }}>
                           {shaftConfiguration.leatherColors.map((color, idx) => (
-                            <div key={idx} style={{ marginBottom: '4px' }}>• Farbe {idx + 1}: {color}</div>
+                            <div key={idx} style={{ marginBottom: '2px' }}>• Farbe {idx + 1}: {color}</div>
                           ))}
                         </div>
                       )}
@@ -923,11 +873,11 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 
                 {/* Innenfutter */}
                 {shaftConfiguration.innenfutter && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Innenfutter
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={shaftConfiguration.innenfutter} />
                     </div>
                   </div>
@@ -935,53 +885,48 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 
                 {/* Schafthöhe */}
                 {shaftConfiguration.schafthohe && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Schafthöhe
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={`${shaftConfiguration.schafthohe} cm`} />
                     </div>
                   </div>
                 )}
-                {shaftConfiguration.schafthoheLinks && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                {(shaftConfiguration.schafthoheLinks || shaftConfiguration.schafthoheRechts) && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Schafthöhe Links
+                      Schafthöhe Links / Rechts
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      <PDFCheckbox isSelected={true} label={`${shaftConfiguration.schafthoheLinks} cm`} />
-                    </div>
-                  </div>
-                )}
-                {shaftConfiguration.schafthoheRechts && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
-                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
-                      Schafthöhe Rechts
-                    </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
-                      <PDFCheckbox isSelected={true} label={`${shaftConfiguration.schafthoheRechts} cm`} />
+                    <div style={{ flex: 1, lineHeight: 1.4, display: 'flex', flexWrap: 'wrap', gap: '0 24px', alignItems: 'center' }}>
+                      {shaftConfiguration.schafthoheLinks && (
+                        <PDFCheckbox isSelected={true} label={`Links: ${shaftConfiguration.schafthoheLinks} cm`} />
+                      )}
+                      {shaftConfiguration.schafthoheRechts && (
+                        <PDFCheckbox isSelected={true} label={`Rechts: ${shaftConfiguration.schafthoheRechts} cm`} />
+                      )}
                     </div>
                   </div>
                 )}
                 
                 {/* Umfangmaße */}
                 {shaftConfiguration.umfangmasseLinks && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Umfangmaße Links
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={shaftConfiguration.umfangmasseLinks} />
                     </div>
                   </div>
                 )}
                 {shaftConfiguration.umfangmasseRechts && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Umfangmaße Rechts
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={shaftConfiguration.umfangmasseRechts} />
                     </div>
                   </div>
@@ -989,11 +934,11 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 
                 {/* Polsterung - Only show selected options */}
                 {shaftConfiguration.polsterung && shaftConfiguration.polsterung.length > 0 && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Polsterung
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       {shaftConfiguration.polsterung.map((option) => (
                         <PDFCheckbox key={option} isSelected={true} label={option} />
                       ))}
@@ -1002,7 +947,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 )}
                 
                 {shaftConfiguration.polsterungText && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Polsterung (Hinweise)
                     </div>
@@ -1014,11 +959,11 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 
                 {/* Verstärkungen - Only show selected options */}
                 {shaftConfiguration.verstarkungen && shaftConfiguration.verstarkungen.length > 0 && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Verstärkungen
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       {shaftConfiguration.verstarkungen.map((option) => (
                         <PDFCheckbox key={option} isSelected={true} label={option} />
                       ))}
@@ -1027,7 +972,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 )}
                 
                 {shaftConfiguration.verstarkungenText && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Verstärkungen (Hinweise)
                     </div>
@@ -1039,76 +984,75 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 
                 {/* Nahtfarbe - Only show selected option */}
                 {(shaftConfiguration.nahtfarbe || shaftConfiguration.nahtfarbeOption) && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Nahtfarbe
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={getNahtfarbeDisplayName(shaftConfiguration.nahtfarbe, shaftConfiguration.nahtfarbeOption)} />
                     </div>
                   </div>
                 )}
                 
-                {/* Verschlussart - Only show selected option */}
+                {/* Verschlussart - Only show selected option (no borderBottom so no line above Extras) */}
                 {shaftConfiguration.closureType && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Verschlussart
                     </div>
-                    <div style={{ flex: 1, lineHeight: 1.8 }}>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={getClosureTypeDisplayName(shaftConfiguration.closureType)} />
                     </div>
                   </div>
                 )}
                 
+                {/* Keep Extras + Sonstige Notizen + Gesamtpreis together (no half-half split across pages) */}
+                <div className="pdf-page-break-avoid" style={{ pageBreakInside: 'avoid', pageBreakAfter: 'avoid' }}>
                 {/* Add-ons - Only show if at least one is selected */}
                 {(shaftConfiguration.passendenSchnursenkel !== undefined || shaftConfiguration.osenEinsetzen !== undefined || shaftConfiguration.zipperExtra !== undefined) && (
-                  <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '2px solid #d1d5db' }}>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', marginBottom: '12px' }}>
+                  <div style={{ marginTop: '8px', paddingTop: '6px' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: '#1e293b', marginBottom: '6px' }}>
                       Extras
                     </div>
-                    {/* Passende Schnürsenkel - Only show if selected (true or false) */}
+                    {/* Passende Schnürsenkel - only selected option */}
                     {shaftConfiguration.passendenSchnursenkel !== undefined && (
-                      <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                         <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                           Passende Schnürsenkel
                         </div>
-                        <div style={{ flex: 1, lineHeight: 1.8 }}>
-                          <PDFCheckbox isSelected={shaftConfiguration.passendenSchnursenkel === true} label="Ja (+4.49€)" />
-                          <PDFCheckbox isSelected={shaftConfiguration.passendenSchnursenkel === false} label="Nein" />
+                        <div style={{ flex: 1, lineHeight: 1.4 }}>
+                          <PDFCheckbox isSelected={true} label={shaftConfiguration.passendenSchnursenkel === true ? 'Ja (+4.49€)' : 'Nein'} />
                         </div>
                       </div>
                     )}
-                    {/* Ösen einsetzen - Only show if selected (true or false) */}
+                    {/* Ösen einsetzen - only selected option */}
                     {shaftConfiguration.osenEinsetzen !== undefined && (
-                      <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                         <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                           Ösen einsetzen
                         </div>
-                        <div style={{ flex: 1, lineHeight: 1.8 }}>
-                          <PDFCheckbox isSelected={shaftConfiguration.osenEinsetzen === true} label="Ja (+8.99€)" />
-                          <PDFCheckbox isSelected={shaftConfiguration.osenEinsetzen === false} label="Nein" />
+                        <div style={{ flex: 1, lineHeight: 1.4 }}>
+                          <PDFCheckbox isSelected={true} label={shaftConfiguration.osenEinsetzen === true ? 'Ja (+8.99€)' : 'Nein'} />
                         </div>
                       </div>
                     )}
-                    {/* Zusätzlicher Reißverschluss - Only show if selected (true or false) */}
+                    {/* Zusätzlicher Reißverschluss - only selected option */}
                     {shaftConfiguration.zipperExtra !== undefined && (
-                      <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                      <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                         <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                           Zusätzlicher Reißverschluss
                         </div>
-                        <div style={{ flex: 1, lineHeight: 1.8 }}>
-                          <PDFCheckbox isSelected={shaftConfiguration.zipperExtra === true} label="Ja (+9.99€)" />
-                          <PDFCheckbox isSelected={shaftConfiguration.zipperExtra === false} label="Nein" />
+                        <div style={{ flex: 1, lineHeight: 1.4 }}>
+                          <PDFCheckbox isSelected={true} label={shaftConfiguration.zipperExtra === true ? 'Ja (+9.99€)' : 'Nein'} />
                         </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* Additional Notes - Only show if not empty */}
+                {/* Additional Notes - Only show if not empty (no borderBottom – Gesamtpreis borderTop is the only separator) */}
                 {shaftConfiguration.additionalNotes && shaftConfiguration.additionalNotes.trim() && (
-                  <div style={{ display: 'flex', padding: '12px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Sonstige Notizen
                     </div>
@@ -1119,11 +1063,11 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                 )}
 
                 {/* Total Price */}
-                <div className="pdf-page-break-avoid pdf-total-price-section" style={{ 
-                  marginTop: '24px', 
-                  marginBottom: '20px', // Reduced from 60px to prevent extra page
-                  paddingTop: '20px', 
-                  paddingBottom: '20px',
+                <div className="pdf-total-price-section" style={{ 
+                  marginTop: '12px', 
+                  marginBottom: '12px',
+                  paddingTop: '10px', 
+                  paddingBottom: '10px',
                   borderTop: '3px solid #000000', 
                   pageBreakInside: 'avoid',
                   pageBreakAfter: 'avoid', // Prevent page break after this section
@@ -1168,6 +1112,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                       </tr>
                     </tbody>
                   </table>
+                </div>
                 </div>
               </div>
             </div>

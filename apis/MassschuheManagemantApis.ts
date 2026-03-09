@@ -80,7 +80,7 @@ export const updateMassschuheOrderStatus = async (orderIds: string[], status: st
 // get massschuhe order status data /massschuhe-order/stats
 export const getMassschuheOrderData = async () => {
     try {
-        const response = await axiosClient.get(`/massschuhe-order/stats`);
+        const response = await axiosClient.get(`/v2/shoe-orders/statistic/get-calculations`);
         return response.data;
     } catch (error) {
         throw error;
@@ -88,10 +88,12 @@ export const getMassschuheOrderData = async () => {
 }
 
 
-// get chart data /massschuhe-order/stats/chart
-export const getMassschuheOrderChartData = async () => {
+// get chart data /v2/shoe-orders/statistic/get-revenue-chart-data?
+// month=3
+// &year=2026
+export const getMassschuheOrderChartData = async (month: number, year: number) => {
     try {
-        const response = await axiosClient.get(`/massschuhe-order/stats/revenue`);
+        const response = await axiosClient.get(`/v2/shoe-orders/statistic/get-revenue-chart-data?month=${month}&year=${year}`);
         return response.data;
     } catch (error) {
         throw error;
@@ -165,6 +167,31 @@ export const balanceMassschuheOrder = async () => {
         throw error;
     }
 }
+
+// Request payout (partner to admin) - POST with amount
+// POST /v2/admin-order-transitions/pay-partner-to-admin
+// body: { "amount": number }
+export const requestPayoutToAdmin = async (amount: number) => {
+    try {
+        const response = await axiosClient.post(`/v2/admin-order-transitions/pay-partner-to-admin`, { amount });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+// get my all payout request v2/admin-order-transitions/get-all-request-payouts-for-partner?limit=1&cursor=
+export const getAllPayoutRequest = async (limit: number, cursor: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/admin-order-transitions/get-all-request-payouts-for-partner?limit=${limit}&cursor=${cursor}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// 
+
 
 
 // Get total price ratio with daily data for balance chart
@@ -336,6 +363,18 @@ export const createCustomBodenkonstruktion = async (formData: FormData | any) =>
 export const getCountDate = async () => {
     try {
         const response = await axiosClient.get(`/custom_shafts/damian-count`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// poast apis  custom_shafts/request-for-leistenerstellung/access 
+
+export const requestForLeistenerstellungAccess = async () => {
+    try {
+        const response = await axiosClient.post(`/custom_shafts/request-for-leistenerstellung/access`);
         return response.data;
     } catch (error) {
         throw error;

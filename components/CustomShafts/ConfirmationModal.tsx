@@ -29,6 +29,10 @@ interface ConfirmationModalProps {
   isLoadingBodenKonfigurieren?: boolean;
   orderId?: string | null;
   isFrom3DUpload?: boolean;
+  /** When true (Versenden selected), show Versand price and add to displayed total */
+  isVersenden?: boolean;
+  /** Versand price in EUR (e.g. 13). Shown and added to Gesamtpreis when isVersenden is true */
+  versandPrice?: number;
 }
 
 export default function ConfirmationModal({
@@ -49,7 +53,10 @@ export default function ConfirmationModal({
   isLoadingBodenKonfigurieren = false,
   orderId,
   isFrom3DUpload = false,
+  isVersenden = false,
+  versandPrice = 13,
 }: ConfirmationModalProps) {
+  const displayTotal = isVersenden ? orderPrice + versandPrice : orderPrice;
   const router = useRouter();
   const [show3DUploadPopup, setShow3DUploadPopup] = React.useState(false);
   const { deliveryDate: deliveryDateText, loading: isLoadingDelivery } = useDeliveryDateByCategory(
@@ -146,15 +153,21 @@ export default function ConfirmationModal({
           <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-3">
             <h4 className="font-medium text-green-900 mb-1 text-sm">Gesamtpreis:</h4>
             <p className="text-2xl font-bold text-green-800">
-              {orderPrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
+              {displayTotal.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}
             </p>
-            <p className="text-[10px] text-gray-400 mt-0.5 leading-tight italic">exkl. Zustellung / Versand</p>
+            {isVersenden ? (
+              <p className="text-xs text-green-700 mt-0.5 leading-tight">
+                inkl. Versand  (+{versandPrice.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })})
+              </p>
+            ) : (
+              <p className="text-[10px] text-gray-400 mt-0.5 leading-tight italic">exkl. Zustellung / Versand (13€)</p>
+            )}
             {(deliveryDateText || isLoadingDelivery) && (
               <p className="text-xs text-slate-500 mt-2">
                 {isLoadingDelivery ? (
                   <span>Lieferzeit wird geladen…</span>
                 ) : deliveryDateText ? (
-                  <span>Die voraussichtliche Lieferzeit beträgt ca. <strong className="text-slate-700">{deliveryDateText}</strong></span>
+                  <span>Die voraussichtliche Lieferzeit beträgt  <strong className="text-slate-700">{deliveryDateText}</strong></span>
                 ) : null}
               </p>
             )}

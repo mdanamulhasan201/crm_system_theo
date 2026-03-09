@@ -3,13 +3,19 @@ import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, CreditCard, Shield } from 'lucide-react'
+import { ArrowLeft, CreditCard, Shield, Loader2 } from 'lucide-react'
+import { processPayment, createSignedReceipt } from '@/apis/pickupsApis'
+import type { PosReceipt } from '@/apis/pickupsApis'
+import toast from 'react-hot-toast'
 
 interface CardPaymentDialogProps {
     isOpen: boolean
     onClose: () => void
     onBack: () => void
-    onComplete: () => void
+    onComplete: (receipt: PosReceipt | null) => void
+    orderId: string
+    orderType: 'insole' | 'shoes'
+    isPickup: boolean
     orderNumber: string
     customerName: string
     totalAmount: string
@@ -22,6 +28,9 @@ export default function CardPaymentDialog({
     onClose,
     onBack,
     onComplete,
+    orderId,
+    orderType,
+    isPickup,
     orderNumber,
     customerName,
     totalAmount,
@@ -29,6 +38,35 @@ export default function CardPaymentDialog({
     customerPayment
 }: CardPaymentDialogProps) {
     const [transactionId, setTransactionId] = useState('')
+    const [isProcessing, setIsProcessing] = useState(false)
+
+    const handleComplete = async () => {
+        if (isProcessing) return
+        setIsProcessing(true)
+
+        try {
+            // Step 1: Record the payment
+            await processPayment(orderId, orderType, isPickup)
+            toast.success('Zahlung erfolgreich')
+
+            // Step 2: Create signed receipt
+            let receipt: PosReceipt | null = null
+            try {
+                const receiptRes = await createSignedReceipt(orderId, orderType, 'NON_CASH')
+                receipt = receiptRes.data
+            } catch (receiptErr) {
+                console.error('Receipt creation failed:', receiptErr)
+                toast.error('Beleg konnte nicht erstellt werden')
+            }
+
+            onComplete(receipt)
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || 'Zahlung fehlgeschlagen'
+            toast.error(msg)
+        } finally {
+            setIsProcessing(false)
+        }
+    }
 
     return (
             <Dialog open={isOpen} onOpenChange={onClose}>
@@ -117,8 +155,10 @@ export default function CardPaymentDialog({
                             </Button>
                             <Button
                                 className="w-full bg-[#61A175] hover:bg-[#4f8a61] text-white"
-                                onClick={onComplete}
+                                onClick={handleComplete}
+                                disabled={isProcessing}
                             >
+                                {isProcessing ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
                                 Zahlung abschließen
                             </Button>
                         </div>

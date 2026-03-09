@@ -17,6 +17,7 @@ export interface PriceDetailsData {
     discount?: number;
     addonPrices?: number;
     insuranceTotalPrice?: number;
+    privatePrice?: number | null;
     bezahlt?: string;
     orderStatus?: string;
     orderCategory?: string;
@@ -24,6 +25,13 @@ export interface PriceDetailsData {
     fussanalysePreis?: number;
     einlagenversorgungPreis?: number;
     quantity?: number;
+    /** VAT rate in percent (e.g. 19, 20). Used for net/MwSt calculation. */
+    vatRate?: number | null;
+    /** API may return paymnentType (typo). Values: broth | private | insurance */
+    paymnentType?: string | null;
+    paymentType?: string | null;
+    insurance_payed?: boolean | null;
+    private_payed?: boolean | null;
     Versorgungen?: {
         supplyStatus?: { price?: number; vatRate?: number };
     };
@@ -41,6 +49,10 @@ interface AbrechnungsuebersichtModalProps {
 
 function formatEuro(value: number): string {
     return value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+}
+
+function formatEuroLeading(value: number): string {
+    return '€ ' + value.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatDescription(desc: unknown): string {
@@ -118,11 +130,23 @@ export default function AbrechnungsuebersichtModal({
         return () => { cancelled = true; };
     }, [isOpen, orderId]);
 
-    const netto = data ? data.totalPrice / 1.19 : 0;
+    const vatRate = data?.vatRate != null ? data.vatRate : 19;
+    const vatDivisor = 1 + vatRate / 100;
+    const netto = data ? data.totalPrice / vatDivisor : 0;
     const mwst = data ? data.totalPrice - netto : 0;
-    const isPaid = data?.bezahlt === 'Privat_Bezahlt' || data?.bezahlt === 'Krankenkasse_Genehmigt';
-    const paidAmount = data && isPaid ? data.totalPrice : 0;
-    const restOffen = data ? data.totalPrice - paidAmount : 0;
+
+    // Payment done: broth → both paid; private → private_payed; insurance → insurance_payed
+    const paymentType = data?.paymnentType ?? data?.paymentType ?? '';
+    const insurancePayed = !!data?.insurance_payed;
+    const privatePayed = !!data?.private_payed;
+    const isPaymentDone =
+        paymentType === 'broth' ? (insurancePayed && privatePayed)
+        : paymentType === 'private' ? privatePayed
+        : paymentType === 'insurance' ? insurancePayed
+        : false;
+
+    const privatePrice = data?.privatePrice ?? 0;
+    const insuranceTotalPrice = data?.insuranceTotalPrice ?? 0;
 
     const categoryLabel = data?.orderCategory === 'insole' ? 'Einlage' : data?.orderCategory === 'milling_block' ? 'Fräsblock' : data?.orderCategory || '';
     const paymentTag = data?.bezahlt?.includes('Privat') ? 'Privat' : data?.bezahlt?.includes('Krankenkasse') ? 'Krankenkasse' : '';
@@ -181,91 +205,106 @@ export default function AbrechnungsuebersichtModal({
                                 <p className="text-2xl font-bold text-gray-900">
                                     {formatEuro(data.totalPrice)}
                                 </p>
-                                <p className="text-sm text-gray-600 mt-1">
+                                {/* <p className="text-sm text-gray-600 mt-1">
                                     Netto {formatEuro(netto)} · MwSt 19% ({formatEuro(mwst)})
-                                </p>
+                                </p> */}
                             </div>
 
                             {/* ZAHLUNGSAUFTEILUNG */}
-                            <div className="rounded-xl border border-gray-200 p-4">
+                            <div className={`rounded-xl border p-4 ${isPaymentDone ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-200'}`}>
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                                     Zahlungsaufteilung
                                 </h3>
                                 <div className="space-y-2 text-sm">
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Kunde zahlt gesamt</span>
-                                        <span className="font-medium">{formatEuro(data.totalPrice)}</span>
+                                    {privatePrice > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-600">Privat (Kunde)</span>
+                                            <span className="font-medium">{formatEuro(privatePrice)}</span>
+                                        </div>
+                                    )}
+                                    {insuranceTotalPrice > 0 && (
+                                        <div className="flex justify-between">
+                                            <span className="text-gray-600">Versicherung</span>
+                                            <span className="font-medium">{formatEuro(insuranceTotalPrice)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between pt-2 border-t border-gray-200">
+                                        <span className="text-gray-700 font-medium">Gesamt</span>
+                                        <span className="font-bold text-gray-900">{formatEuro(data.totalPrice)}</span>
                                     </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Bereits bezahlt</span>
-                                        <span className={`font-medium ${paidAmount > 0 ? 'text-emerald-600' : 'text-gray-900'}`}>
-                                            {formatEuro(paidAmount)}
+                                    <div className={`flex justify-between items-center pt-3 mt-2 rounded-lg px-3 py-2 ${isPaymentDone ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                                        <span className="text-sm font-medium">
+                                            {isPaymentDone ? 'Zahlung abgeschlossen' : 'Zahlung offen'}
                                         </span>
-                                    </div>
-                                    <div className="flex justify-between">
-                                        <span className="text-gray-600">Rest offen</span>
-                                        <span className="font-medium">{formatEuro(restOffen)}</span>
+                                        {isPaymentDone && (
+                                            <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-500 text-white">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </span>
+                                        )}
                                     </div>
                                 </div>
                             </div>
 
                             {/* POSITIONEN */}
-                            <div className="rounded-xl border border-gray-200 overflow-hidden">
+                            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                                 <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                                     <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
                                         Positionen
                                     </h3>
                                 </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-sm">
-                                        <thead>
-                                            <tr className="border-b border-gray-200 bg-gray-50/80">
-                                                <th className="text-left py-2.5 px-3 font-medium text-gray-600">Pos.</th>
-                                                <th className="text-left py-2.5 px-3 font-medium text-gray-600">Beschreibung</th>
-                                                <th className="text-left py-2.5 px-3 font-medium text-gray-600">Seite</th>
-                                                <th className="text-right py-2.5 px-3 font-medium text-gray-600">Einzel</th>
-                                                <th className="text-right py-2.5 px-3 font-medium text-gray-600">Gesamt</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {positions.map((row, idx) => (
-                                                <tr key={row.id} className="border-b border-gray-100">
-                                                    <td className="py-2.5 px-3 text-gray-700 font-mono text-xs">
-                                                        {getPositionsnummerFromDescription(row.description) ?? (idx + 1).toString().padStart(2, '0')}
-                                                    </td>
-                                                    <td
-                                                        className="py-2.5 px-3 text-gray-900 max-w-[220px] cursor-pointer hover:bg-gray-50 rounded transition-colors"
-                                                        onClick={() => setFullDescriptionText(formatDescription(row.description))}
-                                                        title="Klicken für vollständige Beschreibung"
-                                                    >
-                                                        <span className="line-clamp-2 block text-left" title={formatDescription(row.description)}>
-                                                            {truncateDescription(formatDescription(row.description))}
+                                <div className="p-4 bg-[#f5f5f5] space-y-3">
+                                    {positions.map((row, idx) => {
+                                        const posNum = getPositionsnummerFromDescription(row.description) ?? (idx + 1).toString().padStart(2, '0');
+                                        const desc = formatDescription(row.description);
+                                        const seite = getSeiteFromDescription(row.description);
+                                        const rowNetto = row.price / vatDivisor;
+                                        const rowMwst = row.price - rowNetto;
+                                        return (
+                                            <div
+                                                key={row.id}
+                                                className="rounded-lg bg-white border border-gray-100 shadow-sm p-4 flex flex-wrap items-start justify-between gap-4"
+                                            >
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-sm text-gray-800 leading-snug">
+                                                        <span className="font-semibold text-gray-900">{posNum}</span>
+                                                        <span className="text-gray-700"> — </span>
+                                                        <span
+                                                            className="cursor-pointer hover:text-gray-600 transition-colors text-gray-700"
+                                                            onClick={() => setFullDescriptionText(desc)}
+                                                            title="Klicken für vollständige Beschreibung"
+                                                        >
+                                                            {truncateDescription(desc)}
                                                         </span>
-                                                    </td>
-                                                    <td className="py-2.5 px-3 text-gray-600">{getSeiteFromDescription(row.description)}</td>
-                                                    <td className="py-2.5 px-3 text-right text-gray-900">{formatEuro(row.price)}</td>
-                                                    <td className="py-2.5 px-3 text-right font-medium text-gray-900">{formatEuro(row.price)}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2 text-sm shrink-0">
+                                                    {seite && seite !== '—' && (
+                                                        <span className="inline-flex px-2.5 py-1 rounded-md text-emerald-700 bg-emerald-100 text-xs font-medium">
+                                                            Seite: {seite}
+                                                        </span>
+                                                    )}
+                                                    <span className="text-gray-600">Netto: {formatEuroLeading(rowNetto)}</span>
+                                                    <span className="text-gray-600">+ {vatRate}% MwSt.: {formatEuroLeading(rowMwst)}</span>
+                                                    <span className="font-bold text-emerald-600">Gesamt: {formatEuroLeading(row.price)}</span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                                <div className="px-4 py-3 bg-gray-50 border-t border-gray-200 space-y-1 text-sm">
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Zwischensumme</span>
-                                        <span>{formatEuro(netto)}</span>
+                                <div className="px-4 py-4 bg-white rounded-b-xl border-t border-gray-100 space-y-2">
+                                    <div className="flex justify-between text-sm text-gray-600">
+                                        <span>Zwischensumme:</span>
+                                        <span>{formatEuroLeading(netto)}</span>
                                     </div>
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>Netto</span>
-                                        <span>{formatEuro(netto)}</span>
+                                    <div className="flex justify-between text-sm text-gray-600">
+                                        <span>+ {vatRate}% MwSt.:</span>
+                                        <span>{formatEuroLeading(mwst)}</span>
                                     </div>
-                                    <div className="flex justify-between text-gray-600">
-                                        <span>MwSt 19%</span>
-                                        <span>{formatEuro(mwst)}</span>
-                                    </div>
-                                    <div className="flex justify-between font-semibold text-gray-900 pt-1">
-                                        <span>Brutto</span>
-                                        <span>{formatEuro(data.totalPrice)}</span>
+                                    <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
+                                        <span>Gesamt:</span>
+                                        <span className="text-emerald-600">{formatEuroLeading(data.totalPrice)}</span>
                                     </div>
                                 </div>
                             </div>

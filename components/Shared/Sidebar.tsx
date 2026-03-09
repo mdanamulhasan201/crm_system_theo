@@ -18,13 +18,13 @@ import { TbActivityHeartbeat, TbUsers, TbUserCircle, TbChartBar } from 'react-ic
 
 import type { IconType } from 'react-icons';
 import type { StaticImageData } from 'next/image';
-import { FiBarChart, FiUserPlus } from 'react-icons/fi';
+import { FiUserPlus } from 'react-icons/fi';
 
 import { FiDollarSign } from 'react-icons/fi';
 import { BsCashStack } from 'react-icons/bs';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { BiNews, BiPackage } from 'react-icons/bi';
-import { MdAccountBalanceWallet } from 'react-icons/md';
+import { MdAccountBalanceWallet, MdInventory } from 'react-icons/md';
 import Einlagenauftrag from '@/public/images/dashboard/partner_sidebar/Einlagenaufträge.png';
 import Einstellungen from '@/public/images/dashboard/partner_sidebar/Einstellungen.png';
 import Fußübungen from '@/public/images/dashboard/partner_sidebar/Fußübungen.png';
@@ -135,7 +135,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                         
                         // { icon: HiOutlineDocumentText, label: 'Einnahmen & Rechnungen', href: '/dashboard/einnahmen' },
 
-                        { icon: FiBarChart, label: 'Monatsstatistik', href: '/dashboard/monatsstatistik' },
+                        { icon: MdInventory, label: 'Warenwirtschaft', href: '/dashboard/warenwirtschaft' },
                         { icon: TbUsers, label: 'Mitarbeitercontrolling', href: '/dashboard/mitarbeitercontrolling' },
                         { icon: TbActivityHeartbeat, label: 'Krankenkasse', href: '/dashboard/einlagencontrolling' },
                     ]

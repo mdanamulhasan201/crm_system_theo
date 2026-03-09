@@ -8,13 +8,20 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Printer, Download, Mail } from "lucide-react";
+import { CheckCircle, Printer, Download, Mail, Loader2 } from "lucide-react";
+import { submitOrderFeedback, emailReceipt } from "@/apis/pickupsApis";
+import type { PosReceipt } from "@/apis/pickupsApis";
+import { generateReceiptHTML, generateReceiptPDF } from "@/utils/receiptUtils";
+import toast from "react-hot-toast";
 
 interface ProblemFeedbackDialogProps {
   isOpen: boolean;
   onClose: () => void;
   amount: string;
   receiptNumber: string;
+  orderId: string;
+  orderType: "insole" | "shoes";
+  receipt: PosReceipt | null;
 }
 
 export default function ProblemFeedbackDialog({
@@ -22,10 +29,13 @@ export default function ProblemFeedbackDialog({
   onClose,
   amount,
   receiptNumber,
+  orderId,
+  orderType,
+  receipt,
 }: ProblemFeedbackDialogProps) {
   const [problem, setProblem] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset problem text when dialog closes
   useEffect(() => {
     if (!isOpen) {
       setProblem("");
@@ -33,21 +43,61 @@ export default function ProblemFeedbackDialog({
   }, [isOpen]);
 
   const handlePrint = () => {
-    console.log("Print receipt");
+    if (!receipt) {
+      toast.error("Kein Beleg verfügbar");
+      return;
+    }
+    const html = generateReceiptHTML(receipt);
+    const printWindow = window.open("", "_blank", "width=350,height=600");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.onload = () => printWindow.print();
+    }
   };
 
   const handlePDF = () => {
-    console.log("Generate PDF");
+    if (!receipt) {
+      toast.error("Kein Beleg verfügbar");
+      return;
+    }
+    const blob = generateReceiptPDF(receipt);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Kassenbon-${receiptNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const handleEmail = () => {
-    console.log("Send email");
+  const handleEmail = async () => {
+    if (!receipt) {
+      toast.error("Kein Beleg verfügbar");
+      return;
+    }
+    const email = prompt("E-Mail-Adresse eingeben:");
+    if (!email) return;
+    try {
+      await emailReceipt(receipt.id, email);
+      toast.success("Beleg per E-Mail gesendet");
+    } catch {
+      toast.error("E-Mail konnte nicht gesendet werden");
+    }
   };
 
-  const handleSendFeedback = () => {
-    console.log("Send feedback:", problem);
-    setProblem("");
-    onClose();
+  const handleSendFeedback = async () => {
+    setIsSubmitting(true);
+    try {
+      await submitOrderFeedback(orderId, orderType, "Dislike", problem);
+      toast.success("Feedback gesendet");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Feedback konnte nicht gesendet werden";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+      setProblem("");
+      onClose();
+    }
   };
 
   const handleCancel = () => {
@@ -138,8 +188,9 @@ export default function ProblemFeedbackDialog({
               <Button
                 className="h-9 bg-[#61A175] hover:bg-[#4f8a61] text-white text-sm"
                 onClick={handleSendFeedback}
-                disabled={!problem.trim()}
+                disabled={!problem.trim() || isSubmitting}
               >
+                {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : null}
                 Feedback senden
               </Button>
             </div>

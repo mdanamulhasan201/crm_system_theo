@@ -1,5 +1,5 @@
 'use client'
-import LineChartComponent from '@/components/OrdersPage/LineChart';
+import LineChartComponent, { type ChartTimeRange } from '@/components/OrdersPage/LineChart';
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 // import HighPriorityCard from '@/components/OrdersPage/HighPriorityCard/HighPriorityCard';
@@ -9,6 +9,9 @@ import { useRevenueOverview } from '@/hooks/orders/useRevenueOverview';
 import OrdersHeaderShimmer from '@/components/ShimmerEffect/Orders/OrdersHeaderShimmer';
 import AuftragssuchePage from '@/components/OrdersPage/AuftragssuchePage/AuftragssuchePage';
 import SearchBarIWithFilterInsole from '@/components/OrdersPage/ProccessTable/SearchBarIWithFilterInsole';
+import { getWaitingForVersorgungsStartCount } from '@/apis/productsOrder';
+import UmsatzübersichtCard from '@/components/OrdersPage/UmsatzübersichtCard/UmsatzübersichtCard';
+import EinlagenCardSection from '@/components/OrdersPage/UmsatzübersichtCard/EinlagenCardSection';
 // import { Button } from '@/components/ui/button';
 
 export default function Orders() {
@@ -23,11 +26,26 @@ function OrdersPageContent() {
     const now = React.useMemo(() => new Date(), []);
     const [selectedMonth, setSelectedMonth] = React.useState<string>(String(now.getMonth() + 1).padStart(2, '0'));
     const [selectedYear, setSelectedYear] = React.useState<string>(String(now.getFullYear()));
+    const [chartTimeRange, setChartTimeRange] = React.useState<ChartTimeRange>('Monat');
     const shouldFilter = selectedYear !== '' && selectedMonth !== '';
     const { data, processedChartData, loading, error, isRefetching } = useRevenueOverview(
         shouldFilter ? selectedYear : undefined,
         shouldFilter ? selectedMonth : undefined
     );
+
+    // New API: waiting-for-versorgungsstart count ({ success, data: number })
+    const [waitingCount, setWaitingCount] = React.useState<number | null>(null);
+    React.useEffect(() => {
+        let cancelled = false;
+        getWaitingForVersorgungsStartCount()
+            .then((res: { success?: boolean; data?: number }) => {
+                if (!cancelled && res && typeof res.data === 'number') setWaitingCount(res.data);
+            })
+            .catch(() => {
+                if (!cancelled) setWaitingCount(null);
+            });
+        return () => { cancelled = true; };
+    }, []);
 
     const formatEuro = (amount: number) =>
         amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
@@ -82,88 +100,55 @@ function OrdersPageContent() {
 
     return (
         <div className='mb-20'>
+            <div className='mb-5'>
+                <h1 className='text-2xl font-bold mb-1'>Umsatzübersicht</h1>
+                <p className='text-gray-600 text-sm'>Finanzielle Kennzahlen und Umsatzentwicklung</p>
+            </div>
 
-            <div className='py-5 px-8 bg-white rounded-xl shadow'>
-                <div className="text-2xl font-bold mb-5">Umsatzübersicht</div>
+            <UmsatzübersichtCard />
 
-                <>
-                    <div className='flex flex-col xl:flex-row items-stretch w-full gap-6'>
-                        {/* left side card  */}
-                        <div className="bg-white rounded-lg p-8 flex flex-col items-center justify-center min-w-[250px] border mb-4 md:mb-0 xl:w-4/12">
-                            <div className="text-2xl font-bold text-center mb-2">Geschäftsumsatz<br /></div>
-                            <div className="text-4xl font-extrabold mt-4">
-                                {data?.statistics?.totalRevenue ? formatEuro(data.statistics.totalRevenue) : '-€'}
-                            </div>
-                        </div>
+            <div className='py-5 px-8 bg-white rounded-xl shadow mt-4'>
+                <div className="flex flex-wrap items-center justify-end gap-2 mb-2">
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger className="w-[140px] cursor-pointer h-9 text-sm">
+                            <SelectValue placeholder="Monat" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {months.map((m) => (
+                                <SelectItem key={m.value} value={m.value} className='cursor-pointer'>{m.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger className="w-[100px] cursor-pointer h-9 text-sm">
+                            <SelectValue placeholder="Jahr" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {years.map((y) => (
+                                <SelectItem key={y} value={String(y)} className='cursor-pointer'>{y}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {isRefetching && <span className="text-xs text-gray-500">Updating…</span>}
+                </div>
 
-                        {/* right side line chart */}
-                        <div className="w-full xl:w-8/12" >
+                <div style={{ minWidth: 0 }} className='overflow-x-auto'>
+                    <LineChartComponent
+                        chartData={processedChartData}
+                        previousChartData={[]}
+                        timeRange={chartTimeRange}
+                        onTimeRangeChange={setChartTimeRange}
+                    />
+                </div>
 
-                            <div className='flex flex-col items-end justify-end'>
-                                {/* filter need date and year wise  */}
-                                <div className="flex flex-col items-center justify-end">
-                                    <div className="flex flex-col sm:flex-row gap-3 mb-2">
-                                        <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                                            <SelectTrigger className="w-[200px] cursor-pointer">
-                                                <SelectValue placeholder="Monat auswählen" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {months.map((m) => (
-                                                    <SelectItem key={m.value} value={m.value} className='cursor-pointer'>
-                                                        {m.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                <hr className='my-5 border-gray-200 border' />
 
-                                        <Select value={selectedYear} onValueChange={setSelectedYear}>
-                                            <SelectTrigger className="w-[200px] cursor-pointer">
-                                                <SelectValue placeholder="Jahr auswählen" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {years.map((y) => (
-                                                    <SelectItem key={y} value={String(y)} className='cursor-pointer'>{y}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                    <div className="h-5 mb-2 text-xs text-gray-500">
-                                        {isRefetching && <span>Updating…</span>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div style={{ minWidth: 0 }} className='overflow-x-auto'>
-                                <LineChartComponent chartData={processedChartData} />
-                            </div>
-
-
-                        </div>
-                    </div>
-
-                    <hr className='my-5 border-gray-200 border' />
-                </>
-
-                {/* card bottom  */}
-                <div className="flex flex-col md:flex-row justify-between items-stretch w-full gap-0">
-                    {/* Einlagen in Produktion */}
-                    <div className="flex-1 flex flex-col items-center justify-center  border-gray-300 py-6">
-                        <div className="text-lg font-bold text-[#1E1F6D] mb-2 text-center">Einlagen in Produktion</div>
-                        <div className="text-4xl font-extrabold">
-                            {data?.count ?? '-'}
-                        </div>
-                    </div>
-                    <div className='border-r border-gray-300 hidden md:block'></div>
-                    {/* Ausgeführte Einlagen (letzten 30 Tage) */}
-                    <div className="flex-1 flex flex-col items-center justify-center  border-gray-300 py-6">
-                        <div className="text-lg font-bold text-[#62A07C] mb-2 text-center">Ausgeführte Einlagen<br /></div>
-                        <div className="text-4xl font-extrabold">
-                            {data?.totalPrice ? (data.totalPrice) : '-'}
-                        </div>
-                    </div>
-                    <div className=' border-gray-300 mr-5 hidden md:block'></div>
-                    {/* search order */}
-                    {/* <AuftragssuchePage /> */}
+                <div className="mt-6">
+                    <EinlagenCardSection
+                        count={data?.count ?? null}
+                        waitingCount={waitingCount}
+                        executedValue={data?.totalPrice != null ? data.totalPrice : null}
+                    />
                 </div>
             </div>
             {/* <HighPriorityCard /> */}

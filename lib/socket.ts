@@ -2,22 +2,29 @@ import { io, Socket } from "socket.io-client";
 
 /**
  * Socket.IO helper:
- * - `initSocket(userId)` → creates a singleton client and emits "join" with userId after connection.
+ * - `initSocket(userId, role)` → creates a singleton client and emits "join" with userId and role after connection.
  * - `getSocket()` → returns the existing instance (or null if not initialised).
  * - `disconnectSocket()` → closes and clears the instance.
  */
 
 let socket: Socket | null = null;
 
+export type SocketJoinPayload = {
+  userId: string;
+  role: string;
+};
+
 /**
  * Initialize a singleton Socket.IO client.
  *
  * - Safe on the server: returns null when `window` is not available.
  * - Uses `NEXT_PUBLIC_API_ENDPOINT` (e.g., http://localhost:1971).
- * - After connection, emits "join" event with userId to match your backend:
- *   `socket.on("join", (userId) => { socket.join(userId); })`
+ * - After connection, emits "join" event with { userId, role } for your backend.
  */
-export const initSocket = (userId?: string | null): Socket | null => {
+export const initSocket = (
+  userId?: string | null,
+  role?: string | null
+): Socket | null => {
   if (typeof window === "undefined") return null;
 
   if (socket) {
@@ -30,7 +37,7 @@ export const initSocket = (userId?: string | null): Socket | null => {
 
   // Configure socket to match your backend settings
   socket = io(socketUrl, {
-    transports: ["polling", "websocket"], 
+    transports: ["polling", "websocket"],
     path: "/socket.io",
     withCredentials: true,
     // reconnection: true,
@@ -40,11 +47,11 @@ export const initSocket = (userId?: string | null): Socket | null => {
 
   socket.on("connect", () => {
     console.info("[socket] Connected with id:", socket && socket.id);
-    
-    // Emit "join" event with userId after connection (matches your backend)
+
+    // Emit "join" event with userId and role as separate args (backend: socket.on("join", (userId, role) => ...))
     if (userId) {
-      socket?.emit("join", userId);
-      console.info(`[socket] Emitted join event for userId: ${userId}`);
+      socket?.emit("join", userId, role ?? undefined);
+      console.info("[socket] Emitted join event:", { userId, role: role ?? undefined });
     }
   });
 

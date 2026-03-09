@@ -53,6 +53,8 @@ interface Product {
     Status: string
     image?: string
     features?: string[]
+    create_status?: string
+    adminStoreId?: string | null
     inventoryHistory: Array<{
         id: string
         date: string
@@ -125,6 +127,8 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
             Status: apiProduct.Status,
             image: apiProduct.image,
             features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+            create_status: apiProduct.create_status,
+            adminStoreId: apiProduct.adminStoreId ?? null,
             inventoryHistory: [] // API doesn't provide history yet
         };
     };
@@ -337,6 +341,16 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
                     onDeleteProduct={handleDeleteProduct}
                     isLoading={isLoadingProducts}
                     categoryName={type === 'rady_insole' ? 'Einlagenrohlinge' : 'Fräsblock'}
+                    apiType={type}
+                    onOrderSuccess={async () => {
+                        try {
+                            const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type);
+                            const convertedProducts = apiProducts.map(convertApiProductToLocal);
+                            setProductsData(convertedProducts);
+                        } catch (err) {
+                            console.error('Failed to refresh products after order:', err);
+                        }
+                    }}
                 />
             )}
 

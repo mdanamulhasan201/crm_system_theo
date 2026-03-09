@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     Table,
     TableBody,
@@ -25,9 +25,12 @@ import { IoTime } from 'react-icons/io5'
 import { IoCreate } from 'react-icons/io5'
 import { IoTrash } from 'react-icons/io5'
 import AddProduct from './AddProduct'
+import EinlagenNachbestellenModal from './EinlagenNachbestellenModal'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
 import Image from 'next/image'
+import { getSingleStorage } from '@/apis/storeManagement'
+import toast from 'react-hot-toast'
 
 interface SizeData {
     length: number;
@@ -47,6 +50,8 @@ interface Product {
     Status: string
     image?: string
     features?: string[]
+    create_status?: string
+    adminStoreId?: string | null
     inventoryHistory: Array<{
         id: string
         date: string
@@ -84,6 +89,10 @@ interface ProductManagementTableProps {
     isLoading?: boolean
     /** Category label for modal title, e.g. "Einlagenrohlinge" or "Fräsblock" */
     categoryName?: string
+    /** API type for order modal, e.g. "rady_insole" or "milling_block" */
+    apiType?: 'rady_insole' | 'milling_block'
+    /** Called after successful order (e.g. refresh product list) */
+    onOrderSuccess?: () => void
 }
 
 export default function ProductManagementTable({
@@ -95,12 +104,63 @@ export default function ProductManagementTable({
     onUpdateProduct,
     onDeleteProduct,
     isLoading = false,
-    categoryName = 'Einlagenrohlinge'
+    categoryName = 'Einlagenrohlinge',
+    apiType = 'rady_insole',
+    onOrderSuccess
 }: ProductManagementTableProps) {
     const { getProductById } = useStockManagementSlice();
     const [editId, setEditId] = useState<string | undefined>(undefined)
     const [openEdit, setOpenEdit] = useState(false)
+    const [selectedProductIdForModal, setSelectedProductIdForModal] = useState<string | null>(null)
     const [selectedProductForImage, setSelectedProductForImage] = useState<Product | null>(null)
+    const [isModalLoading, setIsModalLoading] = useState(false)
+    const [orderModalOpen, setOrderModalOpen] = useState(false)
+    const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
+
+    // Convert API single-storage response to Product (for modal)
+    const apiDataToProduct = (data: any): Product => ({
+        id: data.id,
+        Produktname: data.produktname,
+        Produktkürzel: data.artikelnummer,
+        Hersteller: data.hersteller,
+        Lagerort: data.lagerort,
+        minStockLevel: data.mindestbestand,
+        sizeQuantities: data.groessenMengen || {},
+        Status: data.Status,
+        image: data.image,
+        features: Array.isArray(data.features) ? data.features : undefined,
+        create_status: data.create_status,
+        adminStoreId: data.adminStoreId ?? null,
+        inventoryHistory: []
+    })
+
+    // When user clicks Lagerort image: fetch single product and show modal
+    useEffect(() => {
+        if (!selectedProductIdForModal) return
+
+        let cancelled = false
+        setIsModalLoading(true)
+        setSelectedProductForImage(null)
+
+        getSingleStorage(selectedProductIdForModal)
+            .then((response: any) => {
+                if (cancelled || !response?.success || !response?.data) return
+                setSelectedProductForImage(apiDataToProduct(response.data))
+            })
+            .catch((err: any) => {
+                if (!cancelled) {
+                    toast.error(err?.response?.data?.message || 'Produkt konnte nicht geladen werden')
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsModalLoading(false)
+                    setSelectedProductIdForModal(null)
+                }
+            })
+
+        return () => { cancelled = true }
+    }, [selectedProductIdForModal])
 
     // Helper to get stock for a size
     function getStockForSize(product: Product, size: string) {
@@ -164,7 +224,7 @@ export default function ProductManagementTable({
                                         <div 
                                             className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
 
-                                            onClick={() => setSelectedProductForImage(product)}
+                                            onClick={() => setSelectedProductIdForModal(product.id)}
                                         >
                                             {product.image ? (
                                                 <Image
@@ -326,16 +386,29 @@ export default function ProductManagementTable({
                 />
             )}
 
-            {/* Image View Modal with Eigenschaften – design like reference (image, dynamic header, bullet list, CTA) */}
-            <Dialog open={!!selectedProductForImage} onOpenChange={(open) => !open && setSelectedProductForImage(null)}>
+            {/* Image View Modal – fetch single product on Lagerort click, then show (image, header, features, CTA) */}
+            <Dialog
+                open={!!selectedProductIdForModal || !!selectedProductForImage}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setSelectedProductIdForModal(null)
+                        setSelectedProductForImage(null)
+                    }
+                }}
+            >
                 <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 bg-white">
                     <DialogTitle className="sr-only">
                         {selectedProductForImage ? `${selectedProductForImage.Produktname} – Produktdetails` : 'Produktdetails'}
                     </DialogTitle>
+                    {isModalLoading ? (
+                        <div className="flex justify-center items-center py-16">
+                            <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-[#61A178]" />
+                        </div>
+                    ) : selectedProductForImage ? (
                     <div className="space-y-0">
                         {/* Product Image – top, prominent */}
                         <div className="flex justify-center items-center bg-white pt-6 pb-4">
-                            {selectedProductForImage?.image ? (
+                            {selectedProductForImage.image ? (
                                 <Image
                                     width={400}
                                     height={280}
@@ -359,7 +432,7 @@ export default function ProductManagementTable({
                             </h2>
                         </div>
 
-                        {/* Bottom section: features list then one button (like reference) */}
+                        {/* Bottom section: features list then one button (like reference) – only when create_status === 'by_admin' */}
                         <div className="px-6 pt-4 pb-6  border-gray-100">
                             {selectedProductForImage?.features && selectedProductForImage.features.length > 0 ? (
                                 <ul className="list-disc list-inside space-y-2 text-sm text-gray-900 mb-6">
@@ -370,16 +443,42 @@ export default function ProductManagementTable({
                             ) : (
                                 <p className="text-sm text-gray-500 mb-6">Keine Eigenschaften hinterlegt.</p>
                             )}
-                            <Button
-                                className="w-fit bg-[#65b87c] hover:bg-[#5aa86e] text-white font-medium rounded-lg py-2.5 cursor-pointer"
-                                onClick={() => setSelectedProductForImage(null)}
-                            >
-                                Einlage nachbestellen
-                            </Button>
+                            {selectedProductForImage?.create_status === 'by_admin' && selectedProductForImage?.adminStoreId ? (
+                                <Button
+                                    className="w-fit bg-[#65b87c] hover:bg-[#5aa86e] text-white font-medium rounded-lg py-2.5 cursor-pointer"
+                                    onClick={() => {
+                                        setOrderAdminStoreId(selectedProductForImage.adminStoreId!)
+                                        setOrderModalOpen(true)
+                                        setSelectedProductForImage(null)
+                                    }}
+                                >
+                                    Einlage nachbestellen
+                                </Button>
+                            ) : (
+                                <Button
+                                    className="w-fit bg-[#65b87c] text-white font-medium rounded-lg py-2.5 opacity-50 cursor-not-allowed"
+                                    disabled
+                                >
+                                    Einlage nachbestellen
+                                </Button>
+                            )}
                         </div>
                     </div>
+                    ) : null}
                 </DialogContent>
             </Dialog>
+
+            {/* Order modal – only for products with create_status === 'by_admin' */}
+            <EinlagenNachbestellenModal
+                isOpen={orderModalOpen}
+                onClose={() => {
+                    setOrderModalOpen(false)
+                    setOrderAdminStoreId(null)
+                }}
+                adminStoreId={orderAdminStoreId}
+                productType={apiType}
+                onOrderSuccess={onOrderSuccess}
+            />
         </>
     )
 }

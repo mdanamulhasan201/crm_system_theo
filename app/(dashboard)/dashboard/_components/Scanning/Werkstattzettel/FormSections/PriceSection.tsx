@@ -23,6 +23,10 @@ interface PriceSectionProps {
   // Versorgung, Menge, Fertigstellung bis
   versorgung: string
   versorgungsname?: string
+  /** Einlage type name for "Auftragsdetails & Preise" (e.g. from formData.einlagentyp) */
+  einlageDisplayName?: string
+  /** Full supply name including add-ons (Positionsnummer) for display */
+  versorgungFullDisplay?: string
   onVersorgungChange: (value: string) => void
   quantity: string
   onQuantityChange: (value: string) => void
@@ -100,6 +104,8 @@ export default function PriceSection({
   onAuftragAngenommenBeiClear,
   versorgung,
   versorgungsname,
+  versorgungFullDisplay,
+  einlageDisplayName,
   onVersorgungChange,
   quantity,
   onQuantityChange,
@@ -185,20 +191,10 @@ export default function PriceSection({
     return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
   }, [addonPrices])
 
-  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal + (positionsnummerPrice || 0)
-  const discountAmount = discountType === 'percentage' && discountValue
-    ? (subtotal * parseFloat(discountValue)) / 100
-    : 0
-  const total = subtotal - discountAmount
-
-  // Report Gesamt (total) to parent so it can be used as total_price
-  useEffect(() => {
-    onTotalChange?.(total)
-  }, [total, onTotalChange])
-
   // Positionsnummer VAT breakdown & insurance/customer split (using account vat_country)
   const { user } = useAuth()
   const vatCountry = user?.accountInfo?.vat_country
+  const isInsuranceMode = disabledPaymentType === 'Krankenkasse'
   const getVatRate = (): number => {
     if (vatCountry === 'Italien (IT)') return 4
     if (vatCountry === 'Österreich (AT)') return 20
@@ -210,11 +206,27 @@ export default function PriceSection({
     positionsVatRate > 0 ? positionsnummerGross / (1 + positionsVatRate / 100) : positionsnummerGross
   const positionsnummerVatAmount = positionsnummerGross - positionsnummerNet
 
-  // Simple split: insurance pays Positionsnummer (inkl. MwSt.), customer pays the rest + Eigenanteil (AT)
-  const isInsuranceMode = disabledPaymentType === 'Krankenkasse'
-  const insurancePays = isInsuranceMode ? positionsnummerGross : 0
+  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal + (positionsnummerPrice || 0)
+  const discountAmount = discountType === 'percentage' && discountValue
+    ? (subtotal * parseFloat(discountValue)) / 100
+    : 0
+  // Krankenkasse + AT: Gesamt includes Eigenanteil 43 (customer pays this; also sent as privatePrice)
   const eigenanteil = isInsuranceMode && vatCountry === 'Österreich (AT)' ? 43 : 0
-  const customerPays = Math.max(total - insurancePays, 0) + eigenanteil
+  const total = subtotal - discountAmount + eigenanteil
+
+  // Report Gesamt (total) to parent so it can be used as total_price
+  useEffect(() => {
+    onTotalChange?.(total)
+  }, [total, onTotalChange])
+
+  // Split for summary: Privat = Fußanalyse + Eigenanteil + Wirtschaftlicher Aufpreis, Rest = Versicherung
+  const isAtInsuranceSplit = isInsuranceMode && vatCountry === 'Österreich (AT)'
+  const privateTotal = isAtInsuranceSplit
+    ? Math.max(eigenanteil + footPrice + addonPricesTotal, 0)
+    : 0
+  const insuranceTotal = isAtInsuranceSplit
+    ? Math.max(total - privateTotal, 0)
+    : 0
 
   // Generate hours (05-21) for 24-hour format and minutes (00, 10, 20, 30, 40, 50)
   const hours24 = Array.from({ length: 17 }, (_, i) => String(i + 5).padStart(2, '0'))
@@ -266,15 +278,20 @@ export default function PriceSection({
         {/* Left Side: Form Fields – 10/12 on lg */}
         <div className="space-y-4 w-full min-w-0 lg:col-span-6">
 
-            {/* Versorgung & Versorgungsname */}
+            {/* Versorgung – full details: Einlage + supply name with add-ons */}
             <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">Versorgung</p>
-              <p className="text-[15px] font-semibold text-gray-700">
-                {versorgung || '-'}
+              <p className="text-xs  text-gray-400 uppercase tracking-wide mb-1.5">Versorgung</p>
+              {einlageDisplayName ? (
+                <p className="text-[14px]  text-gray-700 mb-1">
+                  <span className=" text-gray-600">Einlage:</span> {einlageDisplayName}
+                </p>
+              ) : null}
+              <p className="text-[14px] text-gray-700">
+                {(versorgungFullDisplay ?? versorgung) || '-'}
               </p>
-              {versorgungsname ? (
+              {!versorgungFullDisplay && versorgungsname ? (
                 <p className="text-xs text-gray-500 mt-1">
                   <span className="font-medium text-gray-600">Versorgungsname:</span> {versorgungsname}
                 </p>
@@ -461,6 +478,33 @@ export default function PriceSection({
             <h4 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Preisübersicht</h4>
 
             <div className="space-y-3 min-w-0">
+              {(positionsnummerPrice || 0) > 0 && (
+                <div className="space-y-1">
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-sm text-gray-600 truncate">Positionsnummer netto</span>
+                    <span className="text-sm font-semibold text-gray-900 shrink-0">
+                      {formatPrice(positionsnummerNet)}
+                    </span>
+                  </div>
+                  {positionsVatRate > 0 && (
+                    <div className="flex justify-between items-center gap-2">
+                      <span className="text-sm text-gray-600 truncate">
+                        + {positionsVatRate}% MwSt. 
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900 shrink-0">
+                        {formatPrice(positionsnummerVatAmount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-sm text-gray-600 truncate">Positionsnummer (inkl. MwSt.)</span>
+                    <span className="text-sm font-semibold text-gray-900 shrink-0">
+                      {formatPrice(positionsnummerPrice || 0)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-between items-center gap-2">
                 <span className="text-sm text-gray-600 truncate">Versorgung</span>
                 <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(versorgungPrice)}</span>
@@ -476,37 +520,19 @@ export default function PriceSection({
                 <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(footPrice)}</span>
               </div>
 
+              {eigenanteil > 0 && (
+                <div className="flex justify-between items-center gap-2">
+                  <span className="text-sm text-gray-600 truncate">Enthält Eigenanteil (AT)</span>
+                  <span className="text-sm font-semibold text-gray-900 shrink-0">
+                    {formatPrice(eigenanteil)}
+                  </span>
+                </div>
+              )}
+
               {addonPricesTotal > 0 && (
                 <div className="flex justify-between items-center gap-2">
                   <span className="text-sm text-gray-600 truncate">Wirtschaftlicher Aufpreis</span>
                   <span className="text-sm font-semibold text-gray-900 shrink-0">{formatPrice(addonPricesTotal)}</span>
-                </div>
-              )}
-
-              {(positionsnummerPrice || 0) > 0 && (
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-sm text-gray-600 truncate">Positionsnummer netto</span>
-                    <span className="text-sm font-semibold text-gray-900 shrink-0">
-                      {formatPrice(positionsnummerNet)}
-                    </span>
-                  </div>
-                  {positionsVatRate > 0 && (
-                    <div className="flex justify-between items-center gap-2">
-                      <span className="text-sm text-gray-600 truncate">
-                        + {positionsVatRate}% MwSt. auf Positionsnummer
-                      </span>
-                      <span className="text-sm font-semibold text-gray-900 shrink-0">
-                        {formatPrice(positionsnummerVatAmount)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-sm text-gray-600 truncate">Positionsnummer (inkl. MwSt.)</span>
-                    <span className="text-sm font-semibold text-gray-900 shrink-0">
-                      {formatPrice(positionsnummerPrice || 0)}
-                    </span>
-                  </div>
                 </div>
               )}
 
@@ -526,40 +552,40 @@ export default function PriceSection({
                 <span className="text-base font-bold text-gray-900">Gesamt</span>
                 <span className="text-lg sm:text-xl font-bold text-green-600 shrink-0">{formatPrice(total)}</span>
               </div>
-              {steuersatz != null && mwstAmount != null && (
+
+              {/* {positionsVatRate > 0 && (
+                    <div className="flex justify-end items-center gap-2">
+                      <span className="text-sm text-gray-600 truncate">
+                        + {positionsVatRate}% MwSt. 
+                      </span>
+                      <span className="text-sm font-semibold text-gray-900 shrink-0">
+                        {formatPrice(positionsnummerVatAmount)}
+                      </span>
+                    </div>
+                  )} */}
+              {/* {steuersatz != null && mwstAmount != null && (
                 <div className="flex justify-end">
                   <span className="text-xs text-gray-500">
                     MwSt ({steuersatz}%): {formatPrice(mwstAmount)}
                   </span>
                 </div>
-              )}
+              )} */}
 
-              {/* Insurance vs Customer split */}
-              <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
-                {isInsuranceMode && (
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-sm font-semibold text-sky-700 truncate">
-                      Versicherung zahlt
+              {/* Insurance vs Customer split summary */}
+              {isAtInsuranceSplit && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+                    <span className="inline-flex items-center gap-1.5 text-xs">
+                      <span className="text-amber-600 font-medium">Privat</span>
+                      <span className="text-amber-700 font-semibold tabular-nums">{formatPrice(privateTotal)}</span>
                     </span>
-                    <span className="text-sm font-semibold text-sky-700 shrink-0">
-                      {formatPrice(insurancePays)}
+                    <span className="inline-flex items-center gap-1.5 text-xs">
+                      <span className="text-emerald-600 font-medium">Versicherung</span>
+                      <span className="text-emerald-700 font-semibold tabular-nums">{formatPrice(insuranceTotal)}</span>
                     </span>
                   </div>
-                )}
-                <div className="flex justify-between items-center gap-2">
-                  <span className="text-sm font-semibold text-amber-700 truncate">
-                    Kunde zahlt
-                  </span>
-                  <span className="text-sm font-semibold text-amber-700 shrink-0">
-                    {formatPrice(customerPays)}
-                  </span>
                 </div>
-                {eigenanteil > 0 && (
-                  <p className="text-xs text-gray-600">
-                    Enthält Eigenanteil (AT): {formatPrice(eigenanteil)}
-                  </p>
-                )}
-              </div>
+              )}
             </div>
           </div>
         </div>

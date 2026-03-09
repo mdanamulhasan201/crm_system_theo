@@ -24,7 +24,7 @@ export default function HeadingSection() {
                 </Button>
                 <Button
                     size="default"
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="bg-[#61A175] hover:bg-[#4f8a61] text-white"
                 >
                     <Plus className="size-4" />
                     Neue Kasse

@@ -761,6 +761,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 const bezahltValue = formDataForOrder.bezahlt || formDataForOrder.paymentStatus || '';
                 const paymentStatusValue = formDataForOrder.paymentStatus || formDataForOrder.bezahlt || undefined;
 
+                // Resolve privatePrice (amount customer pays privately)
+                const privatePrice = formDataForOrder.privatePrice;
+
                 // Build base payload
                 const orderPayload: any = {
                     customerId: customer.id,
@@ -797,9 +800,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         : undefined,
                     discountType: formDataForOrder.discountType || undefined,
                     insurances: buildInsurancesArray(),
-                    insuranceTotalPrice: calculateInsuranceTotalPrice(buildInsurancesArray()),
+                    insuranceTotalPrice: formDataForOrder.insuranceTotalPrice !== undefined && formDataForOrder.insuranceTotalPrice !== null
+                        ? Number(formDataForOrder.insuranceTotalPrice)
+                        : calculateInsuranceTotalPrice(buildInsurancesArray()),
                     insoleStandards: formDataForOrder.insoleStandards || [],
                     notiz_hinzufügen: formDataForOrder.notiz_hinzufügen || undefined,
+                    ...(privatePrice !== undefined && { privatePrice: Number(privatePrice) }),
+                    ...(formDataForOrder.vat_rate !== undefined && { vat_rate: Number(formDataForOrder.vat_rate) }),
                 };
 
                 // Add versorgungId OR key based on active tab

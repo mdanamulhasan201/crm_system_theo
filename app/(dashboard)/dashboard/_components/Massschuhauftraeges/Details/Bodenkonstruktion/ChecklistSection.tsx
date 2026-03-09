@@ -1,6 +1,6 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, HinterkappeMusterSideField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -37,6 +37,8 @@ interface ChecklistSectionProps {
     // Left/Right selection fields
     onHinterkappeMusterChange?: (value: HinterkappeMusterSideData | null) => void
     hinterkappeMusterSide?: HinterkappeMusterSideData | null
+    /** When true, show simple Ja/Nein for Hinterkappe Muster only (no Left/Right). Used e.g. on bodenkonstruktion page. */
+    hinterkappeMusterSimple?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -74,6 +76,7 @@ export default function ChecklistSection({
     // Left/Right selection fields
     onHinterkappeMusterChange,
     hinterkappeMusterSide,
+    hinterkappeMusterSimple = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -182,11 +185,19 @@ export default function ChecklistSection({
                                 )}
                             />
                         ) : g.fieldType === "hinterkappeMusterSide" && showOrthopedicFields ? (
-                            <HinterkappeMusterSideField
-                                def={g}
-                                value={hinterkappeMusterSide || null}
-                                onChange={onHinterkappeMusterChange || (() => {})}
-                            />
+                            hinterkappeMusterSimple ? (
+                                <HinterkappeMusterSimpleField
+                                    def={g}
+                                    value={hinterkappeMusterSide || null}
+                                    onChange={onHinterkappeMusterChange || (() => {})}
+                                />
+                            ) : (
+                                <HinterkappeMusterSideField
+                                    def={g}
+                                    value={hinterkappeMusterSide || null}
+                                    onChange={onHinterkappeMusterChange || (() => {})}
+                                />
+                            )
                         ) : g.fieldType === "hinterkappeSide" && showOrthopedicFields ? (
                             <HinterkappeSideField
                                 def={g}

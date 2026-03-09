@@ -348,8 +348,8 @@ export default function SonstigesOrderModal({
                 wohnort: wohnort,
                 auftragsDatum: datumAuftrag,
                 geschaeftsstandort: geschaeftsstandort ? {
-                    title: geschaeftsstandort.description === 'Versand an Kunden' ? '' : (geschaeftsstandort.description || geschaeftsstandort.address || ''),
-                    description: geschaeftsstandort.description === 'Versand an Kunden' ? geschaeftsstandort.address || '' : (geschaeftsstandort.address || geschaeftsstandort.description || '')
+                    address: geschaeftsstandort.address || '',
+                    description: geschaeftsstandort.description === 'Versand an Kunden' ? '' : (geschaeftsstandort.description || '')
                 } : null,
                 fertigstellungBis: fertigstellungBis,
                 bezahlt: bezahlt,

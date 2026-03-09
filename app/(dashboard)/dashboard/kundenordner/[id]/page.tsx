@@ -227,12 +227,12 @@ export default function KundenordnerPage() {
     return (
         <>
             {/* back button */}
-            <div className='p-4 space-y-6'>
+            {/* <div className='p-4 space-y-6'>
                 <Button onClick={() => router.push(`/dashboard/scanning-data/${customerId}`)} variant='outline' className='flex items-center gap-2 cursor-pointer'>
                     <ArrowLeft className='w-4 h-4' />
                     Back
                 </Button>
-            </div>
+            </div> */}
             <div className='mb-20 p-4 space-y-6'>
                 <TopNavigation activeTab='dokumente' />
 

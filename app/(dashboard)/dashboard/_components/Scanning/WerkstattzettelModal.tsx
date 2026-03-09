@@ -34,7 +34,13 @@ interface FormData {
   isCustomVersorgung?: boolean // Flag to indicate if using custom versorgung (Einmalige Versorgung)
   versorgungsname?: string
   positionsnummerTotal?: number
+  selectedPositionsnummer?: string[]
+  positionsnummerOptions?: Array<{ positionsnummer?: string; description?: string | Record<string, unknown>; price?: number }>
   notiz_hinzufügen?: string
+  totalPrice?: number
+  privatePrice?: number
+  insuranceTotalPrice?: number
+  vat_rate?: number
 }
 
 interface UserInfoUpdateModalProps {
@@ -119,6 +125,37 @@ export default function WerkstattzettelModal({
 
     return []
   }, [formData?.selectedVersorgungData, formData?.billingType])
+
+  // Full Versorgung display for "Auftragsdetails & Preise": supply name + add-ons (Positionsnummer)
+  const { einlageDisplayName, versorgungFullDisplay } = React.useMemo(() => {
+    const einlage = formData?.einlagentyp || ''
+    const supplyName =
+      formData?.versorgungsname ||
+      formData?.selectedVersorgungData?.supplyStatus?.name ||
+      formData?.selectedVersorgungData?.name ||
+      formData?.versorgung ||
+      ''
+    const selectedPos = formData?.selectedPositionsnummer || []
+    const options = formData?.positionsnummerOptions || []
+    const getPosNum = (o: any) => o?.positionsnummer ?? (typeof o?.description === 'object' && o?.description?.positionsnummer ? o.description.positionsnummer : '')
+    const getDesc = (o: any): string => {
+      if (typeof o?.description === 'string') return o.description
+      if (o?.description && typeof o.description === 'object') {
+        const t = (o.description as any).title ?? ''
+        const s = (o.description as any).subtitle ?? ''
+        return t && s ? `${t} - ${s}` : t || s || ''
+      }
+      return ''
+    }
+    const addonLabels = selectedPos
+      .map((posNum) => {
+        const opt = options.find((o) => getPosNum(o) === posNum)
+        return opt ? getDesc(opt) || posNum : posNum
+      })
+      .filter(Boolean)
+    const fullSupply = addonLabels.length > 0 ? `${supplyName} (${addonLabels.join(', ')})` : supplyName
+    return { einlageDisplayName: einlage, versorgungFullDisplay: fullSupply }
+  }, [formData?.einlagentyp, formData?.versorgung, formData?.versorgungsname, formData?.selectedVersorgungData, formData?.selectedPositionsnummer, formData?.positionsnummerOptions])
 
   // Auto-set Einlagenversorgung price when versorgung is selected
   // Only for Privat-Abrechnung – Krankenkassa must NOT prefill or calculate this price
@@ -272,7 +309,24 @@ export default function WerkstattzettelModal({
           : 0
       const discountAmountForTotal =
         discountPercent > 0 ? (subtotalForTotal * discountPercent) / 100 : 0
-      const totalPriceOverride = subtotalForTotal - discountAmountForTotal
+      // Krankenkasse + AT: Gesamt (total_price) includes Eigenanteil 43
+      const vatCountry = user?.accountInfo?.vat_country
+      const isKrankenkasseAt = formData?.billingType === 'Krankenkassa' && vatCountry === 'Österreich (AT)'
+      const eigenanteilForTotal = isKrankenkasseAt ? 43 : 0
+      const totalPriceOverride = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
+
+      // privatePrice: Krankenkasse + AT = Fußanalyse + Eigenanteil (43) + Wirtschaftlicher Aufpreis; Privat = full total
+      const isPrivat = formData?.billingType === 'Privat'
+      const totalForPayload = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
+      const privatePrice = isKrankenkasseAt
+        ? footPriceForTotal + eigenanteilForTotal + addonPricesTotalForTotal
+        : isPrivat
+          ? totalForPayload
+          : undefined
+      // insuranceTotalPrice (Krankenkassa AT): rest = Positionsnummer (inkl. MwSt.) = what insurance pays
+      const insuranceTotalPrice = isKrankenkasseAt ? positionsnummerTotalForTotal : undefined
+      // vat_rate: only for Krankenkasse + AT when Wirtschaftlicher Aufpreis; Privat = no vat_rate
+      const vatRate = isKrankenkasseAt && addonPricesTotalForTotal > 0 ? 20 : undefined
 
       // Create payload using utility function
       const werkstattzettelPayload = createWerkstattzettelPayload(
@@ -331,6 +385,9 @@ export default function WerkstattzettelModal({
         })(),
         discountType: form.discountType || undefined,
         notiz_hinzufügen: notizText?.trim() || undefined,
+        ...(privatePrice !== undefined && { privatePrice: Math.round(privatePrice * 100) / 100 }),
+        ...(insuranceTotalPrice !== undefined && { insuranceTotalPrice: Math.round(insuranceTotalPrice * 100) / 100 }),
+        ...(vatRate !== undefined && { vat_rate: vatRate }),
       }
 
       // Do NOT close the Werkstattzettel modal here.
@@ -419,6 +476,8 @@ export default function WerkstattzettelModal({
               }}
               versorgung={form.versorgung}
               versorgungsname={formData?.versorgungsname}
+              einlageDisplayName={einlageDisplayName}
+              versorgungFullDisplay={versorgungFullDisplay}
               onVersorgungChange={form.setVersorgung}
               quantity={form.quantity}
               onQuantityChange={form.setQuantity}

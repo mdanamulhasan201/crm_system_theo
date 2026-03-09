@@ -38,12 +38,15 @@ import { useDeliveryDateByCategory } from "@/hooks/useDeliveryDateByCategory"
 import { prepareOrderDataForPDF, parseEuroFromText } from "./HelperFunctions"
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 import { buildUmfangmasseWithTitles } from "@/utils/customShoeOrderHelpers"
+import { useSingleCustomShaft } from "@/hooks/customShafts/useSingleCustomShaft"
 
 interface BodenkonstruktionProps {
     orderId?: string | null
+    /** When coming from custom-shafts (product card), product ID for header image */
+    productId?: string | null
 }
 
-export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
+export default function Bodenkonstruktion({ orderId, productId }: BodenkonstruktionProps) {
     const router = useRouter()
     
     // Custom shaft data context
@@ -102,6 +105,9 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
     const { soleOptions } = useSoleData()
     const { order } = useGetSingleMassschuheOrder(orderId ?? null)
     const { deliveryDate: deliveryDateKomplettfertigung } = useDeliveryDateByCategory('Komplettfertigung')
+    const { data: productById } = useSingleCustomShaft(productId || '')
+    // Product image: collection product image | custom uploaded image (product-order) | API by productId
+    const productImageUrl = contextData?.productImage ?? contextData?.uploadedImage ?? (productId && productById?.data?.image) ?? null
 
     // Prepare order data for PDF (this page always shows Komplettfertigung delivery date when from redirect)
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
@@ -705,6 +711,22 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return subOption?.price || 0
     }
 
+    // Helper to get option label by id (for human-readable JSON)
+    const getOptionLabel = (groupId: string, optionId: string | null): string => {
+        if (!optionId) return ""
+        const group = GROUPS2.find(g => g.id === groupId)
+        const option = group?.options?.find((o: { id: string; label: string }) => o.id === optionId)
+        return (option as { label: string } | undefined)?.label ?? optionId
+    }
+
+    // Helper to get sub-option (leder) label by id
+    const getSubOptionLabel = (groupId: string, subOptionId: string | null): string => {
+        if (!subOptionId) return ""
+        const group = GROUPS2.find(g => g.id === groupId)
+        const subOption = group?.subOptions?.leder?.find((o: { id: string; label: string }) => o.id === subOptionId)
+        return (subOption as { label: string } | undefined)?.label ?? subOptionId
+    }
+
     // Helper to remove null from payload
     const removeNulls = (obj: any): any => {
         if (obj === null) return ""
@@ -720,24 +742,20 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
         return obj
     }
 
-    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - same structure as bodenkonstruktion/page.tsx
+    // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - full structure so all conditional data is in payload
     const prepareMassschafterstellungJson2 = () => {
         const json: any = {
             "Mehr_ansehen_title": selectedSole?.name || "",
             "Mehr_ansehen_description": selectedSole?.description || "",
-            "hinterkappe_muster": hinterkappeMusterSide ? {
-                mode: hinterkappeMusterSide.mode ?? "",
-                sameValue: hinterkappeMusterSide.sameValue ?? "",
-                leftValue: hinterkappeMusterSide.leftValue ?? "",
-                rightValue: hinterkappeMusterSide.rightValue ?? "",
-                ...(hinterkappeMusterSide.mode === "gleich" && {
-                    samePrice: hinterkappeMusterSide.sameValue === "ja" ? 4.99 : 0,
-                }),
-                ...(hinterkappeMusterSide.mode === "unterschiedlich" && {
-                    leftPrice: hinterkappeMusterSide.leftValue === "ja" ? 2.49 : 0,
-                    rightPrice: hinterkappeMusterSide.rightValue === "ja" ? 2.49 : 0,
-                }),
-            } : {},
+            "hinterkappe_muster": {
+                mode: hinterkappeMusterSide?.mode ?? "",
+                sameValue: hinterkappeMusterSide?.sameValue ?? "",
+                leftValue: hinterkappeMusterSide?.leftValue ?? "",
+                rightValue: hinterkappeMusterSide?.rightValue ?? "",
+                samePrice: hinterkappeMusterSide?.mode === "gleich" ? (hinterkappeMusterSide?.sameValue === "ja" ? 4.99 : 0) : 0,
+                leftPrice: hinterkappeMusterSide?.mode === "unterschiedlich" ? (hinterkappeMusterSide?.leftValue === "ja" ? 2.49 : 0) : 0,
+                rightPrice: hinterkappeMusterSide?.mode === "unterschiedlich" ? (hinterkappeMusterSide?.rightValue === "ja" ? 2.49 : 0) : 0,
+            },
             "hinterkappe": hinterkappeSide && hinterkappeSide.mode ? {
                 mode: hinterkappeSide.mode,
                 sameValue: hinterkappeSide.sameValue ?? "",
@@ -754,26 +772,34 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             "leder_auswahl_links_price": 0.0,
             "leder_auswahl_rechts": "",
             "leder_auswahl_rechts_price": 0.0,
-            "vorderkappe": vorderkappeSide && vorderkappeSide.mode ? {
-                mode: vorderkappeSide.mode,
-                sameMaterial: vorderkappeSide.sameMaterial || "",
-                leftMaterial: vorderkappeSide.leftMaterial || "",
-                rightMaterial: vorderkappeSide.rightMaterial || "",
-            } : {},
-            "rahmen": rahmen && rahmen.type ? { type: rahmen.type, color: rahmen.color || "" } : {},
+            "vorderkappe": {
+                mode: vorderkappeSide?.mode ?? "",
+                sameMaterial: vorderkappeSide?.sameMaterial ?? "",
+                leftMaterial: vorderkappeSide?.leftMaterial ?? "",
+                rightMaterial: vorderkappeSide?.rightMaterial ?? "",
+            },
+            "rahmen": {
+                type: rahmen?.type ?? "",
+                color: rahmen?.color ?? "",
+            },
             "Rahmenfarbe": rahmen?.color || "",
-            "sohlenhoehe_differenziert": sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze) ? {
-                ferse: sohlenhoeheDifferenziert.ferse || 0,
-                ballen: sohlenhoeheDifferenziert.ballen || 0,
-                spitze: sohlenhoeheDifferenziert.spitze || 0,
-            } : {},
+            "sohlenhoehe_differenziert": {
+                ferse: sohlenhoeheDifferenziert?.ferse ?? 0,
+                ballen: sohlenhoeheDifferenziert?.ballen ?? 0,
+                spitze: sohlenhoeheDifferenziert?.spitze ?? 0,
+            },
             "Verbindungsleder": getSelectedValue(selected.verbindungsleder) || "",
             "Konstruktionsart": getSelectedValue(selected.Konstruktionsart) || "",
             "Konstruktionsart_price": 0.0,
             "brandsohle": getSelectedValue(selected.brandsohle) || "",
             "brandsohle_price": 0.0,
             "Seite_wählen": brandsohleSide?.mode || "",
-            "brandsohleSide": brandsohleSide ? { mode: brandsohleSide.mode, sameValues: brandsohleSide.sameValues || [], leftValues: brandsohleSide.leftValues || [], rightValues: brandsohleSide.rightValues || [] } : {},
+            "brandsohleSide": {
+                mode: brandsohleSide?.mode ?? "",
+                sameValues: brandsohleSide?.sameValues ?? [],
+                leftValues: brandsohleSide?.leftValues ?? [],
+                rightValues: brandsohleSide?.rightValues ?? [],
+            },
             "Sohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
             "Bevorzugte_Farbe": textAreas.schlemmaterial_preferred_colour || "",
             "Sohlenerhöhung": soleElevation?.enabled ? "ja" : "nein",
@@ -795,6 +821,56 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             "möchten_Sie_die_Laufsohle_lose_der_Bestellung_beilegen_price": 0.0,
             "besondere_hinweise": textAreas.besondere_hinweise || "",
             "Besondere_Hinweise": textAreas.besondere_hinweise || ""
+        }
+
+        // Human-readable sections so JSON is easy to understand (part-by-part)
+        // 1. Hinterkappe Muster Auswahlbereich – Beidseitig gleich/unterschiedlich + selected labels
+        const musterMode = hinterkappeMusterSide?.mode
+        if (musterMode) {
+            json.Hinterkappe_Muster_Auswahlbereich = {
+                Auswahlbereich: musterMode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich",
+                ...(musterMode === "gleich"
+                    ? { "Hinterkappe (beide Seiten)": hinterkappeMusterSide?.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein" }
+                    : {
+                        "Hinterkappe links": hinterkappeMusterSide?.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein",
+                        "Hinterkappe rechts": hinterkappeMusterSide?.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein",
+                    }),
+            }
+        } else {
+            json.Hinterkappe_Muster_Auswahlbereich = { Auswahlbereich: "", "Hinterkappe (beide Seiten)": "", "Hinterkappe links": "", "Hinterkappe rechts": "" }
+        }
+
+        // 2. Hinterkappe Auswahlbereich – Material/Leder selection with labels (Beidseitig gleich/unterschiedlich + dropdown values)
+        if (hinterkappeSide && hinterkappeSide.mode) {
+            const hMode = hinterkappeSide.mode
+            const sameVal = hinterkappeSide.sameValue ?? ""
+            const sameSub = hinterkappeSide.sameSubValue ?? ""
+            const leftVal = hinterkappeSide.leftValue ?? ""
+            const leftSub = hinterkappeSide.leftSubValue ?? ""
+            const rightVal = hinterkappeSide.rightValue ?? ""
+            const rightSub = hinterkappeSide.rightSubValue ?? ""
+            json.Hinterkappe_Auswahlbereich = {
+                Auswahlbereich: hMode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich",
+                ...(hMode === "gleich"
+                    ? {
+                        "Hinterkappe (beide Seiten)": getOptionLabel("hinterkappe", sameVal || null),
+                        ...(sameVal === "leder" && sameSub ? { "Leder Auswahl (beide Seiten)": getSubOptionLabel("hinterkappe", sameSub) } : {}),
+                    }
+                    : {
+                        "Hinterkappe links": getOptionLabel("hinterkappe", leftVal || null),
+                        ...(leftVal === "leder" && leftSub ? { "Leder Auswahl links": getSubOptionLabel("hinterkappe", leftSub) } : {}),
+                        "Hinterkappe rechts": getOptionLabel("hinterkappe", rightVal || null),
+                        ...(rightVal === "leder" && rightSub ? { "Leder Auswahl rechts": getSubOptionLabel("hinterkappe", rightSub) } : {}),
+                    }),
+            }
+        } else {
+            const simpleVal = getSelectedValue(selected.hinterkappe)
+            const simpleSub = selected.hinterkappe === "leder" && selected.hinterkappe_sub ? (typeof selected.hinterkappe_sub === "string" ? selected.hinterkappe_sub : null) : null
+            json.Hinterkappe_Auswahlbereich = {
+                Auswahlbereich: "Hinterkappe (beide Seiten)",
+                "Hinterkappe (beide Seiten)": getOptionLabel("hinterkappe", simpleVal || null),
+                ...(simpleSub ? { "Leder Auswahl (beide Seiten)": getSubOptionLabel("hinterkappe", simpleSub) } : {}),
+            }
         }
 
         // Get leder_auswahl and prices from hinterkappeSide (mode: gleich | unterschiedlich)
@@ -1092,7 +1168,7 @@ export default function Bodenkonstruktion({ orderId }: BodenkonstruktionProps) {
             />
 
             {/* Product Header */}
-            <ProductHeader orderData={orderDataForPDF} />
+            <ProductHeader orderData={orderDataForPDF} productImageUrl={productImageUrl} />
 
             {/* Sole Selection Section */}
             <SoleSelectionSection

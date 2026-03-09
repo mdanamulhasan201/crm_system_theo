@@ -206,7 +206,7 @@ export default function CustomShafts() {
     }
 
     return (
-        <div className="py-6">
+        <div className="pt-6">
             {/* Header & Filter Section */}
             <CustomShaftsHeader
                 gender={gender}

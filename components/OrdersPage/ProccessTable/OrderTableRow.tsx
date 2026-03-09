@@ -115,12 +115,28 @@ export default function OrderTableRow({
     onPriceClick,
 }: OrderTableRowProps) {
     const { selectedType } = useOrders();
-    // Helper function to safely get string value
+    // Category letter from order.orderType (from API orderCategory): F = Fräsblock, E = Einlage, S = Sonstiges. Use order's category so it shows for "Alle" too.
+    const typeForLetter = order.orderType ?? (selectedType && selectedType !== 'alle' ? selectedType : null);
+    const typeLetter =
+        typeForLetter === 'milling_block' ? 'F'
+            : (typeForLetter === 'rady_insole' || typeForLetter === 'insole') ? 'E'
+                : typeForLetter === 'sonstiges' ? 'S'
+                    : null;
+    // Helper function to safely get string value (supports API format: { address, description })
     const getSafeString = (value: any): string => {
         if (value == null) return '';
         if (typeof value === 'string') return value;
-        // Handle object with title/description properties (e.g., geschaeftsstandort)
+        // Handle object with address/description (API format for geschaeftsstandort)
         if (typeof value === 'object' && value !== null) {
+            const addr = value.address && typeof value.address === 'string' ? value.address.trim() : '';
+            const desc = value.description && typeof value.description === 'string' ? value.description.trim() : '';
+            if (desc === 'Versand an Kunden') {
+                return addr || desc;
+            }
+            if (addr || desc) {
+                return desc ? (addr ? `${desc} - ${addr}` : desc) : addr;
+            }
+            // Legacy: title/description
             if (value.title && typeof value.title === 'string') {
                 return value.title.trim() || (value.description && typeof value.description === 'string' ? value.description.trim() : '');
             }
@@ -135,13 +151,21 @@ export default function OrderTableRow({
         }
     };
 
-    // Get safe geschaeftsstandort string
+    // Get safe geschaeftsstandort string for display in Frist column
     const geschaeftsstandortStr = getSafeString(order.geschaeftsstandort);
     // Ensure it's a string before calling substring
     const safeGeschaeftsstandortStr = typeof geschaeftsstandortStr === 'string' ? geschaeftsstandortStr : '';
     const geschaeftsstandortInitials = safeGeschaeftsstandortStr.length >= 2 
         ? safeGeschaeftsstandortStr.substring(0, 2).toUpperCase() 
         : safeGeschaeftsstandortStr.toUpperCase();
+
+    // Extract address and description for two-line display (API format: { address, description })
+    const gs = order.geschaeftsstandort;
+    const geschaeftsstandortAddress = (typeof gs === 'object' && gs !== null && typeof (gs as any).address === 'string')
+        ? (gs as any).address.trim() : '';
+    const geschaeftsstandortDescription = (typeof gs === 'object' && gs !== null && typeof (gs as any).description === 'string')
+        ? (gs as any).description.trim() : '';
+    const hasGeschaeftsstandortLines = !!(geschaeftsstandortAddress || geschaeftsstandortDescription);
 
     const getStatusBadgeColor = (status: string, type?: string | null) => {
         const normalizedStatus = status.replace(/_/g, ' ');
@@ -207,6 +231,19 @@ export default function OrderTableRow({
     const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
     const hasInvoice = !!order.invoice;
 
+    // Payment success: broth → both paid; private → private_payed; insurance → insurance_payed
+    const paymentType = order.paymentType ?? '';
+    const insurancePayed = !!order.insurance_payed;
+    const privatePayed = !!order.private_payed;
+    const isPaymentSuccess =
+        paymentType === 'broth' ? (insurancePayed && privatePayed)
+        : paymentType === 'private' ? privatePayed
+        : paymentType === 'insurance' ? insurancePayed
+        : false;
+
+    const isAusgefuehrtPaid = isAusgefuehrt && isPaymentSuccess;
+    const isAusgefuehrtUnpaid = isAusgefuehrt && !isPaymentSuccess;
+
     const parseGermanDateString = (dateStr?: string | null): Date | null => {
         if (!dateStr || dateStr === '—') return null;
         const parts = dateStr.split('.');
@@ -248,9 +285,25 @@ export default function OrderTableRow({
             ? `Erstellt ${order.erstelltAm}`
             : null;
 
+    // For Ausgeführt orders, show completed date (updatedAt / deliveryDate) instead of due/created info
+    const completedLabel =
+        isAusgefuehrt && order.deliveryDate && order.deliveryDate !== '—'
+            ? `Ausgeführt am ${order.deliveryDate}`
+            : null;
+
     return (
         <TableRow
-            className={`border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${isRowSelected ? 'bg-gray-50' : ''}`}
+            className={`border-b border-gray-100 transition-colors cursor-pointer ${
+                order.priority === 'Dringend'
+                    ? 'bg-red-100 hover:bg-red-200/90'
+                    : isAusgefuehrtPaid
+                        ? 'bg-emerald-50 hover:bg-emerald-100/90 border-l-4 border-l-emerald-500'
+                        : isAusgefuehrtUnpaid
+                            ? 'bg-orange-50 hover:bg-orange-100/90 border-l-4 border-l-orange-500'
+                            : isRowSelected
+                                ? 'bg-gray-50 hover:bg-gray-50'
+                                : 'hover:bg-gray-50'
+            }`}
             onClick={handleRowClick}
         >
             <TableCell className="py-4 px-4">
@@ -280,6 +333,14 @@ export default function OrderTableRow({
                         >
                             <FileText className="w-4 h-4" />
                         </button>
+                    )}
+                    {typeLetter != null && (
+                        <span
+                            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600"
+                            title={typeForLetter === 'milling_block' ? 'Fräsblock' : (typeForLetter === 'rady_insole' || typeForLetter === 'insole') ? 'Einlage' : 'Sonstiges'}
+                        >
+                            {typeLetter}
+                        </span>
                     )}
                 </div>
             </TableCell>
@@ -356,17 +417,29 @@ export default function OrderTableRow({
                 </div>
             </TableCell>
             <TableCell className="py-4 px-6 text-sm whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
-                {onPriceClick ? (
-                    <button
-                        type="button"
-                        onClick={() => onPriceClick(order.id, order.kundenname, order.bestellnummer)}
-                        className="text-left font-medium text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
-                    >
-                        {order.preis}
-                    </button>
-                ) : (
-                    order.preis
-                )}
+                <div className="flex flex-col items-start gap-0.5">
+                    {onPriceClick ? (
+                        <button
+                            type="button"
+                            onClick={() => onPriceClick(order.id, order.kundenname, order.bestellnummer)}
+                            className="text-left font-semibold text-base text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
+                        >
+                            {order.preis}
+                        </button>
+                    ) : (
+                        <span className="font-semibold text-base text-gray-900">{order.preis}</span>
+                    )}
+                    {order.insuranceTotalPrice != null && Number(order.insuranceTotalPrice) > 0 && (
+                        <span className="text-xs text-blue-600 font-medium">
+                            KK: {Number(order.insuranceTotalPrice).toFixed(2)} €
+                        </span>
+                    )}
+                    {order.privatePrice != null && Number(order.privatePrice) > 0 && (
+                        <span className="text-xs text-amber-600 font-medium">
+                            Privat: {Number(order.privatePrice).toFixed(2)} €
+                        </span>
+                    )}
+                </div>
             </TableCell>
             <TableCell className="py-4 px-6">
                 <div className="flex flex-col items-center gap-1.5 py-1 px-1">
@@ -375,32 +448,73 @@ export default function OrderTableRow({
             </TableCell>
             <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-3">
-                    <div className="flex flex-col items-start">
-                        {dueLabel && (
-                            <span
-                                className={`text-sm font-medium ${
-                                    dueLabel.includes('überfällig') || dueLabel === 'Heute fällig'
-                                        ? dueLabel.includes('überfällig')
-                                            ? 'text-red-600'
-                                            : 'text-orange-500'
-                                        : 'text-gray-700'
-                                }`}
-                            >
-                                {dueLabel}
-                            </span>
+                    <div className="flex flex-col items-start gap-0.5">
+                        {isAusgefuehrt ? (
+                            completedLabel && (
+                                <span className="text-sm font-medium text-gray-800" title="Ausgeführt am">
+                                    {completedLabel}
+                                </span>
+                            )
+                        ) : (
+                            <>
+                                {order.fertiggestelltAm && order.fertiggestelltAm !== '—' && (
+                                    <span className="text-sm font-medium text-gray-800" title="Lieferdatum / Fertigstellung bis">
+                                        {order.fertiggestelltAm}
+                                    </span>
+                                )}
+                                {dueLabel && (
+                                    <span
+                                        className={`text-sm font-medium ${
+                                            dueLabel.includes('überfällig') || dueLabel === 'Heute fällig'
+                                                ? dueLabel.includes('überfällig')
+                                                    ? 'text-red-600'
+                                                    : 'text-orange-500'
+                                                : 'text-gray-700'
+                                        }`}
+                                    >
+                                        {dueLabel}
+                                    </span>
+                                )}
+                                {createdLabel && (
+                                    <span className="text-xs text-gray-500">
+                                        {createdLabel}
+                                    </span>
+                                )}
+                            </>
                         )}
-                        {createdLabel && (
-                            <span className="text-xs text-gray-500">
-                                {createdLabel}
-                            </span>
-                        )}
+                        {hasGeschaeftsstandortLines ? (
+                            <div className="flex flex-col gap-0.5 text-xs text-gray-600 max-w-[140px]">
+                                {geschaeftsstandortAddress && (
+                                    <span className="block truncate" title={geschaeftsstandortAddress}>{geschaeftsstandortAddress}</span>
+                                )}
+                                {geschaeftsstandortDescription && (
+                                    <span className="block truncate" title={geschaeftsstandortDescription}>{geschaeftsstandortDescription}</span>
+                                )}
+                            </div>
+                        ) : safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '' ? (
+                            <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <span className="text-xs text-gray-600 max-w-[140px] truncate block" title={safeGeschaeftsstandortStr}>
+                                            {safeGeschaeftsstandortStr}
+                                        </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg max-w-xs">
+                                        <div className="flex flex-col gap-1">
+                                            <div className="font-semibold text-sm">Abholort / Geschäftsstandort</div>
+                                            <div className="text-sm text-gray-200">{safeGeschaeftsstandortStr}</div>
+                                        </div>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        ) : null}
                     </div>
-                    {safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '' && (
+                    {(hasGeschaeftsstandortLines || (safeGeschaeftsstandortStr && safeGeschaeftsstandortStr.trim() !== '')) && (
                         <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <div 
-                                        className="flex items-center justify-center cursor-pointer"
+                                        className="flex items-center justify-center cursor-pointer shrink-0"
                                         onClick={(e) => e.stopPropagation()}
                                     >
                                         <div className="w-8 h-8 rounded-full bg-[#61A175] text-white flex items-center justify-center text-xs font-semibold hover:bg-[#61A175]/80 transition-colors">
@@ -408,9 +522,10 @@ export default function OrderTableRow({
                                         </div>
                                     </div>
                                 </TooltipTrigger>
-                                <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg">
+                                <TooltipContent className="bg-gray-900 text-white p-3 rounded-lg shadow-lg max-w-xs">
                                     <div className="flex flex-col gap-1">
-                                        <div className="font-semibold text-sm">Abholort: {safeGeschaeftsstandortStr}</div>
+                                        <div className="font-semibold text-sm">Abholort / Geschäftsstandort</div>
+                                        <div className="text-sm text-gray-200">{safeGeschaeftsstandortStr}</div>
                                     </div>
                                 </TooltipContent>
                             </Tooltip>

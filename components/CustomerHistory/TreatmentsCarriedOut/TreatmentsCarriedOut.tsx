@@ -6,6 +6,8 @@ import ReuseableCarousel from '../../ReuseableCarousel/ReuseableCarousel'
 import Image from 'next/image'
 import { getCustomersBySupplyStatusId } from '@/apis/versorgungApis'
 import { useRouter } from 'next/navigation'
+import { Wrench } from 'lucide-react'
+import EmptyState from '@/app/(dashboard)/dashboard/_components/CustomerHistory/EmptyState'
 
 type TreatmentsCarriedOutProps = {
     customerId?: string
@@ -152,13 +154,17 @@ export default function TreatmentsCarriedOut({ customerId }: TreatmentsCarriedOu
 
     return (
         <div className="flex flex-col gap-4 mt-10">
-            <h1 className="text-2xl font-bold">DURCHGEFÜHRTE VERSORGUNGEN</h1>
+            {/* <h1 className="text-2xl font-bold">DURCHGEFÜHRTE VERSORGUNGEN</h1> */}
 
-            {loading && <div className="text-sm text-gray-500">Versorgungen werden geladen...</div>}
-            {error && <div className="text-sm text-red-500">{error}</div>}
+            {loading && <div className="text-sm text-gray-500 text-center">Versorgungen werden geladen...</div>}
+            {error && <div className="text-sm text-red-500 text-center">{error}</div>}
 
             {!loading && !supplyStatusData.length && !error && (
-                <div className="text-sm text-gray-500">Keine Versorgungen gefunden.</div>
+                <EmptyState
+                    icon={<Wrench className="w-8 h-8 text-gray-400" strokeWidth={2} />}
+                    title="Keine Versorgungen vorhanden"
+                    subtitle="Hier werden zukünftige Versorgungen angezeigt."
+                />
             )}
 
             {cardData.length > 0 && (

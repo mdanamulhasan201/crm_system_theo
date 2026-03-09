@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +14,13 @@ import {
   Mail,
   ThumbsUp,
   ThumbsDown,
+  Loader2,
+  XCircle,
 } from "lucide-react";
+import { submitOrderFeedback, emailReceipt, cancelReceipt } from "@/apis/pickupsApis";
+import type { PosReceipt } from "@/apis/pickupsApis";
+import { generateReceiptHTML, generateReceiptPDF } from "@/utils/receiptUtils";
+import toast from "react-hot-toast";
 
 interface CashPaymentSuccessDialogProps {
   isOpen: boolean;
@@ -22,6 +28,9 @@ interface CashPaymentSuccessDialogProps {
   onProblem: () => void;
   amount: string;
   receiptNumber: string;
+  orderId: string;
+  orderType: "insole" | "shoes";
+  receipt: PosReceipt | null;
 }
 
 export default function CashPaymentSuccessDialog({
@@ -30,28 +39,96 @@ export default function CashPaymentSuccessDialog({
   onProblem,
   amount,
   receiptNumber,
+  orderId,
+  orderType,
+  receipt,
 }: CashPaymentSuccessDialogProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [storniertReceipt, setStorniertReceipt] = useState<PosReceipt | null>(null);
+  const [isStornierungProcessing, setIsStornierungProcessing] = useState(false);
+  const [showStornoConfirm, setShowStornoConfirm] = useState(false);
+
+  const activeReceipt = storniertReceipt ?? receipt;
+
+  const handleStornierung = () => {
+    if (!activeReceipt?.fiskalyRecordId || activeReceipt.storniert) return;
+    setShowStornoConfirm(true);
+  };
+
+  const confirmStornierung = async () => {
+    setShowStornoConfirm(false);
+    setIsStornierungProcessing(true);
+    try {
+      const res = await cancelReceipt(activeReceipt!.id);
+      setStorniertReceipt(res.data);
+      toast.success("Beleg erfolgreich storniert");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Stornierung fehlgeschlagen";
+      toast.error(msg);
+    } finally {
+      setIsStornierungProcessing(false);
+    }
+  };
+
   const handlePrint = () => {
-    // Placeholder for print functionality
-    console.log("Print receipt");
+    if (!activeReceipt) {
+      toast.error("Kein Beleg verfügbar");
+      return;
+    }
+    const html = generateReceiptHTML(activeReceipt);
+    const printWindow = window.open("", "_blank", "width=350,height=600");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.onload = () => printWindow.print();
+    }
   };
 
   const handlePDF = () => {
-    // Placeholder for PDF functionality
-    console.log("Generate PDF");
+    if (!activeReceipt) {
+      toast.error("Kein Beleg verfügbar");
+      return;
+    }
+    const blob = generateReceiptPDF(activeReceipt);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Kassenbon-${receiptNumber}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
-  const handleEmail = () => {
-    // Placeholder for email functionality
-    console.log("Send email");
+  const handleEmail = async () => {
+    if (!activeReceipt) {
+      toast.error("Kein Beleg verfügbar");
+      return;
+    }
+    const email = prompt("E-Mail-Adresse eingeben:");
+    if (!email) return;
+    try {
+      await emailReceipt(activeReceipt.id, email);
+      toast.success("Beleg per E-Mail gesendet");
+    } catch {
+      toast.error("E-Mail konnte nicht gesendet werden");
+    }
   };
 
-  const handleFeedbackGood = () => {
-    // Just close the dialog
-    onClose();
+  const handleFeedbackGood = async () => {
+    setIsSubmitting(true);
+    try {
+      await submitOrderFeedback(orderId, orderType, "Like");
+      toast.success("Feedback gesendet");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Feedback konnte nicht gesendet werden";
+      toast.error(msg);
+    } finally {
+      setIsSubmitting(false);
+      onClose();
+    }
   };
 
   return (
+    <>
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
@@ -121,8 +198,13 @@ export default function CashPaymentSuccessDialog({
                 variant="outline"
                 className="flex items-center justify-center gap-2 h-11 hover:bg-gray-50"
                 onClick={handleFeedbackGood}
+                disabled={isSubmitting}
               >
-                <ThumbsUp className="w-4 h-4 text-gray-700" />
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ThumbsUp className="w-4 h-4 text-gray-700" />
+                )}
                 <span className="text-sm font-medium text-gray-700">
                   Ja, alles gut
                 </span>
@@ -140,6 +222,42 @@ export default function CashPaymentSuccessDialog({
             </div>
           </div>
 
+          {/* Stornierung — only visible when a fiscal receipt exists */}
+          {activeReceipt?.fiskalyRecordId && (
+            <div className={`rounded-lg border p-3 ${activeReceipt.storniert ? "border-red-200 bg-red-50" : "border-orange-100 bg-orange-50"}`}>
+              {activeReceipt.storniert ? (
+                <div className="flex items-center gap-2 text-red-700">
+                  <XCircle className="w-4 h-4 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold">Beleg storniert</p>
+                    {activeReceipt.storniertAt && (
+                      <p className="text-xs">{new Date(activeReceipt.storniertAt).toLocaleString("de-DE")}</p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-xs text-orange-800 mb-2">
+                    Produkt zurückgeben / Rückgabe? Fiskalbeleg stornieren:
+                  </p>
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 border-red-300 text-red-700 hover:bg-red-50"
+                    onClick={handleStornierung}
+                    disabled={isStornierungProcessing}
+                  >
+                    {isStornierungProcessing ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <XCircle className="w-4 h-4" />
+                    )}
+                    Stornierung
+                  </Button>
+                </>
+              )}
+            </div>
+          )}
+
           {/* Done Button */}
           <div className="pt-2">
             <Button
@@ -152,5 +270,39 @@ export default function CashPaymentSuccessDialog({
         </div>
       </DialogContent>
     </Dialog>
+
+    {/* ── Stornierung confirmation dialog ── */}
+    <Dialog open={showStornoConfirm} onOpenChange={() => setShowStornoConfirm(false)}>
+      <DialogContent className="sm:max-w-105">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-red-600">
+            <XCircle className="w-5 h-5" />
+            Beleg stornieren?
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <p className="text-sm text-gray-700 leading-relaxed">
+            Diese Aktion kann <strong>nicht rückgängig</strong> gemacht werden. Der Beleg wird
+            bei der Agenzia delle Entrate als storniert gemeldet.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setShowStornoConfirm(false)}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+              onClick={confirmStornierung}
+            >
+              Ja, stornieren
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

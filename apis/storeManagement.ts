@@ -57,6 +57,26 @@ export const addStorage = async (body: { admin_store_id: string }) => {
 }
 
 
+// store/admin-store/get/{{adminStoreId}}
+export const getSingleAdminStore = async (adminStoreId: string) => {
+    try {
+        const response = await axiosClient.get(`/store/admin-store/get/${adminStoreId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// store/get/4709b1b4-b0d0-43f6-96e6-e71f7faa4326
+export const getSingleProduct = async (productId: string) => {
+    try {
+        const response = await axiosClient.get(`/store/get/${productId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
 
 
 // get product history 

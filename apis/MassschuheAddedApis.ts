@@ -41,7 +41,7 @@ export const createMassschuheWithoutOrderIdWithoutCustomModels = async (massschu
 
 // =================== Massschuhe Added APIs  Update v2 ======================
 
-// massschuhe order create v2/shoe-orders/create
+// massschuhe order create v2/shoe-orders/create / update order status 
 export const createMassschuheOrderV2 = async (massschuheOrderData: any) => {
     try {
         const response = await axiosClient.post('/v2/shoe-orders/create', massschuheOrderData);
@@ -52,12 +52,86 @@ export const createMassschuheOrderV2 = async (massschuheOrderData: any) => {
 }
 
 
-// massschuhe all order get – cursor pagination: v2/shoe-orders/get-all?limit=2&status=Auftragserstellung&cursor=&search=
-// cursor: empty for first page, then use last item id or response.pagination.nextCursor for next page
-export const getAllMassschuheOrders = async (limit: number = 10, status: string = 'Auftragserstellung', cursor: string = '', search: string = '') => {
+// v2/shoe-orders/order-step/massschafterstellung/cmmfxmk4o0001kuovio6a7z8z
+export const updateMassschuheOrderStepMassschafterstellung = async (orderId: string, data: any) => {
     try {
-        const cursorParam = cursor ? encodeURIComponent(cursor) : '';
-        const response = await axiosClient.get(`/v2/shoe-orders/get-all?limit=${limit}&status=${status}&cursor=${cursorParam}&search=${encodeURIComponent(search || '')}`);
+        const response = await axiosClient.post(`/v2/shoe-orders/order-step/massschafterstellung/${orderId}`, data);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// get data v2/shoe-orders/order-step/massschafterstellung/cmmfxmk4o0001kuovio6a7z8z?status=Schaft_fertigen
+export const getMassschuheOrderStepMassschafterstellung = async (orderId: string, status: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/order-step/massschafterstellung/${orderId}?status=${status}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// v2/shoe-orders/order-step/bodenkonstruktion/cmmfxmk4o0001kuovio6a7z8z
+export const updateMassschuheOrderStepBodenkonstruktion = async (orderId: string, data: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/shoe-orders/order-step/bodenkonstruktion/${orderId}`, data);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+// v2/shoe-orders/order-step/bodenkonstruktion/cmmfxmk4o0001kuovio6a7z8z?status=Bodenerstellen
+export const getMassschuheOrderStepBodenkonstruktion = async (orderId: string, status: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/order-step/bodenkonstruktion/${orderId}?status=${status}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+
+
+// massschuhe all order get – cursor pagination
+// priority: blank = all, or Dringend | Normal (do not send "Alle" in payload)
+// paymentType: blank = all, or insurance | private | broth (do not send "Alle" in payload)
+// branchLocationTitle: location title from getAllLocations (description or title)
+export const getAllMassschuheOrders = async (
+    limit: number = 10,
+    status: string = '',
+    cursor: string = '',
+    search: string = '',
+    priority: string = '',
+    paymentType: string = '',
+    branchLocationTitle: string = ''
+) => {
+    try {
+        const params = new URLSearchParams();
+        params.set('limit', String(limit));
+        params.set('status', status || '');
+        params.set('cursor', cursor ? encodeURIComponent(cursor) : '');
+        params.set('search', search || '');
+        if (priority) params.set('priority', priority);
+        if (paymentType) params.set('paymentType', paymentType);
+        if (branchLocationTitle) params.set('branchLocationTitle', encodeURIComponent(branchLocationTitle));
+        const response = await axiosClient.get(`/v2/shoe-orders/get-all?${params.toString()}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// update priority (toggle): PATCH v2/shoe-orders/update-priority/:id — no body
+// response: { success, message, data: { priority, id, status } }
+export const updateMassschuheOrderPriority = async (id: string) => {
+    try {
+        const response = await axiosClient.patch(`/v2/shoe-orders/update-priority/${id}`);
         return response.data;
     } catch (error: any) {
         throw error;
@@ -75,6 +149,16 @@ export const getMassschuheOrderById = async (id: string, status: string) => {
     }
 }
 
+// shoe-orders/manage-step4and5/{{orderId}}
+export const manageMassschuheOrderStep4and5 = async (orderId: string, data: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/shoe-orders/manage-step4and5/${orderId}`, data);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
 
 // order details v2/shoe-orders/get-order-details/98bd0578-f4fc-4ca3-8d21-027bf807bb21
 export const getMassschuheOrderDetails = async (id: string) => {
@@ -85,6 +169,8 @@ export const getMassschuheOrderDetails = async (id: string) => {
         throw error;
     }
 }
+
+
 
 
 // v2/shoe-orders/update-status/:id?status=Auftragserstellung
@@ -107,10 +193,17 @@ export const updateMassschuheOrderStatus = async (
 
 
 
-// get note v2/shoe-orders/get-status-note/:id
-export const getMassschuheOrderNote = async (id: string) => {
+// =================== Massschuhe Added APIs  Notes ======================
+
+//create note apis  v2/order-notes/create?type=shoes
+
+// body:{
+//     "orderId": "041fbcf1-d2f3-4522-ace6-5123ff10101a",
+//     "note": "test note dgfdgd"
+// }
+export const createMassschuheOrderNote = async (orderId: string, note: string) => {
     try {
-        const response = await axiosClient.get(`/v2/shoe-orders/get-status-note/${id}`);
+        const response = await axiosClient.post(`/v2/order-notes/create?type=shoes`, { orderId, note });
         return response.data;
     } catch (error: any) {
         throw error;
@@ -118,10 +211,22 @@ export const getMassschuheOrderNote = async (id: string) => {
 }
 
 
-// update note v2/shoe-orders/update-order/:id "status_note": "Hello"
-export const updateMassschuheOrderNote = async (id: string, status_note: string) => {
+
+// get note v2/shoe-orders/get-notes/{{order Id}}
+export const getMassschuheOrderNote = async (orderId: string) => {
     try {
-        const response = await axiosClient.patch(`/v2/shoe-orders/update-order/${id}`, { status_note });
+        const response = await axiosClient.get(`/v2/shoe-orders/get-notes/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+// update note v2/shoe-orders/update-order/:id "supply_note": "Hello"
+export const updateMassschuheOrderNote = async (orderId: string, supply_note: string) => {
+    try {
+        const response = await axiosClient.patch(`/v2/shoe-orders/update-order/${orderId}`, { supply_note });
         return response.data.success;
     } catch (error: any) {
         throw error;

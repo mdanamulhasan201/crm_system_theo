@@ -2,6 +2,8 @@ import React from 'react'
 import ReuseableCarousel from '../../ReuseableCarousel/ReuseableCarousel'
 import Image from 'next/image'
 import shoesImg from "@/public/images/Favorite/shoes.png"
+import { ShoppingBag } from 'lucide-react'
+import EmptyState from '@/app/(dashboard)/dashboard/_components/CustomerHistory/EmptyState'
 
 export default function ShoePurchasesMade() {
     const shoeData = [
@@ -46,6 +48,16 @@ export default function ShoePurchasesMade() {
             image: shoesImg,
         },
     ]
+
+    if (shoeData.length === 0) {
+        return (
+            <EmptyState
+                icon={<ShoppingBag className="w-8 h-8 text-gray-400" strokeWidth={2} />}
+                title="Keine Schuhkäufe vorhanden"
+                subtitle="Hier werden zukünftige Schuhkäufe angezeigt."
+            />
+        )
+    }
 
     const slides = shoeData.map((shoe) => (
         <div key={shoe.id} className="p-3 flex flex-col gap-2 rounded-md">

@@ -9,7 +9,8 @@ const TABS = [
   'Einlagencontrolling',
   'Mitarbeitercontrolling',
   'Lager-Orthopädie',
-  'Kasse & Verkauf'
+  'Kasse & Verkauf',
+  'Monatsstatistik'
 ] as const
 
 const TAB_ROUTES: Record<string, string> = {
@@ -17,7 +18,8 @@ const TAB_ROUTES: Record<string, string> = {
   'Einlagencontrolling': '/dashboard/statistiken/einlagencontrolling',
   'Mitarbeitercontrolling': '/dashboard/statistiken/mitarbeitercontrolling',
   'Lager-Orthopädie': '/dashboard/statistiken/lager-orthopadie',
-  'Kasse & Verkauf': '/dashboard/statistiken/kasse-verkauf'
+  'Kasse & Verkauf': '/dashboard/statistiken/kasse-verkauf',
+  'Monatsstatistik': '/dashboard/monatsstatistik'
 }
 
 export default function DashboardHeader () {

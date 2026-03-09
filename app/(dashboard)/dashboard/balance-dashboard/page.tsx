@@ -11,6 +11,7 @@ import { useFeatureAccess } from "@/contexts/FeatureAccessContext";
 
 export default function BalanceDashboard() {
     const [activeTab, setActiveTab] = useState<'einnahmen' | 'ausgaben'>('ausgaben');
+    const [payoutHistoryKey, setPayoutHistoryKey] = useState(0);
     const { isPathAllowed, loading: featureLoading } = useFeatureAccess();
 
     // Check if "/dashboard/kasse" has action: true
@@ -35,15 +36,17 @@ export default function BalanceDashboard() {
             {/* Top Row: Aktuelle Balance + Balance Verlauf Chart */}
             <div className="flex flex-col lg:flex-row gap-4 w-full">
                 <div className="w-full lg:w-4/12">
-                    <AktuelleBalance />
+                    <AktuelleBalance onPayoutRequested={() => setPayoutHistoryKey((k) => k + 1)} />
                 </div>
                 <div className="w-full lg:w-8/12">
                     <BalanceVerlaufChart />
                 </div>
             </div>
 
-            {/* Bottom Row: Four Stat Cards */}
-            <BalanceCard />
+          
+
+            {/* Bottom Row: Four Stat Cards – Kürzliche Auszahlungen opens modal with PayoutHistory */}
+            <BalanceCard payoutHistoryRefreshKey={payoutHistoryKey} />
 
             <div className="mt-10">
 

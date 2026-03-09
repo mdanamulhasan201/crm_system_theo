@@ -1,4 +1,3 @@
-
 import React from 'react'
 import ReuseableCarousel from '../../ReuseableCarousel/ReuseableCarousel'
 import Image from 'next/image'
@@ -6,6 +5,8 @@ import img1 from "@/public/images/review/shoes1.png"
 import img2 from "@/public/images/review/shoes2.png"
 import img3 from "@/public/images/review/shoes3.png"
 import { IoIosStar, IoIosStarHalf, IoIosStarOutline } from 'react-icons/io'
+import { Star } from 'lucide-react'
+import EmptyState from '@/app/(dashboard)/dashboard/_components/CustomerHistory/EmptyState'
 
 export default function Reviews() {
     const shoeData = [
@@ -55,6 +56,16 @@ export default function Reviews() {
             start: 3,
         },
     ]
+
+    if (shoeData.length === 0) {
+        return (
+            <EmptyState
+                icon={<Star className="w-8 h-8 text-gray-400" strokeWidth={2} />}
+                title="Keine Bewertungen vorhanden"
+                subtitle="Hier werden zukünftige Bewertungen angezeigt."
+            />
+        )
+    }
 
     const slides = shoeData.map((shoe) => (
         <div key={shoe.id} className="p-3 flex flex-col gap-2 rounded-md">

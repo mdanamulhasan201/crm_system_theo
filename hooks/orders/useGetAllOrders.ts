@@ -7,6 +7,8 @@ export interface ApiOrderData {
     fußanalyse: number;
     einlagenversorgung: number;
     totalPrice?: number;
+    privatePrice?: number | null;
+    insuranceTotalPrice?: number | null;
     bezahlt?: string | boolean | null;
     orderStatus: string;
     statusUpdate: string;
@@ -52,6 +54,13 @@ export interface ApiOrderData {
         employeeName: string;
         email: string;
     } | null;
+    /** API may return "paymnentType" (typo); values: "broth" | "private" | "insurance" */
+    paymnentType?: string | null;
+    paymentType?: string | null;
+    insurance_payed?: boolean | null;
+    private_payed?: boolean | null;
+    /** Order category from API: "insole" | "sonstiges" | "milling_block" etc. Used for table category letter. */
+    orderCategory?: string | null;
 }
 
 export interface PaginationData {

@@ -143,6 +143,17 @@ export const RevenueOverview = async (year: string, month: string) => {
 }
 
 
+// /customer-orders/track/waiting-for-versorgungsstart/count
+export const getWaitingForVersorgungsStartCount = async () => {
+    try {
+        const response = await axiosClient.get('/customer-orders/track/waiting-for-versorgungsstart/count');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
 
 
 // custom order create (user info custom) customer-orders/werkstattzettel/:custommerId body pass employeeId

@@ -265,9 +265,9 @@ export default function CustomShoeOrderPage() {
       polsterung_text: polsterungText,
       verstarkungen_text: verstarkungenText,
 
-      // Seam and closure
-      nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : 'default',
-      nahtfarbe_text: nahtfarbeOption === 'custom' ? customNahtfarbe : '',
+      // Seam and closure – send selected Nahtfarbe option (default | personal | custom value)
+      nahtfarbe: nahtfarbeOption === 'custom' ? (customNahtfarbe?.trim() || '') : (nahtfarbeOption || 'default'),
+      nahtfarbe_text: nahtfarbeOption === 'custom' ? (customNahtfarbe?.trim() || '') : '',
       closureType,
 
       // Add-ons
@@ -589,6 +589,8 @@ export default function CustomShoeOrderPage() {
         }}
         onBodenKonfigurieren={handleBodenKonfigurieren}
         orderPrice={orderPrice}
+        isVersenden={!!versendenData}
+        versandPrice={COURIER_PRICE_DEFAULT}
         passendenSchnursenkel={passendenSchnursenkel}
         osenEinsetzen={osenEinsetzen}
         zipperExtra={zipperExtra}

@@ -38,7 +38,12 @@ export default function ScanPictureModal({
     const isSonstiges = data?.category === 'sonstiges';
     const isInsole = data?.category === 'insole';
     const versorgungDisplay = isSonstiges ? data?.orderCategory?.service_name : data?.versorgungName;
-    const insoleStandards = isInsole ? data?.orderCategory?.insoleStandards ?? [] : [];
+    // Only show insole standards where at least one of left/right is not 0
+    const insoleStandards = isInsole
+        ? (data?.orderCategory?.insoleStandards ?? []).filter(
+            (item: { left?: number; right?: number }) => (item.left ?? 0) !== 0 || (item.right ?? 0) !== 0
+        )
+        : [];
 
     const formatLeftRight = (left: number, right: number) =>
         left === right ? `Bds = ${left} mm` : `Links: ${left} mm, Rechts: ${right} mm`;

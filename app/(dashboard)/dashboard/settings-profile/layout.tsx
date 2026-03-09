@@ -13,6 +13,7 @@ import {
     Store,
     HelpCircle,
     Bell,
+    Calendar,
 
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -42,9 +43,11 @@ export default function SettingsProfileLayout({
             return last || "dashboard";
         };
 
+
         const iconForPath = (path: string) => {
             if (path === "/dashboard/settings-profile") return Settings;
             if (path.endsWith("/backup")) return Save;
+            if (path.endsWith("/scheduling-config")) return Calendar;
             // if (path.endsWith("/communication")) return MessageSquare;
             // if (path.endsWith("/werkstattzettel")) return Warehouse;
             if (path.endsWith("/benachrichtigungen")) return Bell;
@@ -57,12 +60,13 @@ export default function SettingsProfileLayout({
             if (path.endsWith("/fragen")) return HelpCircle;
             if (path.endsWith("/automatische-orders")) return GrOrderedList;
             if (path.endsWith("/automatisches")) return GrOrderedList;
+
             return Settings;
         };
 
         const items = allNested
-            .filter((item) => 
-                item.action && 
+            .filter((item) =>
+                item.action &&
                 isPathAllowed(item.path) &&
                 !item.path.endsWith("/software-scanstation") &&
                 !item.path.endsWith("/design") &&
@@ -165,8 +169,24 @@ export default function SettingsProfileLayout({
                     icon: GrOrderedList,
                     label: "Automatische",
                     href: "/dashboard/settings-profile/automatisches"
+                },
+                {
+                    id: "scheduling-config",
+                    icon: Calendar,
+                    label: "Scheduling Konfiguration",
+                    href: "/dashboard/settings-profile/scheduling-config"
                 }
             ];
+        }
+
+        // Always show Scheduling Konfiguration in sidebar (append if not from API)
+        if (!items.some((item) => item.id === "scheduling-config")) {
+            items.push({
+                id: "scheduling-config",
+                icon: Calendar,
+                label: "Terminkalender Einstellungen",
+                href: "/dashboard/settings-profile/scheduling-config",
+            });
         }
 
         return items;

@@ -3,19 +3,26 @@ import React, { useState } from 'react';
 import MasschuProgressTable, { SHOE_STEPS } from './MasschuProgressTable';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Button } from '@/components/ui/button';
-import { PlusIcon } from 'lucide-react';
+import { PlusIcon, LayoutGrid } from 'lucide-react';
 import SchnellAuftragModal from './SchnellAuftragModal';
 
 export default function ProgressTab() {
-    const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(0);
+    // On load: "Alle Aufträge" active, all data shown; no progress tab selected
+    const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
+    const [showAllOrders, setShowAllOrders] = useState(true);
     const [schnellModalOpen, setSchnellModalOpen] = useState(false);
 
     const handleStepClick = (stepIndex: number) => {
+        setShowAllOrders(false);
         if (selectedStepIndex === stepIndex) {
             setSelectedStepIndex(null);
         } else {
             setSelectedStepIndex(stepIndex);
         }
+    };
+
+    const handleAlleAuftrageClick = () => {
+        setShowAllOrders(true);
     };
 
     const handleRowClick = (stepIndex: number) => {
@@ -26,15 +33,30 @@ export default function ProgressTab() {
         <div className="mt-8">
             <div className='flex flex-col sm:flex-row items-center justify-between mb-6'>
                 <h2 className="text-xl font-semibold text-gray-900 ">Fortschritt</h2>
-                <Button
-                    variant="outline"
-                    size="default"
-                    className='cursor-pointer bg-[#61A175] hover:bg-[#61A175]/80 text-white font-semibold rounded-lg px-6 py-2.5 flex items-center gap-2'
-                    onClick={() => setSchnellModalOpen(true)}
-                >
-                    <PlusIcon className='w-4 h-4' />
-                    Schnell Auftrag
-                </Button>
+                <div className="flex items-center gap-3">
+                    <Button
+                        variant="outline"
+                        size="default"
+                        onClick={handleAlleAuftrageClick}
+                        className={`cursor-pointer font-semibold rounded-lg px-6 py-2.5 flex items-center gap-2 ${
+                            showAllOrders
+                                ? 'bg-[#61A175] border-[#61A175] text-white hover:bg-[#61A175]/90'
+                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                        }`}
+                    >
+                        <LayoutGrid className="w-4 h-4" />
+                        Alle Aufträge
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="default"
+                        className='cursor-pointer bg-[#61A175] hover:bg-[#61A175]/80 text-white font-semibold rounded-lg px-6 py-2.5 flex items-center gap-2'
+                        onClick={() => setSchnellModalOpen(true)}
+                    >
+                        <PlusIcon className='w-4 h-4' />
+                        Schnell Auftrag
+                    </Button>
+                </div>
             </div>
 
             {/* Horizontal Progress Stepper */}
@@ -48,12 +70,13 @@ export default function ProgressTab() {
                             {SHOE_STEPS.map((step, index) => {
                                 const isLast = index === SHOE_STEPS.length - 1;
 
-                                // Only green when explicitly selected
+                                // When "Alle Aufträge" is active, stepper shows no active step
                                 const isCompleted =
+                                    !showAllOrders &&
                                     selectedStepIndex !== null
                                         ? index < selectedStepIndex
                                         : false;
-                                const isSelected = selectedStepIndex === index;
+                                const isSelected = !showAllOrders && selectedStepIndex === index;
 
                                 return (
                                     <React.Fragment key={index}>
@@ -117,6 +140,7 @@ export default function ProgressTab() {
             {/* Table */}
             <MasschuProgressTable
                 selectedStepIndex={selectedStepIndex}
+                showAllOrders={showAllOrders}
                 onRowClick={handleRowClick}
             />
 

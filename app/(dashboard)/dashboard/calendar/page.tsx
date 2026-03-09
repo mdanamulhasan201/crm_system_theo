@@ -11,6 +11,8 @@ import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
 import DeleteConfirmModal from '@/app/(dashboard)/dashboard/_components/MainCalendar/DeleteConfirmModal'
 import { useAppoinment } from '@/hooks/appoinment/useAppoinment'
 import { getAppointmentsByDate, type AppointmentByDateItem } from '@/apis/calendarManagementApis'
+import RoomHeader from '../_components/Room/RoomHeader'
+import MainCard from '../_components/Room/MainCard'
 
 interface Employee {
   employeeId: string
@@ -105,7 +107,7 @@ export default function Calendar() {
     // Start with today's date
     return new Date()
   })
-  
+
   const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState<Array<{ employeeId: string; assignedTo: string }>>([])
   const selectedEmployees = useMemo(
     () => selectedEmployeeDetails.map((e) => e.employeeId),
@@ -285,94 +287,109 @@ export default function Calendar() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-gray-50 -m-4">
-      {/* Main Calendar Navbar */}
-      <CalendarMainNav
-        onAddAppointment={handleAddAppointment}
-      />
+    <>
+      <div className="flex flex-col h-full bg-gray-50 -m-4 relative">
+        {/* Main Calendar Navbar */}
+        <CalendarMainNav
+          onAddAppointment={handleAddAppointment}
+        />
 
-      {/* Calendar Date Navigation Bar */}
-      <CalendarNav
-        currentDate={currentDate}
-        onDateChange={handleDateChange}
-      />
-
-      {/* Main Content */}
-      <div className="flex flex-1 overflow-hidden gap-2">
-        {/* Main Calendar */}
-        <MainCalendarPage
+        {/* Calendar Date Navigation Bar */}
+        <CalendarNav
           currentDate={currentDate}
-          appointments={appointments}
-          loading={appointmentsLoading}
-          error={appointmentsError}
-          onAppointmentClick={handleAppointmentClick}
-          onSlotClick={handleSlotClick}
-          onDeleteAppointment={handleDeleteClick}
+          onDateChange={handleDateChange}
         />
 
-        {/* Right Sidebar */}
-        <RightSidebarCalendar
-          currentDate={currentDate}
-          onDateSelect={handleDateChange}
-          selectedEmployees={selectedEmployees}
-          onEmployeeToggle={handleEmployeeToggle}
-        />
-      </div>
+        {/* Main Content */}
+        <div className="flex flex-1 overflow-hidden gap-2">
+          {/* Main Calendar */}
+          <MainCalendarPage
+            currentDate={currentDate}
+            appointments={appointments}
+            loading={appointmentsLoading}
+            error={appointmentsError}
+            onAppointmentClick={handleAppointmentClick}
+            onSlotClick={handleSlotClick}
+            onDeleteAppointment={handleDeleteClick}
+          />
 
-      {/* Add Appointment Modal */}
-      {isAddModalOpen && (
-        <AppointmentModal
-          isOpen={isAddModalOpen}
-          onClose={() => {
-            setIsAddModalOpen(false)
-            appointmentForm.reset()
-          }}
-          form={appointmentForm}
-          onSubmit={handleAppointmentSubmit}
-          title="Neuer Termin"
-          buttonText="Termin bestätigen"
-        />
-      )}
+          {/* Right Sidebar */}
+          <RightSidebarCalendar
+            currentDate={currentDate}
+            onDateSelect={handleDateChange}
+            selectedEmployees={selectedEmployees}
+            onEmployeeToggle={handleEmployeeToggle}
+          />
+        </div>
 
-      {/* Update Appointment Modal */}
-      {isUpdateModalOpen && selectedAppointmentId && (
-        <AppointmentModal
-          isOpen={isUpdateModalOpen}
-          onClose={() => {
-            setIsUpdateModalOpen(false)
-            setSelectedAppointmentId(null)
-            updateAppointmentForm.reset()
-          }}
-          form={updateAppointmentForm}
-          onSubmit={handleUpdateSubmit}
-          title="Termin bearbeiten"
-          buttonText="Aktualisieren"
-          showDeleteButton
-          onDelete={async () => {
-            const ok = await deleteAppointmentById(selectedAppointmentId)
-            if (ok) {
+        {/* Add Appointment Modal */}
+        {isAddModalOpen && (
+          <AppointmentModal
+            isOpen={isAddModalOpen}
+            onClose={() => {
+              setIsAddModalOpen(false)
+              appointmentForm.reset()
+            }}
+            form={appointmentForm}
+            onSubmit={handleAppointmentSubmit}
+            title="Neuer Termin"
+            buttonText="Termin bestätigen"
+          />
+        )}
+
+        {/* Update Appointment Modal */}
+        {isUpdateModalOpen && selectedAppointmentId && (
+          <AppointmentModal
+            isOpen={isUpdateModalOpen}
+            onClose={() => {
               setIsUpdateModalOpen(false)
               setSelectedAppointmentId(null)
               updateAppointmentForm.reset()
-              fetchAppointments()
-            }
-          }}
-        />
-      )}
+            }}
+            form={updateAppointmentForm}
+            onSubmit={handleUpdateSubmit}
+            title="Termin bearbeiten"
+            buttonText="Aktualisieren"
+            showDeleteButton
+            onDelete={async () => {
+              const ok = await deleteAppointmentById(selectedAppointmentId)
+              if (ok) {
+                setIsUpdateModalOpen(false)
+                setSelectedAppointmentId(null)
+                updateAppointmentForm.reset()
+                fetchAppointments()
+              }
+            }}
+          />
+        )}
 
-      {/* Delete Confirm Modal */}
-      <DeleteConfirmModal
-        isOpen={isDeleteConfirmOpen}
-        onClose={() => {
-          setIsDeleteConfirmOpen(false)
-          setAppointmentIdToDelete(null)
-        }}
-        onConfirm={handleDeleteConfirm}
-        title="Termin löschen"
-        message="Möchten Sie diesen Termin wirklich löschen?"
-        confirmText="Löschen"
-        cancelText="Abbrechen"
-      />
-    </div>
+
+
+
+
+
+
+        {/* Delete Confirm Modal */}
+        <DeleteConfirmModal
+          isOpen={isDeleteConfirmOpen}
+          onClose={() => {
+            setIsDeleteConfirmOpen(false)
+            setAppointmentIdToDelete(null)
+          }}
+          onConfirm={handleDeleteConfirm}
+          title="Termin löschen"
+          message="Möchten Sie diesen Termin wirklich löschen?"
+          confirmText="Löschen"
+          cancelText="Abbrechen"
+        />
+      </div>
+
+
+      {/* new room section */}
+      <div className='mt-5'>
+        <RoomHeader />
+        <MainCard />
+      </div>
+    </>
   )
 }

@@ -1,45 +1,91 @@
 'use client'
-import React from 'react'
+import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { CheckCircle, Printer, FileText, Mail, ThumbsUp, AlertTriangle } from 'lucide-react'
+import { CheckCircle, Printer, FileText, Mail, ThumbsUp, AlertTriangle, Loader2 } from 'lucide-react'
+import { submitOrderFeedback, emailReceipt } from '@/apis/pickupsApis'
+import type { PosReceipt } from '@/apis/pickupsApis'
+import { generateReceiptHTML, generateReceiptPDF } from '@/utils/receiptUtils'
+import toast from 'react-hot-toast'
 
 interface CardPaymentSuccessDialogProps {
     isOpen: boolean
     onClose: () => void
+    onProblem: () => void
     amount: string
     receiptNumber: string
+    orderId: string
+    orderType: 'insole' | 'shoes'
+    receipt: PosReceipt | null
 }
 
 export default function CardPaymentSuccessDialog({
     isOpen,
     onClose,
+    onProblem,
     amount,
-    receiptNumber
+    receiptNumber,
+    orderId,
+    orderType,
+    receipt,
 }: CardPaymentSuccessDialogProps) {
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
     const handlePrint = () => {
-        // Placeholder for print functionality
-        console.log('Print receipt')
+        if (!receipt) {
+            toast.error('Kein Beleg verfügbar')
+            return
+        }
+        const html = generateReceiptHTML(receipt)
+        const printWindow = window.open('', '_blank', 'width=350,height=600')
+        if (printWindow) {
+            printWindow.document.write(html)
+            printWindow.document.close()
+            printWindow.onload = () => printWindow.print()
+        }
     }
 
     const handlePDF = () => {
-        // Placeholder for PDF functionality
-        console.log('Generate PDF')
+        if (!receipt) {
+            toast.error('Kein Beleg verfügbar')
+            return
+        }
+        const blob = generateReceiptPDF(receipt)
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Kassenbon-${receiptNumber}.pdf`
+        a.click()
+        URL.revokeObjectURL(url)
     }
 
-    const handleEmail = () => {
-        // Placeholder for email functionality
-        console.log('Send email')
+    const handleEmail = async () => {
+        if (!receipt) {
+            toast.error('Kein Beleg verfügbar')
+            return
+        }
+        const email = prompt('E-Mail-Adresse eingeben:')
+        if (!email) return
+        try {
+            await emailReceipt(receipt.id, email)
+            toast.success('Beleg per E-Mail gesendet')
+        } catch {
+            toast.error('E-Mail konnte nicht gesendet werden')
+        }
     }
 
-    const handleFeedbackGood = () => {
-        // Just close the dialog
-        onClose()
-    }
-
-    const handleFeedbackProblem = () => {
-        // Just close the dialog
-        onClose()
+    const handleFeedbackGood = async () => {
+        setIsSubmitting(true)
+        try {
+            await submitOrderFeedback(orderId, orderType, 'Like')
+            toast.success('Feedback gesendet')
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || 'Feedback konnte nicht gesendet werden'
+            toast.error(msg)
+        } finally {
+            setIsSubmitting(false)
+            onClose()
+        }
     }
 
     return (
@@ -106,14 +152,19 @@ export default function CardPaymentSuccessDialog({
                                 variant="outline"
                                 className="flex items-center justify-center gap-2"
                                 onClick={handleFeedbackGood}
+                                disabled={isSubmitting}
                             >
-                                <ThumbsUp className="w-4 h-4" />
+                                {isSubmitting ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                    <ThumbsUp className="w-4 h-4" />
+                                )}
                                 <span className="text-sm">Ja, alles gut</span>
                             </Button>
                             <Button
                                 variant="outline"
                                 className="flex items-center justify-center gap-2"
-                                onClick={handleFeedbackProblem}
+                                onClick={onProblem}
                             >
                                 <AlertTriangle className="w-4 h-4" />
                                 <span className="text-sm">Nein, Problem</span>

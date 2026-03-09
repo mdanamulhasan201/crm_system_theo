@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
     Table,
     TableBody,
@@ -19,7 +19,10 @@ import { IoCreate } from 'react-icons/io5'
 import { IoTrash } from 'react-icons/io5'
 import Image from 'next/image'
 import MillingBlockImageModal from './MillingBlockImageModal'
+import EinlagenNachbestellenModal from '../EinlagenNachbestellenModal'
 import EditMillingBlock from './EditMillingBlock'
+import { getSingleStorage } from '@/apis/storeManagement'
+import toast from 'react-hot-toast'
 import MillingBlockHistory from './MillingBlockHistory'
 import DeleteMillingBlockModal from './DeleteMillingBlockModal'
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
@@ -36,6 +39,9 @@ interface MillingBlock {
     image?: string
     purchase_price?: number
     selling_price?: number
+    features?: string[]
+    create_status?: string
+    adminStoreId?: string | null
 }
 
 // Helper function to truncate text to 15 characters with ".."
@@ -59,6 +65,7 @@ interface MillingBlocksTableProps {
     onUpdateProduct: (product: MillingBlock) => void
     onDeleteProduct: (product: MillingBlock) => void
     isLoading?: boolean
+    onOrderSuccess?: () => void
 }
 
 export default function MillingBlocksTable({
@@ -69,10 +76,70 @@ export default function MillingBlocksTable({
     getLowStockSizes,
     onUpdateProduct,
     onDeleteProduct,
-    isLoading = false
+    isLoading = false,
+    onOrderSuccess
 }: MillingBlocksTableProps) {
+    const [selectedProductIdForModal, setSelectedProductIdForModal] = useState<string | null>(null)
     const [selectedProductForImage, setSelectedProductForImage] = useState<MillingBlock | null>(null)
+    const [isModalLoading, setIsModalLoading] = useState(false)
+    const [orderModalOpen, setOrderModalOpen] = useState(false)
+    const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
     const [selectedProductForEdit, setSelectedProductForEdit] = useState<MillingBlock | null>(null)
+
+    // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
+    const apiDataToMillingBlock = (data: any): MillingBlock => {
+        const normalizedGroessenMengen: { [key: string]: number } = {}
+        const raw = data.groessenMengen || {}
+        Object.keys(raw).forEach(key => {
+            const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
+            const val = raw[key]
+            normalizedGroessenMengen[normalizedKey] = typeof val === 'object' ? val?.quantity : val
+        })
+        return {
+            id: data.id,
+            Produktname: data.produktname,
+            Produktkürzel: data.artikelnummer,
+            Hersteller: data.hersteller,
+            Lagerort: data.lagerort,
+            minStockLevel: data.mindestbestand,
+            sizeQuantities: normalizedGroessenMengen,
+            Status: data.Status,
+            image: data.image,
+            purchase_price: data.purchase_price,
+            selling_price: data.selling_price,
+            features: Array.isArray(data.features) ? data.features : undefined,
+            create_status: data.create_status,
+            adminStoreId: data.adminStoreId ?? null,
+        }
+    }
+
+    // When user clicks Lagerort image: fetch single product and show modal
+    useEffect(() => {
+        if (!selectedProductIdForModal) return
+
+        let cancelled = false
+        setIsModalLoading(true)
+        setSelectedProductForImage(null)
+
+        getSingleStorage(selectedProductIdForModal)
+            .then((response: any) => {
+                if (cancelled || !response?.success || !response?.data) return
+                setSelectedProductForImage(apiDataToMillingBlock(response.data))
+            })
+            .catch((err: any) => {
+                if (!cancelled) {
+                    toast.error(err?.response?.data?.message || 'Produkt konnte nicht geladen werden')
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setIsModalLoading(false)
+                    setSelectedProductIdForModal(null)
+                }
+            })
+
+        return () => { cancelled = true }
+    }, [selectedProductIdForModal])
     const [selectedProductForHistory, setSelectedProductForHistory] = useState<MillingBlock | null>(null)
     const [selectedProductForDelete, setSelectedProductForDelete] = useState<MillingBlock | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
@@ -129,7 +196,7 @@ export default function MillingBlocksTable({
                                         {/* Product Image Only - Clickable */}
                                         <div 
                                             className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-                                            onClick={() => setSelectedProductForImage(product)}
+                                            onClick={() => setSelectedProductIdForModal(product.id)}
                                         >
                                             {product.image ? (
                                                 <Image
@@ -251,11 +318,34 @@ export default function MillingBlocksTable({
                 </Table>
             </div>
 
-            {/* Image View Modal */}
+            {/* Image View Modal – fetch single product on Lagerort click, then show (same design as Einlagenrohlinge) */}
             <MillingBlockImageModal
                 product={selectedProductForImage}
-                isOpen={!!selectedProductForImage}
-                onClose={() => setSelectedProductForImage(null)}
+                isOpen={!!selectedProductIdForModal || !!selectedProductForImage}
+                onClose={() => {
+                    setSelectedProductIdForModal(null)
+                    setSelectedProductForImage(null)
+                }}
+                isLoading={!!selectedProductIdForModal}
+                categoryName="Fräsblock"
+                onOrderClick={(adminStoreId) => {
+                    setOrderAdminStoreId(adminStoreId)
+                    setSelectedProductForImage(null)
+                    setSelectedProductIdForModal(null)
+                    setOrderModalOpen(true)
+                }}
+            />
+
+            {/* Order modal – only for products with create_status === 'by_admin' */}
+            <EinlagenNachbestellenModal
+                isOpen={orderModalOpen}
+                onClose={() => {
+                    setOrderModalOpen(false)
+                    setOrderAdminStoreId(null)
+                }}
+                adminStoreId={orderAdminStoreId}
+                productType="milling_block"
+                onOrderSuccess={onOrderSuccess}
             />
 
             {/* Edit Modal */}

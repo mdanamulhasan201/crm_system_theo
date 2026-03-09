@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -9,6 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 import { CalendarIcon, Check, ClipboardList, Pencil } from 'lucide-react';
 import ChecklisteHalbprobeModal, { type ChecklisteHalbprobeData } from './ChecklisteHalbprobeModal';
+import SchafttypFieldText, { type SchafttypValue } from './SchafttypFieldText';
+import BodenkonstruktionFiledText from './BodenkonstruktionFiledText';
 
 function formatDateForDisplay(isoDate: string): string {
     if (!isoDate) return '';
@@ -25,36 +26,49 @@ function toISODateString(date: Date): string {
 }
 
 export const PROBENERGEBNIS_OPTIONS = [
-    { value: 'Gut', label: 'Gut', colorClass: 'border-emerald-500 text-emerald-700 hover:bg-emerald-50 data-[selected=true]:bg-emerald-50 data-[selected=true]:ring-2 data-[selected=true]:ring-emerald-500' },
-    { value: 'Druckstellen', label: 'Druckstellen', colorClass: 'border-amber-500 text-amber-700 hover:bg-amber-50 data-[selected=true]:bg-amber-50 data-[selected=true]:ring-2 data-[selected=true]:ring-amber-500' },
-    { value: 'Instabil', label: 'Instabil', colorClass: 'border-red-500 text-red-700 hover:bg-red-50 data-[selected=true]:bg-red-50 data-[selected=true]:ring-2 data-[selected=true]:ring-red-500' },
-    { value: 'Änderungen', label: 'Änderungen', colorClass: 'border-gray-400 text-gray-700 hover:bg-gray-100 data-[selected=true]:bg-gray-100 data-[selected=true]:ring-2 data-[selected=true]:ring-gray-400' },
-] as const;
-
-export const SCHAFTTYP_OPTIONS = [
-    { value: 'Intern', label: 'Intern' },
-    { value: 'Extern', label: 'Extern' },
+    { value: 'Gut', label: 'Freigeben', colorClass: 'border-emerald-500 text-emerald-700 hover:bg-emerald-50 data-[selected=true]:bg-emerald-50 data-[selected=true]:ring-2 data-[selected=true]:ring-emerald-500' },
+    { value: 'Druckstellen', label: 'kleine Nacharbeit', colorClass: 'border-amber-500 text-amber-700 hover:bg-amber-50 data-[selected=true]:bg-amber-50 data-[selected=true]:ring-2 data-[selected=true]:ring-amber-500' },
+    { value: 'Instabil', label: 'große Nacharbeiten', colorClass: 'border-red-500 text-red-700 hover:bg-red-50 data-[selected=true]:bg-red-50 data-[selected=true]:ring-2 data-[selected=true]:ring-red-500' },
 ] as const;
 
 export type ProbenergebnisValue = (typeof PROBENERGEBNIS_OPTIONS)[number]['value'] | '';
-export type SchafttypValue = (typeof SCHAFTTYP_OPTIONS)[number]['value'] | '';
+export type { SchafttypValue };
 
 export interface HalbprobeDurchfuehrungStepFieldsProps {
     probenergebnis: ProbenergebnisValue;
     schafttyp: SchafttypValue;
     fitting_date: string;
+    /** Freigeben (Gut) – Anmerkungen zur Freigabe */
     adjustments: string;
-    customer_reviews: string;
-    /** Order ID for navigation when "Intern" is clicked (go to step Schaft_fertigen) */
+    /** große Nacharbeiten (Instabil) – Anmerkungen zu großen Nacharbeiten */
+    adjustmentsGrosseNacharbeit: string;
+    /** Schafttyp Intern – Hinweise zur internen Schaftfertigung */
+    schafttypInternNote: string;
+    /** Schafttyp Extern – Hinweise zur externen Schaftfertigung */
+    schafttypExternNote: string;
+    /** Order ID for navigation when "Intern" is clicked (go to step Schaft_fertigen). Also used for step 5 massschafterstellung GET/POST. */
     orderId?: string;
+    /** Step 5 status for massschafterstellung API (e.g. "Halbprobe_durchführen") */
+    stepStatus?: string;
     /** JSON string of checklist answers (checkliste_halbprobe) */
     checklisteHalbprobe?: string;
+    /** Bodenkonstruktion notes for step 5 payload */
+    bodenkonstruktionInternNote?: string;
+    bodenkonstruktionExternNote?: string;
+    onBodenkonstruktionInternNoteChange?: (value: string) => void;
+    onBodenkonstruktionExternNoteChange?: (value: string) => void;
     onProbenergebnisChange: (value: ProbenergebnisValue) => void;
     onSchafttypChange: (value: SchafttypValue) => void;
     onFittingDateChange: (value: string) => void;
     onAdjustmentsChange: (value: string) => void;
-    onCustomerReviewsChange: (value: string) => void;
+    onAdjustmentsGrosseNacharbeitChange: (value: string) => void;
+    onSchafttypInternNoteChange: (value: string) => void;
+    onSchafttypExternNoteChange: (value: string) => void;
     onChecklisteHalbprobeChange?: (jsonString: string) => void;
+    /** Called when user clicks "Kleine Nacharbeit freigeben" in ChecklisteHalbprobeModal */
+    onApproveMinorRework?: () => void;
+    /** Called when user clicks "Komplett neu" in ChecklisteHalbprobeModal */
+    onCompletelyNew?: () => void;
 }
 
 function parseChecklisteHalbprobe(json: string | undefined): ChecklisteHalbprobeData | undefined {
@@ -72,17 +86,27 @@ export default function HalbprobeDurchfuehrungStepFields({
     schafttyp,
     fitting_date,
     adjustments,
-    customer_reviews,
+    adjustmentsGrosseNacharbeit,
+    schafttypInternNote,
+    schafttypExternNote,
     orderId,
+    stepStatus,
     checklisteHalbprobe,
+    bodenkonstruktionInternNote,
+    bodenkonstruktionExternNote,
+    onBodenkonstruktionInternNoteChange,
+    onBodenkonstruktionExternNoteChange,
     onProbenergebnisChange,
     onSchafttypChange,
     onFittingDateChange,
     onAdjustmentsChange,
-    onCustomerReviewsChange,
+    onAdjustmentsGrosseNacharbeitChange,
+    onSchafttypInternNoteChange,
+    onSchafttypExternNoteChange,
     onChecklisteHalbprobeChange,
+    onApproveMinorRework,
+    onCompletelyNew,
 }: HalbprobeDurchfuehrungStepFieldsProps) {
-    const router = useRouter();
     const [checklistModalOpen, setChecklistModalOpen] = useState(false);
     const initialChecklistData = parseChecklisteHalbprobe(checklisteHalbprobe);
     const hasChecklistData = initialChecklistData != null && initialChecklistData.length > 0;
@@ -122,7 +146,7 @@ export default function HalbprobeDurchfuehrungStepFields({
             </div>
 
             {/* Anpassungen & Kundennotizen – side by side */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
                     <Label className="text-sm font-medium text-gray-800 mb-2 block">Anpassungen</Label>
                     <textarea
@@ -143,7 +167,7 @@ export default function HalbprobeDurchfuehrungStepFields({
                         className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 resize-none"
                     />
                 </div>
-            </div>
+            </div> */}
 
             {/* Probenergebnis * */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
@@ -153,8 +177,8 @@ export default function HalbprobeDurchfuehrungStepFields({
                 <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full min-w-0">
                     {PROBENERGEBNIS_OPTIONS.map((opt) => {
                         const isSelected = probenergebnis === opt.value;
-                        const isAenderungen = opt.value === 'Änderungen';
-                        const showChecklistBadge = isAenderungen && hasChecklistData;
+                        const isKleineNacharbeit = opt.value === 'Druckstellen';
+                        const showChecklistBadge = isKleineNacharbeit && hasChecklistData;
                         return (
                             <button
                                 key={opt.value}
@@ -162,7 +186,7 @@ export default function HalbprobeDurchfuehrungStepFields({
                                 data-selected={isSelected}
                                 onClick={() => {
                                     onProbenergebnisChange(opt.value);
-                                    if (isAenderungen) setChecklistModalOpen(true);
+                                    if (isKleineNacharbeit) setChecklistModalOpen(true);
                                 }}
                                 className={cn(
                                     'relative flex min-w-0 cursor-pointer flex-1 basis-[calc(50%-0.375rem)] sm:basis-[calc(25%-0.5625rem)] items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
@@ -180,6 +204,35 @@ export default function HalbprobeDurchfuehrungStepFields({
                         );
                     })}
                 </div>
+                {/* Text field when Freigeben or große Nacharbeiten is selected – inside same card */}
+                {probenergebnis === 'Gut' && (
+                    <div className="mt-4 pt-4 border-t border-gray-200/80">
+                        <Label className="text-sm font-medium text-gray-800 mb-2 block">
+                            Anmerkungen zur Freigabe
+                        </Label>
+                        <textarea
+                            value={adjustments}
+                            onChange={(e) => onAdjustmentsChange(e.target.value)}
+                            placeholder="Optionale Notizen zur Freigabe..."
+                            rows={3}
+                            className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
+                        />
+                    </div>
+                )}
+                {probenergebnis === 'Instabil' && (
+                    <div className="mt-4 pt-4 border-t border-gray-200/80">
+                        <Label className="text-sm font-medium text-gray-800 mb-2 block">
+                            Anmerkungen zu großen Nacharbeiten
+                        </Label>
+                        <textarea
+                            value={adjustmentsGrosseNacharbeit}
+                            onChange={(e) => onAdjustmentsGrosseNacharbeitChange(e.target.value)}
+                            placeholder="Beschreibung der notwendigen großen Nacharbeiten..."
+                            rows={3}
+                            className="w-full rounded-lg border border-gray-300 bg-gray-50/80 p-3 text-sm placeholder:text-gray-400 focus:bg-white focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-400 resize-none"
+                        />
+                    </div>
+                )}
             </div>
 
             {/* Sichtbare Info: Checkliste-Daten gespeichert */}
@@ -216,41 +269,31 @@ export default function HalbprobeDurchfuehrungStepFields({
                 onOpenChange={setChecklistModalOpen}
                 initialData={initialChecklistData}
                 onWeiter={(data) => onChecklisteHalbprobeChange?.(JSON.stringify(data))}
+                onApproveMinorRework={onApproveMinorRework}
+                onCompletelyNew={onCompletelyNew}
             />
 
-            {/* Schafttyp * */}
+            <SchafttypFieldText
+                schafttyp={schafttyp}
+                schafttypInternNote={schafttypInternNote}
+                schafttypExternNote={schafttypExternNote}
+                orderId={orderId}
+                stepStatus={stepStatus}
+                onSchafttypChange={onSchafttypChange}
+                onSchafttypInternNoteChange={onSchafttypInternNoteChange}
+                onSchafttypExternNoteChange={onSchafttypExternNoteChange}
+            />
+
+            {/* Bodenkonstruktion */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
-                <Label className="text-sm font-medium text-gray-800 mb-3 block">
-                    Schafttyp <span className="text-red-500">*</span>
-                </Label>
-                <div className="flex flex-col lg:flex-row gap-3 lg:gap-4 w-full min-w-0">
-                    {SCHAFTTYP_OPTIONS.map((opt) => {
-                        const isSelected = schafttyp === opt.value;
-                        const isExtern = opt.value === 'Extern';
-                        return (
-                            <button
-                                key={opt.value}
-                                type="button"
-                                onClick={() => {
-                                    onSchafttypChange(opt.value);
-                                    if (isExtern) {
-                                        router.push('/dashboard/custom-shafts');
-                                    } else if (opt.value === 'Intern' && orderId) {
-                                        router.push(`/dashboard/massschuhauftraege/${orderId}?status=Schaft_fertigen`);
-                                    }
-                                }}
-                                className={cn(
-                                    'relative flex cursor-pointer min-w-0 flex-1 basis-[calc(50%-0.375rem)] items-center justify-center gap-2 rounded-xl border-2 px-4 py-3 text-sm font-medium transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2',
-                                    'border-gray-300 bg-gray-50/80 text-gray-800 hover:border-gray-400 hover:bg-gray-100',
-                                    isSelected && 'border-emerald-500 bg-emerald-50/80 text-emerald-800 ring-2 ring-emerald-500 ring-offset-2'
-                                )}
-                            >
-                                {isSelected && <Check className="h-4 w-4 shrink-0" strokeWidth={2.5} />}
-                                <span>{opt.label}</span>
-                            </button>
-                        );
-                    })}
-                </div>
+                <BodenkonstruktionFiledText
+                    bodenkonstruktionInternNote={bodenkonstruktionInternNote}
+                    bodenkonstruktionExternNote={bodenkonstruktionExternNote}
+                    orderId={orderId}
+                    stepStatus={stepStatus}
+                    onBodenkonstruktionInternNoteChange={onBodenkonstruktionInternNoteChange}
+                    onBodenkonstruktionExternNoteChange={onBodenkonstruktionExternNoteChange}
+                />
             </div>
         </div>
     );

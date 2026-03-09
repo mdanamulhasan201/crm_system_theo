@@ -1,11 +1,13 @@
 import React from "react"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import { FaArrowRight } from "react-icons/fa"
+import { X } from "lucide-react"
 import Image from "next/image"
 
 interface SoleSelectionSectionProps {
     selectedSole: SoleType | null
     onOpenModal: () => void
+    onClearSole?: () => void
     sole4Thickness?: string | null
     sole4Color?: string | null
     onSole4ThicknessChange?: (value: string | null) => void
@@ -23,6 +25,7 @@ interface SoleSelectionSectionProps {
 export default function SoleSelectionSection({ 
     selectedSole, 
     onOpenModal,
+    onClearSole,
     sole4Thickness,
     sole4Color,
     onSole4ThicknessChange,
@@ -55,21 +58,31 @@ export default function SoleSelectionSection({
             
             {selectedSole ? (
                 <div className="space-y-4">
-                    <div className="flex items-center gap-4">
-                        <Image
-                            width={96}
-                            height={96}
-                            src={selectedSole.image} 
-                            alt={selectedSole.name} 
-                            className="w-24 h-24 object-contain" 
-                        />
-                        <div>
-                            <p className="text-sm text-gray-600 mb-1">Ausgewählte Sohle:</p>
-                            <p className="text-lg font-bold text-gray-800">{selectedSole.name}</p>
-                            {selectedSole.des && (
-                                <p className="text-sm text-gray-500 mt-1">{selectedSole.des}</p>
-                            )}
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-center gap-4 min-w-0">
+                            <Image
+                                width={96}
+                                height={96}
+                                src={selectedSole.image} 
+                                alt={selectedSole.name} 
+                                className="w-24 h-24 object-contain shrink-0" 
+                            />
+                            <div className="min-w-0">
+                                <p className="text-sm text-gray-600 mb-1">Ausgewählte Sohle:</p>
+                                <p className="text-lg font-bold text-gray-800">{selectedSole.name}</p>
+                                {selectedSole.des && (
+                                    <p className="text-sm text-gray-500 mt-1">{selectedSole.des}</p>
+                                )}
+                            </div>
                         </div>
+                        <button
+                            type="button"
+                            onClick={() => onClearSole?.()}
+                            className="shrink-0 p-1.5 rounded-md text-gray-500 hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-300 transition-colors"
+                            aria-label="Sohle abwählen"
+                        >
+                            <X className="h-5 w-5" />
+                        </button>
                     </div>
                     
                     {/* Additional fields for sole id "4" */}

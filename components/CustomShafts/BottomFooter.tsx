@@ -13,7 +13,7 @@ export default function BottomFooter() {
     return (
 
 
-        <div className='flex justify-between items-start gap-8 mt-16 pt-8 border-t border-gray-200'>
+        <div className='flex justify-between items-start gap-8 py-8 border-t border-gray-200'>
 
             {/* adresse */}
             <div className='flex-1 flex items-start gap-6'>

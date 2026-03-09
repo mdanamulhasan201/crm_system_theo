@@ -12,18 +12,16 @@ import {
 } from 'recharts';
 import { getMassschuheOrderChartData } from '@/apis/MassschuheManagemantApis';
 
-interface ChartPoint {
+// New API response: /v2/shoe-orders/statistic/get-revenue-chart-data?month=&year=
+interface ChartDataPoint {
     date: string;
-    count: number;
     revenue: number;
+    orderCount: number;
 }
-
 interface ChartData {
-    from: string;
-    to: string;
-    points: ChartPoint[];
-    totalCount: number;
     totalRevenue: number;
+    totalOrders: number;
+    chartData: ChartDataPoint[];
 }
 
 // Format date from "2025-12-08" to "08/12"
@@ -38,7 +36,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !payload || !payload.length) return null;
 
     const revenue = payload[0].value;
-    const count = payload[0].payload?.count || 0;
+    const count = payload[0].payload?.orderCount ?? payload[0].payload?.count ?? 0;
 
     return (
         <div className="rounded-xl border-2 border-emerald-500 bg-white px-4 py-2 text-center text-xs shadow-md">
@@ -103,23 +101,32 @@ function CustomDateTick(props: any) {
     );
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'];
+
 export default function MassschuhaufträgeChart({ onRefetchReady }: { onRefetchReady?: (refetch: () => void) => void }) {
+    const now = new Date();
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
     const [chartData, setChartData] = useState<ChartData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1);
+    const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
 
     const fetchChartData = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            const response = await getMassschuheOrderChartData();
-            if (response.success && response.data) {
-                // Validate that we have points data
-                if (response.data.points && Array.isArray(response.data.points) && response.data.points.length > 0) {
-                    setChartData(response.data);
+            const response = await getMassschuheOrderChartData(selectedMonth, selectedYear);
+            const data = (response as { success?: boolean; data?: ChartData })?.data;
+            if (response?.success && data) {
+                if (data.chartData && Array.isArray(data.chartData)) {
+                    setChartData({
+                        totalRevenue: data.totalRevenue ?? 0,
+                        totalOrders: data.totalOrders ?? 0,
+                        chartData: data.chartData,
+                    });
                 } else {
-                    setError('No chart data points available');
+                    setChartData({ totalRevenue: 0, totalOrders: 0, chartData: [] });
                 }
             } else {
                 setError('Failed to fetch chart data');
@@ -129,7 +136,7 @@ export default function MassschuhaufträgeChart({ onRefetchReady }: { onRefetchR
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [selectedMonth, selectedYear]);
 
     useEffect(() => {
         fetchChartData();
@@ -142,18 +149,20 @@ export default function MassschuhaufträgeChart({ onRefetchReady }: { onRefetchR
         }
     }, [onRefetchReady, fetchChartData]);
 
-    // Transform API data to chart format and sort by date
-    const transformedData = chartData?.points
-        .filter((point) => point && point.date && typeof point.revenue === 'number' && !isNaN(point.revenue))
-        .map((point) => ({
-            date: formatDate(point.date),
-            value: Number(point.revenue) || 0,
-            count: Number(point.count) || 0,
-            revenue: Number(point.revenue) || 0,
-            originalDate: point.date, // Keep for sorting
-        }))
-        .sort((a, b) => new Date(a.originalDate).getTime() - new Date(b.originalDate).getTime())
-        .map(({ originalDate, ...rest }) => rest) || [];
+    // Transform API chartData to chart format and sort by date
+    const transformedData =
+        chartData?.chartData
+            .filter((point) => point && point.date && typeof point.revenue === 'number' && !isNaN(point.revenue))
+            .map((point) => ({
+                date: formatDate(point.date),
+                value: Number(point.revenue) || 0,
+                orderCount: Number(point.orderCount) || 0,
+                count: Number(point.orderCount) || 0,
+                revenue: Number(point.revenue) || 0,
+                originalDate: point.date,
+            }))
+            .sort((a, b) => new Date(a.originalDate).getTime() - new Date(b.originalDate).getTime())
+            .map(({ originalDate, ...rest }) => rest) || [];
 
     // Calculate Y-axis domain with padding
     const getYAxisDomain = () => {
@@ -189,11 +198,36 @@ export default function MassschuhaufträgeChart({ onRefetchReady }: { onRefetchR
         return `€${value.toFixed(0)}`;
     };
 
+    const shimmer = 'animate-pulse bg-slate-200 rounded';
+
     return (
         <div className="w-full rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
             {loading ? (
-                <div className="h-72 w-full flex items-center justify-center">
-                    <div className="text-slate-400">Loading chart data...</div>
+                <div className="w-full">
+                    <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-2">
+                            <div className={`${shimmer} h-5 w-32`} />
+                            <div className={`${shimmer} h-4 w-48`} />
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <div className={`${shimmer} h-9 w-24 rounded-lg`} />
+                            <div className={`${shimmer} h-9 w-20 rounded-lg`} />
+                        </div>
+                    </div>
+                    <div className="h-72 w-full flex items-end gap-1 px-1">
+                        {[65, 45, 70, 40, 55, 80, 50, 60, 45, 70, 55, 40, 65, 50].map((h, i) => (
+                            <div
+                                key={i}
+                                className={`${shimmer} flex-1 min-w-[6px] rounded-t`}
+                                style={{ height: `${h}%`, minHeight: 24 }}
+                            />
+                        ))}
+                    </div>
+                    <div className="flex justify-between mt-2 px-1 gap-1">
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14].map((i) => (
+                            <div key={i} className={`${shimmer} h-3 flex-1 min-w-0 rounded`} />
+                        ))}
+                    </div>
                 </div>
             ) : error ? (
                 <div className="h-72 w-full flex items-center justify-center">
@@ -205,16 +239,50 @@ export default function MassschuhaufträgeChart({ onRefetchReady }: { onRefetchR
                 </div>
             ) : (
                 <>
-                    {chartData && (
-                        <div className="mb-4 flex items-center justify-between">
-                            <div>
-                                <h3 className="text-lg font-semibold text-slate-900">Revenue Chart</h3>
+                    {/* Month / Year filter + summary */}
+                    <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <h3 className="text-lg font-semibold text-slate-900">Umsatz</h3>
+                            {chartData && (
                                 <p className="text-sm text-slate-500">
-                                    Total: €{chartData.totalRevenue.toFixed(2)} • {chartData.totalCount} {chartData.totalCount === 1 ? 'Auftrag' : 'Aufträge'}
+                                    Gesamt: €{chartData.totalRevenue.toFixed(2)} • {chartData.totalOrders} {chartData.totalOrders === 1 ? 'Auftrag' : 'Aufträge'}
                                 </p>
+                            )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-slate-500">Monat:</span>
+                                <select
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                                    className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#61A175]/50"
+                                >
+                                    {MONTH_NAMES.map((name, index) => {
+                                        const monthNum = index + 1;
+                                        return (
+                                            <option key={monthNum} value={monthNum}>
+                                                {name}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-xs font-medium text-slate-500">Jahr:</span>
+                                <select
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                    className="cursor-pointer rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#61A175]/50"
+                                >
+                                    {Array.from({ length: 11 }, (_, i) => now.getFullYear() - 5 + i).map((y) => (
+                                        <option key={y} value={y}>
+                                            {y}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
-                    )}
+                    </div>
                     <div className="h-72 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart
