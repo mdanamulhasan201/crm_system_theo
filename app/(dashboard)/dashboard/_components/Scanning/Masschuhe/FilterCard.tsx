@@ -55,12 +55,9 @@ export interface Step3Data {
 }
 export interface CustomerFittingData {
     fittingDate: Date | undefined;
-    adjustments: string;
-    customerNotes: string;
 }
 export interface InternalPrepData {
     notes: string;
-    preparationDate: Date | undefined;
 }
 
 interface FilterCardProps {
@@ -138,37 +135,6 @@ export default function FilterCard({
                         <div className="space-y-3">
                             <div>
                                 <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                    Vorbereitungsdatum
-                                </label>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button
-                                            variant="outline"
-                                            className="w-full justify-start text-left font-normal text-sm h-10"
-                                        >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {internalPrepData.preparationDate ? (
-                                                format(internalPrepData.preparationDate, 'dd.MM.yyyy')
-                                            ) : (
-                                                <span className="text-gray-400">Datum auswählen</span>
-                                            )}
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                        <Calendar
-                                            mode="single"
-                                            selected={internalPrepData.preparationDate}
-                                            onSelect={(date) => onInternalPrepDataChange({ ...internalPrepData, preparationDate: date })}
-                                            initialFocus
-                                            captionLayout="dropdown"
-                                            fromYear={new Date().getFullYear()}
-                                            toYear={new Date().getFullYear() + 5}
-                                        />
-                                    </PopoverContent>
-                                </Popover>
-                            </div>
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
                                     Notizen
                                 </label>
                                 <textarea
@@ -218,32 +184,6 @@ export default function FilterCard({
                                         />
                                     </PopoverContent>
                                 </Popover>
-                            </div>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        Anpassungen
-                                    </label>
-                                    <textarea
-                                        value={customerFittingData.adjustments}
-                                        onChange={(e) => onCustomerFittingDataChange({ ...customerFittingData, adjustments: e.target.value })}
-                                        placeholder="Anpassungen während der Anprobe..."
-                                        rows={2}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        Kundennotizen
-                                    </label>
-                                    <textarea
-                                        value={customerFittingData.customerNotes}
-                                        onChange={(e) => onCustomerFittingDataChange({ ...customerFittingData, customerNotes: e.target.value })}
-                                        placeholder="Kundenwünsche und Notizen..."
-                                        rows={2}
-                                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent resize-none"
-                                    />
-                                </div>
                             </div>
                         </div>
                     </div>

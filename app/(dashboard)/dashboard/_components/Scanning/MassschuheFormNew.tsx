@@ -201,8 +201,8 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [bettungErforderlich, setBettungErforderlich] = useState<boolean | null>(null);
     const [lastData, setLastData] = useState<Step2Data>({ material: '', leistentyp: '', leistengroesse: '', notes: '' });
     const [footbedData, setFootbedData] = useState<Step3Data>({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel_l: '', thickness_heel_r: '', thickness_ball_l: '', thickness_ball_r: '', thickness_toe_l: '', thickness_toe_r: '', bettung_built_up_notes: '', einlage_rohling_type: null, einlagenrohling_frasblock: '', schicht1_material: '', schicht1_starke: '', schicht2_material: '', schicht2_starke: '', decksohle_material: '', decksohle_starke: '', versteifung: null, versteifung_material: '', versteifung_zone: '', pelotte: null, pelotte_hoehe_l: '', pelotte_hoehe_r: '' });
-    const [internalPrepData, setInternalPrepData] = useState<InternalPrepData>({ notes: '', preparationDate: undefined });
-    const [customerFittingData, setCustomerFittingData] = useState<CustomerFittingData>({ fittingDate: undefined, adjustments: '', customerNotes: '' });
+    const [internalPrepData, setInternalPrepData] = useState<InternalPrepData>({ notes: '' });
+    const [customerFittingData, setCustomerFittingData] = useState<CustomerFittingData>({ fittingDate: undefined });
     const [submitAttempted, setSubmitAttempted] = useState(false);
 
     // Fetch locations on mount
@@ -392,8 +392,8 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setBettungErforderlich(null);
             setLastData({ material: '', leistentyp: '', leistengroesse: '', notes: '' });
             setFootbedData({ material: '', thickness: '', notes: '', bettung_type: null, bettung_notes: '', thickness_heel_l: '', thickness_heel_r: '', thickness_ball_l: '', thickness_ball_r: '', thickness_toe_l: '', thickness_toe_r: '', bettung_built_up_notes: '', einlage_rohling_type: null, einlagenrohling_frasblock: '', schicht1_material: '', schicht1_starke: '', schicht2_material: '', schicht2_starke: '', decksohle_material: '', decksohle_starke: '', versteifung: null, versteifung_material: '', versteifung_zone: '', pelotte: null, pelotte_hoehe_l: '', pelotte_hoehe_r: '' });
-            setInternalPrepData({ notes: '', preparationDate: undefined });
-            setCustomerFittingData({ fittingDate: undefined, adjustments: '', customerNotes: '' });
+            setInternalPrepData({ notes: '' });
+            setCustomerFittingData({ fittingDate: undefined });
             setSubmitAttempted(false);
             if (onDataRefresh) onDataRefresh();
         }
@@ -588,17 +588,12 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                             einlagenrohling_frasblock: footbedData.bettung_type === 'built_up' ? (footbedData.einlagenrohling_frasblock ?? '') : ''
                         },
                         step4: {
-                            preparation_date: internalPrepData.preparationDate
-                                ? internalPrepData.preparationDate.toISOString()
-                                : undefined,
                             notes: internalPrepData.notes
                         },
                         step5: {
                             fitting_date: customerFittingData.fittingDate
                                 ? customerFittingData.fittingDate.toISOString()
-                                : undefined,
-                            adjustments: customerFittingData.adjustments,
-                            customer_reviews: customerFittingData.customerNotes
+                                : undefined
                         }
                     },
                     // Halbprobe (half_sample_required): when true, send Step 4 & 5 data
