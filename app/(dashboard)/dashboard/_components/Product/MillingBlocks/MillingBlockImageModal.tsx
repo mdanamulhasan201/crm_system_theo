@@ -49,15 +49,14 @@ export default function MillingBlockImageModal({
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto p-0 gap-0 bg-white">
+                <DialogTitle className="sr-only">
+                    {isLoading ? 'Produktdetails werden geladen' : product ? `${product.Produktname} – Produktdetails` : 'Produktdetails'}
+                </DialogTitle>
                 {isLoading ? (
                     <div className="flex justify-center items-center py-16">
                         <div className="animate-spin rounded-full h-10 w-10 border-2 border-gray-300 border-t-[#61A178]" />
                     </div>
                 ) : product ? (
-                <>
-                <DialogTitle className="sr-only">
-                    {product.Produktname} – Produktdetails
-                </DialogTitle>
                 <div className="space-y-0">
                     {/* Product Image – top, prominent (same as Einlagenrohlinge modal) */}
                     <div className="flex justify-center items-center bg-white pt-6 pb-4">
@@ -113,7 +112,6 @@ export default function MillingBlockImageModal({
                         )}
                     </div>
                 </div>
-                </>
                 ) : null}
             </DialogContent>
         </Dialog>

@@ -168,6 +168,31 @@ export const balanceMassschuheOrder = async () => {
     }
 }
 
+// Request payout (partner to admin) - POST with amount
+// POST /v2/admin-order-transitions/pay-partner-to-admin
+// body: { "amount": number }
+export const requestPayoutToAdmin = async (amount: number) => {
+    try {
+        const response = await axiosClient.post(`/v2/admin-order-transitions/pay-partner-to-admin`, { amount });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+// get my all payout request v2/admin-order-transitions/get-all-request-payouts-for-partner?limit=1&cursor=
+export const getAllPayoutRequest = async (limit: number, cursor: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/admin-order-transitions/get-all-request-payouts-for-partner?limit=${limit}&cursor=${cursor}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// 
+
+
 
 // Get total price ratio with daily data for balance chart
 // GET /v2/admin-order-transitions/total-price-ratio
