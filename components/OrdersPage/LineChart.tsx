@@ -116,7 +116,7 @@ export default function LineChartComponent({
                     <h2 className="text-lg font-bold text-gray-900">Umsatzübersicht</h2>
                     <p className="text-sm text-gray-500">Umsatzentwicklung im Zeitverlauf</p>
                 </div>
-                <div className="flex gap-1">
+                {/* <div className="flex gap-1">
                     {TIME_RANGE_OPTIONS.map((opt) => (
                         <button
                             key={opt.value}
@@ -132,7 +132,7 @@ export default function LineChartComponent({
                             {opt.label}
                         </button>
                     ))}
-                </div>
+                </div> */}
             </div>
 
             <div className="min-w-[280px]" style={{ minWidth: 0 }}>
