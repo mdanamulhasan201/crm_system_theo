@@ -41,6 +41,8 @@ interface EinlagenNachbestellenModalProps {
     adminStoreId: string | null
     productType: 'rady_insole' | 'milling_block'
     onOrderSuccess?: () => void
+    /** When true (e.g. opened from Lagerort "Einlage nachbestellen"): all quantity inputs 0, labels show Größe X (0) */
+    initialQuantitiesZero?: boolean
 }
 
 function normalizeGroessenMengen(groessenMengen: AdminStoreData['groessenMengen'], type: string) {
@@ -61,7 +63,8 @@ export default function EinlagenNachbestellenModal({
     onClose,
     adminStoreId,
     productType,
-    onOrderSuccess
+    onOrderSuccess,
+    initialQuantitiesZero = false
 }: EinlagenNachbestellenModalProps) {
     const [quantities, setQuantities] = useState<{ [key: string]: number }>({})
     const [productData, setProductData] = useState<AdminStoreData | null>(null)
@@ -90,10 +93,14 @@ export default function EinlagenNachbestellenModal({
                     const initial: { [key: string]: number } = {}
                     const sizes = type === 'milling_block' ? millingBlockSizes : radyInsoleSizes
                     sizes.forEach(size => {
-                        const qty = normalized.groessenMengen?.[size]
-                        initial[size] = (typeof qty === 'object' && qty != null && 'quantity' in qty)
-                            ? qty.quantity
-                            : (typeof qty === 'number' ? qty : 0)
+                        if (initialQuantitiesZero) {
+                            initial[size] = 0
+                        } else {
+                            const qty = normalized.groessenMengen?.[size]
+                            initial[size] = (typeof qty === 'object' && qty != null && 'quantity' in qty)
+                                ? qty.quantity
+                                : (typeof qty === 'number' ? qty : 0)
+                        }
                     })
                     setQuantities(initial)
                 } else {
@@ -107,7 +114,7 @@ export default function EinlagenNachbestellenModal({
         }
 
         fetchData()
-    }, [isOpen, adminStoreId, productType])
+    }, [isOpen, adminStoreId, productType, initialQuantitiesZero])
 
     useEffect(() => {
         if (!isOpen) {
@@ -215,10 +222,12 @@ export default function EinlagenNachbestellenModal({
                                         : undefined
                                     const label =
                                         productType === 'milling_block'
-                                            ? `${size} (Verfügbar: ${available})`
-                                            : length != null
-                                                ? `Größe ${size} (${length})`
-                                                : `Größe ${size}`
+                                            ? `${size} (${initialQuantitiesZero ? available : `Verfügbar: ${available}`})`
+                                            : initialQuantitiesZero
+                                                ? `Größe ${size} (${available})`
+                                                : length != null
+                                                    ? `Größe ${size} (${length})`
+                                                    : `Größe ${size}`
                                     return (
                                         <div key={size} className="space-y-2">
                                             <label className="text-sm font-medium text-gray-700 block">
@@ -227,8 +236,8 @@ export default function EinlagenNachbestellenModal({
                                             <Input
                                                 type="number"
                                                 min={0}
-                                                max={available}
-                                                value={quantities[size] ?? 0}
+                                                max={initialQuantitiesZero ? undefined : available}
+                                                value={initialQuantitiesZero && (quantities[size] ?? 0) === 0 ? '' : (quantities[size] ?? 0)}
                                                 onChange={(e) => handleQuantityChange(size, e.target.value)}
                                                 className="w-full"
                                                 placeholder="0"

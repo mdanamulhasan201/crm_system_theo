@@ -346,6 +346,7 @@ export default function MillingBlocksTable({
                 adminStoreId={orderAdminStoreId}
                 productType="milling_block"
                 onOrderSuccess={onOrderSuccess}
+                initialQuantitiesZero
             />
 
             {/* Edit Modal */}

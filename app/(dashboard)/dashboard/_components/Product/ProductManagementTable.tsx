@@ -478,6 +478,7 @@ export default function ProductManagementTable({
                 adminStoreId={orderAdminStoreId}
                 productType={apiType}
                 onOrderSuccess={onOrderSuccess}
+                initialQuantitiesZero
             />
         </>
     )
