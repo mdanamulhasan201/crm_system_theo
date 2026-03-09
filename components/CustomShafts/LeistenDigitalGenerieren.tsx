@@ -1,19 +1,33 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 import legs from '@/public/Kunden/leg.png'
 import { useRouter } from 'next/navigation'
+import { useFeatureAccess } from '@/contexts/FeatureAccessContext'
+import LeistenkonfiguratorDeactiveModal from './LeistenkonfiguratorDeactiveModal'
 
+const DIGITALE_LEISTENERSTELLUNG_PATH = '/dashboard/digitale-leistenerstellung'
 
 export default function LeistenDigitalGenerieren() {
     const router = useRouter()
-    // const [isDialogOpen, setIsDialogOpen] = useState(false)
+    const { features, loading } = useFeatureAccess()
+    const [isDeactiveModalOpen, setIsDeactiveModalOpen] = useState(false)
+
+    const digitaleLeistenerstellungActive = useMemo(() => {
+        const feature = features.find(
+            (f) => f.path === DIGITALE_LEISTENERSTELLUNG_PATH
+        )
+        return feature?.action === true
+    }, [features])
 
     const handleGenerate = () => {
-        // setIsDialogOpen(true)
-        router.push('/dashboard/leistenkonfigurator')
+        if (digitaleLeistenerstellungActive) {
+            router.push('/dashboard/leistenkonfigurator')
+        } else {
+            setIsDeactiveModalOpen(true)
+        }
     }
 
     return (
@@ -39,13 +53,23 @@ export default function LeistenDigitalGenerieren() {
                         Verfügbar ausschließlich für freigeschaltete Kunden mit aktivem FeetFirst 3D-Scanner.
                     </p>
 
-                    {/* Status and Button Row */}
+                    {/* Status and Button Row - conditional on partner feature "Leistenerstellung" */}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-2">
                         {/* Status Indicator */}
                         <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full bg-red-500"></div>
+                            <div
+                                className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                                    digitaleLeistenerstellungActive
+                                        ? 'bg-green-500'
+                                        : 'bg-red-500'
+                                }`}
+                            />
                             <span className="text-sm md:text-base text-gray-700 font-normal">
-                                Digitale Leistenerstellung nicht aktiv
+                                {loading
+                                    ? 'Laden…'
+                                    : digitaleLeistenerstellungActive
+                                      ? 'Digitale Leistenerstellung aktiv'
+                                      : 'Digitale Leistenerstellung nicht aktiv'}
                             </span>
                         </div>
 
@@ -76,17 +100,10 @@ export default function LeistenDigitalGenerieren() {
                 </div>
             </div>
 
-            {/* Dialog Popup */}
-            {/* <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Bald verfügbar</DialogTitle>
-                        <DialogDescription>
-                            Die digitale Leistenerstellung befindet sich aktuell in Entwicklung und wird in Kürze verfügbar sein.
-                        </DialogDescription>
-                    </DialogHeader>
-                </DialogContent>
-            </Dialog> */}
+            <LeistenkonfiguratorDeactiveModal
+                open={isDeactiveModalOpen}
+                onOpenChange={setIsDeactiveModalOpen}
+            />
         </div>
     )
 }
