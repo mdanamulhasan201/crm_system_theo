@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 
 function formatDateForDisplay(isoDate: string): string {
     if (!isoDate) return '';
-    const d = new Date(isoDate + 'T00:00:00');
+    const d = isoDate.includes('T') ? new Date(isoDate) : new Date(isoDate + 'T00:00:00');
     if (Number.isNaN(d.getTime())) return isoDate;
     return d.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' });
 }
@@ -54,10 +54,13 @@ export type HalbprobeDurchfuehrungValue = (typeof HALBPROBE_DURCHFUEHRUNG_OPTION
 
 export interface HalbprobenerstellungStepFieldsProps {
     preparation_date: string;
+    /** When provided, Anprobedatum field shows and edits this (from API fitting_date). */
+    fitting_date?: string;
     anmerkungen_halbprobe: string;
     halbprobe_durchfuehrung: HalbprobeDurchfuehrungValue;
     checkliste_halbprobe: string;
     onPreparationDateChange: (value: string) => void;
+    onFittingDateChange?: (value: string) => void;
     onAnmerkungenHalbprobeChange: (value: string) => void;
     onHalbprobeDurchfuehrungChange: (value: HalbprobeDurchfuehrungValue) => void;
     onChecklisteHalbprobeChange: (value: string) => void;
@@ -65,14 +68,18 @@ export interface HalbprobenerstellungStepFieldsProps {
 
 export default function HalbprobenerstellungStepFields({
     preparation_date,
+    fitting_date,
     anmerkungen_halbprobe,
     halbprobe_durchfuehrung,
     checkliste_halbprobe,
     onPreparationDateChange,
+    onFittingDateChange,
     onAnmerkungenHalbprobeChange,
     onHalbprobeDurchfuehrungChange,
     onChecklisteHalbprobeChange,
 }: HalbprobenerstellungStepFieldsProps) {
+    const anprobeDate = fitting_date ?? preparation_date;
+    const onAnprobeDateChange = onFittingDateChange ?? onPreparationDateChange;
     const [externModalOpen, setExternModalOpen] = useState(false);
     const [halbprobeBestellenModalOpen, setHalbprobeBestellenModalOpen] = useState(false);
     const [bestellungPruefenModalOpen, setBestellungPruefenModalOpen] = useState(false);
@@ -85,10 +92,10 @@ export default function HalbprobenerstellungStepFields({
 
     return (
         <div className="mb-6 space-y-6">
-            {/* Vorbereitungsdatum – shadcn Calendar + Popover */}
+            {/* Anprobedatum – show fitting_date when it exists from API */}
             <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
                 <Label className="text-sm font-medium text-gray-800 mb-2 block">
-                    Vorbereitungsdatum
+                Anprobedatum
                 </Label>
                 <Popover>
                     <PopoverTrigger asChild>
@@ -96,12 +103,12 @@ export default function HalbprobenerstellungStepFields({
                             variant="outline"
                             className={cn(
                                 'h-14 w-full min-w-[280px] max-w-md justify-start gap-3 rounded-xl border-gray-300 bg-gray-50/80 pl-4 text-left text-base font-normal hover:bg-gray-100 hover:border-gray-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400',
-                                !preparation_date && 'text-muted-foreground'
+                                !anprobeDate && 'text-muted-foreground'
                             )}
                         >
                             <CalendarIcon className="h-5 w-5 shrink-0 text-gray-500" />
-                            {preparation_date ? (
-                                formatDateForDisplay(preparation_date)
+                            {anprobeDate ? (
+                                formatDateForDisplay(anprobeDate)
                             ) : (
                                 <span>Datum wählen</span>
                             )}
@@ -111,14 +118,12 @@ export default function HalbprobenerstellungStepFields({
                         <Calendar
                             mode="single"
                             selected={
-                                preparation_date
-                                    ? new Date(preparation_date + 'T00:00:00')
+                                anprobeDate
+                                    ? (anprobeDate.includes('T') ? new Date(anprobeDate) : new Date(anprobeDate + 'T00:00:00'))
                                     : undefined
                             }
                             onSelect={(date) => {
-                                if (date) {
-                                    onPreparationDateChange(toISODateString(date));
-                                }
+                                if (date) onAnprobeDateChange(toISODateString(date));
                             }}
                             initialFocus
                             captionLayout="dropdown"

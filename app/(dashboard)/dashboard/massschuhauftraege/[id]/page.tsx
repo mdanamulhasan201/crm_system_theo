@@ -937,10 +937,12 @@ export default function MassschuhauftraegePage() {
                                     {activeStepIndex === 3 && (
                                         <HalbprobenerstellungStepFields
                                             preparation_date={preparation_date}
+                                            fitting_date={fitting_date || undefined}
                                             anmerkungen_halbprobe={anmerkungen_halbprobe}
                                             halbprobe_durchfuehrung={halbprobe_durchfuehrung}
                                             checkliste_halbprobe={checkliste_halbprobe}
                                             onPreparationDateChange={setPreparation_date}
+                                            onFittingDateChange={setFitting_date}
                                             onAnmerkungenHalbprobeChange={setAnmerkungen_halbprobe}
                                             onHalbprobeDurchfuehrungChange={setHalbprobe_durchfuehrung}
                                             onChecklisteHalbprobeChange={setCheckliste_halbprobe}
