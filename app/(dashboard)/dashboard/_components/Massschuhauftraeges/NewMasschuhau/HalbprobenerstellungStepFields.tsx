@@ -64,6 +64,7 @@ export interface HalbprobenerstellungStepFieldsProps {
     onAnmerkungenHalbprobeChange: (value: string) => void;
     onHalbprobeDurchfuehrungChange: (value: HalbprobeDurchfuehrungValue) => void;
     onChecklisteHalbprobeChange: (value: string) => void;
+    onSkipHalbprobe?: () => void;
 }
 
 export default function HalbprobenerstellungStepFields({
@@ -77,6 +78,7 @@ export default function HalbprobenerstellungStepFields({
     onAnmerkungenHalbprobeChange,
     onHalbprobeDurchfuehrungChange,
     onChecklisteHalbprobeChange,
+    onSkipHalbprobe,
 }: HalbprobenerstellungStepFieldsProps) {
     const anprobeDate = fitting_date ?? preparation_date;
     const onAnprobeDateChange = onFittingDateChange ?? onPreparationDateChange;
@@ -170,11 +172,18 @@ export default function HalbprobenerstellungStepFields({
                             <button
                                 key={opt.value}
                                 type="button"
-                                onClick={() =>
-                                    opt.value === 'Extern fertigen'
-                                        ? handleExternFertigenClick()
-                                        : onHalbprobeDurchfuehrungChange(opt.value)
-                                }
+                                onClick={() => {
+                                    if (opt.value === 'Extern fertigen') {
+                                        handleExternFertigenClick();
+                                    } else if (opt.value === 'Überspringen') {
+                                        onHalbprobeDurchfuehrungChange(opt.value);
+                                        if (onSkipHalbprobe) {
+                                            onSkipHalbprobe();
+                                        }
+                                    } else {
+                                        onHalbprobeDurchfuehrungChange(opt.value);
+                                    }
+                                }}
                                 className={cn(
                                     'flex cursor-pointer w-full items-start gap-4 rounded-xl border-2 p-4 text-left transition-all',
                                     isSelected

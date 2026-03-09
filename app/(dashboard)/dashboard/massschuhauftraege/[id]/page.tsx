@@ -21,6 +21,7 @@ import HalbprobenerstellungStepFields, { type HalbprobeDurchfuehrungValue } from
 import HalbprobeDurchfuehrungStepFields, { type ProbenergebnisValue, type SchafttypValue } from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/NewMasschuhau/HalbprobeDurchfuehrungStepFields';
 import * as MassschuheAddedApis from '@/apis/MassschuheAddedApis';
 import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'react-hot-toast';
 
 // Short names for progress indicator (matching the image design)
 const STEP_SHORT_NAMES = [
@@ -329,7 +330,12 @@ export default function MassschuhauftraegePage() {
                         setCheckliste_halbprobe(Array.isArray(ch) ? JSON.stringify(ch) : String(ch));
                     }
                     const hd = data.halbprobe_durchfuehrung;
-                    if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') setHalbprobe_durchfuehrung(hd);
+                    const halfRequired = data.order?.half_sample_required;
+                    if (hd === 'Intern fertigen' || hd === 'Extern fertigen' || hd === 'Überspringen') {
+                        setHalbprobe_durchfuehrung(hd);
+                    } else if (halfRequired === false) {
+                        setHalbprobe_durchfuehrung('Überspringen');
+                    }
                     if (data.probenergebnis === 'Gut' || data.probenergebnis === 'Druckstellen' || data.probenergebnis === 'Instabil' || data.probenergebnis === 'Kosmetisch') setProbenergebnis(data.probenergebnis);
                     else if (data.probenergebnis === 'Änderungen') setProbenergebnis('Druckstellen');
                     if (data.schafttyp === 'Intern' || data.schafttyp === 'Extern') setSchafttyp(data.schafttyp);
@@ -424,6 +430,25 @@ export default function MassschuhauftraegePage() {
         } else if (value === 'Instabil') {
             setAdjustments('');
             setCheckliste_halbprobe('');
+        }
+    };
+
+    const handleSkipStep4And5 = async () => {
+        if (!id) return;
+        try {
+            const res: any = await MassschuheAddedApis.manageMassschuheOrderStep4and5(id, {});
+            if (res?.success) {
+                toast.success(res?.message || 'Schritte 4 und 5 wurden übersprungen.');
+                const refetch: any = await MassschuheAddedApis.getMassschuheOrderById(id, statusFromUrl);
+                const steps = refetch?.shoeOrderStep ?? null;
+                setShoeOrderStep(Array.isArray(steps) ? steps : null);
+                setOrderData(mapApiOrderToDetailData(refetch));
+            } else if (res?.message) {
+                toast(res.message);
+            }
+        } catch (error) {
+            console.error(error);
+            toast.error('Fehler beim Überspringen von Schritt 4 und 5.');
         }
     };
 
@@ -946,6 +971,7 @@ export default function MassschuhauftraegePage() {
                                             onAnmerkungenHalbprobeChange={setAnmerkungen_halbprobe}
                                             onHalbprobeDurchfuehrungChange={setHalbprobe_durchfuehrung}
                                             onChecklisteHalbprobeChange={setCheckliste_halbprobe}
+                                            onSkipHalbprobe={handleSkipStep4And5}
                                         />
                                     )}
 

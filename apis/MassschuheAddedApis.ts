@@ -149,6 +149,16 @@ export const getMassschuheOrderById = async (id: string, status: string) => {
     }
 }
 
+// shoe-orders/manage-step4and5/{{orderId}}
+export const manageMassschuheOrderStep4and5 = async (orderId: string, data: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/shoe-orders/manage-step4and5/${orderId}`, data);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
 
 // order details v2/shoe-orders/get-order-details/98bd0578-f4fc-4ca3-8d21-027bf807bb21
 export const getMassschuheOrderDetails = async (id: string) => {
