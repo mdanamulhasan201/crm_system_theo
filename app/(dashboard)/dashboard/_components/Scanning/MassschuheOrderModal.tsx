@@ -55,8 +55,10 @@ export interface MassschuheOrderV2Payload {
     customer_reviews?: string;
     has_trim_strips?: boolean;
     step2_material?: string;
-    /** Required when has_trim_strips is false */
+    /** Required when has_trim_strips is false (snake_case) */
     step2_leistentyp?: string;
+    /** Required when has_trim_strips is false (camelCase – API expects this name) */
+    step2Leistentyp?: string;
     leistentyp?: string;
     leistengroesse?: string;
     /** Payload key when Leisten = Nein (Leistengröße optional field) */
@@ -592,16 +594,21 @@ export default function MassschuheOrderModal({
             order_note: orderNote || undefined,
         };
 
-        // Halbprobe Ja: only Step 4 (Anprobedatum + Notizen) – no step2, no bedding
+        // Halbprobe Ja: Step 4 (Anprobedatum + Notizen), no bedding. When has_trim_strips is false, API still requires step2_material, step2_leistentyp, step2_notes.
         if (halfSampleRequired) {
             v2Payload.half_sample_required = true;
             v2Payload.notes = (step4Notes?.trim() || orderNote?.trim()) || undefined;
             v2Payload.fitting_date = step5FittingDate || undefined;
             v2Payload.has_trim_strips = false;
-            v2Payload.step2_material = undefined;
-            v2Payload.leistentyp = undefined;
-            v2Payload.leistengroesse = undefined;
-            v2Payload.step2_notes = undefined;
+            // API requires these whenever has_trim_strips is false (use form values or empty string)
+            const mat = step2Material?.trim() ?? '';
+            const typ = step2LeistentypVal?.trim() ?? '';
+            const notes = step2Notes?.trim() ?? '';
+            v2Payload.step2_material = mat;
+            v2Payload.step2_leistentyp = typ;
+            v2Payload.step2Leistentyp = typ;
+            v2Payload.leistentyp = typ;
+            v2Payload.step2_notes = notes;
             v2Payload.bedding_required = false;
             v2Payload.step3_json = undefined;
         } else {
@@ -609,7 +616,7 @@ export default function MassschuheOrderModal({
             v2Payload.notes = orderNote || undefined;
             v2Payload.fitting_date = undefined;
             v2Payload.has_trim_strips = hasTrimStrips;
-            // Leisten Nein (has_trim_strips false): payload must include step2_material, step2_leistentyp, step2_notes
+            // Leisten Nein (has_trim_strips false): API requires step2_material, step2Leistentyp, step2_notes (exact names)
             if (!hasTrimStrips) {
                 const mat = step2Material?.trim() ?? '';
                 const typ = step2LeistentypVal?.trim() ?? '';
@@ -617,6 +624,7 @@ export default function MassschuheOrderModal({
 
                 v2Payload.step2_material = mat;
                 v2Payload.step2_leistentyp = typ;
+                v2Payload.step2Leistentyp = typ; // API expects camelCase
                 v2Payload.leistentyp = typ;
                 v2Payload.step2_notes = notes;
             } else {
