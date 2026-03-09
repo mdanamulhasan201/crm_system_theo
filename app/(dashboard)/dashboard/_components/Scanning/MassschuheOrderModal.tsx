@@ -180,6 +180,8 @@ export interface MassschuheOrderModalFormData {
     priceCalculations?: { basisPreis?: number; discountPercent?: number; discountAmount?: number; netto: number; mwst: number; brutto: number };
     has_trim_strips?: boolean;
     step2_material?: string;
+    /** Schritt 2 Leistentyp – sent in payload as step2_leistentyp when Leisten = Nein */
+    step2_leistentyp?: string;
     leistentyp?: string;
     leistengroesse?: string;
     step2_notes?: string;
@@ -563,7 +565,7 @@ export default function MassschuheOrderModal({
         const step4Notes = formData.step4_notes ?? formData.step3_json?.step4?.notes ?? '';
         const step5FittingDate = formData.step5_fitting_date ?? formData.step3_json?.step5?.fitting_date;
         const step2Material = formData.step2_material ?? formData.step3_json?.step2?.material ?? '';
-        const leistentypVal = formData.leistentyp ?? formData.step3_json?.step2?.leistentyp ?? '';
+        const step2LeistentypVal = formData.step2_leistentyp ?? formData.leistentyp ?? formData.step3_json?.step2?.leistentyp ?? '';
         const step2Notes = formData.step2_notes ?? formData.step3_json?.step2?.notes ?? '';
         const leistengroesseVal = formData.leistengroesse?.trim() || formData.step3_json?.step2?.leistengroesse?.trim() || undefined;
 
@@ -607,14 +609,19 @@ export default function MassschuheOrderModal({
             v2Payload.notes = orderNote || undefined;
             v2Payload.fitting_date = undefined;
             v2Payload.has_trim_strips = hasTrimStrips;
-            // Leisten Nein (has_trim_strips false): payload uses step2_material, step2_leistentyp, step2_notes (always send keys so API receives them)
+            // Leisten Nein (has_trim_strips false): payload must include step2_material, step2_leistentyp, step2_notes
             if (!hasTrimStrips) {
-                v2Payload.step2_material = step2Material?.trim() ?? '';
-                v2Payload.step2_leistentyp = leistentypVal?.trim() ?? '';
-                v2Payload.step2_notes = step2Notes?.trim() ?? '';
+                const mat = step2Material?.trim() ?? '';
+                const typ = step2LeistentypVal?.trim() ?? '';
+                const notes = step2Notes?.trim() ?? '';
+
+                v2Payload.step2_material = mat;
+                v2Payload.step2_leistentyp = typ;
+                v2Payload.leistentyp = typ;
+                v2Payload.step2_notes = notes;
             } else {
                 v2Payload.step2_material = step2Material || '';
-                v2Payload.leistentyp = leistentypVal || '';
+                v2Payload.leistentyp = step2LeistentypVal || '';
                 v2Payload.leistengroesse = leistengroesseVal;
                 v2Payload.step2_notes = step2Notes || '';
             }

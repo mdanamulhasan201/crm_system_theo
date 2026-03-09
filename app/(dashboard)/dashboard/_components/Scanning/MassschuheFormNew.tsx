@@ -546,14 +546,15 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     rabatt: rabatt,
                     nettoPreis: nettoPreis,
                     priceCalculations: priceCalculations,
-                    // Basic production workflow fields
+                    // Basic production workflow fields (Leisten Nein → has_trim_strips false; Step 2 data in step2_*)
                     has_trim_strips: leistenVorhanden === true,
                     bedding_required: bettungErforderlich === true,
-                    // Flat fields for modal payload (from step3_json when modal reads formData)
-                    step2_material: lastData.material,
+                    // Schritt 2: Material, Leistentyp, Notizen → payload as step2_material, step2_leistentyp, step2_notes
+                    step2_material: lastData.material ?? '',
+                    step2_leistentyp: lastData.leistentyp ?? '',
                     leistentyp: lastData.leistentyp ?? '',
                     leistengroesse: lastData.leistengroesse ?? '',
-                    step2_notes: lastData.notes,
+                    step2_notes: lastData.notes ?? '',
                     step4_notes: internalPrepData.notes,
                     step5_fitting_date: customerFittingData.fittingDate?.toISOString(),
                     bettung_type: footbedData.bettung_type ?? undefined,
@@ -582,7 +583,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     step3_material: footbedData.material ?? '',
                     step3_thickness: footbedData.thickness ?? '',
                     step3_notes: footbedData.notes ?? '',
-                    // Step 3 JSON - contains all step data
+                    // Step 3 JSON – Schritt 3 "Wie soll die Bettung erstellt werden?" – all data in one object
                     step3_json: {
                         step2: {
                             material: lastData.material,
@@ -590,35 +591,36 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                             leistengroesse: lastData.leistengroesse ?? '',
                             notes: lastData.notes
                         },
+                        // Schritt 3: full Bettung section (on_last + built_up fields always present)
                         step3: {
-                            material: footbedData.material,
-                            thickness: footbedData.thickness,
-                            notes: footbedData.notes,
+                            material: footbedData.material ?? '',
+                            thickness: footbedData.thickness ?? '',
+                            notes: footbedData.notes ?? '',
                             bettung_type: footbedData.bettung_type ?? undefined,
                             zusätzliche_notizen: footbedData.bettung_notes ?? '',
-                            // On last fields
-                            schicht1_material: footbedData.bettung_type === 'on_last' ? (footbedData.schicht1_material ?? '') : '',
-                            schicht1_starke: footbedData.bettung_type === 'on_last' ? (footbedData.schicht1_starke ?? '') : '',
-                            schicht2_material: footbedData.bettung_type === 'on_last' ? (footbedData.schicht2_material ?? '') : '',
-                            schicht2_starke: footbedData.bettung_type === 'on_last' ? (footbedData.schicht2_starke ?? '') : '',
-                            decksohle_material: footbedData.bettung_type === 'on_last' ? (footbedData.decksohle_material ?? '') : '',
-                            decksohle_starke: footbedData.bettung_type === 'on_last' ? (footbedData.decksohle_starke ?? '') : '',
-                            versteifung: footbedData.bettung_type === 'on_last' ? footbedData.versteifung ?? undefined : undefined,
-                            versteifung_material: footbedData.bettung_type === 'on_last' ? (footbedData.versteifung_material ?? '') : '',
-                            versteifung_zone: footbedData.bettung_type === 'on_last' ? (footbedData.versteifung_zone ?? '') : '',
-                            pelotte: footbedData.bettung_type === 'on_last' ? footbedData.pelotte ?? undefined : undefined,
-                            pelotte_hoehe_l: footbedData.bettung_type === 'on_last' ? (footbedData.pelotte_hoehe_l ?? '') : '',
-                            pelotte_hoehe_r: footbedData.bettung_type === 'on_last' ? (footbedData.pelotte_hoehe_r ?? '') : '',
-                            // Built up fields
-                            thickness_heel_l: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_heel_l ?? '') : '',
-                            thickness_heel_r: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_heel_r ?? '') : '',
-                            thickness_ball_l: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_ball_l ?? '') : '',
-                            thickness_ball_r: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_ball_r ?? '') : '',
-                            thickness_toe_l: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_toe_l ?? '') : '',
-                            thickness_toe_r: footbedData.bettung_type === 'built_up' ? (footbedData.thickness_toe_r ?? '') : '',
-                            bettung_built_up_notes: footbedData.bettung_type === 'built_up' ? (footbedData.bettung_built_up_notes ?? '') : '',
-                            einlage_rohling_type: footbedData.bettung_type === 'built_up' ? (footbedData.einlage_rohling_type ?? undefined) : undefined,
-                            einlagenrohling_frasblock: footbedData.bettung_type === 'built_up' ? (footbedData.einlagenrohling_frasblock ?? '') : ''
+                            // Bettung auf dem Leisten (on_last)
+                            schicht1_material: footbedData.schicht1_material ?? '',
+                            schicht1_starke: footbedData.schicht1_starke ?? '',
+                            schicht2_material: footbedData.schicht2_material ?? '',
+                            schicht2_starke: footbedData.schicht2_starke ?? '',
+                            decksohle_material: footbedData.decksohle_material ?? '',
+                            decksohle_starke: footbedData.decksohle_starke ?? '',
+                            versteifung: footbedData.versteifung ?? undefined,
+                            versteifung_material: footbedData.versteifung_material ?? '',
+                            versteifung_zone: footbedData.versteifung_zone ?? '',
+                            pelotte: footbedData.pelotte ?? undefined,
+                            pelotte_hoehe_l: footbedData.pelotte_hoehe_l ?? '',
+                            pelotte_hoehe_r: footbedData.pelotte_hoehe_r ?? '',
+                            // Bettung brutto aufgebaut (built_up)
+                            thickness_heel_l: footbedData.thickness_heel_l ?? '',
+                            thickness_heel_r: footbedData.thickness_heel_r ?? '',
+                            thickness_ball_l: footbedData.thickness_ball_l ?? '',
+                            thickness_ball_r: footbedData.thickness_ball_r ?? '',
+                            thickness_toe_l: footbedData.thickness_toe_l ?? '',
+                            thickness_toe_r: footbedData.thickness_toe_r ?? '',
+                            bettung_built_up_notes: footbedData.bettung_built_up_notes ?? '',
+                            einlage_rohling_type: footbedData.einlage_rohling_type ?? undefined,
+                            einlagenrohling_frasblock: footbedData.einlagenrohling_frasblock ?? ''
                         },
                         step4: {
                             notes: internalPrepData.notes
