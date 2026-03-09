@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { cn } from '@/lib/utils';
 import { MapPin, StickyNote } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -146,6 +144,8 @@ export interface MassschuheOrderV2Payload {
             thickness_toe_l?: string;
             thickness_toe_r?: string;
             bettung_built_up_notes?: string;
+            einlage_rohling_type?: 'frasblock' | 'einlagenrohling' | null;
+            einlagenrohling_frasblock?: string;
         };
         step4?: {
             preparation_date?: string;
@@ -563,6 +563,50 @@ export default function MassschuheOrderModal({
         const beddingRequired = formData.bedding_required ?? false;
         const bettungType = formData.bettung_type ?? formData.step3_json?.step3?.bettung_type;
 
+        // Build step3_json: only bedding (Schritt 3) section data inside step3; Zusätzliche Notizen also at root as zusätzliche_notizen
+        const buildStep3JsonForBedding = (
+            fd: MassschuheOrderModalFormData,
+            type: 'on_last' | 'built_up'
+        ): NonNullable<MassschuheOrderV2Payload['step3_json']> => {
+            const step3 = fd.step3_json?.step3 ?? {};
+            const tr = (s: string | undefined) => (s ?? '')?.trim() || undefined;
+            const zusatz = type === 'on_last'
+                ? (fd.bettung_notes ?? step3.zusätzliche_notizen)?.trim()
+                : (fd.bettung_built_up_notes ?? step3.bettung_built_up_notes)?.trim();
+            return {
+                step3: {
+                    material: fd.step3_material ?? step3.material ?? '',
+                    thickness: fd.step3_thickness ?? step3.thickness ?? '',
+                    notes: fd.step3_notes ?? step3.notes ?? '',
+                    bettung_type: type,
+                    zusätzliche_notizen: zusatz ?? '',
+                    // Bettung auf dem Leisten (on_last) – Erweiterte Daten
+                    schicht1_material: tr(fd.schicht1_material ?? step3.schicht1_material),
+                    schicht1_starke: tr(fd.schicht1_starke ?? step3.schicht1_starke),
+                    schicht2_material: tr(fd.schicht2_material ?? step3.schicht2_material),
+                    schicht2_starke: tr(fd.schicht2_starke ?? step3.schicht2_starke),
+                    decksohle_material: tr(fd.decksohle_material ?? step3.decksohle_material),
+                    decksohle_starke: tr(fd.decksohle_starke ?? step3.decksohle_starke),
+                    versteifung: fd.versteifung ?? step3.versteifung ?? undefined,
+                    versteifung_material: tr(fd.versteifung_material ?? step3.versteifung_material),
+                    versteifung_zone: tr(fd.versteifung_zone ?? step3.versteifung_zone),
+                    pelotte: fd.pelotte ?? step3.pelotte ?? undefined,
+                    pelotte_hoehe_l: tr(fd.pelotte_hoehe_l ?? step3.pelotte_hoehe_l),
+                    pelotte_hoehe_r: tr(fd.pelotte_hoehe_r ?? step3.pelotte_hoehe_r),
+                    // Bettung brutto aufgebaut (built_up)
+                    thickness_heel_l: tr(fd.thickness_heel_l ?? step3.thickness_heel_l),
+                    thickness_heel_r: tr(fd.thickness_heel_r ?? step3.thickness_heel_r),
+                    thickness_ball_l: tr(fd.thickness_ball_l ?? step3.thickness_ball_l),
+                    thickness_ball_r: tr(fd.thickness_ball_r ?? step3.thickness_ball_r),
+                    thickness_toe_l: tr(fd.thickness_toe_l ?? step3.thickness_toe_l),
+                    thickness_toe_r: tr(fd.thickness_toe_r ?? step3.thickness_toe_r),
+                    bettung_built_up_notes: tr(fd.bettung_built_up_notes ?? step3.bettung_built_up_notes),
+                    einlage_rohling_type: fd.einlage_rohling_type ?? step3.einlage_rohling_type ?? undefined,
+                    einlagenrohling_frasblock: tr(fd.einlagenrohling_frasblock ?? step3.einlagenrohling_frasblock),
+                },
+            };
+        };
+
         // Derive Step 4 & 5 from step3_json when not passed flat (Halbprobe: only Anprobedatum + Notizen)
         const step4Notes = formData.step4_notes ?? formData.step3_json?.step4?.notes ?? '';
         const step5FittingDate = formData.step5_fitting_date ?? formData.step3_json?.step5?.fitting_date;
@@ -609,8 +653,19 @@ export default function MassschuheOrderModal({
             v2Payload.step2Leistentyp = typ;
             v2Payload.leistentyp = typ;
             v2Payload.step2_notes = notes;
-            v2Payload.bedding_required = false;
-            v2Payload.step3_json = undefined;
+            // Bettung erforderlich? Ja/Nein from form – use form value, do not force false
+            v2Payload.bedding_required = beddingRequired;
+            if (beddingRequired && bettungType) {
+                v2Payload.bettung_type = bettungType;
+                const zusatzNotes =
+                    bettungType === 'on_last'
+                        ? (formData.bettung_notes ?? formData.step3_json?.step3?.zusätzliche_notizen)?.trim()
+                        : (formData.bettung_built_up_notes ?? formData.step3_json?.step3?.bettung_built_up_notes)?.trim();
+                v2Payload.zusätzliche_notizen = zusatzNotes || undefined;
+                v2Payload.step3_json = buildStep3JsonForBedding(formData, bettungType);
+            } else {
+                v2Payload.step3_json = undefined;
+            }
         } else {
             v2Payload.half_sample_required = false;
             v2Payload.notes = orderNote || undefined;
@@ -633,67 +688,19 @@ export default function MassschuheOrderModal({
                 v2Payload.leistengroesse = leistengroesseVal;
                 v2Payload.step2_notes = step2Notes || '';
             }
-            // Bettung: only when not Halbprobe
+            // Bettung: Ja → bedding_required true, Nein → false (from form choice). Step3 data only when Ja + type selected.
+            v2Payload.bedding_required = beddingRequired;
             if (beddingRequired && bettungType) {
-                v2Payload.bedding_required = true;
                 v2Payload.bettung_type = bettungType;
-                v2Payload.step3_json = formData.step3_json ?? undefined;
-                const bt = formData.bettung_notes?.trim() ?? formData.step3_json?.step3?.zusätzliche_notizen?.trim();
-                v2Payload.bettung_notes = bettungType === 'on_last' ? (bt || undefined) : undefined;
-                v2Payload.zusätzliche_notizen = bettungType === 'on_last' ? (bt || undefined) : undefined;
-                // on_last: Zusätzliche Notizen, Schicht 1/2, Decksohle, Versteifung, Pelotte
-                if (bettungType === 'on_last') {
-                    v2Payload.schicht1_material = (formData.schicht1_material ?? formData.step3_json?.step3?.schicht1_material)?.trim() || undefined;
-                    v2Payload.schicht1_starke = (formData.schicht1_starke ?? formData.step3_json?.step3?.schicht1_starke)?.trim() || undefined;
-                    v2Payload.schicht2_material = (formData.schicht2_material ?? formData.step3_json?.step3?.schicht2_material)?.trim() || undefined;
-                    v2Payload.schicht2_starke = (formData.schicht2_starke ?? formData.step3_json?.step3?.schicht2_starke)?.trim() || undefined;
-                    v2Payload.decksohle_material = (formData.decksohle_material ?? formData.step3_json?.step3?.decksohle_material)?.trim() || undefined;
-                    v2Payload.decksohle_starke = (formData.decksohle_starke ?? formData.step3_json?.step3?.decksohle_starke)?.trim() || undefined;
-                    v2Payload.versteifung = formData.versteifung ?? formData.step3_json?.step3?.versteifung ?? undefined;
-                    v2Payload.versteifung_material = (formData.versteifung_material ?? formData.step3_json?.step3?.versteifung_material)?.trim() || undefined;
-                    v2Payload.versteifung_zone = (formData.versteifung_zone ?? formData.step3_json?.step3?.versteifung_zone)?.trim() || undefined;
-                    v2Payload.pelotte = formData.pelotte ?? formData.step3_json?.step3?.pelotte ?? undefined;
-                    v2Payload.pelotte_hoehe_l = (formData.pelotte_hoehe_l ?? formData.step3_json?.step3?.pelotte_hoehe_l)?.trim() || undefined;
-                    v2Payload.pelotte_hoehe_r = (formData.pelotte_hoehe_r ?? formData.step3_json?.step3?.pelotte_hoehe_r)?.trim() || undefined;
-                }
-                // built_up: Zusätzliche Notizen, Einlage Fräsblock/Einlagenrohling, Dicke Ferse/Ballen/Spitze, Decksohle, Versteifung, Pelotte
-                if (bettungType === 'built_up') {
-                    const thl = (formData.thickness_heel_l ?? formData.step3_json?.step3?.thickness_heel_l)?.trim();
-                    const thr = (formData.thickness_heel_r ?? formData.step3_json?.step3?.thickness_heel_r)?.trim();
-                    const tbl = (formData.thickness_ball_l ?? formData.step3_json?.step3?.thickness_ball_l)?.trim();
-                    const tbr = (formData.thickness_ball_r ?? formData.step3_json?.step3?.thickness_ball_r)?.trim();
-                    const ttl = (formData.thickness_toe_l ?? formData.step3_json?.step3?.thickness_toe_l)?.trim();
-                    const ttr = (formData.thickness_toe_r ?? formData.step3_json?.step3?.thickness_toe_r)?.trim();
-                    v2Payload.thickness_heel_l = thl || undefined;
-                    v2Payload.thickness_heel_r = thr || undefined;
-                    v2Payload.thickness_ball_l = tbl || undefined;
-                    v2Payload.thickness_ball_r = tbr || undefined;
-                    v2Payload.thickness_toe_l = ttl || undefined;
-                    v2Payload.thickness_toe_r = ttr || undefined;
-                    v2Payload.dicke_ferse_l = thl || undefined;
-                    v2Payload.dicke_ferse_r = thr || undefined;
-                    v2Payload.dicke_ballen_l = tbl || undefined;
-                    v2Payload.dicke_ballen_r = tbr || undefined;
-                    v2Payload.dicke_spitze_l = ttl || undefined;
-                    v2Payload.dicke_spitze_r = ttr || undefined;
-                    v2Payload.bettung_built_up_notes = (formData.bettung_built_up_notes ?? formData.step3_json?.step3?.bettung_built_up_notes)?.trim() || undefined;
-                    v2Payload.einlage_rohling_type = formData.einlage_rohling_type ?? formData.step3_json?.step3?.einlage_rohling_type ?? undefined;
-                    v2Payload.einlagenrohling_frasblock = (formData.einlagenrohling_frasblock ?? formData.step3_json?.step3?.einlagenrohling_frasblock)?.trim() || undefined;
-                    // Erweiterte Daten for built_up
-                    v2Payload.decksohle_material = (formData.decksohle_material ?? formData.step3_json?.step3?.decksohle_material)?.trim() || undefined;
-                    v2Payload.decksohle_starke = (formData.decksohle_starke ?? formData.step3_json?.step3?.decksohle_starke)?.trim() || undefined;
-                    v2Payload.versteifung = formData.versteifung ?? formData.step3_json?.step3?.versteifung ?? undefined;
-                    v2Payload.versteifung_material = (formData.versteifung_material ?? formData.step3_json?.step3?.versteifung_material)?.trim() || undefined;
-                    v2Payload.versteifung_zone = (formData.versteifung_zone ?? formData.step3_json?.step3?.versteifung_zone)?.trim() || undefined;
-                    v2Payload.pelotte = formData.pelotte ?? formData.step3_json?.step3?.pelotte ?? undefined;
-                    v2Payload.pelotte_hoehe_l = (formData.pelotte_hoehe_l ?? formData.step3_json?.step3?.pelotte_hoehe_l)?.trim() || undefined;
-                    v2Payload.pelotte_hoehe_r = (formData.pelotte_hoehe_r ?? formData.step3_json?.step3?.pelotte_hoehe_r)?.trim() || undefined;
-                }
-                v2Payload.step3_material = (formData.step3_material ?? formData.step3_json?.step3?.material) ?? '';
-                v2Payload.step3_thickness = (formData.step3_thickness ?? formData.step3_json?.step3?.thickness) ?? '';
-                v2Payload.step3_notes = (formData.step3_notes ?? formData.step3_json?.step3?.notes) ?? '';
+                // Zusätzliche Notizen (optional) → root key zusätzliche_notizen (on_last: bettung_notes, built_up: bettung_built_up_notes)
+                const zusatzNotes =
+                    bettungType === 'on_last'
+                        ? (formData.bettung_notes ?? formData.step3_json?.step3?.zusätzliche_notizen)?.trim()
+                        : (formData.bettung_built_up_notes ?? formData.step3_json?.step3?.bettung_built_up_notes)?.trim();
+                v2Payload.zusätzliche_notizen = zusatzNotes || undefined;
+                // All bedding section data (Erweiterte Daten, thickness, etc.) only inside step3_json.step3
+                v2Payload.step3_json = buildStep3JsonForBedding(formData, bettungType);
             } else {
-                v2Payload.bedding_required = false;
                 v2Payload.step3_json = undefined;
             }
         }
