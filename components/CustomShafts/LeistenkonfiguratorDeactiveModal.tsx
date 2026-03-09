@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Image from 'next/image';
 import {
   Dialog,
@@ -8,7 +8,10 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Shield, ArrowRight } from 'lucide-react';
+import { Shield, ArrowRight, Loader2 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { safeToastMessage } from '@/lib/toastUtils';
+import { requestForLeistenerstellungAccess } from '@/apis/MassschuheManagemantApis';
 
 import feetF1rstLogo from '@/public/images/FeetF1rstLogo.png';
 
@@ -21,10 +24,24 @@ export default function LeistenkonfiguratorDeactiveModal({
   open,
   onOpenChange,
 }: LeistenkonfiguratorDeactiveModalProps) {
-  const handleRequestAccess = () => {
-    onOpenChange(false);
-    // Optional: open support link or mailto
-    // window.location.href = 'mailto:support@feetf1rst.com?subject=Zugang digitale Leistenerstellung';
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleRequestAccess = async () => {
+    setIsSubmitting(true);
+    try {
+      const response = await requestForLeistenerstellungAccess();
+      const message =
+        response?.message ?? 'Ihre Anfrage wurde erfolgreich übermittelt.';
+      toast.success(message);
+      onOpenChange(false);
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } } })?.response?.data
+          ?.message ?? (err as Error)?.message;
+      toast.error(safeToastMessage(msg) || 'Anfrage fehlgeschlagen.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -72,10 +89,20 @@ export default function LeistenkonfiguratorDeactiveModal({
           <Button
             type="button"
             onClick={handleRequestAccess}
-            className="w-full bg-[#62A07C] hover:bg-[#62A07C]/80 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2"
+            disabled={isSubmitting}
+            className="w-full bg-[#62A07C] hover:bg-[#62A07C]/80 text-white font-medium py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-70 disabled:pointer-events-none"
           >
-            Jetzt Zugang anfragen
-            <ArrowRight className="h-4 w-4" />
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Wird gesendet…
+              </>
+            ) : (
+              <>
+                Jetzt Zugang anfragen
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
           </Button>
 
           <p className="text-xs text-gray-500 text-center pt-1">

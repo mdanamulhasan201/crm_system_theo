@@ -368,3 +368,15 @@ export const getCountDate = async () => {
         throw error;
     }
 }
+
+
+// poast apis  custom_shafts/request-for-leistenerstellung/access 
+
+export const requestForLeistenerstellungAccess = async () => {
+    try {
+        const response = await axiosClient.post(`/custom_shafts/request-for-leistenerstellung/access`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
