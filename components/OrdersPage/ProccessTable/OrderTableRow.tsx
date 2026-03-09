@@ -115,10 +115,13 @@ export default function OrderTableRow({
     onPriceClick,
 }: OrderTableRowProps) {
     const { selectedType } = useOrders();
-    // Type letter for table: F = Fräsblock, E = Einlage, S = Sonstiges (show to right of note icon)
+    // Category letter from order.orderType (from API orderCategory): F = Fräsblock, E = Einlage, S = Sonstiges. Use order's category so it shows for "Alle" too.
     const typeForLetter = order.orderType ?? (selectedType && selectedType !== 'alle' ? selectedType : null);
     const typeLetter =
-        typeForLetter === 'milling_block' ? 'F' : typeForLetter === 'rady_insole' ? 'E' : typeForLetter === 'sonstiges' ? 'S' : null;
+        typeForLetter === 'milling_block' ? 'F'
+            : (typeForLetter === 'rady_insole' || typeForLetter === 'insole') ? 'E'
+                : typeForLetter === 'sonstiges' ? 'S'
+                    : null;
     // Helper function to safely get string value (supports API format: { address, description })
     const getSafeString = (value: any): string => {
         if (value == null) return '';
@@ -334,7 +337,7 @@ export default function OrderTableRow({
                     {typeLetter != null && (
                         <span
                             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600"
-                            title={typeForLetter === 'milling_block' ? 'Fräsblock' : typeForLetter === 'rady_insole' ? 'Einlage' : 'Sonstiges'}
+                            title={typeForLetter === 'milling_block' ? 'Fräsblock' : (typeForLetter === 'rady_insole' || typeForLetter === 'insole') ? 'Einlage' : 'Sonstiges'}
                         >
                             {typeLetter}
                         </span>

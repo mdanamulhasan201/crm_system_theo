@@ -59,6 +59,8 @@ export interface ApiOrderData {
     paymentType?: string | null;
     insurance_payed?: boolean | null;
     private_payed?: boolean | null;
+    /** Order category from API: "insole" | "sonstiges" | "milling_block" etc. Used for table category letter. */
+    orderCategory?: string | null;
 }
 
 export interface PaginationData {
