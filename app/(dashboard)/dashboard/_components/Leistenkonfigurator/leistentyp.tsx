@@ -61,7 +61,7 @@ const Leistentyp = forwardRef<LeistentypRef, LeistentypProps>(({ onChange }, ref
   const buttonInactive = 'bg-white text-gray-700 border-gray-200 hover:border-gray-300';
 
   const leftOptions: { value: LeistentypOption; label: string; price?: string }[] = [
-    { value: 'knoechelhoher', label: 'Knöchelhoher Leisten', price: '+19,99€' },
+    { value: 'knoechelhoher', label: 'Knöchelhoher Leisten', price: '+9,99€' },
     { value: 'halbschuhleistenSchmaler', label: 'Halbschuhleisten schmaler Kapp' },
     { value: 'halbschuhleistenBreiter', label: 'Halbschuhleisten breiter Kapp' },
   ];

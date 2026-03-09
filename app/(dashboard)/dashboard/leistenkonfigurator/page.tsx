@@ -26,7 +26,7 @@ export default function LeistenKonfiguratorPage() {
   const korrekturenRef = useRef<KorrekturenModellierungRef>(null);
   const bemerkungenRef = useRef<BemerkungenRef>(null);
   const basePrice = 199.99;
-  const knoechelhoherLeistenPrice = 19.99;
+  const knoechelhoherLeistenPrice = 9.99;
   const plastikleistenDiscount = 20;
 
   const [totalPrice, setTotalPrice] = useState(basePrice);

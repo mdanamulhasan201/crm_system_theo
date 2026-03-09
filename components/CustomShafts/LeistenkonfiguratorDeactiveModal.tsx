@@ -106,7 +106,7 @@ export default function LeistenkonfiguratorDeactiveModal({
           </Button>
 
           <p className="text-xs text-gray-500 text-center pt-1">
-            Nur für Kunden mit aktivem FeetFirst 3D-Scanner verfügbar.
+            Nur für Kunden mit aktivem FeetF1rst 3D-Scanner verfügbar.
           </p>
         </div>
       </DialogContent>
