@@ -7,7 +7,6 @@ import BalanceCard from "../_components/FeetF1rstBalance/BalanceCard";
 import BalanceVerlaufChart from "../_components/FeetF1rstBalance/BalanceVerlaufChart";
 import DataTables from "../_components/FeetF1rstBalance/DataTables";
 import Ausgaben from "../_components/FeetF1rstBalance/Ausgaben";
-import PayoutHistory from "../_components/FeetF1rstBalance/PayoutHistory";
 import { useFeatureAccess } from "@/contexts/FeatureAccessContext";
 
 export default function BalanceDashboard() {
@@ -46,13 +45,8 @@ export default function BalanceDashboard() {
 
           
 
-            {/* Bottom Row: Four Stat Cards */}
-            <BalanceCard />
-
-              {/* Payout request history - refreshKey triggers full reload and shows all data at once */}
-              <div className="mt-6 w-full">
-                <PayoutHistory refreshKey={payoutHistoryKey} />
-            </div>
+            {/* Bottom Row: Four Stat Cards – Kürzliche Auszahlungen opens modal with PayoutHistory */}
+            <BalanceCard payoutHistoryRefreshKey={payoutHistoryKey} />
 
             <div className="mt-10">
 

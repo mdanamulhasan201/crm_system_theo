@@ -5,6 +5,13 @@ import { BsCalendarCheck } from 'react-icons/bs'
 import { TbArrowsExchange } from 'react-icons/tb'
 import { MdOutlineSavings } from 'react-icons/md'
 import { getLeastOneMonthPaymentData } from '@/apis/MassschuheManagemantApis'
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
+import PayoutHistory from './PayoutHistory'
 
 interface BalanceCardData {
     gesamteinnahmen?: number | null;
@@ -18,6 +25,8 @@ interface BalanceCardData {
 
 interface BalanceCardProps {
     data?: BalanceCardData;
+    /** Pass from page to refresh payout history in modal (e.g. after new payout request) */
+    payoutHistoryRefreshKey?: number;
 }
 
 const defaultData: BalanceCardData = {
@@ -33,7 +42,8 @@ const defaultData: BalanceCardData = {
     ruecklagebetragDatum: '--',
 };
 
-export default function BalanceCard({ data = defaultData }: BalanceCardProps) {
+export default function BalanceCard({ data = defaultData, payoutHistoryRefreshKey }: BalanceCardProps) {
+    const [payoutModalOpen, setPayoutModalOpen] = useState(false)
     const [lastMonthData, setLastMonthData] = useState<{
         totalPrice: number | null;
         period: string;
@@ -111,8 +121,12 @@ export default function BalanceCard({ data = defaultData }: BalanceCardProps) {
                 <p className="text-xs text-gray-500">{data.naechsteAuszahlungDatum}</p>
             </div>
 
-            {/* Kürzliche Auszahlungen */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            {/* Kürzliche Auszahlungen – clickable, opens payout history modal */}
+            <button
+                type="button"
+                onClick={() => setPayoutModalOpen(true)}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 text-left w-full cursor-pointer hover:border-emerald-200 hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:ring-offset-2"
+            >
                 <div className="flex items-start gap-3 mb-4">
                     <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center">
                         <TbArrowsExchange className="w-5 h-5 text-emerald-500" />
@@ -145,7 +159,19 @@ export default function BalanceCard({ data = defaultData }: BalanceCardProps) {
                         </div>
                     )}
                 </div>
-            </div>
+                <p className="text-xs text-emerald-600 mt-2">Klicken für Auszahlungsverlauf</p>
+            </button>
+
+            <Dialog open={payoutModalOpen} onOpenChange={setPayoutModalOpen}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Auszahlungsverlauf</DialogTitle>
+                    </DialogHeader>
+                    <div className="mt-2">
+                        <PayoutHistory refreshKey={payoutHistoryRefreshKey} hideTitle />
+                    </div>
+                </DialogContent>
+            </Dialog>
 
             {/* Rücklagebetrag */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">

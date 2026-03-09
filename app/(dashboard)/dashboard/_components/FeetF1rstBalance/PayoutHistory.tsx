@@ -75,9 +75,11 @@ function formatCurrency(value: number) {
 interface PayoutHistoryProps {
     /** When this changes, refetch and load all pages so table shows full data at once */
     refreshKey?: number
+    /** Hide the "Auszahlungsanfragen" heading (e.g. when used inside a modal with its own title) */
+    hideTitle?: boolean
 }
 
-export default function PayoutHistory({ refreshKey }: PayoutHistoryProps) {
+export default function PayoutHistory({ refreshKey, hideTitle }: PayoutHistoryProps) {
     const [items, setItems] = useState<PayoutItem[]>([])
     const [cursor, setCursor] = useState<string>('')
     const [hasMore, setHasMore] = useState(true)
@@ -158,16 +160,16 @@ export default function PayoutHistory({ refreshKey }: PayoutHistoryProps) {
 
     if (isLoading && items.length === 0) {
         return (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                <h2 className="text-xl font-bold text-gray-800 mb-4">Auszahlungsanfragen</h2>
+            <div className={hideTitle ? '' : 'bg-white rounded-xl shadow-sm border border-gray-100 p-6'}>
+                {!hideTitle && <h2 className="text-xl font-bold text-gray-800 mb-4">Auszahlungsanfragen</h2>}
                 <p className="text-gray-500">Lädt...</p>
             </div>
         )
     }
 
     return (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-xl font-bold text-gray-800 mb-4">Auszahlungsanfragen</h2>
+        <div className={hideTitle ? '' : 'bg-white rounded-xl shadow-sm border border-gray-100 p-6'}>
+            {!hideTitle && <h2 className="text-xl font-bold text-gray-800 mb-4">Auszahlungsanfragen</h2>}
             {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
             {items.length === 0 && !isLoading ? (
                 <p className="text-gray-500">Noch keine Auszahlungsanfragen.</p>
