@@ -10,11 +10,14 @@ interface MillingBlock {
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number }
+    sizeQuantities: { [key: string]: number | { quantity?: number; auto_order_quantity?: number } }
     Status: string
     image?: string
     purchase_price?: number
     selling_price?: number
+    features?: string[]
+    create_status?: string
+    adminStoreId?: string | null
 }
 
 interface DeleteMillingBlockModalProps {
