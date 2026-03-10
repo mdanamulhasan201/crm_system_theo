@@ -302,9 +302,27 @@ export default function DataTables({
         setShowCancelModal(true);
     };
 
-    // Handle invoice download - open PDF in new tab
-    const handleDownloadInvoice = (url: string) => {
-        if (url) {
+    // Download PDF with customer name as filename (for navbar/tab and saved file)
+    const handleDownloadInvoice = async (url: string, customerName?: string) => {
+        if (!url) return;
+        const safeName = (customerName || 'Rechnung').replace(/[^a-zA-Z0-9-_ \u00C0-\u024F]/g, '').trim() || 'Rechnung';
+        const filename = `${safeName}-invoice.pdf`;
+        try {
+            const res = await fetch(url, { mode: 'cors' });
+            if (!res.ok) {
+                window.open(url, '_blank');
+                return;
+            }
+            const blob = await res.blob();
+            const blobUrl = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(blobUrl);
+        } catch {
             window.open(url, '_blank');
         }
     };
@@ -580,23 +598,23 @@ export default function DataTables({
         </svg>
     );
 
-    // Invoice PDF button - show when invoice URL exists
+    // Invoice PDF button - show when invoice URL exists; download filename = customer name
     const downloadInvoiceAction: TableAction<TransactionData> = {
         type: 'custom',
         label: 'Rechnung (Schaft)',
         icon: pdfIcon,
         className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer border border-blue-200 rounded-md p-2',
-        onClick: (row) => handleDownloadInvoice(row.custom_shafts_invoice!),
+        onClick: (row) => handleDownloadInvoice(row.custom_shafts_invoice!, row.kundenname),
         show: (row) => !!row.custom_shafts_invoice,
     };
 
-    // Invoice2 PDF button - show when invoice2 URL exists
+    // Invoice2 PDF button - show when invoice2 URL exists; download filename = customer name
     const downloadInvoice2Action: TableAction<TransactionData> = {
         type: 'custom',
         label: 'Rechnung (Boden)',
         icon: pdfIcon,
         className: 'text-blue-600 hover:text-blue-700 hover:bg-blue-50 cursor-pointer border border-blue-200 rounded-md p-2',
-        onClick: (row) => handleDownloadInvoice(row.custom_shafts_invoice2!),
+        onClick: (row) => handleDownloadInvoice(row.custom_shafts_invoice2!, row.kundenname),
         show: (row) => !!row.custom_shafts_invoice2,
     };
 
