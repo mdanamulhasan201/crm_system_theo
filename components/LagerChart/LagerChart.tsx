@@ -119,7 +119,7 @@ export default function LagerChart() {
 
     return (
         <div className="w-full p-2 sm:p-4 mx-auto">
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 md:mb-8">Retourenquote pro Modell</h1>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 md:mb-8">Lagerwert</h1>
 
             <div className="w-full">
                 <div className="w-full overflow-x-auto -mx-2 sm:mx-0">
