@@ -28,9 +28,6 @@ interface MillingBlock {
   sizeQuantities: {
     [key: string]: number | { quantity?: number; auto_order_quantity?: number };
   };
-  sizeQuantities: {
-    [key: string]: number | { quantity?: number; auto_order_quantity?: number };
-  };
   Status: string;
   image?: string;
   purchase_price?: number;
