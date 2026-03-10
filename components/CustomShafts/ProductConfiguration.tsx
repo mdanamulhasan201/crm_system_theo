@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColorSectionModal';
-import ZipperPlacementModal from './ZipperPlacementModal';
+import ZipperPlacementModal, { type ZipperPosition } from './ZipperPlacementModal';
 import toast from 'react-hot-toast';
 
 interface ProductConfigurationProps {
@@ -31,6 +31,9 @@ interface ProductConfigurationProps {
   setOsenEinsetzen?: (value: boolean | undefined) => void;
   zipperExtra?: boolean | undefined;
   setZipperExtra?: (value: boolean | undefined) => void;
+  /** Zipper position when zipper extra is selected: inside/outside = +9.99€, both = +19.99€. Single selection (radio). */
+  zipperPosition?: ZipperPosition | null;
+  setZipperPosition?: (value: ZipperPosition | null) => void;
   closureType: string;
   setClosureType: (type: string) => void;
   lederType: string;
@@ -112,6 +115,8 @@ export default function ProductConfiguration({
   setOsenEinsetzen,
   zipperExtra,
   setZipperExtra,
+  zipperPosition = null,
+  setZipperPosition,
   closureType,
   setClosureType,
   lederType,
@@ -180,8 +185,15 @@ export default function ProductConfiguration({
   const [showLeatherColorModal, setShowLeatherColorModal] = useState(false);
   const [showZipperPlacementModal, setShowZipperPlacementModal] = useState(false);
   const [zipperPlacementImage, setZipperPlacementImage] = useState<string | null>(zipperImage || null);
+  const [localZipperPosition, setLocalZipperPosition] = useState<ZipperPosition | null>(null);
   const [leatherPaintImage, setLeatherPaintImage] = useState<string | null>(paintImage || null);
   const isSavingZipperRef = useRef(false);
+
+  const effectiveZipperPosition = zipperPosition ?? localZipperPosition;
+  const updateZipperPosition = (value: ZipperPosition | null) => {
+    if (setZipperPosition) setZipperPosition(value);
+    else setLocalZipperPosition(value);
+  };
 
   // Use parent state if provided, otherwise use local state
   const effectiveCadModeling = cadModeling || localCadModeling;
@@ -885,21 +897,32 @@ export default function ProductConfiguration({
                     }
                   }}
                 />
-                <span>Ja, zusätzlichen Reißverschluss 
-                  <span className="text-green-600 font-semibold"> (+9,99€)</span>
+                <span>Ja, zusätzlichen Reißverschluss
+                  {effectiveZipperPosition === 'both' ? (
+                    <span className="text-green-600 font-semibold"> (+19,99 €)</span>
+                  ) : (
+                    <span className="text-green-600 font-semibold"> (+9,99 €)</span>
+                  )}
                 </span>
               </label>
           </div>
         </div>
 
         {/* Display Zipper Drawing Image if exists */}
-        {effektZipperExtra === true && zipperPlacementImage && (
+        {effektZipperExtra === true && (zipperPlacementImage || effectiveZipperPosition) && (
           <div className="flex flex-col md:flex-row md:items-start gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <Label className="font-medium text-base md:w-1/3 md:mt-2">Reißverschluss-Position:</Label>
             <div className="flex-1 space-y-3">
+              {effectiveZipperPosition && (
+                <p className="text-sm text-gray-700">
+                  {effectiveZipperPosition === 'inside' && 'Innen (+9,99 €)'}
+                  {effectiveZipperPosition === 'outside' && 'Außen (+9,99 €)'}
+                  {effectiveZipperPosition === 'both' && 'Beide Seiten (+19,99 €)'}
+                </p>
+              )}
               <div className="relative inline-block">
                 {/* Show shoe image as background if available, otherwise just the drawing */}
-                {shoeImage ? (
+                {zipperPlacementImage && shoeImage ? (
                   <div className="relative">
                     <img 
                       src={shoeImage} 
@@ -912,13 +935,13 @@ export default function ProductConfiguration({
                       className="absolute top-0 left-0 w-full h-full object-contain"
                     />
                   </div>
-                ) : (
+                ) : zipperPlacementImage ? (
                   <img 
                     src={zipperPlacementImage} 
                     alt="Zipper placement" 
                     className="max-w-full h-auto max-h-[300px] rounded border border-gray-300"
                   />
-                )}
+                ) : null}
               </div>
               <Button
                 type="button"
@@ -1032,29 +1055,21 @@ export default function ProductConfiguration({
         <ZipperPlacementModal
           isOpen={showZipperPlacementModal}
           onClose={() => {
-            // Reset flag and close modal
             isSavingZipperRef.current = false;
             setShowZipperPlacementModal(false);
           }}
           onSave={(imageDataUrl) => {
-            // Mark that we're saving to prevent onClose from resetting closureType
             isSavingZipperRef.current = true;
-            // Save the zipper placement image locally
             setZipperPlacementImage(imageDataUrl);
-            // Also update parent state if provided
-            if (setZipperImage) {
-              setZipperImage(imageDataUrl);
-            }
-            // Set the checkbox to true when zipper placement is saved
+            if (setZipperImage) setZipperImage(imageDataUrl);
             updateZipperExtra(true);
             setShowZipperPlacementModal(false);
-            // Reset flag after a brief delay
-            setTimeout(() => {
-              isSavingZipperRef.current = false;
-            }, 100);
+            setTimeout(() => { isSavingZipperRef.current = false; }, 100);
           }}
           imageUrl={shoeImage}
           savedDrawing={zipperPlacementImage}
+          zipperPosition={effectiveZipperPosition}
+          onZipperPositionChange={(position) => updateZipperPosition(position)}
         />
       </div>
     </TooltipProvider>

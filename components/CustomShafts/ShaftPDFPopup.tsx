@@ -47,6 +47,7 @@ interface ShaftPDFPopupProps {
     passendenSchnursenkel?: boolean
     osenEinsetzen?: boolean
     zipperExtra?: boolean
+    zipperPosition?: 'inside' | 'outside' | 'both' | null
     additionalNotes?: string
     deliveryMethod?: string
   }
@@ -719,7 +720,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                             Zusätzlicher Reißverschluss
                           </div>
                           <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={true} label={shaftConfiguration.zipperExtra === true ? 'Ja (+9.99€)' : 'Nein'} />
+                            <ModalCheckbox isSelected={true} label={shaftConfiguration.zipperExtra === true ? (shaftConfiguration.zipperPosition === 'both' ? 'Ja (Beide Seiten +19.99€)' : shaftConfiguration.zipperPosition === 'outside' ? 'Ja (Außen +9.99€)' : shaftConfiguration.zipperPosition === 'inside' ? 'Ja (Innen +9.99€)' : 'Ja (+9.99€)') : 'Nein'} />
                           </div>
                         </div>
                       )}
@@ -1043,7 +1044,7 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                           Zusätzlicher Reißverschluss
                         </div>
                         <div style={{ flex: 1, lineHeight: 1.4 }}>
-                          <PDFCheckbox isSelected={true} label={shaftConfiguration.zipperExtra === true ? 'Ja (+9.99€)' : 'Nein'} />
+                          <PDFCheckbox isSelected={true} label={shaftConfiguration.zipperExtra === true ? (shaftConfiguration.zipperPosition === 'both' ? 'Ja (Beide Seiten +19.99€)' : shaftConfiguration.zipperPosition === 'outside' ? 'Ja (Außen +9.99€)' : shaftConfiguration.zipperPosition === 'inside' ? 'Ja (Innen +9.99€)' : 'Ja (+9.99€)') : 'Nein'} />
                         </div>
                       </div>
                     )}

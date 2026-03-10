@@ -21,6 +21,8 @@ interface ConfirmationModalProps {
   passendenSchnursenkel?: boolean | undefined;
   osenEinsetzen?: boolean | undefined;
   zipperExtra?: boolean | undefined;
+  /** When zipper extra is true: 'inside' | 'outside' = +9.99€, 'both' = +19.99€ */
+  zipperPosition?: 'inside' | 'outside' | 'both' | null;
   selectedCustomer: Customer | null;
   otherCustomerNumber?: string;
   shaftName?: string;
@@ -45,6 +47,7 @@ export default function ConfirmationModal({
   passendenSchnursenkel,
   osenEinsetzen,
   zipperExtra,
+  zipperPosition = null,
   selectedCustomer,
   otherCustomerNumber,
   shaftName,
@@ -190,7 +193,11 @@ export default function ConfirmationModal({
                 )}
                 {zipperExtra !== undefined && (
                   <li>
-                    Zusätzlicher Reißverschluss: {zipperExtra ? <span className="font-semibold text-green-700">Ja (+9,99€)</span> : 'Nein'}
+                    Zusätzlicher Reißverschluss: {zipperExtra ? (
+                      <span className="font-semibold text-green-700">
+                        Ja ({zipperPosition === 'both' ? 'Beide Seiten +19,99€' : zipperPosition === 'outside' ? 'Außen +9,99€' : zipperPosition === 'inside' ? 'Innen +9,99€' : '+9,99€'})
+                      </span>
+                    ) : 'Nein'}
                   </li>
                 )}
               </ul>

@@ -16,6 +16,7 @@ import ShaftPDFPopup, { ShaftOrderDataForPDF } from '@/components/CustomShafts/S
 import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp';
 import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
 import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
+import type { ZipperPosition } from '@/components/CustomShafts/ZipperPlacementModal';
 
 interface Customer {
   id: string;
@@ -116,6 +117,7 @@ export default function CustomShoeOrderPage() {
   const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<boolean | undefined>(undefined);
   const [osenEinsetzen, setOsenEinsetzen] = useState<boolean | undefined>(undefined);
   const [zipperExtra, setZipperExtra] = useState<boolean | undefined>(undefined);
+  const [zipperPosition, setZipperPosition] = useState<ZipperPosition | null>(null);
 
   // Business address for courier (abholung)
   const [businessAddress, setBusinessAddress] = useState<BusinessAddressData | null>(null);
@@ -134,7 +136,8 @@ export default function CustomShoeOrderPage() {
   // Pricing constants
   const SCHNURSENKEL_PRICE = 4.49;
   const OSEN_EINSETZEN_PRICE = 8.99;
-  const ZIPPER_EXTRA_PRICE = 9.99;
+  const ZIPPER_EXTRA_PRICE = 9.99;   // Inside or Outside
+  const ZIPPER_BOTH_PRICE = 19.99;   // Both sides
   const CAD_MODELING_2X_PRICE = 6.99;
   const COURIER_PRICE_DEFAULT = 13.0;
 
@@ -182,7 +185,9 @@ export default function CustomShoeOrderPage() {
     // Add-ons
     if (passendenSchnursenkel) total += SCHNURSENKEL_PRICE;
     if (osenEinsetzen) total += OSEN_EINSETZEN_PRICE;
-    if (zipperExtra) total += ZIPPER_EXTRA_PRICE;
+    if (zipperExtra) {
+      total += zipperPosition === 'both' ? ZIPPER_BOTH_PRICE : ZIPPER_EXTRA_PRICE;
+    }
 
     // Courier price
     if (isAbholung && businessAddress) {
@@ -276,7 +281,10 @@ export default function CustomShoeOrderPage() {
       osen_einsetzen: osenEinsetzen === true,
       moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: osenEinsetzen === true ? '8.99' : null,
       zipper_extra: zipperExtra === true,
-      moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true ? '9.99' : null,
+      zipper_position: zipperPosition ?? undefined,
+      moechten_sie_einen_zusaetzlichen_reissverschluss_price: zipperExtra === true
+        ? (zipperPosition === 'both' ? '19.99' : '9.99')
+        : null,
 
       // Business address
       businessAddress,
@@ -440,7 +448,12 @@ export default function CustomShoeOrderPage() {
           osenEinsetzen={osenEinsetzen}
           setOsenEinsetzen={setOsenEinsetzen}
           zipperExtra={zipperExtra}
-          setZipperExtra={setZipperExtra}
+          setZipperExtra={(v) => {
+            setZipperExtra(v);
+            if (v === false) setZipperPosition(null);
+          }}
+          zipperPosition={zipperPosition}
+          setZipperPosition={setZipperPosition}
           closureType={closureType}
           setClosureType={setClosureType}
           lederType={lederType}
@@ -573,6 +586,7 @@ export default function CustomShoeOrderPage() {
             passendenSchnursenkel,
             osenEinsetzen,
             zipperExtra,
+            zipperPosition,
             additionalNotes,
             deliveryMethod,
           }}
@@ -594,6 +608,7 @@ export default function CustomShoeOrderPage() {
         passendenSchnursenkel={passendenSchnursenkel}
         osenEinsetzen={osenEinsetzen}
         zipperExtra={zipperExtra}
+        zipperPosition={zipperPosition}
         selectedCustomer={selectedCustomer}
         otherCustomerNumber={otherCustomerNumber}
         shaftName={productDescription || ''}
@@ -641,6 +656,7 @@ export default function CustomShoeOrderPage() {
             passendenSchnursenkel,
             osenEinsetzen,
             zipperExtra,
+            zipperPosition,
             additionalNotes,
             deliveryMethod,
           }}

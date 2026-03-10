@@ -64,6 +64,7 @@ interface CustomShaftData {
   osen_einsetzen: boolean;
   moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price: string | null;
   zipper_extra: boolean;
+  zipper_position?: 'inside' | 'outside' | 'both';
   moechten_sie_einen_zusaetzlichen_reissverschluss_price: string | null;
   businessAddress: BusinessAddress | null;
   isAbholung: boolean;
@@ -174,6 +175,7 @@ export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
     moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price:
       data.moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen_price || null,
     moechten_sie_einen_zusaetzlichen_reissverschluss: data.zipper_extra || null,
+    zipper_position: data.zipper_position || null,
     moechten_sie_einen_zusaetzlichen_reissverschluss_price:
       data.moechten_sie_einen_zusaetzlichen_reissverschluss_price || null,
     cadModeling: data.cadModeling || null,
