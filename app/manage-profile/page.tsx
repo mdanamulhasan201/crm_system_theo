@@ -8,6 +8,7 @@ import useEmblaCarousel from 'embla-carousel-react'
 import logo from '@/public/images/logo.png'
 import { getProfileList, logicalLogin } from '@/apis/authApis'
 import { useAuth } from '@/contexts/AuthContext'
+import { isNetworkError } from '@/lib/networkError'
 import toast from 'react-hot-toast'
 
 export interface ProfileItem {
@@ -83,6 +84,9 @@ export default function ManageProfilePage() {
         if (res.busnessInfo) setBusnessInfo(res.busnessInfo)
       }
     } catch (e) {
+      if (isNetworkError(e) || (e && (e as { isNetworkError?: boolean }).isNetworkError)) {
+        return
+      }
       const msg = e instanceof Error ? e.message : 'Failed to load profiles'
       toast.error(msg)
       router.replace('/login')
