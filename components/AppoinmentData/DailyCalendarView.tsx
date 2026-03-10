@@ -1,5 +1,5 @@
 'use client'
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAssignedToColor } from '@/lib/appointmentColors';
@@ -52,6 +52,13 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     showHeader = false,
     businessName
 }) => {
+    // Current time for header (updates every minute)
+    const [now, setNow] = useState(() => new Date());
+    useEffect(() => {
+        const interval = setInterval(() => setNow(new Date()), 60_000);
+        return () => clearInterval(interval);
+    }, []);
+
     // Calendar configuration - Only show 5 AM to 9 PM (5-21)
     const calendarStartHour = 5;
     const calendarEndHour = 21; // 9 PM
@@ -297,7 +304,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             {showHeader && (
                 <div className='flex flex-col gap-3 mb-6 pb-4 border-b border-gray-200'>
                     <h1 className='text-3xl font-bold capitalize'>Willkommen zurück <span className='capitalize'>{businessName || ''}</span></h1>
-                    <p className='text-lg text-gray-500'>{format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })}</p>
+                    <p className='text-lg text-gray-500'>{format(now, 'EEEE, d. MMMM yyyy', { locale: de })} · {format(now, 'HH:mm')} Uhr</p>
                 </div>
             )}
 
