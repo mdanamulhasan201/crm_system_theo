@@ -13,7 +13,7 @@ interface MillingBlock {
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number }
+    sizeQuantities: { [key: string]: number | { quantity?: number; auto_order_quantity?: number } }
     Status: string
     image?: string
     purchase_price?: number
@@ -60,10 +60,12 @@ export default function EditMillingBlock({
             setPurchasePrice(product.purchase_price || 0)
             setSellingPrice(product.selling_price || 0)
             
+            const getQty = (v: number | { quantity?: number; auto_order_quantity?: number } | undefined) =>
+                typeof v === 'number' ? v : (v?.quantity ?? 0)
             const initialSizeQuantities: { [key: string]: SizeData } = {}
             sizeColumns.forEach(size => {
                 initialSizeQuantities[size] = {
-                    quantity: product.sizeQuantities[size] || 0,
+                    quantity: getQty(product.sizeQuantities[size]),
                     mindestmenge: product.minStockLevel || 0,
                     autoOrderLimit: undefined,
                     orderQuantity: undefined
