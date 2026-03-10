@@ -265,7 +265,7 @@ export default function ProductManagementTable({
                                     </TableCell>
                                     <TableCell className="p-3 text-gray-900">
                                         {isEinlagenrohlinge ? (
-                                            <div className="flex flex-col gap-0.5">
+                                            <div className="flex flex-col gap-0.5 uppercase">
                                                 <span className="font-semibold text-gray-900 block">{product.Produktname}</span>
                                                 <span className="text-sm text-gray-500">{product.Produktkürzel}</span>
                                             </div>
@@ -273,17 +273,17 @@ export default function ProductManagementTable({
                                             <TooltipProvider>
                                                 <Tooltip>
                                                     <TooltipTrigger asChild>
-                                                        <span className="cursor-help">{truncateText(product.Produktname)}</span>
+                                                        <span className="cursor-help uppercase">{truncateText(product.Produktname)}</span>
                                                     </TooltipTrigger>
                                                     {product.Produktname.length > 15 && (
-                                                        <TooltipContent><p>{product.Produktname}</p></TooltipContent>
+                                                        <TooltipContent><p className="uppercase">{product.Produktname}</p></TooltipContent>
                                                     )}
                                                 </Tooltip>
                                             </TooltipProvider>
                                         )}
                                     </TableCell>
                                     {!isEinlagenrohlinge && (
-                                        <TableCell className="p-3 text-gray-900">
+                                        <TableCell className="p-3 text-gray-900 uppercase">
                                             {product.Produktkürzel}
                                         </TableCell>
                                     )}

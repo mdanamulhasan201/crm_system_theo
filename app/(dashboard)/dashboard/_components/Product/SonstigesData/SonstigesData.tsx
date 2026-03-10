@@ -55,8 +55,19 @@ function CustomCheckbox({
     )
 }
 
-export default function SonstigesData() {
-    const [searchQuery, setSearchQuery] = useState('')
+export interface SonstigesDataProps {
+    setProductCount?: (n: number) => void
+    openAddModal?: boolean
+    onCloseAddModal?: () => void
+    searchQuery?: string
+    onSearchChange?: (value: string) => void
+}
+
+const SonstigesData: React.FunctionComponent<SonstigesDataProps> = (props) => {
+    const { setProductCount, openAddModal, onCloseAddModal, searchQuery: controlledSearch, onSearchChange } = props
+    const [internalSearch, setInternalSearch] = useState('')
+    const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
+    const setSearchQuery = onSearchChange ?? setInternalSearch
     const [createModalOpen, setCreateModalOpen] = useState(false)
     const [editModalOpen, setEditModalOpen] = useState(false)
     const [deleteModalOpen, setDeleteModalOpen] = useState(false)
@@ -88,6 +99,14 @@ export default function SonstigesData() {
     useEffect(() => {
         fetchItems()
     }, [fetchItems])
+
+    useEffect(() => {
+        if (setProductCount) setProductCount(items.length)
+    }, [items.length, setProductCount])
+
+    useEffect(() => {
+        if (openAddModal) setCreateModalOpen(true)
+    }, [openAddModal])
 
     const visibleProducts = useMemo(() => items, [items])
 
@@ -210,24 +229,26 @@ export default function SonstigesData() {
         }).format(val) + ' €'
     }
 
-    return (
-        <div className="w-full px-5">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between mb-5">
-                <h1 className='text-2xl font-semibold'>Sonstiges Verwaltung</h1>
+    const handleCloseCreateModal = () => {
+        setCreateModalOpen(false)
+        onCloseAddModal?.()
+    }
 
-                <div className="flex items-center gap-4">
+    return (
+        <div className="w-full mb-10">
+            {controlledSearch === undefined && (
+                <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between mb-4">
                     <div className="relative w-64">
                         <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg" />
                         <Input
-                            placeholder="Suchen"
+                            placeholder="Suchen..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="pl-10 pr-4 py-2 w-full rounded-full bg-white text-gray-700 placeholder:text-gray-500 border border-gray-300 focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400"
                         />
                     </div>
                 </div>
-            </div>
+            )}
 
             <div className='flex flex-col sm:flex-row items-center justify-end gap-2 sm:gap-4'>
                 {isSomeSelected && (
@@ -240,12 +261,14 @@ export default function SonstigesData() {
                         Ausgewählte löschen ({selectedIds.size})
                     </Button>
                 )}
-                <Button
-                    className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer shrink-0"
-                    onClick={() => setCreateModalOpen(true)}
-                >
-                    Erstellen
-                </Button>
+                {controlledSearch === undefined && (
+                    <Button
+                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer shrink-0"
+                        onClick={() => setCreateModalOpen(true)}
+                    >
+                        Erstellen
+                    </Button>
+                )}
             </div>
 
             {/* Table */}
@@ -366,7 +389,7 @@ export default function SonstigesData() {
 
             <SonstigesCreateModal
                 isOpen={createModalOpen}
-                onClose={() => setCreateModalOpen(false)}
+                onClose={handleCloseCreateModal}
                 onSubmit={handleCreateSubmit}
                 mode="create"
             />
@@ -405,4 +428,6 @@ export default function SonstigesData() {
             />
         </div>
     )
-}
+};
+
+export default SonstigesData

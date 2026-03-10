@@ -12,6 +12,7 @@ import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import AddProductTypeModal from '../AddProductTypeModal'
 
+// sizeQuantities values can be number or { quantity?, auto_order_quantity? } (matches MillingBlocksTable)
 interface MillingBlock {
     id: string
     Produktname: string
@@ -19,7 +20,7 @@ interface MillingBlock {
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number }
+    sizeQuantities: { [key: string]: number | { quantity?: number; auto_order_quantity?: number } }
     Status: string
     image?: string
     purchase_price?: number
@@ -29,35 +30,55 @@ interface MillingBlock {
     adminStoreId?: string | null
 }
 
+function getQuantity(val: number | { quantity?: number; auto_order_quantity?: number } | undefined): number {
+    if (val == null) return 0
+    return typeof val === 'object' ? (val.quantity ?? 0) : val
+}
+
 // Size columns - only 3 sizes
 const sizeColumns = ['Size 1', 'Size 2', 'Size 3']
 
 interface MillingBlocksProps {
     type?: 'rady_insole' | 'milling_block'
+    setProductCount?: (n: number) => void
+    openAddModal?: boolean
+    onCloseAddModal?: () => void
+    searchQuery?: string
+    onSearchChange?: (value: string) => void
 }
 
-export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksProps) {
+export default function MillingBlocks({ type = 'milling_block', setProductCount, openAddModal, onCloseAddModal, searchQuery: controlledSearch, onSearchChange }: MillingBlocksProps) {
     const router = useRouter()
     const { getAllProducts, isLoadingProducts, refreshProducts } = useStockManagementSlice()
     const [products, setProducts] = useState<MillingBlock[]>([])
-    const [searchQuery, setSearchQuery] = useState('')
+    const [internalSearch, setInternalSearch] = useState('')
+    const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
+    const setSearchQuery = onSearchChange ?? setInternalSearch
     const debouncedSearch = useDebounce(searchQuery, 500)
     const [currentPage, setCurrentPage] = useState(1)
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [addProductModalOpen, setAddProductModalOpen] = useState(false)
 
+    useEffect(() => {
+        if (setProductCount) setProductCount(products.length)
+    }, [products.length, setProductCount])
+
+    useEffect(() => {
+        if (openAddModal) setAddProductModalOpen(true)
+    }, [openAddModal])
+
     // Helper to check if product has low stock
     const hasLowStock = (product: MillingBlock): boolean => {
         return Object.values(product.sizeQuantities).some(
-            quantity => quantity <= product.minStockLevel && quantity > 0
+            val => getQuantity(val) <= product.minStockLevel && getQuantity(val) > 0
         );
     }
 
     // Helper to get low stock sizes
     const getLowStockSizes = (product: MillingBlock) => {
         return Object.entries(product.sizeQuantities)
-            .filter(([, quantity]) => quantity <= product.minStockLevel && quantity > 0)
-            .map(([size, quantity]) => ({ size, quantity }));
+            .filter(([, val]) => getQuantity(val) <= product.minStockLevel && getQuantity(val) > 0)
+            .map(([size, val]) => ({ size, quantity: getQuantity(val) }));
     }
 
     // History handler (used by MillingBlocksTable)
@@ -168,50 +189,26 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
     // Filter products based on search query (now handled by API, but keeping for consistency)
     const filteredProducts = products
 
-    return (
-        <div className="w-full px-5">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between mb-10">
-                <h1 className='text-2xl font-semibold'>Fräsblock Verwaltung</h1>
+    const handleCloseAddModal = () => {
+        setAddProductModalOpen(false)
+        onCloseAddModal?.()
+    }
 
-                <div className="flex items-center gap-4">
+    return (
+        <div className="w-full mb-10">
+            {controlledSearch === undefined && (
+                <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-end mb-4">
                     <div className="relative w-64">
                         <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg" />
                         <Input
-                            placeholder="Search"
+                            placeholder="Suchen..."
                             value={searchQuery}
                             onChange={handleSearchChange}
                             className="pl-10 pr-4 py-2 w-full rounded-full bg-white text-gray-700 placeholder:text-gray-500 border border-gray-300 focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400"
                         />
                     </div>
                 </div>
-            </div>
-
-            {/* Section Title */}
-            <div className='flex flex-col lg:flex-row gap-4 md:gap-0 items-center justify-between mb-4'>
-                <div>
-                    <p className="text-sm text-gray-600 mt-1">
-                        {filteredProducts.length} Produkte gefunden
-                    </p>
-                </div>
-                <div className='flex flex-col sm:flex-row items-center gap-4'>
-                    {/* add manual store */}
-                    <Button
-                        onClick={() => setAddProductModalOpen(true)}
-                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
-                    >
-                        Manuelles Lager hinzufügen
-                    </Button>
-                    {/* Buy Now Button */}
-                    <Button
-                        onClick={() => router.push(`/dashboard/buy-storage?type=${type}`)}
-                        disabled={isLoadingProducts}
-                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
-                    >
-                        FeetF1rst Sortiment
-                    </Button>
-                </div>
-            </div>
+            )}
 
             <MillingBlocksTable
                 visibleProducts={filteredProducts}
@@ -244,9 +241,9 @@ export default function MillingBlocks({ type = 'milling_block' }: MillingBlocksP
             {/* Add Product Modal */}
             <AddProductTypeModal
                 isOpen={addProductModalOpen}
-                onClose={() => setAddProductModalOpen(false)}
+                onClose={handleCloseAddModal}
                 onSuccess={async () => {
-                    setAddProductModalOpen(false)
+                    handleCloseAddModal()
                     // Refresh products list
                     try {
                         const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)

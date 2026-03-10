@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { IoSearch } from 'react-icons/io5'
 import ProductsManagement from '../_components/Product/ProductsManagement'
 import MillingBlocks from '../_components/Product/MillingBlocks/MillingBlocks'
 import SonstigesData from '../_components/Product/SonstigesData/SonstigesData'
@@ -23,12 +26,14 @@ export default function Lager() {
             : 'Einlagenrohlinge'
     )
 
-    // Convert UI type to API type
+    const [productCount, setProductCount] = useState(0)
+    const [openAddModalFor, setOpenAddModalFor] = useState<UIType | null>(null)
+    const [searchQuery, setSearchQuery] = useState('')
+
     const apiType: APIType = useMemo(() => {
         return selectedProductType === 'Einlagenrohlinge' ? 'rady_insole' : 'milling_block'
     }, [selectedProductType])
 
-    // Update query string when tab changes
     const handleTabChange = (type: UIType) => {
         setSelectedProductType(type)
         const params = new URLSearchParams(searchParams.toString())
@@ -36,53 +41,121 @@ export default function Lager() {
         router.push(`?${params.toString()}`, { scroll: false })
     }
 
-    // Sync state with query parameter on mount and when query changes
     useEffect(() => {
         if (typeFromQuery && (typeFromQuery === 'Einlagenrohlinge' || typeFromQuery === 'Fräsblock' || typeFromQuery === 'Sonstiges')) {
             setSelectedProductType(typeFromQuery)
         }
     }, [typeFromQuery])
 
+    const handleFeetF1rst = () => {
+        const type = selectedProductType === 'Einlagenrohlinge' ? 'rady_insole' : 'milling_block'
+        router.push(`/dashboard/buy-storage?type=${type}`)
+    }
+
     return (
         <div className="w-full max-w-[100vw] px-3 sm:px-4 md:px-5 overflow-x-hidden">
-            {/* Toggle Buttons */}
-            <div className="flex flex-wrap items-center gap-2 mb-4">
-                <button
-                    onClick={() => handleTabChange('Einlagenrohlinge')}
-                    className={`px-6 cursor-pointer py-2 rounded-full font-medium transition-colors ${selectedProductType === 'Einlagenrohlinge'
-                        ? 'bg-[#61A178] text-white'
-                        : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
-                        }`}
-                >
-                    Einlagenrohlinge
-                </button>
-                <button
-                    onClick={() => handleTabChange('Fräsblock')}
-                    className={`px-6 cursor-pointer py-2 rounded-full font-medium transition-colors ${selectedProductType === 'Fräsblock'
-                        ? 'bg-[#61A178] text-white'
-                        : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
-                        }`}
-                >
-                    Fräsblock
-                </button>
-                <button
-                    onClick={() => handleTabChange('Sonstiges')}
-                    className={`px-6 cursor-pointer py-2 rounded-full font-medium transition-colors ${selectedProductType === 'Sonstiges'
-                        ? 'bg-[#61A178] text-white'
-                        : 'bg-[#E8F5E9] text-gray-700 hover:bg-[#C8E6C9]'
-                        }`}
-                >
-                    Sonstiges
-                </button>
+            {/* Title section – top: title + count (left), search (right) */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                <div>
+                    <h1 className="text-2xl font-semibold text-gray-900">Produktverwaltung</h1>
+                    <p className="text-sm text-gray-500 mt-1">{productCount} Produkte gefunden</p>
+                </div>
+                <div className="relative w-full sm:w-64 shrink-0">
+                    <IoSearch className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-lg pointer-events-none" />
+                    <Input
+                        placeholder="Suchen..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="h-11 w-full rounded bg-gray-50/80 text-gray-700 placeholder:text-gray-400 border border-gray-200 pl-11 pr-5 py-2.5 focus-visible:ring-2 focus-visible:ring-gray-300/50 focus-visible:border-gray-300 focus:outline-none"
+                    />
+                </div>
             </div>
 
-            {/* Conditionally render components based on selected type */}
+            {/* Row: 3 tabs (left) + 2 buttons (right) */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div className="flex flex-wrap items-center gap-2">
+                    <button
+                        onClick={() => handleTabChange('Einlagenrohlinge')}
+                        className={`px-4 cursor-pointer py-2 rounded font-medium transition-colors ${selectedProductType === 'Einlagenrohlinge'
+                            ? 'bg-[#61A178] text-white'
+                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-[#C8E6C9]'
+                            }`}
+                    >
+                        Einlagenrohlinge
+                    </button>
+                    <button
+                        onClick={() => handleTabChange('Fräsblock')}
+                        className={`px-4 cursor-pointer py-2 rounded font-medium transition-colors ${selectedProductType === 'Fräsblock'
+                            ? 'bg-[#61A178] text-white'
+                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-[#C8E6C9]'
+                            }`}
+                    >
+                        Fräsblock
+                    </button>
+                    <button
+                        onClick={() => handleTabChange('Sonstiges')}
+                        className={`px-4 cursor-pointer py-2 rounded font-medium transition-colors ${selectedProductType === 'Sonstiges'
+                            ? 'bg-[#61A178] text-white'
+                            : 'bg-white border border-gray-200 text-gray-700 hover:bg-[#C8E6C9]'
+                            }`}
+                    >
+                        Sonstiges
+                    </button>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+                    {selectedProductType === 'Sonstiges' ? (
+                        <Button
+                            onClick={() => setOpenAddModalFor('Sonstiges')}
+                            className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
+                        >
+                            Erstellen
+                        </Button>
+                    ) : (
+                        <>
+                            <Button
+                                onClick={() => setOpenAddModalFor(selectedProductType)}
+                                className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
+                            >
+                                Manuelles Lager hinzufügen
+                            </Button>
+                            <Button
+                                onClick={handleFeetF1rst}
+                                className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
+                            >
+                                FeetF1rst Sortiment
+                            </Button>
+                        </>
+                    )}
+                </div>
+            </div>
+
+            {/* Content: table (with search inside each component) */}
             {selectedProductType === 'Einlagenrohlinge' ? (
-                <ProductsManagement type={apiType} />
+                <ProductsManagement
+                    type={apiType}
+                    setProductCount={setProductCount}
+                    openAddModal={openAddModalFor === 'Einlagenrohlinge'}
+                    onCloseAddModal={() => setOpenAddModalFor(null)}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                />
             ) : selectedProductType === 'Fräsblock' ? (
-                <MillingBlocks type={apiType} />
+                <MillingBlocks
+                    type={apiType}
+                    setProductCount={setProductCount}
+                    openAddModal={openAddModalFor === 'Fräsblock'}
+                    onCloseAddModal={() => setOpenAddModalFor(null)}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                />
             ) : selectedProductType === 'Sonstiges' ? (
-                <SonstigesData />
+                <SonstigesData
+                    setProductCount={setProductCount}
+                    openAddModal={openAddModalFor === 'Sonstiges'}
+                    onCloseAddModal={() => setOpenAddModalFor(null)}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                />
             ) : null}
 
 
