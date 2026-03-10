@@ -28,6 +28,7 @@ interface ShaftConfiguration {
   passendenSchnursenkel?: boolean;
   osenEinsetzen?: boolean;
   zipperExtra?: boolean;
+  zipperPosition?: 'inside' | 'outside' | 'both' | null;
   additionalNotes?: string;
   deliveryMethod?: string;
 }

@@ -26,3 +26,28 @@ export const getAutomatischeOrdersStatus = async () => {
         throw error;
     }
 }
+
+
+// }store/settings/get-all-brand
+export const getAllBrand = async () => {
+    try {
+        const response = await axiosClient.get('/store/settings/get-all-brand');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// /}store/settings/toggle-brand/
+// body:
+// {
+//     "brand": "beand name"
+// }
+export const toggleBrand = async (body: { brand: string }) => {
+    try {
+        const response = await axiosClient.post(`/store/settings/toggle-brand`, body);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

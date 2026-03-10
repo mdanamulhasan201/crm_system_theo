@@ -18,6 +18,7 @@ import { IoTime } from 'react-icons/io5'
 import { IoCreate } from 'react-icons/io5'
 import { IoTrash } from 'react-icons/io5'
 import Image from 'next/image'
+import { Switch } from '@/components/ui/switch'
 import MillingBlockImageModal from './MillingBlockImageModal'
 import EinlagenNachbestellenModal from '../EinlagenNachbestellenModal'
 import EditMillingBlock from './EditMillingBlock'
@@ -34,7 +35,7 @@ interface MillingBlock {
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number }
+    sizeQuantities: { [key: string]: number | { quantity?: number; auto_order_quantity?: number } }
     Status: string
     image?: string
     purchase_price?: number
@@ -50,10 +51,19 @@ const truncateText = (text: string, maxLength: number = 15): string => {
     return text.substring(0, maxLength) + '..';
 }
 
-// Helper function to get quantity from sizeQuantities
-const getQuantity = (sizeData: number | undefined): number => {
+// Helper function to get quantity from sizeQuantities (supports number or { quantity, auto_order_quantity? })
+const getQuantity = (sizeData: number | { quantity?: number; auto_order_quantity?: number } | undefined): number => {
     if (sizeData === undefined) return 0;
-    return sizeData;
+    if (typeof sizeData === 'number') return sizeData;
+    return sizeData?.quantity ?? 0;
+}
+
+const getAutoOrderQuantity = (sizeData: number | { quantity?: number; auto_order_quantity?: number } | undefined): number => {
+    if (typeof sizeData === 'object' && sizeData != null && 'auto_order_quantity' in sizeData) {
+        const q = (sizeData as { auto_order_quantity?: number }).auto_order_quantity;
+        return typeof q === 'number' ? q : 0;
+    }
+    return 0;
 }
 
 interface MillingBlocksTableProps {
@@ -65,7 +75,7 @@ interface MillingBlocksTableProps {
     onUpdateProduct: (product: MillingBlock) => void
     onDeleteProduct: (product: MillingBlock) => void
     isLoading?: boolean
-    onOrderSuccess?: () => void
+    onOrderSuccess?: (storeId?: string) => void
 }
 
 export default function MillingBlocksTable({
@@ -84,16 +94,21 @@ export default function MillingBlocksTable({
     const [isModalLoading, setIsModalLoading] = useState(false)
     const [orderModalOpen, setOrderModalOpen] = useState(false)
     const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
+    const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
     const [selectedProductForEdit, setSelectedProductForEdit] = useState<MillingBlock | null>(null)
 
     // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
     const apiDataToMillingBlock = (data: any): MillingBlock => {
-        const normalizedGroessenMengen: { [key: string]: number } = {}
+        const normalizedGroessenMengen: MillingBlock['sizeQuantities'] = {}
         const raw = data.groessenMengen || {}
         Object.keys(raw).forEach(key => {
             const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
             const val = raw[key]
-            normalizedGroessenMengen[normalizedKey] = typeof val === 'object' ? val?.quantity : val
+            if (typeof val === 'object' && val != null) {
+                normalizedGroessenMengen[normalizedKey] = { quantity: val?.quantity ?? 0, auto_order_quantity: val?.auto_order_quantity }
+            } else {
+                normalizedGroessenMengen[normalizedKey] = typeof val === 'number' ? val : 0
+            }
         })
         return {
             id: data.id,
@@ -149,6 +164,10 @@ export default function MillingBlocksTable({
         return getQuantity(product.sizeQuantities[size]);
     }
 
+    const hasAutoOrderOn = (product: MillingBlock): boolean => {
+        return sizeColumns.some(size => getAutoOrderQuantity(product.sizeQuantities[size]) > 0);
+    };
+
     if (isLoading) {
         return <ProductManagementTableShimmer sizeColumns={sizeColumns} rows={5} />
     }
@@ -158,16 +177,15 @@ export default function MillingBlocksTable({
             <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
                 <Table className='w-full bg-white rounded-lg overflow-hidden'>
                     <TableHeader>
-                        <TableRow className="border-b bg-white">
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Lagerort</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Hersteller</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Artikelbezeichnung</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Artikelnummer</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Bestandswarnung</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Historie</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Aktionen</TableHead>
+                        <TableRow className="border-b bg-gray-100">
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">BILD</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">HERSTELLER</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">ARTIKELBEZEICHNUNG</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">STATUS</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AUTO</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AKTIONEN</TableHead>
                             {sizeColumns.map(size => (
-                                <TableHead key={size} className="p-3 text-center font-medium text-gray-900">{size}</TableHead>
+                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase">{size}</TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>
@@ -175,7 +193,7 @@ export default function MillingBlocksTable({
                         {visibleProducts.length === 0 ? (
                             <TableRow>
                                 <TableCell
-                                    colSpan={sizeColumns.length + 7}
+                                    colSpan={sizeColumns.length + 6}
                                     className="p-8 text-center"
                                 >
                                     <div className="flex flex-col items-center justify-center py-8">
@@ -193,8 +211,7 @@ export default function MillingBlocksTable({
                             visibleProducts.map((product) => (
                                 <TableRow key={product.id} className="border-b bg-white">
                                     <TableCell className="p-3">
-                                        {/* Product Image Only - Clickable */}
-                                        <div 
+                                        <div
                                             className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
                                             onClick={() => setSelectedProductIdForModal(product.id)}
                                         >
@@ -204,13 +221,11 @@ export default function MillingBlocksTable({
                                                     height={80}
                                                     src={product.image}
                                                     alt={product.Produktname}
-                                                    className="w-20 h-20 rounded border object-contain border-gray-200 shadow-sm"
+                                                    className="w-20 h-20 rounded-lg border object-contain border-gray-200 shadow-sm"
                                                 />
                                             ) : (
-                                                <div className="w-20 h-20 flex items-center justify-center rounded border border-gray-200 bg-white shadow-sm">
-                                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                    </svg>
+                                                <div className="w-20 h-20 flex items-center justify-center rounded-lg border border-gray-200 bg-gray-100 text-gray-400 text-xs font-medium">
+                                                    Bild
                                                 </div>
                                             )}
                                         </div>
@@ -219,46 +234,39 @@ export default function MillingBlocksTable({
                                         {product.Hersteller}
                                     </TableCell>
                                     <TableCell className="p-3 text-gray-900">
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <span className="cursor-help">
-                                                        {truncateText(product.Produktname)}
-                                                    </span>
-                                                </TooltipTrigger>
-                                                {product.Produktname.length > 15 && (
-                                                    <TooltipContent>
-                                                        <p>{product.Produktname}</p>
-                                                    </TooltipContent>
-                                                )}
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </TableCell>
-                                    <TableCell className="p-3 text-gray-900">
-                                        {product.Produktkürzel}
+                                        <div className="flex flex-col gap-0.5 uppercase">
+                                            <span className="font-semibold text-gray-900 block">{product.Produktname}</span>
+                                            <span className="text-sm text-gray-500">{product.Produktkürzel}</span>
+                                        </div>
                                     </TableCell>
                                     <TableCell className="p-3">
                                         <TooltipProvider>
                                             <Tooltip>
-                                                <TooltipTrigger>
-                                                    {hasLowStock(product) ? (
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                            Niedriger Bestand
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                            Voller Bestand
-                                                        </span>
-                                                    )}
+                                                <TooltipTrigger asChild>
+                                                    <div className="flex flex-wrap items-center gap-1">
+                                                        {hasLowStock(product) && (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                                                                Niedrig
+                                                            </span>
+                                                        )}
+                                                        {product.create_status && product.create_status !== 'by_admin' && (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                                                Offen
+                                                            </span>
+                                                        )}
+                                                        {!hasLowStock(product) && (!product.create_status || product.create_status === 'by_admin') && (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                                                Voller Bestand
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     {hasLowStock(product) ? (
                                                         <div>
                                                             <p className="font-medium mb-1">Niedriger Bestand:</p>
                                                             {getLowStockSizes(product).map(({ size, quantity }) => (
-                                                                <p key={size}>
-                                                                    {size}: {quantity} Stück
-                                                                </p>
+                                                                <p key={size}>{size}: {quantity} Stück</p>
                                                             ))}
                                                         </div>
                                                     ) : (
@@ -269,17 +277,24 @@ export default function MillingBlocksTable({
                                         </TooltipProvider>
                                     </TableCell>
                                     <TableCell className="p-3">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => setSelectedProductForHistory(product)}
-                                            className="h-8 w-8 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                                        >
-                                            <IoTime className="w-4 h-4" />
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            <Switch checked={hasAutoOrderOn(product)} disabled className="data-[state=checked]:bg-emerald-500" />
+                                            <span className={`text-xs font-medium ${hasAutoOrderOn(product) ? 'text-emerald-600' : 'text-gray-500'}`}>
+                                                {hasAutoOrderOn(product) ? 'An' : 'Aus'}
+                                            </span>
+                                        </div>
                                     </TableCell>
                                     <TableCell className="p-3">
                                         <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => setSelectedProductForHistory(product)}
+                                                className="h-8 w-8 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                                title="Historie"
+                                            >
+                                                <IoTime className="w-4 h-4" />
+                                            </Button>
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -299,15 +314,20 @@ export default function MillingBlocksTable({
                                         </div>
                                     </TableCell>
                                     {sizeColumns.map(size => {
+                                        const sizeData = product.sizeQuantities[size];
                                         const stock = getStockForSize(product, size);
                                         const isLowStock = stock <= product.minStockLevel && stock > 0;
+                                        const autoQty = getAutoOrderQuantity(sizeData);
                                         return (
                                             <TableCell key={size} className="p-3 text-center text-gray-900">
-                                                <span
-                                                    className={isLowStock ? 'text-red-600 font-semibold' : ''}
-                                                >
-                                                    {stock}
-                                                </span>
+                                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                                    <span className={isLowStock ? 'text-red-600 font-semibold' : ''}>
+                                                        {stock}
+                                                    </span>
+                                                    {autoQty > 0 && (
+                                                        <span className="text-xs text-orange-600 font-medium">+{autoQty}</span>
+                                                    )}
+                                                </div>
                                             </TableCell>
                                         );
                                     })}
@@ -328,8 +348,9 @@ export default function MillingBlocksTable({
                 }}
                 isLoading={!!selectedProductIdForModal}
                 categoryName="Fräsblock"
-                onOrderClick={(adminStoreId) => {
+                onOrderClick={(adminStoreId, storeId) => {
                     setOrderAdminStoreId(adminStoreId)
+                    setOrderStoreId(storeId)
                     setSelectedProductForImage(null)
                     setSelectedProductIdForModal(null)
                     setOrderModalOpen(true)
@@ -342,10 +363,13 @@ export default function MillingBlocksTable({
                 onClose={() => {
                     setOrderModalOpen(false)
                     setOrderAdminStoreId(null)
+                    setOrderStoreId(null)
                 }}
                 adminStoreId={orderAdminStoreId}
                 productType="milling_block"
                 onOrderSuccess={onOrderSuccess}
+                initialQuantitiesZero
+                storeId={orderStoreId}
             />
 
             {/* Edit Modal */}

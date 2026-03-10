@@ -8,7 +8,7 @@ import { X } from 'lucide-react';
 import DailyCalendarView from '@/components/AppoinmentData/DailyCalendarView';
 import { useWeeklyCalendar } from '@/hooks/calendar/useWeeklyCalendar';
 import { useAuth } from '@/contexts/AuthContext';
-import Links from './_components/Dashboard/Links';
+// import Links from './_components/Dashboard/Links';
 import GeneralNotifications from './_components/Dashboard/GeneralNotifications';
 import Aufgaben from './_components/Dashboard/Aufgaben';
 

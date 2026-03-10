@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { userCheckAuth } from '@/apis/authApis';
+import { isNetworkError } from '@/lib/networkError';
 
 interface User {
   id: string;
@@ -113,6 +114,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       return false;
     } catch (error: any) {
+      if (isNetworkError(error) || (error && (error as { isNetworkError?: boolean }).isNetworkError)) {
+        return false;
+      }
       if (error.response?.status === 401 || error.response?.status === 403) {
         if (employeeToken) {
           localStorage.removeItem('employeeToken');
@@ -185,6 +189,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsAuthenticated(false);
       }
     } catch (error: any) {
+      if (isNetworkError(error) || (error && (error as { isNetworkError?: boolean }).isNetworkError)) {
+        setIsInitialized(true);
+        return;
+      }
       if (error.response?.status === 401 || error.response?.status === 403) {
         if (employeeToken) {
           localStorage.removeItem('employeeToken');

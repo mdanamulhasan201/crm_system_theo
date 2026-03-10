@@ -6,12 +6,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Pen, Eraser, HelpCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+/** Zipper position: Inside = +9.99€, Outside = +9.99€, Both sides = +19.99€ */
+export type ZipperPosition = 'inside' | 'outside' | 'both';
+
 interface ZipperPlacementModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (imageDataUrl: string) => void;
   imageUrl: string | null;
   savedDrawing?: string | null;
+  /** Current zipper position (single selection, radio-style). Required before drawing. */
+  zipperPosition: ZipperPosition | null;
+  onZipperPositionChange: (position: ZipperPosition) => void;
 }
 
 export default function ZipperPlacementModal({
@@ -20,6 +26,8 @@ export default function ZipperPlacementModal({
   onSave,
   imageUrl,
   savedDrawing,
+  zipperPosition,
+  onZipperPositionChange,
 }: ZipperPlacementModalProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null); // Canvas overlay for drawing only
   const imageRef = useRef<HTMLImageElement | null>(null);
@@ -77,9 +85,9 @@ export default function ZipperPlacementModal({
     };
   };
 
-  // Start drawing
+  // Start drawing (require zipper position to be selected first)
   const startDrawing = (clientX: number, clientY: number) => {
-    if (!imageLoaded) return;
+    if (!imageLoaded || !zipperPosition) return;
     
     setIsDrawing(true);
     const drawingLayer = drawingLayerRef.current;
@@ -93,7 +101,7 @@ export default function ZipperPlacementModal({
 
   // Draw line
   const draw = (clientX: number, clientY: number) => {
-    if (!isDrawing || !imageLoaded) return;
+    if (!isDrawing || !imageLoaded || !zipperPosition) return;
 
     const drawingLayer = drawingLayerRef.current;
     const drawingCtx = drawingLayer?.getContext('2d');
@@ -299,6 +307,11 @@ export default function ZipperPlacementModal({
     
     if (!drawingLayer) return;
 
+    if (!zipperPosition) {
+      toast.error('Bitte wählen Sie zuerst die Reißverschluss-Position (Innen, Außen oder Beide Seiten).');
+      return;
+    }
+
     // Check if any drawing has been done
     const drawingExists = checkIfDrawingExists() || hasDrawing;
     
@@ -375,6 +388,51 @@ export default function ZipperPlacementModal({
             Bitte zeichnen Sie ein, wo der Reißverschluss am Schuh angebracht werden soll.
           </p>
 
+          {/* Zipper Position: 3 options above canvas (radio-style, single selection). Price updates in order summary. */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-800">Reißverschluss-Position:</p>
+            <div className="flex flex-wrap gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="zipperPosition"
+                  value="inside"
+                  checked={zipperPosition === 'inside'}
+                  onChange={() => onZipperPositionChange('inside')}
+                  className="w-4 h-4 text-green-500 focus:ring-green-500"
+                />
+                <span className="text-sm text-gray-700">Innen <span className="text-green-600 font-medium">+9,99 €</span></span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="zipperPosition"
+                  value="outside"
+                  checked={zipperPosition === 'outside'}
+                  onChange={() => onZipperPositionChange('outside')}
+                  className="w-4 h-4 text-green-500 focus:ring-green-500"
+                />
+                <span className="text-sm text-gray-700">Außen <span className="text-green-600 font-medium">+9,99 €</span></span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="zipperPosition"
+                  value="both"
+                  checked={zipperPosition === 'both'}
+                  onChange={() => onZipperPositionChange('both')}
+                  className="w-4 h-4 text-green-500 focus:ring-green-500"
+                />
+                <span className="text-sm text-gray-700">Beide Seiten <span className="text-green-600 font-medium">+19,99 €</span></span>
+              </label>
+            </div>
+            {zipperPosition === 'both' && (
+              <p className="text-xs text-gray-600">
+                Die Markierung wird für beide Seiten übernommen.
+              </p>
+            )}
+          </div>
+
           {/* Canvas Container */}
           <div 
             ref={containerRef}
@@ -390,6 +448,12 @@ export default function ZipperPlacementModal({
                 {!imageLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-20">
                     <div className="text-gray-400">Bild wird geladen...</div>
+                  </div>
+                )}
+                {/* Require zipper position before drawing */}
+                {imageLoaded && !zipperPosition && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100/80 z-10 rounded-lg">
+                    <p className="text-gray-600 text-sm">Bitte wählen Sie oben die Reißverschluss-Position.</p>
                   </div>
                 )}
                 
@@ -450,7 +514,7 @@ export default function ZipperPlacementModal({
                   onTouchEnd={stopDrawing}
                   className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 cursor-crosshair touch-none z-10"
                   style={{ 
-                    pointerEvents: imageLoaded ? 'auto' : 'none',
+                    pointerEvents: imageLoaded && zipperPosition ? 'auto' : 'none',
                     display: imageLoaded ? 'block' : 'none'
                   }}
                 />
@@ -522,7 +586,7 @@ export default function ZipperPlacementModal({
           <Button
             type="button"
             onClick={handleSave}
-            disabled={!imageLoaded || isSaving}
+            disabled={!imageLoaded || !zipperPosition || isSaving}
             className="bg-black text-white hover:bg-gray-800 min-w-[100px]"
           >
             {isSaving ? (

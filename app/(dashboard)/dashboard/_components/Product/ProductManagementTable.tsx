@@ -29,6 +29,7 @@ import EinlagenNachbestellenModal from './EinlagenNachbestellenModal'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
 import Image from 'next/image'
+import { Switch } from '@/components/ui/switch'
 import { getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 
@@ -37,6 +38,7 @@ interface SizeData {
     quantity: number;
     mindestmenge?: number;
     warningStatus?: string;
+    auto_order_quantity?: number | null;
 }
 
 interface Product {
@@ -91,8 +93,8 @@ interface ProductManagementTableProps {
     categoryName?: string
     /** API type for order modal, e.g. "rady_insole" or "milling_block" */
     apiType?: 'rady_insole' | 'milling_block'
-    /** Called after successful order (e.g. refresh product list) */
-    onOrderSuccess?: () => void
+    /** Called after successful order; receives storeId to update only that row (no full reload) */
+    onOrderSuccess?: (storeId?: string) => void
 }
 
 export default function ProductManagementTable({
@@ -116,6 +118,7 @@ export default function ProductManagementTable({
     const [isModalLoading, setIsModalLoading] = useState(false)
     const [orderModalOpen, setOrderModalOpen] = useState(false)
     const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
+    const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
 
     // Convert API single-storage response to Product (for modal)
     const apiDataToProduct = (data: any): Product => ({
@@ -175,6 +178,20 @@ export default function ProductManagementTable({
         return undefined;
     };
 
+    const getAutoOrderQuantity = (sizeData: number | SizeData | undefined): number => {
+        if (typeof sizeData === 'object' && sizeData != null && 'auto_order_quantity' in sizeData) {
+            const q = (sizeData as SizeData).auto_order_quantity;
+            return typeof q === 'number' ? q : 0;
+        }
+        return 0;
+    };
+
+    const hasAutoOrderOn = (product: Product): boolean => {
+        return sizeColumns.some(size => getAutoOrderQuantity(product.sizeQuantities[size]) > 0);
+    };
+
+    const isEinlagenrohlinge = apiType === 'rady_insole';
+
     if (isLoading) {
         return <ProductManagementTableShimmer sizeColumns={sizeColumns} rows={5} />
     }
@@ -184,17 +201,16 @@ export default function ProductManagementTable({
             <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
                 <Table className='w-full bg-white rounded-lg overflow-hidden'>
                     <TableHeader>
-                        <TableRow className="border-b bg-white">
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Lagerort</TableHead>
-
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Hersteller</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Artikelbezeichnung</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Artikelnummer</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Bestandswarnung</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Historie</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-900">Aktionen</TableHead>
+                        <TableRow className={`border-b ${isEinlagenrohlinge ? 'bg-gray-100' : 'bg-white'}`}>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">{isEinlagenrohlinge ? 'BILD' : 'LAGERORT'}</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">HERSTELLER</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">ARTIKELBEZEICHNUNG</TableHead>
+                            {!isEinlagenrohlinge && <TableHead className="p-3 text-left font-medium text-gray-900 uppercase">ARTIKELNUMMER</TableHead>}
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">{isEinlagenrohlinge ? 'STATUS' : 'BESTANDSWARNUNG'}</TableHead>
+                            {isEinlagenrohlinge && <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AUTO</TableHead>}
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AKTIONEN</TableHead>
                             {sizeColumns.map(size => (
-                                <TableHead key={size} className="p-3 text-center font-medium text-gray-900">{size}</TableHead>
+                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase">{size}</TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>
@@ -202,7 +218,7 @@ export default function ProductManagementTable({
                         {visibleProducts.length === 0 ? (
                             <TableRow>
                                 <TableCell
-                                    colSpan={sizeColumns.length + 7}
+                                    colSpan={sizeColumns.length + (isEinlagenrohlinge ? 7 : 6)}
                                     className="p-8 text-center"
                                 >
                                     <div className="flex flex-col items-center justify-center py-8">
@@ -220,10 +236,9 @@ export default function ProductManagementTable({
                             visibleProducts.map((product) => (
                                 <TableRow key={product.id} className="border-b bg-white">
                                     <TableCell className="p-3">
-                                        {/* Product Image Only - Clickable */}
-                                        <div 
+                                        {/* BILD / Lagerort – clickable image or placeholder */}
+                                        <div
                                             className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
-
                                             onClick={() => setSelectedProductIdForModal(product.id)}
                                         >
                                             {product.image ? (
@@ -232,14 +247,15 @@ export default function ProductManagementTable({
                                                     height={80}
                                                     src={product.image}
                                                     alt={product.Produktname}
-                                                    className="w-20 h-20 rounded border object-contain border-gray-200 shadow-sm"
+                                                    className="w-20 h-20 rounded-lg border object-contain border-gray-200 shadow-sm"
                                                 />
                                             ) : (
-                                                <div className="w-20 h-20 flex items-center justify-center rounded border border-gray-200 bg-white shadow-sm">
-
-                                                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                                                    </svg>
+                                                <div className="w-20 h-20 flex items-center justify-center rounded-lg border border-gray-200 bg-gray-100 text-gray-400 text-xs font-medium">
+                                                    {isEinlagenrohlinge ? 'Bild' : (
+                                                        <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                                        </svg>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -248,47 +264,57 @@ export default function ProductManagementTable({
                                         {product.Hersteller}
                                     </TableCell>
                                     <TableCell className="p-3 text-gray-900">
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <span className="cursor-help">
-                                                        {truncateText(product.Produktname)}
-                                                    </span>
-                                                </TooltipTrigger>
-                                                {product.Produktname.length > 15 && (
-                                                    <TooltipContent>
-                                                        <p>{product.Produktname}</p>
-                                                    </TooltipContent>
-                                                )}
-                                            </Tooltip>
-                                        </TooltipProvider>
+                                        {isEinlagenrohlinge ? (
+                                            <div className="flex flex-col gap-0.5 uppercase">
+                                                <span className="font-semibold text-gray-900 block">{product.Produktname}</span>
+                                                <span className="text-sm text-gray-500">{product.Produktkürzel}</span>
+                                            </div>
+                                        ) : (
+                                            <TooltipProvider>
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <span className="cursor-help uppercase">{truncateText(product.Produktname)}</span>
+                                                    </TooltipTrigger>
+                                                    {product.Produktname.length > 15 && (
+                                                        <TooltipContent><p className="uppercase">{product.Produktname}</p></TooltipContent>
+                                                    )}
+                                                </Tooltip>
+                                            </TooltipProvider>
+                                        )}
                                     </TableCell>
-                                    <TableCell className="p-3 text-gray-900">
-                                        {product.Produktkürzel}
-                                    </TableCell>
+                                    {!isEinlagenrohlinge && (
+                                        <TableCell className="p-3 text-gray-900 uppercase">
+                                            {product.Produktkürzel}
+                                        </TableCell>
+                                    )}
                                     <TableCell className="p-3">
                                         <TooltipProvider>
                                             <Tooltip>
-                                                <TooltipTrigger>
-                                                    {hasLowStock(product) ? (
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                                            Niedriger Bestand
-                                                        </span>
-                                                    ) : (
-                                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                            Voller Bestand
-                                                        </span>
-                                                    )}
+                                                <TooltipTrigger asChild>
+                                                    <div className="flex flex-wrap items-center gap-1">
+                                                        {hasLowStock(product) && (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200">
+                                                                Niedrig
+                                                            </span>
+                                                        )}
+                                                        {product.create_status && product.create_status !== 'by_admin' && (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                                                Offen
+                                                            </span>
+                                                        )}
+                                                        {!hasLowStock(product) && (!product.create_status || product.create_status === 'by_admin') && (
+                                                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                                                Voller Bestand
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </TooltipTrigger>
                                                 <TooltipContent>
                                                     {hasLowStock(product) ? (
                                                         <div>
                                                             <p className="font-medium mb-1">Niedriger Bestand:</p>
                                                             {getLowStockSizes(product).map(({ size, quantity, warningStatus }) => (
-                                                                <p key={size}>
-                                                                    Größe {size}: {quantity} Stück
-                                                                    {warningStatus && ` (${warningStatus})`}
-                                                                </p>
+                                                                <p key={size}>Größe {size}: {quantity} Stück{warningStatus && ` (${warningStatus})`}</p>
                                                             ))}
                                                         </div>
                                                     ) : (
@@ -298,18 +324,27 @@ export default function ProductManagementTable({
                                             </Tooltip>
                                         </TooltipProvider>
                                     </TableCell>
-                                    <TableCell className="p-3">
-                                        <Button
-                                            size="sm"
-                                            variant="ghost"
-                                            onClick={() => onShowHistory(product)}
-                                            className="h-8 w-8 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                                        >
-                                            <IoTime className="w-4 h-4" />
-                                        </Button>
-                                    </TableCell>
-                                    <TableCell className="p-3">
+                                    {isEinlagenrohlinge && (
+                                        <TableCell className="p-3">
+                                            <div className="flex items-center gap-2">
+                                                <Switch checked={hasAutoOrderOn(product)} disabled className="data-[state=checked]:bg-emerald-500" />
+                                                <span className={`text-xs font-medium ${hasAutoOrderOn(product) ? 'text-emerald-600' : 'text-gray-500'}`}>
+                                                    {hasAutoOrderOn(product) ? 'An' : 'Aus'}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                    )}
+                                    <TableCell className="">
                                         <div className="flex items-center gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => onShowHistory(product)}
+                                                className="h-8 w-8 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                                title="Historie"
+                                            >
+                                                <IoTime className="w-4 h-4" />
+                                            </Button>
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -331,18 +366,27 @@ export default function ProductManagementTable({
                                             </Button>
                                         </div>
                                     </TableCell>
-                                    {sizeColumns.map(size => (
-                                        <TableCell key={size} className="p-3 text-center text-gray-900">
-                                            <span
-                                                className={`${getSizeWarningStatus(product, size)?.includes('Niedriger Bestand')
-                                                        ? 'text-red-600 font-semibold'
-                                                        : ''
-                                                    }`}
-                                            >
-                                                {getStockForSize(product, size)}
-                                            </span>
-                                        </TableCell>
-                                    ))}
+                                    {sizeColumns.map(size => {
+                                        const sizeData = product.sizeQuantities[size]
+                                        const autoQty = isEinlagenrohlinge ? getAutoOrderQuantity(sizeData) : 0
+                                        return (
+                                            <TableCell key={size} className="p-3 text-center text-gray-900">
+                                                <div className="flex flex-col items-center justify-center gap-0.5">
+                                                    <span
+                                                        className={`${getSizeWarningStatus(product, size)?.includes('Niedriger Bestand')
+                                                                ? 'text-red-600 font-semibold'
+                                                                : ''
+                                                            }`}
+                                                    >
+                                                        {getStockForSize(product, size)}
+                                                    </span>
+                                                    {isEinlagenrohlinge && autoQty > 0 && (
+                                                        <span className="text-xs text-orange-600 font-medium">+{autoQty}</span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        )
+                                    })}
                                 </TableRow>
                             ))
                         )}
@@ -447,6 +491,7 @@ export default function ProductManagementTable({
                                 <Button
                                     className="w-fit bg-[#65b87c] hover:bg-[#5aa86e] text-white font-medium rounded-lg py-2.5 cursor-pointer"
                                     onClick={() => {
+                                        setOrderStoreId(selectedProductForImage.id)
                                         setOrderAdminStoreId(selectedProductForImage.adminStoreId!)
                                         setOrderModalOpen(true)
                                         setSelectedProductForImage(null)
@@ -474,10 +519,13 @@ export default function ProductManagementTable({
                 onClose={() => {
                     setOrderModalOpen(false)
                     setOrderAdminStoreId(null)
+                    setOrderStoreId(null)
                 }}
                 adminStoreId={orderAdminStoreId}
                 productType={apiType}
                 onOrderSuccess={onOrderSuccess}
+                initialQuantitiesZero
+                storeId={orderStoreId}
             />
         </>
     )

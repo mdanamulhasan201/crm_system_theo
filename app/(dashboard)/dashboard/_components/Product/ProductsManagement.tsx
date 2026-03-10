@@ -29,7 +29,7 @@ import { Button } from "@/components/ui/button"
 import { useRouter } from 'next/navigation'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
 import InventoryHistory, { InventoryHistoryRef } from './InventoryHistory'
-import { deleteStorage } from '@/apis/storeManagement'
+import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 import useDebounce from '@/hooks/useDebounce'
@@ -83,9 +83,14 @@ const sizeColumns = [
 
 interface ProductsManagementProps {
     type?: 'rady_insole' | 'milling_block'
+    setProductCount?: (n: number) => void
+    openAddModal?: boolean
+    onCloseAddModal?: () => void
+    searchQuery?: string
+    onSearchChange?: (value: string) => void
 }
 
-export default function ProductsManagement({ type = 'rady_insole' }: ProductsManagementProps) {
+export default function ProductsManagement({ type = 'rady_insole', setProductCount, openAddModal, onCloseAddModal, searchQuery: controlledSearch, onSearchChange }: ProductsManagementProps) {
     const router = useRouter()
     // Stock management hook
     const { products, pagination, getAllProducts, refreshProducts, isLoadingProducts, error, updateExistingProduct } = useStockManagementSlice();
@@ -94,8 +99,9 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
     const [itemsPerPage, setItemsPerPage] = useState(10)
     const [currentPage, setCurrentPage] = useState(1)
 
-    // Search state
-    const [searchQuery, setSearchQuery] = useState('')
+    const [internalSearch, setInternalSearch] = useState('')
+    const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
+    const setSearchQuery = onSearchChange ?? setInternalSearch
     const debouncedSearch = useDebounce(searchQuery, 500)
 
     // Product data state - convert API products to local format
@@ -113,6 +119,15 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
     // Add product modal state
     const [addProductModalOpen, setAddProductModalOpen] = useState(false)
 
+    // Report count to parent (e.g. lager page)
+    useEffect(() => {
+        if (setProductCount && pagination != null) setProductCount(pagination.totalItems ?? 0)
+    }, [pagination?.totalItems, setProductCount])
+
+    // Open add modal when parent requests (e.g. "Manuelles Lager" in lager page)
+    useEffect(() => {
+        if (openAddModal) setAddProductModalOpen(true)
+    }, [openAddModal])
 
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): Product => {
@@ -266,63 +281,27 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
         }
     };
 
+    const handleCloseAddModal = () => {
+        setAddProductModalOpen(false)
+        onCloseAddModal?.()
+    }
+
     return (
-        <div className="w-full px-5">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-between mb-10">
-                <h1 className='text-2xl font-semibold'>Produktverwaltung</h1>
-
-                <div className="flex items-center gap-4">
-                    {/* <DeliveryNote
-                        productsData={productsData}
-                        onDeliveryNoteAdd={setProductsData}
-                    /> */}
-
+        <div className="w-full">
+            {/* Search is in lager page when controlled; only show when not controlled */}
+            {controlledSearch === undefined && (
+                <div className="flex flex-col md:flex-row gap-4 md:gap-0 items-center justify-end mb-4">
                     <div className="relative w-64">
                         <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg" />
                         <Input
-                            placeholder="Search"
+                            placeholder="Suchen..."
                             value={searchQuery}
                             onChange={handleSearchChange}
                             className="pl-10 pr-4 py-2 w-full rounded-full bg-white text-gray-700 placeholder:text-gray-500 border border-gray-300 focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:border-gray-400"
                         />
                     </div>
                 </div>
-            </div>
-
-            {/* Section Title */}
-            <div className='flex flex-col lg:flex-row gap-4 items-center justify-between mb-4'>
-
-                <div>
-
-                    {pagination && (
-                        <p className="text-sm text-gray-600 mt-1">
-                            {pagination.totalItems} Produkte gefunden
-                        </p>
-                    )}
-                </div>
-
-                <div className='flex flex-col sm:flex-row items-center gap-4'>
-                    {/* add manual store */}
-                    <Button
-                        onClick={() => setAddProductModalOpen(true)}
-                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
-                    >
-                        Manuelles Lager hinzufügen
-                    </Button>
-                    {/* Buy Now Button */}
-                    <Button
-                        onClick={() => router.push(`/dashboard/buy-storage?type=${type}`)}
-                        disabled={isLoadingProducts}
-                        className="bg-[#61A178] hover:bg-[#61A178]/80 text-white cursor-pointer"
-                    >
-                        FeetF1rst Sortiment
-                    </Button>
-                </div>
-
-            </div>
-
-
+            )}
 
             {/* Product Management Table */}
             {error ? (
@@ -342,8 +321,16 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
                     isLoading={isLoadingProducts}
                     categoryName={type === 'rady_insole' ? 'Einlagenrohlinge' : 'Fräsblock'}
                     apiType={type}
-                    onOrderSuccess={async () => {
+                    onOrderSuccess={async (storeId) => {
                         try {
+                            if (storeId) {
+                                const res: any = await getSingleStorage(storeId);
+                                if (res?.success && res?.data) {
+                                    const updated = convertApiProductToLocal(res.data);
+                                    setProductsData(prev => prev.map(p => p.id === storeId ? updated : p));
+                                    return;
+                                }
+                            }
                             const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type);
                             const convertedProducts = apiProducts.map(convertApiProductToLocal);
                             setProductsData(convertedProducts);
@@ -507,9 +494,9 @@ export default function ProductsManagement({ type = 'rady_insole' }: ProductsMan
             {/* Add Product Modal */}
             <AddProductTypeModal
                 isOpen={addProductModalOpen}
-                onClose={() => setAddProductModalOpen(false)}
+                onClose={handleCloseAddModal}
                 onSuccess={async () => {
-                    setAddProductModalOpen(false)
+                    handleCloseAddModal()
                     // Refresh products list
                     try {
                         const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)

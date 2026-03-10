@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from '@/components/ui/input'
-import { buyStore, getSingleStore } from '@/apis/storeManagement'
+import { buyStore, getSingleStore, type BuyStoreGroessenMengen } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 
@@ -153,6 +153,20 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
         setShowConfirmation(true)
     }
 
+    // Build groessenMengen from product and user quantities for buy payload
+    const buildGroessenMengen = (): BuyStoreGroessenMengen => {
+        const groessenMengen: BuyStoreGroessenMengen = {}
+        sizeColumns.forEach(size => {
+            const sizeData = product!.groessenMengen?.[size]
+            const length = typeof sizeData === 'object' && sizeData != null && 'length' in sizeData
+                ? (sizeData.length ?? 0)
+                : 0
+            const quantity = quantities[size] ?? 0
+            groessenMengen[size] = { length, quantity }
+        })
+        return groessenMengen
+    }
+
     // Confirm and submit the order
     const confirmBuy = async () => {
         if (!product) return
@@ -160,7 +174,12 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
         setBuyingId(product.id)
         setShowConfirmation(false)
         try {
-            const response = await buyStore({ admin_store_id: product.id })
+            const groessenMengen = buildGroessenMengen()
+            const response = await buyStore({
+                storeId: '', // new purchase from catalog – no existing storage
+                admin_store_id: product.id,
+                groessenMengen
+            })
             if (response.success) {
                 toast.success(response.message || 'Store purchased successfully!')
                 onClose()

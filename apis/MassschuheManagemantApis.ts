@@ -173,7 +173,7 @@ export const balanceMassschuheOrder = async () => {
 // body: { "amount": number }
 export const requestPayoutToAdmin = async (amount: number) => {
     try {
-        const response = await axiosClient.post(`/v2/admin-order-transitions/pay-partner-to-admin`, { amount });
+        const response = await axiosClient.post(`/v2/admin-order-transitions/finance/pay-partner-to-admin`, { amount });
         return response.data;
     } catch (error) {
         throw error;
@@ -182,7 +182,7 @@ export const requestPayoutToAdmin = async (amount: number) => {
 // get my all payout request v2/admin-order-transitions/get-all-request-payouts-for-partner?limit=1&cursor=
 export const getAllPayoutRequest = async (limit: number, cursor: string) => {
     try {
-        const response = await axiosClient.get(`/v2/admin-order-transitions/get-all-request-payouts-for-partner?limit=${limit}&cursor=${cursor}`);
+        const response = await axiosClient.get(`/v2/admin-order-transitions/finance/get-all-request-payouts-for-partner?limit=${limit}&cursor=${cursor}`);
         return response.data;
     } catch (error) {
         throw error;

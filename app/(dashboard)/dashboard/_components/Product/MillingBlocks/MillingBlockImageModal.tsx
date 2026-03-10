@@ -32,8 +32,8 @@ interface MillingBlockImageModalProps {
     isLoading?: boolean
     /** Category label for modal header, e.g. "Fräsblock" – same design as Einlagenrohlinge modal */
     categoryName?: string
-    /** Called when "Einlage nachbestellen" is clicked (only when create_status === 'by_admin'). Opens order modal. */
-    onOrderClick?: (adminStoreId: string) => void
+    /** Called when "Einlage nachbestellen" is clicked (only when create_status === 'by_admin'). Opens order modal. Passes adminStoreId and storeId (table product id). */
+    onOrderClick?: (adminStoreId: string, storeId: string) => void
 }
 
 export default function MillingBlockImageModal({
@@ -98,7 +98,7 @@ export default function MillingBlockImageModal({
                         {product.create_status === 'by_admin' && product.adminStoreId ? (
                             <Button
                                 className="w-fit bg-[#65b87c] hover:bg-[#5aa86e] text-white font-medium rounded-lg py-2.5 cursor-pointer"
-                                onClick={() => onOrderClick?.(product.adminStoreId!)}
+                                onClick={() => onOrderClick?.(product.adminStoreId!, product.id)}
                             >
                                 Einlage nachbestellen
                             </Button>

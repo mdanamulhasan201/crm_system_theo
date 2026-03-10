@@ -2,16 +2,33 @@ import axiosClient from "@/lib/axiosClient";
 
 
 
-// buy store /store/buy in body {admin_store_id: string}
-export const buyStore = async (body: { admin_store_id: string }) => {
+// buy store /store/buy – body: storeId (required), admin_store_id, groessenMengen (size -> { length, quantity })
+export type BuyStoreGroessenMengen = Record<string, { length: number; quantity: number }>;
+
+export const buyStore = async (body: {
+    storeId: string;
+    admin_store_id: string;
+    groessenMengen: BuyStoreGroessenMengen;
+}) => {
     try {
         const response = await axiosClient.post(`/store/buy`, body);
         return response.data;
     } catch (error: any) {
         throw error;
     }
-}
+};
 
+
+
+// buy single store store/add-storage-from-admin
+export const buySingleStore = async (body: { storeId: string, admin_store_id: string, groessenMengen: BuyStoreGroessenMengen }) => {
+    try {
+        const response = await axiosClient.post(`/store/add-storage-from-admin`, body);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
 
 // get mybuy stores /store/my/get?page=&limit=&search=&type=milling_block or rady_insole
 export const getMyBuyStores = async (page: number, limit: number, search: string, type: string) => {

@@ -1,5 +1,5 @@
 'use client'
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAssignedToColor } from '@/lib/appointmentColors';
@@ -52,6 +52,13 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     showHeader = false,
     businessName
 }) => {
+    // Current time for header (updates every minute)
+    const [now, setNow] = useState(() => new Date());
+    useEffect(() => {
+        const interval = setInterval(() => setNow(new Date()), 60_000);
+        return () => clearInterval(interval);
+    }, []);
+
     // Calendar configuration - Only show 5 AM to 9 PM (5-21)
     const calendarStartHour = 5;
     const calendarEndHour = 21; // 9 PM
@@ -67,6 +74,20 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [noteContent, setNoteContent] = useState<string>('');
 
+    // Calendar scroll focus: only when user has clicked inside calendar, scroll affects calendar; otherwise page scrolls
+    const [isCalendarScrollFocused, setIsCalendarScrollFocused] = useState(false);
+    const calendarContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (calendarContainerRef.current && !calendarContainerRef.current.contains(e.target as Node)) {
+                setIsCalendarScrollFocused(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     // Check if selected date is today
     const isToday = useMemo(() => {
         const now = new Date();
@@ -74,6 +95,11 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             now.getMonth() === selectedDate.getMonth() &&
             now.getDate() === selectedDate.getDate();
     }, [selectedDate]);
+
+    // Current time line (green line) - only when viewing today, same as MainCalendarPage
+    const currentTimeMinutesFromStart = now.getHours() * 60 + now.getMinutes() - calendarStartHour * 60;
+    const lineTopPx = (currentTimeMinutesFromStart / 60) * heightPerSlot;
+    const showCurrentTimeLine = isToday && currentTimeMinutesFromStart >= 0 && currentTimeMinutesFromStart <= (totalHours - 1) * 60;
 
     // Get current time for checking past events
     const getCurrentTime = (): { hour: number; minute: number; totalMinutes: number } => {
@@ -297,7 +323,7 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             {showHeader && (
                 <div className='flex flex-col gap-3 mb-6 pb-4 border-b border-gray-200'>
                     <h1 className='text-3xl font-bold capitalize'>Willkommen zurück <span className='capitalize'>{businessName || ''}</span></h1>
-                    <p className='text-lg text-gray-500'>{format(new Date(), 'EEEE, d. MMMM yyyy', { locale: de })}</p>
+                    <p className='text-lg text-gray-500'>{format(now, 'EEEE, d. MMMM yyyy', { locale: de })} · {format(now, 'HH:mm')} Uhr</p>
                 </div>
             )}
 
@@ -327,36 +353,61 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 
             {/* Calendar Grid */}
             <div className="relative">
-                {/* Calendar Grid Container - Responsive with proper overflow handling */}
+                {/* Calendar Grid Container - Scroll only when user has clicked inside (otherwise page scrolls) */}
                 <div
-                    className="relative bg-white border border-gray-200 rounded-lg overflow-y-auto overflow-x-auto"
+                    ref={calendarContainerRef}
+                    role="region"
+                    aria-label="Kalender"
+                    className="relative bg-white border border-gray-200 rounded-lg overflow-x-auto"
                     style={{
                         height: `${initialVisibleHeight}px`,
-                        width: '100%'
+                        width: '100%',
+                        overflowY: isCalendarScrollFocused ? 'auto' : 'hidden'
+                    }}
+                    onMouseDown={() => setIsCalendarScrollFocused(true)}
+                    onWheel={(e) => {
+                        if (isCalendarScrollFocused) e.stopPropagation();
                     }}
                 >
-                    {/* Time Labels - Fixed 5% width - Integrated with table */}
+                    {/* Time Labels - Sidebar with full HH:00 format (same style as MainCalendar) */}
                     <div
-                        className="absolute left-0 top-0 z-20 pointer-events-none"
+                        className="absolute left-0 top-0 z-20 pointer-events-none border-r border-gray-200"
                         style={{
                             height: `${containerHeightPx}px`,
-                            width: '5%'
+                            width: '5%',
+                            minWidth: '48px'
                         }}
                     >
                         {timeSlots.map((time, index) => (
                             <div
                                 key={index}
-                                className="absolute text-xs sm:text-sm text-gray-500 font-medium flex items-center justify-center pointer-events-none"
+                                className="absolute text-xs text-gray-400 flex items-start justify-end pr-2 pt-1 pointer-events-none"
                                 style={{
                                     top: `${index * heightPerSlot}px`,
                                     height: `${heightPerSlot}px`,
-                                    width: '100%'
+                                    width: '100%',
+                                    boxSizing: 'border-box'
                                 }}
                             >
-                                {time.split(':')[0]}
+                                {time}
                             </div>
                         ))}
                     </div>
+
+                    {/* Current time line (green) - only when viewing today, same as MainCalendarPage */}
+                    {showCurrentTimeLine && (
+                        <div
+                            className="absolute left-0 right-0 flex items-center pointer-events-none z-10"
+                            style={{
+                                top: `${lineTopPx}px`,
+                                transform: 'translateY(-50%)',
+                                left: '5%'
+                            }}
+                        >
+                            <div className="w-2.5 h-2.5 rounded-full bg-[#62A07C] shrink-0 shadow-sm ring-2 ring-white" />
+                            <div className="flex-1 h-0.5 bg-[#62A07C]" />
+                        </div>
+                    )}
 
                     {/* Background Grid Container - Remaining 95% divided into 4 columns */}
                     <div

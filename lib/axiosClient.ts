@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { isNetworkError, SERVER_UNAVAILABLE_PATH } from './networkError';
 
 const axiosClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_ENDPOINT, 
+  baseURL: process.env.NEXT_PUBLIC_API_ENDPOINT,
 });
 
 axiosClient.interceptors.request.use(
@@ -11,7 +12,7 @@ axiosClient.interceptors.request.use(
       const employeeToken = localStorage.getItem('employeeToken');
       const mainToken = localStorage.getItem('token');
       const activeToken = employeeToken || mainToken;
-      
+
       if (activeToken) {
         config.headers.Authorization = `${activeToken}`;
       }
@@ -19,7 +20,7 @@ axiosClient.interceptors.request.use(
     return config;
   },
   (error) => {
-    return Promise.reject(error); 
+    return Promise.reject(error);
   }
 );
 
@@ -28,6 +29,15 @@ axiosClient.interceptors.response.use(
     return response;
   },
   (error) => {
+    if (isNetworkError(error)) {
+      (error as { isNetworkError?: boolean }).isNetworkError = true;
+      if (typeof window !== 'undefined') {
+        const path = window.location.pathname;
+        if (path !== SERVER_UNAVAILABLE_PATH) {
+          window.location.replace(SERVER_UNAVAILABLE_PATH);
+        }
+      }
+    }
     return Promise.reject(error);
   }
 );
