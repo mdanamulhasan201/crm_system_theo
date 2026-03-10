@@ -37,3 +37,17 @@ export const getAllBrand = async () => {
         throw error;
     }
 }
+
+// /}store/settings/toggle-brand/
+// body:
+// {
+//     "brand": "beand name"
+// }
+export const toggleBrand = async (body: { brand: string }) => {
+    try {
+        const response = await axiosClient.post(`/store/settings/toggle-brand`, body);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

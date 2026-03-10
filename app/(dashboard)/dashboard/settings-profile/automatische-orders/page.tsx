@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { getAutomatischeOrders, getAllBrand } from '@/apis/setting/automatischeordersApis'
+import { getAutomatischeOrders, getAllBrand, toggleBrand } from '@/apis/setting/automatischeordersApis'
 import toast from 'react-hot-toast'
 
 interface Manufacturer {
@@ -56,12 +56,31 @@ export default function AutomatischeOrdersPage() {
     fetchBrands()
   }, [])
 
-  const handleToggleBrand = (index: number) => {
+  const handleToggleBrand = async (index: number) => {
+    const item = brands[index]
+    if (!item?.brand) return
+    const previousBrands = [...brands]
     setBrands(prev =>
-      prev.map((item, i) =>
-        i === index ? { ...item, isActive: !item.isActive } : item
+      prev.map((it, i) =>
+        i === index ? { ...it, isActive: !it.isActive } : it
       )
     )
+    try {
+      const res = await toggleBrand({ brand: item.brand })
+      const newActive = res?.data?.isActive
+      if (typeof newActive === 'boolean') {
+        setBrands(prev =>
+          prev.map((it, i) =>
+            i === index ? { ...it, isActive: newActive } : it
+          )
+        )
+      }
+      toast.success('Marke aktualisiert.')
+    } catch (error) {
+      console.error('Error toggling brand:', error)
+      toast.error('Fehler beim Aktualisieren.')
+      setBrands(previousBrands)
+    }
   }
 
   const handleToggleManufacturer = async (id: string) => {
