@@ -1,10 +1,11 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react';
-import { HiMenuAlt2, HiSearch, HiArrowLeft } from 'react-icons/hi';
+import { HiMenuAlt2, HiSearch, HiArrowLeft, HiExternalLink } from 'react-icons/hi';
 import NotificationPage from './Notification';
 import { useRouter } from 'next/navigation';
 import { HiOutlineChatBubbleOvalLeft } from 'react-icons/hi2';
 import { useFeatureAccess } from '@/contexts/FeatureAccessContext';
+import axiosClient from '@/lib/axiosClient';
 
 interface NavbarProps {
     onMenuClick: () => void;
@@ -12,13 +13,29 @@ interface NavbarProps {
 }
 
 const TEAMCHAT_PATH = '/dashboard/teamchat';
+const CRM_BASE_URL = process.env.NEXT_PUBLIC_CRM_URL || 'http://localhost:5173';
 
 export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
     const [isSearchVisible, setIsSearchVisible] = useState(false);
+    const [isCrmLoading, setIsCrmLoading] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
     const { isPathAllowed } = useFeatureAccess();
     const showTeamchat = isPathAllowed(TEAMCHAT_PATH);
+
+    const handleGoToCRM = async () => {
+        setIsCrmLoading(true);
+        try {
+            const res = await axiosClient.get('/v2/auth/crm-token');
+            if (res.data?.success && res.data?.token) {
+                window.open(`${CRM_BASE_URL}/sso-login?token=${res.data.token}`, '_blank');
+            }
+        } catch {
+            console.error('Failed to get CRM token');
+        } finally {
+            setIsCrmLoading(false);
+        }
+    };
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -61,6 +78,16 @@ export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
                 </div>
 
                 <div className="flex items-center space-x-2 md:space-x-4">
+
+                    {/* Go to CRM button */}
+                    <button
+                        onClick={handleGoToCRM}
+                        disabled={isCrmLoading}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isCrmLoading ? 'Loading...' : 'Go to CRM'}
+                        {!isCrmLoading && <HiExternalLink className="text-base" />}
+                    </button>
 
                     {/* Chat icon – only when Teamchat is allowed (same feature access as sidebar) */}
                     {showTeamchat && (
