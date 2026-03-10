@@ -217,9 +217,12 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
     const footer = clone.querySelector(".pdf-info-footer")
     if (footer && footer.parentNode) footer.parentNode.removeChild(footer)
 
+    // Use customer name in the generated PDF filename so the viewer / download
+    // shows a meaningful name instead of a generic or numeric id.
+    const safeCustomerName = (displayCustomerName || "Kunde").replace(/[^a-zA-Z0-9-_ ]/g, "").trim() || "Kunde"
     const opt = {
       margin: [40, 40, 80, 40],
-      filename: "document.pdf",
+      filename: `${safeCustomerName}-invoice.pdf`,
       image: { type: "jpeg", quality: 0.98 },
       html2canvas: {
         scale: 2,
