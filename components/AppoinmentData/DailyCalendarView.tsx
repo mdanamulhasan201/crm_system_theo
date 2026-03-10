@@ -1,5 +1,5 @@
 'use client'
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAssignedToColor } from '@/lib/appointmentColors';
@@ -73,6 +73,20 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
     // Modal state
     const [isNotesOpen, setIsNotesOpen] = useState(false);
     const [noteContent, setNoteContent] = useState<string>('');
+
+    // Calendar scroll focus: only when user has clicked inside calendar, scroll affects calendar; otherwise page scrolls
+    const [isCalendarScrollFocused, setIsCalendarScrollFocused] = useState(false);
+    const calendarContainerRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (calendarContainerRef.current && !calendarContainerRef.current.contains(e.target as Node)) {
+                setIsCalendarScrollFocused(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     // Check if selected date is today
     const isToday = useMemo(() => {
@@ -334,12 +348,20 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
 
             {/* Calendar Grid */}
             <div className="relative">
-                {/* Calendar Grid Container - Responsive with proper overflow handling */}
+                {/* Calendar Grid Container - Scroll only when user has clicked inside (otherwise page scrolls) */}
                 <div
-                    className="relative bg-white border border-gray-200 rounded-lg overflow-y-auto overflow-x-auto"
+                    ref={calendarContainerRef}
+                    role="region"
+                    aria-label="Kalender"
+                    className="relative bg-white border border-gray-200 rounded-lg overflow-x-auto"
                     style={{
                         height: `${initialVisibleHeight}px`,
-                        width: '100%'
+                        width: '100%',
+                        overflowY: isCalendarScrollFocused ? 'auto' : 'hidden'
+                    }}
+                    onMouseDown={() => setIsCalendarScrollFocused(true)}
+                    onWheel={(e) => {
+                        if (isCalendarScrollFocused) e.stopPropagation();
                     }}
                 >
                     {/* Time Labels - Fixed 5% width - Integrated with table */}
