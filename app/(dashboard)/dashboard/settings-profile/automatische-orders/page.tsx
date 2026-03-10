@@ -1,13 +1,14 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
-import { getAutomatischeOrders } from '@/apis/setting/automatischeordersApis'
+import { getAutomatischeOrders, getAllBrand } from '@/apis/setting/automatischeordersApis'
+import toast from 'react-hot-toast'
 
 interface Manufacturer {
   id: string
@@ -15,14 +16,53 @@ interface Manufacturer {
   enabled: boolean
 }
 
+interface BrandItem {
+  brand: string
+  isActive: boolean
+}
+
 export default function AutomatischeOrdersPage() {
   const router = useRouter()
   const [manufacturers, setManufacturers] = useState<Manufacturer[]>([
     { id: 'orthotech', name: 'Orthotech', enabled: true },
-    { id: 'opannrit', name: 'Spannrit', enabled: false },
+    { id: 'opannrit', name: 'Springer', enabled: false },
   ])
+  const [brands, setBrands] = useState<BrandItem[]>([])
+  const [brandsLoading, setBrandsLoading] = useState(false)
   const [newLocation, setNewLocation] = useState('')
   const [locations, setLocations] = useState<string[]>([])
+
+  // Load all brands once on mount
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        setBrandsLoading(true)
+        const res = await getAllBrand()
+        // Expecting shape: { success: boolean; data: { brand: string; isActive: boolean }[] }
+        const items: BrandItem[] = Array.isArray(res?.data)
+          ? res.data.map((item: any) => ({
+              brand: String(item?.brand ?? '').trim(),
+              isActive: Boolean(item?.isActive),
+            }))
+          : []
+        setBrands(items)
+      } catch (error) {
+        console.error('Error fetching brands:', error)
+      } finally {
+        setBrandsLoading(false)
+      }
+    }
+
+    fetchBrands()
+  }, [])
+
+  const handleToggleBrand = (index: number) => {
+    setBrands(prev =>
+      prev.map((item, i) =>
+        i === index ? { ...item, isActive: !item.isActive } : item
+      )
+    )
+  }
 
   const handleToggleManufacturer = async (id: string) => {
     const updatedManufacturers = manufacturers.map(m => 
@@ -38,9 +78,10 @@ export default function AutomatischeOrdersPage() {
     
     try {
       await getAutomatischeOrders(status)
+      toast.success('Einstellung gespeichert.')
     } catch (error) {
       console.error('Error updating automatische orders:', error)
-      // Revert the change on error
+      toast.error('Fehler beim Speichern.')
       setManufacturers(manufacturers)
     }
   }
@@ -108,52 +149,42 @@ export default function AutomatischeOrdersPage() {
               )}
             </div>
           ))}
+          {/* get all brand */}
+          <div className="mt-4 pt-4 border-t border-gray-200">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+              Marken mit Auto-Bestellung (aus Einstellungen)
+            </h3>
+            {brandsLoading && (
+              <p className="text-sm text-gray-500">Marken werden geladen...</p>
+            )}
+            {!brandsLoading && brands.length === 0 && (
+              <p className="text-sm text-gray-500">Keine Marken gefunden.</p>
+            )}
+            {!brandsLoading && brands.length > 0 && (
+              <div className="divide-y divide-gray-200">
+                {brands.map((item, index) => (
+                  <div
+                    key={`${item.brand}-${index}`}
+                    className="flex items-center justify-between py-3"
+                  >
+                    <span className="text-sm text-gray-900">
+                      {item.brand || 'Ohne Namen'}
+                    </span>
+                    <Switch
+                      checked={item.isActive}
+                      onCheckedChange={() => handleToggleBrand(index)}
+                      className="cursor-pointer"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Warehouse Locations Section */}
-      <Card className="bg-gray-50 border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold text-gray-900">
-            Lagerstandorte
-          </CardTitle>
-          <CardDescription className="text-sm text-gray-600">
-            Verwalten Sie Ihre Lagerstandorte und deren Status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-3">
-            <Input
-              type="text"
-              placeholder="Neuer Lagerstandort..."
-              value={newLocation}
-              onChange={(e) => setNewLocation(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="flex-1"
-            />
-            <Button
-              onClick={handleAddLocation}
-              className="bg-primary text-white hover:bg-primary/90 cursor-pointer"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Hinzufügen
-            </Button>
-          </div>
-          
-          {locations.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {locations.map((location, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between p-3 bg-white rounded-lg border border-gray-200"
-                >
-                  <span className="text-sm text-gray-900">{location}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+
+     
     </div>
   )
 }

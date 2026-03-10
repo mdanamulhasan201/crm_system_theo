@@ -26,3 +26,14 @@ export const getAutomatischeOrdersStatus = async () => {
         throw error;
     }
 }
+
+
+// }store/settings/get-all-brand
+export const getAllBrand = async () => {
+    try {
+        const response = await axiosClient.get('/store/settings/get-all-brand');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
