@@ -17,6 +17,9 @@ interface MillingBlock {
     image?: string
     purchase_price?: number
     selling_price?: number
+    features?: string[]
+    create_status?: string
+    adminStoreId?: string | null
 }
 
 interface HistoryEntry {
