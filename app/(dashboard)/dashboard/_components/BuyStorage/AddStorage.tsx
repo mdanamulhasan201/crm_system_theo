@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from '@/components/ui/input'
-import { addStorage, getSingleStore } from '@/apis/storeManagement'
+import { addStorage, getSingleStore, type BuyStoreGroessenMengen } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import Image from 'next/image'
 
@@ -54,6 +54,7 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
     const [addingId, setAddingId] = useState<string | null>(null)
     const [productData, setProductData] = useState<AdminStoreProduct | null>(null)
     const [isLoading, setIsLoading] = useState(false)
+    const [inputValues, setInputValues] = useState<{ [key: string]: string }>({})
 
     // Normalize groessenMengen keys for milling_block type (convert "1", "2", "3" to "Size 1", "Size 2", "Size 3")
     const normalizeGroessenMengen = (groessenMengen: any, type: string) => {
@@ -79,11 +80,15 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
                     if (response.success && response.data) {
                         // Normalize groessenMengen keys for milling_block
                         const type = response.data.type || 'rady_insole'
+                        const sizeColumns = type === 'milling_block' ? millingBlockSizes : radyInsoleSizes
                         const normalizedData = {
                             ...response.data,
                             groessenMengen: normalizeGroessenMengen(response.data.groessenMengen, type)
                         }
                         setProductData(normalizedData)
+                        setInputValues(
+                            Object.fromEntries(sizeColumns.map((size) => [size, '']))
+                        )
                     }
                 } catch (err: any) {
                     toast.error(err?.response?.data?.message || 'Failed to fetch product data')
@@ -101,6 +106,7 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
         if (!isOpen) {
             setAddingId(null)
             setProductData(null)
+            setInputValues({})
         }
     }, [isOpen])
 
@@ -109,10 +115,9 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
     const productType = product?.type || 'rady_insole'
     const sizeColumns = productType === 'milling_block' ? millingBlockSizes : radyInsoleSizes
 
-    // Calculate total quantity from product's existing quantities
+    // Summary section should always stay zero for this modal
     const calculateTotalQuantity = (): number => {
-        if (!productData) return 0
-        return Object.values(productData.groessenMengen || {}).reduce((sum, item) => sum + (item.quantity || 0), 0)
+        return 0
     }
 
     // Calculate total price
@@ -128,8 +133,10 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
 
         setAddingId(product.id)
         try {
+            const groessenMengen = buildGroessenMengen()
             const response = await addStorage({ 
-                admin_store_id: product.id
+                admin_store_id: product.id,
+                groessenMengen,
             })
             if (response.success) {
                 toast.success(response.message || 'Storage added successfully!')
@@ -150,6 +157,34 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
 
     const handleClose = () => {
         onClose()
+    }
+
+    const handleInputChange = (size: string, value: string) => {
+        if (value === '' || /^\d+$/.test(value)) {
+            setInputValues((prev) => ({
+                ...prev,
+                [size]: value,
+            }))
+        }
+    }
+
+    const buildGroessenMengen = (): BuyStoreGroessenMengen => {
+        const groessenMengen: BuyStoreGroessenMengen = {}
+
+        sizeColumns.forEach((size) => {
+            const sizeData = productData?.groessenMengen?.[size]
+            const apiSizeKey =
+                productType === 'milling_block'
+                    ? size.replace(/^Size\s+/i, '')
+                    : size
+
+            groessenMengen[apiSizeKey] = {
+                length: sizeData?.length ?? 0,
+                quantity: parseInt(inputValues[size] || '0', 10) || 0,
+            }
+        })
+
+        return groessenMengen
     }
 
     return (
@@ -195,8 +230,8 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
                             </div>
                         </div>
 
-                        {/* Quantity Inputs - Disabled */}
-                        <div className="space-y-4 opacity-60">
+                        {/* Quantity Inputs */}
+                        <div className="space-y-4">
                             <h4 className="font-medium text-gray-900">Mengen pro Größe:</h4>
                             <div className={`grid gap-4 ${
                                 productType === 'milling_block' 
@@ -204,10 +239,7 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
                                     : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7'
                             }`}>
                                 {sizeColumns.map(size => {
-                                    // Use size directly as key (API returns "Size 1", "Size 2", "Size 3" for milling_block)
-                                    // Use productData directly to ensure we have the latest data
                                     const existingData = productData.groessenMengen?.[size]
-                                    const quantity = existingData?.quantity || 0
                                     const length = existingData?.length
                                     
                                     return (
@@ -223,11 +255,10 @@ export default function AddStorageModal({ isOpen, onClose, selectedProduct, onAd
                                             <Input
                                                 type="number"
                                                 min="0"
-                                                value={quantity}
-                                                disabled
-                                                readOnly
-                                                className="w-full bg-gray-100 cursor-not-allowed"
-                                                placeholder={quantity.toString()}
+                                                value={inputValues[size] ?? ''}
+                                                onChange={(e) => handleInputChange(size, e.target.value)}
+                                                className="w-full"
+                                                placeholder="0"
                                             />
                                         </div>
                                     )

@@ -28,6 +28,14 @@ export default function BarcodeStickerModal({
     const [generating, setGenerating] = useState(false);
     const [activeType, setActiveType] = useState<'left' | 'right'>('right');
 
+    const getBarcodeErrorMessage = (response: any, type: 'left' | 'right') => {
+        if (response?.error) return response.error;
+        if (response?.message) return response.message;
+        return type === 'left'
+            ? 'Keine Daten für Links verfügbar'
+            : 'Fehler beim Laden der Barcode-Daten';
+    };
+
     // Keep partnerAddress as object to preserve address and description structure
     // BarcodeSticker component will handle the display properly
     const normalizePartnerAddress = (partnerAddress: any): any => {
@@ -53,19 +61,15 @@ export default function BarcodeStickerModal({
                 };
                 setBarcodeData(normalizedData);
             } else {
-                if (type === 'left') {
-                    toast.error('Keine Daten für Links verfügbar');
-                } else {
-                    toast.error('Fehler beim Laden der Barcode-Daten');
-                }
+                setBarcodeData(null);
+                setOriginalBarcodeData(null);
+                toast.error(getBarcodeErrorMessage(response, type));
             }
         } catch (error) {
             console.error('Error fetching barcode data:', error);
-            if (type === 'left') {
-                toast.error('Keine Daten für Links verfügbar');
-            } else {
-                toast.error('Fehler beim Laden der Barcode-Daten');
-            }
+            setBarcodeData(null);
+            setOriginalBarcodeData(null);
+            toast.error(getBarcodeErrorMessage(error, type));
         } finally {
             setLoading(false);
         }

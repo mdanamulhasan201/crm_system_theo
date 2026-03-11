@@ -47,8 +47,8 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
     const [leistungsname, setLeistungsname] = useState<string>('');
     const [kategorie, setKategorie] = useState<string>('');
     const [menge, setMenge] = useState<string>('1');
-    const [nettoPreis, setNettoPreis] = useState<string>('0.00');
-    const [rabatt, setRabatt] = useState<string>('0');
+    const [nettoPreis, setNettoPreis] = useState<string>('');
+    const [rabatt, setRabatt] = useState<string>('');
     const [steuersatz, setSteuersatz] = useState<number>(defaultTaxRate.rate);
     // Use Brutto as the default input mode (standard)
     const [isNetto, setIsNetto] = useState<boolean>(false); // true = Preis ist Netto, false = Preis ist Brutto
@@ -220,8 +220,8 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
         setLeistungsname('');
         setKategorie('');
         setMenge('1');
-        setNettoPreis('0.00');
-        setRabatt('0');
+        setNettoPreis('');
+        setRabatt('');
         setLeistungsnotiz('');
         setSelectedEmployee('');
         setSelectedEmployeeId('');
@@ -370,8 +370,8 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                         <span
                                             role="button"
                                             tabIndex={-1}
-                                            onClick={() => setNettoPreis('0.00')}
-                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setNettoPreis('0.00'); } }}
+                                            onClick={() => setNettoPreis('')}
+                                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setNettoPreis(''); } }}
                                             className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
                                             aria-label="Auswahl löschen"
                                         >
@@ -398,12 +398,12 @@ export default function SonstigesForm({ customer, onCustomerUpdate, onDataRefres
                                             onChange={(e) => setRabatt(e.target.value)}
                                             className="w-full h-10 pr-9"
                                         />
-                                        {rabatt && rabatt !== '0' && (
+                                        {rabatt && (
                                             <span
                                                 role="button"
                                                 tabIndex={-1}
-                                                onClick={() => setRabatt('0')}
-                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRabatt('0'); } }}
+                                                onClick={() => setRabatt('')}
+                                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setRabatt(''); } }}
                                                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
                                                 aria-label="Auswahl löschen"
                                             >

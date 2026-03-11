@@ -2,13 +2,14 @@ import axiosClient from "@/lib/axiosClient";
 
 
 
-// buy store /store/buy – body: storeId (required), admin_store_id, groessenMengen (size -> { length, quantity })
+// buy store /store/buy – body: storeId (required), admin_store_id, groessenMengen (size -> { length, quantity }), price
 export type BuyStoreGroessenMengen = Record<string, { length: number; quantity: number }>;
 
 export const buyStore = async (body: {
     storeId: string;
     admin_store_id: string;
     groessenMengen: BuyStoreGroessenMengen;
+    price: number;
 }) => {
     try {
         const response = await axiosClient.post(`/store/buy`, body);
@@ -64,7 +65,7 @@ export const getSingleStore = async (id: string) => {
 
 // Lager hinzufügen store/add-storage
 
-export const addStorage = async (body: { admin_store_id: string }) => {
+export const addStorage = async (body: { admin_store_id: string; groessenMengen: BuyStoreGroessenMengen }) => {
     try {
         const response = await axiosClient.post(`/store/add-storage`, body);
         return response.data;
@@ -228,6 +229,31 @@ export const updateSonstiges = async (id: string, body: SonstigesCreateBody) => 
 export const deleteSonstiges = async (body: { ids: string[] }) => {
     try {
         const response = await axiosClient.delete('/v2/stock-material/delete/', { data: body });
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+
+
+// toggle store auto-order status /store/settings/toggle-auto-order-status/{{store id}}
+export const switchStore = async (storeId: string) => {
+    try {
+        const response = await axiosClient.post(`/store/settings/toggle-auto-order-status/${storeId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
+
+
+// =========store/get-all-my-store-overview?limit=1&cursor=da62c75d-4e2c-4a61-be5a-d7fd5872fc8c
+export const getAllMyStoreOverview = async (limit: number, cursor: string) => {
+    try {
+        const response = await axiosClient.get(`/store/get-all-my-store-overview?limit=${limit}&cursor=${cursor}`);
         return response.data;
     } catch (error: any) {
         throw error;

@@ -58,6 +58,8 @@ export interface OrderData {
   private_payed?: boolean | null;
   /** Order type for table badge: rady_insole | milling_block | sonstiges (from API when "Alle") */
   orderType?: string | null;
+  /** Raw API type from `u_orderType`, used for the small badge beside checkbox. */
+  uOrderType?: string | null;
 }
 
 interface OrdersContextType {
@@ -139,10 +141,10 @@ const mapApiDataToOrderData = (
   const priority = (apiOrder.priority as "Dringend" | "Normal") || "Normal";
   return {
     id: apiOrder.id,
-    customerId: apiOrder.customer?.id ?? "",
+    customerId: customer?.id ?? "",
     bestellnummer: apiOrder.orderNumber.toString(),
-    kundenname: apiOrder.customer
-      ? `${apiOrder.customer.vorname} ${apiOrder.customer.nachname}`
+    kundenname: customer
+      ? `${customer.vorname ?? ""} ${customer.nachname ?? ""}`.trim() || "—"
       : "—",
     status: apiOrder.orderStatus,
     displayStatus: getLabelFromApiStatus(apiOrder.orderStatus, selectedType),
@@ -174,7 +176,10 @@ const mapApiDataToOrderData = (
         apiOrder.statusUpdate ||
         apiOrder.updatedAt,
     ),
-    productName: product?.status || product?.name || "—",
+    productName:
+      (apiOrder as any).orderCategory === "sonstiges"
+        ? (apiOrder as any).service_name || product?.status || product?.name || "—"
+        : product?.status || product?.name || "—",
     deliveryDate: new Date(apiOrder.updatedAt).toLocaleDateString("de-DE"),
     invoice: apiOrder.invoice,
     priority,
@@ -191,6 +196,7 @@ const mapApiDataToOrderData = (
       (apiOrder as any).type ??
       (apiOrder as any).orderType ??
       null,
+    uOrderType: (apiOrder as any).u_orderType ?? null,
   };
 };
 

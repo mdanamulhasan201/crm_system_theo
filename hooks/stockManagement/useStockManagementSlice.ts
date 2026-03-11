@@ -62,6 +62,9 @@ interface ApiProduct {
     features?: string[];
     create_status?: string;
     adminStoreId?: string | null;
+    auto_order?: boolean;
+    able_auto_order?: string;
+    overview_groessenMengen?: { [key: string]: SizeData | number };
 }
 
 
@@ -237,7 +240,10 @@ export const useStockManagementSlice = () => {
                     image: item.image || undefined,
                     features: Array.isArray(item.features) ? item.features : undefined,
                     create_status: item.create_status,
-                    adminStoreId: item.adminStoreId ?? null
+                    adminStoreId: item.adminStoreId ?? null,
+                    auto_order: Boolean(item.auto_order),
+                    able_auto_order: item.able_auto_order,
+                    overview_groessenMengen: item.overview_groessenMengen || {},
                 }));
                 
                 setProducts(products);

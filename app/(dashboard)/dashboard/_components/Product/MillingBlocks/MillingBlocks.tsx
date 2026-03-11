@@ -12,7 +12,7 @@ import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import AddProductTypeModal from '../AddProductTypeModal'
 
-// sizeQuantities values can be number or { quantity?, auto_order_quantity? } (matches MillingBlocksTable)
+// sizeQuantities values can be number or { quantity? } (matches MillingBlocksTable)
 interface MillingBlock {
     id: string
     Produktname: string
@@ -28,9 +28,12 @@ interface MillingBlock {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
 }
 
-function getQuantity(val: number | { quantity?: number; auto_order_quantity?: number } | undefined): number {
+function getQuantity(val: number | { quantity?: number } | undefined): number {
     if (val == null) return 0
     return typeof val === 'object' ? (val.quantity ?? 0) : val
 }
@@ -140,6 +143,9 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
         const normalizedGroessenMengen = typeof apiProduct.groessenMengen === 'object'
             ? normalizeSizeKeys(apiProduct.groessenMengen, productType)
             : apiProduct.groessenMengen || {}
+        const normalizedOverviewGroessenMengen = typeof apiProduct.overview_groessenMengen === 'object'
+            ? normalizeSizeKeys(apiProduct.overview_groessenMengen, productType)
+            : apiProduct.overview_groessenMengen || {}
 
         return {
             id: apiProduct.id,
@@ -161,6 +167,9 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
             features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
             create_status: apiProduct.create_status,
             adminStoreId: apiProduct.adminStoreId ?? null,
+            auto_order: Boolean(apiProduct.auto_order),
+            able_auto_order: apiProduct.able_auto_order,
+            overviewSizeQuantities: normalizedOverviewGroessenMengen,
         }
     }
 

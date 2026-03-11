@@ -41,9 +41,9 @@ export default function AutomatischeOrdersPage() {
         // Expecting shape: { success: boolean; data: { brand: string; isActive: boolean }[] }
         const items: BrandItem[] = Array.isArray(res?.data)
           ? res.data.map((item: any) => ({
-              brand: String(item?.brand ?? '').trim(),
-              isActive: Boolean(item?.isActive),
-            }))
+            brand: String(item?.brand ?? '').trim(),
+            isActive: Boolean(item?.isActive),
+          }))
           : []
         setBrands(items)
       } catch (error) {
@@ -84,17 +84,17 @@ export default function AutomatischeOrdersPage() {
   }
 
   const handleToggleManufacturer = async (id: string) => {
-    const updatedManufacturers = manufacturers.map(m => 
+    const updatedManufacturers = manufacturers.map(m =>
       m.id === id ? { ...m, enabled: !m.enabled } : m
     )
     setManufacturers(updatedManufacturers)
-    
+
     // Prepare the data to send to API
     const status = {
       orthotech: updatedManufacturers.find(m => m.id === 'orthotech')?.enabled || false,
       opannrit: updatedManufacturers.find(m => m.id === 'opannrit')?.enabled || false,
     }
-    
+
     try {
       await getAutomatischeOrders(status)
       toast.success('Einstellung gespeichert.')
@@ -151,7 +151,7 @@ export default function AutomatischeOrdersPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-0">
-          {manufacturers.map((manufacturer, index) => (
+          {/* {manufacturers.map((manufacturer, index) => (
             <div key={manufacturer.id}>
               <div className="flex items-center justify-between py-4">
                 <span className="text-base font-medium text-gray-900">
@@ -167,12 +167,12 @@ export default function AutomatischeOrdersPage() {
                 <hr className="border-gray-200" />
               )}
             </div>
-          ))}
+          ))} */}
           {/* get all brand */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">
+          <div className="mt-4 border-gray-200">
+            {/* <h3 className="text-sm font-semibold text-gray-900 mb-2">
               Marken mit Auto-Bestellung (aus Einstellungen)
-            </h3>
+            </h3> */}
             {brandsLoading && (
               <p className="text-sm text-gray-500">Marken werden geladen...</p>
             )}
@@ -203,7 +203,7 @@ export default function AutomatischeOrdersPage() {
       </Card>
 
 
-     
+
     </div>
   )
 }

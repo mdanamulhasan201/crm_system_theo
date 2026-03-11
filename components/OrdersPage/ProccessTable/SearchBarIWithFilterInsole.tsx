@@ -58,70 +58,75 @@ export default function SearchBarIWithFilterInsole() {
     }, [setSelectedBezahlt]);
 
     return (
-        <div className="border border-gray-200 rounded-lg p-3 sm:p-4 w-full min-w-0">
-            {/* Row: Search (flex) + Zahlung filters */}
-            <div className="flex flex-col xl:flex-row gap-3 sm:gap-4 w-full min-w-0">
-                {/* Search – full width on mobile/tablet, flex-1 on desktop */}
-                <div className="relative w-full min-w-0 shrink-0 xl:min-w-[280px] xl:max-w-[480px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none shrink-0" />
+        <div className="w-full rounded-lg border border-gray-200 p-3 sm:p-4">
+            {/* Search + payment filters */}
+            <div className="flex w-full min-w-0 flex-col gap-3 lg:gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
+                {/* Search – keep full width until very large screens */}
+                <div className="relative w-full min-w-0 2xl:max-w-[480px]">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                        <Search className="h-4 w-4 text-gray-400" />
+                    </div>
                     <Input
                         type="text"
                         placeholder="Suche nach Bestellnummer, Name oder Beschreibung..."
                         value={inputValue}
                         onChange={(e) => setInputValue(e.target.value)}
-                        className="w-full min-w-0 pl-9 h-9 sm:h-10 rounded-lg border-gray-300 bg-gray-50 text-sm placeholder:text-gray-400 focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                        className="h-9 w-full min-w-0 rounded-lg border-gray-300 bg-gray-50 pl-10 pr-3 text-sm placeholder:text-gray-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 sm:h-10"
                         aria-label="Suche nach Bestellnummer, Name oder Beschreibung"
                     />
                 </div>
-
                 {/* Zahlung: label + filters */}
-                <div className="flex flex-col xl:flex-row xl:flex-wrap items-stretch xl:items-center gap-2 flex-1 min-w-0">
-                    <span className="text-sm font-medium text-gray-600 shrink-0 sm:mr-1">Zahlung:</span>
+                <div className="flex min-w-0 flex-col gap-2 lg:gap-3 2xl:flex-1 2xl:items-end">
+                    <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-start md:gap-4 2xl:justify-end">
+                        <span className="shrink-0 pt-1 text-sm font-medium text-gray-600">Zahlung:</span>
 
-                    {/* Mobile: dropdown to save space and avoid overflow */}
-                    <div className="w-full sm:hidden min-w-0">
-                        <Select
-                            value={selectedBezahlt ?? '__all__'}
-                            onValueChange={handleZahlungSelect}
-                        >
-                            <SelectTrigger className="w-full h-9 rounded-lg border-gray-300 bg-gray-50 text-sm font-medium cursor-pointer">
-                                <SelectValue placeholder="Alle Zahlungsstatus" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="__all__" className="text-sm cursor-pointer">
-                                    Alle
-                                </SelectItem>
-                                {ZAHLUNG_OPTIONS.map((opt) => (
-                                    <SelectItem key={opt.value} value={opt.value} className="text-sm cursor-pointer">
-                                        {opt.label}
+                        <div className="min-w-0 flex-1">
+                        {/* Mobile only: dropdown to avoid overflow */}
+                        <div className="w-full min-w-0 md:hidden">
+                            <Select
+                                value={selectedBezahlt ?? '__all__'}
+                                onValueChange={handleZahlungSelect}
+                            >
+                                <SelectTrigger className="h-9 w-full rounded-lg border-gray-300 bg-gray-50 text-left text-sm font-medium cursor-pointer">
+                                    <SelectValue placeholder="Alle Zahlungsstatus" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="__all__" className="text-sm cursor-pointer">
+                                        Alle
                                     </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+                                    {ZAHLUNG_OPTIONS.map((opt) => (
+                                        <SelectItem key={opt.value} value={opt.value} className="text-sm cursor-pointer">
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                    {/* Tablet/desktop: button group */}
-                    <div className="hidden sm:flex flex-wrap items-center gap-2 min-w-0">
-                        {ZAHLUNG_OPTIONS.map((opt) => {
-                            const isActive = selectedBezahlt === opt.value;
-                            return (
-                                <button
-                                    key={opt.value}
-                                    type="button"
-                                    onClick={() => handleBezahltToggle(opt.value)}
-                                    className={`
-                                        shrink-0 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors cursor-pointer
+                        {/* Tablet and up: button group */}
+                        <div className="hidden min-w-0 flex-wrap items-center gap-2 md:flex md:justify-start 2xl:justify-end">
+                            {ZAHLUNG_OPTIONS.map((opt) => {
+                                const isActive = selectedBezahlt === opt.value;
+                                return (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        onClick={() => handleBezahltToggle(opt.value)}
+                                        className={`
+                                        rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer xl:px-4 xl:py-2 xl:text-sm
                                         ${isActive
-                                            ? 'bg-white border border-gray-300 text-gray-700 shadow-sm'
-                                            : 'bg-gray-100 border border-transparent text-gray-500 hover:bg-gray-200 hover:text-gray-700'
-                                        }
+                                                ? 'bg-white border border-gray-300 text-gray-700 shadow-sm'
+                                                : 'bg-gray-100 border border-transparent text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+                                            }
                                     `}
-                                    aria-pressed={isActive}
-                                >
-                                    {opt.label}
-                                </button>
-                            );
-                        })}
+                                        aria-pressed={isActive}
+                                    >
+                                        {opt.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        </div>
                     </div>
                 </div>
             </div>

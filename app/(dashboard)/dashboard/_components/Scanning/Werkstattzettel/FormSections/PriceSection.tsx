@@ -27,6 +27,7 @@ interface PriceSectionProps {
   einlageDisplayName?: string
   /** Full supply name including add-ons (Positionsnummer) for display */
   versorgungFullDisplay?: string
+  zusaetzeDisplayLines?: string[]
   onVersorgungChange: (value: string) => void
   quantity: string
   onQuantityChange: (value: string) => void
@@ -105,6 +106,7 @@ export default function PriceSection({
   versorgung,
   versorgungsname,
   versorgungFullDisplay,
+  zusaetzeDisplayLines = [],
   einlageDisplayName,
   onVersorgungChange,
   quantity,
@@ -289,8 +291,17 @@ export default function PriceSection({
                 </p>
               ) : null}
               <p className="text-[14px] text-gray-700">
-                {(versorgungFullDisplay ?? versorgung) || '-'}
+                <span className="text-gray-600">Versorgung:</span> {(versorgungFullDisplay ?? versorgung) || '-'}
               </p>
+              {zusaetzeDisplayLines.length > 0 ? (
+                <div className="mt-2">
+                  <ul className="space-y-1 list-disc pl-5 marker:text-gray-500">
+                    {zusaetzeDisplayLines.map((line) => (
+                      <li key={line} className="text-[14px] leading-5 text-gray-700 pl-0.5">{line}</li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
               {!versorgungFullDisplay && versorgungsname ? (
                 <p className="text-xs text-gray-500 mt-1">
                   <span className="font-medium text-gray-600">Versorgungsname:</span> {versorgungsname}
@@ -425,7 +436,7 @@ export default function PriceSection({
                     <SelectTrigger className=" border-gray-300 text-sm w-full min-w-0 max-w-full overflow-hidden">
                       <SelectValue placeholder="Kein Rabatt" />
                     </SelectTrigger>
-                    <SelectContent className="min-w-32 w-[var(--radix-select-trigger-width)]">
+                    <SelectContent className="min-w-32 w-(--radix-select-trigger-width)">
                       <SelectItem value="none">Kein Rabatt</SelectItem>
                       <SelectItem value="percentage">Prozent (%)</SelectItem>
                     </SelectContent>

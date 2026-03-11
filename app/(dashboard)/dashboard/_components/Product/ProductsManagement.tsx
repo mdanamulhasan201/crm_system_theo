@@ -55,6 +55,9 @@ interface Product {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
     inventoryHistory: Array<{
         id: string
         date: string
@@ -144,6 +147,9 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
             features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
             create_status: apiProduct.create_status,
             adminStoreId: apiProduct.adminStoreId ?? null,
+            auto_order: Boolean(apiProduct.auto_order),
+            able_auto_order: apiProduct.able_auto_order,
+            overviewSizeQuantities: apiProduct.overview_groessenMengen || {},
             inventoryHistory: [] // API doesn't provide history yet
         };
     };
@@ -481,15 +487,7 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
                 isLoading={isDeleting}
             />
 
-            {/* Chart */}
-            <div className='flex flex-col xl:flex-row gap-4 lg:gap-6 items-stretch lg:items-start justify-center mt-14'>
-                <div className='w-full lg:flex-1'>
-                    <LagerChart />
-                </div>
-                <div className='w-full lg:flex-1'>
-                    <PerformerData />
-                </div>
-            </div>
+           
 
             {/* Add Product Modal */}
             <AddProductTypeModal

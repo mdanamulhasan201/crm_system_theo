@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Table, TableHeader, TableBody, TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -90,6 +90,17 @@ export default function ProcessTable() {
     const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
     const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
     const [billingModalOrderNumber, setBillingModalOrderNumber] = useState<string>('');
+    const tableWrapperRef = useRef<HTMLDivElement | null>(null);
+    const dragScrollStateRef = useRef({
+        isDragging: false,
+        startX: 0,
+        scrollLeft: 0,
+    });
+    const [isDraggingTable, setIsDraggingTable] = useState(false);
+
+    const getTableScrollContainer = () => {
+        return tableWrapperRef.current?.querySelector('[data-slot="table-container"]') as HTMLDivElement | null;
+    };
 
     // Direct generate and send PDF when status is clicked
     const handleStatusClickGenerateAndSend = async (orderId: string, orderNumber: string) => {
@@ -100,7 +111,7 @@ export default function ProcessTable() {
             // Fetch barcode data
             const response = await getBarCodeData(orderId, 'right');
             if (!response.success || !response.data) {
-                toast.error('Fehler beim Laden der Barcode-Daten');
+                toast.error(response?.error || response?.message || 'Fehler beim Laden der Barcode-Daten');
                 setIsGeneratingBarcode(false);
                 return;
             }
@@ -296,6 +307,36 @@ export default function ProcessTable() {
         }
     }, [selectedOrderIds.length]);
 
+    useEffect(() => {
+        const handleMouseMove = (event: MouseEvent) => {
+            const container = getTableScrollContainer();
+            const dragState = dragScrollStateRef.current;
+
+            if (!container || !dragState.isDragging) return;
+
+            const deltaX = event.clientX - dragState.startX;
+            container.scrollLeft = dragState.scrollLeft - deltaX;
+            event.preventDefault();
+        };
+
+        const handleMouseUp = () => {
+            if (!dragScrollStateRef.current.isDragging) return;
+
+            dragScrollStateRef.current.isDragging = false;
+            setIsDraggingTable(false);
+            document.body.style.userSelect = "";
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+            document.body.style.userSelect = "";
+        };
+    }, []);
+
     const executeBulkDelete = async () => {
         if (selectedOrderIds.length === 0) return;
 
@@ -312,6 +353,26 @@ export default function ProcessTable() {
             setIsBulkDeleting(false);
             setShowBulkDeleteModal(false);
         }
+    };
+
+    const handleTableMouseDown = (event: React.MouseEvent<HTMLDivElement>) => {
+        if (event.button !== 0) return;
+
+        const target = event.target as HTMLElement | null;
+        if (target?.closest('button, input, a, select, textarea, [role="checkbox"], [data-radix-collection-item]')) {
+            return;
+        }
+
+        const container = getTableScrollContainer();
+        if (!container || container.scrollWidth <= container.clientWidth) return;
+
+        dragScrollStateRef.current = {
+            isDragging: true,
+            startX: event.clientX,
+            scrollLeft: container.scrollLeft,
+        };
+        setIsDraggingTable(true);
+        document.body.style.userSelect = "none";
     };
 
     if (error) {
@@ -361,7 +422,11 @@ export default function ProcessTable() {
                 )}
 
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
+                    <div
+                        ref={tableWrapperRef}
+                        className={isDraggingTable ? 'cursor-grabbing' : 'cursor-grab'}
+                        onMouseDown={handleTableMouseDown}
+                    >
                         <Table className="w-full min-w-[1700px]">
                             <TableHeader>
                                 <OrderTableHeader

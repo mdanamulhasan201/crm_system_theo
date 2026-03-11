@@ -30,7 +30,7 @@ import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagem
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
 import Image from 'next/image'
 import { Switch } from '@/components/ui/switch'
-import { getSingleStorage } from '@/apis/storeManagement'
+import { getSingleStorage, switchStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 
 interface SizeData {
@@ -38,7 +38,6 @@ interface SizeData {
     quantity: number;
     mindestmenge?: number;
     warningStatus?: string;
-    auto_order_quantity?: number | null;
 }
 
 interface Product {
@@ -54,6 +53,9 @@ interface Product {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
     inventoryHistory: Array<{
         id: string
         date: string
@@ -119,6 +121,7 @@ export default function ProductManagementTable({
     const [orderModalOpen, setOrderModalOpen] = useState(false)
     const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
     const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
+    const [togglingAutoOrderId, setTogglingAutoOrderId] = useState<string | null>(null)
 
     // Convert API single-storage response to Product (for modal)
     const apiDataToProduct = (data: any): Product => ({
@@ -134,6 +137,9 @@ export default function ProductManagementTable({
         features: Array.isArray(data.features) ? data.features : undefined,
         create_status: data.create_status,
         adminStoreId: data.adminStoreId ?? null,
+        auto_order: Boolean(data.auto_order),
+        able_auto_order: data.able_auto_order,
+        overviewSizeQuantities: data.overview_groessenMengen || {},
         inventoryHistory: []
     })
 
@@ -178,16 +184,46 @@ export default function ProductManagementTable({
         return undefined;
     };
 
-    const getAutoOrderQuantity = (sizeData: number | SizeData | undefined): number => {
-        if (typeof sizeData === 'object' && sizeData != null && 'auto_order_quantity' in sizeData) {
-            const q = (sizeData as SizeData).auto_order_quantity;
-            return typeof q === 'number' ? q : 0;
-        }
-        return 0;
+    const getOverviewQuantity = (product: Product, size: string): number => {
+        return product.overviewSizeQuantities?.[size]?.quantity ?? 0;
     };
 
-    const hasAutoOrderOn = (product: Product): boolean => {
-        return sizeColumns.some(size => getAutoOrderQuantity(product.sizeQuantities[size]) > 0);
+    const hasAutoOrderOn = (product: Product): boolean => Boolean(product.auto_order);
+
+    const isAutoOrderEnabled = (product: Product): boolean =>
+        String(product.able_auto_order ?? '').trim().toLowerCase() === 'enable';
+
+    const handleAutoOrderToggle = async (product: Product) => {
+        if (!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id) return;
+
+        try {
+            setTogglingAutoOrderId(product.id);
+            await switchStore(product.id);
+
+            const nextAutoOrder = !Boolean(product.auto_order);
+            onUpdateProduct({
+                ...product,
+                auto_order: nextAutoOrder,
+            });
+
+            const response: any = await getSingleStorage(product.id);
+            if (response?.success && response?.data) {
+                onUpdateProduct({
+                    ...product,
+                    ...apiDataToProduct(response.data),
+                    auto_order: Boolean(
+                        response.data.auto_order ?? nextAutoOrder
+                    ),
+                    able_auto_order: response.data.able_auto_order ?? product.able_auto_order,
+                });
+            }
+
+            toast.success(`Auto-Bestellung ${nextAutoOrder ? 'aktiviert' : 'deaktiviert'}`);
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Auto-Bestellung konnte nicht aktualisiert werden');
+        } finally {
+            setTogglingAutoOrderId(null);
+        }
     };
 
     const isEinlagenrohlinge = apiType === 'rady_insole';
@@ -199,18 +235,19 @@ export default function ProductManagementTable({
     return (
         <>
             <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
-                <Table className='w-full bg-white rounded-lg overflow-hidden'>
+                <div className="w-full overflow-x-auto">
+                <Table className={`w-full bg-white rounded-lg overflow-hidden ${isEinlagenrohlinge ? 'min-w-[1500px]' : 'min-w-[1100px]'}`}>
                     <TableHeader>
                         <TableRow className={`border-b ${isEinlagenrohlinge ? 'bg-gray-100' : 'bg-white'}`}>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">{isEinlagenrohlinge ? 'BILD' : 'LAGERORT'}</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase w-[120px] min-w-[120px]">{isEinlagenrohlinge ? 'BILD' : 'LAGERORT'}</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">HERSTELLER</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">ARTIKELBEZEICHNUNG</TableHead>
-                            {!isEinlagenrohlinge && <TableHead className="p-3 text-left font-medium text-gray-900 uppercase">ARTIKELNUMMER</TableHead>}
+                            {!isEinlagenrohlinge && <TableHead className="p-3 text-left font-medium text-gray-900 uppercase min-w-[160px]">ARTIKELNUMMER</TableHead>}
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">{isEinlagenrohlinge ? 'STATUS' : 'BESTANDSWARNUNG'}</TableHead>
                             {isEinlagenrohlinge && <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AUTO</TableHead>}
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AKTIONEN</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase min-w-[120px]">AKTIONEN</TableHead>
                             {sizeColumns.map(size => (
-                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase">{size}</TableHead>
+                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase min-w-[70px]">{size}</TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>
@@ -235,10 +272,10 @@ export default function ProductManagementTable({
                         ) : (
                             visibleProducts.map((product) => (
                                 <TableRow key={product.id} className="border-b bg-white">
-                                    <TableCell className="p-3">
+                                    <TableCell className="p-3 w-[120px] min-w-[120px]">
                                         {/* BILD / Lagerort – clickable image or placeholder */}
                                         <div
-                                            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                                            className="flex items-center justify-center w-20 min-w-20 cursor-pointer hover:opacity-80 transition-opacity"
                                             onClick={() => setSelectedProductIdForModal(product.id)}
                                         >
                                             {product.image ? (
@@ -327,15 +364,30 @@ export default function ProductManagementTable({
                                     {isEinlagenrohlinge && (
                                         <TableCell className="p-3">
                                             <div className="flex items-center gap-2">
-                                                <Switch checked={hasAutoOrderOn(product)} disabled className="data-[state=checked]:bg-emerald-500" />
-                                                <span className={`text-xs font-medium ${hasAutoOrderOn(product) ? 'text-emerald-600' : 'text-gray-500'}`}>
-                                                    {hasAutoOrderOn(product) ? 'An' : 'Aus'}
+                                                <Switch
+                                                    checked={hasAutoOrderOn(product)}
+                                                    disabled={!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id}
+                                                    onCheckedChange={() => handleAutoOrderToggle(product)}
+                                                    className={`data-[state=checked]:bg-emerald-500 ${isAutoOrderEnabled(product)
+                                                            ? 'cursor-pointer data-[state=unchecked]:bg-slate-300'
+                                                            : 'cursor-not-allowed data-[state=unchecked]:bg-slate-200 data-[state=checked]:bg-slate-400'
+                                                        }`}
+                                                />
+                                                <span
+                                                    className={`text-xs font-medium ${!isAutoOrderEnabled(product)
+                                                            ? 'text-slate-400'
+                                                            : hasAutoOrderOn(product)
+                                                                ? 'text-emerald-600'
+                                                                : 'text-gray-500'
+                                                        }`}
+                                                >
+                                                    {!isAutoOrderEnabled(product) ? 'Gesperrt' : hasAutoOrderOn(product) ? 'An' : 'Aus'}
                                                 </span>
                                             </div>
                                         </TableCell>
                                     )}
-                                    <TableCell className="">
-                                        <div className="flex items-center gap-2">
+                                    <TableCell className="min-w-[120px]">
+                                        <div className="flex items-center gap-2 whitespace-nowrap">
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -368,7 +420,7 @@ export default function ProductManagementTable({
                                     </TableCell>
                                     {sizeColumns.map(size => {
                                         const sizeData = product.sizeQuantities[size]
-                                        const autoQty = isEinlagenrohlinge ? getAutoOrderQuantity(sizeData) : 0
+                                        const autoQty = getOverviewQuantity(product, size)
                                         return (
                                             <TableCell key={size} className="p-3 text-center text-gray-900">
                                                 <div className="flex flex-col items-center justify-center gap-0.5">
@@ -392,6 +444,7 @@ export default function ProductManagementTable({
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </div>
             {/* Hidden Edit Modal controlled here */}
             {editId && (
@@ -420,6 +473,9 @@ export default function ProductManagementTable({
                                 Status: apiProduct.Status,
                                 image: apiProduct.image,
                                 features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+                                overviewSizeQuantities: apiProduct.overview_groessenMengen || {},
+                                auto_order: Boolean(apiProduct.auto_order),
+                                able_auto_order: apiProduct.able_auto_order,
                                 inventoryHistory: []
                             };
                             onUpdateProduct(updatedProduct);

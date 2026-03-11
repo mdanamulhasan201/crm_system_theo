@@ -41,6 +41,7 @@ interface FormData {
   privatePrice?: number
   insuranceTotalPrice?: number
   vat_rate?: number
+  insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>
 }
 
 interface UserInfoUpdateModalProps {
@@ -126,36 +127,51 @@ export default function WerkstattzettelModal({
     return []
   }, [formData?.selectedVersorgungData, formData?.billingType])
 
-  // Full Versorgung display for "Auftragsdetails & Preise": supply name + add-ons (Positionsnummer)
+  // Versorgung display for "Auftragsdetails & Preise": plain selected Versorgung name only
   const { einlageDisplayName, versorgungFullDisplay } = React.useMemo(() => {
     const einlage = formData?.einlagentyp || ''
     const supplyName =
       formData?.versorgungsname ||
+      formData?.selectedVersorgungData?.versorgung ||
       formData?.selectedVersorgungData?.supplyStatus?.name ||
       formData?.selectedVersorgungData?.name ||
       formData?.versorgung ||
       ''
-    const selectedPos = formData?.selectedPositionsnummer || []
-    const options = formData?.positionsnummerOptions || []
-    const getPosNum = (o: any) => o?.positionsnummer ?? (typeof o?.description === 'object' && o?.description?.positionsnummer ? o.description.positionsnummer : '')
-    const getDesc = (o: any): string => {
-      if (typeof o?.description === 'string') return o.description
-      if (o?.description && typeof o.description === 'object') {
-        const t = (o.description as any).title ?? ''
-        const s = (o.description as any).subtitle ?? ''
-        return t && s ? `${t} - ${s}` : t || s || ''
-      }
-      return ''
+    return { einlageDisplayName: einlage, versorgungFullDisplay: supplyName }
+  }, [formData?.einlagentyp, formData?.versorgung, formData?.versorgungsname, formData?.selectedVersorgungData])
+
+  const zusaetzeDisplayLines = React.useMemo(() => {
+    const standards = formData?.insoleStandards || []
+
+    const formatValue = (value: number) => {
+      return Number.isInteger(value) ? String(value) : String(value).replace('.', ',')
     }
-    const addonLabels = selectedPos
-      .map((posNum) => {
-        const opt = options.find((o) => getPosNum(o) === posNum)
-        return opt ? getDesc(opt) || posNum : posNum
+
+    return standards
+      .map((item) => {
+        const left = Number(item?.left ?? 0)
+        const right = Number(item?.right ?? 0)
+        const hasLeft = left > 0
+        const hasRight = right > 0
+
+        if (!item?.name || (!hasLeft && !hasRight)) return null
+
+        if (hasLeft && hasRight && left === right) {
+          return `${formatValue(left)}mm ${item.name} BDS`
+        }
+
+        if (hasLeft && hasRight) {
+          return `${item.name} ${formatValue(left)}mm Links und ${formatValue(right)}mm Rechts`
+        }
+
+        if (hasLeft) {
+          return `${item.name} ${formatValue(left)}mm Links`
+        }
+
+        return `${item.name} ${formatValue(right)}mm Rechts`
       })
-      .filter(Boolean)
-    const fullSupply = addonLabels.length > 0 ? `${supplyName} (${addonLabels.join(', ')})` : supplyName
-    return { einlageDisplayName: einlage, versorgungFullDisplay: fullSupply }
-  }, [formData?.einlagentyp, formData?.versorgung, formData?.versorgungsname, formData?.selectedVersorgungData, formData?.selectedPositionsnummer, formData?.positionsnummerOptions])
+      .filter((item): item is string => Boolean(item))
+  }, [formData?.insoleStandards])
 
   // Auto-set Einlagenversorgung price when versorgung is selected
   // Only for Privat-Abrechnung – Krankenkassa must NOT prefill or calculate this price
@@ -478,6 +494,7 @@ export default function WerkstattzettelModal({
               versorgungsname={formData?.versorgungsname}
               einlageDisplayName={einlageDisplayName}
               versorgungFullDisplay={versorgungFullDisplay}
+              zusaetzeDisplayLines={zusaetzeDisplayLines}
               onVersorgungChange={form.setVersorgung}
               quantity={form.quantity}
               onQuantityChange={form.setQuantity}
