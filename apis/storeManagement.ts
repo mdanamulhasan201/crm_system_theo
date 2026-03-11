@@ -233,3 +233,16 @@ export const deleteSonstiges = async (body: { ids: string[] }) => {
         throw error;
     }
 }
+
+
+
+
+// toggle store auto-order status /store/settings/toggle-auto-order-status/{{store id}}
+export const switchStore = async (storeId: string) => {
+    try {
+        const response = await axiosClient.post(`/store/settings/toggle-auto-order-status/${storeId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}

@@ -22,7 +22,7 @@ import { Switch } from '@/components/ui/switch'
 import MillingBlockImageModal from './MillingBlockImageModal'
 import EinlagenNachbestellenModal from '../EinlagenNachbestellenModal'
 import EditMillingBlock from './EditMillingBlock'
-import { getSingleStorage } from '@/apis/storeManagement'
+import { getSingleStorage, switchStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import MillingBlockHistory from './MillingBlockHistory'
 import DeleteMillingBlockModal from './DeleteMillingBlockModal'
@@ -43,6 +43,8 @@ interface MillingBlock {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
 }
 
 // Helper function to truncate text to 15 characters with ".."
@@ -96,6 +98,7 @@ export default function MillingBlocksTable({
     const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
     const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
     const [selectedProductForEdit, setSelectedProductForEdit] = useState<MillingBlock | null>(null)
+    const [togglingAutoOrderId, setTogglingAutoOrderId] = useState<string | null>(null)
 
     // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
     const apiDataToMillingBlock = (data: any): MillingBlock => {
@@ -125,6 +128,8 @@ export default function MillingBlocksTable({
             features: Array.isArray(data.features) ? data.features : undefined,
             create_status: data.create_status,
             adminStoreId: data.adminStoreId ?? null,
+            auto_order: Boolean(data.auto_order),
+            able_auto_order: data.able_auto_order,
         }
     }
 
@@ -164,9 +169,43 @@ export default function MillingBlocksTable({
         return getQuantity(product.sizeQuantities[size]);
     }
 
-    const hasAutoOrderOn = (product: MillingBlock): boolean => {
-        return sizeColumns.some(size => getAutoOrderQuantity(product.sizeQuantities[size]) > 0);
-    };
+    const hasAutoOrderOn = (product: MillingBlock): boolean => Boolean(product.auto_order);
+
+    const isAutoOrderEnabled = (product: MillingBlock): boolean =>
+        String(product.able_auto_order ?? '').trim().toLowerCase() === 'enable';
+
+    const handleAutoOrderToggle = async (product: MillingBlock) => {
+        if (!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id) return;
+
+        try {
+            setTogglingAutoOrderId(product.id)
+            await switchStore(product.id)
+
+            const nextAutoOrder = !Boolean(product.auto_order)
+            onUpdateProduct({
+                ...product,
+                auto_order: nextAutoOrder,
+            })
+
+            const response: any = await getSingleStorage(product.id)
+            if (response?.success && response?.data) {
+                onUpdateProduct({
+                    ...product,
+                    ...apiDataToMillingBlock(response.data),
+                    auto_order: Boolean(
+                        response.data.auto_order ?? nextAutoOrder
+                    ),
+                    able_auto_order: response.data.able_auto_order ?? product.able_auto_order,
+                })
+            }
+
+            toast.success(`Auto-Bestellung ${nextAutoOrder ? 'aktiviert' : 'deaktiviert'}`)
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Auto-Bestellung konnte nicht aktualisiert werden')
+        } finally {
+            setTogglingAutoOrderId(null)
+        }
+    }
 
     if (isLoading) {
         return <ProductManagementTableShimmer sizeColumns={sizeColumns} rows={5} />
@@ -278,9 +317,24 @@ export default function MillingBlocksTable({
                                     </TableCell>
                                     <TableCell className="p-3">
                                         <div className="flex items-center gap-2">
-                                            <Switch checked={hasAutoOrderOn(product)} disabled className="data-[state=checked]:bg-emerald-500" />
-                                            <span className={`text-xs font-medium ${hasAutoOrderOn(product) ? 'text-emerald-600' : 'text-gray-500'}`}>
-                                                {hasAutoOrderOn(product) ? 'An' : 'Aus'}
+                                            <Switch
+                                                checked={hasAutoOrderOn(product)}
+                                                disabled={!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id}
+                                                onCheckedChange={() => handleAutoOrderToggle(product)}
+                                                className={`data-[state=checked]:bg-emerald-500 ${isAutoOrderEnabled(product)
+                                                        ? 'cursor-pointer data-[state=unchecked]:bg-slate-300'
+                                                        : 'cursor-not-allowed data-[state=unchecked]:bg-slate-200 data-[state=checked]:bg-slate-400'
+                                                    }`}
+                                            />
+                                            <span
+                                                className={`text-xs font-medium ${!isAutoOrderEnabled(product)
+                                                        ? 'text-slate-400'
+                                                        : hasAutoOrderOn(product)
+                                                            ? 'text-emerald-600'
+                                                            : 'text-gray-500'
+                                                    }`}
+                                            >
+                                                {!isAutoOrderEnabled(product) ? 'Gesperrt' : hasAutoOrderOn(product) ? 'An' : 'Aus'}
                                             </span>
                                         </div>
                                     </TableCell>

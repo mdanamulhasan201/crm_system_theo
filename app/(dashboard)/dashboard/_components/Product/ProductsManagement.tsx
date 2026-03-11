@@ -55,6 +55,8 @@ interface Product {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
     inventoryHistory: Array<{
         id: string
         date: string
@@ -144,6 +146,8 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
             features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
             create_status: apiProduct.create_status,
             adminStoreId: apiProduct.adminStoreId ?? null,
+            auto_order: Boolean(apiProduct.auto_order),
+            able_auto_order: apiProduct.able_auto_order,
             inventoryHistory: [] // API doesn't provide history yet
         };
     };

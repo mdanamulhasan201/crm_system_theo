@@ -28,6 +28,8 @@ interface MillingBlock {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
 }
 
 function getQuantity(val: number | { quantity?: number; auto_order_quantity?: number } | undefined): number {
@@ -161,6 +163,8 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
             features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
             create_status: apiProduct.create_status,
             adminStoreId: apiProduct.adminStoreId ?? null,
+            auto_order: Boolean(apiProduct.auto_order),
+            able_auto_order: apiProduct.able_auto_order,
         }
     }
 
