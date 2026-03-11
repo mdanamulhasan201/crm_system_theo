@@ -293,7 +293,7 @@ export default function BuyStoragePage() {
                                                     {availableSizes.map(size => (
                                                         <span 
                                                             key={size}
-                                                            className="px-2 py-0.5 text-center bg-gray-100 text-gray-700 text-[11px] leading-4 font-medium rounded border border-gray-200"
+                                                            className="px-2 py-0.5 text-center bg-gray-100 text-gray-700 text-xs leading-5 font-medium rounded border border-gray-200"
                                                         >
                                                             {size}
                                                         </span>
