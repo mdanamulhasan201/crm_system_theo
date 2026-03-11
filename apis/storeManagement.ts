@@ -247,3 +247,15 @@ export const switchStore = async (storeId: string) => {
         throw error;
     }
 }
+
+
+
+// =========store/get-all-my-store-overview?limit=1&cursor=da62c75d-4e2c-4a61-be5a-d7fd5872fc8c
+export const getAllMyStoreOverview = async (limit: number, cursor: string) => {
+    try {
+        const response = await axiosClient.get(`/store/get-all-my-store-overview?limit=${limit}&cursor=${cursor}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
