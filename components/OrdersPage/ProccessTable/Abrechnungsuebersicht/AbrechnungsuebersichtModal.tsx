@@ -230,7 +230,10 @@ export default function AbrechnungsuebersichtModal({
                                     )}
                                     <div className="flex justify-between pt-2 border-t border-gray-200">
                                         <span className="text-gray-700 font-medium">Gesamt</span>
-                                        <span className="font-bold text-gray-900">{formatEuro(data.totalPrice)}</span>
+                                        <div className="flex flex-col items-end">
+                                            <span className="font-bold text-gray-900">{formatEuro(data.totalPrice)}</span>
+                                            <span className="text-xs text-gray-500">{vatRate}% MwSt. inkl.</span>
+                                        </div>
                                     </div>
                                     <div className={`flex justify-between items-center pt-3 mt-2 rounded-lg px-3 py-2 ${isPaymentDone ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
                                         <span className="text-sm font-medium">
@@ -255,58 +258,58 @@ export default function AbrechnungsuebersichtModal({
                                     </h3>
                                 </div>
                                 <div className="p-4 bg-[#f5f5f5] space-y-3">
-                                    {positions.map((row, idx) => {
-                                        const posNum = getPositionsnummerFromDescription(row.description) ?? (idx + 1).toString().padStart(2, '0');
-                                        const desc = formatDescription(row.description);
-                                        const seite = getSeiteFromDescription(row.description);
-                                        const rowNetto = row.price / vatDivisor;
-                                        const rowMwst = row.price - rowNetto;
-                                        return (
-                                            <div
-                                                key={row.id}
-                                                className="rounded-lg bg-white border border-gray-100 shadow-sm p-4 flex flex-wrap items-start justify-between gap-4"
-                                            >
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="text-sm text-gray-800 leading-snug">
-                                                        <span className="font-semibold text-gray-900">{posNum}</span>
-                                                        <span className="text-gray-700"> — </span>
-                                                        <span
-                                                            className="cursor-pointer hover:text-gray-600 transition-colors text-gray-700"
-                                                            onClick={() => setFullDescriptionText(desc)}
-                                                            title="Klicken für vollständige Beschreibung"
-                                                        >
-                                                            {truncateDescription(desc)}
-                                                        </span>
-                                                    </p>
+                                    {positions.length === 0 ? (
+                                        <div className="rounded-lg bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-500 text-center flex items-center justify-center min-h-[96px]">
+                                            Daten sind derzeit nicht verfugbar.
+                                        </div>
+                                    ) : (
+                                        positions.map((row, idx) => {
+                                            const posNum = getPositionsnummerFromDescription(row.description) ?? (idx + 1).toString().padStart(2, '0');
+                                            const desc = formatDescription(row.description);
+                                            const seite = getSeiteFromDescription(row.description);
+                                            const rowNetto = row.price / vatDivisor;
+                                            const rowMwst = row.price - rowNetto;
+                                            return (
+                                                <div
+                                                    key={row.id}
+                                                    className="rounded-lg bg-white border border-gray-100 shadow-sm p-4 flex flex-wrap items-start justify-between gap-4"
+                                                >
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="text-sm text-gray-800 leading-snug">
+                                                            <span className="font-semibold text-gray-900">{posNum}</span>
+                                                            <span className="text-gray-700"> — </span>
+                                                            <span
+                                                                className="cursor-pointer hover:text-gray-600 transition-colors text-gray-700"
+                                                                onClick={() => setFullDescriptionText(desc)}
+                                                                title="Klicken für vollständige Beschreibung"
+                                                            >
+                                                                {truncateDescription(desc)}
+                                                            </span>
+                                                        </p>
+                                                    </div>
+                                                    <div className="flex flex-col items-end gap-2 text-sm shrink-0">
+                                                        {seite && seite !== '—' && (
+                                                            <span className="inline-flex px-2.5 py-1 rounded-md text-emerald-700 bg-emerald-100 text-xs font-medium">
+                                                                Seite: {seite}
+                                                            </span>
+                                                        )}
+                                                        <span className="text-gray-600">Netto: {formatEuroLeading(rowNetto)}</span>
+                                                        <span className="text-gray-600">+ {vatRate}% MwSt.: {formatEuroLeading(rowMwst)}</span>
+                                                        <span className="font-bold text-emerald-600">Gesamt: {formatEuroLeading(row.price)}</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex flex-col items-end gap-2 text-sm shrink-0">
-                                                    {seite && seite !== '—' && (
-                                                        <span className="inline-flex px-2.5 py-1 rounded-md text-emerald-700 bg-emerald-100 text-xs font-medium">
-                                                            Seite: {seite}
-                                                        </span>
-                                                    )}
-                                                    <span className="text-gray-600">Netto: {formatEuroLeading(rowNetto)}</span>
-                                                    <span className="text-gray-600">+ {vatRate}% MwSt.: {formatEuroLeading(rowMwst)}</span>
-                                                    <span className="font-bold text-emerald-600">Gesamt: {formatEuroLeading(row.price)}</span>
-                                                </div>
-                                            </div>
-                                        );
-                                    })}
+                                            );
+                                        })
+                                    )}
                                 </div>
-                                <div className="px-4 py-4 bg-white rounded-b-xl border-t border-gray-100 space-y-2">
-                                    <div className="flex justify-between text-sm text-gray-600">
-                                        <span>Zwischensumme:</span>
-                                        <span>{formatEuroLeading(netto)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm text-gray-600">
-                                        <span>+ {vatRate}% MwSt.:</span>
-                                        <span>{formatEuroLeading(mwst)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-sm font-bold text-gray-900 pt-2 border-t border-gray-100">
+                                {positions.length > 0 && (
+                                    <div className="px-4 py-4 bg-white rounded-b-xl border-t border-gray-100">
+                                        <div className="flex justify-between text-sm font-bold text-gray-900">
                                         <span>Gesamt:</span>
                                         <span className="text-emerald-600">{formatEuroLeading(data.totalPrice)}</span>
+                                        </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
 
                             {/* DOKUMENTE */}
@@ -319,8 +322,8 @@ export default function AbrechnungsuebersichtModal({
                                         <Button
                                             variant="outline"
                                             size="sm"
-                                            className="gap-2 cursor-pointer"
-                                           
+                                            className="gap-2 bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed hover:bg-gray-100 hover:text-gray-400"
+                                            disabled
                                         >
                                             <Receipt className="w-4 h-4" />
                                             Rechnung öffnen
