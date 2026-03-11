@@ -41,6 +41,7 @@ interface FormData {
   privatePrice?: number
   insuranceTotalPrice?: number
   vat_rate?: number
+  insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>
 }
 
 interface UserInfoUpdateModalProps {
@@ -138,6 +139,39 @@ export default function WerkstattzettelModal({
       ''
     return { einlageDisplayName: einlage, versorgungFullDisplay: supplyName }
   }, [formData?.einlagentyp, formData?.versorgung, formData?.versorgungsname, formData?.selectedVersorgungData])
+
+  const zusaetzeDisplayLines = React.useMemo(() => {
+    const standards = formData?.insoleStandards || []
+
+    const formatValue = (value: number) => {
+      return Number.isInteger(value) ? String(value) : String(value).replace('.', ',')
+    }
+
+    return standards
+      .map((item) => {
+        const left = Number(item?.left ?? 0)
+        const right = Number(item?.right ?? 0)
+        const hasLeft = left > 0
+        const hasRight = right > 0
+
+        if (!item?.name || (!hasLeft && !hasRight)) return null
+
+        if (hasLeft && hasRight && left === right) {
+          return `${formatValue(left)}mm ${item.name} BDS`
+        }
+
+        if (hasLeft && hasRight) {
+          return `${item.name} ${formatValue(left)}mm Links und ${formatValue(right)}mm Rechts`
+        }
+
+        if (hasLeft) {
+          return `${item.name} ${formatValue(left)}mm Links`
+        }
+
+        return `${item.name} ${formatValue(right)}mm Rechts`
+      })
+      .filter((item): item is string => Boolean(item))
+  }, [formData?.insoleStandards])
 
   // Auto-set Einlagenversorgung price when versorgung is selected
   // Only for Privat-Abrechnung – Krankenkassa must NOT prefill or calculate this price
@@ -460,6 +494,7 @@ export default function WerkstattzettelModal({
               versorgungsname={formData?.versorgungsname}
               einlageDisplayName={einlageDisplayName}
               versorgungFullDisplay={versorgungFullDisplay}
+              zusaetzeDisplayLines={zusaetzeDisplayLines}
               onVersorgungChange={form.setVersorgung}
               quantity={form.quantity}
               onQuantityChange={form.setQuantity}
