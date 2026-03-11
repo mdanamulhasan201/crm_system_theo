@@ -128,7 +128,10 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData | null | undefined, select
         fertigstellung: new Date(apiOrder.statusUpdate || apiOrder.createdAt).toLocaleDateString('de-DE'),
         erstelltAm: formatDate(werkstattzettel?.auftragsDatum || apiOrder.createdAt),
         fertiggestelltAm: formatDate(apiOrder.fertigstellungBis || werkstattzettel?.fertigstellungBis || apiOrder.statusUpdate || apiOrder.updatedAt),
-        productName: product?.status || product?.name || '—',
+        productName:
+            (apiOrder as any).orderCategory === 'sonstiges'
+                ? ((apiOrder as any).service_name || product?.status || product?.name || '—')
+                : (product?.status || product?.name || '—'),
         deliveryDate: new Date(apiOrder.updatedAt).toLocaleDateString('de-DE'),
         invoice: apiOrder.invoice,
         priority,
