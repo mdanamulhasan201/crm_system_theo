@@ -286,19 +286,21 @@ export default function BuyStoragePage() {
                                         <TableCell className="p-4">
                                             <span className="text-lg font-semibold text-gray-900">€{product.price}</span>
                                         </TableCell>
-                                        <TableCell className="p-4 text-center">
-                                            <div className="flex flex-wrap items-center justify-center gap-1.5">
+                                        <TableCell className="p-4 text-center min-w-[220px]">
+                                            <div className="grid grid-cols-5 gap-1.5 max-w-[220px] mx-auto">
                                                 {availableSizes.length > 0 ? (
-                                                    availableSizes.map(size => (
+                                                    <>
+                                                    {availableSizes.map(size => (
                                                         <span 
                                                             key={size}
-                                                            className="px-2.5 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-md border border-gray-200"
+                                                            className="px-2 py-0.5 text-center bg-gray-100 text-gray-700 text-[11px] leading-4 font-medium rounded border border-gray-200"
                                                         >
                                                             {size}
                                                         </span>
-                                                    ))
+                                                    ))}
+                                                    </>
                                                 ) : (
-                                                    <span className="text-sm text-gray-400">Alle Größen</span>
+                                                    <span className="col-span-5 text-sm text-gray-400">Alle Größen</span>
                                                 )}
                                             </div>
                                         </TableCell>
