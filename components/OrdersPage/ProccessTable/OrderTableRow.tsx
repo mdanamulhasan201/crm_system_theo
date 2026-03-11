@@ -115,13 +115,19 @@ export default function OrderTableRow({
     onPriceClick,
 }: OrderTableRowProps) {
     const { selectedType } = useOrders();
-    // Category letter from order.orderType (from API orderCategory): F = Fräsblock, E = Einlage, S = Sonstiges. Use order's category so it shows for "Alle" too.
-    const typeForLetter = order.orderType ?? (selectedType && selectedType !== 'alle' ? selectedType : null);
+    // Prefer API `u_orderType` for the small type badge beside the checkbox.
+    const rawOrderType = (order.uOrderType ?? order.orderType ?? selectedType ?? '').toString().trim();
+    const normalizedOrderType = rawOrderType.toLowerCase();
     const typeLetter =
-        typeForLetter === 'milling_block' ? 'F'
-            : (typeForLetter === 'rady_insole' || typeForLetter === 'insole') ? 'E'
-                : typeForLetter === 'sonstiges' ? 'S'
+        normalizedOrderType === 'rady_insole' || normalizedOrderType === 'insole' ? 'R'
+            : normalizedOrderType === 'milling_block' ? 'M'
+                : normalizedOrderType === 'sonstiges' ? 'S'
                     : null;
+    const typeBadgeTitle =
+        normalizedOrderType === 'rady_insole' || normalizedOrderType === 'insole' ? 'Rady Insole'
+            : normalizedOrderType === 'milling_block' ? 'Milling Block'
+                : normalizedOrderType === 'sonstiges' ? 'Sonstiges'
+                    : rawOrderType || 'Unbekannter Typ';
     // Helper function to safely get string value (supports API format: { address, description })
     const getSafeString = (value: any): string => {
         if (value == null) return '';
@@ -208,7 +214,7 @@ export default function OrderTableRow({
         displayText = displayText.replace(/_/g, ' ');
 
         return (
-            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text} break-words`} style={{ wordBreak: 'break-word' }}>
+            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text} wrap-break-word`} style={{ wordBreak: 'break-word' }}>
                 {displayText}
             </span>
         );
@@ -337,7 +343,7 @@ export default function OrderTableRow({
                     {typeLetter != null && (
                         <span
                             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600"
-                            title={typeForLetter === 'milling_block' ? 'Fräsblock' : (typeForLetter === 'rady_insole' || typeForLetter === 'insole') ? 'Einlage' : 'Sonstiges'}
+                            title={typeBadgeTitle}
                         >
                             {typeLetter}
                         </span>
@@ -376,7 +382,7 @@ export default function OrderTableRow({
             <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-2 flex-wrap">
                     <span 
-                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium whitespace-normal break-words ${getStatusBadgeColor(order.displayStatus, selectedType)} ${
+                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium whitespace-normal wrap-break-word ${getStatusBadgeColor(order.displayStatus, selectedType)} ${
                             order.displayStatus?.replace(/_/g, ' ') === 'Abholbereit/Versandt' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
                         }`}
                         onClick={(e) => {

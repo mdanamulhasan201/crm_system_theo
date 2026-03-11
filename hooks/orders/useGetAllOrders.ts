@@ -61,6 +61,8 @@ export interface ApiOrderData {
     private_payed?: boolean | null;
     /** Order category from API: "insole" | "sonstiges" | "milling_block" etc. Used for table category letter. */
     orderCategory?: string | null;
+    /** Raw backend type, e.g. "Rady_Insole" | "Milling_Block" | "Sonstiges". */
+    u_orderType?: string | null;
 }
 
 export interface PaginationData {

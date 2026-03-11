@@ -44,6 +44,8 @@ export interface OrderData {
     private_payed?: boolean | null;
     /** Order type for table badge: rady_insole | milling_block | sonstiges (from API when "Alle") */
     orderType?: string | null;
+    /** Raw API type from `u_orderType`, used for the small badge beside checkbox. */
+    uOrderType?: string | null;
 }
 
 interface OrdersContextType {
@@ -138,6 +140,7 @@ const mapApiDataToOrderData = (apiOrder: ApiOrderData | null | undefined, select
         insurance_payed: (apiOrder as any).insurance_payed ?? null,
         private_payed: (apiOrder as any).private_payed ?? null,
         orderType: (apiOrder as any).orderCategory ?? (apiOrder as any).type ?? (apiOrder as any).orderType ?? null,
+        uOrderType: (apiOrder as any).u_orderType ?? null,
     };
 };
 
