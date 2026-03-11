@@ -238,18 +238,19 @@ export default function ProductManagementTable({
     return (
         <>
             <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
-                <Table className='w-full bg-white rounded-lg overflow-hidden'>
+                <div className="w-full overflow-x-auto">
+                <Table className={`w-full bg-white rounded-lg overflow-hidden ${isEinlagenrohlinge ? 'min-w-[1500px]' : 'min-w-[1100px]'}`}>
                     <TableHeader>
                         <TableRow className={`border-b ${isEinlagenrohlinge ? 'bg-gray-100' : 'bg-white'}`}>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">{isEinlagenrohlinge ? 'BILD' : 'LAGERORT'}</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase w-[120px] min-w-[120px]">{isEinlagenrohlinge ? 'BILD' : 'LAGERORT'}</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">HERSTELLER</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">ARTIKELBEZEICHNUNG</TableHead>
-                            {!isEinlagenrohlinge && <TableHead className="p-3 text-left font-medium text-gray-900 uppercase">ARTIKELNUMMER</TableHead>}
+                            {!isEinlagenrohlinge && <TableHead className="p-3 text-left font-medium text-gray-900 uppercase min-w-[160px]">ARTIKELNUMMER</TableHead>}
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">{isEinlagenrohlinge ? 'STATUS' : 'BESTANDSWARNUNG'}</TableHead>
                             {isEinlagenrohlinge && <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AUTO</TableHead>}
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AKTIONEN</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase min-w-[120px]">AKTIONEN</TableHead>
                             {sizeColumns.map(size => (
-                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase">{size}</TableHead>
+                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase min-w-[70px]">{size}</TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>
@@ -274,10 +275,10 @@ export default function ProductManagementTable({
                         ) : (
                             visibleProducts.map((product) => (
                                 <TableRow key={product.id} className="border-b bg-white">
-                                    <TableCell className="p-3">
+                                    <TableCell className="p-3 w-[120px] min-w-[120px]">
                                         {/* BILD / Lagerort – clickable image or placeholder */}
                                         <div
-                                            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                                            className="flex items-center justify-center w-20 min-w-20 cursor-pointer hover:opacity-80 transition-opacity"
                                             onClick={() => setSelectedProductIdForModal(product.id)}
                                         >
                                             {product.image ? (
@@ -388,8 +389,8 @@ export default function ProductManagementTable({
                                             </div>
                                         </TableCell>
                                     )}
-                                    <TableCell className="">
-                                        <div className="flex items-center gap-2">
+                                    <TableCell className="min-w-[120px]">
+                                        <div className="flex items-center gap-2 whitespace-nowrap">
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
@@ -446,6 +447,7 @@ export default function ProductManagementTable({
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </div>
             {/* Hidden Edit Modal controlled here */}
             {editId && (

@@ -2,13 +2,14 @@ import axiosClient from "@/lib/axiosClient";
 
 
 
-// buy store /store/buy – body: storeId (required), admin_store_id, groessenMengen (size -> { length, quantity })
+// buy store /store/buy – body: storeId (required), admin_store_id, groessenMengen (size -> { length, quantity }), price
 export type BuyStoreGroessenMengen = Record<string, { length: number; quantity: number }>;
 
 export const buyStore = async (body: {
     storeId: string;
     admin_store_id: string;
     groessenMengen: BuyStoreGroessenMengen;
+    price: number;
 }) => {
     try {
         const response = await axiosClient.post(`/store/buy`, body);
@@ -64,7 +65,7 @@ export const getSingleStore = async (id: string) => {
 
 // Lager hinzufügen store/add-storage
 
-export const addStorage = async (body: { admin_store_id: string }) => {
+export const addStorage = async (body: { admin_store_id: string; groessenMengen: BuyStoreGroessenMengen }) => {
     try {
         const response = await axiosClient.post(`/store/add-storage`, body);
         return response.data;

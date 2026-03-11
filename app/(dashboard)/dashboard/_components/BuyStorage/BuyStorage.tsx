@@ -175,10 +175,12 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
         setShowConfirmation(false)
         try {
             const groessenMengen = buildGroessenMengen()
+            const price = calculateTotalPrice()
             const response = await buyStore({
                 storeId: '', // new purchase from catalog – no existing storage
                 admin_store_id: product.id,
-                groessenMengen
+                groessenMengen,
+                price,
             })
             if (response.success) {
                 toast.success(response.message || 'Store purchased successfully!')
@@ -292,7 +294,7 @@ export default function BuyStorageModal({ isOpen, onClose, selectedProduct, onBu
                                                 type="number"
                                                 min="0"
                                                 max={availableQuantity}
-                                                value={quantities[size] || 0}
+                                                value={quantities[size] === undefined || quantities[size] === 0 ? '' : quantities[size]}
                                                 onChange={(e) => handleQuantityChange(size, e.target.value)}
                                                 className="w-full"
                                                 placeholder="0"

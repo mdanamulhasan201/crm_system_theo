@@ -214,17 +214,18 @@ export default function MillingBlocksTable({
     return (
         <>
             <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
-                <Table className='w-full bg-white rounded-lg overflow-hidden'>
+                <div className="w-full overflow-x-auto">
+                <Table className='w-full min-w-[1100px] bg-white rounded-lg overflow-hidden'>
                     <TableHeader>
                         <TableRow className="border-b bg-gray-100">
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">BILD</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase w-[120px] min-w-[120px]">BILD</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">HERSTELLER</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">ARTIKELBEZEICHNUNG</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">STATUS</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AUTO</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AKTIONEN</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase min-w-[120px]">AKTIONEN</TableHead>
                             {sizeColumns.map(size => (
-                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase">{size}</TableHead>
+                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase min-w-[90px]">{size}</TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>
@@ -249,9 +250,9 @@ export default function MillingBlocksTable({
                         ) : (
                             visibleProducts.map((product) => (
                                 <TableRow key={product.id} className="border-b bg-white">
-                                    <TableCell className="p-3">
+                                    <TableCell className="p-3 w-[120px] min-w-[120px]">
                                         <div
-                                            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                                            className="flex items-center justify-center w-20 min-w-20 cursor-pointer hover:opacity-80 transition-opacity"
                                             onClick={() => setSelectedProductIdForModal(product.id)}
                                         >
                                             {product.image ? (
@@ -315,8 +316,8 @@ export default function MillingBlocksTable({
                                             </Tooltip>
                                         </TooltipProvider>
                                     </TableCell>
-                                    <TableCell className="p-3">
-                                        <div className="flex items-center gap-2">
+                                    <TableCell className="p-3 min-w-[120px]">
+                                        <div className="flex items-center gap-2 whitespace-nowrap">
                                             <Switch
                                                 checked={hasAutoOrderOn(product)}
                                                 disabled={!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id}
@@ -390,6 +391,7 @@ export default function MillingBlocksTable({
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </div>
 
             {/* Image View Modal – fetch single product on Lagerort click, then show (same design as Einlagenrohlinge) */}

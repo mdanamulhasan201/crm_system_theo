@@ -209,16 +209,17 @@ export default function BuyStoragePage() {
 
             {/* Table */}
             <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
-                <Table className='w-full bg-white rounded-lg overflow-hidden'>
+                <div className="w-full overflow-x-auto">
+                <Table className='min-w-[1100px] w-full bg-white rounded-lg overflow-hidden'>
                     <TableHeader>
                         <TableRow className="border-b bg-gray-100">
-                            <TableHead className="p-4 text-left font-semibold text-gray-900">Bild</TableHead>
+                            <TableHead className="p-4 text-left font-semibold text-gray-900 w-[120px] min-w-[120px]">Bild</TableHead>
                             <TableHead className="p-4 text-left font-semibold text-gray-900">Hersteller</TableHead>
                             <TableHead className="p-4 text-left font-semibold text-gray-900">Produktname</TableHead>
-                            <TableHead className="p-4 text-left font-semibold text-gray-900">Artikelnummer</TableHead>
-                            <TableHead className="p-4 text-left font-semibold text-gray-900">Preis</TableHead>
-                            <TableHead className="p-4 text-center font-semibold text-gray-900">Verfügbare Größen</TableHead>
-                            <TableHead className="p-4 text-center font-semibold text-gray-900">Aktion</TableHead>
+                            <TableHead className="p-4 text-left font-semibold text-gray-900 min-w-[160px]">Artikelnummer</TableHead>
+                            <TableHead className="p-4 text-left font-semibold text-gray-900 min-w-[120px]">Preis</TableHead>
+                            <TableHead className="p-4 text-center font-semibold text-gray-900 min-w-[220px]">Verfügbare Größen</TableHead>
+                            <TableHead className="p-4 text-center font-semibold text-gray-900 min-w-[260px]">Aktion</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -254,8 +255,8 @@ export default function BuyStoragePage() {
                                 
                                 return (
                                     <TableRow key={product.id} className="border-b bg-white hover:bg-gray-50 transition-colors">
-                                        <TableCell className="p-4">
-                                            <div className="flex items-center justify-center">
+                                        <TableCell className="p-4 w-[120px] min-w-[120px]">
+                                            <div className="flex items-center justify-center w-20 min-w-20">
                                                 {product.image ? (
                                                     <Image
                                                         width={80}
@@ -301,7 +302,8 @@ export default function BuyStoragePage() {
                                                 )}
                                             </div>
                                         </TableCell>
-                                        <TableCell className="p-4 flex items-center gap-2">
+                                        <TableCell className="p-4">
+                                            <div className="flex items-center gap-2 whitespace-nowrap">
                                             <Button
                                                 onClick={() => handleOpenModal(product)}
                                                 className="bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer text-xs shadow-sm hover:shadow transition-all"
@@ -314,6 +316,7 @@ export default function BuyStoragePage() {
                                             >
                                                 Lager hinzufügen
                                             </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 )
@@ -321,6 +324,7 @@ export default function BuyStoragePage() {
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </div>
 
             {/* Pagination */}
