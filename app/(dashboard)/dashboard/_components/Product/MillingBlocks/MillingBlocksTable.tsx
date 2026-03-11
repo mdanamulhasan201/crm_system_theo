@@ -35,7 +35,7 @@ interface MillingBlock {
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number | { quantity?: number; auto_order_quantity?: number } }
+    sizeQuantities: { [key: string]: number | { quantity?: number } }
     Status: string
     image?: string
     purchase_price?: number
@@ -45,6 +45,7 @@ interface MillingBlock {
     adminStoreId?: string | null
     auto_order?: boolean
     able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
 }
 
 // Helper function to truncate text to 15 characters with ".."
@@ -53,19 +54,11 @@ const truncateText = (text: string, maxLength: number = 15): string => {
     return text.substring(0, maxLength) + '..';
 }
 
-// Helper function to get quantity from sizeQuantities (supports number or { quantity, auto_order_quantity? })
-const getQuantity = (sizeData: number | { quantity?: number; auto_order_quantity?: number } | undefined): number => {
+// Helper function to get quantity from sizeQuantities
+const getQuantity = (sizeData: number | { quantity?: number } | undefined): number => {
     if (sizeData === undefined) return 0;
     if (typeof sizeData === 'number') return sizeData;
     return sizeData?.quantity ?? 0;
-}
-
-const getAutoOrderQuantity = (sizeData: number | { quantity?: number; auto_order_quantity?: number } | undefined): number => {
-    if (typeof sizeData === 'object' && sizeData != null && 'auto_order_quantity' in sizeData) {
-        const q = (sizeData as { auto_order_quantity?: number }).auto_order_quantity;
-        return typeof q === 'number' ? q : 0;
-    }
-    return 0;
 }
 
 interface MillingBlocksTableProps {
@@ -108,9 +101,19 @@ export default function MillingBlocksTable({
             const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
             const val = raw[key]
             if (typeof val === 'object' && val != null) {
-                normalizedGroessenMengen[normalizedKey] = { quantity: val?.quantity ?? 0, auto_order_quantity: val?.auto_order_quantity }
+                normalizedGroessenMengen[normalizedKey] = { quantity: val?.quantity ?? 0 }
             } else {
                 normalizedGroessenMengen[normalizedKey] = typeof val === 'number' ? val : 0
+            }
+        })
+        const normalizedOverviewGroessenMengen: NonNullable<MillingBlock['overviewSizeQuantities']> = {}
+        const overviewRaw = data.overview_groessenMengen || {}
+        Object.keys(overviewRaw).forEach(key => {
+            const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
+            const val = overviewRaw[key]
+            normalizedOverviewGroessenMengen[normalizedKey] = {
+                length: val?.length ?? 0,
+                quantity: val?.quantity ?? 0,
             }
         })
         return {
@@ -130,6 +133,7 @@ export default function MillingBlocksTable({
             adminStoreId: data.adminStoreId ?? null,
             auto_order: Boolean(data.auto_order),
             able_auto_order: data.able_auto_order,
+            overviewSizeQuantities: normalizedOverviewGroessenMengen,
         }
     }
 
@@ -167,6 +171,10 @@ export default function MillingBlocksTable({
     // Helper to get stock for a size
     function getStockForSize(product: MillingBlock, size: string) {
         return getQuantity(product.sizeQuantities[size]);
+    }
+
+    const getOverviewQuantity = (product: MillingBlock, size: string): number => {
+        return product.overviewSizeQuantities?.[size]?.quantity ?? 0
     }
 
     const hasAutoOrderOn = (product: MillingBlock): boolean => Boolean(product.auto_order);
@@ -372,7 +380,7 @@ export default function MillingBlocksTable({
                                         const sizeData = product.sizeQuantities[size];
                                         const stock = getStockForSize(product, size);
                                         const isLowStock = stock <= product.minStockLevel && stock > 0;
-                                        const autoQty = getAutoOrderQuantity(sizeData);
+                                        const autoQty = getOverviewQuantity(product, size);
                                         return (
                                             <TableCell key={size} className="p-3 text-center text-gray-900">
                                                 <div className="flex flex-col items-center justify-center gap-0.5">

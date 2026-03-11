@@ -57,6 +57,7 @@ interface Product {
     adminStoreId?: string | null
     auto_order?: boolean
     able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
     inventoryHistory: Array<{
         id: string
         date: string
@@ -148,6 +149,7 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
             adminStoreId: apiProduct.adminStoreId ?? null,
             auto_order: Boolean(apiProduct.auto_order),
             able_auto_order: apiProduct.able_auto_order,
+            overviewSizeQuantities: apiProduct.overview_groessenMengen || {},
             inventoryHistory: [] // API doesn't provide history yet
         };
     };

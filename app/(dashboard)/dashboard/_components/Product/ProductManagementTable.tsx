@@ -38,7 +38,6 @@ interface SizeData {
     quantity: number;
     mindestmenge?: number;
     warningStatus?: string;
-    auto_order_quantity?: number | null;
 }
 
 interface Product {
@@ -56,6 +55,7 @@ interface Product {
     adminStoreId?: string | null
     auto_order?: boolean
     able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
     inventoryHistory: Array<{
         id: string
         date: string
@@ -139,6 +139,7 @@ export default function ProductManagementTable({
         adminStoreId: data.adminStoreId ?? null,
         auto_order: Boolean(data.auto_order),
         able_auto_order: data.able_auto_order,
+        overviewSizeQuantities: data.overview_groessenMengen || {},
         inventoryHistory: []
     })
 
@@ -183,12 +184,8 @@ export default function ProductManagementTable({
         return undefined;
     };
 
-    const getAutoOrderQuantity = (sizeData: number | SizeData | undefined): number => {
-        if (typeof sizeData === 'object' && sizeData != null && 'auto_order_quantity' in sizeData) {
-            const q = (sizeData as SizeData).auto_order_quantity;
-            return typeof q === 'number' ? q : 0;
-        }
-        return 0;
+    const getOverviewQuantity = (product: Product, size: string): number => {
+        return product.overviewSizeQuantities?.[size]?.quantity ?? 0;
     };
 
     const hasAutoOrderOn = (product: Product): boolean => Boolean(product.auto_order);
@@ -423,7 +420,7 @@ export default function ProductManagementTable({
                                     </TableCell>
                                     {sizeColumns.map(size => {
                                         const sizeData = product.sizeQuantities[size]
-                                        const autoQty = isEinlagenrohlinge ? getAutoOrderQuantity(sizeData) : 0
+                                        const autoQty = getOverviewQuantity(product, size)
                                         return (
                                             <TableCell key={size} className="p-3 text-center text-gray-900">
                                                 <div className="flex flex-col items-center justify-center gap-0.5">
@@ -476,6 +473,7 @@ export default function ProductManagementTable({
                                 Status: apiProduct.Status,
                                 image: apiProduct.image,
                                 features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+                                overviewSizeQuantities: apiProduct.overview_groessenMengen || {},
                                 auto_order: Boolean(apiProduct.auto_order),
                                 able_auto_order: apiProduct.able_auto_order,
                                 inventoryHistory: []

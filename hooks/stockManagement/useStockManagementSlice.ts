@@ -64,6 +64,7 @@ interface ApiProduct {
     adminStoreId?: string | null;
     auto_order?: boolean;
     able_auto_order?: string;
+    overview_groessenMengen?: { [key: string]: SizeData | number };
 }
 
 
@@ -242,6 +243,7 @@ export const useStockManagementSlice = () => {
                     adminStoreId: item.adminStoreId ?? null,
                     auto_order: Boolean(item.auto_order),
                     able_auto_order: item.able_auto_order,
+                    overview_groessenMengen: item.overview_groessenMengen || {},
                 }));
                 
                 setProducts(products);
