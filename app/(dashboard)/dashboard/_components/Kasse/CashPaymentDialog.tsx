@@ -8,19 +8,25 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ArrowLeft, CheckCircle, Shield } from "lucide-react";
+import { ArrowLeft, CheckCircle, Shield, Loader2 } from "lucide-react";
+import { processPayment, createSignedReceipt } from "@/apis/pickupsApis";
+import type { PosReceipt } from "@/apis/pickupsApis";
+import toast from "react-hot-toast";
 
 interface CashPaymentDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onBack: () => void;
-  onComplete: () => void;
+  onComplete: (receipt: PosReceipt | null) => void;
+  orderId: string;
+  orderType: "insole" | "shoes";
+  isPickup: boolean;
   orderNumber: string;
   customerName: string;
   totalAmount: string;
   insuranceAmount: string;
   customerPayment: string;
-  remainingAmount: number; // numeric value for calculations
+  remainingAmount: number;
 }
 
 export default function CashPaymentDialog({
@@ -28,6 +34,9 @@ export default function CashPaymentDialog({
   onClose,
   onBack,
   onComplete,
+  orderId,
+  orderType,
+  isPickup,
   orderNumber,
   customerName,
   totalAmount,
@@ -38,6 +47,7 @@ export default function CashPaymentDialog({
   const [customerGives, setCustomerGives] = useState<string>("");
   const [change, setChange] = useState<number>(0);
   const [isPaymentComplete, setIsPaymentComplete] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Calculate change whenever customer gives amount changes
   useEffect(() => {
@@ -52,9 +62,31 @@ export default function CashPaymentDialog({
     setCustomerGives((current + amount).toFixed(2));
   };
 
-  const handleComplete = () => {
-    if (isPaymentComplete) {
-      onComplete();
+  const handleComplete = async () => {
+    if (!isPaymentComplete || isProcessing) return;
+    setIsProcessing(true);
+
+    try {
+      // Step 1: Record the payment
+      await processPayment(orderId, orderType, isPickup);
+      toast.success("Zahlung erfolgreich");
+
+      // Step 2: Create signed receipt
+      let receipt: PosReceipt | null = null;
+      try {
+        const receiptRes = await createSignedReceipt(orderId, orderType, "CASH");
+        receipt = receiptRes.data;
+      } catch (receiptErr) {
+        console.error("Receipt creation failed:", receiptErr);
+        toast.error("Beleg konnte nicht erstellt werden");
+      }
+
+      onComplete(receipt);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Zahlung fehlgeschlagen";
+      toast.error(msg);
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -205,13 +237,16 @@ export default function CashPaymentDialog({
             </Button>
             <Button
               className={`w-full ${
-                isPaymentComplete
+                isPaymentComplete && !isProcessing
                   ? "bg-[#61A175] hover:bg-[#4f8a61] text-white"
                   : "bg-gray-200 text-gray-400 cursor-not-allowed"
               }`}
               onClick={handleComplete}
-              disabled={!isPaymentComplete}
+              disabled={!isPaymentComplete || isProcessing}
             >
+              {isProcessing ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : null}
               Zahlung abschließen
             </Button>
           </div>

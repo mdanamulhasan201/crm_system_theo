@@ -251,13 +251,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       localStorage.removeItem('token');
       localStorage.removeItem('employeeToken');
-      
+
       setUser(null);
       setIsAuthenticated(false);
       setIsEmployeeMode(false);
-      router.push('/login');
+
+      // SSO: redirect to CRM logout page so it clears its Zustand/localStorage,
+      // then CRM redirects back to Dashboard login page.
+      const crmUrl = process.env.NEXT_PUBLIC_CRM_URL || 'http://localhost:5173';
+      const dashboardLoginUrl = `${window.location.origin}/login`;
+      window.location.href = `${crmUrl}/sso-logout?redirect=${encodeURIComponent(dashboardLoginUrl)}`;
     } catch (error) {
-      // Silent error handling
+      // If CRM redirect fails, fallback to local login
+      router.push('/login');
     }
   };
 
