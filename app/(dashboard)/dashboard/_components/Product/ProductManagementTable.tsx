@@ -195,6 +195,7 @@ export default function ProductManagementTable({
     const hasAutoOrderOn = (product: Product): boolean => Boolean(product.auto_order);
 
     const isAutoOrderEnabled = (product: Product): boolean =>
+        product.create_status === 'by_admin' &&
         String(product.able_auto_order ?? '').trim().toLowerCase() === 'enable';
 
     const handleAutoOrderToggle = async (product: Product) => {

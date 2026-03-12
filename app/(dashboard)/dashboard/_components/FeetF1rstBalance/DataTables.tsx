@@ -478,7 +478,7 @@ export default function DataTables({
         },
         {
             key: 'beschreibung',
-            header: 'Beschreibung',
+            header: 'Einlagenbestellung',
             render: (value) => value || '-',
         },
         {

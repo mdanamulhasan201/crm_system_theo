@@ -182,6 +182,7 @@ export default function MillingBlocksTable({
     const hasAutoOrderOn = (product: MillingBlock): boolean => Boolean(product.auto_order);
 
     const isAutoOrderEnabled = (product: MillingBlock): boolean =>
+        product.create_status === 'by_admin' &&
         String(product.able_auto_order ?? '').trim().toLowerCase() === 'enable';
 
     const handleAutoOrderToggle = async (product: MillingBlock) => {

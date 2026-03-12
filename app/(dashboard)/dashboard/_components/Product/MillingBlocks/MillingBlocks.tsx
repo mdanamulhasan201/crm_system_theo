@@ -53,7 +53,7 @@ interface MillingBlocksProps {
 
 export default function MillingBlocks({ type = 'milling_block', setProductCount, openAddModal, onCloseAddModal, searchQuery: controlledSearch, onSearchChange }: MillingBlocksProps) {
     const router = useRouter()
-    const { getAllProducts, isLoadingProducts, refreshProducts } = useStockManagementSlice()
+    const { getAllProducts, isLoadingProducts } = useStockManagementSlice()
     const [products, setProducts] = useState<MillingBlock[]>([])
     const [internalSearch, setInternalSearch] = useState('')
     const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
@@ -92,21 +92,11 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
         console.log('Show history for:', product);
     }
 
-    // Update product handler - refresh data from API after update
-    const handleUpdateProduct = async (updatedProduct: MillingBlock) => {
-        // Optimistically update local state
+    // Update only the changed row so the whole table does not reload
+    const handleUpdateProduct = (updatedProduct: MillingBlock) => {
         setProducts(prev =>
             prev.map(product => (product.id === updatedProduct.id ? updatedProduct : product))
-        );
-
-        // Refresh data from API to ensure consistency
-        try {
-            const apiProducts = await refreshProducts(currentPage, itemsPerPage, debouncedSearch, type)
-            const convertedProducts = apiProducts.map(convertApiProductToLocal)
-            setProducts(convertedProducts)
-        } catch (err) {
-            console.error('Failed to refresh products after update:', err)
-        }
+        )
     }
 
     // Delete product handler
