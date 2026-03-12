@@ -60,6 +60,12 @@ export interface OrderData {
   orderType?: string | null;
   /** Raw API type from `u_orderType`, used for the small badge beside checkbox. */
   uOrderType?: string | null;
+  insoleStandards?: Array<{
+    name: string;
+    left: number;
+    right: number;
+    isFavorite?: boolean;
+  }>;
 }
 
 interface OrdersContextType {
@@ -197,6 +203,9 @@ const mapApiDataToOrderData = (
       (apiOrder as any).orderType ??
       null,
     uOrderType: (apiOrder as any).u_orderType ?? null,
+    insoleStandards: Array.isArray((apiOrder as any).insoleStandards)
+      ? (apiOrder as any).insoleStandards
+      : [],
   };
 };
 

@@ -120,7 +120,7 @@ export default function OrderTableRow({
     const normalizedOrderType = rawOrderType.toLowerCase();
     const typeLetter =
         normalizedOrderType === 'rady_insole' || normalizedOrderType === 'insole' ? 'R'
-            : normalizedOrderType === 'milling_block' ? 'M'
+            : normalizedOrderType === 'milling_block' ? 'F'
                 : normalizedOrderType === 'sonstiges' ? 'S'
                     : null;
     const typeBadgeTitle =
@@ -128,6 +128,33 @@ export default function OrderTableRow({
             : normalizedOrderType === 'milling_block' ? 'Milling Block'
                 : normalizedOrderType === 'sonstiges' ? 'Sonstiges'
                     : rawOrderType || 'Unbekannter Typ';
+    const shouldShowInsoleStandards =
+        (selectedType === 'rady_insole' || selectedType === 'milling_block') &&
+        Array.isArray(order.insoleStandards) &&
+        order.insoleStandards.length > 0;
+    const shouldHideBeschreibung =
+        selectedType === 'rady_insole' || selectedType === 'milling_block';
+    const visibleInsoleStandards = shouldShowInsoleStandards
+        ? order.insoleStandards!.filter((item) => (item.left ?? 0) !== 0 || (item.right ?? 0) !== 0)
+        : [];
+    const formatInsoleStandard = (name: string, left: number, right: number) => {
+        const formatValue = (value: number) =>
+            Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
+
+        const hasLeft = left > 0;
+        const hasRight = right > 0;
+
+        if (hasLeft && hasRight && left === right) {
+            return `${formatValue(left)}mm ${name} BDS`;
+        }
+        if (hasLeft && hasRight) {
+            return `${name} ${formatValue(left)}mm Links und ${formatValue(right)}mm Rechts`;
+        }
+        if (hasLeft) {
+            return `${name} ${formatValue(left)}mm Links`;
+        }
+        return `${name} ${formatValue(right)}mm Rechts`;
+    };
     // Helper function to safely get string value (supports API format: { address, description })
     const getSafeString = (value: any): string => {
         if (value == null) return '';
@@ -374,8 +401,17 @@ export default function OrderTableRow({
                     </div>
                     <span className="text-gray-500 text-xs">#{order.bestellnummer}</span>
                     <span className="text-gray-400 text-xs">{order.productName}</span>
-                    {order.beschreibung && (
+                    {!shouldHideBeschreibung && order.beschreibung && (
                         <span className="text-gray-400 text-xs">{order.beschreibung}</span>
+                    )}
+                    {visibleInsoleStandards.length > 0 && (
+                        <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-gray-500 marker:text-gray-400">
+                            {visibleInsoleStandards.map((item, idx) => (
+                                <li key={`${item.name}-${idx}`} className="pl-1">
+                                    {formatInsoleStandard(item.name, item.left, item.right)}
+                                </li>
+                            ))}
+                        </ul>
                     )}
                 </div>
             </TableCell>
