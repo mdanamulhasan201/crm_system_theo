@@ -31,6 +31,18 @@ export const getAllBlogs = async ({
     }
 }
 
+// Mark a news article as read
+export const markNewsAsRead = async (id: string | number) => {
+    const response = await axiosClient.post(`/v2/news/mark-read/${id}`);
+    return response.data;
+};
+
+// Get unread news count for sidebar badge
+export const getUnreadNewsCount = async (): Promise<number> => {
+    const response = await axiosClient.get(`/v2/news/unread-count`);
+    return response.data.unreadCount || 0;
+};
+
 // Get blog by ID (for customer view)
 export const getBlogById = async (id: string | number) => {
     try {

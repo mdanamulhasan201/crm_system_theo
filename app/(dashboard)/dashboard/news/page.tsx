@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { format } from "date-fns";
-import Image from "next/image";
+
 import { BiSearch, BiCalendar, BiBookOpen } from "react-icons/bi";
 import { getAllBlogs } from "@/apis/blogApis";
 import { Input } from "@/components/ui/input";
@@ -179,67 +179,144 @@ export default function NewsPage() {
           </div>
         ) : (
           <>
-            {/* Blog Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {blogs.map((blog) => (
-                <Card
-                  key={blog.id}
-                  className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer bg-white p-0"
-                  onClick={() => handleBlogClick(blog.id)}
-                >
-                  {/* Blog Image */}
-                  <div className="relative h-48 bg-gray-200 overflow-hidden">
-                    {blog.image ? (
-                      <Image
-                        key={`blog-card-${blog.id}-${Date.now()}`}
-                        src={`${blog.image}${blog.image.includes('?') ? '&' : '?'}t=${Date.now()}`}
-                        alt={blog.title}
-                        width={600}
-                        height={400}
-                        className="w-full h-full object-cover"
-                        unoptimized
-                        onError={(e) => {
-                          console.error(`Image failed to load for blog ${blog.id}:`, blog.image);
-                        }}
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                        <BiBookOpen className="text-gray-400" size={48} />
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-5">
-                    {/* Date */}
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                      <BiCalendar size={16} />
-                      <span>
-                        {format(new Date(blog.createdAt), "dd.MM.yyyy")}
-                      </span>
+            {/* Featured / Latest Article */}
+            {blogs.length > 0 && (
+              <div
+                className="flex flex-col lg:flex-row gap-8 mb-10 bg-white rounded-2xl overflow-hidden shadow-sm cursor-pointer hover:shadow-lg transition-shadow"
+                onClick={() => handleBlogClick(blogs[0].id)}
+              >
+                {/* Featured Image */}
+                <div className="relative lg:w-1/2 h-64 lg:h-auto lg:self-stretch bg-gray-200 overflow-hidden shrink-0">
+                  {blogs[0].image ? (
+                    <img
+                      src={blogs[0].image}
+                      alt={blogs[0].title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                      <BiBookOpen className="text-gray-400" size={64} />
                     </div>
+                  )}
+                </div>
 
-                    {/* Title */}
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-primary-600 transition-colors">
-                      {blog.title}
-                    </h3>
-
-                    {/* Subtitle */}
-                    {blog.subtitle && (
-                      <p className="text-sm text-gray-600 mb-3 line-clamp-1">
-                        {blog.subtitle}
-                      </p>
-                    )}
-
-                    {/* Description */}
-                    {blog.shortDescription && (
-                      <p className="text-sm text-gray-600 line-clamp-3">
-                        {blog.shortDescription}
-                      </p>
-                    )}
+                {/* Featured Content */}
+                <div className="lg:w-1/2 flex flex-col justify-center p-8 lg:pr-12">
+                  {/* Tag + Reading Time */}
+                  <div className="flex items-center gap-3 mb-4">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-600">
+                      <BiBookOpen size={16} />
+                      Artikel
+                    </span>
+                    <span className="flex items-center gap-1.5 text-sm text-gray-500">
+                      <BiCalendar size={14} />
+                      5 Min. Lesezeit
+                    </span>
                   </div>
-                </Card>
-              ))}
-            </div>
+
+                  {/* Title */}
+                  <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-3 leading-tight">
+                    {blogs[0].title}
+                  </h2>
+
+                  {/* Subtitle */}
+                  {blogs[0].subtitle && (
+                    <p className="text-gray-500 mb-3 text-base">
+                      {blogs[0].subtitle}
+                    </p>
+                  )}
+
+                  {/* Description */}
+                  {blogs[0].shortDescription && (
+                    <p className="text-gray-600 mb-6 leading-relaxed line-clamp-3">
+                      {blogs[0].shortDescription}
+                    </p>
+                  )}
+
+                  {/* CTA Button */}
+                  <div>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg gap-2"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBlogClick(blogs[0].id);
+                      }}
+                    >
+                      Artikel lesen
+                      <span className="ml-1">&rarr;</span>
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Divider */}
+            {blogs.length > 1 && (
+              <div className="border-t border-gray-200 my-8" />
+            )}
+
+            {/* Weitere Artikel */}
+            {blogs.length > 1 && (
+              <>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  Weitere Artikel
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {blogs.slice(1).map((blog) => (
+                    <Card
+                      key={blog.id}
+                      className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer bg-white p-0"
+                      onClick={() => handleBlogClick(blog.id)}
+                    >
+                      {/* Blog Image */}
+                      <div className="relative h-48 bg-gray-200 overflow-hidden">
+                        {blog.image ? (
+                          <img
+                            src={blog.image}
+                            alt={blog.title}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                            <BiBookOpen className="text-gray-400" size={48} />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="p-5">
+                        {/* Date */}
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
+                          <BiCalendar size={16} />
+                          <span>
+                            {format(new Date(blog.createdAt), "dd.MM.yyyy")}
+                          </span>
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-primary-600 transition-colors">
+                          {blog.title}
+                        </h3>
+
+                        {/* Subtitle */}
+                        {blog.subtitle && (
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-1">
+                            {blog.subtitle}
+                          </p>
+                        )}
+
+                        {/* Description */}
+                        {blog.shortDescription && (
+                          <p className="text-sm text-gray-600 line-clamp-3">
+                            {blog.shortDescription}
+                          </p>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* Pagination */}
             {pagination.totalPages > 1 && (
