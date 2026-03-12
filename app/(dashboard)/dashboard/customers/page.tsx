@@ -332,7 +332,7 @@ export default function Customers() {
                   </label>
                   {renderSearchInput(
                     nameInputRef,
-                    "Name",
+                    "",
                     searchName,
                     handleNameChange,
                     () => setShowNameSuggestions(nameSuggestions.length > 0),
@@ -349,7 +349,7 @@ export default function Customers() {
                   </label>
                   {renderSearchInput(
                     emailInputRef,
-                    "Email",
+                    "",
                     searchEmail,
                     handleEmailChange,
                     () => setShowEmailSuggestions(emailSuggestions.length > 0),
@@ -367,7 +367,7 @@ export default function Customers() {
                 </label>
                 {renderSearchInput(
                   phoneInputRef,
-                  "Telefon",
+                  "",
                   searchPhone,
                   handlePhoneChange,
                   () => setShowPhoneSuggestions(phoneSuggestions.length > 0),
@@ -384,7 +384,7 @@ export default function Customers() {
                 </label>
                 {renderSearchInput(
                   locationInputRef,
-                  "Ort",
+                  "",
                   searchLocation,
                   handleLocationChange,
                   () =>
