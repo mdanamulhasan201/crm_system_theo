@@ -38,15 +38,38 @@ export default function ScanPictureModal({
     const isSonstiges = data?.category === 'sonstiges';
     const isInsole = data?.category === 'insole';
     const versorgungDisplay = isSonstiges ? data?.orderCategory?.service_name : data?.versorgungName;
+    const supplyNameDisplay = isInsole ? ((data as { supplyName?: string | null } | null)?.supplyName ?? '') : '';
+    const primaryVersorgungDisplay = isInsole ? supplyNameDisplay : versorgungDisplay;
+    const quantityDisplay = typeof (data as { quantity?: number | null } | null)?.quantity === 'number'
+        ? (data as { quantity?: number | null }).quantity
+        : null;
     // Only show insole standards where at least one of left/right is not 0
     const insoleStandards = isInsole
         ? (data?.orderCategory?.insoleStandards ?? []).filter(
             (item: { left?: number; right?: number }) => (item.left ?? 0) !== 0 || (item.right ?? 0) !== 0
         )
         : [];
+    const formatLeftRight = (name: string, left: number, right: number) => {
+        const formatValue = (value: number) =>
+            Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
 
-    const formatLeftRight = (left: number, right: number) =>
-        left === right ? `Bds = ${left} mm` : `Links: ${left} mm, Rechts: ${right} mm`;
+        const hasLeft = left > 0;
+        const hasRight = right > 0;
+
+        if (hasLeft && hasRight && left === right) {
+            return `${formatValue(left)}mm ${name} BDS`;
+        }
+
+        if (hasLeft && hasRight) {
+            return `${name} ${formatValue(left)}mm Links und ${formatValue(right)}mm Rechts`;
+        }
+
+        if (hasLeft) {
+            return `${name} ${formatValue(left)}mm Links`;
+        }
+
+        return `${name} ${formatValue(right)}mm Rechts`;
+    };
 
     // Format date for fertigstellungBis - converts UTC to user's local timezone
     const formatDate = (dateString: string) => {
@@ -265,59 +288,54 @@ export default function ScanPictureModal({
                                             <p className="text-sm font-medium text-gray-900">
                                                 {data.orderCategory?.sonstiges_category || '—'}
                                             </p>
-                                        ) : data.diagnosisStatus && Array.isArray(data.diagnosisStatus) && data.diagnosisStatus.length > 0 ? (
-                                            <div className="flex flex-wrap gap-2">
-                                                {data.diagnosisStatus.map((diagnosis, idx) => (
-                                                    <span
-                                                        key={idx}
-                                                        className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-200 shadow-sm"
-                                                    >
-                                                        {diagnosis}
-                                                    </span>
-                                                ))}
+                                        ) : data.ausführliche_diagnose ? (
+                                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                                <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                                                    {data.ausführliche_diagnose}
+                                                </p>
                                             </div>
                                         ) : (
                                             <p className="text-sm text-gray-500 italic">—</p>
                                         )}
                                     </div>
                                     <div className="pb-4 border-b border-gray-100">
-                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                            Versorgung
-                                        </h3>
                                         <p className="text-sm font-medium text-gray-900">
-                                            {versorgungDisplay || '—'}
+                                            <span className="font-semibold">Versorgung:</span>{' '}
+                                            <span>{primaryVersorgungDisplay || '—'}</span>
                                         </p>
-                                        {isInsole && insoleStandards.length > 0 && (
-                                            <div className="mt-3 space-y-2 pl-2 border-l-2 border-gray-200">
-                                                {insoleStandards.map((item, idx) => (
-                                                    <div key={idx} className="text-sm">
-                                                        <span className="font-medium text-gray-900">{item.name}</span>
-                                                        <span className="text-gray-600 ml-2">
-                                                            {formatLeftRight(item.left, item.right)}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                            </div>
+                                        {quantityDisplay !== null && (
+                                            <p className="mt-2 text-sm font-medium text-gray-900">
+                                                <span className="font-semibold">Menge:</span>{' '}
+                                                <span>{quantityDisplay}</span>
+                                            </p>
                                         )}
-                                    </div>
-                                    {!isSonstiges && (
-                                    <div className="pb-4 border-b border-gray-100">
-                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                            Materialien
-                                        </h3>
-                                        {materials.length > 0 ? (
-                                            <ul className="space-y-2">
-                                                {materials.map((m, idx) => (
-                                                    <li key={idx} className="text-sm text-gray-900 flex items-center">
-                                                        <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
-                                                        <span className="font-medium">{m}</span>
+                                        {isInsole && insoleStandards.length > 0 && (
+                                            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-900 marker:text-gray-500">
+                                                {insoleStandards.map((item, idx) => (
+                                                    <li key={idx} className="pl-1">
+                                                        {formatLeftRight(item.name, item.left, item.right)}
                                                     </li>
                                                 ))}
                                             </ul>
-                                        ) : (
-                                            <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
                                         )}
                                     </div>
+                                    {!isSonstiges && (
+                                        <div className="pb-4 border-b border-gray-100">
+                                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                                Materialien
+                                            </h3>
+                                            {materials.length > 0 ? (
+                                                <ul className="list-disc space-y-2 pl-5 text-sm text-gray-900 marker:text-gray-500">
+                                                    {materials.map((m, idx) => (
+                                                        <li key={idx} className="pl-1">
+                                                            {m}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
+                                            )}
+                                        </div>
                                     )}
 
                                     {/* Insole Stock Section */}
@@ -326,12 +344,11 @@ export default function ScanPictureModal({
                                             <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                                 Einlagenlager
                                             </h3>
-                                            <div className="flex items-center">
-                                                <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
-                                                <span className="text-sm font-medium text-gray-900">
+                                            <ul className="list-disc pl-5 text-sm text-gray-900 marker:text-gray-500">
+                                                <li className="pl-1">
                                                     {data.insoleStock.produktname} - {data.insoleStock.size}
-                                                </span>
-                                            </div>
+                                                </li>
+                                            </ul>
                                         </div>
                                     )}
 
@@ -405,22 +422,31 @@ export default function ScanPictureModal({
                                 <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                     Versorgung
                                 </h3>
-                                <p className="text-sm font-medium text-gray-900">
-                                    {versorgungDisplay || '—'}
+                                {/* <span className="font-semibold">:</span>{' '} */}
+                                <p className="text-sm  text-gray-900">
+
+                                    <span>{primaryVersorgungDisplay || '—'}</span>
                                 </p>
+
                                 {isInsole && insoleStandards.length > 0 && (
-                                    <div className="mt-3 space-y-2 pl-2 border-l-2 border-gray-200">
+                                    <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-900 marker:text-gray-500">
                                         {insoleStandards.map((item, idx) => (
-                                            <div key={idx} className="text-sm">
-                                                <span className="font-medium text-gray-900">{item.name}</span>
-                                                <span className="text-gray-600 ml-2">
-                                                    {formatLeftRight(item.left, item.right)}
-                                                </span>
-                                            </div>
+                                            <li key={idx} className="pl-1">
+                                                {formatLeftRight(item.name, item.left, item.right)}
+                                            </li>
                                         ))}
-                                    </div>
+                                    </ul>
+                                )}
+
+                                {quantityDisplay !== null && (
+                                    <p className="mt-2 text-sm font-medium text-gray-900">
+                                        <span className="font-semibold">Menge:</span>{' '}
+                                        <span>{quantityDisplay}</span>
+                                    </p>
                                 )}
                             </div>
+
+
 
                             {/* Uberzug Section */}
                             {data.uberzug && (
@@ -435,23 +461,22 @@ export default function ScanPictureModal({
                             )}
 
                             {!isSonstiges && (
-                            <div className="pb-4 border-b border-gray-100">
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                    Materialien
-                                </h3>
-                                {materials.length > 0 ? (
-                                    <ul className="space-y-2">
-                                        {materials.map((m, idx) => (
-                                            <li key={idx} className="text-sm text-gray-900 flex items-center">
-                                                <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
-                                                <span className="font-medium">{m}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
-                                )}
-                            </div>
+                                <div className="pb-4 border-b border-gray-100">
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                        Materialien
+                                    </h3>
+                                    {materials.length > 0 ? (
+                                        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-900 marker:text-gray-500">
+                                            {materials.map((m, idx) => (
+                                                <li key={idx} className="pl-1">
+                                                    {m}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
+                                    )}
+                                </div>
                             )}
 
                             {/* Insole Stock Section */}
@@ -460,12 +485,11 @@ export default function ScanPictureModal({
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                                         Einlagenlager
                                     </h3>
-                                    <div className="flex items-center">
-                                        <span className="w-2 h-2 bg-[#61A175] rounded-full mr-3 shrink-0"></span>
-                                        <span className="text-sm font-medium text-gray-900">
+                                    <ul className="list-disc pl-5 text-sm text-gray-900 marker:text-gray-500">
+                                        <li className="pl-1">
                                             {data.insoleStock.produktname} - {data.insoleStock.size} mm
-                                        </span>
-                                    </div>
+                                        </li>
+                                    </ul>
                                 </div>
                             )}
 
