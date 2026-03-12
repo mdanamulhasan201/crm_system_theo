@@ -382,132 +382,128 @@ export default function ScanPictureModal({
                             </div>
                         </div>
                     ) : (
-                        // No images at all: only meta information, full width
-                        <div className="w-full space-y-4 bg-white rounded-xl p-6 border-2 border-gray-200 shadow-lg">
-                            {data.fertigstellungBis && (
-                                <div className="pb-4 border-b border-gray-100">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Fertigstellung bis
-                                    </h3>
-                                    <p className="text-sm font-semibold text-gray-900">
-                                        {formatDate(data.fertigstellungBis)}
-                                    </p>
+                        <div className="flex flex-col lg:flex-row gap-6 items-start">
+                            <div className="w-full lg:w-[60%] shrink-0">
+                                <div className="relative w-full min-h-[420px] bg-white rounded-xl border-2 border-gray-200 flex items-center justify-center p-8">
+                                    <p className="text-orange-500 font-medium text-center">Im Moment kein Scan verfügbar.</p>
                                 </div>
-                            )}
-                            <div className="pb-4 border-b border-gray-100">
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                    Kunde
-                                </h3>
-                                <p className="text-sm font-medium text-gray-900">{data.customerName || '—'}</p>
                             </div>
-                            <div className="pb-4 border-b border-gray-100">
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                    Diagnose
-                                </h3>
-                                {isSonstiges ? (
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {data.orderCategory?.sonstiges_category || '—'}
-                                    </p>
-                                ) : data.ausführliche_diagnose ? (
-                                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                        <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
-                                            {data.ausführliche_diagnose}
+
+                            <div className="w-full lg:w-[40%] shrink-0 bg-white rounded-xl p-6 border-2 border-gray-200">
+                                {data.fertigstellungBis && (
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Fertigstellung bis
+                                        </h3>
+                                        <p className="text-sm font-semibold text-gray-900">
+                                            {formatDate(data.fertigstellungBis)}
                                         </p>
                                     </div>
-                                ) : (
-                                    <p className="text-sm text-gray-500 italic">—</p>
                                 )}
-                            </div>
-                            <div className="pb-4 border-b border-gray-100">
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                    Versorgung
-                                </h3>
-                                {/* <span className="font-semibold">:</span>{' '} */}
-                                <p className="text-sm  text-gray-900">
-
-                                    <span>{primaryVersorgungDisplay || '—'}</span>
-                                </p>
-
-                                {isInsole && insoleStandards.length > 0 && (
-                                    <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-900 marker:text-gray-500">
-                                        {insoleStandards.map((item, idx) => (
-                                            <li key={idx} className="pl-1">
-                                                {formatLeftRight(item.name, item.left, item.right)}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-
-                                {quantityDisplay !== null && (
-                                    <p className="mt-2 text-sm font-medium text-gray-900">
-                                        <span className="font-semibold">Menge:</span>{' '}
-                                        <span>{quantityDisplay}</span>
-                                    </p>
-                                )}
-                            </div>
-
-
-
-                            {/* Uberzug Section */}
-                            {data.uberzug && (
                                 <div className="pb-4 border-b border-gray-100">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Überzug
+                                        Kunde
                                     </h3>
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {data.uberzug}
-                                    </p>
+                                    <p className="text-sm font-medium text-gray-900">{data.customerName || '—'}</p>
                                 </div>
-                            )}
-
-                            {!isSonstiges && (
                                 <div className="pb-4 border-b border-gray-100">
                                     <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Materialien
+                                        Diagnose
                                     </h3>
-                                    {materials.length > 0 ? (
-                                        <ul className="list-disc space-y-2 pl-5 text-sm text-gray-900 marker:text-gray-500">
-                                            {materials.map((m, idx) => (
+                                    {isSonstiges ? (
+                                        <p className="text-sm font-medium text-gray-900">
+                                            {data.orderCategory?.sonstiges_category || '—'}
+                                        </p>
+                                    ) : data.ausführliche_diagnose ? (
+                                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                            <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                                                {data.ausführliche_diagnose}
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-gray-500 italic">—</p>
+                                    )}
+                                </div>
+                                <div className="pb-4 border-b border-gray-100">
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                        Versorgung
+                                    </h3>
+                                    <p className="text-sm  text-gray-900">
+                                        <span>{primaryVersorgungDisplay || '—'}</span>
+                                    </p>
+                                    {isInsole && insoleStandards.length > 0 && (
+                                        <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-gray-900 marker:text-gray-500">
+                                            {insoleStandards.map((item, idx) => (
                                                 <li key={idx} className="pl-1">
-                                                    {m}
+                                                    {formatLeftRight(item.name, item.left, item.right)}
                                                 </li>
                                             ))}
                                         </ul>
-                                    ) : (
-                                        <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
+                                    )}
+                                    {quantityDisplay !== null && (
+                                        <p className="mt-2 text-sm font-medium text-gray-900">
+                                            <span className="font-semibold">Menge:</span>{' '}
+                                            <span>{quantityDisplay}</span>
+                                        </p>
                                     )}
                                 </div>
-                            )}
 
-                            {/* Insole Stock Section */}
-                            {data.insoleStock && (
-                                <div className="pb-4 border-b border-gray-100">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Einlagenlager
-                                    </h3>
-                                    <ul className="list-disc pl-5 text-sm text-gray-900 marker:text-gray-500">
-                                        <li className="pl-1">
-                                            {data.insoleStock.produktname} - {data.insoleStock.size} mm
-                                        </li>
-                                    </ul>
-                                </div>
-                            )}
-
-                            {/* Versorgung Note Section */}
-                            {data.versorgung_note && (
-                                <div className="pb-4 border-b border-gray-100">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                                        Notiz
-                                    </h3>
-                                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
-                                        <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
-                                            {data.versorgung_note}
+                                {data.uberzug && (
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Überzug
+                                        </h3>
+                                        <p className="text-sm font-medium text-gray-900">
+                                            {data.uberzug}
                                         </p>
                                     </div>
-                                </div>
-                            )}
+                                )}
 
+                                {!isSonstiges && (
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Materialien
+                                        </h3>
+                                        {materials.length > 0 ? (
+                                            <ul className="list-disc space-y-2 pl-5 text-sm text-gray-900 marker:text-gray-500">
+                                                {materials.map((m, idx) => (
+                                                    <li key={idx} className="pl-1">
+                                                        {m}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : (
+                                            <p className="text-sm text-gray-500 italic">Keine Materialien angegeben</p>
+                                        )}
+                                    </div>
+                                )}
 
+                                {data.insoleStock && (
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Einlagenlager
+                                        </h3>
+                                        <ul className="list-disc pl-5 text-sm text-gray-900 marker:text-gray-500">
+                                            <li className="pl-1">
+                                                {data.insoleStock.produktname} - {data.insoleStock.size} mm
+                                            </li>
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {data.versorgung_note && (
+                                    <div className="pb-4 border-b border-gray-100">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                                            Notiz
+                                        </h3>
+                                        <div className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                            <p className="text-sm text-gray-900 whitespace-pre-wrap leading-relaxed">
+                                                {data.versorgung_note}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     )}
                 </div>
