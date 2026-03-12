@@ -24,7 +24,7 @@ interface SizeData {
 interface AddProductTypeModalProps {
     isOpen: boolean
     onClose: () => void
-    onSuccess: () => void
+    onSuccess: (createdProduct?: any) => void
     type: 'rady_insole' | 'milling_block'
 }
 
@@ -299,7 +299,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
             if (response.success) {
                 toast.success('Produkt erfolgreich erstellt')
                 onClose()
-                onSuccess()
+                onSuccess(response.data)
             } else {
                 toast.error(response.message || 'Fehler beim Erstellen des Produkts')
             }

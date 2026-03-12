@@ -496,16 +496,31 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
             <AddProductTypeModal
                 isOpen={addProductModalOpen}
                 onClose={handleCloseAddModal}
-                onSuccess={async () => {
+                onSuccess={(createdProduct) => {
                     handleCloseAddModal()
-                    // Refresh products list
-                    try {
-                        const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
-                        const convertedProducts = apiProducts.map(convertApiProductToLocal)
-                        setProductsData(convertedProducts)
-                    } catch (err) {
-                        console.error('Failed to refresh products:', err)
-                    }
+
+                    if (!createdProduct) return
+
+                    const newProduct = convertApiProductToLocal(createdProduct)
+                    const normalizedSearch = debouncedSearch.trim().toLowerCase()
+                    const matchesSearch =
+                        !normalizedSearch ||
+                        [
+                            newProduct.Produktname,
+                            newProduct.Produktkürzel,
+                            newProduct.Hersteller,
+                        ]
+                            .filter(Boolean)
+                            .some((value) => value.toLowerCase().includes(normalizedSearch))
+
+                    if (!matchesSearch) return
+
+                    setProductsData((prev) => {
+                        const withoutDuplicate = prev.filter(product => product.id !== newProduct.id)
+                        return [newProduct, ...withoutDuplicate].slice(0, itemsPerPage)
+                    })
+
+                    setProductCount?.((pagination?.totalItems ?? productsData.length) + 1)
                 }}
                 type={type}
             />
