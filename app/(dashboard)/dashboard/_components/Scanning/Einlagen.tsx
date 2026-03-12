@@ -496,15 +496,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         }
     }, [selectedEinlage, setEinlagentyp, setValue]);
 
-    // TEMPORARY: Set a dummy einlagentyp for testing the SPRINGER logo
-    useEffect(() => {
-        if (!einlagentyp && !selectedEinlage && einlageOptions.length === 0) {
-            // Set a dummy value to show the logo
-            setEinlagentyp('Test Einlage');
-            setValue('einlagentyp', 'Test Einlage');
-        }
-    }, []);
-
     // Reset prefill tracker when order changes back to null
     useEffect(() => {
         if (!prefillOrderData) {
@@ -1171,7 +1162,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         onClick={handleSpeichernClick}
                         disabled={isCreating}
                     >
-                        {isCreating ? 'Speichern...' : 'Speichern'}
+                        {isCreating ? 'Abschliessen...' : 'Abschliessen'}
                     </Button>
             </div>
 

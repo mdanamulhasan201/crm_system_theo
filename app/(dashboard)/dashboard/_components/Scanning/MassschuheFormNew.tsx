@@ -513,10 +513,10 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                         {isLoading ? (
                             <>
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                                Speichern...
+                                Abschliessen...
                             </>
                         ) : (
-                            'Speichern'
+                            'Abschliessen'
                         )}
                     </Button>
                 </div>
