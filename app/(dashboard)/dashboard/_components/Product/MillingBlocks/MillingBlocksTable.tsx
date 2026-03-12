@@ -27,6 +27,7 @@ import toast from 'react-hot-toast'
 import MillingBlockHistory from './MillingBlockHistory'
 import DeleteMillingBlockModal from './DeleteMillingBlockModal'
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
+import { normalizeFeatures } from '../featureUtils'
 
 interface MillingBlock {
     id: string
@@ -95,6 +96,7 @@ export default function MillingBlocksTable({
 
     // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
     const apiDataToMillingBlock = (data: any): MillingBlock => {
+        const normalizedFeatures = normalizeFeatures(data.features)
         const normalizedGroessenMengen: MillingBlock['sizeQuantities'] = {}
         const raw = data.groessenMengen || {}
         Object.keys(raw).forEach(key => {
@@ -128,7 +130,7 @@ export default function MillingBlocksTable({
             image: data.image,
             purchase_price: data.purchase_price,
             selling_price: data.selling_price,
-            features: Array.isArray(data.features) ? data.features : undefined,
+            features: normalizedFeatures.length > 0 ? normalizedFeatures : undefined,
             create_status: data.create_status,
             adminStoreId: data.adminStoreId ?? null,
             auto_order: Boolean(data.auto_order),

@@ -33,6 +33,7 @@ import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 import useDebounce from '@/hooks/useDebounce'
+import { normalizeFeatures } from './featureUtils'
 
 
 interface SizeData {
@@ -134,6 +135,8 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
 
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): Product => {
+        const normalizedFeatures = normalizeFeatures(apiProduct.features)
+
         return {
             id: apiProduct.id,
             Produktname: apiProduct.produktname,
@@ -144,7 +147,7 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
             sizeQuantities: apiProduct.groessenMengen,
             Status: apiProduct.Status,
             image: apiProduct.image,
-            features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+            features: normalizedFeatures.length > 0 ? normalizedFeatures : undefined,
             create_status: apiProduct.create_status,
             adminStoreId: apiProduct.adminStoreId ?? null,
             auto_order: Boolean(apiProduct.auto_order),

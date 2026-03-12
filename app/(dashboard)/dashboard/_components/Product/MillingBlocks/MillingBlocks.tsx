@@ -11,6 +11,7 @@ import useDebounce from '@/hooks/useDebounce'
 import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import AddProductTypeModal from '../AddProductTypeModal'
+import { normalizeFeatures } from '../featureUtils'
 
 // sizeQuantities values can be number or { quantity? } (matches MillingBlocksTable)
 interface MillingBlock {
@@ -138,6 +139,8 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
 
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): MillingBlock => {
+        const normalizedFeatures = normalizeFeatures(apiProduct.features)
+
         // Normalize groessenMengen keys for milling_block type
         const productType = apiProduct.type || type
         const normalizedGroessenMengen = typeof apiProduct.groessenMengen === 'object'
@@ -164,7 +167,7 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
             image: apiProduct.image,
             purchase_price: apiProduct.purchase_price,
             selling_price: apiProduct.selling_price,
-            features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+            features: normalizedFeatures.length > 0 ? normalizedFeatures : undefined,
             create_status: apiProduct.create_status,
             adminStoreId: apiProduct.adminStoreId ?? null,
             auto_order: Boolean(apiProduct.auto_order),

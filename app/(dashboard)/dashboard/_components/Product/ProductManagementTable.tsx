@@ -32,6 +32,7 @@ import Image from 'next/image'
 import { Switch } from '@/components/ui/switch'
 import { getSingleStorage, switchStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
+import { normalizeFeatures } from './featureUtils'
 
 interface SizeData {
     length: number;
@@ -125,6 +126,10 @@ export default function ProductManagementTable({
 
     // Convert API single-storage response to Product (for modal)
     const apiDataToProduct = (data: any): Product => ({
+        features: (() => {
+            const normalizedFeatures = normalizeFeatures(data.features)
+            return normalizedFeatures.length > 0 ? normalizedFeatures : undefined
+        })(),
         id: data.id,
         Produktname: data.produktname,
         Produktkürzel: data.artikelnummer,
@@ -134,7 +139,6 @@ export default function ProductManagementTable({
         sizeQuantities: data.groessenMengen || {},
         Status: data.Status,
         image: data.image,
-        features: Array.isArray(data.features) ? data.features : undefined,
         create_status: data.create_status,
         adminStoreId: data.adminStoreId ?? null,
         auto_order: Boolean(data.auto_order),
@@ -462,6 +466,7 @@ export default function ProductManagementTable({
                         try {
                             // Fetch the updated product from API and update only that row
                             const apiProduct: any = await getProductById(editId);
+                            const normalizedFeatures = normalizeFeatures(apiProduct.features)
                                 const updatedProduct: Product = {
                                 id: apiProduct.id,
                                 Produktname: apiProduct.produktname,
@@ -472,7 +477,9 @@ export default function ProductManagementTable({
                                 sizeQuantities: apiProduct.groessenMengen,
                                 Status: apiProduct.Status,
                                 image: apiProduct.image,
-                                features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+                                features: normalizedFeatures.length > 0 ? normalizedFeatures : undefined,
+                                create_status: apiProduct.create_status,
+                                adminStoreId: apiProduct.adminStoreId ?? null,
                                 overviewSizeQuantities: apiProduct.overview_groessenMengen || {},
                                 auto_order: Boolean(apiProduct.auto_order),
                                 able_auto_order: apiProduct.able_auto_order,
