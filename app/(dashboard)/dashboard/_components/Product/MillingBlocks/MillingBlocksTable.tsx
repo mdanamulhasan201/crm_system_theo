@@ -181,8 +181,11 @@ export default function MillingBlocksTable({
 
     const hasAutoOrderOn = (product: MillingBlock): boolean => Boolean(product.auto_order);
 
+    const isAdminManagedProduct = (product: MillingBlock): boolean =>
+        product.create_status === 'by_admin' || product.create_status === 'by_models';
+
     const isAutoOrderEnabled = (product: MillingBlock): boolean =>
-        product.create_status === 'by_admin' &&
+        isAdminManagedProduct(product) &&
         String(product.able_auto_order ?? '').trim().toLowerCase() === 'enable';
 
     const handleAutoOrderToggle = async (product: MillingBlock) => {
@@ -300,12 +303,12 @@ export default function MillingBlocksTable({
                                                                 Niedrig
                                                             </span>
                                                         )}
-                                                        {product.create_status && product.create_status !== 'by_admin' && (
+                                                        {product.create_status && !isAdminManagedProduct(product) && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
                                                                 Offen
                                                             </span>
                                                         )}
-                                                        {!hasLowStock(product) && (!product.create_status || product.create_status === 'by_admin') && (
+                                                        {!hasLowStock(product) && (!product.create_status || isAdminManagedProduct(product)) && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
                                                                 Voller Bestand
                                                             </span>

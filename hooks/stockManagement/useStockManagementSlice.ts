@@ -16,6 +16,7 @@ interface ProductFormData {
     Produktname: string;
     Hersteller: string;
     Produktkürzel: string;
+    model_id?: string;
     Lagerort?: string;
     minStockLevel?: number;
     purchase_price: number;
@@ -31,6 +32,7 @@ interface CreateProductPayload {
     produktname: string;
     hersteller: string;
     artikelnummer: string;
+    model_id?: string;
     lagerort: string;
     mindestbestand: number;
     historie: string;
@@ -142,6 +144,7 @@ export const useStockManagementSlice = () => {
             produktname: formData.Produktname,
             hersteller: formData.Hersteller,
             artikelnummer: formData.Produktkürzel,
+            ...(formData.model_id && { model_id: formData.model_id }),
             lagerort: formData.Lagerort || '',
             mindestbestand: minStockLevel,
             historie: `Product created on ${new Date().toISOString().split('T')[0]}`,

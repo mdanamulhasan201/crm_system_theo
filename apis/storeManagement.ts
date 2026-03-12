@@ -144,6 +144,16 @@ export const getAllManufacturers = async (page: number, limit: number, search: s
     }
 }
 
+// get all store/admin-store/get-all-model-name/{{brand name}}
+export const getAllModelName = async (brandName: string, cursor: string, limit: number) => {
+    try {
+        const response = await axiosClient.get(`/store/admin-store/get-all-model-name/${brandName}?cursor=${cursor}&limit=${limit}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
 // get single manufacturer /store/admin-store/get-brand-store/42d5eb66-8d60-4934-ad6a-b772e32c44
 export const getSingleManufacturer = async (id: string) => {
     try {
