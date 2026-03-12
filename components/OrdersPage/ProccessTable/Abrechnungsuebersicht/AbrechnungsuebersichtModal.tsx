@@ -318,7 +318,7 @@ export default function AbrechnungsuebersichtModal({
                                     Dokumente
                                 </h3>
                                 <div className="flex flex-wrap gap-2">
-                                    {onInvoiceDownload && orderId && (
+                                    {/* {onInvoiceDownload && orderId && (
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -328,7 +328,11 @@ export default function AbrechnungsuebersichtModal({
                                             <Receipt className="w-4 h-4" />
                                             Rechnung öffnen
                                         </Button>
-                                    )}
+                                    )} */}
+                                     <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
+                                     <Receipt className="w-4 h-4" />
+                                        Rechnung öffnen
+                                    </Button>
                                     <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
                                         <FileText className="w-4 h-4" />
                                         KVA öffnen
