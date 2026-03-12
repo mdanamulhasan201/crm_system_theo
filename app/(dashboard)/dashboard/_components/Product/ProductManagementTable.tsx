@@ -467,8 +467,9 @@ export default function ProductManagementTable({
                         try {
                             // Fetch the updated product from API and update only that row
                             const apiProduct: any = await getProductById(editId);
+                            const previousProduct = visibleProducts.find(product => product.id === editId)
                             const normalizedFeatures = normalizeFeatures(apiProduct.features)
-                                const updatedProduct: Product = {
+                            const updatedProduct: Product = {
                                 id: apiProduct.id,
                                 Produktname: apiProduct.produktname,
                                 Produktkürzel: apiProduct.artikelnummer,
@@ -477,13 +478,15 @@ export default function ProductManagementTable({
                                 minStockLevel: apiProduct.mindestbestand,
                                 sizeQuantities: apiProduct.groessenMengen,
                                 Status: apiProduct.Status,
-                                image: apiProduct.image,
-                                features: normalizedFeatures.length > 0 ? normalizedFeatures : undefined,
-                                create_status: apiProduct.create_status,
-                                adminStoreId: apiProduct.adminStoreId ?? null,
+                                image: apiProduct.image ?? previousProduct?.image,
+                                features: normalizedFeatures.length > 0
+                                    ? normalizedFeatures
+                                    : previousProduct?.features,
+                                create_status: apiProduct.create_status ?? previousProduct?.create_status,
+                                adminStoreId: apiProduct.adminStoreId ?? previousProduct?.adminStoreId ?? null,
                                 overviewSizeQuantities: apiProduct.overview_groessenMengen || {},
-                                auto_order: Boolean(apiProduct.auto_order),
-                                able_auto_order: apiProduct.able_auto_order,
+                                auto_order: Boolean(apiProduct.auto_order ?? previousProduct?.auto_order),
+                                able_auto_order: apiProduct.able_auto_order ?? previousProduct?.able_auto_order,
                                 inventoryHistory: []
                             };
                             onUpdateProduct(updatedProduct);
