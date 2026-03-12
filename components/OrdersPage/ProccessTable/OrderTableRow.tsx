@@ -226,27 +226,6 @@ export default function OrderTableRow({
         return 'bg-gray-100 text-gray-800';
     };
 
-    const renderPaymentStatus = () => {
-        if (!order.zahlung) {
-            return null;
-        }
-
-        const colors = getPaymentStatusColor(order.zahlung);
-        // Format display text - replace underscores with spaces for better readability
-        let displayText = order.zahlung.includes(' - ')
-            ? order.zahlung.split(' - ').join(' • ') // Replace " - " with " • " for better display
-            : order.zahlung;
-        
-        // Replace underscores with spaces for better display
-        displayText = displayText.replace(/_/g, ' ');
-
-        return (
-            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text} wrap-break-word`} style={{ wordBreak: 'break-word' }}>
-                {displayText}
-            </span>
-        );
-    };
-
     const handleRowClick = (e: React.MouseEvent) => {
         // Don't trigger row click if clicking on checkbox, note button, or action buttons
         if ((e.target as HTMLElement).closest('[type="checkbox"]') ||
@@ -264,15 +243,63 @@ export default function OrderTableRow({
     const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
     const hasInvoice = !!order.invoice;
 
-    // Payment success: broth → both paid; private → private_payed; insurance → insurance_payed
-    const paymentType = order.paymentType ?? '';
+    const rawBezahltValue = typeof order.bezahlt === 'string' ? order.bezahlt : '';
+    const hasInsuranceAmount = Number(order.insuranceTotalPrice ?? 0) > 0;
+    const hasPrivateAmount = Number(order.privatePrice ?? 0) > 0;
+    const paymentType = (order.paymentType ?? '').toString().trim().toLowerCase();
+    const normalizedPaymentType =
+        paymentType === 'broth'
+            ? 'both'
+            : paymentType === 'both' || paymentType === 'private' || paymentType === 'insurance'
+                ? paymentType
+                : '';
+    const inferredPaymentType =
+        normalizedPaymentType ||
+        (hasInsuranceAmount && hasPrivateAmount
+            ? 'both'
+            : rawBezahltValue.includes('Krankenkasse') && rawBezahltValue.includes('Privat')
+                ? 'both'
+                : hasInsuranceAmount || rawBezahltValue.includes('Krankenkasse')
+                    ? 'insurance'
+                    : hasPrivateAmount || rawBezahltValue.includes('Privat')
+                        ? 'private'
+                        : '');
     const insurancePayed = !!order.insurance_payed;
     const privatePayed = !!order.private_payed;
+    const insuranceAmountColorClass =
+        rawBezahltValue.includes('Krankenkasse_Genehmigt') || insurancePayed
+            ? 'text-blue-600'
+            : 'text-red-600';
+    const privateAmountColorClass =
+        rawBezahltValue.includes('Privat_Bezahlt') || privatePayed
+            ? 'text-emerald-600'
+            : 'text-orange-600';
     const isPaymentSuccess =
-        paymentType === 'broth' ? (insurancePayed && privatePayed)
-        : paymentType === 'private' ? privatePayed
-        : paymentType === 'insurance' ? insurancePayed
-        : false;
+        inferredPaymentType === 'both'
+            ? (insurancePayed && privatePayed)
+            : inferredPaymentType === 'private'
+                ? privatePayed
+                : inferredPaymentType === 'insurance'
+                    ? insurancePayed
+                    : false;
+    const renderPaymentStatus = () => {
+        if (!order.zahlung) {
+            return null;
+        }
+
+        const colors = getPaymentStatusColor(order.zahlung);
+        let displayText = order.zahlung.includes(' - ')
+            ? order.zahlung.split(' - ').join(' • ')
+            : order.zahlung;
+
+        displayText = displayText.replace(/_/g, ' ');
+
+        return (
+            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text} wrap-break-word`} style={{ wordBreak: 'break-word' }}>
+                {displayText}
+            </span>
+        );
+    };
 
     const isAusgefuehrtPaid = isAusgefuehrt && isPaymentSuccess;
     const isAusgefuehrtUnpaid = isAusgefuehrt && !isPaymentSuccess;
@@ -472,12 +499,12 @@ export default function OrderTableRow({
                         <span className="font-semibold text-base text-gray-900">{order.preis}</span>
                     )}
                     {order.insuranceTotalPrice != null && Number(order.insuranceTotalPrice) > 0 && (
-                        <span className="text-xs text-blue-600 font-medium">
+                        <span className={`text-xs font-medium ${insuranceAmountColorClass}`}>
                             KK: {Number(order.insuranceTotalPrice).toFixed(2)} €
                         </span>
                     )}
                     {order.privatePrice != null && Number(order.privatePrice) > 0 && (
-                        <span className="text-xs text-amber-600 font-medium">
+                        <span className={`text-xs font-medium ${privateAmountColorClass}`}>
                             Privat: {Number(order.privatePrice).toFixed(2)} €
                         </span>
                     )}
