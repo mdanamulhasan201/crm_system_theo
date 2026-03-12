@@ -41,6 +41,10 @@ interface FormData {
   privatePrice?: number
   insuranceTotalPrice?: number
   vat_rate?: number
+  insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>
+  bezahlt?: string
+  paymentStatus?: string
+  printWerkstattzettel?: boolean
 }
 
 interface UserInfoUpdateModalProps {
@@ -62,6 +66,7 @@ export default function WerkstattzettelModal({
   // Use custom hook for form state management
   const form = useWerkstattzettelForm(scanData, isOpen, formData)
   const { user } = useAuth()
+  const { bezahlt: bezahltState, setBezahlt } = form
 
   // Price summary: Gesamt + MwSt (same as SonstigesOrderModal / PriceSection)
   const [calculatedTotal, setCalculatedTotal] = useState<number | null>(null)
@@ -75,25 +80,46 @@ export default function WerkstattzettelModal({
     if (calculatedTotal == null || steuersatz <= 0) return undefined
     return Math.round((calculatedTotal * steuersatz) / (100 + steuersatz) * 100) / 100
   }, [calculatedTotal, steuersatz])
+  const addonPricesTotal = React.useMemo(() => {
+    const raw = form.addonPrices
+    if (!raw || typeof raw !== 'string') return 0
+    const parts = raw.split(/[,\s]+/).filter(Boolean)
+    return parts.reduce((sum, part) => sum + (parseFloat(part.replace(',', '.')) || 0), 0)
+  }, [form.addonPrices])
+  const allowDualPaymentSelection =
+    formData?.billingType === 'Krankenkassa' &&
+    (addonPricesTotal > 0 || user?.accountInfo?.vat_country === 'Österreich (AT)')
+  const disabledPaymentOptions = React.useMemo<Array<'Privat' | 'Krankenkasse'>>(() => {
+    if (formData?.billingType === 'Privat') {
+      return ['Krankenkasse']
+    }
+
+    return []
+  }, [formData?.billingType])
 
   // Set default bezahlt value based on billingType from formData
   useEffect(() => {
-    if (isOpen && formData?.billingType && !form.bezahlt) {
-      // Map billingType to bezahlt format
-      // "Krankenkassa" -> "Krankenkasse_Genehmigt" (note: "Krankenkassa" in billingType but "Krankenkasse" in bezahlt)
-      // "Privat" -> "Privat_Bezahlt"
-      const bezahltValue = formData.billingType === 'Krankenkassa' 
-        ? 'Krankenkasse_Genehmigt' 
-        : 'Privat_Bezahlt'
-      form.setBezahlt(bezahltValue)
+    if (!isOpen) return
+
+    const bezahltValue =
+      formData?.bezahlt ||
+      formData?.paymentStatus ||
+      (formData?.billingType === 'Krankenkassa'
+        ? 'Krankenkasse_Genehmigt'
+        : formData?.billingType === 'Privat'
+          ? 'Privat_Bezahlt'
+          : '')
+
+    if (bezahltValue && !bezahltState) {
+      setBezahlt(bezahltValue)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, formData?.billingType])
+  }, [isOpen, formData?.bezahlt, formData?.paymentStatus, formData?.billingType, bezahltState, setBezahlt])
 
   // ✅ Local validation removed - backend handles all validation
  
 
   // Notiz (note) state
+  const [shouldPrintWerkstattzettel, setShouldPrintWerkstattzettel] = useState(true)
   const [showNotizTextarea, setShowNotizTextarea] = useState(false)
   const [notizText, setNotizText] = useState('')
 
@@ -126,36 +152,51 @@ export default function WerkstattzettelModal({
     return []
   }, [formData?.selectedVersorgungData, formData?.billingType])
 
-  // Full Versorgung display for "Auftragsdetails & Preise": supply name + add-ons (Positionsnummer)
+  // Versorgung display for "Auftragsdetails & Preise": plain selected Versorgung name only
   const { einlageDisplayName, versorgungFullDisplay } = React.useMemo(() => {
     const einlage = formData?.einlagentyp || ''
     const supplyName =
       formData?.versorgungsname ||
+      formData?.selectedVersorgungData?.versorgung ||
       formData?.selectedVersorgungData?.supplyStatus?.name ||
       formData?.selectedVersorgungData?.name ||
       formData?.versorgung ||
       ''
-    const selectedPos = formData?.selectedPositionsnummer || []
-    const options = formData?.positionsnummerOptions || []
-    const getPosNum = (o: any) => o?.positionsnummer ?? (typeof o?.description === 'object' && o?.description?.positionsnummer ? o.description.positionsnummer : '')
-    const getDesc = (o: any): string => {
-      if (typeof o?.description === 'string') return o.description
-      if (o?.description && typeof o.description === 'object') {
-        const t = (o.description as any).title ?? ''
-        const s = (o.description as any).subtitle ?? ''
-        return t && s ? `${t} - ${s}` : t || s || ''
-      }
-      return ''
+    return { einlageDisplayName: einlage, versorgungFullDisplay: supplyName }
+  }, [formData?.einlagentyp, formData?.versorgung, formData?.versorgungsname, formData?.selectedVersorgungData])
+
+  const zusaetzeDisplayLines = React.useMemo(() => {
+    const standards = formData?.insoleStandards || []
+
+    const formatValue = (value: number) => {
+      return Number.isInteger(value) ? String(value) : String(value).replace('.', ',')
     }
-    const addonLabels = selectedPos
-      .map((posNum) => {
-        const opt = options.find((o) => getPosNum(o) === posNum)
-        return opt ? getDesc(opt) || posNum : posNum
+
+    return standards
+      .map((item) => {
+        const left = Number(item?.left ?? 0)
+        const right = Number(item?.right ?? 0)
+        const hasLeft = left > 0
+        const hasRight = right > 0
+
+        if (!item?.name || (!hasLeft && !hasRight)) return null
+
+        if (hasLeft && hasRight && left === right) {
+          return `${formatValue(left)}mm ${item.name} BDS`
+        }
+
+        if (hasLeft && hasRight) {
+          return `${item.name} ${formatValue(left)}mm Links und ${formatValue(right)}mm Rechts`
+        }
+
+        if (hasLeft) {
+          return `${item.name} ${formatValue(left)}mm Links`
+        }
+
+        return `${item.name} ${formatValue(right)}mm Rechts`
       })
-      .filter(Boolean)
-    const fullSupply = addonLabels.length > 0 ? `${supplyName} (${addonLabels.join(', ')})` : supplyName
-    return { einlageDisplayName: einlage, versorgungFullDisplay: fullSupply }
-  }, [formData?.einlagentyp, formData?.versorgung, formData?.versorgungsname, formData?.selectedVersorgungData, formData?.selectedPositionsnummer, formData?.positionsnummerOptions])
+      .filter((item): item is string => Boolean(item))
+  }, [formData?.insoleStandards])
 
   // Auto-set Einlagenversorgung price when versorgung is selected
   // Only for Privat-Abrechnung – Krankenkassa must NOT prefill or calculate this price
@@ -216,6 +257,11 @@ export default function WerkstattzettelModal({
       })
     return () => { cancelled = true }
   }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    setShouldPrintWerkstattzettel(formData?.printWerkstattzettel ?? true)
+  }, [isOpen, formData?.printWerkstattzettel])
 
   // Fetch locations from API when modal opens
   useEffect(() => {
@@ -478,6 +524,7 @@ export default function WerkstattzettelModal({
               versorgungsname={formData?.versorgungsname}
               einlageDisplayName={einlageDisplayName}
               versorgungFullDisplay={versorgungFullDisplay}
+              zusaetzeDisplayLines={zusaetzeDisplayLines}
               onVersorgungChange={form.setVersorgung}
               quantity={form.quantity}
               onQuantityChange={form.setQuantity}
@@ -512,7 +559,9 @@ export default function WerkstattzettelModal({
               bezahlt={form.bezahlt}
               onBezahltChange={form.setBezahlt}
               paymentError={undefined}
-              disabledPaymentType={formData?.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData?.billingType === 'Privat' ? 'Privat' : undefined}
+              billingType={formData?.billingType}
+              disabledPaymentOptions={disabledPaymentOptions}
+              allowDualPaymentSelection={allowDualPaymentSelection}
               datumAuftrag={form.datumAuftrag}
               completionDays={completionDays}
               steuersatz={steuersatz > 0 ? steuersatz : undefined}
@@ -571,6 +620,33 @@ export default function WerkstattzettelModal({
                   <span>Notiz hinzufügen</span>
                 </Button>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Werkstattzettel</label>
+            <p className="text-sm text-gray-500 mb-4">Soll der Werkstattzettel mit ausgedruckt werden?</p>
+            <div className="grid grid-cols-2 gap-3 max-w-xs">
+              <Button
+                type="button"
+                variant="outline"
+                className={shouldPrintWerkstattzettel
+                  ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                  : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                onClick={() => setShouldPrintWerkstattzettel(true)}
+              >
+                Ja
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={!shouldPrintWerkstattzettel
+                  ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                  : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                onClick={() => setShouldPrintWerkstattzettel(false)}
+              >
+                Nein
+              </Button>
             </div>
           </div>
 

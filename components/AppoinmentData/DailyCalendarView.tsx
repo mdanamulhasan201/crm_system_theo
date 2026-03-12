@@ -96,10 +96,38 @@ const DailyCalendarView: React.FC<DailyCalendarViewProps> = ({
             now.getDate() === selectedDate.getDate();
     }, [selectedDate]);
 
+    useEffect(() => {
+        if (!isToday) return;
+
+        const container = calendarContainerRef.current;
+        if (!container) return;
+
+        const scrollToCurrentTime = () => {
+            const target = calendarContainerRef.current;
+            if (!target || target.clientHeight === 0) return;
+
+            const current = new Date();
+            const minutesFromStart = (current.getHours() - calendarStartHour) * 60 + current.getMinutes();
+            const top = (minutesFromStart / 60) * heightPerSlot;
+
+            target.scrollTop = Math.max(0, top - target.clientHeight / 2 + 16);
+        };
+
+        scrollToCurrentTime();
+        const resizeObserver = new ResizeObserver(() => scrollToCurrentTime());
+        resizeObserver.observe(container);
+        const timeoutId = setTimeout(scrollToCurrentTime, 200);
+
+        return () => {
+            resizeObserver.disconnect();
+            clearTimeout(timeoutId);
+        };
+    }, [isToday, selectedDate]);
+
     // Current time line (green line) - only when viewing today, same as MainCalendarPage
     const currentTimeMinutesFromStart = now.getHours() * 60 + now.getMinutes() - calendarStartHour * 60;
     const lineTopPx = (currentTimeMinutesFromStart / 60) * heightPerSlot;
-    const showCurrentTimeLine = isToday && currentTimeMinutesFromStart >= 0 && currentTimeMinutesFromStart <= (totalHours - 1) * 60;
+    const showCurrentTimeLine = isToday && currentTimeMinutesFromStart >= 0 && currentTimeMinutesFromStart <= totalHours * 60;
 
     // Get current time for checking past events
     const getCurrentTime = (): { hour: number; minute: number; totalMinutes: number } => {

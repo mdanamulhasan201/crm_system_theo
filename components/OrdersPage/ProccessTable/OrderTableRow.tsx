@@ -115,13 +115,46 @@ export default function OrderTableRow({
     onPriceClick,
 }: OrderTableRowProps) {
     const { selectedType } = useOrders();
-    // Category letter from order.orderType (from API orderCategory): F = Fräsblock, E = Einlage, S = Sonstiges. Use order's category so it shows for "Alle" too.
-    const typeForLetter = order.orderType ?? (selectedType && selectedType !== 'alle' ? selectedType : null);
+    // Prefer API `u_orderType` for the small type badge beside the checkbox.
+    const rawOrderType = (order.uOrderType ?? order.orderType ?? selectedType ?? '').toString().trim();
+    const normalizedOrderType = rawOrderType.toLowerCase();
     const typeLetter =
-        typeForLetter === 'milling_block' ? 'F'
-            : (typeForLetter === 'rady_insole' || typeForLetter === 'insole') ? 'E'
-                : typeForLetter === 'sonstiges' ? 'S'
+        normalizedOrderType === 'rady_insole' || normalizedOrderType === 'insole' ? 'R'
+            : normalizedOrderType === 'milling_block' ? 'F'
+                : normalizedOrderType === 'sonstiges' ? 'S'
                     : null;
+    const typeBadgeTitle =
+        normalizedOrderType === 'rady_insole' || normalizedOrderType === 'insole' ? 'Rady Insole'
+            : normalizedOrderType === 'milling_block' ? 'Milling Block'
+                : normalizedOrderType === 'sonstiges' ? 'Sonstiges'
+                    : rawOrderType || 'Unbekannter Typ';
+    const shouldShowInsoleStandards =
+        (selectedType === 'rady_insole' || selectedType === 'milling_block') &&
+        Array.isArray(order.insoleStandards) &&
+        order.insoleStandards.length > 0;
+    const shouldHideBeschreibung =
+        selectedType === 'rady_insole' || selectedType === 'milling_block';
+    const visibleInsoleStandards = shouldShowInsoleStandards
+        ? order.insoleStandards!.filter((item) => (item.left ?? 0) !== 0 || (item.right ?? 0) !== 0)
+        : [];
+    const formatInsoleStandard = (name: string, left: number, right: number) => {
+        const formatValue = (value: number) =>
+            Number.isInteger(value) ? String(value) : String(value).replace('.', ',');
+
+        const hasLeft = left > 0;
+        const hasRight = right > 0;
+
+        if (hasLeft && hasRight && left === right) {
+            return `${formatValue(left)}mm ${name} BDS`;
+        }
+        if (hasLeft && hasRight) {
+            return `${name} ${formatValue(left)}mm Links und ${formatValue(right)}mm Rechts`;
+        }
+        if (hasLeft) {
+            return `${name} ${formatValue(left)}mm Links`;
+        }
+        return `${name} ${formatValue(right)}mm Rechts`;
+    };
     // Helper function to safely get string value (supports API format: { address, description })
     const getSafeString = (value: any): string => {
         if (value == null) return '';
@@ -193,27 +226,6 @@ export default function OrderTableRow({
         return 'bg-gray-100 text-gray-800';
     };
 
-    const renderPaymentStatus = () => {
-        if (!order.zahlung) {
-            return null;
-        }
-
-        const colors = getPaymentStatusColor(order.zahlung);
-        // Format display text - replace underscores with spaces for better readability
-        let displayText = order.zahlung.includes(' - ')
-            ? order.zahlung.split(' - ').join(' • ') // Replace " - " with " • " for better display
-            : order.zahlung;
-        
-        // Replace underscores with spaces for better display
-        displayText = displayText.replace(/_/g, ' ');
-
-        return (
-            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text} break-words`} style={{ wordBreak: 'break-word' }}>
-                {displayText}
-            </span>
-        );
-    };
-
     const handleRowClick = (e: React.MouseEvent) => {
         // Don't trigger row click if clicking on checkbox, note button, or action buttons
         if ((e.target as HTMLElement).closest('[type="checkbox"]') ||
@@ -231,15 +243,63 @@ export default function OrderTableRow({
     const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
     const hasInvoice = !!order.invoice;
 
-    // Payment success: broth → both paid; private → private_payed; insurance → insurance_payed
-    const paymentType = order.paymentType ?? '';
+    const rawBezahltValue = typeof order.bezahlt === 'string' ? order.bezahlt : '';
+    const hasInsuranceAmount = Number(order.insuranceTotalPrice ?? 0) > 0;
+    const hasPrivateAmount = Number(order.privatePrice ?? 0) > 0;
+    const paymentType = (order.paymentType ?? '').toString().trim().toLowerCase();
+    const normalizedPaymentType =
+        paymentType === 'broth'
+            ? 'both'
+            : paymentType === 'both' || paymentType === 'private' || paymentType === 'insurance'
+                ? paymentType
+                : '';
+    const inferredPaymentType =
+        normalizedPaymentType ||
+        (hasInsuranceAmount && hasPrivateAmount
+            ? 'both'
+            : rawBezahltValue.includes('Krankenkasse') && rawBezahltValue.includes('Privat')
+                ? 'both'
+                : hasInsuranceAmount || rawBezahltValue.includes('Krankenkasse')
+                    ? 'insurance'
+                    : hasPrivateAmount || rawBezahltValue.includes('Privat')
+                        ? 'private'
+                        : '');
     const insurancePayed = !!order.insurance_payed;
     const privatePayed = !!order.private_payed;
+    const insuranceAmountColorClass =
+        rawBezahltValue.includes('Krankenkasse_Genehmigt') || insurancePayed
+            ? 'text-blue-600'
+            : 'text-red-600';
+    const privateAmountColorClass =
+        rawBezahltValue.includes('Privat_Bezahlt') || privatePayed
+            ? 'text-emerald-600'
+            : 'text-orange-600';
     const isPaymentSuccess =
-        paymentType === 'broth' ? (insurancePayed && privatePayed)
-        : paymentType === 'private' ? privatePayed
-        : paymentType === 'insurance' ? insurancePayed
-        : false;
+        inferredPaymentType === 'both'
+            ? (insurancePayed && privatePayed)
+            : inferredPaymentType === 'private'
+                ? privatePayed
+                : inferredPaymentType === 'insurance'
+                    ? insurancePayed
+                    : false;
+    const renderPaymentStatus = () => {
+        if (!order.zahlung) {
+            return null;
+        }
+
+        const colors = getPaymentStatusColor(order.zahlung);
+        let displayText = order.zahlung.includes(' - ')
+            ? order.zahlung.split(' - ').join(' • ')
+            : order.zahlung;
+
+        displayText = displayText.replace(/_/g, ' ');
+
+        return (
+            <span className={`px-2 py-1 rounded text-xs font-semibold ${colors.bg} ${colors.text} wrap-break-word`} style={{ wordBreak: 'break-word' }}>
+                {displayText}
+            </span>
+        );
+    };
 
     const isAusgefuehrtPaid = isAusgefuehrt && isPaymentSuccess;
     const isAusgefuehrtUnpaid = isAusgefuehrt && !isPaymentSuccess;
@@ -337,7 +397,7 @@ export default function OrderTableRow({
                     {typeLetter != null && (
                         <span
                             className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-200 text-xs font-semibold text-gray-600"
-                            title={typeForLetter === 'milling_block' ? 'Fräsblock' : (typeForLetter === 'rady_insole' || typeForLetter === 'insole') ? 'Einlage' : 'Sonstiges'}
+                            title={typeBadgeTitle}
                         >
                             {typeLetter}
                         </span>
@@ -368,15 +428,24 @@ export default function OrderTableRow({
                     </div>
                     <span className="text-gray-500 text-xs">#{order.bestellnummer}</span>
                     <span className="text-gray-400 text-xs">{order.productName}</span>
-                    {order.beschreibung && (
+                    {!shouldHideBeschreibung && order.beschreibung && (
                         <span className="text-gray-400 text-xs">{order.beschreibung}</span>
+                    )}
+                    {visibleInsoleStandards.length > 0 && (
+                        <ul className="mt-1 list-disc space-y-1 pl-4 text-xs text-gray-500 marker:text-gray-400">
+                            {visibleInsoleStandards.map((item, idx) => (
+                                <li key={`${item.name}-${idx}`} className="pl-1">
+                                    {formatInsoleStandard(item.name, item.left, item.right)}
+                                </li>
+                            ))}
+                        </ul>
                     )}
                 </div>
             </TableCell>
             <TableCell className="py-4 px-6">
                 <div className="flex flex-row items-center justify-center gap-2 flex-wrap">
                     <span 
-                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium whitespace-normal break-words ${getStatusBadgeColor(order.displayStatus, selectedType)} ${
+                        className={`px-1 sm:px-2 py-1 rounded text-xs font-medium whitespace-normal wrap-break-word ${getStatusBadgeColor(order.displayStatus, selectedType)} ${
                             order.displayStatus?.replace(/_/g, ' ') === 'Abholbereit/Versandt' ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
                         }`}
                         onClick={(e) => {
@@ -430,12 +499,12 @@ export default function OrderTableRow({
                         <span className="font-semibold text-base text-gray-900">{order.preis}</span>
                     )}
                     {order.insuranceTotalPrice != null && Number(order.insuranceTotalPrice) > 0 && (
-                        <span className="text-xs text-blue-600 font-medium">
+                        <span className={`text-xs font-medium ${insuranceAmountColorClass}`}>
                             KK: {Number(order.insuranceTotalPrice).toFixed(2)} €
                         </span>
                     )}
                     {order.privatePrice != null && Number(order.privatePrice) > 0 && (
-                        <span className="text-xs text-amber-600 font-medium">
+                        <span className={`text-xs font-medium ${privateAmountColorClass}`}>
                             Privat: {Number(order.privatePrice).toFixed(2)} €
                         </span>
                     )}

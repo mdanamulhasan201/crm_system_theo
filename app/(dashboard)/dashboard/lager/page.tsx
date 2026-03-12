@@ -11,6 +11,8 @@ import SonstigesData from '../_components/Product/SonstigesData/SonstigesData'
 import BestellubersichtTable from '../_components/Product/Bestellubersicht/BestellubersichtTable'
 import StatisticDeadStock from '../_components/Product/Bestellubersicht/StatisticDeadStock'
 import VerfugbareProdukte from '../_components/Product/Bestellubersicht/VerfugbareProdukte'
+import LagerChart from '@/components/LagerChart/LagerChart'
+import PerformerData from '@/components/LagerChart/PerformerData'
 
 type UIType = 'Einlagenrohlinge' | 'Fräsblock' | 'Sonstiges'
 type APIType = 'rady_insole' | 'milling_block'
@@ -159,7 +161,15 @@ export default function Lager() {
             ) : null}
 
 
-
+            {/* Chart */}
+            <div className='flex flex-col xl:flex-row gap-4 lg:gap-6 items-stretch lg:items-start justify-center mt-14'>
+                <div className='w-full lg:flex-1'>
+                    <LagerChart />
+                </div>
+                <div className='w-full lg:flex-1'>
+                    <PerformerData />
+                </div>
+            </div>
 
             <div className="w-full border border-gray-200 rounded-lg p-4">
                 <h2 className="text-lg font-bold text-gray-900 sm:text-xl md:text-2xl">

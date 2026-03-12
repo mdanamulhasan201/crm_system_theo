@@ -22,11 +22,12 @@ import { Switch } from '@/components/ui/switch'
 import MillingBlockImageModal from './MillingBlockImageModal'
 import EinlagenNachbestellenModal from '../EinlagenNachbestellenModal'
 import EditMillingBlock from './EditMillingBlock'
-import { getSingleStorage } from '@/apis/storeManagement'
+import { getSingleStorage, switchStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import MillingBlockHistory from './MillingBlockHistory'
 import DeleteMillingBlockModal from './DeleteMillingBlockModal'
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
+import { normalizeFeatures } from '../featureUtils'
 
 interface MillingBlock {
     id: string
@@ -35,7 +36,7 @@ interface MillingBlock {
     Hersteller: string
     Lagerort: string
     minStockLevel: number
-    sizeQuantities: { [key: string]: number | { quantity?: number; auto_order_quantity?: number } }
+    sizeQuantities: { [key: string]: number | { quantity?: number } }
     Status: string
     image?: string
     purchase_price?: number
@@ -43,6 +44,9 @@ interface MillingBlock {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
 }
 
 // Helper function to truncate text to 15 characters with ".."
@@ -51,19 +55,11 @@ const truncateText = (text: string, maxLength: number = 15): string => {
     return text.substring(0, maxLength) + '..';
 }
 
-// Helper function to get quantity from sizeQuantities (supports number or { quantity, auto_order_quantity? })
-const getQuantity = (sizeData: number | { quantity?: number; auto_order_quantity?: number } | undefined): number => {
+// Helper function to get quantity from sizeQuantities
+const getQuantity = (sizeData: number | { quantity?: number } | undefined): number => {
     if (sizeData === undefined) return 0;
     if (typeof sizeData === 'number') return sizeData;
     return sizeData?.quantity ?? 0;
-}
-
-const getAutoOrderQuantity = (sizeData: number | { quantity?: number; auto_order_quantity?: number } | undefined): number => {
-    if (typeof sizeData === 'object' && sizeData != null && 'auto_order_quantity' in sizeData) {
-        const q = (sizeData as { auto_order_quantity?: number }).auto_order_quantity;
-        return typeof q === 'number' ? q : 0;
-    }
-    return 0;
 }
 
 interface MillingBlocksTableProps {
@@ -96,18 +92,30 @@ export default function MillingBlocksTable({
     const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
     const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
     const [selectedProductForEdit, setSelectedProductForEdit] = useState<MillingBlock | null>(null)
+    const [togglingAutoOrderId, setTogglingAutoOrderId] = useState<string | null>(null)
 
     // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
     const apiDataToMillingBlock = (data: any): MillingBlock => {
+        const normalizedFeatures = normalizeFeatures(data.features)
         const normalizedGroessenMengen: MillingBlock['sizeQuantities'] = {}
         const raw = data.groessenMengen || {}
         Object.keys(raw).forEach(key => {
             const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
             const val = raw[key]
             if (typeof val === 'object' && val != null) {
-                normalizedGroessenMengen[normalizedKey] = { quantity: val?.quantity ?? 0, auto_order_quantity: val?.auto_order_quantity }
+                normalizedGroessenMengen[normalizedKey] = { quantity: val?.quantity ?? 0 }
             } else {
                 normalizedGroessenMengen[normalizedKey] = typeof val === 'number' ? val : 0
+            }
+        })
+        const normalizedOverviewGroessenMengen: NonNullable<MillingBlock['overviewSizeQuantities']> = {}
+        const overviewRaw = data.overview_groessenMengen || {}
+        Object.keys(overviewRaw).forEach(key => {
+            const normalizedKey = key.startsWith('Size ') ? key : `Size ${key}`
+            const val = overviewRaw[key]
+            normalizedOverviewGroessenMengen[normalizedKey] = {
+                length: val?.length ?? 0,
+                quantity: val?.quantity ?? 0,
             }
         })
         return {
@@ -122,9 +130,12 @@ export default function MillingBlocksTable({
             image: data.image,
             purchase_price: data.purchase_price,
             selling_price: data.selling_price,
-            features: Array.isArray(data.features) ? data.features : undefined,
+            features: normalizedFeatures.length > 0 ? normalizedFeatures : undefined,
             create_status: data.create_status,
             adminStoreId: data.adminStoreId ?? null,
+            auto_order: Boolean(data.auto_order),
+            able_auto_order: data.able_auto_order,
+            overviewSizeQuantities: normalizedOverviewGroessenMengen,
         }
     }
 
@@ -164,9 +175,51 @@ export default function MillingBlocksTable({
         return getQuantity(product.sizeQuantities[size]);
     }
 
-    const hasAutoOrderOn = (product: MillingBlock): boolean => {
-        return sizeColumns.some(size => getAutoOrderQuantity(product.sizeQuantities[size]) > 0);
-    };
+    const getOverviewQuantity = (product: MillingBlock, size: string): number => {
+        return product.overviewSizeQuantities?.[size]?.quantity ?? 0
+    }
+
+    const hasAutoOrderOn = (product: MillingBlock): boolean => Boolean(product.auto_order);
+
+    const isAdminManagedProduct = (product: MillingBlock): boolean =>
+        product.create_status === 'by_admin' || product.create_status === 'by_models';
+
+    const isAutoOrderEnabled = (product: MillingBlock): boolean =>
+        isAdminManagedProduct(product) &&
+        String(product.able_auto_order ?? '').trim().toLowerCase() === 'enable';
+
+    const handleAutoOrderToggle = async (product: MillingBlock) => {
+        if (!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id) return;
+
+        try {
+            setTogglingAutoOrderId(product.id)
+            await switchStore(product.id)
+
+            const nextAutoOrder = !Boolean(product.auto_order)
+            onUpdateProduct({
+                ...product,
+                auto_order: nextAutoOrder,
+            })
+
+            const response: any = await getSingleStorage(product.id)
+            if (response?.success && response?.data) {
+                onUpdateProduct({
+                    ...product,
+                    ...apiDataToMillingBlock(response.data),
+                    auto_order: Boolean(
+                        response.data.auto_order ?? nextAutoOrder
+                    ),
+                    able_auto_order: response.data.able_auto_order ?? product.able_auto_order,
+                })
+            }
+
+            toast.success(`Auto-Bestellung ${nextAutoOrder ? 'aktiviert' : 'deaktiviert'}`)
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Auto-Bestellung konnte nicht aktualisiert werden')
+        } finally {
+            setTogglingAutoOrderId(null)
+        }
+    }
 
     if (isLoading) {
         return <ProductManagementTableShimmer sizeColumns={sizeColumns} rows={5} />
@@ -175,17 +228,18 @@ export default function MillingBlocksTable({
     return (
         <>
             <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
-                <Table className='w-full bg-white rounded-lg overflow-hidden'>
+                <div className="w-full overflow-x-auto">
+                <Table className='w-full min-w-[1100px] bg-white rounded-lg overflow-hidden'>
                     <TableHeader>
                         <TableRow className="border-b bg-gray-100">
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">BILD</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase w-[120px] min-w-[120px]">BILD</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">HERSTELLER</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">ARTIKELBEZEICHNUNG</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">STATUS</TableHead>
                             <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AUTO</TableHead>
-                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase">AKTIONEN</TableHead>
+                            <TableHead className="p-3 text-left font-medium text-gray-700 uppercase min-w-[120px]">AKTIONEN</TableHead>
                             {sizeColumns.map(size => (
-                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase">{size}</TableHead>
+                                <TableHead key={size} className="p-3 text-center font-medium text-gray-700 uppercase min-w-[90px]">{size}</TableHead>
                             ))}
                         </TableRow>
                     </TableHeader>
@@ -210,9 +264,9 @@ export default function MillingBlocksTable({
                         ) : (
                             visibleProducts.map((product) => (
                                 <TableRow key={product.id} className="border-b bg-white">
-                                    <TableCell className="p-3">
+                                    <TableCell className="p-3 w-[120px] min-w-[120px]">
                                         <div
-                                            className="flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity"
+                                            className="flex items-center justify-center w-20 min-w-20 cursor-pointer hover:opacity-80 transition-opacity"
                                             onClick={() => setSelectedProductIdForModal(product.id)}
                                         >
                                             {product.image ? (
@@ -249,12 +303,12 @@ export default function MillingBlocksTable({
                                                                 Niedrig
                                                             </span>
                                                         )}
-                                                        {product.create_status && product.create_status !== 'by_admin' && (
+                                                        {product.create_status && !isAdminManagedProduct(product) && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
                                                                 Offen
                                                             </span>
                                                         )}
-                                                        {!hasLowStock(product) && (!product.create_status || product.create_status === 'by_admin') && (
+                                                        {!hasLowStock(product) && (!product.create_status || isAdminManagedProduct(product)) && (
                                                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 border border-emerald-200">
                                                                 Voller Bestand
                                                             </span>
@@ -276,11 +330,26 @@ export default function MillingBlocksTable({
                                             </Tooltip>
                                         </TooltipProvider>
                                     </TableCell>
-                                    <TableCell className="p-3">
-                                        <div className="flex items-center gap-2">
-                                            <Switch checked={hasAutoOrderOn(product)} disabled className="data-[state=checked]:bg-emerald-500" />
-                                            <span className={`text-xs font-medium ${hasAutoOrderOn(product) ? 'text-emerald-600' : 'text-gray-500'}`}>
-                                                {hasAutoOrderOn(product) ? 'An' : 'Aus'}
+                                    <TableCell className="p-3 min-w-[120px]">
+                                        <div className="flex items-center gap-2 whitespace-nowrap">
+                                            <Switch
+                                                checked={hasAutoOrderOn(product)}
+                                                disabled={!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id}
+                                                onCheckedChange={() => handleAutoOrderToggle(product)}
+                                                className={`data-[state=checked]:bg-emerald-500 ${isAutoOrderEnabled(product)
+                                                        ? 'cursor-pointer data-[state=unchecked]:bg-slate-300'
+                                                        : 'cursor-not-allowed data-[state=unchecked]:bg-slate-200 data-[state=checked]:bg-slate-400'
+                                                    }`}
+                                            />
+                                            <span
+                                                className={`text-xs font-medium ${!isAutoOrderEnabled(product)
+                                                        ? 'text-slate-400'
+                                                        : hasAutoOrderOn(product)
+                                                            ? 'text-emerald-600'
+                                                            : 'text-gray-500'
+                                                    }`}
+                                            >
+                                                {!isAutoOrderEnabled(product) ? 'Gesperrt' : hasAutoOrderOn(product) ? 'An' : 'Aus'}
                                             </span>
                                         </div>
                                     </TableCell>
@@ -317,7 +386,7 @@ export default function MillingBlocksTable({
                                         const sizeData = product.sizeQuantities[size];
                                         const stock = getStockForSize(product, size);
                                         const isLowStock = stock <= product.minStockLevel && stock > 0;
-                                        const autoQty = getAutoOrderQuantity(sizeData);
+                                        const autoQty = getOverviewQuantity(product, size);
                                         return (
                                             <TableCell key={size} className="p-3 text-center text-gray-900">
                                                 <div className="flex flex-col items-center justify-center gap-0.5">
@@ -336,6 +405,7 @@ export default function MillingBlocksTable({
                         )}
                     </TableBody>
                 </Table>
+                </div>
             </div>
 
             {/* Image View Modal – fetch single product on Lagerort click, then show (same design as Einlagenrohlinge) */}

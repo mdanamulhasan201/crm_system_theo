@@ -16,6 +16,7 @@ interface ProductFormData {
     Produktname: string;
     Hersteller: string;
     Produktkürzel: string;
+    model_id?: string;
     Lagerort?: string;
     minStockLevel?: number;
     purchase_price: number;
@@ -31,6 +32,7 @@ interface CreateProductPayload {
     produktname: string;
     hersteller: string;
     artikelnummer: string;
+    model_id?: string;
     lagerort: string;
     mindestbestand: number;
     historie: string;
@@ -62,6 +64,9 @@ interface ApiProduct {
     features?: string[];
     create_status?: string;
     adminStoreId?: string | null;
+    auto_order?: boolean;
+    able_auto_order?: string;
+    overview_groessenMengen?: { [key: string]: SizeData | number };
 }
 
 
@@ -139,6 +144,7 @@ export const useStockManagementSlice = () => {
             produktname: formData.Produktname,
             hersteller: formData.Hersteller,
             artikelnummer: formData.Produktkürzel,
+            ...(formData.model_id && { model_id: formData.model_id }),
             lagerort: formData.Lagerort || '',
             mindestbestand: minStockLevel,
             historie: `Product created on ${new Date().toISOString().split('T')[0]}`,
@@ -237,7 +243,10 @@ export const useStockManagementSlice = () => {
                     image: item.image || undefined,
                     features: Array.isArray(item.features) ? item.features : undefined,
                     create_status: item.create_status,
-                    adminStoreId: item.adminStoreId ?? null
+                    adminStoreId: item.adminStoreId ?? null,
+                    auto_order: Boolean(item.auto_order),
+                    able_auto_order: item.able_auto_order,
+                    overview_groessenMengen: item.overview_groessenMengen || {},
                 }));
                 
                 setProducts(products);

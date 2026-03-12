@@ -25,6 +25,7 @@ export interface OrderCategory {
 export interface Picture2324Data {
     customerName: string;
     versorgungName: string | null;
+    supplyName?: string | null;
     diagnosisStatus: string[] | null;
     material: string | null;
     picture_23: string | null;

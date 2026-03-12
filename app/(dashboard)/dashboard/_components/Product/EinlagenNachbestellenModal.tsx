@@ -162,13 +162,9 @@ export default function EinlagenNachbestellenModal({
         setIsSubmitting(true)
         try {
             const groessenMengen = buildGroessenMengen()
-            const body = {
-                storeId,
-                admin_store_id: adminStoreId,
-                groessenMengen
-            }
-            const apiCall = initialQuantitiesZero ? buySingleStore : buyStore
-            const response = await apiCall(body)
+            const response = initialQuantitiesZero
+                ? await buySingleStore({ storeId, admin_store_id: adminStoreId, groessenMengen })
+                : await buyStore({ storeId, admin_store_id: adminStoreId, groessenMengen, price: totalPrice })
             if (response.success) {
                 toast.success(response.message || 'Bestellung erfolgreich')
                 onClose()

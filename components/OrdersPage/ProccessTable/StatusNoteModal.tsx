@@ -32,7 +32,7 @@ export interface StatusNoteData {
     customer: {
         vorname: string;
         nachname: string;
-    };
+    } | null;
 }
 
 interface NotesResponse {
@@ -79,6 +79,10 @@ export default function StatusNoteModal({
     const [addNoteModalOpen, setAddNoteModalOpen] = useState(false);
     const [editModalNote, setEditModalNote] = useState<{ id: string; note: string } | null>(null);
     const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+    const customerFullName = [data?.customer?.vorname, data?.customer?.nachname]
+        .filter(Boolean)
+        .join(' ')
+        .trim() || 'Unbekannter Kunde';
 
     const fetchNotes = useCallback((orderId: string, cursor?: string) => {
         return getStatusNote(orderId, cursor).then((res: any) => {
@@ -197,8 +201,8 @@ export default function StatusNoteModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:!max-w-3xl p-0 gap-0 overflow-hidden rounded-xl border border-gray-200 shadow-lg">
-                <DialogHeader className="px-6 pt-6 pb-4 bg-gradient-to-b from-gray-50 to-white border-b border-gray-100">
+            <DialogContent className="sm:max-w-3xl! p-0 gap-0 overflow-hidden rounded-xl border border-gray-200 shadow-lg">
+                <DialogHeader className="px-6 pt-6 pb-4 bg-linear-to-b from-gray-50 to-white border-b border-gray-100">
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-600">
                             <FileText className="w-5 h-5" />
@@ -234,7 +238,7 @@ export default function StatusNoteModal({
                                     <InfoRow
                                         icon={User}
                                         label="Kunde"
-                                        value={`${data.customer.vorname} ${data.customer.nachname}`}
+                                        value={customerFullName}
                                     />
                                     <InfoRow icon={Hash} label="Auftragsnummer" value={data.orderNumber} />
                                     {data.product?.name && (
@@ -392,7 +396,7 @@ export default function StatusNoteModal({
                 isOpen={addNoteModalOpen}
                 onClose={() => setAddNoteModalOpen(false)}
                 orderId={orderId}
-                orderName={data ? `${data.customer?.vorname ?? ''} ${data.customer?.nachname ?? ''}`.trim() : undefined}
+                orderName={data ? customerFullName : undefined}
                 onSuccess={refetchNotes}
             />
             <EditNoteModal

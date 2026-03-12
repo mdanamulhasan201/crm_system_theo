@@ -43,6 +43,7 @@ interface FormData {
     email: string;
     telefon: string;
     wohnort: string;
+    printWerkstattzettel?: boolean;
 }
 
 interface SonstigesOrderModalProps {
@@ -110,6 +111,7 @@ export default function SonstigesOrderModal({
     const [calculatedTotal, setCalculatedTotal] = useState<number | null>(null);
 
     // Notiz hinzufügen (same as WerkstattzettelModal) – shown when button clicked, sent as orderNotes
+    const [shouldPrintWerkstattzettel, setShouldPrintWerkstattzettel] = useState(true);
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
     const [orderNotes, setOrderNotes] = useState('');
 
@@ -127,6 +129,7 @@ export default function SonstigesOrderModal({
             setTelefonnummer(customer.telefon || customer.telefonnummer || formData.telefon || '');
             setSelectedEmployee(formData.selectedEmployee || '');
             setSelectedEmployeeId(formData.selectedEmployeeId || '');
+            setShouldPrintWerkstattzettel(formData.printWerkstattzettel ?? true);
             
             // Set Menge from formData
             if (formData?.menge) {
@@ -473,7 +476,8 @@ export default function SonstigesOrderModal({
                             bezahlt={bezahlt}
                             onBezahltChange={setBezahlt}
                             paymentError={undefined}
-                            disabledPaymentType={undefined}
+                            disabledPaymentOptions={[]}
+                            visiblePaymentTypes={['Privat']}
                             datumAuftrag={datumAuftrag}
                             completionDays={undefined}
                             steuersatz={formData?.steuersatz}
@@ -531,6 +535,33 @@ export default function SonstigesOrderModal({
                                     <span>Notiz hinzufügen</span>
                                 </Button>
                             </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">Werkstattzettel</label>
+                        <p className="text-sm text-gray-500 mb-4">Soll der Werkstattzettel mit ausgedruckt werden?</p>
+                        <div className="grid grid-cols-2 gap-3 max-w-xs">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className={shouldPrintWerkstattzettel
+                                    ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                                    : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                                onClick={() => setShouldPrintWerkstattzettel(true)}
+                            >
+                                Ja
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className={!shouldPrintWerkstattzettel
+                                    ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                                    : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                                onClick={() => setShouldPrintWerkstattzettel(false)}
+                            >
+                                Nein
+                            </Button>
                         </div>
                     </div>
 

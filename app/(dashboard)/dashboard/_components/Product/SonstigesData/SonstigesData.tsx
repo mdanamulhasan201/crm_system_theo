@@ -272,7 +272,7 @@ const SonstigesData: React.FunctionComponent<SonstigesDataProps> = (props) => {
             </div>
 
             {/* Table */}
-            <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow overflow-hidden">
+            <div className="bg-gray-50 rounded-lg p-4 mt-5 shadow">
                 {isLoading ? (
                     <div className="overflow-x-auto">
                     <Table className="w-full bg-white rounded-lg min-w-[900px]">

@@ -11,8 +11,9 @@ import useDebounce from '@/hooks/useDebounce'
 import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import AddProductTypeModal from '../AddProductTypeModal'
+import { normalizeFeatures } from '../featureUtils'
 
-// sizeQuantities values can be number or { quantity?, auto_order_quantity? } (matches MillingBlocksTable)
+// sizeQuantities values can be number or { quantity? } (matches MillingBlocksTable)
 interface MillingBlock {
     id: string
     Produktname: string
@@ -28,9 +29,12 @@ interface MillingBlock {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
 }
 
-function getQuantity(val: number | { quantity?: number; auto_order_quantity?: number } | undefined): number {
+function getQuantity(val: number | { quantity?: number } | undefined): number {
     if (val == null) return 0
     return typeof val === 'object' ? (val.quantity ?? 0) : val
 }
@@ -49,7 +53,7 @@ interface MillingBlocksProps {
 
 export default function MillingBlocks({ type = 'milling_block', setProductCount, openAddModal, onCloseAddModal, searchQuery: controlledSearch, onSearchChange }: MillingBlocksProps) {
     const router = useRouter()
-    const { getAllProducts, isLoadingProducts, refreshProducts } = useStockManagementSlice()
+    const { getAllProducts, isLoadingProducts } = useStockManagementSlice()
     const [products, setProducts] = useState<MillingBlock[]>([])
     const [internalSearch, setInternalSearch] = useState('')
     const searchQuery = controlledSearch !== undefined ? controlledSearch : internalSearch
@@ -88,21 +92,11 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
         console.log('Show history for:', product);
     }
 
-    // Update product handler - refresh data from API after update
-    const handleUpdateProduct = async (updatedProduct: MillingBlock) => {
-        // Optimistically update local state
+    // Update only the changed row so the whole table does not reload
+    const handleUpdateProduct = (updatedProduct: MillingBlock) => {
         setProducts(prev =>
             prev.map(product => (product.id === updatedProduct.id ? updatedProduct : product))
-        );
-
-        // Refresh data from API to ensure consistency
-        try {
-            const apiProducts = await refreshProducts(currentPage, itemsPerPage, debouncedSearch, type)
-            const convertedProducts = apiProducts.map(convertApiProductToLocal)
-            setProducts(convertedProducts)
-        } catch (err) {
-            console.error('Failed to refresh products after update:', err)
-        }
+        )
     }
 
     // Delete product handler
@@ -135,11 +129,16 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
 
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): MillingBlock => {
+        const normalizedFeatures = normalizeFeatures(apiProduct.features)
+
         // Normalize groessenMengen keys for milling_block type
         const productType = apiProduct.type || type
         const normalizedGroessenMengen = typeof apiProduct.groessenMengen === 'object'
             ? normalizeSizeKeys(apiProduct.groessenMengen, productType)
             : apiProduct.groessenMengen || {}
+        const normalizedOverviewGroessenMengen = typeof apiProduct.overview_groessenMengen === 'object'
+            ? normalizeSizeKeys(apiProduct.overview_groessenMengen, productType)
+            : apiProduct.overview_groessenMengen || {}
 
         return {
             id: apiProduct.id,
@@ -158,9 +157,12 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
             image: apiProduct.image,
             purchase_price: apiProduct.purchase_price,
             selling_price: apiProduct.selling_price,
-            features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+            features: normalizedFeatures.length > 0 ? normalizedFeatures : undefined,
             create_status: apiProduct.create_status,
             adminStoreId: apiProduct.adminStoreId ?? null,
+            auto_order: Boolean(apiProduct.auto_order),
+            able_auto_order: apiProduct.able_auto_order,
+            overviewSizeQuantities: normalizedOverviewGroessenMengen,
         }
     }
 

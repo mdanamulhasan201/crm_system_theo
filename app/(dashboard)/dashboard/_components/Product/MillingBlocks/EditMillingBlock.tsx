@@ -59,7 +59,7 @@ export default function EditMillingBlock({
   onUpdated,
   sizeColumns,
 }: EditMillingBlockProps) {
-  const { updateExistingProduct } = useStockManagementSlice();
+  const { updateExistingProduct, getProductById } = useStockManagementSlice();
   const [isLoading, setIsLoading] = useState(false);
   const [sizeQuantities, setSizeQuantities] = useState<{
     [key: string]: SizeData;
@@ -69,36 +69,65 @@ export default function EditMillingBlock({
   const [artikelnummer, setArtikelnummer] = useState("");
   const [purchasePrice, setPurchasePrice] = useState<number>(0);
   const [sellingPrice, setSellingPrice] = useState<number>(0);
+  const [editCreateStatus, setEditCreateStatus] = useState<string | undefined>(
+    undefined,
+  );
 
   // Initialize form data when product changes
   useEffect(() => {
-    if (product && isOpen) {
-      setProduktname(product.Produktname);
-      setHersteller(product.Hersteller);
-      setArtikelnummer(product.Produktkürzel);
-      setPurchasePrice(product.purchase_price || 0);
-      setSellingPrice(product.selling_price || 0);
+    const loadProduct = async () => {
+      if (!product || !isOpen) return;
 
-      const getQty = (
-        v:
-          | number
-          | { quantity?: number; auto_order_quantity?: number }
-          | undefined,
-      ) => (typeof v === "number" ? v : (v?.quantity ?? 0));
-      const initialSizeQuantities: { [key: string]: SizeData } = {};
-      sizeColumns.forEach((size) => {
-        const raw = product.sizeQuantities[size];
-        const qty = typeof raw === "number" ? raw : (raw?.quantity ?? 0);
-        initialSizeQuantities[size] = {
-          quantity: qty || 0,
-          mindestmenge: product.minStockLevel || 0,
-          autoOrderLimit: undefined,
-          orderQuantity: undefined,
-        };
-      });
-      setSizeQuantities(initialSizeQuantities);
-    }
-  }, [product, isOpen, sizeColumns]);
+      try {
+        setIsLoading(true);
+        const fullProduct = await getProductById(product.id);
+        setProduktname(fullProduct.produktname);
+        setHersteller(fullProduct.hersteller);
+        setArtikelnummer(fullProduct.artikelnummer);
+        setPurchasePrice(fullProduct.purchase_price || 0);
+        setSellingPrice(fullProduct.selling_price || 0);
+        setEditCreateStatus(fullProduct.create_status);
+
+        const initialSizeQuantities: { [key: string]: SizeData } = {};
+        sizeColumns.forEach((size) => {
+          const normalizedSizeKey = size.replace(/^Size\s+/i, "");
+          const raw =
+            fullProduct.groessenMengen?.[size] ??
+            fullProduct.groessenMengen?.[normalizedSizeKey];
+          const rawData =
+            typeof raw === "object" && raw !== null
+              ? (raw as {
+                  quantity?: number;
+                  mindestmenge?: number;
+                  auto_order_limit?: number;
+                  auto_order_quantity?: number;
+                })
+              : undefined;
+          const qty = typeof raw === "number" ? raw : (rawData?.quantity ?? 0);
+
+          initialSizeQuantities[size] = {
+            quantity: qty || 0,
+            mindestmenge:
+              rawData?.mindestmenge ?? fullProduct.mindestbestand ?? 0,
+            autoOrderLimit: rawData?.auto_order_limit ?? undefined,
+            orderQuantity: rawData?.auto_order_quantity ?? undefined,
+          };
+        });
+        setSizeQuantities(initialSizeQuantities);
+      } catch (error) {
+        console.error("Failed to load milling block for edit:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProduct();
+  }, [product, isOpen, sizeColumns, getProductById]);
+
+  const canEditQuantityFields =
+    !product || editCreateStatus !== "by_admin";
+  const canEditAutoOrderFields =
+    !product || editCreateStatus !== "by_self";
 
   const handleSizeQuantityChange = (size: string, value: string) => {
     setSizeQuantities((prev) => ({
@@ -354,7 +383,7 @@ export default function EditMillingBlock({
                             handleSizeQuantityChange(size, e.target.value)
                           }
                           className="w-full"
-                          disabled={isLoading}
+                          disabled={isLoading || !canEditQuantityFields}
                         />
                       </TableCell>
                       <TableCell>
@@ -367,7 +396,7 @@ export default function EditMillingBlock({
                             handleMindestmengeChange(size, e.target.value)
                           }
                           className="w-full"
-                          disabled={isLoading}
+                          disabled={isLoading || !canEditQuantityFields}
                         />
                       </TableCell>
                       <TableCell>
@@ -384,7 +413,7 @@ export default function EditMillingBlock({
                             handleAutoOrderLimitChange(size, e.target.value)
                           }
                           className="w-full"
-                          disabled={isLoading}
+                          disabled={isLoading || !canEditAutoOrderFields}
                         />
                       </TableCell>
                       <TableCell>
@@ -401,7 +430,7 @@ export default function EditMillingBlock({
                             handleOrderQuantityChange(size, e.target.value)
                           }
                           className="w-full"
-                          disabled={isLoading}
+                          disabled={isLoading || !canEditAutoOrderFields}
                         />
                       </TableCell>
                     </TableRow>

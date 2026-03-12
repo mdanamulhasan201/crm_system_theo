@@ -164,7 +164,7 @@ export default function UmsatzübersichtCard({ items = DEMO_CARDS, className }: 
     return (
         <div
             className={cn(
-                'grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4',
+                'grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4',
                 className
             )}
         >

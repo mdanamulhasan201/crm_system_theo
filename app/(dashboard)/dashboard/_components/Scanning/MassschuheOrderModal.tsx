@@ -217,6 +217,7 @@ export interface MassschuheOrderModalFormData {
     adjustments?: string;
     customer_reviews?: string;
     halbprobeErforderlich?: boolean | null;
+    printWerkstattzettel?: boolean;
     step4_preparation_date?: string;
     step4_notes?: string;
     step5_fitting_date?: string;
@@ -301,8 +302,16 @@ export default function MassschuheOrderModal({
     const [locationsLoading, setLocationsLoading] = useState(false);
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [shouldPrintWerkstattzettel, setShouldPrintWerkstattzettel] = useState(true);
 
     const { user } = useAuth();
+    const allowDualPaymentSelection =
+        formData.billingType === 'Krankenkassa' &&
+        ((parseFloat(formData.nettoPreis || '0') || 0) > 0 || user?.accountInfo?.vat_country === 'Österreich (AT)');
+    const disabledPaymentOptions: Array<'Privat' | 'Krankenkasse'> =
+        formData.billingType === 'Privat'
+            ? ['Krankenkasse']
+            : [];
 
     // Parse Fußanalyse selected value: stored as "index__price" for unique Select values (avoids duplicate-price = "all select" bug)
     const getFußanalysePrice = (value: string): number => {
@@ -437,6 +446,7 @@ export default function MassschuheOrderModal({
                 setSelectedEinlagenversorgung('');
             }
             setOrderNote('');
+            setShouldPrintWerkstattzettel(formData.printWerkstattzettel ?? true);
             // Set default bezahlt based on billingType (same as WerkstattzettelModal)
             if (formData.billingType === 'Krankenkassa') {
                 setBezahlt('Krankenkasse_Genehmigt');
@@ -448,6 +458,19 @@ export default function MassschuheOrderModal({
             // Don't reset selectedLocation here - it will be set by the locations useEffect
         }
     }, [isOpen, user?.hauptstandort, customer, completionDays, formData.billingType, laserPrintPrices]);
+
+    useEffect(() => {
+        if (allowDualPaymentSelection) return;
+
+        if (bezahlt.startsWith('Privat')) {
+            setPaymentType('privat');
+            return;
+        }
+
+        if (bezahlt.startsWith('Krankenkasse')) {
+            setPaymentType('krankenkasse');
+        }
+    }, [bezahlt, allowDualPaymentSelection]);
 
     const handleSubmit = async () => {
         if (!customer?.id) {
@@ -852,7 +875,7 @@ export default function MassschuheOrderModal({
                                     </p>
                                 </div>
                                 {/* Standort auswählen + Menge */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {(locations.length > 0 || (user?.hauptstandort && user.hauptstandort.length > 0)) && (
                                         <div>
                                             <label className="text-sm font-medium text-gray-600 mb-1 block">Standort auswählen</label>
@@ -938,11 +961,13 @@ export default function MassschuheOrderModal({
                                         </Select>
                                     </div>
                                 </div>
-                                <div>
+                                <div className="col-span-1 md:col-span-2">
                                     <PaymentStatusSection
                                         value={bezahlt}
                                         onChange={setBezahlt}
-                                        disabledPaymentType={formData.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData.billingType === 'Privat' ? 'Privat' : undefined}
+                                        disabledOptions={disabledPaymentOptions}
+                                        allowDualSelection={allowDualPaymentSelection}
+                                        layout="compactRow"
                                     />
                                 </div>
                             </div>
@@ -1150,6 +1175,37 @@ export default function MassschuheOrderModal({
                                         <span>Notiz hinzufügen</span>
                                     </Button>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+                            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
+                                Werkstattzettel
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                                Soll der Werkstattzettel mit ausgedruckt werden?
+                            </p>
+                            <div className="grid grid-cols-2 gap-3 max-w-xs">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={shouldPrintWerkstattzettel
+                                        ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                                        : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                                    onClick={() => setShouldPrintWerkstattzettel(true)}
+                                >
+                                    Ja
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={!shouldPrintWerkstattzettel
+                                        ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                                        : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                                    onClick={() => setShouldPrintWerkstattzettel(false)}
+                                >
+                                    Nein
+                                </Button>
                             </div>
                         </div>
 

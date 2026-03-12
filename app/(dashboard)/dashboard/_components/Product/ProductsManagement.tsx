@@ -33,6 +33,7 @@ import { deleteStorage, getSingleStorage } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import PerformerData from '@/components/LagerChart/PerformerData'
 import useDebounce from '@/hooks/useDebounce'
+import { normalizeFeatures } from './featureUtils'
 
 
 interface SizeData {
@@ -55,6 +56,9 @@ interface Product {
     features?: string[]
     create_status?: string
     adminStoreId?: string | null
+    auto_order?: boolean
+    able_auto_order?: string
+    overviewSizeQuantities?: { [key: string]: { length?: number; quantity: number } }
     inventoryHistory: Array<{
         id: string
         date: string
@@ -131,6 +135,8 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
 
     // Convert API product to local format
     const convertApiProductToLocal = (apiProduct: any): Product => {
+        const normalizedFeatures = normalizeFeatures(apiProduct.features)
+
         return {
             id: apiProduct.id,
             Produktname: apiProduct.produktname,
@@ -141,9 +147,12 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
             sizeQuantities: apiProduct.groessenMengen,
             Status: apiProduct.Status,
             image: apiProduct.image,
-            features: Array.isArray(apiProduct.features) ? apiProduct.features : undefined,
+            features: normalizedFeatures.length > 0 ? normalizedFeatures : undefined,
             create_status: apiProduct.create_status,
             adminStoreId: apiProduct.adminStoreId ?? null,
+            auto_order: Boolean(apiProduct.auto_order),
+            able_auto_order: apiProduct.able_auto_order,
+            overviewSizeQuantities: apiProduct.overview_groessenMengen || {},
             inventoryHistory: [] // API doesn't provide history yet
         };
     };
@@ -481,30 +490,37 @@ export default function ProductsManagement({ type = 'rady_insole', setProductCou
                 isLoading={isDeleting}
             />
 
-            {/* Chart */}
-            <div className='flex flex-col xl:flex-row gap-4 lg:gap-6 items-stretch lg:items-start justify-center mt-14'>
-                <div className='w-full lg:flex-1'>
-                    <LagerChart />
-                </div>
-                <div className='w-full lg:flex-1'>
-                    <PerformerData />
-                </div>
-            </div>
+           
 
             {/* Add Product Modal */}
             <AddProductTypeModal
                 isOpen={addProductModalOpen}
                 onClose={handleCloseAddModal}
-                onSuccess={async () => {
+                onSuccess={(createdProduct) => {
                     handleCloseAddModal()
-                    // Refresh products list
-                    try {
-                        const apiProducts = await getAllProducts(currentPage, itemsPerPage, debouncedSearch, type)
-                        const convertedProducts = apiProducts.map(convertApiProductToLocal)
-                        setProductsData(convertedProducts)
-                    } catch (err) {
-                        console.error('Failed to refresh products:', err)
-                    }
+
+                    if (!createdProduct) return
+
+                    const newProduct = convertApiProductToLocal(createdProduct)
+                    const normalizedSearch = debouncedSearch.trim().toLowerCase()
+                    const matchesSearch =
+                        !normalizedSearch ||
+                        [
+                            newProduct.Produktname,
+                            newProduct.Produktkürzel,
+                            newProduct.Hersteller,
+                        ]
+                            .filter(Boolean)
+                            .some((value) => value.toLowerCase().includes(normalizedSearch))
+
+                    if (!matchesSearch) return
+
+                    setProductsData((prev) => {
+                        const withoutDuplicate = prev.filter(product => product.id !== newProduct.id)
+                        return [newProduct, ...withoutDuplicate].slice(0, itemsPerPage)
+                    })
+
+                    setProductCount?.((pagination?.totalItems ?? productsData.length) + 1)
                 }}
                 type={type}
             />
