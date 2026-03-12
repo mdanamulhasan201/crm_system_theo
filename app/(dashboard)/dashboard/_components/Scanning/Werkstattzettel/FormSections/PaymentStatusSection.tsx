@@ -1,16 +1,17 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+
+type PaymentType = 'Privat' | 'Krankenkasse' | ''
 
 interface PaymentStatusSectionProps {
     value: string
     onChange: (value: string) => void
     error?: string
-    disabledPaymentType?: 'Privat' | 'Krankenkasse'
+    disabledOptions?: Array<Exclude<PaymentType, ''>>
+    allowDualSelection?: boolean
 }
-
-type PaymentType = 'Privat' | 'Krankenkasse' | ''
 type PrivatStatus = 'Bezahlt' | 'Offen'
 type InsuranceStatus = 'Genehmigt' | 'Ungenehmigt'
 
@@ -18,10 +19,11 @@ export default function PaymentStatusSection({
     value,
     onChange,
     error,
-    disabledPaymentType,
+    disabledOptions = [],
+    allowDualSelection = false,
 }: PaymentStatusSectionProps) {
     // Parse initial value
-    const parseInitialValue = (val: string): { type: PaymentType; status: string } => {
+    const parseStatusToken = (val: string): { type: PaymentType; status: string } => {
         if (!val) return { type: '', status: '' }
 
         // Handle old format (boolean/string)
@@ -57,108 +59,182 @@ export default function PaymentStatusSection({
         return { type: '', status: '' }
     }
 
+    const parseInitialValue = useCallback((val: string): {
+        type: PaymentType
+        status: string
+        privatStatus: string
+        krankenkasseStatus: string
+    } => {
+        const tokens = String(val || '')
+            .split('|')
+            .map((item) => item.trim())
+            .filter(Boolean)
+
+        const parsedTokens = tokens.map(parseStatusToken)
+        const privatStatus = parsedTokens.find((item) => item.type === 'Privat')?.status || ''
+        const krankenkasseStatus = parsedTokens.find((item) => item.type === 'Krankenkasse')?.status || ''
+        const fallbackParsed: { type: PaymentType; status: string } =
+            tokens.length > 0 ? parseStatusToken(tokens[0]) : { type: '', status: '' }
+
+        return {
+            type: fallbackParsed.type,
+            status: fallbackParsed.status,
+            privatStatus,
+            krankenkasseStatus,
+        }
+    }, [])
+
     const initialParsed = parseInitialValue(value)
     const [paymentType, setPaymentType] = useState<PaymentType>(initialParsed.type)
     const [status, setStatus] = useState<string>(initialParsed.status)
+    const [privatStatus, setPrivatStatus] = useState<string>(initialParsed.privatStatus)
+    const [krankenkasseStatus, setKrankenkasseStatus] = useState<string>(initialParsed.krankenkasseStatus)
+
+    const applyPaymentType = useCallback((newType: PaymentType) => {
+        setPaymentType(newType)
+
+        if (newType === 'Privat') {
+            setStatus('Bezahlt')
+            onChange('Privat_Bezahlt')
+            return
+        }
+
+        if (newType === 'Krankenkasse') {
+            setStatus('Genehmigt')
+            onChange('Krankenkasse_Genehmigt')
+            return
+        }
+
+        setStatus('')
+        onChange('')
+    }, [onChange])
 
     // Update when value prop changes
     useEffect(() => {
         const parsed = parseInitialValue(value)
         setPaymentType(parsed.type)
         setStatus(parsed.status)
-    }, [value])
+        setPrivatStatus(parsed.privatStatus)
+        setKrankenkasseStatus(parsed.krankenkasseStatus)
+    }, [value, parseInitialValue])
+
+    useEffect(() => {
+        if (paymentType && disabledOptions.includes(paymentType)) {
+            const fallbackType = (['Privat', 'Krankenkasse'] as const).find(
+                (type) => !disabledOptions.includes(type)
+            )
+            if (fallbackType) {
+                applyPaymentType(fallbackType)
+            }
+        }
+    }, [disabledOptions, paymentType, applyPaymentType])
 
     const handlePaymentTypeChange = (newType: PaymentType) => {
-        setPaymentType(newType)
-
-        // Set default status based on type
-        if (newType === 'Privat') {
-            const newValue = 'Privat_Bezahlt'
-            setStatus('Bezahlt')
-            onChange(newValue)
-        } else if (newType === 'Krankenkasse') {
-            const newValue = 'Krankenkasse_Genehmigt'
-            setStatus('Genehmigt')
-            onChange(newValue)
-        } else {
-            setStatus('')
-            onChange('')
-        }
+        if (disabledOptions.includes(newType as Exclude<PaymentType, ''>)) return
+        applyPaymentType(newType)
     }
 
-    const handleStatusChange = (newStatus: string) => {
-        setStatus(newStatus)
-        if (paymentType) {
-            // Format: "Privat_Bezahlt" or "Privat_offen" (lowercase for "offen")
-            // For Krankenkasse: "Krankenkasse_Genehmigt" or "Krankenkasse_Ungenehmigt"
-            let formattedStatus = newStatus
-            if (newStatus === 'Offen') {
-                formattedStatus = 'offen'
+    const handleStatusChange = (type: Exclude<PaymentType, ''>, newStatus: PrivatStatus | InsuranceStatus) => {
+        if (disabledOptions.includes(type)) return
+
+        if (allowDualSelection) {
+            const nextPrivatStatus = type === 'Privat' ? newStatus : privatStatus
+            const nextKrankenkasseStatus = type === 'Krankenkasse' ? newStatus : krankenkasseStatus
+
+            if (type === 'Privat') setPrivatStatus(newStatus)
+            if (type === 'Krankenkasse') setKrankenkasseStatus(newStatus)
+
+            setPaymentType(type)
+            setStatus(newStatus)
+
+            const parts: string[] = []
+            if (nextPrivatStatus) {
+                parts.push(`Privat_${nextPrivatStatus === 'Offen' ? 'offen' : nextPrivatStatus}`)
             }
-            const newValue = `${paymentType}_${formattedStatus}`
-            onChange(newValue)
+            if (nextKrankenkasseStatus) {
+                parts.push(`Krankenkasse_${nextKrankenkasseStatus}`)
+            }
+            onChange(parts.join('|'))
+            return
         }
+
+        setPaymentType(type)
+        setStatus(newStatus)
+
+        const formattedStatus = newStatus === 'Offen' ? 'offen' : newStatus
+        onChange(`${type}_${formattedStatus}`)
     }
+    const privatOptions = ['Offen', 'Bezahlt'] as const
+    const krankenkasseOptions = ['Ungenehmigt', 'Genehmigt'] as const
+    const isPrivatDisabled = disabledOptions.includes('Privat')
+    const isKrankenkasseDisabled = disabledOptions.includes('Krankenkasse')
 
     return (
         <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">Kostenträger</Label>
-            <div className="flex gap-3 w-full">
-                {/* Payment Type Dropdown - half width */}
-                <div className="flex-1 min-w-0">
-                    <Select 
-                        value={paymentType} 
-                        onValueChange={handlePaymentTypeChange}
-                        disabled={!!disabledPaymentType}
-                    >
-                    <SelectTrigger
-                        className={cn(
-                            'w-full h-11 border-gray-300 min-w-0',
-                            error && 'border-red-500 focus-visible:ring-red-500',
-                            disabledPaymentType && 'opacity-60 cursor-not-allowed'
-                        )}
-                    >
-                            <SelectValue placeholder="Privat" />
-                        </SelectTrigger>
-                        <SelectContent className="min-w-[8rem] w-[var(--radix-select-trigger-width)]">
-                            <SelectItem value="Privat">Privat</SelectItem>
-                            <SelectItem value="Krankenkasse">Krankenkasse</SelectItem>
-                        </SelectContent>
-                    </Select>
-                </div>
-
-                {/* Status Dropdown - half width, only show if payment type is selected */}
-                {paymentType && (
-                    <div className="flex-1 min-w-0">
-                        <Select 
-                            key={`status-${paymentType}`} 
-                            value={status} 
-                            onValueChange={handleStatusChange}
-                        >
-                            <SelectTrigger
+            <div className="flex flex-wrap items-start gap-5 ">
+                <div className="min-w-[220px] flex-1">
+                    <div className={cn(
+                        'mb-2 text-xs font-semibold text-gray-900',
+                        isPrivatDisabled && 'text-gray-400'
+                    )}>
+                        Privat
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        {privatOptions.map((option) => (
+                            <Button
+                                key={option}
+                                type="button"
+                                variant="outline"
+                                onClick={() => handleStatusChange('Privat', option)}
+                                disabled={isPrivatDisabled}
                                 className={cn(
-                                    'w-full h-11 border-gray-300 min-w-0',
-                                    error && 'border-red-500 focus-visible:ring-red-500'
+                                    'rounded-md border text-sm font-semibold shadow-none transition-all',
+                                    (allowDualSelection ? privatStatus : paymentType === 'Privat' ? status : '') === option
+                                        ? 'cursor-pointer border-[#f0b323] bg-[#f7b24d] text-black hover:bg-[#eea63c]'
+                                        : 'border-[#d9d9d9] bg-[#eeeeee] text-black hover:bg-[#e6e6e6]',
+                                    isPrivatDisabled && 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 hover:bg-gray-100'
                                 )}
                             >
-                                <SelectValue placeholder="Status auswählen..." />
-                            </SelectTrigger>
-                            <SelectContent className="min-w-[8rem] w-[var(--radix-select-trigger-width)]">
-                                {paymentType === 'Privat' ? (
-                                    <>
-                                        <SelectItem value="Bezahlt">Bezahlt</SelectItem>
-                                        <SelectItem value="Offen">Offen</SelectItem>
-                                    </>
-                                ) : (
-                                    <>
-                                        <SelectItem value="Genehmigt">Genehmigt</SelectItem>
-                                        <SelectItem value="Ungenehmigt">Ungenehmigt</SelectItem>
-                                    </>
-                                )}
-                            </SelectContent>
-                        </Select>
+                                {option}
+                            </Button>
+                        ))}
                     </div>
-                )}
+                </div>
+
+                <div className="min-w-[220px] flex-1">
+                    <div className={cn(
+                        'mb-2 text-xs font-semibold text-gray-900',
+                        isKrankenkasseDisabled && 'text-gray-400'
+                    )}>
+                        Krankenkasse
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                        {krankenkasseOptions.map((option) => {
+                            const isGenehmigtOption = option === 'Genehmigt'
+                            const isOptionDisabled = isKrankenkasseDisabled || isGenehmigtOption
+
+                            return (
+                                <Button
+                                    key={option}
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => handleStatusChange('Krankenkasse', option)}
+                                    disabled={isOptionDisabled}
+                                    className={cn(
+                                        'rounded-md border text-sm font-semibold shadow-none transition-all',
+                                        (allowDualSelection ? krankenkasseStatus : paymentType === 'Krankenkasse' ? status : '') === option
+                                            ? 'border-[#f0b323] bg-[#f7b24d] text-black hover:bg-[#eea63c]'
+                                            : 'border-[#d9d9d9] bg-[#eeeeee] text-black hover:bg-[#e6e6e6]',
+                                        isOptionDisabled && 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 hover:bg-gray-100'
+                                    )}
+                                >
+                                    {option}
+                                </Button>
+                            )
+                        })}
+                    </div>
+                </div>
             </div>
             {error && (
                 <p className="text-xs text-red-500 mt-1">{error}</p>

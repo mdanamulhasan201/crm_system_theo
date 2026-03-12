@@ -42,6 +42,8 @@ interface FormData {
   insuranceTotalPrice?: number
   vat_rate?: number
   insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>
+  bezahlt?: string
+  paymentStatus?: string
 }
 
 interface UserInfoUpdateModalProps {
@@ -63,6 +65,7 @@ export default function WerkstattzettelModal({
   // Use custom hook for form state management
   const form = useWerkstattzettelForm(scanData, isOpen, formData)
   const { user } = useAuth()
+  const { bezahlt: bezahltState, setBezahlt } = form
 
   // Price summary: Gesamt + MwSt (same as SonstigesOrderModal / PriceSection)
   const [calculatedTotal, setCalculatedTotal] = useState<number | null>(null)
@@ -76,20 +79,40 @@ export default function WerkstattzettelModal({
     if (calculatedTotal == null || steuersatz <= 0) return undefined
     return Math.round((calculatedTotal * steuersatz) / (100 + steuersatz) * 100) / 100
   }, [calculatedTotal, steuersatz])
+  const addonPricesTotal = React.useMemo(() => {
+    const raw = form.addonPrices
+    if (!raw || typeof raw !== 'string') return 0
+    const parts = raw.split(/[,\s]+/).filter(Boolean)
+    return parts.reduce((sum, part) => sum + (parseFloat(part.replace(',', '.')) || 0), 0)
+  }, [form.addonPrices])
+  const allowDualPaymentSelection =
+    formData?.billingType === 'Krankenkassa' &&
+    (addonPricesTotal > 0 || user?.accountInfo?.vat_country === 'Österreich (AT)')
+  const disabledPaymentOptions = React.useMemo<Array<'Privat' | 'Krankenkasse'>>(() => {
+    if (formData?.billingType === 'Privat') {
+      return ['Krankenkasse']
+    }
+
+    return []
+  }, [formData?.billingType])
 
   // Set default bezahlt value based on billingType from formData
   useEffect(() => {
-    if (isOpen && formData?.billingType && !form.bezahlt) {
-      // Map billingType to bezahlt format
-      // "Krankenkassa" -> "Krankenkasse_Genehmigt" (note: "Krankenkassa" in billingType but "Krankenkasse" in bezahlt)
-      // "Privat" -> "Privat_Bezahlt"
-      const bezahltValue = formData.billingType === 'Krankenkassa' 
-        ? 'Krankenkasse_Genehmigt' 
-        : 'Privat_Bezahlt'
-      form.setBezahlt(bezahltValue)
+    if (!isOpen) return
+
+    const bezahltValue =
+      formData?.bezahlt ||
+      formData?.paymentStatus ||
+      (formData?.billingType === 'Krankenkassa'
+        ? 'Krankenkasse_Genehmigt'
+        : formData?.billingType === 'Privat'
+          ? 'Privat_Bezahlt'
+          : '')
+
+    if (bezahltValue && !bezahltState) {
+      setBezahlt(bezahltValue)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, formData?.billingType])
+  }, [isOpen, formData?.bezahlt, formData?.paymentStatus, formData?.billingType, bezahltState, setBezahlt])
 
   // ✅ Local validation removed - backend handles all validation
  
@@ -529,7 +552,9 @@ export default function WerkstattzettelModal({
               bezahlt={form.bezahlt}
               onBezahltChange={form.setBezahlt}
               paymentError={undefined}
-              disabledPaymentType={formData?.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData?.billingType === 'Privat' ? 'Privat' : undefined}
+              billingType={formData?.billingType}
+              disabledPaymentOptions={disabledPaymentOptions}
+              allowDualPaymentSelection={allowDualPaymentSelection}
               datumAuftrag={form.datumAuftrag}
               completionDays={completionDays}
               steuersatz={steuersatz > 0 ? steuersatz : undefined}

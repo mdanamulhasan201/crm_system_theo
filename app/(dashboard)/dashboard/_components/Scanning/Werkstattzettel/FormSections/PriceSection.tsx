@@ -64,7 +64,9 @@ interface PriceSectionProps {
   bezahlt: string
   onBezahltChange: (value: string) => void
   paymentError?: string
-  disabledPaymentType?: 'Privat' | 'Krankenkasse'
+  billingType?: 'Krankenkassa' | 'Privat'
+  disabledPaymentOptions?: Array<'Privat' | 'Krankenkasse'>
+  allowDualPaymentSelection?: boolean
 
   // Date utils
   datumAuftrag?: string
@@ -142,7 +144,9 @@ export default function PriceSection({
   bezahlt,
   onBezahltChange,
   paymentError,
-  disabledPaymentType,
+  billingType,
+  disabledPaymentOptions = [],
+  allowDualPaymentSelection = false,
   datumAuftrag,
   completionDays,
   steuersatz,
@@ -196,7 +200,7 @@ export default function PriceSection({
   // Positionsnummer VAT breakdown & insurance/customer split (using account vat_country)
   const { user } = useAuth()
   const vatCountry = user?.accountInfo?.vat_country
-  const isInsuranceMode = disabledPaymentType === 'Krankenkasse'
+  const isInsuranceMode = billingType === 'Krankenkassa'
   const getVatRate = (): number => {
     if (vatCountry === 'Italien (IT)') return 4
     if (vatCountry === 'Österreich (AT)') return 20
@@ -280,8 +284,8 @@ export default function PriceSection({
         {/* Left Side: Form Fields – 10/12 on lg */}
         <div className="space-y-4 w-full min-w-0 lg:col-span-6">
 
-            {/* Versorgung – full details: Einlage + supply name with add-ons */}
-            <div className="flex items-start gap-3">
+          {/* Versorgung – full details: Einlage + supply name with add-ons */}
+          <div className="flex items-start gap-3">
             <FileText className="w-5 h-5 text-gray-400 mt-1 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-xs  text-gray-400 uppercase tracking-wide mb-1.5">Versorgung</p>
@@ -320,7 +324,7 @@ export default function PriceSection({
                 value={auftragAngenommenBei ?? null}
                 locations={locations}
                 isOpen={isAuftragLocationDropdownOpen}
-                onOpenChange={onAuftragLocationDropdownChange ?? (() => {})}
+                onOpenChange={onAuftragLocationDropdownChange ?? (() => { })}
                 onChange={onAuftragAngenommenBeiChange}
                 onSelect={onAuftragAngenommenBeiChange}
                 onClear={onAuftragAngenommenBeiClear}
@@ -328,7 +332,7 @@ export default function PriceSection({
             </div>
           )}
 
-        
+
 
           {/* Menge | Fußanalyse | Fertigstellung bis - same line, flex, Fertigstellung bis last */}
 
@@ -472,14 +476,7 @@ export default function PriceSection({
                 className="py-2 border-gray-300 w-full min-w-0 text-sm"
               />
             </div>
-            <div className="space-y-1.5 min-w-0">
-              <PaymentStatusSection
-                value={bezahlt}
-                onChange={onBezahltChange}
-                error={paymentError}
-                disabledPaymentType={disabledPaymentType}
-              />
-            </div>
+
           </div>
         </div>
 
@@ -500,7 +497,7 @@ export default function PriceSection({
                   {positionsVatRate > 0 && (
                     <div className="flex justify-between items-center gap-2">
                       <span className="text-sm text-gray-600 truncate">
-                        + {positionsVatRate}% MwSt. 
+                        + {positionsVatRate}% MwSt.
                       </span>
                       <span className="text-sm font-semibold text-gray-900 shrink-0">
                         {formatPrice(positionsnummerVatAmount)}
@@ -600,6 +597,15 @@ export default function PriceSection({
             </div>
           </div>
         </div>
+      </div>
+      <div className="space-y-1.5 min-w-0 pt-5">
+        <PaymentStatusSection
+          value={bezahlt}
+          onChange={onBezahltChange}
+          error={paymentError}
+          disabledOptions={disabledPaymentOptions}
+          allowDualSelection={allowDualPaymentSelection}
+        />
       </div>
     </div>
   )

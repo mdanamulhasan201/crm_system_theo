@@ -303,6 +303,13 @@ export default function MassschuheOrderModal({
     const [showConfirmModal, setShowConfirmModal] = useState(false);
 
     const { user } = useAuth();
+    const allowDualPaymentSelection =
+        formData.billingType === 'Krankenkassa' &&
+        ((parseFloat(formData.nettoPreis || '0') || 0) > 0 || user?.accountInfo?.vat_country === 'Österreich (AT)');
+    const disabledPaymentOptions: Array<'Privat' | 'Krankenkasse'> =
+        formData.billingType === 'Privat'
+            ? ['Krankenkasse']
+            : [];
 
     // Parse Fußanalyse selected value: stored as "index__price" for unique Select values (avoids duplicate-price = "all select" bug)
     const getFußanalysePrice = (value: string): number => {
@@ -448,6 +455,19 @@ export default function MassschuheOrderModal({
             // Don't reset selectedLocation here - it will be set by the locations useEffect
         }
     }, [isOpen, user?.hauptstandort, customer, completionDays, formData.billingType, laserPrintPrices]);
+
+    useEffect(() => {
+        if (allowDualPaymentSelection) return;
+
+        if (bezahlt.startsWith('Privat')) {
+            setPaymentType('privat');
+            return;
+        }
+
+        if (bezahlt.startsWith('Krankenkasse')) {
+            setPaymentType('krankenkasse');
+        }
+    }, [bezahlt, allowDualPaymentSelection]);
 
     const handleSubmit = async () => {
         if (!customer?.id) {
@@ -942,7 +962,8 @@ export default function MassschuheOrderModal({
                                     <PaymentStatusSection
                                         value={bezahlt}
                                         onChange={setBezahlt}
-                                        disabledPaymentType={formData.billingType === 'Krankenkassa' ? 'Krankenkasse' : formData.billingType === 'Privat' ? 'Privat' : undefined}
+                                        disabledOptions={disabledPaymentOptions}
+                                        allowDualSelection={allowDualPaymentSelection}
                                     />
                                 </div>
                             </div>

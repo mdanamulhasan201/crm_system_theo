@@ -11,7 +11,8 @@ interface FormData {
   versorgung_laut_arzt?: string
   einlagentyp?: string
   überzug?: string
-  menge?: number
+  menge?: number | string
+  quantity?: number | string
   versorgung?: string
   versorgung_note?: string
   schuhmodell_wählen?: string
@@ -19,6 +20,9 @@ interface FormData {
   employeeName?: string
   employeeId?: string
   selectedVersorgungData?: any
+  billingType?: 'Krankenkassa' | 'Privat'
+  bezahlt?: string
+  paymentStatus?: string
 }
 
 export function useWerkstattzettelForm(
@@ -91,7 +95,16 @@ export function useWerkstattzettelForm(
     setVersorgung(initialized.versorgung)
     setDatumAuftrag(initialized.datumAuftrag)
     setGeschaeftsstandort(null)
-    setBezahlt(initialized.bezahlt)
+    const preferredBezahlt =
+      formData?.bezahlt ||
+      formData?.paymentStatus ||
+      initialized.bezahlt ||
+      (formData?.billingType === 'Krankenkassa'
+        ? 'Krankenkasse_Genehmigt'
+        : formData?.billingType === 'Privat'
+          ? 'Privat_Bezahlt'
+          : '')
+    setBezahlt(preferredBezahlt)
     setFootAnalysisPrice(initialized.footAnalysisPrice)
     setInsoleSupplyPrice(initialized.insoleSupplyPrice)
 
@@ -107,11 +120,14 @@ export function useWerkstattzettelForm(
     if (formData?.versorgung) {
       setVersorgung(formData.versorgung)
     }
-    if (formData?.menge != null) {
-      const quantityValue = typeof formData.menge === 'number'
-        ? `${formData.menge} paar`
-        : String(formData.menge)
+    const quantitySource = formData?.quantity ?? formData?.menge
+    if (quantitySource != null) {
+      const quantityValue = typeof quantitySource === 'number'
+        ? `${quantitySource} paar`
+        : String(quantitySource)
       setQuantity(quantityValue)
+    } else {
+      setQuantity('1 paar')
     }
   }, [scanData, isOpen, formData])
 
