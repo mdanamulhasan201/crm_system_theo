@@ -67,6 +67,7 @@ interface PriceSectionProps {
   billingType?: 'Krankenkassa' | 'Privat'
   disabledPaymentOptions?: Array<'Privat' | 'Krankenkasse'>
   allowDualPaymentSelection?: boolean
+  visiblePaymentTypes?: Array<'Privat' | 'Krankenkasse'>
 
   // Date utils
   datumAuftrag?: string
@@ -147,6 +148,7 @@ export default function PriceSection({
   billingType,
   disabledPaymentOptions = [],
   allowDualPaymentSelection = false,
+  visiblePaymentTypes = ['Privat', 'Krankenkasse'],
   datumAuftrag,
   completionDays,
   steuersatz,
@@ -605,6 +607,7 @@ export default function PriceSection({
           error={paymentError}
           disabledOptions={disabledPaymentOptions}
           allowDualSelection={allowDualPaymentSelection}
+          visibleTypes={visiblePaymentTypes}
         />
       </div>
     </div>

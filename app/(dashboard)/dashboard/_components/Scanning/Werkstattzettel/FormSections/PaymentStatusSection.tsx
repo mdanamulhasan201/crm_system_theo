@@ -12,6 +12,7 @@ interface PaymentStatusSectionProps {
     disabledOptions?: Array<Exclude<PaymentType, ''>>
     allowDualSelection?: boolean
     layout?: 'default' | 'compactRow'
+    visibleTypes?: Array<Exclude<PaymentType, ''>>
 }
 type PrivatStatus = 'Bezahlt' | 'Offen'
 type InsuranceStatus = 'Genehmigt' | 'Ungenehmigt'
@@ -23,6 +24,7 @@ export default function PaymentStatusSection({
     disabledOptions = [],
     allowDualSelection = false,
     layout = 'default',
+    visibleTypes = ['Privat', 'Krankenkasse'],
 }: PaymentStatusSectionProps) {
     // Parse initial value
     const parseStatusToken = (val: string): { type: PaymentType; status: string } => {
@@ -170,6 +172,8 @@ export default function PaymentStatusSection({
     const krankenkasseOptions = ['Ungenehmigt', 'Genehmigt'] as const
     const isPrivatDisabled = disabledOptions.includes('Privat')
     const isKrankenkasseDisabled = disabledOptions.includes('Krankenkasse')
+    const showPrivat = visibleTypes.includes('Privat')
+    const showKrankenkasse = visibleTypes.includes('Krankenkasse')
     const compactButtonClass = (selected: boolean, disabled: boolean) =>
         cn(
             'cursor-pointer w-full flex-1 whitespace-nowrap rounded-md border px-3 text-sm font-semibold shadow-none transition-all',
@@ -183,7 +187,8 @@ export default function PaymentStatusSection({
         return (
             <div className="space-y-2">
                 <Label className="text-base font-medium text-gray-800">Kostenträger</Label>
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className={cn('grid grid-cols-1 gap-4', showPrivat && showKrankenkasse ? 'md:grid-cols-2' : 'md:grid-cols-1')}>
+                    {showPrivat && (
                     <div className="space-y-2">
                         <div className={cn('text-sm font-medium text-gray-900', isPrivatDisabled && 'text-gray-400')}>
                             Privat
@@ -206,7 +211,9 @@ export default function PaymentStatusSection({
                             ))}
                         </div>
                     </div>
+                    )}
 
+                    {showKrankenkasse && (
                     <div className="space-y-2">
                         <div className={cn('text-sm font-medium text-gray-900', isKrankenkasseDisabled && 'text-gray-400')}>
                             Krankenkasse
@@ -234,6 +241,7 @@ export default function PaymentStatusSection({
                             })}
                         </div>
                     </div>
+                    )}
                 </div>
                 {error && (
                     <p className="text-xs text-red-500 mt-1">{error}</p>
@@ -246,6 +254,7 @@ export default function PaymentStatusSection({
         <div className="space-y-2">
             <Label className="text-sm font-medium text-gray-700">Kostenträger</Label>
             <div className="flex flex-wrap items-start gap-5 ">
+                {showPrivat && (
                 <div className="min-w-[220px] flex-1">
                     <div className={cn(
                         'mb-2 text-xs font-semibold text-gray-900',
@@ -274,7 +283,9 @@ export default function PaymentStatusSection({
                         ))}
                     </div>
                 </div>
+                )}
 
+                {showKrankenkasse && (
                 <div className="min-w-[220px] flex-1">
                     <div className={cn(
                         'mb-2 text-xs font-semibold text-gray-900',
@@ -308,6 +319,7 @@ export default function PaymentStatusSection({
                         })}
                     </div>
                 </div>
+                )}
             </div>
             {error && (
                 <p className="text-xs text-red-500 mt-1">{error}</p>

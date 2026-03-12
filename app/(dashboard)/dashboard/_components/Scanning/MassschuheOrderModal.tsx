@@ -217,6 +217,7 @@ export interface MassschuheOrderModalFormData {
     adjustments?: string;
     customer_reviews?: string;
     halbprobeErforderlich?: boolean | null;
+    printWerkstattzettel?: boolean;
     step4_preparation_date?: string;
     step4_notes?: string;
     step5_fitting_date?: string;
@@ -301,6 +302,7 @@ export default function MassschuheOrderModal({
     const [locationsLoading, setLocationsLoading] = useState(false);
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [shouldPrintWerkstattzettel, setShouldPrintWerkstattzettel] = useState(true);
 
     const { user } = useAuth();
     const allowDualPaymentSelection =
@@ -444,6 +446,7 @@ export default function MassschuheOrderModal({
                 setSelectedEinlagenversorgung('');
             }
             setOrderNote('');
+            setShouldPrintWerkstattzettel(formData.printWerkstattzettel ?? true);
             // Set default bezahlt based on billingType (same as WerkstattzettelModal)
             if (formData.billingType === 'Krankenkassa') {
                 setBezahlt('Krankenkasse_Genehmigt');
@@ -1172,6 +1175,37 @@ export default function MassschuheOrderModal({
                                         <span>Notiz hinzufügen</span>
                                     </Button>
                                 </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6 space-y-4">
+                            <h3 className="text-sm font-semibold tracking-wide text-[#7583a0] uppercase">
+                                Werkstattzettel
+                            </h3>
+                            <p className="text-sm text-gray-500">
+                                Soll der Werkstattzettel mit ausgedruckt werden?
+                            </p>
+                            <div className="grid grid-cols-2 gap-3 max-w-xs">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={shouldPrintWerkstattzettel
+                                        ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                                        : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                                    onClick={() => setShouldPrintWerkstattzettel(true)}
+                                >
+                                    Ja
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className={!shouldPrintWerkstattzettel
+                                        ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                                        : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                                    onClick={() => setShouldPrintWerkstattzettel(false)}
+                                >
+                                    Nein
+                                </Button>
                             </div>
                         </div>
 

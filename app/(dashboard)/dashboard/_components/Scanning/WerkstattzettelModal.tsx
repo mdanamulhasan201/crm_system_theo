@@ -44,6 +44,7 @@ interface FormData {
   insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>
   bezahlt?: string
   paymentStatus?: string
+  printWerkstattzettel?: boolean
 }
 
 interface UserInfoUpdateModalProps {
@@ -118,6 +119,7 @@ export default function WerkstattzettelModal({
  
 
   // Notiz (note) state
+  const [shouldPrintWerkstattzettel, setShouldPrintWerkstattzettel] = useState(true)
   const [showNotizTextarea, setShowNotizTextarea] = useState(false)
   const [notizText, setNotizText] = useState('')
 
@@ -255,6 +257,11 @@ export default function WerkstattzettelModal({
       })
     return () => { cancelled = true }
   }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    setShouldPrintWerkstattzettel(formData?.printWerkstattzettel ?? true)
+  }, [isOpen, formData?.printWerkstattzettel])
 
   // Fetch locations from API when modal opens
   useEffect(() => {
@@ -613,6 +620,33 @@ export default function WerkstattzettelModal({
                   <span>Notiz hinzufügen</span>
                 </Button>
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Werkstattzettel</label>
+            <p className="text-sm text-gray-500 mb-4">Soll der Werkstattzettel mit ausgedruckt werden?</p>
+            <div className="grid grid-cols-2 gap-3 max-w-xs">
+              <Button
+                type="button"
+                variant="outline"
+                className={shouldPrintWerkstattzettel
+                  ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                  : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                onClick={() => setShouldPrintWerkstattzettel(true)}
+              >
+                Ja
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className={!shouldPrintWerkstattzettel
+                  ? 'border-[#61A178] bg-[#61A178] text-white hover:bg-[#4A8A5F] hover:text-white'
+                  : 'border-[#dde3ee] bg-white text-gray-700 hover:bg-gray-50'}
+                onClick={() => setShouldPrintWerkstattzettel(false)}
+              >
+                Nein
+              </Button>
             </div>
           </div>
 
