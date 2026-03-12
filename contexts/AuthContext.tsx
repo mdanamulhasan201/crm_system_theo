@@ -258,7 +258,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // SSO: redirect to CRM logout page so it clears its Zustand/localStorage,
       // then CRM redirects back to Dashboard login page.
-      const crmUrl = process.env.NEXT_PUBLIC_CRM_URL || 'http://localhost:5173';
+      const crmUrl = process.env.NEXT_PUBLIC_CRM_URL || 'https://stock.feetf1rst.tech';
       const dashboardLoginUrl = `${window.location.origin}/login`;
       window.location.href = `${crmUrl}/sso-logout?redirect=${encodeURIComponent(dashboardLoginUrl)}`;
     } catch (error) {
