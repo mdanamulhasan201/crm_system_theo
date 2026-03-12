@@ -18,8 +18,6 @@ import { TbActivityHeartbeat, TbUsers, TbUserCircle, TbChartBar } from 'react-ic
 
 import type { IconType } from 'react-icons';
 import type { StaticImageData } from 'next/image';
-import { FiUserPlus } from 'react-icons/fi';
-
 import { FiDollarSign } from 'react-icons/fi';
 import { BsCashStack } from 'react-icons/bs';
 import { HiOutlineDocumentText } from 'react-icons/hi';
@@ -80,13 +78,6 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                     icon: IoSearchOutline,
                     label: 'Kundensuche',
                     href: '/dashboard/customers'
-                },
-                {
-                    id: '1b',
-                    standalone: true,
-                    icon: FiUserPlus,
-                    label: 'Neukundenerstellung',
-                    href: '/dashboard/neukundenerstellung'
                 },
                 {
                     id: '1c',
@@ -228,7 +219,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                 const prevSection = menuSections[index - 1];
                 if (section.id === 'employee-profile') {
                     result.push({ type: 'divider', key: `divider-${section.id}` });
-                } else if (!section.standalone || !prevSection.standalone || section.id === '1c') {
+                } else if (!section.standalone || !prevSection.standalone || section.id === '1e') {
                     result.push({ type: 'divider', key: `divider-${section.id}` });
                 }
             }
@@ -353,7 +344,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                                 style={{ textDecoration: 'none' }}
                             >
                                 <span
-                                    className={`flex items-center ${showLabels ? 'px-5 justify-start' : 'justify-center p-2'} py-1 rounded-lg transition-colors duration-200 ${isActive ? 'bg-[var(--td-green,#61A175)] text-white' : 'text-gray-700 hover:bg-gray-100'
+                                    className={`flex items-center ${showLabels ? 'px-5 justify-start' : 'justify-center p-2'} py-1 rounded-lg transition-colors duration-200 ${isActive ? 'bg-(--td-green,#61A175) text-white' : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                 >
                                     {isImageIcon ? (
