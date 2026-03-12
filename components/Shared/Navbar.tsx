@@ -13,6 +13,7 @@ interface NavbarProps {
 }
 
 const TEAMCHAT_PATH = '/dashboard/teamchat';
+const CRM_PATH = '/dashboard/crm-cunnection';
 const CRM_BASE_URL = process.env.NEXT_PUBLIC_CRM_URL || 'http://localhost:5173';
 
 export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
@@ -20,8 +21,10 @@ export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
     const [isCrmLoading, setIsCrmLoading] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
-    const { isPathAllowed } = useFeatureAccess();
-    const showTeamchat = isPathAllowed(TEAMCHAT_PATH);
+    const { isPathAllowed, loading: featureLoading, features } = useFeatureAccess();
+    const hasLoadedFeatures = !featureLoading && features.length > 0;
+    const showTeamchat = hasLoadedFeatures && isPathAllowed(TEAMCHAT_PATH);
+    const showCrmButton = hasLoadedFeatures && isPathAllowed(CRM_PATH);
 
     const handleGoToCRM = async () => {
         setIsCrmLoading(true);
@@ -80,14 +83,16 @@ export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
                 <div className="flex items-center space-x-2 md:space-x-4">
 
                     {/* Go to CRM button */}
-                    <button
-                        onClick={handleGoToCRM}
-                        disabled={isCrmLoading}
-                        className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {isCrmLoading ? 'Loading...' : 'Go to CRM'}
-                        {!isCrmLoading && <HiExternalLink className="text-base" />}
-                    </button>
+                    {showCrmButton && (
+                        <button
+                            onClick={handleGoToCRM}
+                            disabled={isCrmLoading}
+                            className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isCrmLoading ? 'Loading...' : 'Go to CRM'}
+                            {!isCrmLoading && <HiExternalLink className="text-base" />}
+                        </button>
+                    )}
 
                     {/* Chat icon – only when Teamchat is allowed (same feature access as sidebar) */}
                     {showTeamchat && (
