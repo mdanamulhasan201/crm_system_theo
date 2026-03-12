@@ -41,6 +41,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
     const isOpen = open !== undefined ? open : showAddProductModal;
     const setOpen = onOpenChange || setShowAddProductModal;
     const [isPrefilling, setIsPrefilling] = useState(false)
+    const [editCreateStatus, setEditCreateStatus] = useState<string | undefined>(undefined)
     const [increaseAllSizesInput, setIncreaseAllSizesInput] = useState<string>('');
     const [cumulativeIncreaseValue, setCumulativeIncreaseValue] = useState<number>(0);
     const [newProduct, setNewProduct] = useState<NewProduct>({
@@ -143,6 +144,10 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
         setCumulativeIncreaseValue(prev => prev + numValue);
         setIncreaseAllSizesInput('');
     };
+
+    const canEditQuantityFields = !editProductId || editCreateStatus !== 'by_admin'
+    const canEditAutoOrderFields = !editProductId || editCreateStatus !== 'by_self'
+
     // Helper function to transform sizeQuantities from camelCase to snake_case for backend
     const transformSizeQuantitiesForBackend = (sizeQuantities: { [key: string]: SizeData }) => {
         const transformed: { [key: string]: any } = {};
@@ -231,6 +236,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
             try {
                 setIsPrefilling(true)
                 const product = await getProductById(editProductId);
+                setEditCreateStatus(product.create_status)
                 // Convert backend format to frontend format
                 const convertedSizeQuantities: { [key: string]: SizeData } = {};
                 if (product.groessenMengen) {
@@ -291,6 +297,9 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
             });
             setIncreaseAllSizesInput('');
             setCumulativeIncreaseValue(0);
+        }
+        if (!isOpen) {
+            setEditCreateStatus(undefined)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen])
@@ -415,7 +424,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.quantity || 0}
                                                         onChange={e => handleNewProductSizeChange(size, e.target.value)}
                                                         className="w-full"
-                                                        disabled={!!(isLoading && editProductId)}
+                                                        disabled={!!(isLoading && editProductId) || !canEditQuantityFields}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -438,7 +447,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.mindestmenge ?? ''}
                                                         onChange={e => handleNewProductMinQuantityChange(size, e.target.value)}
                                                         className="w-full"
-                                                        disabled={!!(isLoading && editProductId)}
+                                                        disabled={!!(isLoading && editProductId) || !canEditQuantityFields}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -449,7 +458,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.autoOrderLimit !== undefined ? newProduct.sizeQuantities[size]?.autoOrderLimit : ''}
                                                         onChange={e => handleAutoOrderLimitChange(size, e.target.value)}
                                                         className="w-full"
-                                                        disabled={!!(isLoading && editProductId)}
+                                                        disabled={!!(isLoading && editProductId) || !canEditAutoOrderFields}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
@@ -460,7 +469,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.orderQuantity !== undefined ? newProduct.sizeQuantities[size]?.orderQuantity : ''}
                                                         onChange={e => handleOrderQuantityChange(size, e.target.value)}
                                                         className="w-full"
-                                                        disabled={!!(isLoading && editProductId)}
+                                                        disabled={!!(isLoading && editProductId) || !canEditAutoOrderFields}
                                                     />
                                                 </TableCell>
                                             </TableRow>
