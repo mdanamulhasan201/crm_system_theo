@@ -11,6 +11,7 @@ interface PaymentStatusSectionProps {
     error?: string
     disabledOptions?: Array<Exclude<PaymentType, ''>>
     allowDualSelection?: boolean
+    layout?: 'default' | 'compactRow'
 }
 type PrivatStatus = 'Bezahlt' | 'Offen'
 type InsuranceStatus = 'Genehmigt' | 'Ungenehmigt'
@@ -21,6 +22,7 @@ export default function PaymentStatusSection({
     error,
     disabledOptions = [],
     allowDualSelection = false,
+    layout = 'default',
 }: PaymentStatusSectionProps) {
     // Parse initial value
     const parseStatusToken = (val: string): { type: PaymentType; status: string } => {
@@ -168,6 +170,77 @@ export default function PaymentStatusSection({
     const krankenkasseOptions = ['Ungenehmigt', 'Genehmigt'] as const
     const isPrivatDisabled = disabledOptions.includes('Privat')
     const isKrankenkasseDisabled = disabledOptions.includes('Krankenkasse')
+    const compactButtonClass = (selected: boolean, disabled: boolean) =>
+        cn(
+            'cursor-pointer w-full flex-1 whitespace-nowrap rounded-md border px-3 text-sm font-semibold shadow-none transition-all',
+            selected
+                ? 'cursor-pointer border-[#f0b323] bg-[#f7b24d] text-black hover:bg-[#eea63c]'
+                : 'border-[#d9d9d9] bg-[#eeeeee] text-black hover:bg-[#e6e6e6]',
+            disabled && 'cursor-not-allowed border-gray-200 bg-gray-100 text-gray-400 hover:bg-gray-100'
+        )
+
+    if (layout === 'compactRow') {
+        return (
+            <div className="space-y-2">
+                <Label className="text-base font-medium text-gray-800">Kostenträger</Label>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="space-y-2">
+                        <div className={cn('text-sm font-medium text-gray-900', isPrivatDisabled && 'text-gray-400')}>
+                            Privat
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            {privatOptions.map((option) => (
+                                <Button
+                                    key={option}
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => handleStatusChange('Privat', option)}
+                                    disabled={isPrivatDisabled}
+                                    className={compactButtonClass(
+                                        (allowDualSelection ? privatStatus : paymentType === 'Privat' ? status : '') === option,
+                                        isPrivatDisabled
+                                    )}
+                                >
+                                    {option}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <div className={cn('text-sm font-medium text-gray-900', isKrankenkasseDisabled && 'text-gray-400')}>
+                            Krankenkasse
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                            {krankenkasseOptions.map((option) => {
+                                const isGenehmigtOption = option === 'Genehmigt'
+                                const isOptionDisabled = isKrankenkasseDisabled || isGenehmigtOption
+
+                                return (
+                                    <Button
+                                        key={option}
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => handleStatusChange('Krankenkasse', option)}
+                                        disabled={isOptionDisabled}
+                                        className={compactButtonClass(
+                                            (allowDualSelection ? krankenkasseStatus : paymentType === 'Krankenkasse' ? status : '') === option,
+                                            isOptionDisabled
+                                        )}
+                                    >
+                                        {option}
+                                    </Button>
+                                )
+                            })}
+                        </div>
+                    </div>
+                </div>
+                {error && (
+                    <p className="text-xs text-red-500 mt-1">{error}</p>
+                )}
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-2">

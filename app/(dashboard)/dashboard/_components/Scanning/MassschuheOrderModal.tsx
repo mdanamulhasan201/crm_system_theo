@@ -872,7 +872,7 @@ export default function MassschuheOrderModal({
                                     </p>
                                 </div>
                                 {/* Standort auswählen + Menge */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="col-span-1 md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {(locations.length > 0 || (user?.hauptstandort && user.hauptstandort.length > 0)) && (
                                         <div>
                                             <label className="text-sm font-medium text-gray-600 mb-1 block">Standort auswählen</label>
@@ -958,12 +958,13 @@ export default function MassschuheOrderModal({
                                         </Select>
                                     </div>
                                 </div>
-                                <div>
+                                <div className="col-span-1 md:col-span-2">
                                     <PaymentStatusSection
                                         value={bezahlt}
                                         onChange={setBezahlt}
                                         disabledOptions={disabledPaymentOptions}
                                         allowDualSelection={allowDualPaymentSelection}
+                                        layout="compactRow"
                                     />
                                 </div>
                             </div>
