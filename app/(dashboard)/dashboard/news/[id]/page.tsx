@@ -4,7 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { format } from 'date-fns'
 import Image from 'next/image'
 import { BiArrowBack, BiCalendar, BiUser, BiShareAlt } from 'react-icons/bi'
-import { getBlogById } from '@/apis/blogApis'
+import { getBlogById, markNewsAsRead } from '@/apis/blogApis'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
@@ -15,6 +15,7 @@ interface Blog {
   image?: string;
   shortDescription?: string;
   completeDescription?: string;
+  benefits?: string[];
   author?: string;
   tags?: string[];
   createdAt: string;
@@ -35,6 +36,9 @@ export default function BlogDetailPage() {
 
         const blogData = await getBlogById(params.id as string)
         setBlog(blogData)
+
+        // Mark as read silently
+        markNewsAsRead(params.id as string).catch(() => {})
       } catch (error: any) {
         console.error('Failed to fetch blog:', error)
         setError(error.message)
@@ -154,6 +158,21 @@ export default function BlogDetailPage() {
               <p className="text-xl text-gray-600 mb-6">
                 {blog.subtitle}
               </p>
+            )}
+
+            {/* Benefits */}
+            {blog.benefits && blog.benefits.length > 0 && (
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <h3 className="text-sm font-semibold text-green-800 uppercase tracking-wide mb-3">Vorteile</h3>
+                <ul className="space-y-2">
+                  {blog.benefits.map((benefit, index) => (
+                    <li key={index} className="flex items-start gap-2 text-green-900">
+                      <span className="mt-1 h-1.5 w-1.5 rounded-full bg-green-500 shrink-0" />
+                      <span>{benefit}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             {/* Meta Info */}

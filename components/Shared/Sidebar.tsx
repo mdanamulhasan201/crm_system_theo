@@ -1,5 +1,5 @@
 'use client'
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { IoClose, IoSearchOutline } from 'react-icons/io5';
@@ -24,6 +24,7 @@ import { FiDollarSign } from 'react-icons/fi';
 import { BsCashStack } from 'react-icons/bs';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import { BiNews, BiPackage } from 'react-icons/bi';
+import { getUnreadNewsCount } from '@/apis/blogApis';
 import { MdAccountBalanceWallet, MdInventory } from 'react-icons/md';
 import Einlagenauftrag from '@/public/images/dashboard/partner_sidebar/Einlagenaufträge.png';
 import Einstellungen from '@/public/images/dashboard/partner_sidebar/Einstellungen.png';
@@ -48,6 +49,12 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
     const pathname = usePathname();
     const showLabels = !isCollapsed;
     const { isPathAllowed, loading: featureLoading, features } = useFeatureAccess();
+    const [unreadNewsCount, setUnreadNewsCount] = useState(0);
+
+    useEffect(() => {
+        if (!user?.id) return;
+        getUnreadNewsCount().then(setUnreadNewsCount).catch(() => {});
+    }, [user?.id, pathname]);
 
     const menuSections = useMemo(
         () => {
@@ -179,7 +186,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
     );
 
     type MenuItem =
-        | { type: 'link'; key: string; icon: IconType | StaticImageData; label: string; href: string }
+        | { type: 'link'; key: string; icon: IconType | StaticImageData; label: string; href: string; badge?: number }
         | { type: 'divider'; key: string };
 
     const menuItems: MenuItem[] = useMemo(() => {
@@ -216,7 +223,10 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                 }));
 
             // Filter items based on access - only show allowed routes
-            const items = rawItems.filter((item: any) => canShow(item.href, section));
+            const items = rawItems.filter((item: any) => canShow(item.href, section)).map((item: any) => ({
+                ...item,
+                badge: item.href === '/dashboard/news' ? unreadNewsCount : undefined,
+            }));
 
             // Don't add section if no items are allowed
             if (items.length === 0) return [];
@@ -263,7 +273,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
             
             return result;
         });
-    }, [menuSections, isPathAllowed, features, user, featureLoading]);
+    }, [menuSections, isPathAllowed, features, user, featureLoading, unreadNewsCount]);
 
     // Get user first letter for avatar
     const getUserInitials = () => {
@@ -353,7 +363,7 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                                 style={{ textDecoration: 'none' }}
                             >
                                 <span
-                                    className={`flex items-center ${showLabels ? 'px-5 justify-start' : 'justify-center p-2'} py-1 rounded-lg transition-colors duration-200 ${isActive ? 'bg-[var(--td-green,#61A175)] text-white' : 'text-gray-700 hover:bg-gray-100'
+                                    className={`relative flex items-center ${showLabels ? 'px-5 justify-start' : 'justify-center p-2'} py-1 rounded-lg transition-colors duration-200 ${isActive ? 'bg-[var(--td-green,#61A175)] text-white' : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                 >
                                     {isImageIcon ? (
@@ -368,6 +378,11 @@ export default function Sidebar({ isCollapsed, onClose, onCollapseToggle }: Side
                                         <Icon className={`h-5 w-5 ${showLabels ? 'mr-3' : ''}`} />
                                     )}
                                     {showLabels && item.label}
+                                    {item.type === 'link' && item.badge != null && item.badge > 0 && (
+                                        <span className={`${showLabels ? 'ml-auto' : 'absolute -top-1 -right-1'} bg-red-500 text-white text-xs font-bold rounded-full min-w-5 h-5 flex items-center justify-center px-1.5`}>
+                                            {item.badge > 99 ? '99+' : item.badge}
+                                        </span>
+                                    )}
                                 </span>
                             </Link>
                         );

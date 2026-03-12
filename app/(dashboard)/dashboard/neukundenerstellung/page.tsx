@@ -14,8 +14,10 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { addCustomer } from '@/apis/customerApis';
+import { createCustomerSign } from '@/apis/customerSignApis';
 import { getBasicSettings } from '@/apis/setting/basicSettingsApis';
 import WohnortInput from '../_components/Customers/WohnortInput';
+import NewCustomerDatenschutzDialog from '../_components/Customers/NewCustomerDatenschutzDialog';
 
 interface RequiredFields {
     vorname: boolean;
@@ -52,6 +54,7 @@ export default function Neukundenerstellung() {
         billingType: false,
     });
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [showDatenschutz, setShowDatenschutz] = useState(false);
 
     // Fetch required fields settings
     useEffect(() => {
@@ -110,37 +113,65 @@ export default function Neukundenerstellung() {
         return Object.keys(errors).length === 0;
     };
 
-    const handleSubmit = async () => {
-        // Validate form before submitting
+    const handleSubmit = () => {
+        // Validate form before showing privacy dialog
         if (!validateForm()) {
             toast.error('Bitte füllen Sie alle Pflichtfelder aus.');
             return;
         }
 
+        // Show the Datenschutzerklärung dialog instead of creating directly
+        setShowDatenschutz(true);
+    };
+
+    const handlePrivacyAccepted = async (privacyData: { acceptedPrivacy: boolean; wantsNewsletter: boolean; signature?: string; uploadedPdf?: File }) => {
         try {
             setIsSubmitting(true);
 
+            // Step 1: Create the customer
             const formData = new FormData();
             formData.append('gender', gender);
-            // API expects German field names
             formData.append('vorname', firstName);
             formData.append('nachname', lastName);
             formData.append('wohnort', address);
             formData.append('email', email);
             formData.append('telefon', phone);
             if (birthDate) {
-                // API expects field name "geburtsdatum"
                 formData.append('geburtsdatum', birthDate.toISOString().split('T')[0]);
             }
             formData.append('land', insuranceNumber);
             formData.append('billingType', billingType);
 
-            await addCustomer(formData);
+            const customerResponse = await addCustomer(formData);
+            const customerId = customerResponse?.data?.id;
+
+            // Step 2: Upload signature/PDF to customer sign endpoint
+            if (customerId) {
+                try {
+                    const signFormData = new FormData();
+
+                    if (privacyData.signature) {
+                        // Digital signature: send base64 data URL directly
+                        signFormData.append('signBase64', privacyData.signature);
+                    }
+
+                    if (privacyData.uploadedPdf) {
+                        // Manual signature: upload the signed PDF
+                        signFormData.append('pdf', privacyData.uploadedPdf);
+                    }
+
+                    await createCustomerSign(customerId, signFormData);
+                } catch (signError) {
+                    console.error('Error saving signature:', signError);
+                    // Customer was created, just warn about signature
+                    toast.error('Kunde erstellt, aber Unterschrift konnte nicht gespeichert werden.');
+                }
+            }
+
             toast.success('Kunde wurde erfolgreich erstellt.');
             router.push('/dashboard/customers');
         } catch (error: any) {
             console.error(error);
-            // Versuche, die Fehlermeldung der API zu lesen
             const apiMessage =
                 error?.response?.data?.message ||
                 error?.message ||
@@ -451,6 +482,14 @@ export default function Neukundenerstellung() {
                     </button>
                 </div>
             </div>
+
+            {/* Datenschutzerklärung Dialog */}
+            <NewCustomerDatenschutzDialog
+                open={showDatenschutz}
+                onOpenChange={setShowDatenschutz}
+                customerData={{ vorname: firstName, nachname: lastName }}
+                onAccepted={handlePrivacyAccepted}
+            />
         </div>
     );
 }
