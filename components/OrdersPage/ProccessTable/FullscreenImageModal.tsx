@@ -1,9 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, RotateCw, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
+
+const TOOLBAR_HEIGHT = 56;
+const PADDING = 32;
 
 interface FullscreenImageModalProps {
     isOpen: boolean;
@@ -22,6 +25,7 @@ export default function FullscreenImageModal({
     const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
     const [rotation, setRotation] = useState(0); // Rotation in degrees: 0, 90, 180, 270
     const [zoom, setZoom] = useState(1); // Zoom scale factor (1.0 = 100%)
+    const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
 
     const MIN_ZOOM = 0.1; // 10% minimum zoom
@@ -46,6 +50,15 @@ export default function FullscreenImageModal({
             setZoom(1); // Reset zoom when modal closes or image changes
         }
     }, [isOpen, imageUrl]);
+
+    // Track viewport size for device-wise image sizing
+    useEffect(() => {
+        if (!isOpen) return;
+        const updateSize = () => setViewportSize({ width: window.innerWidth, height: window.innerHeight });
+        updateSize();
+        window.addEventListener('resize', updateSize);
+        return () => window.removeEventListener('resize', updateSize);
+    }, [isOpen]);
 
     // Mouse wheel zoom support
     useEffect(() => {
@@ -84,23 +97,32 @@ export default function FullscreenImageModal({
         setZoom(1);
     };
 
+    // Device-wise image size: fit to viewport; wrapper size = rotated bounding box (no extra modal width)
+    const imageDisplay = useMemo(() => {
+        if (!imageDimensions || viewportSize.width <= 0 || viewportSize.height <= 0) return null;
+        const { width: nw, height: nh } = imageDimensions;
+        const availableW = viewportSize.width - PADDING * 2;
+        const availableH = viewportSize.height - TOOLBAR_HEIGHT - PADDING * 2;
+        const scaleFit = Math.min(availableW / nw, availableH / nh, 1);
+        const displayedW = nw * scaleFit;
+        const displayedH = nh * scaleFit;
+        const is90or270 = rotation === 90 || rotation === 270;
+        const wrapperW = is90or270 ? displayedH : displayedW;
+        const wrapperH = is90or270 ? displayedW : displayedH;
+        return { displayedW, displayedH, wrapperW, wrapperH };
+    }, [imageDimensions, viewportSize, rotation]);
+
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent 
-                className="w-screen max-w-none h-screen max-h-screen p-0 gap-0 bg-white/95 border-0 m-0 rounded-none [&_[data-slot='dialog-close']]:hidden transition-transform duration-300"
-                style={{
-                    transform: `rotate(${rotation}deg)`,
-                }}
+            <DialogContent
+                className="!w-screen !max-w-none !h-screen !max-h-screen p-0 gap-0 bg-transparent shadow-none border-0 m-0 rounded-none [&_[data-slot='dialog-close']]:hidden"
             >
                 <DialogTitle className="sr-only">1:1 Bildansicht - {imageAlt}</DialogTitle>
                 <div className="relative w-full h-full flex flex-col overflow-hidden" ref={containerRef}>
-                    {/* Toolbar with controls - Always fixed at top center of viewport, counter-rotated */}
-                    <div 
-                        className="fixed top-4 left-1/2 z-[100] flex items-center gap-2 flex-wrap transition-transform duration-300 pointer-events-auto"
-                        style={{
-                            transform: `translateX(-50%) translateY(0) rotate(-${rotation}deg)`,
-                            transformOrigin: 'center center',
-                        }}
+                    {/* Toolbar - fixed at top center, modal never rotates so no counter-rotate */}
+                    <div
+                        className="fixed top-4 left-1/2 z-[100] flex items-center gap-2 flex-wrap pointer-events-auto"
+                        style={{ transform: 'translateX(-50%)' }}
                     >
                         {/* Zoom Controls */}
                         <div className="flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-md p-1">
@@ -170,41 +192,44 @@ export default function FullscreenImageModal({
                         </Button>
                     </div>
                 
-                    {/* Image at 1:1 original size - perfect pixel display */}
+                    {/* Image: only the image rotates; modal stays fixed; device-wise width (fit viewport) */}
                     <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
-                        {imageLoaded && imageDimensions ? (
-                            <img
-                                src={imageUrl}
-                                alt={imageAlt}
-                                className="max-w-none max-h-none min-w-0 min-h-0"
+                        {imageLoaded && imageDimensions && imageDisplay ? (
+                            <div
+                                className="flex items-center justify-center flex-shrink-0"
                                 style={{
-                                    width: `${imageDimensions.width}px`,
-                                    height: `${imageDimensions.height}px`,
-                                    minWidth: `${imageDimensions.width}px`,
-                                    minHeight: `${imageDimensions.height}px`,
-                                    maxWidth: `${imageDimensions.width}px`,
-                                    maxHeight: `${imageDimensions.height}px`,
-                                    imageRendering: 'auto',
-                                    display: 'block',
-                                    objectFit: 'none',
-                                    objectPosition: 'center',
-                                    flexShrink: 0,
-                                    transform: `scale(${zoom})`,
-                                    transition: 'transform 0.2s ease-in-out',
+                                    width: imageDisplay.wrapperW,
+                                    height: imageDisplay.wrapperH,
                                 }}
-                                onError={(e) => {
-                                    console.error('Image failed to load:', imageUrl);
-                                    const target = e.currentTarget;
-                                    target.style.display = 'none';
-                                    const parent = target.parentElement;
-                                    if (parent && !parent.querySelector('.error-message')) {
-                                        const errorMsg = document.createElement('p');
-                                        errorMsg.className = 'text-white error-message text-center';
-                                        errorMsg.textContent = 'Bild konnte nicht geladen werden';
-                                        parent.appendChild(errorMsg);
-                                    }
-                                }}
-                            />
+                            >
+                                <img
+                                    src={imageUrl}
+                                    alt={imageAlt}
+                                    className="block"
+                                    style={{
+                                        width: imageDisplay.displayedW,
+                                        height: imageDisplay.displayedH,
+                                        imageRendering: 'auto',
+                                        objectFit: 'none',
+                                        objectPosition: 'center',
+                                        transform: `rotate(${rotation}deg) scale(${zoom})`,
+                                        transformOrigin: 'center center',
+                                        transition: 'transform 0.2s ease-in-out',
+                                    }}
+                                    onError={(e) => {
+                                        console.error('Image failed to load:', imageUrl);
+                                        const target = e.currentTarget;
+                                        target.style.display = 'none';
+                                        const parent = target.parentElement;
+                                        if (parent && !parent.querySelector('.error-message')) {
+                                            const errorMsg = document.createElement('p');
+                                            errorMsg.className = 'text-white error-message text-center';
+                                            errorMsg.textContent = 'Bild konnte nicht geladen werden';
+                                            parent.appendChild(errorMsg);
+                                        }
+                                    }}
+                                />
+                            </div>
                         ) : (
                             <div className="flex items-center justify-center">
                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mb-4"></div>
