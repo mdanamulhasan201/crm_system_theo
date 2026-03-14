@@ -820,14 +820,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     orderPayload.versorgungId = versorgungIdToUse;
                 }
 
-                // Add paymentStatus and paymentType (API / display)
+                // Add paymentStatus if it has a value
                 if (paymentStatusValue) {
                     orderPayload.paymentStatus = paymentStatusValue;
-                    orderPayload.paymentType = paymentStatusValue.startsWith('Krankenkasse_')
-                        ? 'Krankenkasse'
-                        : paymentStatusValue.startsWith('Privat_')
-                            ? 'Privat'
-                            : undefined;
                 }
                 if (formDataForOrder.billingType) {
                     orderPayload.billingType = formDataForOrder.billingType;
