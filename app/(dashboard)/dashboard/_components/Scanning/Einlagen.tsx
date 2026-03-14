@@ -750,7 +750,18 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
                 // Get bezahlt value - use paymentStatus if bezahlt is not available (for backward compatibility)
                 const bezahltValue = formDataForOrder.bezahlt || formDataForOrder.paymentStatus || '';
-                const paymentStatusValue = formDataForOrder.paymentStatus || formDataForOrder.bezahlt || undefined;
+                const rawPaymentStatus = formDataForOrder.paymentStatus || formDataForOrder.bezahlt || undefined;
+                // API accepts only a single status. Modal sends pipe-separated when dual; last token = last clicked in Kostenträger.
+                const VALID_PAYMENT_STATUSES = ['Privat_Bezahlt', 'Privat_offen', 'Krankenkasse_Ungenehmigt', 'Krankenkasse_Genehmigt'] as const;
+                const tokens = rawPaymentStatus ? rawPaymentStatus.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
+                const validTokens = tokens.filter((s: string) => VALID_PAYMENT_STATUSES.includes(s as any));
+                let paymentStatusValue: string | undefined;
+                if (validTokens.length === 0) {
+                    paymentStatusValue = rawPaymentStatus?.trim() && VALID_PAYMENT_STATUSES.includes(rawPaymentStatus.trim() as any) ? rawPaymentStatus.trim() : undefined;
+                } else {
+                    // Single or dual: use last token = the button user last clicked in Kostenträger section
+                    paymentStatusValue = validTokens[validTokens.length - 1];
+                }
 
                 // Resolve privatePrice (amount customer pays privately)
                 const privatePrice = formDataForOrder.privatePrice;
@@ -775,7 +786,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     mitarbeiter: formDataForOrder.mitarbeiter || '',
                     fertigstellungBis: formDataForOrder.fertigstellungBis || '',
                     versorgung: formDataForOrder.versorgung || '',
-                    bezahlt: bezahltValue, // Required by API
+                    bezahlt: paymentStatusValue ?? bezahltValue, // Required by API; use normalized single status when dual was selected
                     fussanalysePreis: fussanalysePreis,
                     einlagenversorgungPreis: einlagenversorgungPreis,
                     fußanalyse: fussanalysePreis, 
