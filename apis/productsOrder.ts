@@ -9,12 +9,14 @@ export const createOrder = async (customerId: string, versorgungId: string, werk
         if (formData) {
             Object.assign(payload, formData);
         }
-        const response = await axiosClient.post('/customer-orders/create', payload);
+        const response = await axiosClient.post('/customer-orders/create-order/please', payload);
         return response.data;
     } catch (error) {
         throw error;
     }
 }
+
+
 // create custom Versorgung privet-supply/shadow
 export const createCustomVersorgung = async (payload: Record<string, any>) => {
     try {

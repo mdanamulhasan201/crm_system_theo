@@ -61,7 +61,10 @@ export default function ChecklisteHalbprobeModal({
         }
     }, [open, initialData]);
 
+    const allAnswered = answers.every((a) => a !== null);
+
     const handleWeiter = () => {
+        if (!allAnswered) return;
         const data: ChecklisteHalbprobeData = CHECKLIST_QUESTIONS.map((question, index) => ({
             question,
             value: answers[index] ?? 'Ja',
@@ -190,8 +193,10 @@ export default function ChecklisteHalbprobeModal({
                         </Button>
                         <Button
                             type="button"
-                            className="h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm inline-flex items-center gap-2"
+                            className="h-9 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-sm inline-flex items-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
                             onClick={handleWeiter}
+                            disabled={!allAnswered}
+                            title={!allAnswered ? 'Bitte alle Fragen beantworten' : undefined}
                         >
                             <Check className="h-4 w-4" />
                             Speichern & Weiter

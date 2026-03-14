@@ -114,7 +114,7 @@ export default function HalbprobeDurchfuehrungStepFields({
     return (
         <div className="mb-6 space-y-6">
             {/* Anprobedatum (fitting_date) */}
-            <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
+            {/* <div className="rounded-xl border border-gray-200/80 bg-white p-6 shadow-sm">
                 <Label className="text-sm font-medium text-gray-800 mb-2 block">
                     Anprobedatum
                 </Label>
@@ -143,7 +143,7 @@ export default function HalbprobeDurchfuehrungStepFields({
                         />
                     </PopoverContent>
                 </Popover>
-            </div>
+            </div> */}
 
             {/* Anpassungen & Kundennotizen – side by side */}
             {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

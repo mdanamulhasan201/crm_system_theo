@@ -25,8 +25,13 @@ export default function FullscreenImageModal({
     const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
     const [rotation, setRotation] = useState(0); // Rotation in degrees: 0, 90, 180, 270
     const [zoom, setZoom] = useState(1); // Zoom scale factor (1.0 = 100%)
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
     const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
+    const imageAreaRef = useRef<HTMLDivElement>(null);
+    const isDraggingRef = useRef(false);
+    const dragStartRef = useRef({ clientX: 0, clientY: 0, panX: 0, panY: 0 });
 
     const MIN_ZOOM = 0.1; // 10% minimum zoom
     const MAX_ZOOM = 5; // 500% maximum zoom
@@ -46,8 +51,9 @@ export default function FullscreenImageModal({
         } else {
             setImageLoaded(false);
             setImageDimensions(null);
-            setRotation(0); // Reset rotation when modal closes or image changes
-            setZoom(1); // Reset zoom when modal closes or image changes
+            setRotation(0);
+            setZoom(1);
+            setPan({ x: 0, y: 0 });
         }
     }, [isOpen, imageUrl]);
 
@@ -60,21 +66,34 @@ export default function FullscreenImageModal({
         return () => window.removeEventListener('resize', updateSize);
     }, [isOpen]);
 
-    // Mouse wheel zoom support
+    const handleWheel = (e: React.WheelEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+        setZoom((prev) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)));
+    };
+
+    // Native wheel with passive: false so preventDefault works (mouse wheel zoom)
     useEffect(() => {
-        const container = containerRef.current;
-        if (!container) return;
-
-        const handleWheel = (e: WheelEvent) => {
-            if (e.ctrlKey || e.metaKey) {
-                e.preventDefault();
-                const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-                setZoom((prev) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)));
-            }
+        const el = imageAreaRef.current;
+        if (!el || !isOpen) return;
+        const onWheel = (e: WheelEvent) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+            setZoom((prev) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, prev + delta)));
         };
+        el.addEventListener('wheel', onWheel, { passive: false });
+        return () => el.removeEventListener('wheel', onWheel);
+    }, [isOpen]);
 
-        container.addEventListener('wheel', handleWheel, { passive: false });
-        return () => container.removeEventListener('wheel', handleWheel);
+    // Stop drag when mouse released outside (e.g. over toolbar)
+    useEffect(() => {
+        const onGlobalMouseUp = () => {
+            isDraggingRef.current = false;
+            setIsDragging(false);
+        };
+        window.addEventListener('mouseup', onGlobalMouseUp);
+        return () => window.removeEventListener('mouseup', onGlobalMouseUp);
     }, []);
 
     const rotateClockwise = () => {
@@ -95,6 +114,37 @@ export default function FullscreenImageModal({
 
     const resetZoom = () => {
         setZoom(1);
+        setPan({ x: 0, y: 0 });
+    };
+
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (e.button !== 0) return;
+        isDraggingRef.current = true;
+        setIsDragging(true);
+        dragStartRef.current = {
+            clientX: e.clientX,
+            clientY: e.clientY,
+            panX: pan.x,
+            panY: pan.y,
+        };
+    };
+
+    const handleMouseMove = (e: React.MouseEvent) => {
+        if (!isDraggingRef.current) return;
+        setPan({
+            x: dragStartRef.current.panX + (e.clientX - dragStartRef.current.clientX),
+            y: dragStartRef.current.panY + (e.clientY - dragStartRef.current.clientY),
+        });
+    };
+
+    const handleMouseUp = () => {
+        isDraggingRef.current = false;
+        setIsDragging(false);
+    };
+
+    const handleMouseLeave = () => {
+        isDraggingRef.current = false;
+        setIsDragging(false);
     };
 
     // Device-wise image size: fit to viewport; wrapper size = rotated bounding box (no extra modal width)
@@ -115,7 +165,7 @@ export default function FullscreenImageModal({
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent
-                className="!w-screen !max-w-none !h-screen !max-h-screen p-0 gap-0 bg-transparent shadow-none border-0 m-0 rounded-none [&_[data-slot='dialog-close']]:hidden"
+                className="!w-screen !max-w-none !h-screen !max-h-screen p-0 gap-0 bg-black/40 shadow-none border-0 m-0 rounded-none [&_[data-slot='dialog-close']]:hidden"
             >
                 <DialogTitle className="sr-only">1:1 Bildansicht - {imageAlt}</DialogTitle>
                 <div className="relative w-full h-full flex flex-col overflow-hidden" ref={containerRef}>
@@ -192,20 +242,32 @@ export default function FullscreenImageModal({
                         </Button>
                     </div>
                 
-                    {/* Image: only the image rotates; modal stays fixed; device-wise width (fit viewport) */}
-                    <div className="w-full h-full flex items-center justify-center overflow-auto p-4">
+                    {/* Image: no scrollbars; pan with mouse drag; wheel = zoom */}
+                    <div
+                        ref={imageAreaRef}
+                        className="w-full h-full flex items-center justify-center overflow-hidden p-4 select-none"
+                        style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                        onMouseDown={handleMouseDown}
+                        onMouseMove={handleMouseMove}
+                        onMouseUp={handleMouseUp}
+                        onMouseLeave={handleMouseLeave}
+                        onWheel={handleWheel}
+                    >
                         {imageLoaded && imageDimensions && imageDisplay ? (
                             <div
-                                className="flex items-center justify-center flex-shrink-0"
+                                className="flex items-center justify-center shrink-0"
                                 style={{
                                     width: imageDisplay.wrapperW,
                                     height: imageDisplay.wrapperH,
+                                    transform: `translate(${pan.x}px, ${pan.y}px)`,
+                                    transition: isDragging ? 'none' : 'transform 0.1s ease-out',
                                 }}
                             >
                                 <img
                                     src={imageUrl}
                                     alt={imageAlt}
-                                    className="block"
+                                    className="block pointer-events-none"
+                                    draggable={false}
                                     style={{
                                         width: imageDisplay.displayedW,
                                         height: imageDisplay.displayedH,
