@@ -4,6 +4,7 @@ import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import { Package, Layers, Box } from 'lucide-react';
 
 export interface SuggestSupplyItem {
     id: string;
@@ -15,7 +16,7 @@ export interface SuggestSupplyItem {
     supplyStatus?: {
         name?: string;
         price?: number;
-        image?: string;
+        image?: string | null;
     };
     storeType?: string;
     store?: {
@@ -54,6 +55,8 @@ interface SuggestSupplyAndStockModalProps {
     loading?: boolean;
 }
 
+const MAX_DIAGNOSIS_TAGS = 3;
+
 export default function SuggestSupplyAndStockModal({
     open,
     onOpenChange,
@@ -91,113 +94,163 @@ export default function SuggestSupplyAndStockModal({
                     <div className="space-y-6 mt-4">
                         {/* Supply (Versorgung) */}
                         {supply.length > 0 && (
-                            <div>
-                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Versorgung (Supply)</h3>
-                                <div className="grid gap-3 sm:grid-cols-2">
+                            <section>
+                                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-3">
+                                    <Layers className="h-4 w-4 text-[#61A178]" />
+                                    Versorgung ({supply.length})
+                                </h3>
+                                <div className="grid gap-4 sm:grid-cols-1">
                                     {supply.map((item) => (
                                         <div
                                             key={item.id}
-                                            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                                            className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50/50 p-4 shadow-sm hover:shadow-md transition-shadow"
                                         >
-                                            <div className="flex gap-3">
-                                                {item.supplyStatus?.image && (
-                                                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                                            <div className="flex gap-4">
+                                                <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 border border-gray-200">
+                                                    {item.supplyStatus?.image ? (
                                                         <Image
                                                             src={item.supplyStatus.image}
                                                             alt={item.name || ''}
-                                                            fill
-                                                            className="object-contain"
-                                                            sizes="64px"
+                                                            width={80}
+                                                            height={80}
+                                                            className="h-20 w-20 object-contain"
                                                         />
+                                                    ) : (
+                                                        <Layers className="h-9 w-9 text-gray-400" />
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0 flex-1 space-y-2">
+                                                    <div className="flex flex-wrap items-start justify-between gap-2">
+                                                        <div>
+                                                            <p className="font-semibold text-gray-900">{item.name}</p>
+                                                            {item.versorgung ? (
+                                                                <p className="text-xs text-gray-500 mt-0.5">{item.versorgung}</p>
+                                                            ) : null}
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-1.5">
+                                                            {item.store?.matchedSizeKey != null && (
+                                                                <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                                                                    Größe {item.store.matchedSizeKey}
+                                                                </span>
+                                                            )}
+                                                            {item.store?.matchedQuantity != null && (
+                                                                <span className="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                                                                    {item.store.matchedQuantity} Stück
+                                                                </span>
+                                                            )}
+                                                            {item.supplyStatus?.price != null && (
+                                                                <span className="inline-flex items-center rounded-md bg-[#61A178]/15 px-2 py-0.5 text-xs font-semibold text-[#61A178]">
+                                                                    €{item.supplyStatus.price}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                )}
-                                                <div className="min-w-0 flex-1">
-                                                    <p className="font-medium text-gray-900 truncate">{item.name}</p>
-                                                    {item.versorgung && (
-                                                        <p className="text-xs text-gray-500 mt-0.5">{item.versorgung}</p>
-                                                    )}
-                                                    {item.rohlingHersteller && (
-                                                        <p className="text-xs text-gray-500">Rohling: {item.rohlingHersteller}</p>
-                                                    )}
-                                                    {item.supplyStatus?.name && (
-                                                        <p className="text-xs text-gray-600 mt-1">{item.supplyStatus.name}</p>
-                                                    )}
-                                                    {item.supplyStatus?.price != null && (
-                                                        <p className="text-sm font-medium text-emerald-600 mt-1">
-                                                            €{item.supplyStatus.price}
-                                                        </p>
-                                                    )}
-                                                    {item.store && (
-                                                        <p className="text-xs text-gray-500 mt-1">
-                                                            Lager: {item.store.produktname || item.store.hersteller}
-                                                            {item.store.matchedQuantity != null && ` · ${item.store.matchedQuantity} Stück`}
-                                                        </p>
-                                                    )}
+                                                    <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                                                        {item.rohlingHersteller ? (
+                                                            <span>Rohling: {item.rohlingHersteller}</span>
+                                                        ) : null}
+                                                        {item.supplyStatus?.name ? (
+                                                            <span>Status: {item.supplyStatus.name}</span>
+                                                        ) : null}
+                                                        {item.store?.produktname || item.store?.hersteller ? (
+                                                            <span>Lager: {item.store.produktname || item.store.hersteller}</span>
+                                                        ) : null}
+                                                    </div>
+                                                    {Array.isArray(item.diagnosis_status) && item.diagnosis_status.length > 0 ? (
+                                                        <div className="flex flex-wrap gap-1 pt-1">
+                                                            {item.diagnosis_status.slice(0, MAX_DIAGNOSIS_TAGS).map((d, i) => (
+                                                                <span
+                                                                    key={i}
+                                                                    className="inline-flex max-w-[180px] truncate rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700"
+                                                                    title={typeof d === 'string' ? d : String(d)}
+                                                                >
+                                                                    {typeof d === 'string' ? d : String(d)}
+                                                                </span>
+                                                            ))}
+                                                            {item.diagnosis_status.length > MAX_DIAGNOSIS_TAGS ? (
+                                                                <span className="inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                                                                    +{item.diagnosis_status.length - MAX_DIAGNOSIS_TAGS}
+                                                                </span>
+                                                            ) : null}
+                                                        </div>
+                                                    ) : null}
                                                 </div>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
+                            </section>
                         )}
 
                         {/* Ready insole */}
-                        {radyInsole.length > 0 && (
-                            <div>
-                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Fertige Einlagen (Rady Insole)</h3>
+                        {radyInsole.length > 0 ? (
+                            <section>
+                                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-3">
+                                    <Package className="h-4 w-4 text-[#61A178]" />
+                                    Fertige Einlagen ({radyInsole.length})
+                                </h3>
                                 <div className="grid gap-3 sm:grid-cols-2">
                                     {(radyInsole as Record<string, unknown>[]).map((item: Record<string, unknown>, idx: number) => (
                                         <div
                                             key={idx}
-                                            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                                            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
                                         >
                                             <p className="font-medium text-gray-900">
                                                 {String(item.produktname ?? item.name ?? 'Eintrag')}
                                             </p>
-                                            {item.hersteller && (
+                                            {item.hersteller != null && String(item.hersteller) !== '' ? (
                                                 <p className="text-xs text-gray-500 mt-0.5">Hersteller: {String(item.hersteller)}</p>
-                                            )}
-                                            {item.matchedQuantity != null && (
-                                                <p className="text-xs text-gray-600 mt-1">Anzahl: {Number(item.matchedQuantity)}</p>
-                                            )}
+                                            ) : null}
+                                            {item.matchedQuantity != null ? (
+                                                <p className="mt-1.5 text-xs font-medium text-emerald-600">Anzahl: {Number(item.matchedQuantity)}</p>
+                                            ) : null}
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                        )}
+                            </section>
+                        ) : null}
 
                         {/* Milling block */}
-                        {millingBlock.length > 0 && (
-                            <div>
-                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Fräsblöcke (Milling Block)</h3>
-                                <div className="grid gap-3 sm:grid-cols-2">
+                        {millingBlock.length > 0 ? (
+                            <section>
+                                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-800 mb-3">
+                                    <Box className="h-4 w-4 text-[#61A178]" />
+                                    Fräsblöcke ({millingBlock.length})
+                                </h3>
+                                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                     {millingBlock.map((item) => (
                                         <div
                                             key={item.id}
-                                            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
+                                            className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow flex flex-col"
                                         >
-                                            <p className="font-medium text-gray-900">{item.produktname || 'Fräsblock'}</p>
-                                            {item.hersteller && (
-                                                <p className="text-xs text-gray-500 mt-0.5">Hersteller: {item.hersteller}</p>
-                                            )}
-                                            {item.artikelnummer && (
-                                                <p className="text-xs text-gray-500">Art.-Nr.: {item.artikelnummer}</p>
-                                            )}
-                                            {item.matchedSizeKey != null && (
-                                                <p className="text-xs text-gray-600 mt-1">Größe: {item.matchedSizeKey}</p>
-                                            )}
-                                            {item.matchedQuantity != null && (
-                                                <p className="text-xs text-gray-600">Anzahl: {item.matchedQuantity} Stück</p>
-                                            )}
+                                            <p className="font-semibold text-gray-900 truncate" title={item.produktname}>
+                                                {item.produktname || 'Fräsblock'}
+                                            </p>
+                                            <div className="mt-2 space-y-0.5 text-xs text-gray-500">
+                                                {item.hersteller ? <p>Hersteller: {item.hersteller}</p> : null}
+                                                {item.artikelnummer ? <p>Art.-Nr.: {item.artikelnummer}</p> : null}
+                                            </div>
+                                            <div className="mt-3 flex flex-wrap gap-1.5">
+                                                {item.matchedSizeKey != null ? (
+                                                    <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                                                        Größe {item.matchedSizeKey}
+                                                    </span>
+                                                ) : null}
+                                                {item.matchedQuantity != null ? (
+                                                    <span className="inline-flex items-center rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-800">
+                                                        {item.matchedQuantity} Stück
+                                                    </span>
+                                                ) : null}
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
-                            </div>
-                        )}
+                            </section>
+                        ) : null}
 
-                        {supply.length === 0 && millingBlock.length === 0 && radyInsole.length === 0 && !loading && (
+                        {supply.length === 0 && millingBlock.length === 0 && radyInsole.length === 0 && !loading ? (
                             <p className="text-sm text-gray-500 py-4">Keine passenden Vorschläge vorhanden.</p>
-                        )}
+                        ) : null}
                     </div>
                 )}
 
