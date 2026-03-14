@@ -24,7 +24,9 @@ import ProduktBasisdatenCard from './Einlagen/FormSections/ProduktBasisdatenCard
 import VersorgungsnotizCard from './Einlagen/FormSections/VersorgungsnotizCard';
 import WerkstattzettelModal from './WerkstattzettelModal';
 import SpringerDialog from './SpringerDialog';
+import SuggestSupplyAndStockModal, { type SuggestSupplyAndStockData } from './SuggestSupplyAndStockModal';
 import { getSettingData } from '@/apis/einlagenApis';
+import { suggestSupplyAndStockByRequiredLength } from '@/apis/productsOrder';
 // import PositionsnummerDropdown from './Einlagen/Dropdowns/PositionsnummerDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -307,6 +309,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [formDataForOrder, setFormDataForOrder] = useState<any>(null);
     const [orderPrices, setOrderPrices] = useState<{ fussanalysePreis: number; einlagenversorgungPreis: number } | null>(null);
     const [showSpringerDialog, setShowSpringerDialog] = useState(false);
+    const [suggestSupplyModalOpen, setSuggestSupplyModalOpen] = useState(false);
+    const [suggestSupplyModalData, setSuggestSupplyModalData] = useState<SuggestSupplyAndStockData | null>(null);
+    const [suggestSupplyModalLoading, setSuggestSupplyModalLoading] = useState(false);
+    const [suggestSupplyRequiredLength, setSuggestSupplyRequiredLength] = useState<number | undefined>(undefined);
+    const [suggestSupplyErrorMessage, setSuggestSupplyErrorMessage] = useState<string | null>(null);
     
     // Settings data state
     const [coverTypes, setCoverTypes] = useState<string[]>([]);
@@ -852,9 +859,38 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     // After successful order creation, clear all Einlagen inputs
                     resetEinlagenForm();
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error while creating order:', error);
-                toast.error('Fehler beim Erstellen der Bestellung. Bitte versuchen Sie es erneut.');
+                const errData = error?.response?.data;
+                const suggestSupply = errData?.suggestSupplyAndStock === true;
+                const requiredLength = errData?.suggestParams?.requiredLength != null
+                    ? Number(errData.suggestParams.requiredLength)
+                    : undefined;
+
+                if (suggestSupply && requiredLength != null && !Number.isNaN(requiredLength)) {
+                    setShowConfirmModal(false);
+                    setSuggestSupplyRequiredLength(requiredLength);
+                    setSuggestSupplyErrorMessage(errData?.message ?? null);
+                    setSuggestSupplyModalOpen(true);
+                    setSuggestSupplyModalData(null);
+                    setSuggestSupplyModalLoading(true);
+                    try {
+                        const res = await suggestSupplyAndStockByRequiredLength(requiredLength);
+                        const data = (res as any)?.data ?? res;
+                        setSuggestSupplyModalData({
+                            supply: (data?.supply ?? []) as SuggestSupplyAndStockData['supply'],
+                            rady_insole: data?.rady_insole ?? [],
+                            milling_block: (data?.milling_block ?? []) as SuggestSupplyAndStockData['milling_block'],
+                        });
+                    } catch (suggestErr) {
+                        console.error('Suggest supply and stock failed:', suggestErr);
+                        toast.error('Vorschläge konnten nicht geladen werden.');
+                    } finally {
+                        setSuggestSupplyModalLoading(false);
+                    }
+                } else {
+                    toast.error(errData?.message || 'Fehler beim Erstellen der Bestellung. Bitte versuchen Sie es erneut.');
+                }
             }
         }
         setShowConfirmModal(false);
@@ -1206,6 +1242,15 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 formData={formDataForOrder}
                 customerId={customer?.id}
                 versorgungId={resolveVersorgungIdFromText()}
+            />
+
+            <SuggestSupplyAndStockModal
+                open={suggestSupplyModalOpen}
+                onOpenChange={setSuggestSupplyModalOpen}
+                data={suggestSupplyModalData}
+                requiredLengthMm={suggestSupplyRequiredLength}
+                errorMessage={suggestSupplyErrorMessage}
+                loading={suggestSupplyModalLoading}
             />
 
             <InvoiceGeneratePdfModal

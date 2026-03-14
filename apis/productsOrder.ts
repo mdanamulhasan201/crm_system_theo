@@ -17,6 +17,21 @@ export const createOrder = async (customerId: string, versorgungId: string, werk
 }
 
 
+/** Call suggest-supply-and-stock. Backend expects param footLengthMm; we pass requiredLength (from suggestParams.requiredLength) as the value. */
+export const suggestSupplyAndStock = async (requiredLength: number) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/create-order/suggest-supply-and-stock?footLengthMm=${requiredLength}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/** Alias for Einlagen flow: same as suggestSupplyAndStock(requiredLength). */
+export const suggestSupplyAndStockByRequiredLength = suggestSupplyAndStock;
+
+
+
 // create custom Versorgung privet-supply/shadow
 export const createCustomVersorgung = async (payload: Record<string, any>) => {
     try {
