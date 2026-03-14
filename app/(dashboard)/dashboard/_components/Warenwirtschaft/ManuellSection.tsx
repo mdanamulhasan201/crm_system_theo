@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -10,244 +11,263 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Plus, Check, Trash2, Package } from 'lucide-react'
+import { ArrowLeft, Package, Loader2 } from 'lucide-react'
+import {
+  createInventory,
+  type CreateInventoryPayload,
+  type InventoryType,
+  type InventoryStatus,
+  type PaymentStatus,
+} from '@/apis/warenwirtschaftApis'
+import toast from 'react-hot-toast'
 
-const EINHEIT_OPTIONS = ['Stü', 'kg', 'm', 'L', 'Paar']
-const KATEGORIE_OPTIONS = ['Lager-A', 'Lager-B', 'Lager-C']
+const STATUS_OPTIONS: { value: InventoryStatus; label: string }[] = [
+  { value: 'Ordered', label: 'Ordered' },
+  { value: 'Delivered', label: 'Delivered' },
+  { value: 'Partially', label: 'Partially' },
+]
 
-export interface PositionRow {
-  id: string
-  artikel: string
-  kategorie: string
-  menge: number
-  einheit: string
-  ePreis: number
+const PAYMENT_STATUS_OPTIONS: { value: PaymentStatus; label: string }[] = [
+  { value: 'Open', label: 'Open' },
+  { value: 'Paid', label: 'Paid' },
+]
+
+const WE_LINKED_OPTIONS = [
+  { value: 'false', label: 'Nein' },
+  { value: 'true', label: 'Ja' },
+]
+
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
 }
 
-function createEmptyPosition(id: string): PositionRow {
-  return {
-    id,
-    artikel: '',
-    kategorie: KATEGORIE_OPTIONS[0] ?? 'Lager-A',
-    menge: 1,
-    einheit: 'Stü',
-    ePreis: 0,
-  }
+export interface LieferantOption {
+  id: string
+  name: string
 }
 
 interface ManuellSectionProps {
+  inventoryType: InventoryType
+  supplierName?: string
+  lieferanten: LieferantOption[]
   onBack: () => void
+  onSuccess?: () => void
 }
 
-export default function ManuellSection({ onBack }: ManuellSectionProps) {
-  const [positions, setPositions] = useState<PositionRow[]>(() => [
-    createEmptyPosition('1'),
-    createEmptyPosition('2'),
-  ])
-
-  const addPosition = () => {
-    setPositions((prev) => [
-      ...prev,
-      createEmptyPosition(String(Date.now())),
-    ])
-  }
-
-  const removePosition = (id: string) => {
-    setPositions((prev) => prev.filter((p) => p.id !== id))
-  }
-
-  const updatePosition = (id: string, field: keyof PositionRow, value: string | number) => {
-    setPositions((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, [field]: value } : p))
-    )
-  }
-
-  const gesamtwert = positions.reduce(
-    (sum, p) => sum + p.menge * p.ePreis,
-    0
+export default function ManuellSection({
+  inventoryType,
+  supplierName,
+  lieferanten,
+  onBack,
+  onSuccess,
+}: ManuellSectionProps) {
+  const [supplierId, setSupplierId] = useState<string>(() =>
+    supplierName ? lieferanten.find((l) => l.name === supplierName)?.id ?? '' : ''
   )
+  const [date, setDate] = useState<string>(todayISO())
+  const [amount, setAmount] = useState<number>(0)
+  const [status, setStatus] = useState<InventoryStatus>('Delivered')
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('Paid')
+  const [paymentDate, setPaymentDate] = useState<string>(todayISO())
+  const [weLinked, setWeLinked] = useState<boolean>(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const isInvoices = inventoryType === 'Invoices'
+  const supplier = lieferanten.find((l) => l.id === supplierId)?.name ?? ''
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (!supplier) {
+      setError('Bitte wählen Sie einen Lieferanten.')
+      return
+    }
+    const payload: CreateInventoryPayload = {
+      inventory_type: inventoryType,
+      supplier,
+      date,
+      amount,
+      status,
+      payment_status: paymentStatus,
+      payment_date: paymentDate,
+      we_linked: weLinked,
+    }
+    setSubmitting(true)
+    try {
+      await createInventory(payload)
+      toast.success('Wareneingang erfolgreich erstellt.')
+      onSuccess?.()
+    } catch (err: unknown) {
+      const message = err && typeof err === 'object' && 'message' in err
+        ? String((err as { message: unknown }).message)
+        : 'Fehler beim Erstellen.'
+      setError(message)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold text-gray-900">
-          Positionen prüfen & buchen
-        </h2>
-        <Button
-          type="button"
-          variant="outline"
-          size="default"
-          className="border-gray-300 bg-white hover:bg-gray-50 text-[#62A17C] hover:text-[#62A17C]/80 cursor-pointer"
-          onClick={addPosition}
-        >
-          <Plus className="size-4" />
-          Position
-        </Button>
-      </div>
-
-      {/* Table – single grey box with header + rows */}
-      <div className="mt-4 rounded-xl bg-gray-100/80 border border-gray-200 overflow-hidden flex-1 min-h-0 flex flex-col">
-        <div className="overflow-auto flex-1 min-h-0 p-3">
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="text-left text-sm font-medium text-gray-700">
-                <th className="pb-2 pr-2 w-8">
-                  <div className="flex size-6 items-center justify-center rounded-full bg-[#62A17C] text-white">
-                    <Check className="size-3.5" strokeWidth={3} />
-                  </div>
-                </th>
-                <th className="pb-2 pr-2">Artikel</th>
-                <th className="pb-2 pr-2">Kategorie</th>
-                <th className="pb-2 pr-2 w-20">Menge</th>
-                <th className="pb-2 pr-2 w-20">Einheit</th>
-                <th className="pb-2 pr-2 w-24">E-Preis</th>
-                <th className="pb-2 pr-2 w-20">Gesamt</th>
-                <th className="pb-2 w-10" />
-              </tr>
-            </thead>
-            <tbody>
-              {positions.map((pos) => (
-                <PositionTableRow
-                  key={pos.id}
-                  position={pos}
-                  onUpdate={(field, value) => updatePosition(pos.id, field, value)}
-                  onRemove={() => removePosition(pos.id)}
-                  einheitOptions={EINHEIT_OPTIONS}
-                  kategorieOptions={KATEGORIE_OPTIONS}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Summary */}
-      <div className="mt-4 space-y-0.5">
-        <p className="text-sm text-gray-700">
-          Gesamtwert: <span className="font-semibold">{gesamtwert.toFixed(0)} €</span>
-        </p>
-        <p className="text-sm text-[#62A17C] font-medium">
-          Davon ins Lager: {gesamtwert.toFixed(0)} €
-        </p>
-      </div>
-
-      {/* Actions */}
-      <div className="mt-6 flex items-center justify-between gap-2">
-        <Button
-          type="button"
-          variant="outline"
-          size="default"
-          className="border-gray-300 bg-white hover:bg-gray-50 cursor-pointer"
-          onClick={onBack}
-        >
-          Zurück
-        </Button>
-        <Button
-          type="button"
-          size="default"
-          className="bg-[#62A17C] hover:bg-[#62A17C]/80 text-white cursor-pointer"
-        >
-          <Package className="size-4" />
-          Ins Lager buchen
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-interface PositionTableRowProps {
-  position: PositionRow
-  onUpdate: (field: keyof PositionRow, value: string | number) => void
-  onRemove: () => void
-  einheitOptions: string[]
-  kategorieOptions: string[]
-}
-
-function PositionTableRow({
-  position,
-  onUpdate,
-  onRemove,
-  einheitOptions,
-  kategorieOptions,
-}: PositionTableRowProps) {
-  const gesamt = position.menge * position.ePreis
-  return (
-    <tr className="border-t border-gray-200/80 first:border-t-0">
-      <td className="py-2 pr-2 align-top pt-3">
-        <div className="flex size-6 items-center justify-center rounded-full bg-[#62A17C] text-white shrink-0">
-          <Check className="size-3.5" strokeWidth={3} />
-        </div>
-      </td>
-      <td className="py-2 pr-2">
-        <Input
-          value={position.artikel}
-          onChange={(e) => onUpdate('artikel', e.target.value)}
-          placeholder="EV."
-          className="h-8 text-sm border-gray-200 bg-white"
-        />
-      </td>
-      <td className="py-2 pr-2">
-        <Select value={position.kategorie} onValueChange={(v) => onUpdate('kategorie', v)}>
-          <SelectTrigger className="h-8 text-sm border-gray-200 bg-white w-full min-w-[100px]">
-            <SelectValue placeholder="Lager -..." />
-          </SelectTrigger>
-          <SelectContent>
-            {kategorieOptions.map((k) => (
-              <SelectItem key={k} value={k}>
-                {k}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </td>
-      <td className="py-2 pr-2">
-        <Input
-          type="number"
-          min={1}
-          value={position.menge}
-          onChange={(e) => onUpdate('menge', Number(e.target.value) || 0)}
-          className="h-8 text-sm border-gray-200 bg-white w-16"
-        />
-      </td>
-      <td className="py-2 pr-2">
-        <Select value={position.einheit} onValueChange={(v) => onUpdate('einheit', v)}>
-          <SelectTrigger className="h-8 text-sm border-gray-200 bg-white w-full min-w-[70px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {einheitOptions.map((e) => (
-              <SelectItem key={e} value={e}>
-                {e}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </td>
-      <td className="py-2 pr-2">
-        <Input
-          type="number"
-          min={0}
-          step={0.01}
-          value={position.ePreis}
-          onChange={(e) => onUpdate('ePreis', Number(e.target.value) || 0)}
-          className="h-8 text-sm border-gray-200 bg-white w-20"
-        />
-      </td>
-      <td className="py-2 pr-2 text-sm font-medium text-gray-900 align-top pt-3">
-        {gesamt.toFixed(0)} €
-      </td>
-      <td className="py-2 align-top pt-3">
+      <div className="flex items-center gap-2 mb-4">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="size-8 cursor-pointer text-gray-400 hover:text-red-600 hover:bg-red-50"
-          onClick={onRemove}
+          className="size-8 shrink-0 cursor-pointer text-gray-600 hover:bg-gray-100"
+          onClick={onBack}
         >
-          <Trash2 className="size-4" />
+          <ArrowLeft className="size-4" />
         </Button>
-      </td>
-    </tr>
+        <h2 className="text-lg font-semibold text-gray-900">
+          Manuell – {isInvoices ? 'Rechnung' : 'Bestellung'}
+        </h2>
+      </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 space-y-4">
+        {/* Lieferant: Dropdown für beide (Rechnung + Bestellung) */}
+        <div className="space-y-2">
+          <Label htmlFor="manuell-lieferant" className="text-sm font-medium text-gray-700">
+            Lieferant <span className="text-red-500">*</span>
+          </Label>
+          <Select value={supplierId || undefined} onValueChange={setSupplierId} required>
+            <SelectTrigger id="manuell-lieferant" className="w-full">
+              <SelectValue placeholder="Lieferant auswählen..." />
+            </SelectTrigger>
+            <SelectContent>
+              {lieferanten.map((l) => (
+                <SelectItem key={l.id} value={l.id} className="focus:bg-[#62A17C]/10 focus:text-[#62A17C]">
+                  {l.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="manuell-date" className="text-sm font-medium text-gray-700">
+            Datum
+          </Label>
+          <Input
+            id="manuell-date"
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="w-full"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="manuell-amount" className="text-sm font-medium text-gray-700">
+            Betrag
+          </Label>
+          <Input
+            id="manuell-amount"
+            type="number"
+            min={0}
+            step={0.01}
+            value={amount === 0 ? '' : amount}
+            onChange={(e) => setAmount(Number(e.target.value) || 0)}
+            placeholder="0"
+            className="w-full"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Status</Label>
+          <Select value={status} onValueChange={(v) => setStatus(v as InventoryStatus)}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} className="focus:bg-[#62A17C]/10 focus:text-[#62A17C]">
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">Zahlungsstatus</Label>
+          <Select value={paymentStatus} onValueChange={(v) => setPaymentStatus(v as PaymentStatus)}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {PAYMENT_STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} className="focus:bg-[#62A17C]/10 focus:text-[#62A17C]">
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="manuell-payment-date" className="text-sm font-medium text-gray-700">
+            Zahlungsdatum
+          </Label>
+          <Input
+            id="manuell-payment-date"
+            type="date"
+            value={paymentDate}
+            onChange={(e) => setPaymentDate(e.target.value)}
+            className="w-full"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-gray-700">WE verknüpft</Label>
+          <Select
+            value={weLinked ? 'true' : 'false'}
+            onValueChange={(v) => setWeLinked(v === 'true')}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {WE_LINKED_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value} className="focus:bg-[#62A17C]/10 focus:text-[#62A17C]">
+                  {opt.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {error && (
+          <p className="text-sm text-red-500">{error}</p>
+        )}
+
+        <div className="mt-auto pt-4 flex items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="default"
+            className="border-gray-300 bg-white hover:bg-gray-50 cursor-pointer"
+            onClick={onBack}
+            disabled={submitting}
+          >
+            Zurück
+          </Button>
+          <Button
+            type="submit"
+            size="default"
+            className="bg-[#62A17C] hover:bg-[#62A17C]/80 text-white cursor-pointer"
+            disabled={submitting}
+          >
+            {submitting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Package className="size-4" />
+            )}
+            Ins Lager buchen
+          </Button>
+        </div>
+      </form>
+    </div>
   )
 }

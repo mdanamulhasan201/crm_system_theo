@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -20,6 +20,7 @@ import {
 import { Package, FileText, Upload, Pencil, LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ManuellSection from './ManuellSection'
+import type { InventoryType } from '@/apis/warenwirtschaftApis'
 
 type Quelle = 'rechnung' | 'lieferschein' | 'manuell'
 
@@ -30,15 +31,21 @@ const QUELLE_OPTIONS: { value: Quelle; label: string; icon: LucideIcon }[] = [
 ]
 
 // Supplier list – replace with API data when ready
-const LIEFERANTEN = [
+export const LIEFERANTEN = [
   { id: '1', name: 'Orthopädie Müller' },
   { id: '2', name: 'Lederwelt GmbH' },
   { id: '3', name: 'SchaumTech' },
   { id: '4', name: 'Renia Kleber' },
   { id: '5', name: 'KorkNatur' },
   { id: '6', name: 'SohlenDirekt' },
+  { id: '7', name: 'Global Medical Supply' },
 ]
 const NEU_ANLEGEN_VALUE = '__new__'
+
+export type ManuellContext = {
+  inventoryType: InventoryType
+  supplierName?: string
+}
 
 interface NeuerWareneingangSidebarProps {
   open: boolean
@@ -49,17 +56,46 @@ export default function NeuerWareneingangSidebar({
   open,
   onOpenChange,
 }: NeuerWareneingangSidebarProps) {
-  const [quelle, setQuelle] = useState<Quelle>('manuell')
+  const [quelle, setQuelle] = useState<Quelle | null>(null)
   const [lieferantId, setLieferantId] = useState<string>('')
   const [showManuellSection, setShowManuellSection] = useState(false)
+  const [manuellContext, setManuellContext] = useState<ManuellContext | null>(null)
+  const [lieferantError, setLieferantError] = useState<string>('')
+
+  // Beim Schließen der Sidebar State zurücksetzen – beim erneuten Öffnen wieder erste Seite (Quelle + Lieferant)
+  useEffect(() => {
+    if (!open) {
+      setShowManuellSection(false)
+      setManuellContext(null)
+      setQuelle(null)
+      setLieferantError('')
+    }
+  }, [open])
 
   const handleLieferantChange = (value: string) => {
+    setLieferantError('')
     if (value === NEU_ANLEGEN_VALUE) {
       // TODO: open "Neuer Lieferant" modal/form
       setLieferantId('')
       return
     }
     setLieferantId(value)
+  }
+
+  const handleManuellClick = () => {
+    if (quelle === 'rechnung') {
+      const supplier = lieferantId ? LIEFERANTEN.find((l) => l.id === lieferantId) : undefined
+      setManuellContext({
+        inventoryType: 'Invoices',
+        supplierName: supplier?.name,
+      })
+    } else {
+      setManuellContext({
+        inventoryType: 'Orders',
+        supplierName: lieferantId ? LIEFERANTEN.find((l) => l.id === lieferantId)?.name : undefined,
+      })
+    }
+    setShowManuellSection(true)
   }
 
   return (
@@ -85,8 +121,17 @@ export default function NeuerWareneingangSidebar({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          {showManuellSection ? (
-            <ManuellSection onBack={() => setShowManuellSection(false)} />
+          {showManuellSection && manuellContext ? (
+            <ManuellSection
+              inventoryType={manuellContext.inventoryType}
+              supplierName={manuellContext.supplierName}
+              lieferanten={LIEFERANTEN}
+              onBack={() => {
+                setShowManuellSection(false)
+                setManuellContext(null)
+              }}
+              onSuccess={() => onOpenChange(false)}
+            />
           ) : (
             <>
               {/* Quelle wählen */}
@@ -101,8 +146,15 @@ export default function NeuerWareneingangSidebar({
                         key={opt.value}
                         type="button"
                         onClick={() => {
+                          setLieferantError('')
+                          if (quelle === opt.value) {
+                            setQuelle(null)
+                            return
+                          }
+                          if (opt.value === 'manuell') {
+                            handleManuellClick()
+                          }
                           setQuelle(opt.value)
-                          if (opt.value === 'manuell') setShowManuellSection(true)
                         }}
                         className={cn(
                           'flex flex-col cursor-pointer items-center gap-2 rounded-lg border px-3 py-4 text-sm font-medium transition-colors',
@@ -119,7 +171,7 @@ export default function NeuerWareneingangSidebar({
                 </div>
               </div>
 
-              {/* Lieferant */}
+              {/* Lieferant – immer sichtbar (common) */}
               <div className="mt-6 space-y-2">
                 <Label htmlFor="lieferant" className="text-sm font-medium text-gray-700">
                   Lieferant <span className="text-red-500">*</span>
@@ -129,7 +181,10 @@ export default function NeuerWareneingangSidebar({
                   onValueChange={handleLieferantChange}
                   required
                 >
-                  <SelectTrigger id="lieferant" className="w-full">
+                  <SelectTrigger
+                    id="lieferant"
+                    className={cn('w-full', lieferantError && 'border-red-500')}
+                  >
                     <SelectValue placeholder="Lieferant auswählen..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -147,6 +202,9 @@ export default function NeuerWareneingangSidebar({
                     </SelectItem>
                   </SelectContent>
                 </Select>
+                {lieferantError && (
+                  <p className="text-sm text-red-500">{lieferantError}</p>
+                )}
               </div>
             </>
           )}
