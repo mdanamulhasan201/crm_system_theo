@@ -1,10 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { Package, Layers, Box } from 'lucide-react';
+import { Package, Layers, Box, AlertCircle } from 'lucide-react';
 
 export interface SuggestSupplyItem {
     id: string;
@@ -53,6 +53,10 @@ interface SuggestSupplyAndStockModalProps {
     /** Backend error message that triggered this modal (e.g. "Block 3 ist nicht auf Lager...") */
     errorMessage?: string | null;
     loading?: boolean;
+    /** When user selects a supply or milling_block card, call with that item's id (used as versorgungId in order) */
+    onSelectVersorgung?: (id: string) => void;
+    /** Called when user clicks Skip. Parent sends full order payload to without-supply-or-store API. */
+    onSkip?: () => void | Promise<void>;
 }
 
 const MAX_DIAGNOSIS_TAGS = 3;
@@ -64,17 +68,27 @@ export default function SuggestSupplyAndStockModal({
     requiredLengthMm,
     errorMessage,
     loading = false,
+    onSelectVersorgung,
+    onSkip,
 }: SuggestSupplyAndStockModalProps) {
+    const [step, setStep] = useState<1 | 2>(1);
+    const [skipInProgress, setSkipInProgress] = useState(false);
     const supply = data?.supply ?? [];
     const millingBlock = data?.milling_block ?? [];
     const radyInsole = data?.rady_insole ?? [];
+
+    const canSkip = Boolean(onSkip);
+
+    useEffect(() => {
+        if (open) setStep(1);
+    }, [open]);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold text-gray-900">
-                        Vorschläge zu Versorgung & Lager
+                        {step === 1 ? 'Keine passende Größe im Lager' : 'Vorschläge zu Versorgung & Lager'}
                     </DialogTitle>
                     {errorMessage && (
                         <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
@@ -88,7 +102,46 @@ export default function SuggestSupplyAndStockModal({
                     )}
                 </DialogHeader>
 
-                {loading ? (
+                {step === 1 ? (
+                    <div className="mt-4 space-y-4">
+                        <div className="flex gap-2 rounded-lg bg-amber-50 border border-amber-200 p-3">
+                            <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 mt-0.5" />
+                            <p className="text-sm text-amber-800">
+                                Wenn Sie überspringen, wird die Bestellung trotzdem erstellt. Wenn Sie möchten, können Sie eine passende Versorgung aus der Liste auswählen – klicken Sie auf <strong>Weiter</strong>, um die Vorschläge zu sehen und eine für Sie passende Option zu wählen.
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-3 justify-end pt-2">
+                            {canSkip && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="cursor-pointer border-gray-300"
+                                    disabled={skipInProgress}
+                                    onClick={async () => {
+                                        if (!onSkip) return;
+                                        setSkipInProgress(true);
+                                        try {
+                                            await onSkip();
+                                            onOpenChange(false);
+                                        } finally {
+                                            setSkipInProgress(false);
+                                        }
+                                    }}
+                                >
+                                    {skipInProgress ? 'Wird erstellt...' : 'Überspringen'}
+                                </Button>
+                            )}
+                            <Button
+                                type="button"
+                                className="cursor-pointer bg-[#61A178] hover:bg-[#61A178]/90 text-white"
+                                onClick={() => setStep(2)}
+                                disabled={loading}
+                            >
+                                Weiter
+                            </Button>
+                        </div>
+                    </div>
+                ) : loading ? (
                     <div className="py-8 text-center text-gray-500">Wird geladen...</div>
                 ) : (
                     <div className="space-y-6 mt-4">
@@ -105,7 +158,7 @@ export default function SuggestSupplyAndStockModal({
                                             key={item.id}
                                             className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50/50 p-4 shadow-sm hover:shadow-md transition-shadow"
                                         >
-                                            <div className="flex gap-4">
+                                            <div className="flex gap-4 items-start">
                                                 <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-gray-100 border border-gray-200">
                                                     {item.supplyStatus?.image ? (
                                                         <Image
@@ -175,6 +228,19 @@ export default function SuggestSupplyAndStockModal({
                                                         </div>
                                                     ) : null}
                                                 </div>
+                                                {onSelectVersorgung ? (
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        className="shrink-0 bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer"
+                                                        onClick={() => {
+                                                            onSelectVersorgung(item.id);
+                                                            onOpenChange(false);
+                                                        }}
+                                                    >
+                                                        Auswählen
+                                                    </Button>
+                                                ) : null}
                                             </div>
                                         </div>
                                     ))}
@@ -242,6 +308,19 @@ export default function SuggestSupplyAndStockModal({
                                                     </span>
                                                 ) : null}
                                             </div>
+                                            {onSelectVersorgung ? (
+                                                <Button
+                                                    type="button"
+                                                    size="sm"
+                                                    className="mt-3 w-full bg-[#61A178] hover:bg-[#61A178]/90 text-white cursor-pointer"
+                                                    onClick={() => {
+                                                        onSelectVersorgung(item.id);
+                                                        onOpenChange(false);
+                                                    }}
+                                                >
+                                                    Auswählen
+                                                </Button>
+                                            ) : null}
                                         </div>
                                     ))}
                                 </div>

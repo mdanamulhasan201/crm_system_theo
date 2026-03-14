@@ -31,6 +31,17 @@ export const suggestSupplyAndStock = async (requiredLength: number) => {
 export const suggestSupplyAndStockByRequiredLength = suggestSupplyAndStock;
 
 
+/** Create order without supply/store (e.g. when user skips suggest modal). Sends full order payload as body. */
+export const createOrderWithoutSupplyOrStore = async (payload: Record<string, any>) => {
+    try {
+        const response = await axiosClient.post("/customer-orders/create-order/without-supply-or-store", payload);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
 
 // create custom Versorgung privet-supply/shadow
 export const createCustomVersorgung = async (payload: Record<string, any>) => {
