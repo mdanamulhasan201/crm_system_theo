@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import { useSearchParams, usePathname, useRouter } from 'next/navigation'
 import WarenwirtschaftHeader from '../_components/Warenwirtschaft/WarenwirtschaftHeader'
 import WarenwirtschaftCard from '../_components/Warenwirtschaft/WarenwirtschaftCard'
@@ -22,6 +22,9 @@ export default function Warenwirtschaft() {
   const pathname = usePathname()
   const router = useRouter()
   const activeTab = getTabFromSearchParams(searchParams)
+  const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [editInventoryId, setEditInventoryId] = useState<string | null>(null)
 
   const handleTabChange = (value: string) => {
     const next = VALID_TABS.includes(value as TabValue) ? value : 'warenwirtschaft'
@@ -49,10 +52,36 @@ export default function Warenwirtschaft() {
 
       <TabsContent value="warenwirtschaft" className="mt-6 focus-visible:outline-none">
         <div className="space-y-6">
-          <WarenwirtschaftHeader />
+          <WarenwirtschaftHeader
+            sidebarOpen={sidebarOpen}
+            onSidebarOpenChange={(open) => {
+              setSidebarOpen(open)
+              if (!open) setEditInventoryId(null)
+            }}
+            onOpenForCreate={() => {
+              setEditInventoryId(null)
+              setSidebarOpen(true)
+            }}
+            editInventoryId={editInventoryId}
+            onInventorySuccess={() => setInventoryRefreshKey((k) => k + 1)}
+          />
           <WarenwirtschaftCard />
-          <BestellungenTable />
-          <RechnungenTable />
+          <BestellungenTable
+            refreshTrigger={inventoryRefreshKey}
+            onEditInventory={(id) => {
+              setEditInventoryId(id)
+              setSidebarOpen(true)
+            }}
+            onDeleted={() => setInventoryRefreshKey((k) => k + 1)}
+          />
+          <RechnungenTable
+            refreshTrigger={inventoryRefreshKey}
+            onEditInventory={(id) => {
+              setEditInventoryId(id)
+              setSidebarOpen(true)
+            }}
+            onDeleted={() => setInventoryRefreshKey((k) => k + 1)}
+          />
         </div>
       </TabsContent>
 

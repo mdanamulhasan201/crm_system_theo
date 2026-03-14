@@ -14,7 +14,9 @@ import {
 import { ArrowLeft, Package, Loader2 } from 'lucide-react'
 import {
   createInventory,
+  updateInventory,
   type CreateInventoryPayload,
+  type InventoryItem,
   type InventoryType,
   type InventoryStatus,
   type PaymentStatus,
@@ -41,6 +43,11 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10)
 }
 
+function dateToInput(iso: string) {
+  if (!iso) return todayISO()
+  return iso.slice(0, 10)
+}
+
 export interface LieferantOption {
   id: string
   name: string
@@ -52,6 +59,8 @@ interface ManuellSectionProps {
   lieferanten: LieferantOption[]
   onBack: () => void
   onSuccess?: () => void
+  initialData?: InventoryItem
+  editId?: string
 }
 
 export default function ManuellSection({
@@ -60,21 +69,25 @@ export default function ManuellSection({
   lieferanten,
   onBack,
   onSuccess,
+  initialData,
+  editId,
 }: ManuellSectionProps) {
-  const [supplierId, setSupplierId] = useState<string>(() =>
-    supplierName ? lieferanten.find((l) => l.name === supplierName)?.id ?? '' : ''
-  )
-  const [date, setDate] = useState<string>(todayISO())
-  const [amount, setAmount] = useState<number>(0)
-  const [status, setStatus] = useState<InventoryStatus>('Delivered')
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('Paid')
-  const [paymentDate, setPaymentDate] = useState<string>(todayISO())
-  const [weLinked, setWeLinked] = useState<boolean>(false)
+  const isEdit = Boolean(editId && initialData)
+  const [supplierId, setSupplierId] = useState<string>(() => {
+    if (initialData) return lieferanten.find((l) => l.name === initialData.supplier)?.id ?? ''
+    return supplierName ? lieferanten.find((l) => l.name === supplierName)?.id ?? '' : ''
+  })
+  const [date, setDate] = useState<string>(() => (initialData ? dateToInput(initialData.date) : todayISO()))
+  const [amount, setAmount] = useState<number>(initialData?.amount ?? 0)
+  const [status, setStatus] = useState<InventoryStatus>(initialData?.status ?? 'Delivered')
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(initialData?.payment_status ?? 'Paid')
+  const [paymentDate, setPaymentDate] = useState<string>(() => (initialData ? dateToInput(initialData.payment_date) : todayISO()))
+  const [weLinked, setWeLinked] = useState<boolean>(initialData?.we_linked ?? false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isInvoices = inventoryType === 'Invoices'
-  const supplier = lieferanten.find((l) => l.id === supplierId)?.name ?? ''
+  const supplier = lieferanten.find((l) => l.id === supplierId)?.name ?? initialData?.supplier ?? ''
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,13 +108,18 @@ export default function ManuellSection({
     }
     setSubmitting(true)
     try {
-      await createInventory(payload)
-      toast.success('Wareneingang erfolgreich erstellt.')
+      if (isEdit && editId) {
+        await updateInventory(editId, payload)
+        toast.success('Wareneingang erfolgreich aktualisiert.')
+      } else {
+        await createInventory(payload)
+        toast.success('Wareneingang erfolgreich erstellt.')
+      }
       onSuccess?.()
     } catch (err: unknown) {
       const message = err && typeof err === 'object' && 'message' in err
         ? String((err as { message: unknown }).message)
-        : 'Fehler beim Erstellen.'
+        : isEdit ? 'Fehler beim Aktualisieren.' : 'Fehler beim Erstellen.'
       setError(message)
     } finally {
       setSubmitting(false)
@@ -121,7 +139,7 @@ export default function ManuellSection({
           <ArrowLeft className="size-4" />
         </Button>
         <h2 className="text-lg font-semibold text-gray-900">
-          Manuell – {isInvoices ? 'Rechnung' : 'Bestellung'}
+          {isEdit ? 'Bearbeiten' : 'Manuell'} – {isInvoices ? 'Rechnung' : 'Bestellung'}
         </h2>
       </div>
 
@@ -264,7 +282,7 @@ export default function ManuellSection({
             ) : (
               <Package className="size-4" />
             )}
-            Ins Lager buchen
+            {isEdit ? 'Aktualisieren' : 'Ins Lager buchen'}
           </Button>
         </div>
       </form>

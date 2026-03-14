@@ -6,9 +6,22 @@ import { Wrench, Plus } from 'lucide-react'
 import LagerkorrekturModal from './LagerkorrekturModal'
 import NeuerWareneingangSidebar from './NeuerWareneingangSidebar'
 
-export default function WarenwirtschaftHeader() {
+interface WarenwirtschaftHeaderProps {
+  sidebarOpen: boolean
+  onSidebarOpenChange: (open: boolean) => void
+  onOpenForCreate: () => void
+  editInventoryId: string | null
+  onInventorySuccess?: () => void
+}
+
+export default function WarenwirtschaftHeader({
+  sidebarOpen,
+  onSidebarOpenChange,
+  onOpenForCreate,
+  editInventoryId,
+  onInventorySuccess,
+}: WarenwirtschaftHeaderProps) {
   const [lagerkorrekturOpen, setLagerkorrekturOpen] = useState(false)
-  const [wareneingangSidebarOpen, setWareneingangSidebarOpen] = useState(false)
 
   return (
     <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -33,7 +46,7 @@ export default function WarenwirtschaftHeader() {
         <Button
           size="default"
           className="bg-[#62A17C] cursor-pointer hover:bg-[#4A8A5F] text-white"
-          onClick={() => setWareneingangSidebarOpen(true)}
+          onClick={onOpenForCreate}
         >
           <Plus className="size-4" />
           Neuer Wareneingang
@@ -46,8 +59,10 @@ export default function WarenwirtschaftHeader() {
       />
 
       <NeuerWareneingangSidebar
-        open={wareneingangSidebarOpen}
-        onOpenChange={setWareneingangSidebarOpen}
+        open={sidebarOpen}
+        onOpenChange={onSidebarOpenChange}
+        onSuccess={onInventorySuccess}
+        editInventoryId={editInventoryId}
       />
     </header>
   )

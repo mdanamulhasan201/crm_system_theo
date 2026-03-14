@@ -17,10 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Package, FileText, Upload, Pencil, LucideIcon } from 'lucide-react'
+import { Package, FileText, Upload, Pencil, LucideIcon, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ManuellSection from './ManuellSection'
-import type { InventoryType } from '@/apis/warenwirtschaftApis'
+import { getSingleInventory, type InventoryType, type InventoryItem } from '@/apis/warenwirtschaftApis'
 
 type Quelle = 'rechnung' | 'lieferschein' | 'manuell'
 
@@ -50,17 +50,45 @@ export type ManuellContext = {
 interface NeuerWareneingangSidebarProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
+  editInventoryId?: string | null
 }
 
 export default function NeuerWareneingangSidebar({
   open,
   onOpenChange,
+  onSuccess,
+  editInventoryId,
 }: NeuerWareneingangSidebarProps) {
   const [quelle, setQuelle] = useState<Quelle | null>(null)
   const [lieferantId, setLieferantId] = useState<string>('')
   const [showManuellSection, setShowManuellSection] = useState(false)
   const [manuellContext, setManuellContext] = useState<ManuellContext | null>(null)
   const [lieferantError, setLieferantError] = useState<string>('')
+  const [editData, setEditData] = useState<InventoryItem | null>(null)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+
+  // Edit: single inventory laden wenn editInventoryId gesetzt
+  useEffect(() => {
+    if (!open || !editInventoryId) {
+      setEditData(null)
+      setEditError(null)
+      return
+    }
+    setEditLoading(true)
+    setEditError(null)
+    getSingleInventory(editInventoryId)
+      .then((res) => {
+        setEditData(res.data)
+      })
+      .catch(() => {
+        setEditError('Fehler beim Laden.')
+      })
+      .finally(() => {
+        setEditLoading(false)
+      })
+  }, [open, editInventoryId])
 
   // Beim Schließen der Sidebar State zurücksetzen – beim erneuten Öffnen wieder erste Seite (Quelle + Lieferant)
   useEffect(() => {
@@ -69,6 +97,8 @@ export default function NeuerWareneingangSidebar({
       setManuellContext(null)
       setQuelle(null)
       setLieferantError('')
+      setEditData(null)
+      setEditError(null)
     }
   }, [open])
 
@@ -121,7 +151,28 @@ export default function NeuerWareneingangSidebar({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
-          {showManuellSection && manuellContext ? (
+          {editInventoryId ? (
+            editLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="size-8 animate-spin text-[#62A17C]" />
+              </div>
+            ) : editError || !editData ? (
+              <div className="text-sm text-red-500 py-4">{editError || 'Nicht gefunden.'}</div>
+            ) : (
+              <ManuellSection
+                inventoryType={editData.inventory_type}
+                supplierName={editData.supplier}
+                lieferanten={LIEFERANTEN}
+                onBack={() => onOpenChange(false)}
+                onSuccess={() => {
+                  onOpenChange(false)
+                  onSuccess?.()
+                }}
+                initialData={editData}
+                editId={editData.id}
+              />
+            )
+          ) : showManuellSection && manuellContext ? (
             <ManuellSection
               inventoryType={manuellContext.inventoryType}
               supplierName={manuellContext.supplierName}
@@ -130,7 +181,10 @@ export default function NeuerWareneingangSidebar({
                 setShowManuellSection(false)
                 setManuellContext(null)
               }}
-              onSuccess={() => onOpenChange(false)}
+              onSuccess={() => {
+                onOpenChange(false)
+                onSuccess?.()
+              }}
             />
           ) : (
             <>
