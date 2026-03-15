@@ -132,7 +132,7 @@ export default function BalanceCard({ data = defaultData, payoutHistoryRefreshKe
                         <TbArrowsExchange className="w-5 h-5 text-emerald-500" />
                     </div>
                 </div>
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Kürzliche Auszahlungen</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-3">Kürzliche Zahlungen</h3>
                 <div className="space-y-2">
                     {loading ? (
                         <div className="flex flex-col gap-2">
