@@ -136,7 +136,41 @@ export const toggleEmployeeAvailabilityActivity = async (employeeId: string, eav
     }
 }
 
+// update availability time /v2/employee-availability/update-availability-time
 
+export const updateEmployeeAvailabilityTime = async (availabilityId: string, availabilityTimeData: any) => {
+    try {
+        const response = await axiosClient.patch(
+            `/v2/employee-availability/update-availability-time`,
+            {
+                availability_time_id: availabilityId,
+                ...availabilityTimeData,
+            }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
 
+// /v2/employee-availability/add-availability-time
 
+export const addEmployeeAvailabilityTime = async (availabilityTimeData: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/employee-availability/add-availability-time`, availabilityTimeData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
 
+// delete /v2/employee-availability/delete-availability-time/cmmrfcp1g0003j8kutzl7bzlb
+
+export const deleteEmployeeAvailabilityTime = async (availabilityId: string) => {
+    try {
+        const response = await axiosClient.delete(`/v2/employee-availability/delete-availability-time/${availabilityId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

@@ -4,8 +4,15 @@ import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Plus, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Trash2, Plus, Clock, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import EmployeeListLeftSide from "./EmployeeListLeftSide";
 import CrearteAvailabilityModal from "./CrearteAvailabilityModal";
 import {
@@ -13,6 +20,9 @@ import {
   getAllEmployeeAvailability,
   createEmployeeAvailability,
   toggleEmployeeAvailabilityActivity,
+  updateEmployeeAvailabilityTime,
+  addEmployeeAvailabilityTime,
+  deleteEmployeeAvailabilityTime,
 } from "@/apis/employeeaApis";
 import toast from "react-hot-toast";
 
@@ -58,6 +68,7 @@ const DAY_WEEK_TO_NAME: Record<number, string> = {
 
 interface ScheduleEntry {
   id: string;
+  slotId?: string;
   day: string;
   title: string;
   start: string;
@@ -124,10 +135,13 @@ export default function StaffAvailability() {
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [scheduleEntries, setScheduleEntries] = useState<Record<string, ScheduleEntry[]>>({});
   const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
   const [modalRows, setModalRows] = useState<ModalRow[]>([newModalRow()]);
   const [dayEnabled, setDayEnabled] = useState<DayEnabledMap>({});
   const [dayMeta, setDayMeta] = useState<DayMetaMap>({});
   const [togglingDay, setTogglingDay] = useState<string | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<ScheduleEntry | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   const [loadingAvailability, setLoadingAvailability] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -188,25 +202,30 @@ export default function StaffAvailability() {
     getAllEmployeeAvailability(selectedStaffId)
       .then((res: any) => {
         if (cancelled) return;
-        const list = Array.isArray(res) ? res : res?.data ?? res?.availability ?? [];
+        // API shape: { success: true, data: [{ id, dayOfWeek, isActive, availability_time: [] }, ...] }
+        const list: any[] = Array.isArray(res)
+          ? res
+          : (res?.data != null ? res.data : res?.availability) ?? [];
         const entries: ScheduleEntry[] = [];
         const meta: Record<string, DayMeta> = {};
         list.forEach((item: any) => {
           const dayName = DAY_WEEK_TO_NAME[item.dayOfWeek] ?? null;
-          if (!dayName) return;
+          if (dayName == null) return;
           const eavailabilityId = item.id;
           const isActive = item.isActive !== false;
+          // Day exists in API → always show card (even when availability_time is empty)
           if (eavailabilityId) {
             meta[dayName] = { eavailabilityId, isActive };
           }
-          const slots = item.availability_time || item.availabilityTime || [];
-          slots.forEach((slot: any) => {
+          const slots = item.availability_time ?? item.availabilityTime ?? [];
+          (Array.isArray(slots) ? slots : []).forEach((slot: any) => {
             entries.push({
               id: crypto.randomUUID(),
+              slotId: slot.id,
               day: dayName,
               title: slot.title || DEFAULT_TITLE,
-              start: slot.startTime || slot.start || "09:00",
-              end: slot.endTime || slot.end || "17:00",
+              start: slot.startTime ?? slot.start ?? "09:00",
+              end: slot.endTime ?? slot.end ?? "17:00",
             });
           });
         });
@@ -240,10 +259,13 @@ export default function StaffAvailability() {
     return g;
   }, [scheduleEntries, selectedStaffId]);
 
-  const daysWithEntries = useMemo(
-    () => DAYS.filter((d) => (entriesByDay[d]?.length ?? 0) > 0),
-    [entriesByDay]
-  );
+  const daysWithEntries = useMemo(() => {
+    const staffMeta = (selectedStaffId && dayMeta ? dayMeta[selectedStaffId] : null) ?? {};
+    return DAYS.filter(
+      (d) =>
+        (entriesByDay?.[d]?.length ?? 0) > 0 || !!staffMeta?.[d]
+    );
+  }, [entriesByDay, dayMeta, selectedStaffId]);
 
   const isDayEnabled = (day: string) => {
     if (!selectedStaffId) return true;
@@ -284,8 +306,40 @@ export default function StaffAvailability() {
   };
 
   const openAddModal = () => {
+    setEditingSlotId(null);
     setModalRows([newModalRow()]);
     setAddModalOpen(true);
+  };
+
+  const openAddModalForDay = (day: string) => {
+    setEditingSlotId(null);
+    setModalRows([{ day, title: DEFAULT_TITLE, start: "09:00", end: "17:00" }]);
+    setAddModalOpen(true);
+  };
+
+  const openEditModal = (entry: ScheduleEntry) => {
+    if (!entry.slotId) return;
+    setEditingSlotId(entry.slotId);
+    setModalRows([
+      {
+        day: entry.day,
+        title: entry.title || DEFAULT_TITLE,
+        start: entry.start,
+        end: entry.end,
+      },
+    ]);
+    setAddModalOpen(true);
+  };
+
+  const handleDayHeaderEditClick = (day: string) => {
+    const dayEntries = entriesByDay?.[day] ?? [];
+    const existingWithSlot = dayEntries.find((e) => e.slotId);
+
+    if (existingWithSlot) {
+      openEditModal(existingWithSlot);
+    } else {
+      openAddModalForDay(day);
+    }
   };
 
   const addModalRow = () => {
@@ -302,65 +356,107 @@ export default function StaffAvailability() {
     setModalRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
   };
 
+  const refetchAvailability = async () => {
+    if (!selectedStaffId) return;
+    const res: any = await getAllEmployeeAvailability(selectedStaffId);
+    const list: any[] = Array.isArray(res)
+      ? res
+      : (res?.data != null ? res.data : res?.availability) ?? [];
+    const entries: ScheduleEntry[] = [];
+    const meta: Record<string, DayMeta> = {};
+    list.forEach((item: any) => {
+      const dayName = DAY_WEEK_TO_NAME[item.dayOfWeek] ?? null;
+      if (dayName == null) return;
+      const eavailabilityId = item.id;
+      const isActive = item.isActive !== false;
+      if (eavailabilityId) {
+        meta[dayName] = { eavailabilityId, isActive };
+      }
+      const slots = item.availability_time ?? item.availabilityTime ?? [];
+      (Array.isArray(slots) ? slots : []).forEach((slot: any) => {
+        entries.push({
+          id: crypto.randomUUID(),
+          slotId: slot.id,
+          day: dayName,
+          title: slot.title || DEFAULT_TITLE,
+          start: slot.startTime ?? slot.start ?? "09:00",
+          end: slot.endTime ?? slot.end ?? "17:00",
+        });
+      });
+    });
+    setScheduleEntries((prev) => ({ ...prev, [selectedStaffId]: entries }));
+    setDayMeta((prev) => ({ ...prev, [selectedStaffId]: meta }));
+  };
+
   const saveModalEntries = async () => {
     const valid = modalRows.filter((r) => r.start && r.end);
     if (valid.length === 0 || !selectedStaffId) return;
-    const byDay: Record<string, { title: string; start: string; end: string }[]> = {};
-    valid.forEach((r) => {
-      const day = r.day;
-      if (!byDay[day]) byDay[day] = [];
-      byDay[day].push({
-        title: r.title?.trim() || DEFAULT_TITLE,
-        start: r.start,
-        end: r.end,
-      });
-    });
+
     setSaving(true);
     try {
-      await Promise.all(
-        Object.entries(byDay).map(([dayName, slots]) => {
-          const dayOfWeek = DAY_NAME_TO_WEEK[dayName];
-          if (dayOfWeek == null) return Promise.resolve();
-          return createEmployeeAvailability(selectedStaffId, {
-            dayOfWeek,
-            availability_time: slots.map((s) => ({
+      if (editingSlotId) {
+        // Update existing time slot: PATCH /v2/employee-availability/update-availability-time/{availabilityId}
+        const row = valid[0];
+        await updateEmployeeAvailabilityTime(editingSlotId, {
+          title: row.title?.trim() || DEFAULT_TITLE,
+          startTime: row.start,
+          endTime: row.end,
+        });
+        toast.success("Arbeitszeit aktualisiert.");
+        setAddModalOpen(false);
+        setEditingSlotId(null);
+        await refetchAvailability();
+      } else {
+        // New time slots:
+        // - if day already exists (has eavailabilityId): POST /v2/employee-availability/add-availability-time
+        // - if day does NOT exist yet: POST /v2/employee-availability/create/{employeeId}
+        const byDay: Record<string, { title: string; start: string; end: string }[]> = {};
+        valid.forEach((r) => {
+          const day = r.day;
+          if (!byDay[day]) byDay[day] = [];
+          byDay[day].push({
+            title: r.title?.trim() || DEFAULT_TITLE,
+            start: r.start,
+            end: r.end,
+          });
+        });
+        await Promise.all(
+          Object.entries(byDay).map(([dayName, slots]) => {
+            const dayOfWeek = DAY_NAME_TO_WEEK[dayName];
+            if (dayOfWeek == null) return Promise.resolve();
+
+            const existingDay =
+              selectedStaffId && dayMeta[selectedStaffId]
+                ? dayMeta[selectedStaffId][dayName]
+                : undefined;
+
+            const payloadTimes = slots.map((s) => ({
               title: s.title,
               startTime: s.start,
               endTime: s.end,
-            })),
-          });
-        })
-      );
-      toast.success("Arbeitszeiten gespeichert.");
-      setAddModalOpen(false);
-      // Refetch availability for current employee (includes eavailability_id + isActive)
-      const res: any = await getAllEmployeeAvailability(selectedStaffId);
-      const list = Array.isArray(res) ? res : res?.data ?? res?.availability ?? [];
-      const entries: ScheduleEntry[] = [];
-      const meta: Record<string, DayMeta> = {};
-      list.forEach((item: any) => {
-        const dayName = DAY_WEEK_TO_NAME[item.dayOfWeek] ?? null;
-        if (!dayName) return;
-        const eavailabilityId = item.id;
-        const isActive = item.isActive !== false;
-        if (eavailabilityId) {
-          meta[dayName] = { eavailabilityId, isActive };
-        }
-        const slots = item.availability_time || item.availabilityTime || [];
-        slots.forEach((slot: any) => {
-          entries.push({
-            id: crypto.randomUUID(),
-            day: dayName,
-            title: slot.title || DEFAULT_TITLE,
-            start: slot.startTime || slot.start || "09:00",
-            end: slot.endTime || slot.end || "17:00",
-          });
-        });
-      });
-      setScheduleEntries((prev) => ({ ...prev, [selectedStaffId]: entries }));
-      setDayMeta((prev) => ({ ...prev, [selectedStaffId]: meta }));
+            }));
+
+            // Existing day from API but no times yet (availability_time: [])
+            if (existingDay?.eavailabilityId) {
+              return addEmployeeAvailabilityTime({
+                availability_id: existingDay.eavailabilityId,
+                availability_time: payloadTimes,
+              });
+            }
+
+            // Day not yet created for this employee
+            return createEmployeeAvailability(selectedStaffId, {
+              dayOfWeek,
+              availability_time: payloadTimes,
+            });
+          })
+        );
+        toast.success("Arbeitszeiten gespeichert.");
+        setAddModalOpen(false);
+        await refetchAvailability();
+      }
     } catch {
-      toast.error("Speichern fehlgeschlagen.");
+      toast.error(editingSlotId ? "Aktualisierung fehlgeschlagen." : "Speichern fehlgeschlagen.");
     } finally {
       setSaving(false);
     }
@@ -374,11 +470,72 @@ export default function StaffAvailability() {
     }));
   };
 
+  const handleDeleteClick = (entry: ScheduleEntry) => {
+    if (entry.slotId) {
+      setEntryToDelete(entry);
+    } else {
+      removeEntry(entry.id);
+    }
+  };
+
+  const confirmDeleteEntry = async () => {
+    if (!entryToDelete?.slotId) return;
+    setDeleting(true);
+    try {
+      await deleteEmployeeAvailabilityTime(entryToDelete.slotId);
+      toast.success("Zeit gelöscht.");
+      setEntryToDelete(null);
+      await refetchAvailability();
+    } catch {
+      toast.error("Löschen fehlgeschlagen.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6 pt-4">
+      {/* Delete single time confirm modal */}
+      <Dialog open={!!entryToDelete} onOpenChange={(open) => !open && setEntryToDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Zeit löschen?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600 py-2">
+            {entryToDelete && (
+              <>
+                Möchten Sie &quot;{entryToDelete.title?.trim() || "Arbeitszeit"}&quot; ({entryToDelete.start} –{" "}
+                {entryToDelete.end}) wirklich löschen?
+              </>
+            )}
+          </p>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setEntryToDelete(null)}
+              disabled={deleting}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDeleteEntry}
+              disabled={deleting}
+            >
+              {deleting ? "Löschen…" : "Löschen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <CrearteAvailabilityModal
         open={addModalOpen}
-        onOpenChange={setAddModalOpen}
+        onOpenChange={(open) => {
+          if (!open) setEditingSlotId(null);
+          setAddModalOpen(open);
+        }}
         rows={modalRows}
         days={Array.from(DAYS)}
         titleOptions={Array.from(TITLE_OPTIONS)}
@@ -388,6 +545,8 @@ export default function StaffAvailability() {
         onChangeRow={updateModalRow}
         onSave={saveModalEntries}
         TimeInputWithIcon={TimeInputWithIcon}
+        editMode={!!editingSlotId}
+        saveButtonLabel={editingSlotId ? "Speichern" : "Hinzufügen"}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -426,16 +585,40 @@ export default function StaffAvailability() {
                 Bitte wählen Sie links einen Mitarbeiter aus.
               </div>
             ) : loadingAvailability ? (
-              <div className="rounded-xl border border-gray-200 bg-white px-6 py-8 text-center text-sm text-gray-500">
-                Arbeitszeiten werden geladen…
+              <div className="flex flex-col gap-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="rounded-xl border border-gray-200 bg-white overflow-hidden"
+                  >
+                    <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+                      <div className="h-5 w-5 rounded shrink-0 shimmer" />
+                      <div className="h-4 w-24 shimmer" />
+                    </div>
+                    <div className="divide-y divide-gray-50 p-4 space-y-2">
+                      <div className="flex items-center gap-4">
+                        <div className="h-4 w-20 shrink-0 shimmer" />
+                        <div className="h-4 flex-1 max-w-[140px] shimmer" />
+                        <div className="h-8 w-8 shrink-0 rounded-lg shimmer" />
+                        <div className="h-8 w-8 shrink-0 rounded-lg shimmer" />
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="h-4 w-20 shrink-0 shimmer" />
+                        <div className="h-4 flex-1 max-w-[120px] shimmer" />
+                        <div className="h-8 w-8 shrink-0 rounded-lg shimmer" />
+                        <div className="h-8 w-8 shrink-0 rounded-lg shimmer" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ) : currentEntries.length === 0 ? (
+            ) : daysWithEntries.length === 0 ? (
               <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/50 px-6 py-8 text-center text-sm text-gray-500">
                 Noch keine Zeiten. Klicken Sie auf &quot;Hinzufügen&quot;, um Arbeitszeiten und Pausen einzutragen.
               </div>
             ) : (
               daysWithEntries.map((day) => {
-                const dayEntries = entriesByDay[day] ?? [];
+                const dayEntries = entriesByDay?.[day] ?? [];
                 const enabled = isDayEnabled(day);
                 return (
                   <div
@@ -448,24 +631,40 @@ export default function StaffAvailability() {
                     {/* Card header: switch + day */}
                     <div
                       className={cn(
-                        "flex items-center gap-3 px-4 py-3 rounded-t-xl border-b",
+                        "flex items-center justify-between gap-3 px-4 py-3 rounded-t-xl border-b",
                         enabled ? "border-gray-100 bg-gray-50/30" : "border-gray-100 bg-gray-50/50"
                       )}
                     >
-                      <Switch
-                        checked={enabled}
-                        onCheckedChange={() => handleToggleDay(day)}
-                        disabled={togglingDay === day}
-                        className="data-[state=checked]:bg-[#61A07B] shrink-0 cursor-pointer"
-                      />
-                      <span
+                      <div className="flex items-center gap-3">
+                        <Switch
+                          checked={enabled}
+                          onCheckedChange={() => handleToggleDay(day)}
+                          disabled={togglingDay === day}
+                          className="data-[state=checked]:bg-[#61A07B] shrink-0 cursor-pointer"
+                        />
+                        <span
+                          className={cn(
+                            "font-semibold text-sm",
+                            enabled ? "text-gray-900" : "text-gray-400"
+                          )}
+                        >
+                          {day}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleDayHeaderEditClick(day)}
+                        disabled={!enabled}
                         className={cn(
-                          "font-semibold text-sm",
-                          enabled ? "text-gray-900" : "text-gray-400"
+                          "p-2 rounded-lg transition-colors",
+                          enabled
+                            ? "text-gray-400 hover:text-[#61A07B] hover:bg-[#61A07B]/10 cursor-pointer"
+                            : "text-gray-300 cursor-not-allowed"
                         )}
+                        aria-label="Arbeitszeit für diesen Tag hinzufügen oder bearbeiten"
                       >
-                        {day}
-                      </span>
+                        <Pencil className="h-4 w-4" />
+                      </button>
                     </div>
                     {/* Time slots list */}
                     <div className="divide-y divide-gray-50">
@@ -495,20 +694,22 @@ export default function StaffAvailability() {
                           >
                             {entry.start} – {entry.end}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => removeEntry(entry.id)}
-                            disabled={!enabled}
-                            className={cn(
-                              "p-2 rounded-lg shrink-0 transition-colors",
-                              enabled
-                                ? "text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
-                                : "text-gray-300 cursor-not-allowed"
-                            )}
-                            aria-label="Eintrag entfernen"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteClick(entry)}
+                              disabled={!enabled}
+                              className={cn(
+                                "p-2 rounded-lg transition-colors",
+                                enabled
+                                  ? "text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                                  : "text-gray-300 cursor-not-allowed"
+                              )}
+                              aria-label="Eintrag entfernen"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>

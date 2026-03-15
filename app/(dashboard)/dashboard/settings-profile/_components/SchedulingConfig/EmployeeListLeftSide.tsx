@@ -36,8 +36,19 @@ export default function EmployeeListLeftSide({
       </h3>
       <div className="flex flex-col gap-2">
         {loading ? (
-          <div className="rounded-lg border border-gray-200 bg-gray-50/50 px-4 py-6 text-center text-sm text-gray-500">
-            Laden…
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="rounded-lg border border-gray-200 bg-white p-3 flex items-center gap-3"
+              >
+                <div className="h-9 w-9 rounded-full shrink-0 shimmer" />
+                <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+                  <div className="h-3.5 w-3/4 shimmer" />
+                  <div className="h-3 w-1/2 shimmer" />
+                </div>
+              </div>
+            ))}
           </div>
         ) : employees.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50/50 px-4 py-6 text-center text-sm text-gray-500">
