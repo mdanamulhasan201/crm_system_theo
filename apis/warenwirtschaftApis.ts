@@ -109,6 +109,18 @@ export const deleteInventory = async (id: string): Promise<{ success: boolean }>
 };
 
 
+
+// card data v2/inventory-management/dashboard-kpis
+export const getCardDataDashboardKpis = async () => {
+  try {
+    const response = await axiosClient.get(`/v2/inventory-management/dashboard-kpis`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
 // ============================ inventory-management Dokumente & Forderungen============================//
 
 // create apis v2/inventory-management/documents-claims/create
@@ -121,12 +133,69 @@ export const createDocumentsClaims = async (documentsClaimsData: any) => {
   }
 }
 
-// get card data  v2/inventory-management/documents-claims/calculation
+// get card data  v2/inventory-management/documents-claims/calculations
 export const getCardDataCalculation = async () => {
   try {
-    const response = await axiosClient.get(`/v2/inventory-management/documents-claims/calculation`);
+    const response = await axiosClient.get(`/v2/inventory-management/documents-claims/calculations`);
     return response.data;
   } catch (error) {
     throw error;
   }
 }
+
+
+// get all v2/inventory-management/documents-claims/get-all?limit=10&cursor=&recipient=&search=&type=invoices
+export const getAllDocumentsClaims = async (limit: number, cursor: string, recipient: string, search: string, type: string) => {
+  try {
+    const response = await axiosClient.get(`/v2/inventory-management/documents-claims/get-all?limit=${limit}&cursor=${cursor}&recipient=${recipient}&search=${search}&type=${type}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+// get all fiter data v2/inventory-management/documents-claims/get-recipient-name
+
+export const getRecipientName = async () => {
+  try {
+    const response = await axiosClient.get(`/v2/inventory-management/documents-claims/get-recipient-name`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+// get dingle data v2/inventory-management/documents-claims/get-details/cmmrtnqkl0000z7ku11hhh43v
+export const getSingleDocumentsClaims = async (id: string) => {
+  try {
+    const response = await axiosClient.get(`/v2/inventory-management/documents-claims/get-details/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+// delete v2/inventory-management/documents-claims/delete/cmmrtnqkl0000z7ku11hhh43v 
+export const deleteDocumentsClaims = async (id: string) => {
+  try {
+    const response = await axiosClient.delete(`/v2/inventory-management/documents-claims/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+// update v2/inventory-management/documents-claims/update/cmmrtkh2q0001lqkus89oa7ny
+export const updateDocumentsClaims = async (id: string, documentsClaimsData: any) => {
+  try {
+    const response = await axiosClient.patch(`/v2/inventory-management/documents-claims/update/${id}`, documentsClaimsData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+

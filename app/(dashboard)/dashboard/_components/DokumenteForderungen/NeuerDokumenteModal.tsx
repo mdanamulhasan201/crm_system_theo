@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -19,12 +19,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { createDocumentsClaims } from '@/apis/warenwirtschaftApis';
+import {
+  createDocumentsClaims,
+  getSingleDocumentsClaims,
+  updateDocumentsClaims,
+} from '@/apis/warenwirtschaftApis';
 import toast from 'react-hot-toast';
 
 interface NeuerDokumenteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  mode?: 'create' | 'edit';
+  documentId?: string;
+  onSuccess?: () => void;
 }
 
 type DocumentType = 'cost_estimate' | 'invoices' | 'delivery_notes';
@@ -33,6 +40,9 @@ type PaymentType = 'Open' | 'Paid';
 export default function NeuerDokumenteModal({
   open,
   onOpenChange,
+  mode = 'create',
+  documentId,
+  onSuccess,
 }: NeuerDokumenteModalProps) {
   const [type, setType] = useState<DocumentType | ''>('');
   const [customerName, setCustomerName] = useState('');
@@ -45,6 +55,7 @@ export default function NeuerDokumenteModal({
   const [createdBy, setCreatedBy] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadingDetails, setLoadingDetails] = useState(false);
 
   const resetForm = () => {
     setType('');
@@ -71,6 +82,57 @@ export default function NeuerDokumenteModal({
     setFile(selectedFile);
   };
 
+  useEffect(() => {
+    const fetchDetails = async () => {
+      if (!open || mode !== 'edit' || !documentId) return;
+      try {
+        setLoadingDetails(true);
+        const res: any = await getSingleDocumentsClaims(documentId);
+        const item = res?.data ?? res;
+        if (!item) return;
+
+        const apiType = item.type ?? item.document_type ?? '';
+        if (apiType) setType(apiType as DocumentType);
+        setCustomerName(item.customerName ?? item.customer_name ?? '');
+        setRecipient(item.recipient ?? '');
+        const inTotalValue = item.in_total ?? item.total_amount;
+        setInTotal(
+          typeof inTotalValue === 'number' ? String(inTotalValue) : inTotalValue ?? ''
+        );
+        const paidValue = item.paid;
+        setPaid(typeof paidValue === 'number' ? String(paidValue) : paidValue ?? '');
+        const openValue = item.open;
+        setOpenAmount(
+          typeof openValue === 'number' ? String(openValue) : openValue ?? ''
+        );
+        const payType = item.payment_type as PaymentType | undefined;
+        if (payType) setPaymentType(payType);
+
+        const rawDate = item.date ?? item.createdAt;
+        if (typeof rawDate === 'string' && rawDate) {
+          const d = new Date(rawDate);
+          if (!isNaN(d.getTime())) {
+            const iso = d.toISOString().slice(0, 10);
+            setDate(iso);
+          } else {
+            setDate(rawDate);
+          }
+        } else {
+          setDate('');
+        }
+        setCreatedBy(item.created_by ?? item.createdBy ?? '');
+        setFile(null);
+      } catch {
+        toast.error('Details konnten nicht geladen werden.');
+        onOpenChange(false);
+      } finally {
+        setLoadingDetails(false);
+      }
+    };
+
+    void fetchDetails();
+  }, [open, mode, documentId, onOpenChange]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -83,23 +145,33 @@ export default function NeuerDokumenteModal({
       setSaving(true);
 
       const formData = new FormData();
-      formData.append("type", type);
-      formData.append("customerName", customerName);
-      if (recipient) formData.append("recipient", recipient);
-      formData.append("in_total", inTotal);
-      if (paid) formData.append("paid", paid);
-      if (openAmount) formData.append("open", openAmount);
-      formData.append("payment_type", paymentType);
-      formData.append("date", date);
-      if (createdBy) formData.append("created_by", createdBy);
-      if (file) formData.append("file", file);
+      formData.append('type', type);
+      formData.append('customerName', customerName);
+      if (recipient) formData.append('recipient', recipient);
+      formData.append('in_total', inTotal);
+      if (paid) formData.append('paid', paid);
+      if (openAmount) formData.append('open', openAmount);
+      formData.append('payment_type', paymentType);
+      formData.append('date', date);
+      if (createdBy) formData.append('created_by', createdBy);
+      if (file) formData.append('file', file);
 
-      await createDocumentsClaims(formData);
-      toast.success('Dokument wurde erfolgreich angelegt.');
+      if (mode === 'edit' && documentId) {
+        await updateDocumentsClaims(documentId, formData);
+        toast.success('Dokument wurde erfolgreich aktualisiert.');
+      } else {
+        await createDocumentsClaims(formData);
+        toast.success('Dokument wurde erfolgreich angelegt.');
+      }
+      if (onSuccess) onSuccess();
       resetForm();
       onOpenChange(false);
     } catch (error) {
-      toast.error('Dokument konnte nicht angelegt werden.');
+      toast.error(
+        mode === 'edit'
+          ? 'Dokument konnte nicht aktualisiert werden.'
+          : 'Dokument konnte nicht angelegt werden.'
+      );
     } finally {
       setSaving(false);
     }
@@ -109,9 +181,13 @@ export default function NeuerDokumenteModal({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Neuer Dokumente</DialogTitle>
+          <DialogTitle>
+            {mode === 'edit' ? 'Dokument bearbeiten' : 'Neuer Dokumente'}
+          </DialogTitle>
           <DialogDescription>
-            Neues Dokument mit allen relevanten Angaben und Datei erfassen.
+            {mode === 'edit'
+              ? 'Bestehendes Dokument bearbeiten.'
+              : 'Neues Dokument mit allen relevanten Angaben und Datei erfassen.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -255,10 +331,20 @@ export default function NeuerDokumenteModal({
               type="submit"
               className="bg-[#62A17C] hover:bg-[#4A8A5F] cursor-pointer text-white"
               disabled={
-                saving || !type || !customerName.trim() || !inTotal || !paymentType || !date
+                saving ||
+                loadingDetails ||
+                !type ||
+                !customerName.trim() ||
+                !inTotal ||
+                !paymentType ||
+                !date
               }
             >
-              {saving ? 'Wird gespeichert…' : 'Dokument anlegen'}
+              {saving || loadingDetails
+                ? 'Wird gespeichert…'
+                : mode === 'edit'
+                  ? 'Dokument aktualisieren'
+                  : 'Dokument anlegen'}
             </Button>
           </DialogFooter>
         </form>

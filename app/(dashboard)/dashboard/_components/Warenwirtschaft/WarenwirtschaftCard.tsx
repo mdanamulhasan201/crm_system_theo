@@ -1,15 +1,36 @@
 'use client'
 
-import React from 'react'
-import { ShoppingCart, FileText, Package, Info, LucideIcon, BarChart3, TrendingUp } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import {
+    ShoppingCart,
+    FileText,
+    Package,
+    Info,
+    LucideIcon,
+    BarChart3,
+    TrendingUp,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getCardDataDashboardKpis } from '@/apis/warenwirtschaftApis'
 
-const CARDS = [
-    { title: 'Offene Bestellungen', value: '4', icon: ShoppingCart },
-    { title: 'Offene Rechnungen', value: '3', icon: FileText },
-    { title: 'WE heute', value: '1', icon: Package },
-    { title: 'WE diese Woche', value: '5', icon: Package },
-    { title: 'Lagerwert aktuell', value: '84.6k €', icon: Info },
+type DashboardKpis = {
+    open_orders: number
+    we_this_week: number
+    total_expenditures: number
+    average_monthly_expenses: number
+}
+
+const CARDS: {
+    title: string
+    icon: LucideIcon
+    key?: keyof DashboardKpis
+    fallback: string
+}[] = [
+    { title: 'Offene Bestellungen', key: 'open_orders', icon: ShoppingCart, fallback: '4' },
+    { title: 'Offene Rechnungen', icon: FileText, fallback: '3' },
+    { title: 'WE heute', icon: Package, fallback: '1' },
+    { title: 'WE diese Woche', key: 'we_this_week', icon: Package, fallback: '5' },
+    { title: 'Lagerwert aktuell', icon: Info, fallback: '84.6k €' },
 ]
 
 function SingleCard({
@@ -45,6 +66,34 @@ function SingleCard({
 }
 
 export default function WarenwirtschaftCard() {
+    const [kpis, setKpis] = useState<DashboardKpis | null>(null)
+
+    useEffect(() => {
+        const fetchKpis = async () => {
+            try {
+                const res: any = await getCardDataDashboardKpis()
+                const data = res?.data ?? res
+                if (data) {
+                    setKpis(data as DashboardKpis)
+                }
+            } catch {
+                // ignore and keep static fallback values
+            }
+        }
+
+        void fetchKpis()
+    }, [])
+
+    const formatCurrency = (amount: number | undefined) => {
+        if (typeof amount !== 'number') return '–'
+        return new Intl.NumberFormat('de-DE', {
+            style: 'currency',
+            currency: 'EUR',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(amount)
+    }
+
     return (
         <>
 
@@ -53,7 +102,11 @@ export default function WarenwirtschaftCard() {
                     <SingleCard
                         key={index}
                         title={card.title}
-                        value={card.value}
+                        value={
+                            card.key && kpis && typeof kpis[card.key] === 'number'
+                                ? kpis[card.key]!
+                                : card.fallback
+                        }
                         icon={card.icon}
                     />
                 ))}
@@ -64,13 +117,17 @@ export default function WarenwirtschaftCard() {
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <SingleCard
                     title="Gesamt-Ausgaben"
-                    value="18.4k €"
+                    value={
+                        kpis ? formatCurrency(kpis.total_expenditures) : '18.4k €'
+                    }
                     icon={ShoppingCart}
-                    trend="📈 9.5% vs. Vorperiode"
+                    trend=""
                 />
                 <SingleCard
                     title="Ø Ausgaben/Monat"
-                    value="15.7k €"
+                    value={
+                        kpis ? formatCurrency(kpis.average_monthly_expenses) : '15.7k €'
+                    }
                     icon={BarChart3}
                 />
                 <SingleCard

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import DocumentSearchBar from './DocumentSearchBar'
 import DocumentFilterDropdown from './DocumentFilterDropdown'
@@ -11,6 +11,23 @@ import CursorPagination from '@/components/ui/cursor-pagination'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { DokumentFilterTab } from './FilterTabButton'
+import {
+  deleteDocumentsClaims,
+  getAllDocumentsClaims,
+  getRecipientName,
+} from '@/apis/warenwirtschaftApis'
+import NeuerDokumenteModal from './NeuerDokumenteModal'
+import { Pencil, Trash2 } from 'lucide-react'
+import toast from 'react-hot-toast'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 const PAGE_SIZE = 10
 
@@ -29,168 +46,7 @@ export interface DokumentRow extends Record<string, unknown> {
   erstelltVon: string
 }
 
-const ALL_DATA: DokumentRow[] = [
-  {
-    id: 'kv-1',
-    typ: 'Kostenvoranschlag',
-    nummer: 'KV-2024-0078',
-    referenz: 'AUF-2024-089',
-    kunde: 'Thomas Müller',
-    empfaenger: 'AOK Bayern',
-    gesamt: '4.850,00 €',
-    bezahlt: '–',
-    offen: '–',
-    status: 'Gesendet',
-    datum: '30.10.2024',
-    erstelltVon: 'Dr. Schmidt',
-  },
-  {
-    id: 'kv-2',
-    typ: 'Kostenvoranschlag',
-    nummer: 'KV-2024-0082',
-    referenz: 'AUF-2024-110',
-    kunde: 'Sabine Braun',
-    empfaenger: 'TK',
-    gesamt: '3.100,00 €',
-    bezahlt: '–',
-    offen: '–',
-    status: 'Erstellt',
-    datum: '15.1.2025',
-    erstelltVon: 'Fr. Becker',
-  },
-  {
-    id: 'kv-3',
-    typ: 'Kostenvoranschlag',
-    nummer: 'KV-2025-0005',
-    referenz: 'AUF-2025-012',
-    kunde: 'Werner Schulz',
-    empfaenger: 'DAK',
-    gesamt: '6.700,00 €',
-    bezahlt: '–',
-    offen: '–',
-    status: 'Erstellt',
-    datum: '1.3.2025',
-    erstelltVon: 'Dr. Schmidt',
-  },
-  {
-    id: 're-1',
-    typ: 'Rechnung',
-    nummer: 'RE-2024-1201',
-    referenz: 'KV-2024-0078',
-    kunde: 'Thomas Müller',
-    empfaenger: 'AOK Bayern',
-    gesamt: '4.850,00 €',
-    bezahlt: '–',
-    offen: '4.850,00 €',
-    status: 'Offen',
-    datum: '30.11.2024',
-    erstelltVon: 'Dr. Schmidt',
-  },
-  {
-    id: 're-2',
-    typ: 'Rechnung',
-    nummer: 'RE-2024-1198',
-    referenz: 'AUF-2024-110',
-    kunde: 'Sabine Braun',
-    empfaenger: 'TK',
-    gesamt: '3.100,00 €',
-    bezahlt: '3.100,00 €',
-    offen: '–',
-    status: 'Bezahlt',
-    datum: '15.11.2024',
-    erstelltVon: 'Fr. Becker',
-  },
-  {
-    id: 're-3',
-    typ: 'Rechnung',
-    nummer: 'RE-2025-0002',
-    referenz: 'AUF-2025-012',
-    kunde: 'Werner Schulz',
-    empfaenger: 'DAK',
-    gesamt: '6.700,00 €',
-    bezahlt: '–',
-    offen: '6.700,00 €',
-    status: 'Überfällig',
-    datum: '1.2.2025',
-    erstelltVon: 'Dr. Schmidt',
-  },
-  {
-    id: 'ls-1',
-    typ: 'Lieferschein',
-    nummer: 'LS-2024-0892',
-    referenz: 'AUF-2024-089',
-    kunde: 'Thomas Müller',
-    empfaenger: 'AOK Bayern',
-    gesamt: '4.850,00 €',
-    bezahlt: '–',
-    offen: '–',
-    status: 'Versendet',
-    datum: '28.10.2024',
-    erstelltVon: 'Dr. Schmidt',
-  },
-  {
-    id: 'ls-2',
-    typ: 'Lieferschein',
-    nummer: 'LS-2025-0012',
-    referenz: 'AUF-2025-012',
-    kunde: 'Werner Schulz',
-    empfaenger: 'DAK',
-    gesamt: '6.700,00 €',
-    bezahlt: '–',
-    offen: '–',
-    status: 'Erstellt',
-    datum: '15.2.2025',
-    erstelltVon: 'Dr. Schmidt',
-  },
-  {
-    id: 'ls-3',
-    typ: 'Lieferschein',
-    nummer: 'LS-2024-0898',
-    referenz: 'AUF-2024-110',
-    kunde: 'Sabine Braun',
-    empfaenger: 'TK',
-    gesamt: '3.100,00 €',
-    bezahlt: '–',
-    offen: '–',
-    status: 'Erhalten',
-    datum: '10.11.2024',
-    erstelltVon: 'Fr. Becker',
-  },
-]
-
-const EMPFAENGER_OPTIONS = [
-  { value: 'all', label: 'Alle Empfänger' },
-  { value: 'aok', label: 'AOK Bayern' },
-  { value: 'tk', label: 'TK' },
-  { value: 'dak', label: 'DAK' },
-]
-
-const STATUS_OPTIONS_KV = [
-  { value: 'all', label: 'Alle Status' },
-  { value: 'Gesendet', label: 'Gesendet' },
-  { value: 'Erstellt', label: 'Erstellt' },
-]
-
-const STATUS_OPTIONS_RE = [
-  { value: 'all', label: 'Alle Status' },
-  { value: 'Offen', label: 'Offen' },
-  { value: 'Bezahlt', label: 'Bezahlt' },
-  { value: 'Überfällig', label: 'Überfällig' },
-]
-
-const STATUS_OPTIONS_LS = [
-  { value: 'all', label: 'Alle Status' },
-  { value: 'Erstellt', label: 'Erstellt' },
-  { value: 'Versendet', label: 'Versendet' },
-  { value: 'Erhalten', label: 'Erhalten' },
-]
-
-const TYP_OPTIONS = [
-  { value: 'all', label: 'Alle Typen' },
-  { value: 'Rechnung', label: 'Rechnung' },
-  { value: 'Kostenvoranschlag', label: 'Kostenvoranschlag' },
-  { value: 'Lieferschein', label: 'Lieferschein' },
-]
+const DEFAULT_EMPFAENGER_OPTION = { value: 'all', label: 'Alle Empfänger' }
 
 function TypPill({ value }: { value: string }) {
   return (
@@ -238,25 +94,129 @@ interface DokumenteTableProps {
 
 export default function DokumenteTable({ activeTab }: DokumenteTableProps) {
   const [search, setSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [empfaenger, setEmpfaenger] = useState('all')
-  const [statusFilter, setStatusFilter] = useState('all')
-  const [typFilter, setTypFilter] = useState('all')
+  const [empfaengerOptions, setEmpfaengerOptions] = useState<
+    { value: string; label: string }[]
+  >([DEFAULT_EMPFAENGER_OPTION])
+  const [rows, setRows] = useState<DokumentRow[]>([])
+  const [loading, setLoading] = useState(false)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+  const [hasNextPage, setHasNextPage] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [rowToDelete, setRowToDelete] = useState<DokumentRow | null>(null)
 
   const category = CATEGORY_MAP[activeTab]
 
-  const statusOptions =
-    activeTab === 'Rechnungen'
-      ? STATUS_OPTIONS_RE
-      : activeTab === 'Lieferscheine'
-        ? STATUS_OPTIONS_LS
-        : activeTab === 'Kostenvoranschläge'
-          ? STATUS_OPTIONS_KV
-          : TYP_OPTIONS
-
   const showTypColumn = activeTab === 'Alle'
-  const isSecondFilterTyp = activeTab === 'Alle'
 
-  const columns: DocumentDataTableColumn<DokumentRow>[] = useMemo(() => {
+  const mapApiTypeToLabel = (apiType: string | null | undefined): DokumentRow['typ'] => {
+    switch (apiType) {
+      case 'invoices':
+        return 'Rechnung'
+      case 'cost_estimate':
+        return 'Kostenvoranschlag'
+      case 'delivery_notes':
+        return 'Lieferschein'
+      default:
+        return 'Rechnung'
+    }
+  }
+
+  const formatCurrency = (amount: unknown): string => {
+    if (typeof amount === 'number') {
+      return new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: 'EUR',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount)
+    }
+    if (typeof amount === 'string' && amount.trim() !== '') {
+      return amount
+    }
+    return '–'
+  }
+
+  const formatDate = (value: unknown): string => {
+    if (typeof value === 'string' && value) {
+      const d = new Date(value)
+      if (!isNaN(d.getTime())) {
+        return d.toLocaleDateString('de-DE')
+      }
+      return value
+    }
+    return '–'
+  }
+
+  const mapApiItemToRow = (item: any): DokumentRow => {
+    const apiType = item?.type ?? item?.document_type
+    const paymentType = item?.payment_type as string | undefined
+    let status: string = item?.status ?? ''
+
+    if (!status && paymentType) {
+      if (paymentType === 'Open') status = 'Offen'
+      else if (paymentType === 'Paid') status = 'Bezahlt'
+      else status = paymentType
+    }
+
+    return {
+      id: String(item?.id ?? item?._id ?? ''),
+      typ: mapApiTypeToLabel(apiType),
+      nummer: String(item?.number ?? item?.documentNumber ?? item?.document_number ?? '–'),
+      referenz: String(item?.reference ?? item?.reference_number ?? '–'),
+      kunde: String(item?.customerName ?? item?.customer_name ?? '–'),
+      empfaenger: String(item?.recipient ?? '–'),
+      gesamt: formatCurrency(item?.in_total ?? item?.total_amount),
+      bezahlt: formatCurrency(item?.paid),
+      offen: formatCurrency(item?.open),
+      status: status || '–',
+      datum: formatDate(item?.date ?? item?.createdAt),
+      erstelltVon: String(item?.created_by ?? item?.createdBy ?? '–'),
+    }
+  }
+
+  const handleEditClick = useCallback((row: DokumentRow) => {
+    setEditingId(row.id)
+    setEditModalOpen(true)
+  }, [])
+
+  const handleDeleteClick = useCallback(
+    (row: DokumentRow) => {
+      setRowToDelete(row)
+      setDeleteConfirmOpen(true)
+    },
+    []
+  )
+
+  const confirmDelete = useCallback(
+    async () => {
+      if (!rowToDelete || deletingId) return
+      setDeletingId(rowToDelete.id)
+      try {
+        await deleteDocumentsClaims(rowToDelete.id)
+        toast.success('Dokument gelöscht.')
+        setDeleteConfirmOpen(false)
+        setRowToDelete(null)
+        // reload from first page
+        setRows([])
+        setNextCursor(null)
+        setHasNextPage(false)
+        await loadPage('')
+      } catch {
+        toast.error('Dokument konnte nicht gelöscht werden.')
+      } finally {
+        setDeletingId(null)
+      }
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [rowToDelete, deletingId]
+  )
+
+  const columns: DocumentDataTableColumn<DokumentRow>[] = React.useMemo(() => {
     const base: DocumentDataTableColumn<DokumentRow>[] = []
     if (showTypColumn) {
       base.push({
@@ -295,54 +255,131 @@ export default function DokumenteTable({ activeTab }: DokumenteTableProps) {
         render: (_, row) => <StatusPill status={row.status} />,
       },
       { key: 'datum', label: activeTab === 'Kostenvoranschläge' ? 'Fällig' : 'Datum' },
-      { key: 'erstelltVon', label: 'Erstellt von' }
+      { key: 'erstelltVon', label: 'Erstellt von' },
+      {
+        key: 'actions',
+        label: 'Aktionen',
+        align: 'right',
+        render: (_, row) => (
+          <div className="flex items-center justify-end gap-1">
+            <button
+              type="button"
+              className="p-2 cursor-pointer text-gray-500 hover:text-gray-700 rounded transition-colors"
+              onClick={() => handleEditClick(row)}
+              aria-label="Dokument bearbeiten"
+            >
+              <Pencil className="h-4 w-4" />
+            </button>
+            <button
+              type="button"
+              className="p-2 cursor-pointer text-gray-500 hover:text-red-600 rounded transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              onClick={() => handleDeleteClick(row)}
+              aria-label="Dokument löschen"
+              disabled={deletingId === row.id}
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          </div>
+        ),
+      }
     )
     return base
-  }, [activeTab, showTypColumn])
+  }, [activeTab, showTypColumn, deletingId, handleEditClick, handleDeleteClick])
 
-  const filteredData = useMemo(() => {
-    let list = ALL_DATA.filter((row) => {
-      if (category === 'all') return true
-      return row.typ === category
-    })
-    if (activeTab === 'Alle' && typFilter !== 'all') {
-      list = list.filter((row) => row.typ === typFilter)
+  const apiTypeForTab = (tab: DokumentFilterTab): string => {
+    switch (tab) {
+      case 'Rechnungen':
+        return 'invoices'
+      case 'Kostenvoranschläge':
+        return 'cost_estimate'
+      case 'Lieferscheine':
+        return 'delivery_notes'
+      default:
+        return ''
     }
-    if (activeTab !== 'Alle' && statusFilter !== 'all') {
-      list = list.filter((row) => row.status === statusFilter)
-    }
-    if (empfaenger !== 'all') {
-      list = list.filter((row) =>
-        row.empfaenger.toLowerCase().includes(empfaenger)
-      )
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase()
-      list = list.filter(
-        (row) =>
-          row.nummer.toLowerCase().includes(q) ||
-          row.kunde.toLowerCase().includes(q) ||
-          row.referenz.toLowerCase().includes(q)
-      )
-    }
-    return list
-  }, [activeTab, category, search, empfaenger, statusFilter, typFilter])
+  }
 
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE)
+  const loadPage = async (cursor: string) => {
+    try {
+      setLoading(true)
+      const recipientParam = empfaenger === 'all' ? '' : empfaenger
+      const typeParam = apiTypeForTab(activeTab)
+
+      const res: any = await getAllDocumentsClaims(
+        PAGE_SIZE,
+        cursor,
+        recipientParam,
+        search.trim(),
+        typeParam
+      )
+
+      const items = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []
+      const mapped = items.map(mapApiItemToRow)
+
+      setRows((prev) => (cursor ? [...prev, ...mapped] : mapped))
+      setHasNextPage(Boolean(res?.hasMore))
+      setNextCursor(res?.nextCursor ?? null)
+    } catch (error) {
+      if (!cursor) {
+        setRows([])
+        setHasNextPage(false)
+        setNextCursor(null)
+      }
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
-    setVisibleCount(PAGE_SIZE)
-  }, [search, empfaenger, statusFilter, typFilter, activeTab])
+    const loadRecipients = async () => {
+      try {
+        const res: any = await getRecipientName()
+        const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : []
 
-  const paginatedData = useMemo(
-    () => filteredData.slice(0, visibleCount),
-    [filteredData, visibleCount]
-  )
-  const hasNextPage = visibleCount < filteredData.length
-  const nextCursor =
-    paginatedData.length > 0 ? paginatedData[paginatedData.length - 1].id : null
+        const mapped = list
+          .map((item: any) => {
+            const name =
+              typeof item === 'string'
+                ? item.trim()
+                : String(item?.recipient ?? item?.name ?? '').trim()
+            if (!name) return null
+            return { value: name, label: name }
+          })
+          .filter(Boolean) as { value: string; label: string }[]
+
+        const uniqueByValue = Array.from(
+          new Map(mapped.map((opt) => [opt.value, opt])).values()
+        )
+
+        setEmpfaengerOptions([DEFAULT_EMPFAENGER_OPTION, ...uniqueByValue])
+      } catch {
+        setEmpfaengerOptions([DEFAULT_EMPFAENGER_OPTION])
+      }
+    }
+
+    void loadRecipients()
+  }, [])
+
+  useEffect(() => {
+    // reset and load first page when filters or tab change
+    setRows([])
+    setNextCursor(null)
+    setHasNextPage(false)
+    void loadPage('')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, search, empfaenger])
+
+  // debounce search input -> search used for API calls
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      setSearch(searchInput.trim())
+    }, 400)
+    return () => clearTimeout(handle)
+  }, [searchInput])
 
   const handleNextPage = () => {
-    setVisibleCount((v) => v + PAGE_SIZE)
+    if (loading || !hasNextPage || !nextCursor) return
+    void loadPage(nextCursor)
   }
 
   const emptyMessage =
@@ -360,46 +397,92 @@ export default function DokumenteTable({ activeTab }: DokumenteTableProps) {
         <div className="w-fit sm:max-w-[320px]">
           <DocumentSearchBar
             placeholder="Suche nach Nr., Kunde, Referenz..."
-            value={search}
-            onChange={setSearch}
+            value={searchInput}
+            onChange={setSearchInput}
           />
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-3 sm:flex-nowrap sm:ml-auto">
           <DocumentFilterDropdown
             placeholder="Alle Empfänger"
-            options={EMPFAENGER_OPTIONS}
+            options={empfaengerOptions}
             value={empfaenger}
             onValueChange={setEmpfaenger}
-          />
-          <DocumentFilterDropdown
-            placeholder={isSecondFilterTyp ? 'Alle Typen' : 'Alle Status'}
-            options={statusOptions}
-            value={isSecondFilterTyp ? typFilter : statusFilter}
-            onValueChange={isSecondFilterTyp ? setTypFilter : setStatusFilter}
-            showFilterIcon
           />
         </div>
       </div>
       <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
         <DocumentDataTable<DokumentRow>
           columns={columns}
-          data={paginatedData}
+          data={rows}
           keyField="id"
           emptyMessage={emptyMessage}
           className="rounded-none border-0 shadow-none"
         />
-        {filteredData.length > 0 && (
+        {rows.length > 0 && (
           <CursorPagination
             hasNextPage={hasNextPage}
             onNext={handleNextPage}
             nextCursor={nextCursor}
-            totalShown={paginatedData.length}
-            totalCount={filteredData.length}
+            totalShown={rows.length}
+            totalCount={rows.length}
             pageSize={PAGE_SIZE}
             nextLabel="Mehr laden"
           />
         )}
       </div>
+
+      <NeuerDokumenteModal
+        open={editModalOpen}
+        onOpenChange={(open) => {
+          setEditModalOpen(open)
+          if (!open) setEditingId(null)
+        }}
+        mode="edit"
+        documentId={editingId ?? undefined}
+        onSuccess={async () => {
+          setRows([])
+          setNextCursor(null)
+          setHasNextPage(false)
+          await loadPage('')
+        }}
+      />
+
+      <Dialog
+        open={deleteConfirmOpen}
+        onOpenChange={(open) => {
+          setDeleteConfirmOpen(open)
+          if (!open) setRowToDelete(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Dokument löschen?</DialogTitle>
+            <DialogDescription>
+              {rowToDelete
+                ? `Möchten Sie das Dokument "${rowToDelete.nummer}" wirklich löschen?`
+                : 'Möchten Sie dieses Dokument wirklich löschen?'}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setDeleteConfirmOpen(false)}
+              disabled={!!deletingId}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => void confirmDelete()}
+              disabled={!!deletingId}
+            >
+              {deletingId ? 'Wird gelöscht…' : 'Löschen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
