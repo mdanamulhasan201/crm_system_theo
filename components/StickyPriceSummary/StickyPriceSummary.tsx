@@ -15,6 +15,8 @@ export interface StickyPriceSummaryProps {
   isSubmitting?: boolean
   /** Optional: custom label for primary button (e.g. "Abschließen" when saving order step) */
   weiterLabel?: React.ReactNode
+  /** Optional: hide all price display (e.g. customer-order page) - only show action buttons */
+  hidePrice?: boolean
 }
 
 /**
@@ -29,9 +31,10 @@ export default function StickyPriceSummary({
   onCancel,
   isSubmitting = false,
   weiterLabel,
+  hidePrice = false,
 }: StickyPriceSummaryProps) {
   const formatPrice = (val: number) => val.toFixed(2).replace(".", ",")
-  const showBreakdown = subtotal !== undefined || additions !== undefined
+  const showBreakdown = !hidePrice && (subtotal !== undefined || additions !== undefined)
   const showWeiterButton = typeof onWeiterClick === "function"
   const showCancelButton = typeof onCancel === "function"
 
@@ -41,9 +44,11 @@ export default function StickyPriceSummary({
       aria-live="polite"
     >
       <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-4 shadow-md min-w-[200px]">
-        <div className="text-sm font-semibold text-gray-700 mb-3">
-          Preisübersicht
-        </div>
+        {!hidePrice && (
+          <div className="text-sm font-semibold text-gray-700 mb-3">
+            Preisübersicht
+          </div>
+        )}
         {showBreakdown && (
           <>
             {subtotal !== undefined && (
@@ -61,15 +66,19 @@ export default function StickyPriceSummary({
             <div className="border-t border-gray-200 my-2" />
           </>
         )}
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-semibold text-gray-700">Gesamtpreis</span>
-          <span className="text-lg font-bold text-green-600">€{formatPrice(price)}</span>
-        </div>
-        <div className="mt-1 text-xs text-gray-400">
-          exkl. Zustellungsversand
-        </div>
+        {!hidePrice && (
+          <>
+            <div className="flex justify-between items-center">
+              <span className="text-sm font-semibold text-gray-700">Gesamtpreis</span>
+              <span className="text-lg font-bold text-green-600">€{formatPrice(price)}</span>
+            </div>
+            <div className="mt-1 text-xs text-gray-400">
+              exkl. Zustellungsversand
+            </div>
+          </>
+        )}
         {(showWeiterButton || showCancelButton) && (
-          <div className="flex flex-col gap-2 mt-4 pt-3 border-t border-gray-200">
+          <div className={`flex flex-col gap-2 ${hidePrice ? "" : "mt-4 pt-3 border-t border-gray-200"}`}>
             {showCancelButton && onCancel && (
               <button
                 type="button"
@@ -89,7 +98,7 @@ export default function StickyPriceSummary({
                 {isSubmitting ? (
                   "Wird gesendet..."
                 ) : (
-                  weiterLabel ?? <>Weiter €{formatPrice(price)}</>
+                  hidePrice ? (weiterLabel ?? "Weiter") : (weiterLabel ?? <>Weiter €{formatPrice(price)}</>)
                 )}
               </button>
             )}

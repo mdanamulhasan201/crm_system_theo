@@ -10,6 +10,16 @@ function formatBrandsohleLabelWithHalfPrice(label: string): string {
     const halfStr = half.toFixed(2).replace(".", ",")
     return label.replace(/\([+-]?\d{1,3}[.,]\d{2}\s*€\)/, `(+${halfStr} €)`)
 }
+
+/** Strip price from label - e.g. "Standard mit Kork (+2,49 €)" -> "Standard mit Kork". Used when hidePrice (e.g. customer-order page). */
+function stripPriceFromBrandsohleLabel(label: string): string {
+    return label.replace(/\s*\([+]?\d{1,3}[.,]\d{2}\s*€\)\s*$/i, "").trim()
+}
+
+/** Strip price from option label - e.g. "Ja (–5,99 €)" or "Gummi-Rahmen (+20,00 €)" -> "Ja" / "Gummi-Rahmen". Handles + and –/-. */
+function stripPriceFromOptionLabel(label: string): string {
+    return label.replace(/\s*\([+\-–]?\d{1,3}[.,]\d{2}\s*€\)\s*$/i, "").trim()
+}
 import type { OptionDef, OptionInputsState } from "./types"
 
 type GroupDef = {
@@ -657,6 +667,7 @@ export function OptionGroup({
     onOptionClick,
     selectedSole,
     tooltipText,
+    hidePriceForGroupIds,
 }: {
     def: GroupDef & { multiSelect?: boolean }
     selected: string | string[] | null
@@ -666,12 +677,15 @@ export function OptionGroup({
     onOptionClick?: (groupId: string, optionId: string) => void
     selectedSole?: { id: string; name: string; [key: string]: any } | null
     tooltipText?: string
+    /** When group id is in this list, option labels are shown without price (e.g. customer-order page) */
+    hidePriceForGroupIds?: string[]
 }) {
     const isMultiSelect = def.multiSelect === true
     const selectedArray = isMultiSelect 
         ? (Array.isArray(selected) ? selected : (typeof selected === 'string' ? [selected] : []))
         : null
     const selectedValue = isMultiSelect ? null : (selected as string | null)
+    const stripPrice = hidePriceForGroupIds?.includes(def.id) ?? false
 
     const handleSelect = (optId: string) => {
         if (onOptionClick && def.id === "absatzform") {
@@ -801,7 +815,7 @@ export function OptionGroup({
                                     checked={isChecked}
                                     disabled={isDisabled}
                                     onChange={() => !isDisabled && handleSelect(opt.id)}
-                                    aria-label={opt.label}
+                                    aria-label={stripPrice ? stripPriceFromOptionLabel(opt.label) : opt.label}
                                     aria-disabled={isDisabled}
                                 />
                                 <div 
@@ -837,7 +851,7 @@ export function OptionGroup({
                                     } ${shouldDisableDueToSole ? 'line-through' : ''}`}
                                     onClick={() => !isDisabled && handleSelect(opt.id)}
                                     role="button"
-                                    aria-label={opt.label}
+                                    aria-label={stripPrice ? stripPriceFromOptionLabel(opt.label) : opt.label}
                                     aria-disabled={isDisabled}
                                 >
                                     <InlineLabelWithInputs
@@ -872,7 +886,7 @@ export function OptionGroup({
                                         }
                                     }}
                                 >
-                                    {opt.label}
+                                    {stripPrice ? stripPriceFromOptionLabel(opt.label) : opt.label}
                                 </label>
                             )}
                         </div>
@@ -1141,10 +1155,13 @@ export function RahmenField({
     def,
     value,
     onChange,
+    hidePrice = false,
 }: {
     def: GroupDef
     value: RahmenData | null
     onChange: (value: RahmenData | null) => void
+    /** When true, show option labels without price (e.g. customer-order page only) */
+    hidePrice?: boolean
 }) {
     const type = value?.type || null
     const color = value?.color || ""
@@ -1181,6 +1198,7 @@ export function RahmenField({
                     { value: "gummi", label: "Gummi-Rahmen (+20,00 €)" }
                 ].map((option) => {
                     const isChecked = type === option.value
+                    const displayLabel = hidePrice ? stripPriceFromOptionLabel(option.label) : option.label
                     const handleToggle = () => {
                         // Toggle: if already checked, uncheck it; otherwise check it
                         updateType(isChecked ? null : (option.value as "eva" | "gummi"))
@@ -1193,7 +1211,7 @@ export function RahmenField({
                                     className="sr-only"
                                     checked={isChecked}
                                     onChange={handleToggle}
-                                    aria-label={option.label}
+                                    aria-label={displayLabel}
                                 />
                                 <div 
                                     className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
@@ -1211,7 +1229,7 @@ export function RahmenField({
                                 </div>
                             </div>
                             <span className="text-base text-gray-700 cursor-pointer" onClick={handleToggle}>
-                                {option.label}
+                                {displayLabel}
                             </span>
                         </div>
                     )
@@ -1461,12 +1479,12 @@ export function HinterkappeMusterSideField({
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-2">
                             <div className="relative flex items-center">
-                                <input type="checkbox" className="sr-only" checked={sameValue === "ja"} onChange={() => updateSameValue(sameValue === "ja" ? null : "ja")} aria-label="Ja (+4,99 €)" />
+                                <input type="checkbox" className="sr-only" checked={sameValue === "ja"} onChange={() => updateSameValue(sameValue === "ja" ? null : "ja")} aria-label="Ja" />
                                 <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${sameValue === "ja" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateSameValue(sameValue === "ja" ? null : "ja")}>
                                     {sameValue === "ja" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                 </div>
                             </div>
-                            <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateSameValue(sameValue === "ja" ? null : "ja")}>Ja (+4,99 €)</span>
+                            <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateSameValue(sameValue === "ja" ? null : "ja")}>Ja</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <div className="relative flex items-center">
@@ -1489,12 +1507,12 @@ export function HinterkappeMusterSideField({
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="relative flex items-center">
-                                    <input type="checkbox" className="sr-only" checked={leftValue === "ja"} onChange={() => updateLeftValue(leftValue === "ja" ? null : "ja")} aria-label="Links Ja (+2,49 €)" />
+                                    <input type="checkbox" className="sr-only" checked={leftValue === "ja"} onChange={() => updateLeftValue(leftValue === "ja" ? null : "ja")} aria-label="Links Ja" />
                                     <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${leftValue === "ja" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateLeftValue(leftValue === "ja" ? null : "ja")}>
                                         {leftValue === "ja" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                     </div>
                                 </div>
-                                <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateLeftValue(leftValue === "ja" ? null : "ja")}>Ja (+2,49 €)</span>
+                                <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateLeftValue(leftValue === "ja" ? null : "ja")}>Ja</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="relative flex items-center">
@@ -1512,12 +1530,12 @@ export function HinterkappeMusterSideField({
                         <div className="flex flex-wrap items-center gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="relative flex items-center">
-                                    <input type="checkbox" className="sr-only" checked={rightValue === "ja"} onChange={() => updateRightValue(rightValue === "ja" ? null : "ja")} aria-label="Rechts Ja (+2,49 €)" />
+                                    <input type="checkbox" className="sr-only" checked={rightValue === "ja"} onChange={() => updateRightValue(rightValue === "ja" ? null : "ja")} aria-label="Rechts Ja" />
                                     <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${rightValue === "ja" ? 'bg-green-500 border-green-500 cursor-pointer' : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'}`} onClick={() => updateRightValue(rightValue === "ja" ? null : "ja")}>
                                         {rightValue === "ja" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                                     </div>
                                 </div>
-                                <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateRightValue(rightValue === "ja" ? null : "ja")}>Ja (+2,49 €)</span>
+                                <span className="text-base text-gray-700 cursor-pointer" onClick={() => updateRightValue(rightValue === "ja" ? null : "ja")}>Ja</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="relative flex items-center">
@@ -1559,12 +1577,12 @@ export function HinterkappeMusterSimpleField({
             <div className="flex flex-wrap items-center gap-4">
                 <div className="flex items-center gap-2">
                     <div className="relative flex items-center">
-                        <input type="checkbox" className="sr-only" checked={sameValue === "ja"} onChange={() => setValue(sameValue === "ja" ? null : "ja")} aria-label="Ja, ein Muster erstellen (+4,99 €)" />
+                        <input type="checkbox" className="sr-only" checked={sameValue === "ja"} onChange={() => setValue(sameValue === "ja" ? null : "ja")} aria-label="Ja, ein Muster erstellen" />
                         <div className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${sameValue === "ja" ? "bg-green-500 border-green-500 cursor-pointer" : "bg-white border-gray-300 hover:border-green-400 cursor-pointer"}`} onClick={() => setValue(sameValue === "ja" ? null : "ja")}>
                             {sameValue === "ja" && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
                         </div>
                     </div>
-                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => setValue(sameValue === "ja" ? null : "ja")}>Ja, ein Muster erstellen (+4,99 €)</span>
+                    <span className="text-base text-gray-700 cursor-pointer" onClick={() => setValue(sameValue === "ja" ? null : "ja")}>Ja, ein Muster erstellen</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="relative flex items-center">
@@ -1863,10 +1881,13 @@ export function BrandsohleSideField({
     def,
     value,
     onChange,
+    hidePrice = false,
 }: {
     def: GroupDef2
     value: BrandsohleSideData | null
     onChange: (value: BrandsohleSideData | null) => void
+    /** When true, show option labels without price (e.g. customer-order page only) */
+    hidePrice?: boolean
 }) {
     const mode = value?.mode || null
     const sameValues = value?.sameValues || []
@@ -1992,6 +2013,7 @@ export function BrandsohleSideField({
                     <div className="flex flex-wrap items-center gap-4">
                         {def.options.map((opt) => {
                             const isChecked = Array.isArray(sameValues) && sameValues.includes(opt.id)
+                            const displayLabel = hidePrice ? stripPriceFromBrandsohleLabel(opt.label) : opt.label
                             return (
                                 <div key={opt.id} className="flex items-center gap-2">
                                     <div className="relative flex items-center">
@@ -2000,7 +2022,7 @@ export function BrandsohleSideField({
                                             className="sr-only"
                                             checked={isChecked}
                                             onChange={() => toggleSameValue(opt.id)}
-                                            aria-label={`Beide Seiten ${opt.label}`}
+                                            aria-label={`Beide Seiten ${displayLabel}`}
                                         />
                                         <div 
                                             className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
@@ -2018,7 +2040,7 @@ export function BrandsohleSideField({
                                         </div>
                                     </div>
                                     <span className="text-base text-gray-700 cursor-pointer" onClick={() => toggleSameValue(opt.id)}>
-                                        {opt.label}
+                                        {displayLabel}
                                     </span>
                                 </div>
                             )
@@ -2035,7 +2057,7 @@ export function BrandsohleSideField({
                     <div className="flex flex-wrap items-center gap-4">
                         {def.options.map((opt) => {
                             const isChecked = Array.isArray(leftValues) && leftValues.includes(opt.id)
-                            const displayLabel = formatBrandsohleLabelWithHalfPrice(opt.label)
+                            const displayLabel = hidePrice ? stripPriceFromBrandsohleLabel(opt.label) : formatBrandsohleLabelWithHalfPrice(opt.label)
                             return (
                                 <div key={opt.id} className="flex items-center gap-2">
                                     <div className="relative flex items-center">
@@ -2075,7 +2097,7 @@ export function BrandsohleSideField({
                     <div className="flex flex-wrap items-center gap-4">
                         {def.options.map((opt) => {
                             const isChecked = Array.isArray(rightValues) && rightValues.includes(opt.id)
-                            const displayLabel = formatBrandsohleLabelWithHalfPrice(opt.label)
+                            const displayLabel = hidePrice ? stripPriceFromBrandsohleLabel(opt.label) : formatBrandsohleLabelWithHalfPrice(opt.label)
                             return (
                                 <div key={opt.id} className="flex items-center gap-2">
                                     <div className="relative flex items-center">
