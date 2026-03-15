@@ -136,16 +136,13 @@ export const toggleEmployeeAvailabilityActivity = async (employeeId: string, eav
     }
 }
 
-// update availability time /v2/employee-availability/update-availability-time
+// update availability time /v2/employee-availability/update-availability-time?availability_time_id={id}
 
 export const updateEmployeeAvailabilityTime = async (availabilityId: string, availabilityTimeData: any) => {
     try {
         const response = await axiosClient.patch(
-            `/v2/employee-availability/update-availability-time`,
-            {
-                availability_time_id: availabilityId,
-                ...availabilityTimeData,
-            }
+            `/v2/employee-availability/update-availability-time/${availabilityId}`,
+            availabilityTimeData
         );
         return response.data;
     } catch (error) {
@@ -174,3 +171,25 @@ export const deleteEmployeeAvailabilityTime = async (availabilityId: string) => 
         throw error;
     }
 }
+
+
+
+// create /v2/appointment/booking-rules/manage
+
+// {
+//     "minNoticeHours": 22,
+//     "cancellationHours": 48,
+//     "defaultSlotMinutes": 30
+// }
+
+export const createBookingRule = async (bookingRuleData: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/appointment/booking-rules/manage`, bookingRuleData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// get all /v2/appointment/booking-rules/manage
