@@ -84,3 +84,59 @@ export const getFeatureAccess = async (employeeId: string) => {
         throw error;
     }
 }
+
+
+
+
+
+
+
+
+
+
+// ============================= `employeeAvailabilityApis` =============================//
+
+// create employee availability /v2/employee-availability/create/0d6ecfed-b9a7-454b-a4a3-ece4c2ffc57a
+
+export const createEmployeeAvailability = async (employeeId: string, employeeAvailabilityData: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/employee-availability/create/${employeeId}`, employeeAvailabilityData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
+// get all /v2/employee-availability/availability-list/0d6ecfed-b9a7-454b-a4a3-ece4c2ffc57a
+
+export const getAllEmployeeAvailability = async (employeeId: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/employee-availability/availability-list/${employeeId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// POST /v2/employee-availability/toggle-activity/{employeeId}
+// body: { "eavailability_id": "..." }
+
+export const toggleEmployeeAvailabilityActivity = async (employeeId: string, eavailabilityId: string) => {
+    try {
+        const response = await axiosClient.patch(
+            `/v2/employee-availability/toggle-activity/${employeeId}`,
+            { eavailability_id: eavailabilityId }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
+
+

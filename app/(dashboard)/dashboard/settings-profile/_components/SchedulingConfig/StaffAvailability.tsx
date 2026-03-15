@@ -1,21 +1,60 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { Trash2, Plus, Clock } from "lucide-react";
+import { Trash2, Plus, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import EmployeeListLeftSide from "./EmployeeListLeftSide";
+import CrearteAvailabilityModal from "./CrearteAvailabilityModal";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+  getAllEmployees,
+  getAllEmployeeAvailability,
+  createEmployeeAvailability,
+  toggleEmployeeAvailabilityActivity,
+} from "@/apis/employeeaApis";
+import toast from "react-hot-toast";
 
-const DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"] as const;
+// 0=Sunday .. 6=Saturday – all days for Tag dropdown and cards
+const DAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"] as const;
 const DEFAULT_TITLE = "Arbeitszeit";
+const EMPLOYEES_PER_PAGE = 6;
+
+// Predefined title options for dropdown (Titel)
+const TITLE_OPTIONS = [
+  "Arbeitszeit",
+  "Pause",
+  "Mittagspause",
+  "Lunch",
+  "Break",
+  "Vormittag",
+  "Nachmittag",
+  "Abend",
+  "Frühschicht",
+  "Spätschicht",
+  "Ganztags",
+] as const;
+
+// API: 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday
+const DAY_NAME_TO_WEEK: Record<string, number> = {
+  Sonntag: 0,
+  Montag: 1,
+  Dienstag: 2,
+  Mittwoch: 3,
+  Donnerstag: 4,
+  Freitag: 5,
+  Samstag: 6,
+};
+const DAY_WEEK_TO_NAME: Record<number, string> = {
+  0: "Sonntag",
+  1: "Montag",
+  2: "Dienstag",
+  3: "Mittwoch",
+  4: "Donnerstag",
+  5: "Freitag",
+  6: "Samstag",
+};
 
 interface ScheduleEntry {
   id: string;
@@ -25,12 +64,20 @@ interface ScheduleEntry {
   end: string;
 }
 
-const STAFF_MEMBERS = [
-  { id: "anna", name: "Anna" },
-  { id: "mark", name: "Mark" },
-  { id: "lisa", name: "Lisa" },
-  { id: "tom", name: "Tom" },
-];
+interface StaffMember {
+  id: string;
+  name: string;
+  email?: string | null;
+  image?: string | null;
+}
+
+type DayEnabledMap = Record<string, Record<string, boolean>>;
+
+interface DayMeta {
+  eavailabilityId: string;
+  isActive: boolean;
+}
+type DayMetaMap = Record<string, Record<string, DayMeta>>;
 
 type ModalRow = { day: string; title: string; start: string; end: string };
 
@@ -65,31 +112,128 @@ function TimeInputWithIcon({
 
 const newModalRow = (): ModalRow => ({
   day: DAYS[0],
-  title: "",
+  title: DEFAULT_TITLE,
   start: "09:00",
   end: "17:00",
 });
 
 export default function StaffAvailability() {
-  const [selectedStaffId, setSelectedStaffId] = useState<string>("anna");
-  const [scheduleEntries, setScheduleEntries] = useState<Record<string, ScheduleEntry[]>>(() => {
-    const initial: Record<string, ScheduleEntry[]> = {};
-    STAFF_MEMBERS.forEach((s) => {
-      initial[s.id] = [];
-    });
-    return initial;
-  });
-
+  const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
+  const [employeePage, setEmployeePage] = useState(1);
+  const [totalEmployeePages, setTotalEmployeePages] = useState(1);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
+  const [scheduleEntries, setScheduleEntries] = useState<Record<string, ScheduleEntry[]>>({});
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [modalRows, setModalRows] = useState<ModalRow[]>([newModalRow()]);
-  const [dayEnabled, setDayEnabled] = useState<Record<string, Record<string, boolean>>>({});
+  const [dayEnabled, setDayEnabled] = useState<DayEnabledMap>({});
+  const [dayMeta, setDayMeta] = useState<DayMetaMap>({});
+  const [togglingDay, setTogglingDay] = useState<string | null>(null);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
+  const [loadingAvailability, setLoadingAvailability] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const currentEntries = scheduleEntries[selectedStaffId] ?? [];
+  const currentEntries = selectedStaffId ? scheduleEntries[selectedStaffId] ?? [] : [];
+
+  // Fetch employees for current page
+  useEffect(() => {
+    let cancelled = false;
+    setLoadingEmployees(true);
+    getAllEmployees(employeePage, EMPLOYEES_PER_PAGE)
+      .then((res: any) => {
+        if (cancelled) return;
+        const list = Array.isArray(res) ? res : res?.data ?? [];
+        const mapped: StaffMember[] = list
+          .map((e: any) => ({
+            id: e.id || e._id || "",
+            name: e.employeeName || e.name || "—",
+            email: e.email,
+            image: e.image,
+          }))
+          .filter((e: StaffMember) => e.id);
+        setStaffMembers(mapped);
+        const pagination = res?.pagination;
+        const totalPages = pagination?.totalPages ?? 1;
+        setTotalEmployeePages(totalPages);
+        if (mapped.length > 0) {
+          setSelectedStaffId(mapped[0].id);
+        } else {
+          setSelectedStaffId(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("Mitarbeiter konnten nicht geladen werden.");
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingEmployees(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [employeePage]);
+
+  // When selectedStaffId is set, sync it from staff list if needed
+  useEffect(() => {
+    if (staffMembers.length > 0 && selectedStaffId === null) {
+      setSelectedStaffId(staffMembers[0].id);
+    }
+  }, [staffMembers, selectedStaffId]);
+
+  // Fetch availability when employee is selected
+  useEffect(() => {
+    if (!selectedStaffId) {
+      return;
+    }
+    let cancelled = false;
+    setLoadingAvailability(true);
+    getAllEmployeeAvailability(selectedStaffId)
+      .then((res: any) => {
+        if (cancelled) return;
+        const list = Array.isArray(res) ? res : res?.data ?? res?.availability ?? [];
+        const entries: ScheduleEntry[] = [];
+        const meta: Record<string, DayMeta> = {};
+        list.forEach((item: any) => {
+          const dayName = DAY_WEEK_TO_NAME[item.dayOfWeek] ?? null;
+          if (!dayName) return;
+          const eavailabilityId = item.id;
+          const isActive = item.isActive !== false;
+          if (eavailabilityId) {
+            meta[dayName] = { eavailabilityId, isActive };
+          }
+          const slots = item.availability_time || item.availabilityTime || [];
+          slots.forEach((slot: any) => {
+            entries.push({
+              id: crypto.randomUUID(),
+              day: dayName,
+              title: slot.title || DEFAULT_TITLE,
+              start: slot.startTime || slot.start || "09:00",
+              end: slot.endTime || slot.end || "17:00",
+            });
+          });
+        });
+        setScheduleEntries((prev) => ({
+          ...prev,
+          [selectedStaffId]: entries,
+        }));
+        setDayMeta((prev) => ({ ...prev, [selectedStaffId]: meta }));
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setScheduleEntries((prev) => ({ ...prev, [selectedStaffId]: [] }));
+          toast.error("Arbeitszeiten konnten nicht geladen werden.");
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingAvailability(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStaffId]);
 
   const entriesByDay = useMemo(() => {
-    const entries = scheduleEntries[selectedStaffId] ?? [];
+    const entries = selectedStaffId ? (scheduleEntries[selectedStaffId] ?? []) : [];
     const g: Record<string, ScheduleEntry[]> = {};
-    entries.forEach((e) => {
+    entries.forEach((e: ScheduleEntry) => {
       if (!g[e.day]) g[e.day] = [];
       g[e.day].push(e);
     });
@@ -101,16 +245,42 @@ export default function StaffAvailability() {
     [entriesByDay]
   );
 
-  const isDayEnabled = (day: string) => dayEnabled[selectedStaffId]?.[day] ?? true;
+  const isDayEnabled = (day: string) => {
+    if (!selectedStaffId) return true;
+    const meta = dayMeta[selectedStaffId]?.[day];
+    if (meta) return meta.isActive;
+    return dayEnabled[selectedStaffId]?.[day] ?? true;
+  };
 
-  const setDayEnabledFor = (day: string, enabled: boolean) => {
-    setDayEnabled((prev) => ({
-      ...prev,
-      [selectedStaffId]: {
-        ...(prev[selectedStaffId] ?? {}),
-        [day]: enabled,
-      },
-    }));
+  const handleToggleDay = async (day: string) => {
+    if (!selectedStaffId) return;
+    const meta = dayMeta[selectedStaffId]?.[day];
+    if (!meta?.eavailabilityId) {
+      setDayEnabled((prev: DayEnabledMap) => ({
+        ...prev,
+        [selectedStaffId]: {
+          ...(prev[selectedStaffId] ?? {}),
+          [day]: !(prev[selectedStaffId]?.[day] ?? true),
+        },
+      }));
+      return;
+    }
+    setTogglingDay(day);
+    const nextActive = !meta.isActive;
+    try {
+      await toggleEmployeeAvailabilityActivity(selectedStaffId, meta.eavailabilityId);
+      setDayMeta((prev) => ({
+        ...prev,
+        [selectedStaffId]: {
+          ...(prev[selectedStaffId] ?? {}),
+          [day]: { ...meta, isActive: nextActive },
+        },
+      }));
+    } catch {
+      toast.error("Aktivität konnte nicht umgeschaltet werden.");
+    } finally {
+      setTogglingDay(null);
+    }
   };
 
   const openAddModal = () => {
@@ -132,25 +302,72 @@ export default function StaffAvailability() {
     setModalRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
   };
 
-  const saveModalEntries = () => {
-    const toAdd: ScheduleEntry[] = modalRows
-      .filter((r) => r.start && r.end)
-      .map((r) => ({
-        id: crypto.randomUUID(),
-        day: r.day,
-        title: r.title || DEFAULT_TITLE,
+  const saveModalEntries = async () => {
+    const valid = modalRows.filter((r) => r.start && r.end);
+    if (valid.length === 0 || !selectedStaffId) return;
+    const byDay: Record<string, { title: string; start: string; end: string }[]> = {};
+    valid.forEach((r) => {
+      const day = r.day;
+      if (!byDay[day]) byDay[day] = [];
+      byDay[day].push({
+        title: r.title?.trim() || DEFAULT_TITLE,
         start: r.start,
         end: r.end,
-      }));
-    if (toAdd.length === 0) return;
-    setScheduleEntries((prev) => ({
-      ...prev,
-      [selectedStaffId]: [...(prev[selectedStaffId] ?? []), ...toAdd],
-    }));
-    setAddModalOpen(false);
+      });
+    });
+    setSaving(true);
+    try {
+      await Promise.all(
+        Object.entries(byDay).map(([dayName, slots]) => {
+          const dayOfWeek = DAY_NAME_TO_WEEK[dayName];
+          if (dayOfWeek == null) return Promise.resolve();
+          return createEmployeeAvailability(selectedStaffId, {
+            dayOfWeek,
+            availability_time: slots.map((s) => ({
+              title: s.title,
+              startTime: s.start,
+              endTime: s.end,
+            })),
+          });
+        })
+      );
+      toast.success("Arbeitszeiten gespeichert.");
+      setAddModalOpen(false);
+      // Refetch availability for current employee (includes eavailability_id + isActive)
+      const res: any = await getAllEmployeeAvailability(selectedStaffId);
+      const list = Array.isArray(res) ? res : res?.data ?? res?.availability ?? [];
+      const entries: ScheduleEntry[] = [];
+      const meta: Record<string, DayMeta> = {};
+      list.forEach((item: any) => {
+        const dayName = DAY_WEEK_TO_NAME[item.dayOfWeek] ?? null;
+        if (!dayName) return;
+        const eavailabilityId = item.id;
+        const isActive = item.isActive !== false;
+        if (eavailabilityId) {
+          meta[dayName] = { eavailabilityId, isActive };
+        }
+        const slots = item.availability_time || item.availabilityTime || [];
+        slots.forEach((slot: any) => {
+          entries.push({
+            id: crypto.randomUUID(),
+            day: dayName,
+            title: slot.title || DEFAULT_TITLE,
+            start: slot.startTime || slot.start || "09:00",
+            end: slot.endTime || slot.end || "17:00",
+          });
+        });
+      });
+      setScheduleEntries((prev) => ({ ...prev, [selectedStaffId]: entries }));
+      setDayMeta((prev) => ({ ...prev, [selectedStaffId]: meta }));
+    } catch {
+      toast.error("Speichern fehlgeschlagen.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const removeEntry = (id: string) => {
+    if (!selectedStaffId) return;
     setScheduleEntries((prev) => ({
       ...prev,
       [selectedStaffId]: (prev[selectedStaffId] ?? []).filter((e) => e.id !== id),
@@ -159,124 +376,31 @@ export default function StaffAvailability() {
 
   return (
     <div className="flex flex-col gap-6 pt-4">
-      <Dialog open={addModalOpen} onOpenChange={setAddModalOpen}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Arbeitszeiten hinzufügen</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2 max-h-[60vh] overflow-y-auto">
-            {modalRows.map((row, index) => (
-              <div
-                key={index}
-                className="flex flex-col gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50/50"
-              >
-                {/* Tag half + Titel half — full width row */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="grid gap-1.5 min-w-0">
-                    <label className="text-xs font-medium text-gray-600">Tag</label>
-                    <select
-                      value={row.day}
-                      onChange={(e) => updateModalRow(index, "day", e.target.value)}
-                      className="h-9 rounded-md border border-gray-200 bg-white px-2.5 text-sm w-full"
-                    >
-                      {DAYS.map((d) => (
-                        <option key={d} value={d}>
-                          {d}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="grid gap-1.5 min-w-0">
-                    <label className="text-xs font-medium text-gray-600">Titel</label>
-                    <Input
-                      value={row.title}
-                      onChange={(e) => updateModalRow(index, "title", e.target.value)}
-                      placeholder={DEFAULT_TITLE}
-                      className="h-9 text-sm w-full"
-                    />
-                  </div>
-                </div>
-                {/* Start half + Ende half — full width row + trash */}
-                <div className="flex gap-3 items-end">
-                  <div className="grid grid-cols-2 gap-3 flex-1 min-w-0">
-                    <div className="grid gap-1.5 min-w-0">
-                      <label className="text-xs font-medium text-gray-600">Start</label>
-                      <TimeInputWithIcon
-                        value={row.start}
-                        onChange={(v) => updateModalRow(index, "start", v)}
-                        className="h-9 text-sm w-full"
-                      />
-                    </div>
-                    <div className="grid gap-1.5 min-w-0">
-                      <label className="text-xs font-medium text-gray-600">Ende</label>
-                      <TimeInputWithIcon
-                        value={row.end}
-                        onChange={(v) => updateModalRow(index, "end", v)}
-                        className="h-9 text-sm w-full"
-                      />
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => removeModalRow(index)}
-                    className="p-2 rounded text-gray-400 hover:text-red-600 hover:bg-red-50 shrink-0"
-                    aria-label="Zeile entfernen"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={addModalRow}
-              className="w-full border-dashed"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Weitere Zeile hinzufügen
-            </Button>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setAddModalOpen(false)}>
-              Abbrechen
-            </Button>
-            <Button
-              type="button"
-              onClick={saveModalEntries}
-              className="bg-[#61A07B] hover:bg-[#61A07B]/90"
-            >
-              Hinzufügen
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <CrearteAvailabilityModal
+        open={addModalOpen}
+        onOpenChange={setAddModalOpen}
+        rows={modalRows}
+        days={Array.from(DAYS)}
+        titleOptions={Array.from(TITLE_OPTIONS)}
+        saving={saving}
+        onAddRow={addModalRow}
+        onRemoveRow={removeModalRow}
+        onChangeRow={updateModalRow}
+        onSave={saveModalEntries}
+        TimeInputWithIcon={TimeInputWithIcon}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Staff members list */}
-        <div className="md:col-span-1">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700 mb-4">
-            Mitarbeiter
-          </h3>
-          <div className="flex flex-col gap-2">
-            {STAFF_MEMBERS.map((staff) => (
-              <button
-                key={staff.id}
-                type="button"
-                onClick={() => setSelectedStaffId(staff.id)}
-                className={cn(
-                  "w-full cursor-pointer text-left px-4 py-3 rounded-lg border transition-colors",
-                  selectedStaffId === staff.id
-                    ? "bg-[#61A07B] border-[#61A07B]/60 text-white"
-                    : "bg-white border-gray-200 text-gray-700 hover:bg-gray-50"
-                )}
-              >
-                {staff.name}
-              </button>
-            ))}
-          </div>
-        </div>
+        {/* Staff members list from API (separate component) */}
+        <EmployeeListLeftSide
+          loading={loadingEmployees}
+          employees={staffMembers}
+          selectedId={selectedStaffId}
+          page={employeePage}
+          totalPages={totalEmployeePages}
+          onSelect={setSelectedStaffId}
+          onPageChange={setEmployeePage}
+        />
 
         {/* Wöchentliche Arbeitszeiten — Add button + list from modal */}
         <div className="md:col-span-2">
@@ -289,14 +413,23 @@ export default function StaffAvailability() {
               variant="outline"
               size="sm"
               onClick={openAddModal}
-              className="shrink-0 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-[#61A07B] hover:text-[#61A07B]"
+              disabled={!selectedStaffId || loadingAvailability}
+              className="shrink-0 border-gray-300 text-gray-600 hover:bg-gray-50 hover:border-[#61A07B] hover:text-[#61A07B] disabled:opacity-50"
             >
               <Plus className="h-4 w-4 mr-1.5" />
               Hinzufügen
             </Button>
           </div>
           <div className="flex flex-col gap-3">
-            {currentEntries.length === 0 ? (
+            {!selectedStaffId ? (
+              <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/50 px-6 py-8 text-center text-sm text-gray-500">
+                Bitte wählen Sie links einen Mitarbeiter aus.
+              </div>
+            ) : loadingAvailability ? (
+              <div className="rounded-xl border border-gray-200 bg-white px-6 py-8 text-center text-sm text-gray-500">
+                Arbeitszeiten werden geladen…
+              </div>
+            ) : currentEntries.length === 0 ? (
               <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50/50 px-6 py-8 text-center text-sm text-gray-500">
                 Noch keine Zeiten. Klicken Sie auf &quot;Hinzufügen&quot;, um Arbeitszeiten und Pausen einzutragen.
               </div>
@@ -321,7 +454,8 @@ export default function StaffAvailability() {
                     >
                       <Switch
                         checked={enabled}
-                        onCheckedChange={(checked) => setDayEnabledFor(day, checked)}
+                        onCheckedChange={() => handleToggleDay(day)}
+                        disabled={togglingDay === day}
                         className="data-[state=checked]:bg-[#61A07B] shrink-0 cursor-pointer"
                       />
                       <span
@@ -389,3 +523,4 @@ export default function StaffAvailability() {
     </div>
   );
 }
+
