@@ -46,6 +46,7 @@ export default function Rooms() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
 
   const fetchRooms = async () => {
     setLoading(true);
@@ -123,14 +124,18 @@ export default function Rooms() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Möchten Sie diesen Raum wirklich löschen?");
-    if (!confirmed) return;
+  const handleDeleteClick = (room: Room) => {
+    setRoomToDelete(room);
+  };
 
+  const confirmDeleteRoom = async () => {
+    if (!roomToDelete) return;
+    const id = roomToDelete.id;
     setDeletingId(id);
     try {
       await deleteAppointmentRoom(id);
       toast.success("Raum gelöscht.");
+      setRoomToDelete(null);
       await fetchRooms();
     } catch {
       toast.error("Raum konnte nicht gelöscht werden.");
@@ -228,7 +233,7 @@ export default function Rooms() {
                     <button
                       type="button"
                       className="p-2 cursor-pointer text-gray-500 hover:text-red-600 rounded transition-colors"
-                      onClick={() => handleDelete(room.id)}
+                      onClick={() => handleDeleteClick(room)}
                       aria-label="Raum löschen"
                       disabled={deletingId === room.id}
                     >
@@ -298,6 +303,38 @@ export default function Rooms() {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation modal */}
+      <Dialog open={!!roomToDelete} onOpenChange={(open) => !open && setRoomToDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Raum löschen?</DialogTitle>
+            <DialogDescription>
+              {roomToDelete
+                ? `Möchten Sie den Raum "${roomToDelete.name}" wirklich löschen?`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRoomToDelete(null)}
+              disabled={deletingId !== null}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDeleteRoom}
+              disabled={deletingId !== null}
+            >
+              {deletingId !== null ? "Wird gelöscht…" : "Löschen"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
