@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Wallet,
   AlertTriangle,
@@ -11,50 +11,64 @@ import {
   LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { getCardDataCalculation } from '@/apis/warenwirtschaftApis'
+
+type CardCalculationData = {
+  outstandingClaim: number
+  overdue: number
+  partiallyPaid: number
+  paidMonth: number
+  totalDocuments: number
+  openDeliveryNotes: number
+}
 
 const CARDS: {
   label: string
-  value: string
   icon: LucideIcon
   valueClassName?: string
   iconClassName?: string
+  key: keyof CardCalculationData
+  isCurrency?: boolean
 }[] = [
   {
     label: 'OFFENE FORDERUNGEN',
-    value: '15.620,00 €',
     icon: Wallet,
     iconClassName: 'text-gray-400',
+    key: 'outstandingClaim',
+    isCurrency: true,
   },
   {
     label: 'ÜBERFÄLLIG',
-    value: '8.170,00 €',
     icon: AlertTriangle,
     valueClassName: 'text-red-600',
     iconClassName: 'text-orange-400',
+    key: 'overdue',
+    isCurrency: true,
   },
   {
     label: 'TEILWEISE BEZAHLT',
-    value: '1',
     icon: Clock,
     iconClassName: 'text-gray-400',
+    key: 'partiallyPaid',
   },
   {
     label: 'BEZAHLT (MONAT)',
-    value: '6.200,00 €',
     icon: FileCheck,
     iconClassName: 'text-green-500',
+    key: 'paidMonth',
+    isCurrency: true,
   },
   {
     label: 'DOKUMENTE GESAMT',
-    value: '15',
     icon: FileText,
     iconClassName: 'text-gray-400',
+    key: 'totalDocuments',
   },
   {
     label: 'OFFENE LIEFERSCHEINE',
-    value: '2',
     icon: Truck,
     iconClassName: 'text-gray-400',
+    key: 'openDeliveryNotes',
   },
 ]
 
@@ -92,18 +106,55 @@ function SingleCard({
 }
 
 export default function DokumenteForderungenCard() {
+  const [data, setData] = useState<CardCalculationData | null>(null)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res: any = await getCardDataCalculation()
+        const payload = res?.data ?? res
+        if (payload) {
+          setData(payload as CardCalculationData)
+        }
+      } catch {
+        // ignore and keep fallback values
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('de-DE', {
+      style: 'currency',
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount)
+
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-6">
-      {CARDS.map((card, index) => (
-        <SingleCard
-          key={index}
-          label={card.label}
-          value={card.value}
-          icon={card.icon}
-          valueClassName={card.valueClassName}
-          iconClassName={card.iconClassName}
-        />
-      ))}
+      {CARDS.map((card, index) => {
+        let value = '-'
+
+        if (data) {
+          const raw = data[card.key]
+          if (typeof raw === 'number') {
+            value = card.isCurrency ? formatCurrency(raw) : String(raw)
+          }
+        }
+
+        return (
+          <SingleCard
+            key={index}
+            label={card.label}
+            value={value}
+            icon={card.icon}
+            valueClassName={card.valueClassName}
+            iconClassName={card.iconClassName}
+          />
+        )
+      })}
     </div>
   )
 }

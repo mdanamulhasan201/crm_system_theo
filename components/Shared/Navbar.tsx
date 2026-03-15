@@ -13,6 +13,8 @@ interface NavbarProps {
 }
 
 const TEAMCHAT_PATH = '/dashboard/teamchat';
+/** CRM feature path from API – when action is false, button is hidden (same as sidebar items) */
+const CRM_PATH = '/dashboard/crm-cunnection';
 const CRM_BASE_URL = process.env.NEXT_PUBLIC_CRM_URL || 'http://stock.feetf1rst.tech';
 
 export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
@@ -22,6 +24,7 @@ export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
   const router = useRouter();
   const { isPathAllowed } = useFeatureAccess();
   const showTeamchat = isPathAllowed(TEAMCHAT_PATH);
+  const showCrm = isPathAllowed(CRM_PATH);
 
   const handleGoToCRM = async () => {
     setIsCrmLoading(true);
@@ -71,15 +74,17 @@ export default function Navbar({ onMenuClick, isSidebarOpen }: NavbarProps) {
         </div>
 
         <div className='flex items-center space-x-2 md:space-x-4'>
-          {/* Go to Stock button */}
-          <button
-            onClick={handleGoToCRM}
-            disabled={isCrmLoading}
-            className='flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors duration-200'
-          >
-            Gehe zu CRM
-            <HiExternalLink className='text-base' />
-          </button>
+          {/* Gehe zu CRM – only when CRM Connection has action: true (same feature access as sidebar) */}
+          {showCrm && (
+            <button
+              onClick={handleGoToCRM}
+              disabled={isCrmLoading}
+              className='flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors duration-200'
+            >
+              Gehe zu CRM
+              <HiExternalLink className='text-base' />
+            </button>
+          )}
 
           {/* Chat icon – only when Teamchat is allowed (same feature access as sidebar) */}
           {showTeamchat && (

@@ -428,13 +428,14 @@ export default function BodenkonstruktionCustomerOrderPage() {
                     <p className="text-sm font-medium text-gray-700">Lade Bodenkonstruktion...</p>
                 </div>
             )}
-            {/* Sticky Price Summary - bottom-right with Abbrechen + Weiter buttons */}
+            {/* Sticky Price Summary - bottom-right with Abbrechen + Weiter buttons (no price on customer-order page) */}
             <StickyPriceSummary
                 price={grandTotal}
                 onWeiterClick={handleWeiterClick}
                 onCancel={() => router.back()}
                 isSubmitting={isSubmitting}
                 weiterLabel={orderId ? "Abschließen" : undefined}
+                hidePrice={true}
             />
 
             {/* Header: product name + customer + delivery (no product image for standalone order) */}
@@ -572,6 +573,9 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}
                 brandsohleSide={brandsohleSide}
+                hideBrandsohlePrice={true}
+                hideRahmenPrice={true}
+                hideOptionPricesForGroupIds={["laufsohle_lose_beilegen"]}
             />
 
             {/* PDF Popup */}
@@ -611,6 +615,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
                     isLoading={isSubmitting}
                     onConfirm={handleFinalSubmit}
                     deliveryCategory="Bodenkonstruktion"
+                    hidePrice={true}
                 />
             )}
 

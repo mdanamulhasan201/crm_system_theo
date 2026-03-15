@@ -44,9 +44,11 @@ interface CompletionPopUpProps {
   shaftConfiguration?: ShaftConfiguration;
   /** e.g. "Bodenkonstruktion", "Halbprobenerstellung", "Massschafterstellung", "Komplettfertigung" – used to show category-wise delivery date */
   deliveryCategory?: string;
+  /** When true, hide price row and balance paragraph (e.g. customer-order page) */
+  hidePrice?: boolean;
 }
 
-const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value, isLoading, shaftConfiguration, deliveryCategory }: CompletionPopUpProps) => {
+const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value, isLoading, shaftConfiguration, deliveryCategory, hidePrice = false }: CompletionPopUpProps) => {
   const value2 = value || null;
   const [availableBalance, setAvailableBalance] = useState<number | null>(null);
   const [isLoadingBalance, setIsLoadingBalance] = useState(true);
@@ -166,20 +168,23 @@ const CompletionPopUp = ({ onClose, onConfirm, productName, customerName, value,
               <span className="text-sm text-slate-500 font-medium">Kunde:</span>
               <span className="text-sm text-slate-900 font-semibold">{customerName || 'N/A'}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-slate-100">
-              <span className="text-sm text-slate-500 font-medium">Preis:</span>
-              <div className="flex flex-col items-end">
-                <span className="text-sm text-slate-900 font-semibold">{formatBalance(value2)}</span>
-                <span className="text-xs text-slate-400 mt-0.5">excl. Zustellungsversand</span>
-              </div>
-            </div>
-            
-            <div className="bg-slate-50 rounded-lg p-4 mt-4">
-              <p className="text-sm text-slate-600 leading-relaxed m-0">
-                Wird von Ihrer FeetFirst Balance abgerechnet.<br />
-                Verfügbares Guthaben: <strong className="text-slate-900">{displayAvailableBalance}</strong> – Restguthaben nach Kauf: <strong className="text-slate-900">{displayRemainingBalance}</strong>
-              </p>
-            </div>
+            {!hidePrice && (
+              <>
+                <div className="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span className="text-sm text-slate-500 font-medium">Preis:</span>
+                  <div className="flex flex-col items-end">
+                    <span className="text-sm text-slate-900 font-semibold">{formatBalance(value2)}</span>
+                    <span className="text-xs text-slate-400 mt-0.5">excl. Zustellungsversand</span>
+                  </div>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-slate-600 leading-relaxed m-0">
+                    Wird von Ihrer FeetFirst Balance abgerechnet.<br />
+                    Verfügbares Guthaben: <strong className="text-slate-900">{displayAvailableBalance}</strong> – Restguthaben nach Kauf: <strong className="text-slate-900">{displayRemainingBalance}</strong>
+                  </p>
+                </div>
+              </>
+            )}
             
             {(deliveryCategory && (deliveryDateText || isLoadingDelivery)) && (
               <div className="text-xs text-slate-500 mt-2">

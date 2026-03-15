@@ -43,6 +43,12 @@ interface ChecklistSectionProps {
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
     brandsohleSide?: BrandsohleSideData | null
+    /** When true, hide price in Brandsohle option labels (e.g. customer-order page only) */
+    hideBrandsohlePrice?: boolean
+    /** When true, hide price in Rahmen option labels (e.g. customer-order page only) */
+    hideRahmenPrice?: boolean
+    /** Group IDs for which option labels are shown without price (e.g. ["laufsohle_lose_beilegen"] on customer-order page) */
+    hideOptionPricesForGroupIds?: string[]
 }
 
 export default function ChecklistSection({
@@ -81,6 +87,9 @@ export default function ChecklistSection({
     hinterkappeSide,
     onBrandsohleChange,
     brandsohleSide,
+    hideBrandsohlePrice = false,
+    hideRahmenPrice = false,
+    hideOptionPricesForGroupIds,
 }: ChecklistSectionProps) {
     // Orthopedic field IDs that should only show when showOrthopedicFields is true
     const orthopedicFieldIds = [
@@ -209,6 +218,7 @@ export default function ChecklistSection({
                                 def={g}
                                 value={brandsohleSide || null}
                                 onChange={onBrandsohleChange || (() => {})}
+                                hidePrice={hideBrandsohlePrice}
                             />
                         ) : g.fieldType === "vorderkappeSide" && showOrthopedicFields ? (
                             <VorderkappeSideField
@@ -221,6 +231,7 @@ export default function ChecklistSection({
                                 def={g}
                                 value={rahmen || null}
                                 onChange={onRahmenChange || (() => {})}
+                                hidePrice={hideRahmenPrice}
                             />
                         ) : g.fieldType === "sohlenhoeheDifferenziert" && shouldShowSohlenhoeheDifferenziert ? (
                             <SohlenhoeheDifferenziertField
@@ -242,6 +253,7 @@ export default function ChecklistSection({
                                     onOptionClick={onAbsatzFormClick}
                                     selectedSole={selectedSole}
                                     tooltipText={(g as any).tooltipText}
+                                    hidePriceForGroupIds={hideOptionPricesForGroupIds}
                                 />
 
                                 {/* Bevorzugte Farbe input für Sohlenmaterial */}

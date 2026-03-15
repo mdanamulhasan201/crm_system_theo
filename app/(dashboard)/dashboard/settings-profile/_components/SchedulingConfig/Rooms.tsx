@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,30 +22,58 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import {
+  createAppointmentRoom,
+  deleteAppointmentRoom,
+  getAllAppointmentRooms,
+  updateAppointmentRoom,
+} from "@/apis/employeeaApis";
+import toast from "react-hot-toast";
 
 interface Room {
   id: string;
   name: string;
-  active: boolean;
+  isActive: boolean;
 }
 
-const INITIAL_ROOMS: Room[] = [
-  { id: "1", name: "Scan 1", active: true },
-  { id: "2", name: "Scan 2", active: true },
-  { id: "3", name: "Beratung", active: true },
-  { id: "4", name: "Labor", active: false },
-];
-
 export default function Rooms() {
-  const [rooms, setRooms] = useState<Room[]>(INITIAL_ROOMS);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
   const [newRoomName, setNewRoomName] = useState("");
   const [newRoomActive, setNewRoomActive] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [roomToDelete, setRoomToDelete] = useState<Room | null>(null);
 
-  const setRoomActive = (id: string, active: boolean) => {
-    setRooms((prev) => prev.map((r) => (r.id === id ? { ...r, active } : r)));
+  const fetchRooms = async () => {
+    setLoading(true);
+    try {
+      const res: any = await getAllAppointmentRooms();
+      const data = res?.data ?? res;
+      if (Array.isArray(data)) {
+        setRooms(
+          data.map((room: any) => ({
+            id: room.id || room._id,
+            name: room.name,
+            isActive: room.isActive,
+          }))
+        );
+      } else {
+        setRooms([]);
+      }
+    } catch {
+      toast.error("Räume konnten nicht geladen werden.");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  useEffect(() => {
+    fetchRooms();
+  }, []);
 
   const openAddModal = () => {
     setEditingRoom(null);
@@ -57,7 +85,7 @@ export default function Rooms() {
   const openEditModal = (room: Room) => {
     setEditingRoom(room);
     setNewRoomName(room.name);
-    setNewRoomActive(room.active);
+    setNewRoomActive(room.isActive);
     setModalOpen(true);
   };
 
@@ -66,30 +94,73 @@ export default function Rooms() {
     if (!open) setEditingRoom(null);
   };
 
-  const handleSaveRoom = (e: React.FormEvent) => {
+  const handleSaveRoom = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newRoomName.trim();
     if (!name) return;
-    if (editingRoom) {
-      setRooms((prev) =>
-        prev.map((r) =>
-          r.id === editingRoom.id
-            ? { ...r, name, active: newRoomActive }
-            : r
-        )
-      );
-    } else {
-      setRooms((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), name, active: newRoomActive },
-      ]);
+
+    setSaving(true);
+    try {
+      if (editingRoom) {
+        await updateAppointmentRoom(editingRoom.id, {
+          name,
+          isActive: newRoomActive,
+        });
+        toast.success("Raum aktualisiert.");
+      } else {
+        await createAppointmentRoom({
+          name,
+          isActive: newRoomActive,
+        });
+        toast.success("Raum erstellt.");
+      }
+      await fetchRooms();
+      setModalOpen(false);
+      setEditingRoom(null);
+    } catch {
+      toast.error("Raum konnte nicht gespeichert werden.");
+    } finally {
+      setSaving(false);
     }
-    setModalOpen(false);
-    setEditingRoom(null);
   };
 
-  const handleDelete = (id: string) => {
-    setRooms((prev) => prev.filter((r) => r.id !== id));
+  const handleDeleteClick = (room: Room) => {
+    setRoomToDelete(room);
+  };
+
+  const confirmDeleteRoom = async () => {
+    if (!roomToDelete) return;
+    const id = roomToDelete.id;
+    setDeletingId(id);
+    try {
+      await deleteAppointmentRoom(id);
+      toast.success("Raum gelöscht.");
+      setRoomToDelete(null);
+      await fetchRooms();
+    } catch {
+      toast.error("Raum konnte nicht gelöscht werden.");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleToggleActive = async (room: Room, nextActive: boolean) => {
+    setTogglingId(room.id);
+    try {
+      await updateAppointmentRoom(room.id, {
+        name: room.name,
+        isActive: nextActive,
+      });
+      setRooms((prev) =>
+        prev.map((r) =>
+          r.id === room.id ? { ...r, isActive: nextActive } : r
+        )
+      );
+    } catch {
+      toast.error("Status konnte nicht aktualisiert werden.");
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   return (
@@ -140,9 +211,10 @@ export default function Rooms() {
                 <TableCell className="text-center py-4 px-4">
                   <div className="flex justify-center">
                     <Switch
-                      checked={room.active}
+                      checked={room.isActive}
+                      disabled={togglingId === room.id}
                       onCheckedChange={(checked) =>
-                        setRoomActive(room.id, checked)
+                        handleToggleActive(room, checked)
                       }
                       className="data-[state=checked]:bg-[#61A07B] cursor-pointer"
                     />
@@ -161,8 +233,9 @@ export default function Rooms() {
                     <button
                       type="button"
                       className="p-2 cursor-pointer text-gray-500 hover:text-red-600 rounded transition-colors"
-                      onClick={() => handleDelete(room.id)}
+                      onClick={() => handleDeleteClick(room)}
                       aria-label="Raum löschen"
+                      disabled={deletingId === room.id}
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -220,12 +293,48 @@ export default function Rooms() {
               <Button
                 type="submit"
                 className="bg-[#61A07B] hover:bg-[#4A8A6A] cursor-pointer"
-                disabled={!newRoomName.trim()}
+                disabled={!newRoomName.trim() || saving}
               >
-                {editingRoom ? "Raum aktualisieren" : "Raum anlegen"}
+                {saving
+                  ? "Wird gespeichert…"
+                  : editingRoom
+                  ? "Raum aktualisieren"
+                  : "Raum anlegen"}
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation modal */}
+      <Dialog open={!!roomToDelete} onOpenChange={(open) => !open && setRoomToDelete(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Raum löschen?</DialogTitle>
+            <DialogDescription>
+              {roomToDelete
+                ? `Möchten Sie den Raum "${roomToDelete.name}" wirklich löschen?`
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setRoomToDelete(null)}
+              disabled={deletingId !== null}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDeleteRoom}
+              disabled={deletingId !== null}
+            >
+              {deletingId !== null ? "Wird gelöscht…" : "Löschen"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

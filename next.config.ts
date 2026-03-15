@@ -121,6 +121,24 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      {
+        // Page routes (/, /dashboard, etc.) – no cache so normal reload shows updates
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
+          },
+          {
+            key: 'Pragma',
+            value: 'no-cache',
+          },
+          {
+            key: 'Expires',
+            value: '0',
+          },
+        ],
+      },
     ];
   },
 };

@@ -14,13 +14,13 @@ export default function SchedulingConfigPage() {
     <div className="w-full">
       <TabConfig value={activeTab} onValueChange={setActiveTab}>
         <TabsContent value="staff-availability" className="mt-0 outline-none">
-          <StaffAvailability />
+          {activeTab === "staff-availability" && <StaffAvailability />}
         </TabsContent>
         <TabsContent value="rooms" className="mt-0 outline-none">
-          <Rooms />
+          {activeTab === "rooms" && <Rooms />}
         </TabsContent>
         <TabsContent value="booking-rules" className="mt-0 outline-none">
-          <BookingRules />
+          {activeTab === "booking-rules" && <BookingRules />}
         </TabsContent>
       </TabConfig>
     </div>

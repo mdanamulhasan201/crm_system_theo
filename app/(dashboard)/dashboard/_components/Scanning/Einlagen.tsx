@@ -24,7 +24,9 @@ import ProduktBasisdatenCard from './Einlagen/FormSections/ProduktBasisdatenCard
 import VersorgungsnotizCard from './Einlagen/FormSections/VersorgungsnotizCard';
 import WerkstattzettelModal from './WerkstattzettelModal';
 import SpringerDialog from './SpringerDialog';
+import SuggestSupplyAndStockModal, { type SuggestSupplyAndStockData } from './SuggestSupplyAndStockModal';
 import { getSettingData } from '@/apis/einlagenApis';
+import { suggestSupplyAndStockByRequiredLength, createOrderWithoutSupplyOrStore } from '@/apis/productsOrder';
 // import PositionsnummerDropdown from './Einlagen/Dropdowns/PositionsnummerDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -307,6 +309,15 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [formDataForOrder, setFormDataForOrder] = useState<any>(null);
     const [orderPrices, setOrderPrices] = useState<{ fussanalysePreis: number; einlagenversorgungPreis: number } | null>(null);
     const [showSpringerDialog, setShowSpringerDialog] = useState(false);
+    const [suggestSupplyModalOpen, setSuggestSupplyModalOpen] = useState(false);
+    const [suggestSupplyModalData, setSuggestSupplyModalData] = useState<SuggestSupplyAndStockData | null>(null);
+    const [suggestSupplyModalLoading, setSuggestSupplyModalLoading] = useState(false);
+    const [suggestSupplyRequiredLength, setSuggestSupplyRequiredLength] = useState<number | undefined>(undefined);
+    const [suggestSupplyErrorMessage, setSuggestSupplyErrorMessage] = useState<string | null>(null);
+    /** When user selects a supply/milling_block from suggest modal, this overrides versorgungId in the next order */
+    const [suggestedVersorgungIdOverride, setSuggestedVersorgungIdOverride] = useState<string | null>(null);
+    /** Full order payload when order failed with suggestSupplyAndStock (for Skip = create without supply/store) */
+    const [suggestSupplyOrderPayload, setSuggestSupplyOrderPayload] = useState<Record<string, any> | null>(null);
     
     // Settings data state
     const [coverTypes, setCoverTypes] = useState<string[]>([]);
@@ -650,10 +661,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     };
 
     const handleConfirmOrder = async () => {
-        // Use custom versorgung ID if on einmalig tab and it exists, otherwise use resolved ID
+        // Use custom versorgung ID if on einmalig tab and it exists, otherwise use resolved ID. If user selected from suggest modal, use that.
         let versorgungIdToUse: string | null = null;
         
-        if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
+        if (suggestedVersorgungIdOverride) {
+            versorgungIdToUse = suggestedVersorgungIdOverride;
+        } else if (activeVersorgungTab === 'einmalig' && customVersorgungId) {
             versorgungIdToUse = customVersorgungId;
         } else if (activeVersorgungTab === 'standard') {
             versorgungIdToUse = resolveVersorgungIdFromText();
@@ -750,7 +763,18 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
                 // Get bezahlt value - use paymentStatus if bezahlt is not available (for backward compatibility)
                 const bezahltValue = formDataForOrder.bezahlt || formDataForOrder.paymentStatus || '';
-                const paymentStatusValue = formDataForOrder.paymentStatus || formDataForOrder.bezahlt || undefined;
+                const rawPaymentStatus = formDataForOrder.paymentStatus || formDataForOrder.bezahlt || undefined;
+                // API accepts only a single status. Modal sends pipe-separated when dual; last token = last clicked in Kostenträger.
+                const VALID_PAYMENT_STATUSES = ['Privat_Bezahlt', 'Privat_offen', 'Krankenkasse_Ungenehmigt', 'Krankenkasse_Genehmigt'] as const;
+                const tokens = rawPaymentStatus ? rawPaymentStatus.split('|').map((s: string) => s.trim()).filter(Boolean) : [];
+                const validTokens = tokens.filter((s: string) => VALID_PAYMENT_STATUSES.includes(s as any));
+                let paymentStatusValue: string | undefined;
+                if (validTokens.length === 0) {
+                    paymentStatusValue = rawPaymentStatus?.trim() && VALID_PAYMENT_STATUSES.includes(rawPaymentStatus.trim() as any) ? rawPaymentStatus.trim() : undefined;
+                } else {
+                    // Single or dual: use last token = the button user last clicked in Kostenträger section
+                    paymentStatusValue = validTokens[validTokens.length - 1];
+                }
 
                 // Resolve privatePrice (amount customer pays privately)
                 const privatePrice = formDataForOrder.privatePrice;
@@ -775,7 +799,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     mitarbeiter: formDataForOrder.mitarbeiter || '',
                     fertigstellungBis: formDataForOrder.fertigstellungBis || '',
                     versorgung: formDataForOrder.versorgung || '',
-                    bezahlt: bezahltValue, // Required by API
+                    bezahlt: paymentStatusValue ?? bezahltValue, // Required by API; use normalized single status when dual was selected
                     fussanalysePreis: fussanalysePreis,
                     einlagenversorgungPreis: einlagenversorgungPreis,
                     fußanalyse: fussanalysePreis, 
@@ -813,9 +837,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 if (paymentStatusValue) {
                     orderPayload.paymentStatus = paymentStatusValue;
                 }
+                if (formDataForOrder.billingType) {
+                    orderPayload.billingType = formDataForOrder.billingType;
+                }
 
                 // For createOrderAndGeneratePdf, we still pass versorgungIdToUse
                 // The actual field (versorgungId or key) is already set in orderPayload
+                setSuggestSupplyOrderPayload(orderPayload);
                 const result = await createOrderAndGeneratePdf(
                     customer.id,
                     versorgungIdToUse || customVersorgungId || '', // Fallback to customVersorgungId if needed
@@ -824,8 +852,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 );
                 const orderId = (result as any)?.data?.id ?? (result as any)?.id ?? result?.orderId;
                 if (orderId) {
+                    setSuggestSupplyOrderPayload(null);
                     setCurrentOrderId(orderId);
                     setShowPdfModal(true);
+                    setSuggestedVersorgungIdOverride(null);
                     // Close Werkstattzettel modal only after successful order creation
                     setShowUserInfoUpdateModal(false);
                     
@@ -838,9 +868,39 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     // After successful order creation, clear all Einlagen inputs
                     resetEinlagenForm();
                 }
-            } catch (error) {
+            } catch (error: any) {
                 console.error('Error while creating order:', error);
-                toast.error('Fehler beim Erstellen der Bestellung. Bitte versuchen Sie es erneut.');
+                const errData = error?.response?.data;
+                const suggestSupply = errData?.suggestSupplyAndStock === true;
+                const requiredLength = errData?.suggestParams?.requiredLength != null
+                    ? Number(errData.suggestParams.requiredLength)
+                    : undefined;
+
+                if (suggestSupply && requiredLength != null && !Number.isNaN(requiredLength)) {
+                    setShowConfirmModal(false);
+                    setSuggestedVersorgungIdOverride(null);
+                    setSuggestSupplyRequiredLength(requiredLength);
+                    setSuggestSupplyErrorMessage(errData?.message ?? null);
+                    setSuggestSupplyModalOpen(true);
+                    setSuggestSupplyModalData(null);
+                    setSuggestSupplyModalLoading(true);
+                    try {
+                        const res = await suggestSupplyAndStockByRequiredLength(requiredLength);
+                        const data = (res as any)?.data ?? res;
+                        setSuggestSupplyModalData({
+                            supply: (data?.supply ?? []) as SuggestSupplyAndStockData['supply'],
+                            rady_insole: data?.rady_insole ?? [],
+                            milling_block: (data?.milling_block ?? []) as SuggestSupplyAndStockData['milling_block'],
+                        });
+                    } catch (suggestErr) {
+                        console.error('Suggest supply and stock failed:', suggestErr);
+                        toast.error('Vorschläge konnten nicht geladen werden.');
+                    } finally {
+                        setSuggestSupplyModalLoading(false);
+                    }
+                } else {
+                    toast.error(errData?.message || 'Fehler beim Erstellen der Bestellung. Bitte versuchen Sie es erneut.');
+                }
             }
         }
         setShowConfirmModal(false);
@@ -1192,6 +1252,42 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 formData={formDataForOrder}
                 customerId={customer?.id}
                 versorgungId={resolveVersorgungIdFromText()}
+            />
+
+            <SuggestSupplyAndStockModal
+                open={suggestSupplyModalOpen}
+                onOpenChange={setSuggestSupplyModalOpen}
+                data={suggestSupplyModalData}
+                requiredLengthMm={suggestSupplyRequiredLength}
+                errorMessage={suggestSupplyErrorMessage}
+                loading={suggestSupplyModalLoading}
+                onSkip={async () => {
+                    if (!suggestSupplyOrderPayload) return;
+                    try {
+                        const result: any = await createOrderWithoutSupplyOrStore(suggestSupplyOrderPayload);
+                        const orderId = result?.data?.id ?? result?.id ?? result?.orderId;
+                        if (orderId) {
+                            setCurrentOrderId(orderId);
+                            setShowPdfModal(true);
+                            setSuggestedVersorgungIdOverride(null);
+                            setSuggestSupplyOrderPayload(null);
+                            setSuggestSupplyModalOpen(false);
+                            setShowUserInfoUpdateModal(false);
+                            resetEinlagenForm();
+                            toast.success('Bestellung wurde erstellt (ohne Lagerzuordnung).');
+                        } else {
+                            toast.error('Bestellung konnte nicht erstellt werden.');
+                        }
+                    } catch (err: any) {
+                        toast.error(err?.response?.data?.message ?? 'Bestellung fehlgeschlagen.');
+                        throw err;
+                    }
+                }}
+                onSelectVersorgung={(id) => {
+                    setSuggestedVersorgungIdOverride(id);
+                    setSuggestSupplyModalOpen(false);
+                    toast.success('Versorgung ausgewählt. Bitte erneut auf "Weiter" klicken und Bestellung bestätigen.');
+                }}
             />
 
             <InvoiceGeneratePdfModal

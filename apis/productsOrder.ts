@@ -9,12 +9,40 @@ export const createOrder = async (customerId: string, versorgungId: string, werk
         if (formData) {
             Object.assign(payload, formData);
         }
-        const response = await axiosClient.post('/customer-orders/create', payload);
+        const response = await axiosClient.post('/customer-orders/create-order/please', payload);
         return response.data;
     } catch (error) {
         throw error;
     }
 }
+
+
+/** Call suggest-supply-and-stock. Backend expects param footLengthMm; we pass requiredLength (from suggestParams.requiredLength) as the value. */
+export const suggestSupplyAndStock = async (requiredLength: number) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/create-order/suggest-supply-and-stock?footLengthMm=${requiredLength}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+/** Alias for Einlagen flow: same as suggestSupplyAndStock(requiredLength). */
+export const suggestSupplyAndStockByRequiredLength = suggestSupplyAndStock;
+
+
+/** Create order without supply/store (e.g. when user skips suggest modal). Sends full order payload as body. */
+export const createOrderWithoutSupplyOrStore = async (payload: Record<string, any>) => {
+    try {
+        const response = await axiosClient.post("/customer-orders/create-order/without-supply-or-store", payload);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+
 // create custom Versorgung privet-supply/shadow
 export const createCustomVersorgung = async (payload: Record<string, any>) => {
     try {

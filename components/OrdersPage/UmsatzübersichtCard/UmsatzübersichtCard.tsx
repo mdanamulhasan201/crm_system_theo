@@ -93,20 +93,20 @@ function SingleCard({ item }: { item: UmsatzCardItem }) {
 
             {/* First metric – when combined, both in flex row */}
             {hasSecondBlock ? (
-                <div className="flex min-w-0 flex-row gap-4 sm:gap-6">
+                <div className="flex min-w-0 flex-row gap-4 sm:gap-6 overflow-hidden">
                     <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-gray-600 sm:text-sm">{item.title}</p>
+                        <p className="text-xs font-medium text-gray-600 ">{item.title}</p>
                         <p className="mt-1 text-lg font-bold tracking-tight text-emerald-600 sm:text-xl">
                             {item.value}
                         </p>
                         {item.description && (
-                            <p className="mt-1.5 text-xs text-gray-500 sm:text-sm">{item.description}</p>
+                            <p className="mt-1.5 text-xs text-gray-500 ">{item.description}</p>
                         )}
                     </div>
                     {item.title2 && item.value2 && (
                         <div className="min-w-0 flex-1 border-l border-gray-100 pl-4 sm:pl-6">
-                            <p className="text-xs font-medium text-gray-600 sm:text-sm">{item.title2}</p>
-                            <p className="mt-1 text-lg font-bold tracking-tight text-emerald-600 sm:text-xl">
+                            <p className="text-xs font-medium text-gray-600 ">{item.title2}</p>
+                            <p className="mt-1 text-lg font-bold tracking-tight text-emerald-600 sm:text-lg 2xl:text-xl">
                                 {item.value2}
                             </p>
                             {item.description2 && (
@@ -116,10 +116,10 @@ function SingleCard({ item }: { item: UmsatzCardItem }) {
                     )}
                 </div>
             ) : (
-                <div>
+                <div className='overflow-hidden'>
                     <p
                         className={cn(
-                            'mt-1 text-2xl font-bold tracking-tight sm:text-3xl',
+                            'mt-1 text-2xl font-bold tracking-tight ',
                             item.valueGreen ? 'text-emerald-600' : 'text-gray-900'
                         )}
                     >
@@ -164,7 +164,7 @@ export default function UmsatzübersichtCard({ items = DEMO_CARDS, className }: 
     return (
         <div
             className={cn(
-                'grid w-full min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-4',
+                'grid w-full min-w-0 grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4',
                 className
             )}
         >

@@ -150,6 +150,13 @@ export default function AbrechnungsuebersichtModal({
 
     const categoryLabel = data?.orderCategory === 'insole' ? 'Einlage' : data?.orderCategory === 'milling_block' ? 'Fräsblock' : data?.orderCategory || '';
     const bezahltValue = data?.bezahlt != null ? String(data.bezahlt).trim() : '';
+    // Same color logic as Preis column: KK = blue (genehmigt/payed) or red (ungenehmigt); Privat = emerald (bezahlt) or orange (offen)
+    const insurancePayed = !!data?.insurance_payed;
+    const privatePayed = !!data?.private_payed;
+    const insuranceAmountColorClass =
+        bezahltValue.includes('Krankenkasse_Genehmigt') || insurancePayed ? 'text-blue-600' : 'text-red-600';
+    const privateAmountColorClass =
+        bezahltValue.includes('Privat_Bezahlt') || privatePayed ? 'text-emerald-600' : 'text-orange-600';
     const paymentTags = Array.from(
         new Set(
             bezahltValue
@@ -261,12 +268,12 @@ export default function AbrechnungsuebersichtModal({
                                 {(displayInsuranceTotal > 0 || displayPrivateTotal > 0) && (
                                     <div className="mt-3 space-y-1.5">
                                         {displayInsuranceTotal > 0 && (
-                                            <div className="text-lg font-semibold text-black">
+                                            <div className={`text-lg font-semibold ${insuranceAmountColorClass}`}>
                                                 KK: {formatEuro(displayInsuranceTotal)}
                                             </div>
                                         )}
                                         {displayPrivateTotal > 0 && (
-                                            <div className="text-lg font-semibold text-black">
+                                            <div className={`text-lg font-semibold ${privateAmountColorClass}`}>
                                                 Privat: {formatEuro(displayPrivateTotal)}
                                             </div>
                                         )}

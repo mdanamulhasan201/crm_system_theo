@@ -151,13 +151,10 @@ export default function PaymentStatusSection({
             setPaymentType(type)
             setStatus(newStatus)
 
-            const parts: string[] = []
-            if (nextPrivatStatus) {
-                parts.push(`Privat_${nextPrivatStatus === 'Offen' ? 'offen' : nextPrivatStatus}`)
-            }
-            if (nextKrankenkasseStatus) {
-                parts.push(`Krankenkasse_${nextKrankenkasseStatus}`)
-            }
+            // Put the clicked type last so API can use "last selected" as the single status to send
+            const privatPart = nextPrivatStatus ? `Privat_${nextPrivatStatus === 'Offen' ? 'offen' : nextPrivatStatus}` : null
+            const krankenkassePart = nextKrankenkasseStatus ? `Krankenkasse_${nextKrankenkasseStatus}` : null
+            const parts: string[] = type === 'Privat' ? [krankenkassePart, privatPart].filter(Boolean) as string[] : [privatPart, krankenkassePart].filter(Boolean) as string[]
             onChange(parts.join('|'))
             return
         }

@@ -24,13 +24,6 @@ const CATEGORY_OPTIONS = [
     { value: 'Businessschuhe', label: 'Businessschuhe' },
 ];
 
-const INNENFUTTER_OPTIONS = [
-    { value: 'ziegenleder-hellbraun', label: 'Ziegenleder hellbraun' },
-    { value: 'kalbsleder-beige', label: 'Kalbsleder Beige' },
-    { value: 'sport-mesh-nero-schwarz', label: 'Sport Mesh Nero/Schwarz' },
-    { value: 'comfort-line-nero-schwarz', label: 'Comfort Line Nero/Schwarz' },
-];
-
 const VERSCHLUSS_OPTIONS = [
     { value: 'Eyelets', label: 'Ösen (Schnürung)' },
     { value: 'Velcro', label: 'Klettverschluss' },
@@ -43,6 +36,7 @@ const VERSTAERKUNGEN_OPTIONS = ['Standard', 'Fersenverstärkung', 'Innen-Außenk
 export interface MassschafterstellungJson {
     cadModeling?: string;
     kategorie?: string;
+    modelName?: string;
     anzahlLedertypen?: string;
     innenfutter?: string;
     nahtfarbe?: string;
@@ -74,6 +68,7 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [cadModeling, setCadModeling] = useState<'1x' | '2x'>('1x');
     const [kategorie, setKategorie] = useState('');
+    const [modelName, setModelName] = useState('');
     const [anzahlLedertypen, setAnzahlLedertypen] = useState('');
     const [innenfutter, setInnenfutter] = useState('');
     const [nahtfarbe, setNahtfarbe] = useState('');
@@ -93,6 +88,7 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
             if (initialData) {
                 setCadModeling((initialData.cadModeling as '1x' | '2x') || '1x');
                 setKategorie(initialData.kategorie ?? '');
+                setModelName(initialData.modelName ?? '');
                 setAnzahlLedertypen(initialData.anzahlLedertypen ?? '');
                 setInnenfutter(initialData.innenfutter ?? '');
                 setNahtfarbe(initialData.nahtfarbe ?? '');
@@ -108,6 +104,7 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
             } else {
                 setCadModeling('1x');
                 setKategorie('');
+                setModelName('');
                 setAnzahlLedertypen('');
                 setInnenfutter('');
                 setNahtfarbe('');
@@ -147,6 +144,7 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
         const massschafterstellung_json: MassschafterstellungJson = {
             cadModeling,
             kategorie: kategorie || undefined,
+            modelName: modelName?.trim() || undefined,
             anzahlLedertypen: anzahlLedertypen || undefined,
             innenfutter: innenfutter || undefined,
             nahtfarbe: nahtfarbe || undefined,
@@ -180,7 +178,7 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
                         <DialogTitle className="text-lg font-bold text-gray-800">
                             Massschaftkonfigurator
                         </DialogTitle>
-                        <p className="text-sm font-medium text-gray-600">Custom Made #1000</p>
+                        {/* <p className="text-sm font-medium text-gray-600">Custom Made #1000</p> */}
                     </div>
                 </DialogHeader>
 
@@ -211,14 +209,14 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
                         </button>
                     </div>
 
-                    {/* CAD-Modellierung */}
+                    {/* Modellierung */}
                     <div className="flex flex-wrap items-center gap-4">
                         <div className="flex items-center gap-2">
-                            <Label className="font-medium text-base">CAD-Modellierung</Label>
+                            <Label className="font-medium text-base">Modellierung</Label>
                             <div className="relative group">
                                 <Info className="w-5 h-5 text-gray-400 cursor-help" />
                                 <div className="absolute left-0 bottom-full mb-1 w-72 p-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
-                                    Bei deutlich unterschiedlichen Füßen empfehlen wir zwei separate CAD-Modellierungen.
+                                    Bei deutlich unterschiedlichen Füßen empfehlen wir zwei separate Modellierungen.
                                 </div>
                             </div>
                         </div>
@@ -228,14 +226,14 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
                                     checked={cadModeling === '1x'}
                                     onChange={() => setCadModeling('1x')}
                                 />
-                                <span className="text-sm">1× CAD-Modellierung (Standard)</span>
+                                <span className="text-sm">1× Modellierung (Standard)</span>
                             </label>
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <Checkbox
                                     checked={cadModeling === '2x'}
                                     onChange={() => setCadModeling('2x')}
                                 />
-                                <span className="text-sm">2× CAD-Modellierung (separat)</span>
+                                <span className="text-sm">2× Modellierung (separat)</span>
                             </label>
                         </div>
                     </div>
@@ -255,34 +253,43 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
                         </Select>
                     </div>
 
-                    {/* Anzahl der Ledertypen */}
+                    {/* Modellname */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
-                        <Label className="font-medium text-base">Anzahl der Ledertypen:</Label>
-                        <Select value={anzahlLedertypen} onValueChange={setAnzahlLedertypen}>
-                            <SelectTrigger className="col-span-2 border-gray-300">
-                                <SelectValue placeholder="Auswählen" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="1">1</SelectItem>
-                                <SelectItem value="2">2</SelectItem>
-                                <SelectItem value="3">3</SelectItem>
-                            </SelectContent>
-                        </Select>
+                        <Label className="font-medium text-base">
+                            Modellname <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                            type="text"
+                            placeholder="Modellname eingeben..."
+                            className="col-span-2 border-gray-300"
+                            value={modelName}
+                            onChange={(e) => setModelName(e.target.value)}
+                            required
+                        />
+                    </div>
+
+                    {/* Lederfarbe */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
+                        <Label className="font-medium text-base">Lederfarbe:</Label>
+                        <Input
+                            type="text"
+                            placeholder="z.B. Braun, Schwarz"
+                            className="col-span-2 border-gray-300"
+                            value={anzahlLedertypen}
+                            onChange={(e) => setAnzahlLedertypen(e.target.value)}
+                        />
                     </div>
 
                     {/* Innenfutter */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:items-center">
                         <Label className="font-medium text-base">Innenfutter:</Label>
-                        <Select value={innenfutter} onValueChange={setInnenfutter}>
-                            <SelectTrigger className="col-span-2 border-gray-300">
-                                <SelectValue placeholder="Innenfutter wählen..." />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {INNENFUTTER_OPTIONS.map((o) => (
-                                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <Input
+                            type="text"
+                            placeholder="Innenfutter eingeben..."
+                            className="col-span-2 border-gray-300"
+                            value={innenfutter}
+                            onChange={(e) => setInnenfutter(e.target.value)}
+                        />
                     </div>
 
                     {/* Nahtfarbe */}
@@ -426,7 +433,7 @@ export default function SchafttypCustomModal({ open, onOpenChange, initialData, 
                             type="button"
                             className="w-full bg-gray-900 hover:bg-gray-800 text-white"
                             onClick={handleAbschliessen}
-                            disabled={submitting}
+                            disabled={submitting || !modelName?.trim()}
                         >
                             {submitting ? (
                                 <>

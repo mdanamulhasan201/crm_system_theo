@@ -1,19 +1,64 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, Info, Clock, CalendarX, Calendar } from "lucide-react";
+import { createBookingRule, getAllBookingRules } from "@/apis/employeeaApis";
+import toast from "react-hot-toast";
 
 export default function BookingRules() {
-  const [minNoticeHours, setMinNoticeHours] = useState("24");
-  const [cancellationHours, setCancellationHours] = useState("48");
+  // Start with empty fields; they will be populated from API if data exists
+  const [minNoticeHours, setMinNoticeHours] = useState("");
+  const [cancellationHours, setCancellationHours] = useState("");
+  const [defaultSlotMinutes, setDefaultSlotMinutes] = useState("");
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  useEffect(() => {
+    const fetchRules = async () => {
+      setLoading(true);
+      try {
+        const res: any = await getAllBookingRules();
+        const data = res?.data ?? res;
+        if (data) {
+          if (typeof data.minNoticeHours === "number") {
+            setMinNoticeHours(String(data.minNoticeHours));
+          }
+          if (typeof data.cancellationHours === "number") {
+            setCancellationHours(String(data.cancellationHours));
+          }
+          if (typeof data.defaultSlotMinutes === "number") {
+            setDefaultSlotMinutes(String(data.defaultSlotMinutes));
+          }
+        }
+      } catch {
+        toast.error("Buchungsregeln konnten nicht geladen werden.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRules();
+  }, []);
+
+  const handleSave = async () => {
+    const payload = {
+      minNoticeHours: minNoticeHours === "" ? null : Number(minNoticeHours),
+      cancellationHours: cancellationHours === "" ? null : Number(cancellationHours),
+      defaultSlotMinutes: defaultSlotMinutes === "" ? null : Number(defaultSlotMinutes),
+    };
+
     setSaving(true);
-    setTimeout(() => setSaving(false), 800);
+    try {
+      await createBookingRule(payload);
+      toast.success("Buchungsregeln gespeichert.");
+    } catch {
+      toast.error("Buchungsregeln konnten nicht gespeichert werden.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -46,6 +91,7 @@ export default function BookingRules() {
                   min={0}
                   value={minNoticeHours}
                   onChange={(e) => setMinNoticeHours(e.target.value)}
+                  disabled={loading}
                   className="h-9 w-24 rounded-md border-gray-200 bg-white"
                 />
                 <span className="text-sm text-gray-600">Stunden</span>
@@ -73,6 +119,7 @@ export default function BookingRules() {
                   min={0}
                   value={cancellationHours}
                   onChange={(e) => setCancellationHours(e.target.value)}
+                  disabled={loading}
                   className="h-9 w-24 rounded-md border-gray-200 bg-white"
                 />
                 <span className="text-sm text-gray-600">Stunden</span>
@@ -92,7 +139,9 @@ export default function BookingRules() {
                 Slot-Länge
               </Label>
               <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                <span className="font-medium text-gray-700">30 Minuten</span>
+                <span className="font-medium text-gray-700">
+                  {defaultSlotMinutes} Minuten
+                </span>
                 <span
                   className="text-gray-400"
                   title="Alle Terminslots sind auf 30 Minuten festgelegt. Die Dauer kann bei der Erstellung von Terminen angepasst werden."
@@ -112,7 +161,7 @@ export default function BookingRules() {
         <div className="pt-2">
           <Button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || loading}
             className="bg-[#61A07B] hover:bg-[#4A8A6A] text-white cursor-pointer"
           >
             <Check className="h-4 w-4" />

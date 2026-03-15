@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/table";
 import toast from "react-hot-toast";
 import { useStockManagementSlice } from "@/hooks/stockManagement/useStockManagementSlice";
+import { getSingleStorage } from "@/apis/storeManagement";
 
 interface MillingBlock {
   id: string;
@@ -59,7 +60,7 @@ export default function EditMillingBlock({
   onUpdated,
   sizeColumns,
 }: EditMillingBlockProps) {
-  const { updateExistingProduct, getProductById } = useStockManagementSlice();
+  const { updateExistingProduct } = useStockManagementSlice();
   const [isLoading, setIsLoading] = useState(false);
   const [sizeQuantities, setSizeQuantities] = useState<{
     [key: string]: SizeData;
@@ -73,27 +74,47 @@ export default function EditMillingBlock({
     undefined,
   );
 
-  // Initialize form data when product changes
-  useEffect(() => {
-    const loadProduct = async () => {
-      if (!product || !isOpen) return;
+  const lastLoadedIdRef = useRef<string | null>(null);
 
+  // Load product from API when edit modal opens so form always has fresh data
+  useEffect(() => {
+    if (!isOpen || !product?.id) {
+      lastLoadedIdRef.current = null;
+      return;
+    }
+
+    const productId = product.id;
+    if (lastLoadedIdRef.current === productId) return;
+    lastLoadedIdRef.current = productId;
+
+    let cancelled = false;
+
+    const loadProduct = async () => {
       try {
         setIsLoading(true);
-        const fullProduct = await getProductById(product.id);
-        setProduktname(fullProduct.produktname);
-        setHersteller(fullProduct.hersteller);
-        setArtikelnummer(fullProduct.artikelnummer);
-        setPurchasePrice(fullProduct.purchase_price || 0);
-        setSellingPrice(fullProduct.selling_price || 0);
+        const response: any = await getSingleStorage(productId);
+        if (cancelled) return;
+
+        const fullProduct = response?.data ?? response;
+        if (!fullProduct || typeof fullProduct !== "object") {
+          toast.error("Produktdaten konnten nicht geladen werden.");
+          return;
+        }
+
+        setProduktname(fullProduct.produktname ?? "");
+        setHersteller(fullProduct.hersteller ?? "");
+        setArtikelnummer(fullProduct.artikelnummer ?? "");
+        setPurchasePrice(Number(fullProduct.purchase_price) || 0);
+        setSellingPrice(Number(fullProduct.selling_price) || 0);
         setEditCreateStatus(fullProduct.create_status);
 
+        const groessenMengen = fullProduct.groessenMengen ?? {};
         const initialSizeQuantities: { [key: string]: SizeData } = {};
         sizeColumns.forEach((size) => {
           const normalizedSizeKey = size.replace(/^Size\s+/i, "");
           const raw =
-            fullProduct.groessenMengen?.[size] ??
-            fullProduct.groessenMengen?.[normalizedSizeKey];
+            groessenMengen[size] ??
+            groessenMengen[normalizedSizeKey];
           const rawData =
             typeof raw === "object" && raw !== null
               ? (raw as {
@@ -114,15 +135,24 @@ export default function EditMillingBlock({
           };
         });
         setSizeQuantities(initialSizeQuantities);
-      } catch (error) {
-        console.error("Failed to load milling block for edit:", error);
+      } catch (error: any) {
+        if (!cancelled) {
+          console.error("Failed to load milling block for edit:", error);
+          toast.error(
+            error?.response?.data?.message ??
+              "Produkt konnte nicht geladen werden."
+          );
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     loadProduct();
-  }, [product, isOpen, sizeColumns, getProductById]);
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, product?.id, sizeColumns]);
 
   const canEditQuantityFields =
     !product || editCreateStatus !== "by_admin";
@@ -264,6 +294,9 @@ export default function EditMillingBlock({
       <DialogContent className="!max-w-4xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Produkt bearbeiten</DialogTitle>
+          {isLoading && (
+            <p className="text-sm text-gray-500 mt-1">Daten werden geladen...</p>
+          )}
         </DialogHeader>
         <form
           onSubmit={(e) => {
