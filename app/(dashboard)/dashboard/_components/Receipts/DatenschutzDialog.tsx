@@ -12,6 +12,7 @@ import { Pen, FileText, X, Printer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
 import { getAllLocations } from "@/apis/setting/locationManagementApis";
+import { createCustomerSign } from "@/apis/customerSignApis";
 import toast from "react-hot-toast";
 
 interface Location {
@@ -41,6 +42,7 @@ export default function DatenschutzDialog({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasSignature, setHasSignature] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (needsSignature && canvasRef.current) {
@@ -172,7 +174,19 @@ export default function DatenschutzDialog({
     }
   };
 
-  const handleSave = () => {
+  const resetState = () => {
+    setShowSignaturePrompt(true);
+    setNeedsSignature(null);
+    setAcceptedPrivacy(false);
+    setWantsNewsletter(false);
+    setHasSignature(false);
+    if (canvasRef.current) {
+      const ctx = canvasRef.current.getContext("2d");
+      if (ctx) ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    }
+  };
+
+  const handleSave = async () => {
     if (!acceptedPrivacy) {
       toast.error(
         "Bitte bestätigen Sie, dass Sie die Datenschutzerklärung gelesen und akzeptiert haben",
@@ -185,36 +199,82 @@ export default function DatenschutzDialog({
       return;
     }
 
-    // Save PDF with or without digital signature
-    if (needsSignature) {
-      toast.success(
-        "Datenschutzerklärung wurde mit digitaler Unterschrift gespeichert",
-      );
+    if (needsSignature && canvasRef.current && customerData?.id) {
+      setIsGenerating(true);
+      const container = document.createElement("div");
+      try {
+        const signatureDataUrl = canvasRef.current.toDataURL("image/png");
+        const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+          import("html2canvas"),
+          import("jspdf"),
+        ]);
+
+        const fullHtml = getDocumentHtml(signatureDataUrl, acceptedPrivacy, wantsNewsletter);
+        const parser = new DOMParser();
+        const parsedDoc = parser.parseFromString(fullHtml, "text/html");
+        parsedDoc.querySelectorAll("script").forEach((s) => s.remove());
+
+        container.style.cssText =
+          "position:fixed;left:-9999px;top:0;width:794px;background:white;";
+        const styleEl = document.createElement("style");
+        styleEl.textContent =
+          parsedDoc.head.querySelector("style")?.textContent ?? "";
+        container.appendChild(styleEl);
+        const bodyDiv = document.createElement("div");
+        bodyDiv.innerHTML = parsedDoc.body.innerHTML;
+        container.appendChild(bodyDiv);
+        document.body.appendChild(container);
+
+        const canvas = await html2canvas(container, {
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          windowWidth: 794,
+        });
+
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        const pdfW = pdf.internal.pageSize.getWidth();
+        const pdfH = pdf.internal.pageSize.getHeight();
+        const totalImgH = (canvas.height * pdfW) / canvas.width;
+        const pages = Math.ceil(totalImgH / pdfH);
+
+        for (let i = 0; i < pages; i++) {
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, "JPEG", 0, -(i * pdfH), pdfW, totalImgH);
+        }
+
+        const blob = pdf.output("blob");
+        const safeName = `${customerData.vorname || "kunde"}-${customerData.nachname || ""}`
+          .replace(/\s+/g, "-")
+          .toLowerCase();
+        const dateStr = new Date().toLocaleDateString("de-DE").replace(/\./g, "-");
+        const pdfFile = new File(
+          [blob],
+          `datenschutz-${safeName}-${dateStr}.pdf`,
+          { type: "application/pdf" },
+        );
+
+        const formData = new FormData();
+        formData.append("pdf", pdfFile);
+        await createCustomerSign(customerData.id, formData);
+
+        toast.success("Datenschutzerklärung wurde mit digitaler Unterschrift gespeichert");
+      } catch (err) {
+        console.error("PDF generation error:", err);
+        toast.error("Fehler beim Erstellen des PDF-Dokuments");
+        return;
+      } finally {
+        if (document.body.contains(container)) document.body.removeChild(container);
+        setIsGenerating(false);
+      }
     } else {
-      toast.success("PDF wurde erstellt und kann ausgedruckt werden");
+      toast.success("Datenschutzerklärung wurde gespeichert");
     }
 
     onOpenChange(false);
-
-    // Reset states when closing
-    setTimeout(() => {
-      setShowSignaturePrompt(true);
-      setNeedsSignature(null);
-      setAcceptedPrivacy(false);
-      setWantsNewsletter(false);
-      setHasSignature(false);
-      if (canvasRef.current) {
-        const ctx = canvasRef.current.getContext("2d");
-        if (ctx) {
-          ctx.clearRect(
-            0,
-            0,
-            canvasRef.current.width,
-            canvasRef.current.height,
-          );
-        }
-      }
-    }, 300);
+    setTimeout(resetState, 300);
   };
 
   const handleBack = () => {
@@ -237,84 +297,29 @@ export default function DatenschutzDialog({
     }
   };
 
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
+  const getDocumentHtml = (signatureDataUrl?: string, privacyChecked?: boolean, newsletterChecked?: boolean) => {
     const logoHtml = user?.image
       ? `<img src="${user.image}" alt="Company Logo" style="max-width: 150px; max-height: 80px; object-fit: contain;" />`
       : '';
 
-    printWindow.document.write(`
+    return `
       <!DOCTYPE html>
       <html>
       <head>
         <title>Datenschutzhinweis für Kund:innen</title>
         <style>
-          body {
-            font-family: Arial, sans-serif;
-            padding: 40px;
-            margin: 0;
-            color: #000;
-            line-height: 1.6;
-          }
-          .header {
-            background: #2C2C2C;
-            color: white;
-            padding: 30px;
-            margin: -40px -40px 30px -40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-          }
-          h2 {
-            font-size: 1.25rem;
-            font-weight: bold;
-            text-align: center;
-            margin-bottom: 10px;
-          }
-          h3 {
-            font-size: 1.125rem;
-            font-weight: bold;
-            margin: 25px 0 15px 0;
-          }
-          p {
-            margin-bottom: 12px;
-            font-size: 0.875rem;
-          }
-          ul {
-            margin: 10px 0;
-            padding-left: 25px;
-          }
-          li {
-            margin-bottom: 8px;
-            font-size: 0.875rem;
-          }
-          .section {
-            margin-bottom: 25px;
-          }
-          .checkbox-section {
-            background: #f9fafb;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-          }
-          .signature-box {
-            border: 2px dashed #d1d5db;
-            border-radius: 8px;
-            height: 120px;
-            background: white;
-            margin-top: 10px;
-          }
-          .info-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-          }
-          @media print {
-            body { padding: 20px; }
-            .header { margin: -20px -20px 20px -20px; }
-          }
+          body { font-family: Arial, sans-serif; padding: 40px; margin: 0; color: #000; line-height: 1.6; }
+          .header { background: #2C2C2C; color: white; padding: 30px; margin: -40px -40px 30px -40px; display: flex; justify-content: space-between; align-items: start; }
+          h2 { font-size: 1.25rem; font-weight: bold; text-align: center; margin-bottom: 10px; }
+          h3 { font-size: 1.125rem; font-weight: bold; margin: 25px 0 15px 0; }
+          p { margin-bottom: 12px; font-size: 0.875rem; }
+          ul { margin: 10px 0; padding-left: 25px; }
+          li { margin-bottom: 8px; font-size: 0.875rem; }
+          .section { margin-bottom: 25px; }
+          .checkbox-section { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .signature-box { border: 2px dashed #d1d5db; border-radius: 8px; height: 120px; background: white; margin-top: 10px; }
+          .info-row { display: flex; justify-content: space-between; margin-bottom: 20px; }
+          @media print { body { padding: 20px; } .header { margin: -20px -20px 20px -20px; } }
         </style>
       </head>
       <body>
@@ -418,8 +423,8 @@ export default function DatenschutzDialog({
           <p style="font-weight: 600; margin-bottom: 15px;">Ich habe die Datenschutzerklärung gelesen und bin mit der Verarbeitung meiner personenbezogenen Daten gemäß dieser Erklärung einverstanden.</p>
 
           <div class="checkbox-section">
-            <p style="margin-bottom: 10px;">☐ Ich habe die Datenschutzerklärung gelesen und akzeptiere sie.</p>
-            <p>☐ Ich möchte den Newsletter erhalten.</p>
+            <p style="margin-bottom: 10px;">${privacyChecked ? '☑' : '☐'} Ich habe die Datenschutzerklärung gelesen und akzeptiere sie.</p>
+            <p>${newsletterChecked ? '☑' : '☐'} Ich möchte den Newsletter erhalten.</p>
           </div>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
@@ -440,9 +445,9 @@ export default function DatenschutzDialog({
 
             <div>
               <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 10px;">Unterschrift</h4>
-              <div class="signature-box"></div>
+              <div class="signature-box">${signatureDataUrl ? `<img src="${signatureDataUrl}" alt="Unterschrift" style="width: 100%; height: 100%; object-fit: contain; display: block;" />` : ''}</div>
               <p style="font-size: 0.75rem; color: #6b7280; text-align: center; margin-top: 8px;">
-                Bitte unterschreiben Sie im Feld oben
+                ${signatureDataUrl ? 'Digital unterzeichnet' : 'Bitte unterschreiben Sie im Feld oben'}
               </p>
             </div>
           </div>
@@ -455,14 +460,18 @@ export default function DatenschutzDialog({
         <script>
           window.onload = function() {
             window.print();
-            window.onafterprint = function() {
-              window.close();
-            }
+            window.onafterprint = function() { window.close(); }
           }
         </script>
       </body>
       </html>
-    `);
+    `;
+  };
+
+  const handlePrint = () => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+    printWindow.document.write(getDocumentHtml());
     printWindow.document.close();
   };
 
@@ -599,15 +608,17 @@ export default function DatenschutzDialog({
               <Button
                 onClick={handleReset}
                 variant="outline"
+                disabled={isGenerating}
                 className="cursor-pointer px-6"
               >
                 Zurücksetzen
               </Button>
               <Button
                 onClick={handleSave}
-                className="bg-[#61A07B] hover:bg-[#528c68] text-white cursor-pointer px-6"
+                disabled={isGenerating}
+                className="bg-[#61A07B] hover:bg-[#528c68] text-white cursor-pointer px-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Speichern & erstellen
+                {isGenerating ? "PDF wird erstellt..." : "Speichern & erstellen"}
               </Button>
             </div>
 
