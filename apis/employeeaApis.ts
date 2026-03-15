@@ -192,4 +192,68 @@ export const createBookingRule = async (bookingRuleData: any) => {
 }
 
 
-// get all /v2/appointment/booking-rules/manage
+// get all /v2/appointment/booking-rules/get
+export const getAllBookingRules = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/appointment/booking-rules/get`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// ============================ Rooms Management Apis ============================//
+
+// /v2/appointment/appomnent-room/create
+export const createAppointmentRoom = async (appointmentRoomData: any) => {
+    try {
+        const response = await axiosClient.post(`/v2/appointment/appomnent-room/create`, appointmentRoomData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// get all /v2/appointment/appomnent-room/get-all
+export const getAllAppointmentRooms = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/appointment/appomnent-room/get-all`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// /v2/appointment/appomnent-room/get/cmmrlduw10000hikuahv4ejhi
+export const getAppointmentRoomById = async (roomId: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/appointment/appomnent-room/get/${roomId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// /v2/appointment/appomnent-room/update/cmmrlduw10000hikuahv4ejhi
+export const updateAppointmentRoom = async (roomId: string, roomData: any) => {
+    try {
+        const response = await axiosClient.patch(`/v2/appointment/appomnent-room/update/${roomId}`, roomData);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// delete /v2/appointment/appomnent-room/delete/cmmrlduw10000hikuahv4ejhi
+export const deleteAppointmentRoom = async (roomId: string) => {
+    try {
+        const response = await axiosClient.delete(`/v2/appointment/appomnent-room/delete/${roomId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
