@@ -117,3 +117,12 @@ export const getCombinedAvailableSlots = async (date: string, employeeIds: strin
         throw error;
     }
 };
+// v2/appointment/appomnent-room/get-all-active
+export const getAllActiveAppointmentRooms = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/appointment/appomnent-room/get-all-active`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

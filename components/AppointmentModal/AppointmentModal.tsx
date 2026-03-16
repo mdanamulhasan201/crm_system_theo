@@ -19,7 +19,50 @@ import { UseFormReturn } from "react-hook-form";
 import { Calendar } from "../ui/calendar";
 import { useSearchCustomer } from "@/hooks/customer/useSearchCustomer";
 import { useSearchEmployee } from "@/hooks/employee/useSearchEmployee";
+import { getCombinedAvailableSlots } from "@/apis/appoinmentApis";
 import toast from "react-hot-toast";
+
+// Expand API slot times into every valid minute-level start time
+function expandAvailableSlots(times: string[], intervalMinutes: number): string[] {
+    if (!times || times.length === 0 || intervalMinutes <= 0) return [];
+
+    const toMin = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+    };
+    const toStr = (total: number) => {
+        const h = Math.floor(total / 60);
+        const m = total % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    };
+
+    const sorted = [...times].map(toMin).sort((a, b) => a - b);
+
+    // Group into contiguous blocks
+    const blocks: { start: number; end: number }[] = [];
+    let bStart = sorted[0];
+    let bEnd = sorted[0] + intervalMinutes;
+
+    for (let i = 1; i < sorted.length; i++) {
+        if (sorted[i] === bEnd) {
+            bEnd = sorted[i] + intervalMinutes;
+        } else {
+            blocks.push({ start: bStart, end: bEnd });
+            bStart = sorted[i];
+            bEnd = sorted[i] + intervalMinutes;
+        }
+    }
+    blocks.push({ start: bStart, end: bEnd });
+
+    // For each block, valid start = every minute from block.start to block.end - intervalMinutes
+    const result: string[] = [];
+    for (const { start, end } of blocks) {
+        for (let t = start; t <= end - intervalMinutes; t++) {
+            if (t < 24 * 60) result.push(toStr(t));
+        }
+    }
+    return result;
+}
 
 interface Employee {
     employeeId: string;
@@ -88,9 +131,39 @@ export default function AppointmentModal({
     const durationValue = form.watch('duration');
 
     // Step-by-step progressive unlock
-    const datumEnabled  = employees.length > 0;
-    const dauerEnabled  = datumEnabled && !!toValidDate(selectedEventDate);
+    const datumEnabled   = employees.length > 0;
+    const dauerEnabled   = datumEnabled && !!toValidDate(selectedEventDate);
     const uhrzeitEnabled = dauerEnabled && !!durationValue;
+
+    // Available time slots from API
+    const [availableSlots, setAvailableSlots] = React.useState<string[]>([]);
+    const [slotsLoading, setSlotsLoading]     = React.useState(false);
+
+    React.useEffect(() => {
+        if (!uhrzeitEnabled) {
+            setAvailableSlots([]);
+            return;
+        }
+        const validDate = toValidDate(selectedEventDate);
+        if (!validDate || !durationValue || employees.length === 0) return;
+
+        const dateStr        = format(validDate, 'yyyy-MM-dd');
+        const employeeIds    = employees.map(e => e.employeeId);
+        const intervalMinutes = Math.round(durationValue * 60);
+
+        setSlotsLoading(true);
+        getCombinedAvailableSlots(dateStr, employeeIds, intervalMinutes)
+            .then((res) => {
+                if (res?.times) {
+                    setAvailableSlots(expandAvailableSlots(res.times as string[], intervalMinutes));
+                } else {
+                    setAvailableSlots([]);
+                }
+            })
+            .catch(() => setAvailableSlots([]))
+            .finally(() => setSlotsLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [uhrzeitEnabled, selectedEventDate, durationValue, employees]);
 
     const clientTerminOptions = React.useMemo(() => [
         { value: 'fussanalyse-laufanalyse', label: 'Fußanalyse / Laufanalyse' },
@@ -605,25 +678,64 @@ export default function AppointmentModal({
                                 name="uhrzeit"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                        <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
                                             Uhrzeit <span className="text-red-400">*</span>
+                                            {slotsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#61A07B]" />}
                                         </FormLabel>
                                         <div className={cn(!uhrzeitEnabled && "pointer-events-none select-none")}>
-                                            <FormControl>
-                                                <Input
-                                                    type="time"
-                                                    step={300}
-                                                    disabled={!uhrzeitEnabled}
-                                                    className={cn(
-                                                        "w-full rounded-xl border-gray-200 mt-1 transition-colors",
-                                                        uhrzeitEnabled
-                                                            ? "cursor-pointer bg-white text-gray-700"
-                                                            : "cursor-not-allowed bg-gray-50 text-gray-400"
-                                                    )}
-                                                    value={field.value || ""}
-                                                    onChange={(e) => field.onChange(e.target.value)}
-                                                />
-                                            </FormControl>
+                                            {uhrzeitEnabled && !slotsLoading && availableSlots.length === 0 ? (
+                                                <div className="mt-1 h-10 flex items-center px-3 rounded-xl border border-orange-200 bg-orange-50 text-orange-600 text-sm">
+                                                    Keine verfügbaren Zeiten gefunden
+                                                </div>
+                                            ) : (
+                                                <Select
+                                                    disabled={!uhrzeitEnabled || slotsLoading}
+                                                    onValueChange={field.onChange}
+                                                    value={field.value || ''}
+                                                >
+                                                    <FormControl>
+                                                        <SelectTrigger className={cn(
+                                                            "w-full rounded-xl border-gray-200 mt-1 transition-colors",
+                                                            uhrzeitEnabled && !slotsLoading
+                                                                ? "cursor-pointer bg-white text-gray-700"
+                                                                : "cursor-not-allowed bg-gray-50 text-gray-400"
+                                                        )}>
+                                                            <SelectValue placeholder={
+                                                                slotsLoading ? "Lade verfügbare Zeiten..." : "Uhrzeit wählen"
+                                                            } />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent className="rounded-xl max-h-64">
+                                                        {availableSlots.length > 0 ? (
+                                                            (() => {
+                                                                // Group by hour for readability
+                                                                const byHour: Record<string, string[]> = {};
+                                                                availableSlots.forEach(t => {
+                                                                    const hour = t.split(':')[0];
+                                                                    if (!byHour[hour]) byHour[hour] = [];
+                                                                    byHour[hour].push(t);
+                                                                });
+                                                                return Object.entries(byHour).map(([hour, slots]) => (
+                                                                    <React.Fragment key={hour}>
+                                                                        <div className="px-2 pt-2 pb-0.5 text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
+                                                                            {hour}:00 Uhr
+                                                                        </div>
+                                                                        {slots.map(t => (
+                                                                            <SelectItem key={t} value={t} className="cursor-pointer rounded-lg pl-4">
+                                                                                {t}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </React.Fragment>
+                                                                ));
+                                                            })()
+                                                        ) : (
+                                                            <div className="px-3 py-4 text-sm text-gray-400 text-center">
+                                                                {slotsLoading ? "Lädt..." : "Keine Zeiten verfügbar"}
+                                                            </div>
+                                                        )}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
                                         </div>
                                     </FormItem>
                                 )}
