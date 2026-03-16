@@ -275,11 +275,11 @@ export default function AppointmentModal({
     };
 
     return (
-        <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[95vh] overflow-y-auto">
-                <div className="sticky top-0 bg-white border-b border-gray-200 p-4 sm:p-6">
-                    <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-semibold">{title}</h3>
+        <div className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4 min-h-screen">
+            <div className="bg-white rounded-lg w-full max-w-2xl max-h-[95vh] overflow-y-auto shadow-xl">
+                <div className="sticky top-0 bg-white border-b border-gray-200 p-3 sm:p-6 z-10">
+                    <div className="flex justify-between items-center gap-2">
+                        <h3 className="text-base sm:text-lg font-semibold truncate">{title}</h3>
                         <button
                             onClick={onClose}
                             className="text-gray-500 hover:text-gray-700 cursor-pointer"
@@ -290,15 +290,15 @@ export default function AppointmentModal({
                 </div>
 
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="p-4 sm:p-6 space-y-4">
+                    <form onSubmit={form.handleSubmit(handleFormSubmit)} className="p-3 sm:p-6 space-y-4">
                         <FormField
                             control={form.control}
                             name="isClientEvent"
                             render={({ field }) => (
-                                <FormItem className="flex items-center justify-between">
-                                    <FormLabel>Kundentyp <span className="text-red-500">*</span></FormLabel>
+                                <FormItem className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                    <FormLabel className="shrink-0">Kundentyp <span className="text-red-500">*</span></FormLabel>
                                     <FormControl>
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-wrap gap-2">
                                             <Button
                                                 type="button"
                                                 onClick={() => {
@@ -394,7 +394,7 @@ export default function AppointmentModal({
                                             value={field.value}
                                         >
                                             <FormControl>
-                                                <SelectTrigger className="cursor-pointer">
+                                                <SelectTrigger className="cursor-pointer w-full">
                                                     <SelectValue placeholder="Uhrzeit wählen" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -458,56 +458,58 @@ export default function AppointmentModal({
                             />
                         </div>
 
-                        <FormField
-                            control={form.control}
-                            name="duration"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Dauer <span className="text-red-500">*</span></FormLabel>
-                                    <Select 
-                                        onValueChange={(value) => field.onChange(parseFloat(value))} 
-                                        value={field.value?.toString()}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger className="cursor-pointer">
-                                                <SelectValue placeholder="Dauer wählen" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {durationOptions.map((opt) => (
-                                                <SelectItem key={opt.value} value={opt.value.toString()} className="cursor-pointer">
-                                                    {opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </FormItem>
-                            )}
-                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="duration"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Dauer <span className="text-red-500">*</span></FormLabel>
+                                        <Select 
+                                            onValueChange={(value) => field.onChange(parseFloat(value))} 
+                                            value={field.value?.toString()}
+                                        >
+                                            <FormControl>
+                                                <SelectTrigger className="cursor-pointer w-full">
+                                                    <SelectValue placeholder="Dauer wählen" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {durationOptions.map((opt) => (
+                                                    <SelectItem key={opt.value} value={opt.value.toString()} className="cursor-pointer">
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )}
+                            />
 
-                        <FormField
-                            control={form.control}
-                            name="termin"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Grund <span className="text-red-500">*</span></FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger className="cursor-pointer">
-                                                <SelectValue placeholder="Kundentermin wählen" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {(isClientEvent ? clientTerminOptions : otherTerminOptions).map((opt) => (
-                                                <SelectItem key={opt.value} value={opt.value} className="cursor-pointer">
-                                                    {opt.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </FormItem>
-                            )}
-                        />
+                            <FormField
+                                control={form.control}
+                                name="termin"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Grund <span className="text-red-500">*</span></FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger className="cursor-pointer w-full">
+                                                    <SelectValue placeholder="Kundentermin wählen" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {(isClientEvent ? clientTerminOptions : otherTerminOptions).map((opt) => (
+                                                    <SelectItem key={opt.value} value={opt.value} className="cursor-pointer">
+                                                        {opt.label}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
 
 
 
@@ -611,7 +613,7 @@ export default function AppointmentModal({
                                         value={field.value === null || field.value === undefined ? 'null' : field.value.toString()}
                                     >
                                         <FormControl>
-                                            <SelectTrigger className="cursor-pointer">
+                                            <SelectTrigger className="cursor-pointer w-full">
                                                 <SelectValue placeholder="Erinnerung wählen" />
                                             </SelectTrigger>
                                         </FormControl>
@@ -631,7 +633,7 @@ export default function AppointmentModal({
                             )}
                         />
 
-                        <div className="flex justify-center gap-3">
+                        <div className="flex flex-col-reverse sm:flex-row justify-center gap-2 sm:gap-3 pt-2">
                             {showDeleteButton && onDelete && (
                                 <Button
                                     type="button"
@@ -639,7 +641,7 @@ export default function AppointmentModal({
                                         e.preventDefault();
                                         onDelete();
                                     }}
-                                    className="bg-red-600 cursor-pointer hover:bg-red-700 text-white rounded-3xl"
+                                    className="bg-red-600 cursor-pointer hover:bg-red-700 text-white rounded-3xl w-full sm:w-auto"
                                 >
                                     Löschen
                                 </Button>
@@ -647,7 +649,7 @@ export default function AppointmentModal({
                             <Button
                                 type="submit"
                                 disabled={submitting}
-                                className="bg-[#61A07B] cursor-pointer hover:bg-[#528c68] text-white rounded-3xl disabled:opacity-70 disabled:cursor-not-allowed"
+                                className="bg-[#61A07B] cursor-pointer hover:bg-[#528c68] text-white rounded-3xl disabled:opacity-70 disabled:cursor-not-allowed w-full sm:w-auto"
                             >
                                 {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 {submitting ? 'Bitte warten...' : buttonText}
