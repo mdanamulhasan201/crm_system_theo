@@ -60,9 +60,9 @@ export default function SearchBarIWithFilterInsole() {
     return (
         <div className="w-full rounded-lg border border-gray-200 p-3 sm:p-4">
             {/* Search + payment filters */}
-            <div className="flex w-full min-w-0 flex-col gap-3 lg:gap-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
+            <div className="flex flex-col md:flex-row items-center gap-2 w-full justify-between">
                 {/* Search – keep full width until very large screens */}
-                <div className="relative w-full min-w-0 2xl:max-w-[480px]">
+                <div className="relative w-full md:w-3/12">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
                         <Search className="h-4 w-4 text-gray-400" />
                     </div>
@@ -76,58 +76,34 @@ export default function SearchBarIWithFilterInsole() {
                     />
                 </div>
                 {/* Zahlung: label + filters */}
-                <div className="flex min-w-0 flex-col gap-2 lg:gap-3 2xl:flex-1 2xl:items-end">
-                    <div className="flex min-w-0 flex-col gap-2 md:flex-row md:items-start md:gap-4 2xl:justify-end">
-                        <span className="shrink-0 pt-1 text-sm font-medium text-gray-600">Zahlung:</span>
+                <div className="flex items-center gap-2 w-full md:w-9/12">
 
-                        <div className="min-w-0 flex-1">
-                        {/* Mobile only: dropdown to avoid overflow */}
-                        <div className="w-full min-w-0 md:hidden">
-                            <Select
-                                value={selectedBezahlt ?? '__all__'}
-                                onValueChange={handleZahlungSelect}
-                            >
-                                <SelectTrigger className="h-9 w-full rounded-lg border-gray-300 bg-gray-50 text-left text-sm font-medium cursor-pointer">
-                                    <SelectValue placeholder="Alle Zahlungsstatus" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="__all__" className="text-sm cursor-pointer">
-                                        Alle
-                                    </SelectItem>
-                                    {ZAHLUNG_OPTIONS.map((opt) => (
-                                        <SelectItem key={opt.value} value={opt.value} className="text-sm cursor-pointer">
-                                            {opt.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
+                    <p className=" text-sm font-medium text-gray-600">Zahlung:</p>
 
-                        {/* Tablet and up: button group */}
-                        <div className="hidden min-w-0 flex-wrap items-center gap-2 md:flex md:justify-start 2xl:justify-end">
-                            {ZAHLUNG_OPTIONS.map((opt) => {
-                                const isActive = selectedBezahlt === opt.value;
-                                return (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        onClick={() => handleBezahltToggle(opt.value)}
-                                        className={`
+                    {/* Tablet and up: button group */}
+                    <div className="flex items-center gap-2 w-full">
+                        {ZAHLUNG_OPTIONS.map((opt) => {
+                            const isActive = selectedBezahlt === opt.value;
+                            return (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    onClick={() => handleBezahltToggle(opt.value)}
+                                    className={`
                                         rounded-lg px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer xl:px-4 xl:py-2 xl:text-sm
                                         ${isActive
-                                                ? 'bg-white border border-gray-300 text-gray-700 shadow-sm'
-                                                : 'bg-gray-100 border border-transparent text-gray-500 hover:bg-gray-200 hover:text-gray-700'
-                                            }
+                                            ? 'bg-white border border-gray-300 text-gray-700 shadow-sm'
+                                            : 'bg-gray-100 border border-transparent text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+                                        }
                                     `}
-                                        aria-pressed={isActive}
-                                    >
-                                        {opt.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        </div>
+                                    aria-pressed={isActive}
+                                >
+                                    {opt.label}
+                                </button>
+                            );
+                        })}
                     </div>
+
                 </div>
             </div>
         </div>
