@@ -97,23 +97,23 @@ export default function CalendarNav({
             <Button
               variant="outline"
               size="sm"
-              className="gap-2 rounded-md px-3 py-1.5 text-sm font-medium bg-white border-gray-200 hover:bg-gray-50"
+              className="gap-2 cursor-pointer rounded-md px-3 py-1.5 text-sm font-medium bg-white border-gray-200 hover:bg-gray-50"
             >
               <CalendarDays className="w-4 h-4 text-gray-600" />
               <span>{viewLabel}</span>
               <ChevronDown className="w-4 h-4 text-gray-500" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="min-w-[140px]">
+          <DropdownMenuContent align="end" className="min-w-[140px] ">
             <DropdownMenuItem
               onClick={() => onViewModeChange('day')}
-              className={cn(viewMode === 'day' && 'bg-[#62A07C]/10 text-[#62A07C] font-medium')}
+              className={cn('cursor-pointer', viewMode === 'day' && 'bg-[#62A07C]/10 text-[#62A07C] font-medium')}
             >
               Tag
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onViewModeChange('2days')}
-              className={cn(viewMode === '2days' && 'bg-[#62A07C]/10 text-[#62A07C] font-medium')}
+              className={cn('cursor-pointer', viewMode === '2days' && 'bg-[#62A07C]/10 text-[#62A07C] font-medium')}
             >
               2 Tage
             </DropdownMenuItem>
