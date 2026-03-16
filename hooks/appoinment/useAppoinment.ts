@@ -65,6 +65,7 @@ interface SubmittedAppointmentData {
     employeeId?: string;
     employees?: Employee[];
     reminder?: number | null;
+    appomnentRoom?: string;
 }
 
 export const useAppoinment = () => {
@@ -160,6 +161,11 @@ export const useAppoinment = () => {
             // Add reminder if provided (already in minutes)
             if (data.reminder !== null && data.reminder !== undefined) {
                 appointmentData.reminder = data.reminder;
+            }
+
+            // Add room if provided
+            if (data.appomnentRoom) {
+                appointmentData.appomnentRoom = data.appomnentRoom;
             }
 
             // Add employees array as assignedTo
@@ -263,6 +269,11 @@ export const useAppoinment = () => {
             // Add reminder if provided (already in minutes)
             if (data.reminder !== null && data.reminder !== undefined) {
                 appointmentData.reminder = data.reminder;
+            }
+
+            // Add room if provided
+            if (data.appomnentRoom) {
+                appointmentData.appomnentRoom = data.appomnentRoom;
             }
 
             // Add employees array as assignedTo

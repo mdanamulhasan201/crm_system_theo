@@ -19,7 +19,7 @@ import { UseFormReturn } from "react-hook-form";
 import { Calendar } from "../ui/calendar";
 import { useSearchCustomer } from "@/hooks/customer/useSearchCustomer";
 import { useSearchEmployee } from "@/hooks/employee/useSearchEmployee";
-import { getCombinedAvailableSlots } from "@/apis/appoinmentApis";
+import { getCombinedAvailableSlots, getAllActiveAppointmentRooms } from "@/apis/appoinmentApis";
 import toast from "react-hot-toast";
 
 // Expand API slot times into every valid minute-level start time
@@ -82,6 +82,7 @@ interface AppointmentFormData {
     employeeId?: string;
     employees?: Employee[];
     reminder?: number | null;
+    appomnentRoom?: string;
 }
 
 interface SubmittedAppointmentData {
@@ -97,6 +98,7 @@ interface SubmittedAppointmentData {
     employeeId?: string;
     employees?: Employee[];
     reminder?: number | null;
+    appomnentRoom?: string;
 }
 
 interface AppointmentModalProps {
@@ -138,6 +140,23 @@ export default function AppointmentModal({
     // Available time slots from API
     const [availableSlots, setAvailableSlots] = React.useState<string[]>([]);
     const [slotsLoading, setSlotsLoading]     = React.useState(false);
+
+    // Appointment rooms from API
+    const [rooms, setRooms]           = React.useState<string[]>([]);
+    const [roomsLoading, setRoomsLoading] = React.useState(false);
+
+    React.useEffect(() => {
+        if (!isOpen) return;
+        setRoomsLoading(true);
+        getAllActiveAppointmentRooms()
+            .then((res) => {
+                if (res?.data) {
+                    setRooms((res.data as { name: string }[]).map(r => r.name).filter(Boolean));
+                }
+            })
+            .catch(() => setRooms([]))
+            .finally(() => setRoomsLoading(false));
+    }, [isOpen]);
 
     React.useEffect(() => {
         if (!uhrzeitEnabled) {
@@ -744,21 +763,45 @@ export default function AppointmentModal({
 
                         {/* Row 4: Raum + Erinnerung */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <FormItem>
-                                <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Raum (optional)</FormLabel>
-                                <Select>
-                                    <SelectTrigger className="cursor-pointer w-full rounded-xl border-gray-200 mt-1">
-                                        <SelectValue placeholder="Raum auswählen" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl">
-                                        <SelectItem value="raum-1" className="cursor-pointer rounded-lg">Raum 1 – Behandlungsraum</SelectItem>
-                                        <SelectItem value="raum-2" className="cursor-pointer rounded-lg">Raum 2 – Beratungsraum</SelectItem>
-                                        <SelectItem value="raum-3" className="cursor-pointer rounded-lg">Raum 3 – Therapieraum</SelectItem>
-                                        <SelectItem value="raum-4" className="cursor-pointer rounded-lg">Raum 4 – Besprechungsraum</SelectItem>
-                                        <SelectItem value="raum-5" className="cursor-pointer rounded-lg">Raum 5 – Schulungsraum</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </FormItem>
+                            <FormField
+                                control={form.control}
+                                name="appomnentRoom"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
+                                            Raum (optional)
+                                            {roomsLoading && <Loader2 className="w-3 h-3 animate-spin text-[#61A07B]" />}
+                                        </FormLabel>
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            value={field.value || ''}
+                                            disabled={roomsLoading}
+                                        >
+                                            <SelectTrigger className={cn(
+                                                "w-full rounded-xl border-gray-200 mt-1",
+                                                roomsLoading ? "cursor-not-allowed bg-gray-50" : "cursor-pointer"
+                                            )}>
+                                                <SelectValue placeholder={roomsLoading ? "Lädt..." : "Raum auswählen"} />
+                                            </SelectTrigger>
+                                            <SelectContent className="rounded-xl">
+                                                {rooms.length > 0 ? (
+                                                    rooms.map((name) => (
+                                                        <SelectItem key={name} value={name} className="cursor-pointer rounded-lg">
+                                                            {name}
+                                                        </SelectItem>
+                                                    ))
+                                                ) : (
+                                                    !roomsLoading && (
+                                                        <div className="px-3 py-3 text-sm text-gray-400 text-center">
+                                                            Keine Räume verfügbar
+                                                        </div>
+                                                    )
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    </FormItem>
+                                )}
+                            />
 
                             <FormField
                                 control={form.control}

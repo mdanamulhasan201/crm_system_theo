@@ -16,6 +16,7 @@ export const createAppoinment = async (appointmentData: {
     customerId?: string;
     duration?: number;
     reminder?: number | null;
+    appomnentRoom?: string;
 }) => {
     try {
         const response = await axiosClient.post('/v2/appointment', appointmentData);
@@ -88,6 +89,7 @@ export const updateAppointment = async (appointmentId: string, appointmentData: 
     customerId?: string;
     duration?: number;
     reminder?: number | null;
+    appomnentRoom?: string;
 }) => {
     try {
         const response = await axiosClient.put(`/v2/appointment/${appointmentId}`, appointmentData);
@@ -109,18 +111,18 @@ export const updateAppointment = async (appointmentId: string, appointmentData: 
 //     "intervalMinutes": 15
 //   }
 
-export const getCombinedAvailableSlots = async (date: string, employeeIds: string[], intervalMinutes: number) => {
+export const getAllActiveAppointmentRooms = async () => {
     try {
-        const response = await axiosClient.post(`/v2/employee-availability/combined-available-slots`, { date, employeeIds, intervalMinutes });
+        const response = await axiosClient.get(`/v2/appointment/appomnent-room/get-all-active`);
         return response.data;
     } catch (error) {
         throw error;
     }
 };
-// v2/appointment/appomnent-room/get-all-active
-export const getAllActiveAppointmentRooms = async () => {
+
+export const getCombinedAvailableSlots = async (date: string, employeeIds: string[], intervalMinutes: number) => {
     try {
-        const response = await axiosClient.get(`/v2/appointment/appomnent-room/get-all-active`);
+        const response = await axiosClient.post(`/v2/employee-availability/combined-available-slots`, { date, employeeIds, intervalMinutes });
         return response.data;
     } catch (error) {
         throw error;
