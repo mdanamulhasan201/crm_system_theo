@@ -28,6 +28,8 @@ export interface WerkstattzettelFormData {
   positionsnummerTotal?: number
   selectedVersorgungData?: { supplyStatus?: { price?: number }; price?: number }
   billingType?: 'Krankenkassa' | 'Privat'
+  /** When Privat + Einmalige Versorgung, price from selected Einlagetyp */
+  einlagetypPriceForPrivat?: number
   // Optional: if provided, this precomputed total (from UI "Gesamt")
   // will be used instead of recalculating here.
   totalPriceOverride?: number
@@ -49,11 +51,12 @@ export function createWerkstattzettelPayload(
   let parsedInsole = 0
   if (billingType === 'Privat') {
     parsedInsole = Number(formData.insoleSupplyPrice)
-    // Fallback: use selectedVersorgungData when insoleSupplyPrice is 0 (e.g. from Einlagen flow)
+    // Fallback: use selectedVersorgungData or Einlagetyp price (Einmalige Versorgung) when insoleSupplyPrice is 0
     if (isNaN(parsedInsole) || parsedInsole === 0) {
       const fallback =
         (formData as any).selectedVersorgungData?.supplyStatus?.price ??
-        (formData as any).selectedVersorgungData?.price
+        (formData as any).selectedVersorgungData?.price ??
+        formData.einlagetypPriceForPrivat
       if (fallback != null && !isNaN(Number(fallback))) parsedInsole = Number(fallback)
     }
   }
@@ -206,10 +209,18 @@ export function initializeFormData(scanData: any, formData?: any) {
     employeeId: formData?.employeeId || '',
     // Do not auto-fill Fußanalyse from scan data; leave empty so user or flow sets it explicitly
     footAnalysisPrice: '',
-    insoleSupplyPrice:
-      typeof scanData?.einlagenversorgung === 'number'
+    insoleSupplyPrice: (() => {
+      // Privat: prefer price from selected versorgung or from Einlagetyp (Einmalige Versorgung)
+      if (formData?.billingType === 'Privat') {
+        const fromVersorgung = formData?.selectedVersorgungData?.supplyStatus?.price
+        const fromEinlagetyp = formData?.einlagetypPriceForPrivat
+        const value = fromVersorgung ?? fromEinlagetyp
+        if (value != null && !isNaN(Number(value))) return String(value)
+      }
+      return typeof scanData?.einlagenversorgung === 'number'
         ? String(scanData.einlagenversorgung)
-        : scanData?.einlagenversorgung || '',
+        : scanData?.einlagenversorgung || ''
+    })(),
   }
 }
 

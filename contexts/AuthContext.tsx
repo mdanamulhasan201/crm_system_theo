@@ -117,18 +117,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (isNetworkError(error) || (error && (error as { isNetworkError?: boolean }).isNetworkError)) {
         return false;
       }
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        if (employeeToken) {
-          localStorage.removeItem('employeeToken');
-          localStorage.removeItem('currentEmployeeId');
-          localStorage.removeItem('currentEmployeeData');
-          window.location.reload();
-        } else if (pathname !== '/manage-profile') {
-          // First-login token (no role): keep token, go to profile selection
-          setUser(null);
-          setIsAuthenticated(false);
-          router.push('/manage-profile');
-        }
+      const msg = typeof error?.response?.data?.message === 'string' ? error.response.data.message : '';
+      const isInvalidToken =
+        error.response?.status === 401 ||
+        error.response?.status === 403 ||
+        /invalid or expired token/i.test(msg);
+      if (isInvalidToken) {
+        await forceLogout();
       }
       return false;
     }
@@ -193,22 +188,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsInitialized(true);
         return;
       }
-      if (error.response?.status === 401 || error.response?.status === 403) {
-        if (employeeToken) {
-          localStorage.removeItem('employeeToken');
-          localStorage.removeItem('currentEmployeeId');
-          localStorage.removeItem('currentEmployeeData');
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
-        } else {
-          // First-login token (no role): keep token, allow manage-profile
-          setUser(null);
-          setIsAuthenticated(false);
-          if (pathname !== '/manage-profile') {
-            router.push('/manage-profile');
-          }
-        }
+      const msg = typeof error?.response?.data?.message === 'string' ? error.response.data.message : '';
+      const isInvalidToken =
+        error.response?.status === 401 ||
+        error.response?.status === 403 ||
+        /invalid or expired token/i.test(msg);
+      if (isInvalidToken) {
+        await forceLogout();
       } else {
         setIsAuthenticated(false);
       }

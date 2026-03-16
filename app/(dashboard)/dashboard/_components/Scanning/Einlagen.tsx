@@ -963,10 +963,17 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             vatCountry: user?.accountInfo?.vat_country ?? undefined,
         });
         
+        // For Privat + Einmalige Versorgung: pass selected Einlagetyp price so Werkstattzettel modal shows it
+        const einlagetypPriceForPrivat =
+            billingType === 'Privat' && activeVersorgungTab === 'einmalig'
+                ? (einlageOptions.find((o: { name: string; price?: number }) => o.name === einlagentyp)?.price ?? undefined)
+                : undefined;
+
         // Add flag to indicate if using custom versorgung (Einmalige Versorgung)
         const formDataWithFlag = {
             ...formData,
             isCustomVersorgung: activeVersorgungTab === 'einmalig',
+            ...(einlagetypPriceForPrivat != null && { einlagetypPriceForPrivat }),
         };
         
         setFormDataForOrder(formDataWithFlag);

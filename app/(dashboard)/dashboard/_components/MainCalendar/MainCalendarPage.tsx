@@ -27,6 +27,8 @@ interface MainCalendarPageProps {
   onAppointmentClick?: (appointmentId: string) => void
   onSlotClick?: (date: Date, time: string) => void
   onDeleteAppointment?: (appointmentId: string) => void
+  /** 1 = day view (one column), 2 = 2 days view (two columns) */
+  daysToShow?: 1 | 2
 }
 
 // Generate time slots from 0:00 to 22:00
@@ -49,17 +51,161 @@ const timeToMinutes = (time: string): number => {
 // Min height so title (2 lines) + time + type + person are visible
 const MIN_CARD_HEIGHT_PX = 72
 
-// Calculate position and height for appointment block
-const getAppointmentStyle = (startTime: string, endTime: string) => {
+// Map API reason value to display label (Grund)
+const REASON_LABELS: Record<string, string> = {
+  'fussanalyse-laufanalyse': 'Fußanalyse / Laufanalyse',
+  'massnehmen': 'Maßnehmen',
+  'anprobe-abholung': 'Anprobe / Abholung',
+  'kontrolle-nachkontrolle': 'Kontrolle / Nachkontrolle',
+  'beratung-rezept-einloesung': 'Beratung / Rezept-Einlösung',
+  'hausbesuch': 'Hausbesuch',
+  'sonstiges': 'Sonstiges',
+  'teammeeting-fallbesprechung': 'Teammeeting / Fallbesprechung',
+  'fortbildung-schulung': 'Fortbildung / Schulung',
+  'verwaltung-dokumentation': 'Verwaltung / Dokumentation',
+  'interne-sprechstunde-besprechung': 'Interne Sprechstunde / Besprechung',
+  'externe-termine-kooperation': 'Externe Termine / Kooperation',
+}
+
+function getReasonLabel(reason: string | undefined): string {
+  if (!reason || !reason.trim()) return ''
+  const label = REASON_LABELS[reason.trim().toLowerCase()]
+  if (label) return label
+  // Fallback: capitalize words, replace hyphens with space
+  return reason
+    .split(/[-_\s]+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ')
+}
+
+// Two time ranges overlap or touch if they share time or are adjacent (so we show them side-by-side)
+function doRangesOverlap(
+  startA: string,
+  endA: string,
+  startB: string,
+  endB: string
+): boolean {
+  const sA = timeToMinutes(startA)
+  const eA = timeToMinutes(endA)
+  const sB = timeToMinutes(startB)
+  const eB = timeToMinutes(endB)
+  return eA >= sB && eB >= sA
+}
+
+// Overlap groups: appointments that (transitively) overlap get the same group
+function getOverlapGroups(appointments: Appointment[]): number[] {
+  const n = appointments.length
+  const groupId = new Array(n).fill(-1)
+  let nextId = 0
+  for (let i = 0; i < n; i++) {
+    if (groupId[i] >= 0) continue
+    const stack = [i]
+    groupId[i] = nextId
+    while (stack.length > 0) {
+      const cur = stack.pop()!
+      for (let j = 0; j < n; j++) {
+        if (groupId[j] >= 0) continue
+        if (
+          doRangesOverlap(
+            appointments[cur].startTime,
+            appointments[cur].endTime,
+            appointments[j].startTime,
+            appointments[j].endTime
+          )
+        ) {
+          groupId[j] = nextId
+          stack.push(j)
+        }
+      }
+    }
+    nextId++
+  }
+  return groupId
+}
+
+// For each appointment: columnIndex (0-based) and totalColumns in its overlap group
+function getOverlapLayout(appointments: Appointment[]): { columnIndex: number; totalColumns: number }[] {
+  const groups = getOverlapGroups(appointments)
+  const groupMembers = new Map<number, number[]>()
+  groups.forEach((g, i) => {
+    if (!groupMembers.has(g)) groupMembers.set(g, [])
+    groupMembers.get(g)!.push(i)
+  })
+
+  const result: { columnIndex: number; totalColumns: number }[] = appointments.map(() => ({
+    columnIndex: 0,
+    totalColumns: 1,
+  }))
+
+  groupMembers.forEach((indices) => {
+    const sorted = [...indices].sort(
+      (a, b) => timeToMinutes(appointments[a].startTime) - timeToMinutes(appointments[b].startTime)
+    )
+    const colAssign: number[] = []
+    for (let pos = 0; pos < sorted.length; pos++) {
+      const i = sorted[pos]
+      const used = new Set<number>()
+      for (let k = 0; k < pos; k++) {
+        const j = sorted[k]
+        if (
+          doRangesOverlap(
+            appointments[i].startTime,
+            appointments[i].endTime,
+            appointments[j].startTime,
+            appointments[j].endTime
+          )
+        ) {
+          used.add(colAssign[k])
+        }
+      }
+      let col = 0
+      while (used.has(col)) col++
+      colAssign[pos] = col
+    }
+    const totalColumns = Math.max(...colAssign) + 1
+    sorted.forEach((origIdx, pos) => {
+      result[origIdx] = { columnIndex: colAssign[pos], totalColumns }
+    })
+  })
+
+  return result
+}
+
+const CARD_GAP_PX = 4
+const CARD_PADDING_REM = 0.5
+
+// Position and size: when totalColumns > 1, cards share width side-by-side; else full width
+function getAppointmentStyle(
+  startTime: string,
+  endTime: string,
+  columnIndex: number,
+  totalColumns: number
+): React.CSSProperties {
   const startMinutes = timeToMinutes(startTime)
   const endMinutes = timeToMinutes(endTime)
   const duration = endMinutes - startMinutes
   const top = ((startMinutes - START_MINUTES) / 60) * SLOT_HEIGHT
   const height = (duration / 60) * SLOT_HEIGHT
 
-  return {
+  const base: React.CSSProperties = {
     top: `${top}px`,
     height: `${Math.max(height, MIN_CARD_HEIGHT_PX)}px`,
+  }
+
+  if (totalColumns <= 1) {
+    return {
+      ...base,
+      left: `${CARD_PADDING_REM}rem`,
+      right: `${CARD_PADDING_REM}rem`,
+    }
+  }
+
+  const totalGap = (totalColumns - 1) * CARD_GAP_PX
+  const widthExpr = `(100% - ${CARD_PADDING_REM * 2}rem - ${totalGap}px) / ${totalColumns}`
+  return {
+    ...base,
+    left: `calc(${CARD_PADDING_REM}rem + ${columnIndex} * (${widthExpr} + ${CARD_GAP_PX}px))`,
+    width: `calc(${widthExpr})`,
   }
 }
 
@@ -70,14 +216,15 @@ export default function MainCalendarPage({
   error = null,
   onAppointmentClick,
   onSlotClick,
-  onDeleteAppointment
+  onDeleteAppointment,
+  daysToShow = 2
 }: MainCalendarPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => new Date())
 
   const day1 = currentDate
   const day2 = addDays(currentDate, 1)
-  const days = [day1, day2]
+  const days = daysToShow === 1 ? [day1] : [day1, day2]
   const isViewingToday = isSameDay(currentDate, new Date())
 
   // Update current time every minute
@@ -149,7 +296,7 @@ export default function MainCalendarPage({
       </div>
 
       {/* Scrollable body */}
-      <div ref={scrollRef} className="flex-1 overflow-auto calendar-scrollbar min-h-0">
+      <div ref={scrollRef} className="flex-1 max-h-[650px] overflow-y-auto calendar-scrollbar min-h-0">
         <div className="flex">
           {/* Time Column */}
           <div className="w-20 shrink-0 border-r border-gray-200">
@@ -187,13 +334,14 @@ export default function MainCalendarPage({
           )}
           {days.map((day, dayIndex) => {
             const dayAppointments = getAppointmentsForDay(day)
+            const overlapLayout = getOverlapLayout(dayAppointments)
 
             return (
               <div
                 key={dayIndex}
-                className="flex-1 border-r border-gray-200 last:border-r-0 relative"
+                className="flex-1 border-r border-gray-200 last:border-r-0 relative min-w-0"
               >
-                <div className="relative">
+                <div className="relative h-full">
                   {timeSlots.map((time) => (
                     <div
                       key={time}
@@ -205,11 +353,14 @@ export default function MainCalendarPage({
                     />
                   ))}
 
-                  {/* Appointments */}
-                  {dayAppointments.map((appointment) => {
+                  {/* Appointments: same time = side-by-side (narrow width), else full width */}
+                  {dayAppointments.map((appointment, idx) => {
+                    const { columnIndex, totalColumns } = overlapLayout[idx] ?? { columnIndex: 0, totalColumns: 1 }
                     const style = getAppointmentStyle(
                       appointment.startTime,
-                      appointment.endTime
+                      appointment.endTime,
+                      columnIndex,
+                      totalColumns
                     )
 
                     return (
@@ -219,7 +370,7 @@ export default function MainCalendarPage({
                         tabIndex={0}
                         onClick={() => onAppointmentClick?.(appointment.id)}
                         onKeyDown={(e) => e.key === 'Enter' && onAppointmentClick?.(appointment.id)}
-                        className="group absolute left-2 right-2 overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-sm bg-[#62A07C]/20 border-l-4 border-l-[#62A07C]"
+                        className="group absolute overflow-hidden rounded-lg cursor-pointer hover:opacity-90 transition-opacity shadow-sm bg-[#62A07C]/20 border-l-4 border-l-[#62A07C]"
                         style={style}
                       >
                         <div className="flex flex-col h-full min-h-0 p-2.5 gap-1 relative">
@@ -239,15 +390,22 @@ export default function MainCalendarPage({
                           <div className="font-semibold text-green-800 text-xs leading-snug line-clamp-2 shrink-0">
                             {appointment.title}
                           </div>
-                          <div className="text-[11px] text-gray-600 shrink-0">
-                            {appointment.startTime} – {appointment.endTime}
+                          <div className="flex items-center justify-between gap-2 shrink-0 min-h-0">
+                            <span className="text-[11px] text-gray-600">
+                              {appointment.startTime} – {appointment.endTime}
+                            </span>
+                            {appointment.type && (
+                              <span className="text-[10px] text-gray-600 font-semibold truncate max-w-[50%]">
+                                {getReasonLabel(appointment.type)}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 mt-auto shrink-0 min-h-0">
-                            <span className="text-[11px] text-gray-700 truncate font-medium">
-                              {appointment.person.trim()}
+                            <span className="text-[11px] text-gray-700 truncate font-medium flex-1 min-w-0">
+                              {appointment.person.trim() || '—'}
                             </span>
                             <span className="w-4 h-4 rounded-full bg-[#62A07C] text-white flex items-center justify-center text-[10px] font-semibold shrink-0 shadow-sm">
-                              {appointment.person.trim().charAt(0).toUpperCase()}
+                              {(appointment.person.trim() || '?').charAt(0).toUpperCase()}
                             </span>
                           </div>
                         </div>

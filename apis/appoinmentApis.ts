@@ -16,6 +16,7 @@ export const createAppoinment = async (appointmentData: {
     customerId?: string;
     duration?: number;
     reminder?: number | null;
+    appomnentRoom?: string;
 }) => {
     try {
         const response = await axiosClient.post('/v2/appointment', appointmentData);
@@ -88,6 +89,7 @@ export const updateAppointment = async (appointmentId: string, appointmentData: 
     customerId?: string;
     duration?: number;
     reminder?: number | null;
+    appomnentRoom?: string;
 }) => {
     try {
         const response = await axiosClient.put(`/v2/appointment/${appointmentId}`, appointmentData);
@@ -97,6 +99,70 @@ export const updateAppointment = async (appointmentId: string, appointmentData: 
         if (error.response?.data) {
             return error.response.data;
         }
+        throw error;
+    }
+};
+
+
+// v2/employee-availability/combined-available-slots
+// {
+//     "date": "2026-03-16",
+//     "employeeIds": ["3931f18d-834d-4c58-bdfd-687121a65dec", "0d6ecfed-b9a7-454b-a4a3-ece4c2ffc57a"],
+//     "intervalMinutes": 15
+//   }
+
+export const getAllActiveAppointmentRooms = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/appointment/appomnent-room/get-all-active`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getCombinedAvailableSlots = async (date: string, employeeIds: string[], intervalMinutes: number) => {
+    try {
+        const response = await axiosClient.post(`/v2/employee-availability/combined-available-slots`, { date, employeeIds, intervalMinutes });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// v2/appointment/by-date-next-four-days?date=2026-03-16
+export const getAppointmentsByDate = async (date: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/appointment/by-date-next-four-days?date=${date}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// v2/appointment/employee-free-slots
+export const getEmployeeFreeSlots = async (date: string, employeeId: string) => {
+    try {
+        const response = await axiosClient.post(`/v2/appointment/employee-free-slots`, {
+            date,
+            employeeIds: [employeeId],
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+
+// v2/appointment/employee-free-percentage
+// body
+// {
+//     "dates": ["2026-03-16", "2026-03-27"]
+//   }
+export const getEmployeeFreePercentage = async (dates: string[]) => {
+    try {
+        const response = await axiosClient.post(`/v2/appointment/employee-free-percentage`, { dates });
+        return response.data;
+    } catch (error) {
         throw error;
     }
 };

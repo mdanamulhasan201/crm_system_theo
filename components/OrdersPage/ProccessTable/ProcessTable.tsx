@@ -19,7 +19,7 @@ import { AbrechnungsuebersichtModal } from "./Abrechnungsuebersicht";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getKrankenKasseStatus, getPaymentStatus } from '@/apis/productsOrder';
+import { getKrankenKasseStatus, getPaymentStatus, updatePaidStatus } from '@/apis/productsOrder';
 
 import toast from 'react-hot-toast';
 
@@ -43,6 +43,7 @@ export default function ProcessTable() {
         updateOrderPriority,
         updateBulkKrankenkasseStatus,
         updateBulkPaymentStatus,
+        updateBulkPaidStatus,
         orderIdFromSearch, // Get orderId from URL
     } = useOrders();
 
@@ -86,6 +87,7 @@ export default function ProcessTable() {
     const [isGeneratingBarcode, setIsGeneratingBarcode] = useState(false);
     const [isUpdatingKrankenkasseStatus, setIsUpdatingKrankenkasseStatus] = useState(false);
     const [isUpdatingPaymentStatus, setIsUpdatingPaymentStatus] = useState(false);
+    const [isUpdatingPaidStatus, setIsUpdatingPaidStatus] = useState(false);
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
     const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
     const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
@@ -301,6 +303,23 @@ export default function ProcessTable() {
         }
     };
 
+    // Handle bulk insurance_payed / private_payed update for "broth" type orders
+    const handleBulkPaidStatus = async (orderIds: string[], insurance_payed: boolean, private_payed: boolean) => {
+        if (orderIds.length === 0) return;
+        setIsUpdatingPaidStatus(true);
+        try {
+            updateBulkPaidStatus(orderIds, insurance_payed, private_payed);
+            await updatePaidStatus(orderIds, insurance_payed, private_payed);
+            toast.success(`Zahlungsstatus für ${orderIds.length} ${orderIds.length === 1 ? 'Auftrag' : 'Aufträge'} aktualisiert`);
+        } catch (error) {
+            console.error('Failed to update paid status:', error);
+            toast.error('Fehler beim Aktualisieren des Zahlungsstatus');
+            refetch();
+        } finally {
+            setIsUpdatingPaidStatus(false);
+        }
+    };
+
     useEffect(() => {
         if (selectedOrderIds.length === 0) {
             setBulkStatusSelectValue("");
@@ -418,6 +437,8 @@ export default function ProcessTable() {
                         isUpdatingKrankenkasseStatus={isUpdatingKrankenkasseStatus}
                         onBulkPaymentStatus={handleBulkPaymentStatus}
                         isUpdatingPaymentStatus={isUpdatingPaymentStatus}
+                        onBulkPaidStatus={handleBulkPaidStatus}
+                        isUpdatingPaidStatus={isUpdatingPaidStatus}
                     />
                 )}
 

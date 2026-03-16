@@ -4,15 +4,16 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { format, addDays } from 'date-fns'
 import CalendarMainNav from '../_components/MainCalendar/CalendarMainNav'
-import CalendarNav from '../_components/MainCalendar/CalendarNav'
+import CalendarNav, { type CalendarViewMode } from '../_components/MainCalendar/CalendarNav'
 import MainCalendarPage from '../_components/MainCalendar/MainCalendarPage'
 import RightSidebarCalendar from '../_components/MainCalendar/RightSidebarCalendar'
 import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
 import DeleteConfirmModal from '@/app/(dashboard)/dashboard/_components/MainCalendar/DeleteConfirmModal'
 import { useAppoinment } from '@/hooks/appoinment/useAppoinment'
 import { getAppointmentsByDate, type AppointmentByDateItem } from '@/apis/calendarManagementApis'
-import RoomHeader from '../_components/Room/RoomHeader'
-import MainCard from '../_components/Room/MainCard'
+import { getAppointmentsByDate as getRoomAppointmentsByDate, getEmployeeFreeSlots, getEmployeeFreePercentage } from '@/apis/appoinmentApis'
+import RoomHeader, { type StaffItem } from '../_components/Room/RoomHeader'
+import MainCard, { type DayAppointment, type EmployeeFreeSlotGroup } from '../_components/Room/MainCard'
 
 interface Employee {
   employeeId: string
@@ -103,10 +104,8 @@ function mapApiAppointmentToCalendar(api: AppointmentByDateItem): CalendarAppoin
 }
 
 export default function Calendar() {
-  const [currentDate, setCurrentDate] = useState(() => {
-    // Start with today's date
-    return new Date()
-  })
+  const [currentDate, setCurrentDate] = useState(() => new Date())
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('2days')
 
   const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState<Array<{ employeeId: string; assignedTo: string }>>([])
   const selectedEmployees = useMemo(
@@ -121,6 +120,12 @@ export default function Calendar() {
   const [appointmentsError, setAppointmentsError] = useState<string | null>(null)
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [appointmentIdToDelete, setAppointmentIdToDelete] = useState<string | null>(null)
+
+  const [roomDate, setRoomDate] = useState<Date>(() => new Date())
+  const [roomAppointmentsByDay, setRoomAppointmentsByDay] = useState<Record<string, DayAppointment[]>>({})
+  const [roomFreeSlotsByDay, setRoomFreeSlotsByDay] = useState<Record<string, EmployeeFreeSlotGroup[]>>({})
+  const [staffFreePercentages, setStaffFreePercentages] = useState<StaffItem[]>([])
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
 
   const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
@@ -160,7 +165,10 @@ export default function Calendar() {
 
   const fetchAppointments = useCallback(async () => {
     const startDate = format(currentDate, 'yyyy-MM-dd')
-    const endDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
+    const endDate =
+      viewMode === 'day'
+        ? startDate
+        : format(addDays(currentDate, 1), 'yyyy-MM-dd')
     const ids = selectedEmployeeDetails.map((e) => e.employeeId)
     const employeeParam = ids.length > 0 ? ids.join(',') : undefined
     setAppointmentsLoading(true)
@@ -175,14 +183,66 @@ export default function Calendar() {
     } finally {
       setAppointmentsLoading(false)
     }
-  }, [currentDate, selectedEmployeeDetails])
+  }, [currentDate, viewMode, selectedEmployeeDetails])
 
   useEffect(() => {
     fetchAppointments()
   }, [fetchAppointments])
 
+  const fetchRoomAppointments = useCallback(async (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    try {
+      const res = await getRoomAppointmentsByDate(dateStr)
+      if (res?.days) {
+        const mapped: Record<string, DayAppointment[]> = {}
+        res.days.forEach((day: { date: string; appointments: Array<{ id: string; time: string; employeeName: string }> }) => {
+          mapped[day.date] = day.appointments.map((apt) => ({
+            id: apt.id,
+            time: apt.time,
+            title: apt.employeeName,
+            color: 'gray' as const,
+          }))
+        })
+        setRoomAppointmentsByDay(mapped)
+      }
+    } catch {
+      setRoomAppointmentsByDay({})
+    }
+  }, [])
+
+  const fetchEmployeeFreePercentages = useCallback(async (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    try {
+      const res = await getEmployeeFreePercentage([dateStr])
+      const staffList: StaffItem[] = (res?.data ?? []).map((item: any) => ({
+        id: item.employeeId,
+        name: item.employeeName,
+        percentage: item.paidPercentage ?? 0
+      }))
+      setStaffFreePercentages(staffList)
+    } catch {
+      setStaffFreePercentages([])
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchRoomAppointments(roomDate)
+    fetchEmployeeFreePercentages(roomDate)
+  }, [roomDate, fetchRoomAppointments, fetchEmployeeFreePercentages])
+
+  const handleRoomCardClick = useCallback(async (date: string, employeeId: string) => {
+    try {
+      const res = await getEmployeeFreeSlots(date, employeeId)
+      const groups: EmployeeFreeSlotGroup[] = res?.data ?? []
+      setRoomFreeSlotsByDay((prev) => ({ ...prev, [date]: groups }))
+    } catch {
+      // silently ignore
+    }
+  }, [])
+
   const handleDateChange = (date: Date) => {
     setCurrentDate(date)
+    setRoomDate(date)
   }
 
   const handleAddAppointment = (presetDate?: Date, presetTime?: string) => {
@@ -288,7 +348,7 @@ export default function Calendar() {
 
   return (
     <>
-      <div className="flex flex-col h-full bg-gray-50 -m-4 relative">
+      <div className="flex flex-col h-fit bg-gray-50 -m-4 relative">
         {/* Main Calendar Navbar */}
         <CalendarMainNav
           onAddAppointment={handleAddAppointment}
@@ -298,10 +358,12 @@ export default function Calendar() {
         <CalendarNav
           currentDate={currentDate}
           onDateChange={handleDateChange}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
 
         {/* Main Content */}
-        <div className="flex flex-1 overflow-hidden gap-2">
+        <div className="flex flex-1 overflow-x-hidden gap-2">
           {/* Main Calendar */}
           <MainCalendarPage
             currentDate={currentDate}
@@ -311,6 +373,7 @@ export default function Calendar() {
             onAppointmentClick={handleAppointmentClick}
             onSlotClick={handleSlotClick}
             onDeleteAppointment={handleDeleteClick}
+            daysToShow={viewMode === 'day' ? 1 : 2}
           />
 
           {/* Right Sidebar */}
@@ -319,6 +382,7 @@ export default function Calendar() {
             onDateSelect={handleDateChange}
             selectedEmployees={selectedEmployees}
             onEmployeeToggle={handleEmployeeToggle}
+            viewMode={viewMode}
           />
         </div>
 
@@ -384,12 +448,18 @@ export default function Calendar() {
         />
       </div>
 
-
       {/* new room section */}
-      <div className='mt-5'>
-        <RoomHeader />
-        <MainCard />
-      </div>
+      <RoomHeader
+        staff={staffFreePercentages}
+        selectedStaffId={selectedStaffId}
+        onStaffSelect={setSelectedStaffId}
+      />
+      <MainCard
+        weekStart={roomDate}
+        appointmentsByDay={roomAppointmentsByDay}
+        freeSlotsByDay={roomFreeSlotsByDay}
+        onCardAppointmentClick={handleRoomCardClick}
+      />
     </>
   )
 }
