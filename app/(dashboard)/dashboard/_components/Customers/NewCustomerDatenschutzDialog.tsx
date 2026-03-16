@@ -55,6 +55,7 @@ export default function NewCustomerDatenschutzDialog({
   const [hasPrinted, setHasPrinted] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     if (needsSignature && canvasRef.current) {
@@ -193,7 +194,7 @@ export default function NewCustomerDatenschutzDialog({
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!acceptedPrivacy) {
       toast.error(
         "Bitte bestätigen Sie, dass Sie die Datenschutzerklärung gelesen und akzeptiert haben",
@@ -212,18 +213,82 @@ export default function NewCustomerDatenschutzDialog({
       return;
     }
 
-    // Get signature data if digital signature was used
-    let signatureData: string | undefined;
+    let pdfToUpload: File | undefined;
+
+    // For digital signature: generate a full PDF with the privacy policy + embedded signature
     if (needsSignature && canvasRef.current) {
-      signatureData = canvasRef.current.toDataURL("image/png");
+      setIsGenerating(true);
+      const container = document.createElement("div");
+      try {
+        const signatureDataUrl = canvasRef.current.toDataURL("image/png");
+        const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+          import("html2canvas"),
+          import("jspdf"),
+        ]);
+
+        // Build full HTML with embedded signature and checked checkboxes
+        const fullHtml = getPrintHtml(signatureDataUrl, acceptedPrivacy, wantsNewsletter);
+        const parser = new DOMParser();
+        const parsedDoc = parser.parseFromString(fullHtml, "text/html");
+        parsedDoc.querySelectorAll("script").forEach((s) => s.remove());
+
+        // Mount a hidden off-screen container so html2canvas can render it
+        container.style.cssText =
+          "position:fixed;left:-9999px;top:0;width:794px;background:white;";
+        const styleEl = document.createElement("style");
+        styleEl.textContent =
+          parsedDoc.head.querySelector("style")?.textContent ?? "";
+        container.appendChild(styleEl);
+        const bodyDiv = document.createElement("div");
+        bodyDiv.innerHTML = parsedDoc.body.innerHTML;
+        container.appendChild(bodyDiv);
+        document.body.appendChild(container);
+
+        const canvas = await html2canvas(container, {
+          scale: 1.5,
+          useCORS: true,
+          logging: false,
+          backgroundColor: "#ffffff",
+          windowWidth: 794,
+        });
+
+        const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+        const imgData = canvas.toDataURL("image/jpeg", 0.92);
+        const pdfW = pdf.internal.pageSize.getWidth();
+        const pdfH = pdf.internal.pageSize.getHeight();
+        const totalImgH = (canvas.height * pdfW) / canvas.width;
+        const pages = Math.ceil(totalImgH / pdfH);
+
+        for (let i = 0; i < pages; i++) {
+          if (i > 0) pdf.addPage();
+          pdf.addImage(imgData, "JPEG", 0, -(i * pdfH), pdfW, totalImgH);
+        }
+
+        const blob = pdf.output("blob");
+        const safeName = `${customerData.vorname || "kunde"}-${customerData.nachname || ""}`
+          .replace(/\s+/g, "-")
+          .toLowerCase();
+        const dateStr = new Date().toLocaleDateString("de-DE").replace(/\./g, "-");
+        pdfToUpload = new File(
+          [blob],
+          `datenschutz-${safeName}-${dateStr}.pdf`,
+          { type: "application/pdf" },
+        );
+      } catch (err) {
+        console.error("PDF generation error:", err);
+        toast.error("Fehler beim Erstellen des PDF-Dokuments");
+        return;
+      } finally {
+        if (document.body.contains(container)) document.body.removeChild(container);
+        setIsGenerating(false);
+      }
     }
 
     // Notify parent that privacy was accepted
     onAccepted({
       acceptedPrivacy: true,
       wantsNewsletter,
-      signature: signatureData,
-      uploadedPdf: uploadedFile || undefined,
+      uploadedPdf: pdfToUpload ?? uploadedFile ?? undefined,
     });
 
     onOpenChange(false);
@@ -267,7 +332,7 @@ export default function NewCustomerDatenschutzDialog({
     }
   };
 
-  const getPrintHtml = () => {
+  const getPrintHtml = (signatureDataUrl?: string, privacyChecked?: boolean, newsletterChecked?: boolean) => {
     const logoHtml = user?.image
       ? `<img src="${user.image}" alt="Company Logo" style="max-width: 150px; max-height: 80px; object-fit: contain;" />`
       : '';
@@ -445,8 +510,8 @@ export default function NewCustomerDatenschutzDialog({
           <p style="font-weight: 600; margin-bottom: 15px;">Ich habe die Datenschutzerklärung gelesen und bin mit der Verarbeitung meiner personenbezogenen Daten gemäß dieser Erklärung einverstanden.</p>
 
           <div class="checkbox-section">
-            <p style="margin-bottom: 10px;">☐ Ich habe die Datenschutzerklärung gelesen und akzeptiere sie.</p>
-            <p>☐ Ich möchte den Newsletter erhalten.</p>
+            <p style="margin-bottom: 10px;">${privacyChecked ? '☑' : '☐'} Ich habe die Datenschutzerklärung gelesen und akzeptiere sie.</p>
+            <p>${newsletterChecked ? '☑' : '☐'} Ich möchte den Newsletter erhalten.</p>
           </div>
 
           <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
@@ -467,9 +532,9 @@ export default function NewCustomerDatenschutzDialog({
 
             <div>
               <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: 10px;">Unterschrift</h4>
-              <div class="signature-box"></div>
+              <div class="signature-box">${signatureDataUrl ? `<img src="${signatureDataUrl}" alt="Unterschrift" style="width: 100%; height: 100%; object-fit: contain; display: block;" />` : ''}</div>
               <p style="font-size: 0.75rem; color: #6b7280; text-align: center; margin-top: 8px;">
-                Bitte unterschreiben Sie im Feld oben
+                ${signatureDataUrl ? 'Digital unterzeichnet' : 'Bitte unterschreiben Sie im Feld oben'}
               </p>
             </div>
           </div>
@@ -639,15 +704,17 @@ export default function NewCustomerDatenschutzDialog({
               <Button
                 onClick={handleReset}
                 variant="outline"
+                disabled={isGenerating}
                 className="cursor-pointer px-6"
               >
                 Zurücksetzen
               </Button>
               <Button
                 onClick={handleSave}
-                className="bg-[#61A07B] hover:bg-[#528c68] text-white cursor-pointer px-6"
+                disabled={isGenerating}
+                className="bg-[#61A07B] hover:bg-[#528c68] text-white cursor-pointer px-6 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Speichern & erstellen
+                {isGenerating ? "PDF wird erstellt..." : "Speichern & erstellen"}
               </Button>
             </div>
 
