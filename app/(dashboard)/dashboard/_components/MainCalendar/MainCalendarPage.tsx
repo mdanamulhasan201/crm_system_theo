@@ -49,6 +49,33 @@ const timeToMinutes = (time: string): number => {
 // Min height so title (2 lines) + time + type + person are visible
 const MIN_CARD_HEIGHT_PX = 72
 
+// Map API reason value to display label (Grund)
+const REASON_LABELS: Record<string, string> = {
+  'fussanalyse-laufanalyse': 'Fußanalyse / Laufanalyse',
+  'massnehmen': 'Maßnehmen',
+  'anprobe-abholung': 'Anprobe / Abholung',
+  'kontrolle-nachkontrolle': 'Kontrolle / Nachkontrolle',
+  'beratung-rezept-einloesung': 'Beratung / Rezept-Einlösung',
+  'hausbesuch': 'Hausbesuch',
+  'sonstiges': 'Sonstiges',
+  'teammeeting-fallbesprechung': 'Teammeeting / Fallbesprechung',
+  'fortbildung-schulung': 'Fortbildung / Schulung',
+  'verwaltung-dokumentation': 'Verwaltung / Dokumentation',
+  'interne-sprechstunde-besprechung': 'Interne Sprechstunde / Besprechung',
+  'externe-termine-kooperation': 'Externe Termine / Kooperation',
+}
+
+function getReasonLabel(reason: string | undefined): string {
+  if (!reason || !reason.trim()) return ''
+  const label = REASON_LABELS[reason.trim().toLowerCase()]
+  if (label) return label
+  // Fallback: capitalize words, replace hyphens with space
+  return reason
+    .split(/[-_\s]+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ')
+}
+
 // Calculate position and height for appointment block
 const getAppointmentStyle = (startTime: string, endTime: string) => {
   const startMinutes = timeToMinutes(startTime)
@@ -239,15 +266,22 @@ export default function MainCalendarPage({
                           <div className="font-semibold text-green-800 text-xs leading-snug line-clamp-2 shrink-0">
                             {appointment.title}
                           </div>
-                          <div className="text-[11px] text-gray-600 shrink-0">
-                            {appointment.startTime} – {appointment.endTime}
+                          <div className="flex items-center justify-between gap-2 shrink-0 min-h-0">
+                            <span className="text-[11px] text-gray-600">
+                              {appointment.startTime} – {appointment.endTime}
+                            </span>
+                            {appointment.type && (
+                              <span className="text-[10px] text-gray-600 font-semibold truncate max-w-[50%]">
+                                {getReasonLabel(appointment.type)}
+                              </span>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 mt-auto shrink-0 min-h-0">
-                            <span className="text-[11px] text-gray-700 truncate font-medium">
-                              {appointment.person.trim()}
+                            <span className="text-[11px] text-gray-700 truncate font-medium flex-1 min-w-0">
+                              {appointment.person.trim() || '—'}
                             </span>
                             <span className="w-4 h-4 rounded-full bg-[#62A07C] text-white flex items-center justify-center text-[10px] font-semibold shrink-0 shadow-sm">
-                              {appointment.person.trim().charAt(0).toUpperCase()}
+                              {(appointment.person.trim() || '?').charAt(0).toUpperCase()}
                             </span>
                           </div>
                         </div>
