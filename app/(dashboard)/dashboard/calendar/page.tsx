@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
 import { format, addDays } from 'date-fns'
 import CalendarMainNav from '../_components/MainCalendar/CalendarMainNav'
-import CalendarNav from '../_components/MainCalendar/CalendarNav'
+import CalendarNav, { type CalendarViewMode } from '../_components/MainCalendar/CalendarNav'
 import MainCalendarPage from '../_components/MainCalendar/MainCalendarPage'
 import RightSidebarCalendar from '../_components/MainCalendar/RightSidebarCalendar'
 import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
@@ -103,10 +103,8 @@ function mapApiAppointmentToCalendar(api: AppointmentByDateItem): CalendarAppoin
 }
 
 export default function Calendar() {
-  const [currentDate, setCurrentDate] = useState(() => {
-    // Start with today's date
-    return new Date()
-  })
+  const [currentDate, setCurrentDate] = useState(() => new Date())
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('2days')
 
   const [selectedEmployeeDetails, setSelectedEmployeeDetails] = useState<Array<{ employeeId: string; assignedTo: string }>>([])
   const selectedEmployees = useMemo(
@@ -160,7 +158,10 @@ export default function Calendar() {
 
   const fetchAppointments = useCallback(async () => {
     const startDate = format(currentDate, 'yyyy-MM-dd')
-    const endDate = format(addDays(currentDate, 1), 'yyyy-MM-dd')
+    const endDate =
+      viewMode === 'day'
+        ? startDate
+        : format(addDays(currentDate, 1), 'yyyy-MM-dd')
     const ids = selectedEmployeeDetails.map((e) => e.employeeId)
     const employeeParam = ids.length > 0 ? ids.join(',') : undefined
     setAppointmentsLoading(true)
@@ -175,7 +176,7 @@ export default function Calendar() {
     } finally {
       setAppointmentsLoading(false)
     }
-  }, [currentDate, selectedEmployeeDetails])
+  }, [currentDate, viewMode, selectedEmployeeDetails])
 
   useEffect(() => {
     fetchAppointments()
@@ -298,6 +299,8 @@ export default function Calendar() {
         <CalendarNav
           currentDate={currentDate}
           onDateChange={handleDateChange}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
 
         {/* Main Content */}
@@ -311,6 +314,7 @@ export default function Calendar() {
             onAppointmentClick={handleAppointmentClick}
             onSlotClick={handleSlotClick}
             onDeleteAppointment={handleDeleteClick}
+            daysToShow={viewMode === 'day' ? 1 : 2}
           />
 
           {/* Right Sidebar */}
@@ -319,6 +323,7 @@ export default function Calendar() {
             onDateSelect={handleDateChange}
             selectedEmployees={selectedEmployees}
             onEmployeeToggle={handleEmployeeToggle}
+            viewMode={viewMode}
           />
         </div>
 

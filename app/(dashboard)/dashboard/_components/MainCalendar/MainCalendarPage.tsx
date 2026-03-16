@@ -27,6 +27,8 @@ interface MainCalendarPageProps {
   onAppointmentClick?: (appointmentId: string) => void
   onSlotClick?: (date: Date, time: string) => void
   onDeleteAppointment?: (appointmentId: string) => void
+  /** 1 = day view (one column), 2 = 2 days view (two columns) */
+  daysToShow?: 1 | 2
 }
 
 // Generate time slots from 0:00 to 22:00
@@ -214,14 +216,15 @@ export default function MainCalendarPage({
   error = null,
   onAppointmentClick,
   onSlotClick,
-  onDeleteAppointment
+  onDeleteAppointment,
+  daysToShow = 2
 }: MainCalendarPageProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const [now, setNow] = useState(() => new Date())
 
   const day1 = currentDate
   const day2 = addDays(currentDate, 1)
-  const days = [day1, day2]
+  const days = daysToShow === 1 ? [day1] : [day1, day2]
   const isViewingToday = isSameDay(currentDate, new Date())
 
   // Update current time every minute

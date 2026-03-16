@@ -8,18 +8,23 @@ import { cn } from '@/lib/utils'
 import EmloyeesLists from './EmloyeesLists'
 import { getDotInMyCalendar } from '@/apis/calendarManagementApis'
 
+export type CalendarViewMode = 'day' | '2days'
+
 interface RightSidebarCalendarProps {
   currentDate: Date
   onDateSelect: (date: Date) => void
   selectedEmployees: string[]
   onEmployeeToggle: (employeeId: string, employeeName?: string) => void
+  /** Day view = only currentDate highlighted; 2 days = currentDate + next day */
+  viewMode?: CalendarViewMode
 }
 
 export default function RightSidebarCalendar({
   currentDate,
   onDateSelect,
   selectedEmployees,
-  onEmployeeToggle
+  onEmployeeToggle,
+  viewMode = '2days'
 }: RightSidebarCalendarProps) {
   const [miniCalendarMonth, setMiniCalendarMonth] = useState(() => startOfMonth(currentDate))
   const [datesWithDots, setDatesWithDots] = useState<string[]>([])
@@ -62,8 +67,11 @@ export default function RightSidebarCalendar({
     end: calendarEnd
   })
 
-  // Main calendar shows 2 dates: currentDate and currentDate + 1 — both should be active in this grid
-  const visibleInMainCalendar = [currentDate, addDays(currentDate, 1)]
+  // Main calendar visible dates: day view = 1 day, 2 days view = current + next
+  const visibleInMainCalendar =
+    viewMode === 'day'
+      ? [currentDate]
+      : [currentDate, addDays(currentDate, 1)]
 
   const handlePreviousMonth = () => {
     setMiniCalendarMonth(subMonths(miniCalendarMonth, 1))
