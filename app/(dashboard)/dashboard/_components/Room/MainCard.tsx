@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
 import { format, addDays, isSameDay, startOfWeek, subDays } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
@@ -14,55 +15,40 @@ export interface DayAppointment {
   color?: 'green' | 'orange' | 'gray';
 }
 
+export interface EmployeeFreeSlotGroup {
+  employeeId: string;
+  employeeName: string;
+  freeSlots: string[];
+}
+
 export interface MainCardProps {
-  /** Start of the week to display (default: current week start) */
   weekStart?: Date;
-  /** Appointments per day (key = YYYY-MM-DD) */
   appointmentsByDay?: Record<string, DayAppointment[]>;
-  /** Free slots per day when expanded (key = YYYY-MM-DD) */
-  freeSlotsByDay?: Record<string, string[]>;
-  onSlotClick?: (date: Date, slot: string) => void;
+  freeSlotsByDay?: Record<string, EmployeeFreeSlotGroup[]>;
+  onSlotClick?: (date: Date, slot: string, employeeId: string) => void;
   onAppointmentClick?: (appointmentId: string) => void;
+  onCardAppointmentClick?: (date: string, employeeId: string) => void;
 }
 
 const DEFAULT_WEEK_DAYS = 4;
-const DEMO_APPOINTMENTS: Record<string, DayAppointment[]> = {
-  // Keys filled in component
-};
-const DEMO_FREE_SLOTS: Record<string, string[]> = {};
 
-function getDemoData(day: Date) {
-  const key = format(day, 'yyyy-MM-dd');
+function getDemoData(day: Date): DayAppointment[] {
   const dayNum = day.getDay();
-  if (dayNum === 1) {
-    return [
-      { id: '1', time: '09:00', title: 'Dr', color: 'gray' as const },
-      { id: '2', time: '11:30', title: 'Thera', color: 'gray' as const },
-    ];
-  }
-  if (dayNum === 2) {
-    return [
-      { id: '3', time: '10:00', title: 'Follow-up', color: 'green' as const },
-    ];
-  }
-  if (dayNum === 3) {
-    return [
-      { id: '4', time: '09:30', title: 'Team Sync', color: 'orange' as const },
-      { id: '5', time: '14:00', title: 'Consultation', color: 'gray' as const },
-      { id: '6', time: '16:00', title: 'Review', color: 'gray' as const },
-    ];
-  }
-  if (dayNum === 4) {
-    return [{ id: '7', time: '11:00', title: 'New Patient', color: 'gray' as const }];
-  }
-  return [];
-}
-
-function getDemoFreeSlots(day: Date): string[] {
-  const d = day.getDay();
-  if (d === 2) return ['11:00-11:30', '14:00-14:30'];
-  if (d === 3) return ['10:00-10:30'];
-  if (d === 4) return ['09:00-09:30', '14:00-14:30', '15:00-15:30'];
+  if (dayNum === 1) return [
+    { id: '1', time: '09:00', title: 'Dr', color: 'gray' },
+    { id: '2', time: '11:30', title: 'Thera', color: 'gray' },
+  ];
+  if (dayNum === 2) return [
+    { id: '3', time: '10:00', title: 'Follow-up', color: 'green' },
+  ];
+  if (dayNum === 3) return [
+    { id: '4', time: '09:30', title: 'Team Sync', color: 'orange' },
+    { id: '5', time: '14:00', title: 'Consultation', color: 'gray' },
+    { id: '6', time: '16:00', title: 'Review', color: 'gray' },
+  ];
+  if (dayNum === 4) return [
+    { id: '7', time: '11:00', title: 'New Patient', color: 'gray' },
+  ];
   return [];
 }
 
@@ -78,113 +64,127 @@ export default function MainCard({
   freeSlotsByDay = {},
   onSlotClick,
   onAppointmentClick,
+  onCardAppointmentClick,
 }: MainCardProps) {
-  const [weekOffset, setWeekOffset] = useState(0);
   const [expandedDayKey, setExpandedDayKey] = useState<string | null>(null);
+
+  const [emblaRef, emblaApi] = useEmblaCarousel({
+    align: 'start',
+    dragFree: false,
+    slidesToScroll: 1,
+  });
+
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
   const weekStart = useMemo(() => {
     if (weekStartProp) return weekStartProp;
     const today = new Date();
-    return subDays(startOfWeek(today, { weekStartsOn: 1 }), weekOffset * 7);
-  }, [weekStartProp, weekOffset]);
+    return startOfWeek(today, { weekStartsOn: 1 });
+  }, [weekStartProp]);
 
-  const days = useMemo(() => {
-    return Array.from({ length: DEFAULT_WEEK_DAYS }, (_, i) => addDays(weekStart, i));
-  }, [weekStart]);
+  const days = useMemo(
+    () => Array.from({ length: DEFAULT_WEEK_DAYS }, (_, i) => addDays(weekStart, i)),
+    [weekStart]
+  );
 
   const today = new Date();
 
   return (
-    <div className=" mt-5 pb-6">
+    <div className="mt-5 pb-6">
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-2">
-        <div className="flex items-center justify-between px-4 py-3  border-gray-100 ">
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3">
           <h3 className="text-sm font-semibold text-gray-700">Woche</h3>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 lg:hidden">
             <button
               type="button"
-              onClick={() => setWeekOffset((o) => o + 1)}
+              onClick={scrollPrev}
               className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              aria-label="Vorherige Woche"
+              aria-label="Vorherige"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               type="button"
-              onClick={() => setWeekOffset((o) => o - 1)}
+              onClick={scrollNext}
               className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
-              aria-label="Nächste Woche"
+              aria-label="Nächste"
             >
               <ChevronRight className="w-5 h-5" />
             </button>
           </div>
         </div>
 
-        <div className="flex gap-4 min-h-[200px] px-2">
-          {days.map((day) => {
-            const key = format(day, 'yyyy-MM-dd');
-            const appointments = appointmentsByDay[key] ?? getDemoData(day);
-            const freeSlots = freeSlotsByDay[key] ?? getDemoFreeSlots(day);
-            const isToday = isSameDay(day, today);
-            const isExpanded = expandedDayKey === key;
+        {/* Embla viewport */}
+        <div ref={emblaRef} className="overflow-hidden px-2">
+          {/* Embla container — negative margin cancels the per-slide padding */}
+          <div className="flex -ml-3 min-h-[200px]">
+            {days.map((day) => {
+              const key = format(day, 'yyyy-MM-dd');
+              const appointments = appointmentsByDay[key] ?? getDemoData(day);
+              const isToday = isSameDay(day, today);
 
-            return (
-              <div
-                key={key}
-                className="flex flex-1 min-w-0 flex-col rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden"
-              >
-                <div className="p-3 border-b border-gray-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-gray-900">{format(day, 'd')}</span>
-                    <span className="text-sm text-gray-600">{format(day, 'EEE', { locale: de })}</span>
-                  </div>
-                  {isToday && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-[#62A07C] bg-[#62A07C]/10 px-2 py-0.5 rounded">
-                      Heute
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
-                  {appointments.map((apt) => (
-                    <button
-                      key={apt.id}
-                      type="button"
-                      onClick={() => onAppointmentClick?.(apt.id)}
-                      className={cn(
-                        'text-left rounded-lg px-2.5 py-2 text-xs font-medium transition-opacity hover:opacity-90',
-                        colorClasses[apt.color ?? 'gray']
+              return (
+                /* Embla slide */
+                <div
+                  key={key}
+                  className="flex-none pl-3 w-full sm:w-1/2 lg:w-1/4"
+                >
+                  <div className="flex flex-col h-full rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+                    {/* Day header */}
+                    <div className="p-3 border-b border-gray-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-gray-900">{format(day, 'd')}</span>
+                        <span className="text-sm text-gray-600">{format(day, 'EEE', { locale: de })}</span>
+                      </div>
+                      {isToday && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wide text-[#62A07C] bg-[#62A07C]/10 px-2 py-0.5 rounded">
+                          Heute
+                        </span>
                       )}
-                    >
-                      <span className="text-gray-500 font-normal">{apt.time}</span>{' '}
-                      <span className="font-medium">{apt.title}</span>
-                    </button>
-                  ))}
-                  {freeSlots.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setExpandedDayKey(isExpanded ? null : key)}
-                      className="mt-auto rounded-lg px-2.5 py-2 text-xs font-semibold bg-emerald-100 text-emerald-800 hover:bg-emerald-200 transition-colors"
-                    >
-                      + {freeSlots.length} freie Slots
-                    </button>
-                  )}
+                    </div>
+
+                    {/* Appointments */}
+                    <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
+                      {appointments.map((apt) => (
+                        <button
+                          key={apt.id}
+                          type="button"
+                          onClick={() => {
+                            onAppointmentClick?.(apt.id);
+                            onCardAppointmentClick?.(key, apt.id);
+                            setExpandedDayKey(key);
+                          }}
+                          className={cn(
+                            'text-left rounded-lg px-2.5 py-2 text-xs font-medium cursor-pointer transition-all',
+                            'hover:ring-2 hover:ring-offset-1 hover:ring-[#62A07C]/50 hover:brightness-95',
+                            colorClasses[apt.color ?? 'gray']
+                          )}
+                        >
+                          <span className="text-gray-500 font-normal">{apt.time}</span>{' '}
+                          <span className="font-medium">{apt.title}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
 
+        {/* Free slots expanded panel */}
         {expandedDayKey && (() => {
           const day = days.find((d) => format(d, 'yyyy-MM-dd') === expandedDayKey);
-          const freeSlots =
-            day != null
-              ? freeSlotsByDay[expandedDayKey] ?? getDemoFreeSlots(day)
-              : [];
-          if (!day || freeSlots.length === 0) return null;
+          if (!day) return null;
+          const groups = freeSlotsByDay[expandedDayKey];
+          if (groups === undefined) return null;
           const label = `${format(day, 'd')} ${format(day, 'EEE', { locale: de })}`;
           return (
-            <div className="border-t border-gray-200 bg-gray-50/80 px-4 py-3">
-              <div className="flex items-center justify-between mb-2">
+            <div className="border-t border-gray-200 bg-gray-50/80 px-4 py-3 mt-2">
+              <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-semibold text-gray-700">
                   Verfügbare Slots für {label}:
                 </span>
@@ -197,18 +197,31 @@ export default function MainCard({
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {freeSlots.map((slot) => (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => onSlotClick?.(day, slot)}
-                    className="rounded-lg px-3 py-2 text-sm font-medium bg-white border border-gray-200 text-gray-800 hover:border-[#62A07C] hover:bg-emerald-50/50 transition-colors"
-                  >
-                    {slot}
-                  </button>
-                ))}
-              </div>
+              {groups.length === 0 ? (
+                <p className="text-sm text-gray-400 italic">Keine freien Slots gefunden.</p>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {groups.map((group) => (
+                    <div key={group.employeeId}>
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                        {group.employeeName}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {group.freeSlots.map((slot) => (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => onSlotClick?.(day, slot, group.employeeId)}
+                            className="rounded-lg px-3 py-2 text-sm font-medium bg-white border border-gray-200 text-gray-800 hover:border-[#62A07C] hover:bg-emerald-50/50 transition-colors"
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           );
         })()}

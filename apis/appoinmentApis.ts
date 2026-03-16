@@ -128,3 +128,26 @@ export const getCombinedAvailableSlots = async (date: string, employeeIds: strin
         throw error;
     }
 };
+
+// v2/appointment/by-date-next-four-days?date=2026-03-16
+export const getAppointmentsByDate = async (date: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/appointment/by-date-next-four-days?date=${date}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+// v2/appointment/employee-free-slots
+export const getEmployeeFreeSlots = async (date: string, employeeId: string) => {
+    try {
+        const response = await axiosClient.post(`/v2/appointment/employee-free-slots`, {
+            date,
+            employeeIds: [employeeId],
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

@@ -11,8 +11,9 @@ import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
 import DeleteConfirmModal from '@/app/(dashboard)/dashboard/_components/MainCalendar/DeleteConfirmModal'
 import { useAppoinment } from '@/hooks/appoinment/useAppoinment'
 import { getAppointmentsByDate, type AppointmentByDateItem } from '@/apis/calendarManagementApis'
+import { getAppointmentsByDate as getRoomAppointmentsByDate, getEmployeeFreeSlots } from '@/apis/appoinmentApis'
 import RoomHeader from '../_components/Room/RoomHeader'
-import MainCard from '../_components/Room/MainCard'
+import MainCard, { type DayAppointment, type EmployeeFreeSlotGroup } from '../_components/Room/MainCard'
 
 interface Employee {
   employeeId: string
@@ -120,6 +121,10 @@ export default function Calendar() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false)
   const [appointmentIdToDelete, setAppointmentIdToDelete] = useState<string | null>(null)
 
+  const [roomDate, setRoomDate] = useState<Date>(() => new Date())
+  const [roomAppointmentsByDay, setRoomAppointmentsByDay] = useState<Record<string, DayAppointment[]>>({})
+  const [roomFreeSlotsByDay, setRoomFreeSlotsByDay] = useState<Record<string, EmployeeFreeSlotGroup[]>>({})
+
   const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
   const appointmentForm = useForm<AppointmentFormData>({
@@ -182,8 +187,44 @@ export default function Calendar() {
     fetchAppointments()
   }, [fetchAppointments])
 
+  const fetchRoomAppointments = useCallback(async (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    try {
+      const res = await getRoomAppointmentsByDate(dateStr)
+      if (res?.days) {
+        const mapped: Record<string, DayAppointment[]> = {}
+        res.days.forEach((day: { date: string; appointments: Array<{ id: string; time: string; employeeName: string }> }) => {
+          mapped[day.date] = day.appointments.map((apt) => ({
+            id: apt.id,
+            time: apt.time,
+            title: apt.employeeName,
+            color: 'gray' as const,
+          }))
+        })
+        setRoomAppointmentsByDay(mapped)
+      }
+    } catch {
+      setRoomAppointmentsByDay({})
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchRoomAppointments(roomDate)
+  }, [roomDate, fetchRoomAppointments])
+
+  const handleRoomCardClick = useCallback(async (date: string, employeeId: string) => {
+    try {
+      const res = await getEmployeeFreeSlots(date, employeeId)
+      const groups: EmployeeFreeSlotGroup[] = res?.data ?? []
+      setRoomFreeSlotsByDay((prev) => ({ ...prev, [date]: groups }))
+    } catch {
+      // silently ignore
+    }
+  }, [])
+
   const handleDateChange = (date: Date) => {
     setCurrentDate(date)
+    setRoomDate(date)
   }
 
   const handleAddAppointment = (presetDate?: Date, presetTime?: string) => {
@@ -393,7 +434,12 @@ export default function Calendar() {
       {/* new room section */}
       <div className='mt-5'>
         <RoomHeader />
-        <MainCard />
+        <MainCard
+          weekStart={roomDate}
+          appointmentsByDay={roomAppointmentsByDay}
+          freeSlotsByDay={roomFreeSlotsByDay}
+          onCardAppointmentClick={handleRoomCardClick}
+        />
       </div>
     </>
   )
