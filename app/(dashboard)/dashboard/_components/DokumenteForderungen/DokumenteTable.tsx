@@ -17,7 +17,7 @@ import {
   getRecipientName,
 } from '@/apis/warenwirtschaftApis'
 import NeuerDokumenteModal from './NeuerDokumenteModal'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Eye, Pencil, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
   Dialog,
@@ -44,6 +44,7 @@ export interface DokumentRow extends Record<string, unknown> {
   status: string
   datum: string
   erstelltVon: string
+  fileUrl: string | null
 }
 
 const DEFAULT_EMPFAENGER_OPTION = { value: 'all', label: 'Alle Empfänger' }
@@ -108,6 +109,8 @@ export default function DokumenteTable({ activeTab }: DokumenteTableProps) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [rowToDelete, setRowToDelete] = useState<DokumentRow | null>(null)
+  const [viewFileUrl, setViewFileUrl] = useState<string | null>(null)
+  const [viewFileRow, setViewFileRow] = useState<DokumentRow | null>(null)
 
   const category = CATEGORY_MAP[activeTab]
 
@@ -176,8 +179,14 @@ export default function DokumenteTable({ activeTab }: DokumenteTableProps) {
       status: status || '–',
       datum: formatDate(item?.date ?? item?.createdAt),
       erstelltVon: String(item?.created_by ?? item?.createdBy ?? '–'),
+      fileUrl: typeof item?.file === 'string' && item.file ? item.file : null,
     }
   }
+
+  const handleViewClick = useCallback((row: DokumentRow) => {
+    setViewFileRow(row)
+    setViewFileUrl(row.fileUrl)
+  }, [])
 
   const handleEditClick = useCallback((row: DokumentRow) => {
     setEditingId(row.id)
@@ -262,6 +271,16 @@ export default function DokumenteTable({ activeTab }: DokumenteTableProps) {
         align: 'right',
         render: (_, row) => (
           <div className="flex items-center justify-end gap-1">
+            {row.fileUrl && (
+              <button
+                type="button"
+                className="p-2 cursor-pointer text-gray-500 hover:text-blue-600 rounded transition-colors"
+                onClick={() => handleViewClick(row)}
+                aria-label="Datei ansehen"
+              >
+                <Eye className="h-4 w-4" />
+              </button>
+            )}
             <button
               type="button"
               className="p-2 cursor-pointer text-gray-500 hover:text-gray-700 rounded transition-colors"
@@ -284,7 +303,7 @@ export default function DokumenteTable({ activeTab }: DokumenteTableProps) {
       }
     )
     return base
-  }, [activeTab, showTypColumn, deletingId, handleEditClick, handleDeleteClick])
+  }, [activeTab, showTypColumn, deletingId, handleViewClick, handleEditClick, handleDeleteClick])
 
   const apiTypeForTab = (tab: DokumentFilterTab): string => {
     switch (tab) {
@@ -483,6 +502,55 @@ export default function DokumenteTable({ activeTab }: DokumenteTableProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* File Viewer Modal */}
+      {viewFileUrl && (
+        <Dialog
+          open={!!viewFileUrl}
+          onOpenChange={(open) => {
+            if (!open) {
+              setViewFileUrl(null)
+              setViewFileRow(null)
+            }
+          }}
+        >
+          <DialogContent className="max-w-4xl w-full h-[90vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="flex flex-row items-center justify-between px-5 py-3 border-b border-gray-200 shrink-0">
+              <div className="flex flex-col gap-0.5">
+                <DialogTitle className="text-base font-semibold text-gray-900">
+                  {viewFileRow?.nummer ?? 'Dokument'}
+                </DialogTitle>
+                {viewFileRow?.kunde && (
+                  <DialogDescription className="text-xs text-gray-500 m-0">
+                    {viewFileRow.kunde}
+                    {viewFileRow.referenz && viewFileRow.referenz !== '–'
+                      ? ` · ${viewFileRow.referenz}`
+                      : ''}
+                  </DialogDescription>
+                )}
+              </div>
+              <div className="flex items-center gap-2 shrink-0 ml-4">
+                <a
+                  href={viewFileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  Im neuen Tab öffnen
+                </a>
+              </div>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden bg-gray-100">
+              <iframe
+                src={`${viewFileUrl}#toolbar=1&navpanes=0&scrollbar=1`}
+                className="w-full h-full border-0"
+                title={viewFileRow?.nummer ?? 'Dokument Vorschau'}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }
