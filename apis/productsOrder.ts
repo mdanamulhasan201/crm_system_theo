@@ -285,6 +285,24 @@ export const getPaymentStatus = async (orderIds: string[], paymentStatus: string
     }
 }
 
+// Update insurance_payed / private_payed for both-payment-type orders
+export const updatePaidStatus = async (
+    orderIds: string[],
+    insurance_payed: boolean,
+    private_payed: boolean
+) => {
+    try {
+        const response = await axiosClient.patch('/customer-orders/manage/payment-status', {
+            orderIds,
+            insurance_payed,
+            private_payed,
+        });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 // Alias for Krankenkasse status updates (for backward compatibility)
 export const getKrankenKasseStatus = async (orderIds: string[], krankenkasseStatus: string) => {
     try {

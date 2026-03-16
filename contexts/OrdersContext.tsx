@@ -121,6 +121,7 @@ interface OrdersContextType {
     krankenkasseStatus: string,
   ) => void;
   updateBulkPaymentStatus: (orderIds: string[], paymentStatus: string) => void;
+  updateBulkPaidStatus: (orderIds: string[], insurance_payed: boolean, private_payed: boolean) => void;
 }
 
 const OrdersContext = createContext<OrdersContextType | undefined>(undefined);
@@ -682,6 +683,21 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Optimistically update insurance_payed / private_payed for "broth" orders
+  const updateBulkPaidStatus = (
+    orderIds: string[],
+    insurance_payed: boolean,
+    private_payed: boolean,
+  ) => {
+    setOrders((prev) =>
+      prev.map((order) =>
+        orderIds.includes(order.id)
+          ? { ...order, insurance_payed, private_payed }
+          : order,
+      ),
+    );
+  };
+
   const refreshOrderData = async (orderId: string) => {
     try {
       const response = await getSingleOrder(orderId);
@@ -744,6 +760,7 @@ export function OrdersProvider({ children }: { children: ReactNode }) {
         updateOrderPriority,
         updateBulkKrankenkasseStatus,
         updateBulkPaymentStatus,
+        updateBulkPaidStatus,
         orderIdFromSearch, // Expose orderId from URL
       }}
     >

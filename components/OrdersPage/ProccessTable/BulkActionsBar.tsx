@@ -18,6 +18,8 @@ interface BulkActionsBarProps {
     isUpdatingKrankenkasseStatus: boolean;
     onBulkPaymentStatus?: (orderIds: string[], paymentStatus: string) => void;
     isUpdatingPaymentStatus?: boolean;
+    onBulkPaidStatus?: (orderIds: string[], insurance_payed: boolean, private_payed: boolean) => void;
+    isUpdatingPaidStatus?: boolean;
 }
 
 export default function BulkActionsBar({
@@ -33,6 +35,8 @@ export default function BulkActionsBar({
     isUpdatingKrankenkasseStatus,
     onBulkPaymentStatus,
     isUpdatingPaymentStatus = false,
+    onBulkPaidStatus,
+    isUpdatingPaidStatus = false,
 }: BulkActionsBarProps) {
     const statusOptions = getStatusOptions(selectedType);
     const handleBulkDelete = () => {
@@ -103,7 +107,89 @@ export default function BulkActionsBar({
     };
 
     const { status: currentPaymentStatus, isMixed: hasMixedPaymentStatus } = getCurrentPaymentStatus();
-    
+
+    // Check if all selected orders are "broth" (both private + insurance) type
+    const isBrothType =
+        selectedOrders.length > 0 &&
+        selectedOrders.every(
+            (o) =>
+                (o.paymentType ?? '').toString().trim().toLowerCase() === 'broth' ||
+                (o.paymentType ?? '').toString().trim().toLowerCase() === 'both',
+        );
+
+    // Majority value for insurance_payed across selected broth orders
+    const brothInsurancePayed =
+        isBrothType &&
+        selectedOrders.filter((o) => o.insurance_payed === true).length >=
+            selectedOrders.length / 2;
+
+    // Majority value for private_payed across selected broth orders
+    const brothPrivatePayed =
+        isBrothType &&
+        selectedOrders.filter((o) => o.private_payed === true).length >=
+            selectedOrders.length / 2;
+
+    const renderBrothButtons = () => {
+        if (!isBrothType || !onBulkPaidStatus) return null;
+
+        return (
+            <>
+                {/* Insurance toggle */}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                        onBulkPaidStatus(selectedOrderIds, !brothInsurancePayed, brothPrivatePayed)
+                    }
+                    disabled={isUpdatingPaidStatus}
+                    className={`text-xs py-2 sm:py-3 lg:py-4 cursor-pointer whitespace-nowrap flex-shrink-0 ${
+                        brothInsurancePayed
+                            ? 'bg-blue-50 border-blue-300 text-blue-700 hover:bg-blue-100'
+                            : 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100'
+                    }`}
+                >
+                    {brothInsurancePayed ? (
+                        <>
+                            <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                            <span className="hidden sm:inline">KK </span>Genehmigt
+                        </>
+                    ) : (
+                        <>
+                            <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                            <span className="hidden sm:inline">KK </span>Ungenehmigt
+                        </>
+                    )}
+                </Button>
+                {/* Private toggle */}
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                        onBulkPaidStatus(selectedOrderIds, brothInsurancePayed, !brothPrivatePayed)
+                    }
+                    disabled={isUpdatingPaidStatus}
+                    className={`text-xs py-2 sm:py-3 lg:py-4 cursor-pointer whitespace-nowrap flex-shrink-0 ${
+                        brothPrivatePayed
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100'
+                            : 'bg-orange-50 border-orange-300 text-orange-700 hover:bg-orange-100'
+                    }`}
+                >
+                    {brothPrivatePayed ? (
+                        <>
+                            <CheckCircle2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                            Privat Bezahlt
+                        </>
+                    ) : (
+                        <>
+                            <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1 sm:mr-1.5 flex-shrink-0" />
+                            Privat Offen
+                        </>
+                    )}
+                </Button>
+            </>
+        );
+    };
+
     // Determine which payment status buttons to show
     const getPaymentStatusButtons = () => {
         if (!currentPaymentStatus || !onBulkPaymentStatus) return null;
@@ -225,6 +311,13 @@ export default function BulkActionsBar({
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2 flex-shrink-0">
+                        {/* Broth (both) type: show 2 independent toggle buttons */}
+                        {isBrothType ? (
+                            <div className="flex items-center gap-2">
+                                {renderBrothButtons()}
+                            </div>
+                        ) : (
+                        <>
                         {/* Payment Status Buttons */}
                         {getPaymentStatusButtons() && (
                             <div className="flex items-center gap-2">
@@ -257,6 +350,8 @@ export default function BulkActionsBar({
                                     </>
                                 )}
                             </Button>
+                        )}
+                        </>
                         )}
                         <Button
                             variant="destructive"

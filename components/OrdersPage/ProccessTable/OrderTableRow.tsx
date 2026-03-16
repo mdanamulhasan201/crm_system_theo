@@ -283,6 +283,24 @@ export default function OrderTableRow({
                     ? insurancePayed
                     : false;
     const renderPaymentStatus = () => {
+        // "broth" type: show both insurance and private badges based on payed flags
+        if (inferredPaymentType === 'both') {
+            const insLabel = insurancePayed ? 'Krankenkasse Genehmigt' : 'Krankenkasse Ungenehmigt';
+            const insColors = getPaymentStatusColor(insurancePayed ? 'Krankenkasse_Genehmigt' : 'Krankenkasse_Ungenehmigt');
+            const privLabel = privatePayed ? 'Privat Bezahlt' : 'Privat Offen';
+            const privColors = getPaymentStatusColor(privatePayed ? 'Privat_Bezahlt' : 'Privat_offen');
+            return (
+                <>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${insColors.bg} ${insColors.text}`}>
+                        {insLabel}
+                    </span>
+                    <span className={`px-2 py-1 rounded text-xs font-semibold ${privColors.bg} ${privColors.text}`}>
+                        {privLabel}
+                    </span>
+                </>
+            );
+        }
+
         if (!order.zahlung) {
             return null;
         }
