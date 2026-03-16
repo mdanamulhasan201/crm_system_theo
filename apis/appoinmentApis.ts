@@ -101,3 +101,19 @@ export const updateAppointment = async (appointmentId: string, appointmentData: 
     }
 };
 
+
+// v2/employee-availability/combined-available-slots
+// {
+//     "date": "2026-03-16",
+//     "employeeIds": ["3931f18d-834d-4c58-bdfd-687121a65dec", "0d6ecfed-b9a7-454b-a4a3-ece4c2ffc57a"],
+//     "intervalMinutes": 15
+//   }
+
+export const getCombinedAvailableSlots = async (date: string, employeeIds: string[], intervalMinutes: number) => {
+    try {
+        const response = await axiosClient.post(`/v2/employee-availability/combined-available-slots`, { date, employeeIds, intervalMinutes });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
