@@ -32,6 +32,8 @@ interface FormData {
   screenerId?: string | null
   billingType?: 'Krankenkassa' | 'Privat'
   isCustomVersorgung?: boolean // Flag to indicate if using custom versorgung (Einmalige Versorgung)
+  /** When Privat + Einmalige Versorgung, price from selected Einlagetyp (ProduktBasisdatenCard) */
+  einlagetypPriceForPrivat?: number
   versorgungsname?: string
   positionsnummerTotal?: number
   selectedPositionsnummer?: string[]
@@ -133,24 +135,29 @@ export default function WerkstattzettelModal({
   const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([])
   const [locationsLoading, setLocationsLoading] = useState(false)
 
-  // Extract Einlagenversorgung price and name from selected versorgung
+  // Extract Einlagenversorgung price and name from selected versorgung (or Einlagetyp for Einmalige Versorgung)
   // NOTE: For Krankenkassa-Abrechnung this price should NOT be shown or used.
   const einlagenversorgungPrice = React.useMemo(() => {
     // Only show / use Versorgung price for Privat billing
     if (formData?.billingType !== 'Privat') return []
 
     const selectedData = formData?.selectedVersorgungData
-    if (!selectedData) return []
+    const priceFromVersorgung = selectedData?.supplyStatus?.price
+    const nameFromVersorgung = selectedData?.supplyStatus?.name || selectedData?.name || ''
 
-    const price = selectedData?.supplyStatus?.price
-    const name = selectedData?.supplyStatus?.name || selectedData?.name || ''
+    // Standard: use price from selected versorgung
+    if (priceFromVersorgung !== undefined && priceFromVersorgung !== null && !isNaN(Number(priceFromVersorgung))) {
+      return [{ name: nameFromVersorgung || formData?.versorgungsname || '', price: Number(priceFromVersorgung) }]
+    }
 
-    if (price !== undefined && price !== null && !isNaN(Number(price))) {
-      return [{ name, price: Number(price) }]
+    // Einmalige Versorgung: use price from selected Einlagetyp (ProduktBasisdatenCard)
+    if (formData?.isCustomVersorgung && formData?.einlagetypPriceForPrivat != null && !isNaN(Number(formData.einlagetypPriceForPrivat))) {
+      const name = formData?.einlagentyp || formData?.versorgungsname || formData?.versorgung || 'Versorgung'
+      return [{ name, price: Number(formData.einlagetypPriceForPrivat) }]
     }
 
     return []
-  }, [formData?.selectedVersorgungData, formData?.billingType])
+  }, [formData?.selectedVersorgungData, formData?.billingType, formData?.isCustomVersorgung, formData?.einlagetypPriceForPrivat, formData?.einlagentyp, formData?.versorgungsname, formData?.versorgung])
 
   // Versorgung display for "Auftragsdetails & Preise": plain selected Versorgung name only
   const { einlageDisplayName, versorgungFullDisplay } = React.useMemo(() => {
@@ -198,21 +205,24 @@ export default function WerkstattzettelModal({
       .filter((item): item is string => Boolean(item))
   }, [formData?.insoleStandards])
 
-  // Auto-set Einlagenversorgung price when versorgung is selected
+  // Auto-set Einlagenversorgung price when versorgung is selected (or Einlagetyp for Einmalige Versorgung)
   // Only for Privat-Abrechnung – Krankenkassa must NOT prefill or calculate this price
   useEffect(() => {
-    if (
-      isOpen &&
-      formData?.billingType === 'Privat' &&
-      formData?.selectedVersorgungData?.supplyStatus?.price
-    ) {
-      const price = String(formData.selectedVersorgungData.supplyStatus.price)
-      // Always update the price when versorgung changes, even if there's already a value
-      if (form.insoleSupplyPrice !== price) {
-        form.setInsoleSupplyPrice(price)
+    if (!isOpen || formData?.billingType !== 'Privat') return
+
+    const priceFromVersorgung = formData?.selectedVersorgungData?.supplyStatus?.price
+    const priceFromEinlagetyp = formData?.isCustomVersorgung && formData?.einlagetypPriceForPrivat != null
+      ? formData.einlagetypPriceForPrivat
+      : null
+
+    const price = priceFromVersorgung ?? priceFromEinlagetyp
+    if (price !== undefined && price !== null && !isNaN(Number(price))) {
+      const priceStr = String(price)
+      if (form.insoleSupplyPrice !== priceStr) {
+        form.setInsoleSupplyPrice(priceStr)
       }
     }
-  }, [isOpen, formData, form])
+  }, [isOpen, formData?.billingType, formData?.selectedVersorgungData?.supplyStatus?.price, formData?.isCustomVersorgung, formData?.einlagetypPriceForPrivat, form])
 
   // Fetch settings only once when modal opens. Do NOT depend on `form` (new ref every render = infinite calls).
   const hasFetchedSettingsRef = useRef(false)
@@ -410,6 +420,7 @@ export default function WerkstattzettelModal({
           selectedVersorgungData: formData?.selectedVersorgungData,
           // Pass billing type through so pricing logic can respect Krankenkassa vs Privat
           billingType: formData?.billingType,
+          einlagetypPriceForPrivat: formData?.einlagetypPriceForPrivat,
           totalPriceOverride,
         },
         scanData.id
