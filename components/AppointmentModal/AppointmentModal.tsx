@@ -460,27 +460,15 @@ export default function AppointmentModal({
                                 render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Uhrzeit <span className="text-red-500">*</span></FormLabel>
-                                        <Select 
-                                            onValueChange={field.onChange} 
-                                            value={field.value}
-                                        >
-                                            <FormControl>
-                                                <SelectTrigger className="cursor-pointer w-full">
-                                                    <SelectValue placeholder="Uhrzeit wählen" />
-                                                </SelectTrigger>
-                                            </FormControl>
-                                            <SelectContent className="max-h-[300px] overflow-y-auto">
-                                                {timeSlots.map((slot) => (
-                                                    <SelectItem 
-                                                        key={slot.value} 
-                                                        value={slot.value} 
-                                                        className="cursor-pointer"
-                                                    >
-                                                        {slot.label}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <FormControl>
+                                            <Input
+                                                type="time"
+                                                step={300}
+                                                className="w-full"
+                                                value={field.value || ""}
+                                                onChange={(e) => field.onChange(e.target.value)}
+                                            />
+                                        </FormControl>
                                     </FormItem>
                                 )}
                             />
