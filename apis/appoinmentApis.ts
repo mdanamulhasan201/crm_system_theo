@@ -151,3 +151,19 @@ export const getEmployeeFreeSlots = async (date: string, employeeId: string) => 
         throw error;
     }
 };
+
+
+// v2/appointment/employee-free-percentage
+// body
+// {
+//     "dates": ["2026-03-16", "2026-03-27"]
+//   }
+export const getEmployeeFreePercentage = async (dates: string[]) => {
+    try {
+        const response = await axiosClient.post(`/v2/appointment/employee-free-percentage`, { dates });
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
