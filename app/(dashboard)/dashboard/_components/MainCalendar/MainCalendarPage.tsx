@@ -296,7 +296,7 @@ export default function MainCalendarPage({
       </div>
 
       {/* Scrollable body */}
-      <div ref={scrollRef} className="flex-1 overflow-auto calendar-scrollbar min-h-0">
+      <div ref={scrollRef} className="flex-1 max-h-[650px] overflow-y-auto calendar-scrollbar min-h-0">
         <div className="flex">
           {/* Time Column */}
           <div className="w-20 shrink-0 border-r border-gray-200">
