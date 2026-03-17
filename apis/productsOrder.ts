@@ -505,3 +505,17 @@ export const getKvaData = async (orderId: string) => {
         throw error;
     }
 }
+
+
+// customer-orders/track/halbprobe-data/{{order id}}
+
+export const getHalbprobeData = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/track/halbprobe-data/${orderId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+

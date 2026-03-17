@@ -58,6 +58,28 @@ const formatMoney = (value: unknown) => {
   return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 };
 
+const formatMoneyWithEuro = (value: unknown) => {
+  const formatted = formatMoney(value);
+  return formatted ? `${formatted}€` : '';
+};
+
+const formatVatLabel = (value: unknown) => {
+  const n = typeof value === 'number' ? value : value == null ? NaN : Number(value);
+  if (!Number.isFinite(n)) return '';
+  return `+ ${formatMoney(n)}% MwSt.`;
+};
+
+const PriceRow = ({ label, value }: { label: string; value: string }) => {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 }}>
+      <div style={{ fontSize: 11, color: '#374151' }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: '#111827', textAlign: 'right', whiteSpace: 'nowrap' }}>
+        {value}
+      </div>
+    </div>
+  );
+};
+
 const HeaderLineField = ({ label, value }: { label: string; value: string }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, width: '100%' }}>
@@ -112,6 +134,11 @@ export default function WerkstattzettelSheet({
   const zusatz = data.zusatzpositionen ?? {};
   const diagnosisStatus = (zusatz.diagnosis_status ?? []).filter(Boolean).join(', ');
   const fussanalysePreis = (data as any)?.fussanalysePreis ?? (price as any)?.fussanalysePreis;
+  const quantityNum = (price as any)?.quantity;
+  const insuranceGross = (price as any)?.insuranceTotalPrice;
+  const vatRate = (price as any)?.vatRate;
+  const positionsnummerNet = (price as any)?.net_price;
+  const discount = (price as any)?.discount;
 
   return (
     <div
@@ -188,7 +215,7 @@ export default function WerkstattzettelSheet({
       </div>
 
       {/* Versorgung & Positionen + Preisübersicht */}
-      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 240px', columnGap: 20 }}>
+      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr 290px', columnGap: 20 }}>
         <div>
           <div style={{ fontSize: 10, fontWeight: 600, color: '#1f2937', textTransform: 'uppercase', letterSpacing: 0.7 }}>
             Versorgung &amp; Positionen
@@ -233,34 +260,77 @@ export default function WerkstattzettelSheet({
           </div>
         </div>
 
-        <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', padding: 12, height: 'fit-content' }}>
+        <div style={{ backgroundColor: '#f9fafb', border: '1px solid #e5e7eb', padding: 14, height: 'fit-content' }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: '#1f2937', textTransform: 'uppercase', letterSpacing: 0.7 }}>
             Preisübersicht
           </div>
-          <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Field label="Pos. Netto" value={price.einlagenversorgungPreis != null ? formatMoney(price.einlagenversorgungPreis) : ''} />
-            <Field label="MwSt." value={price.vatRate != null ? `${price.vatRate}%` : ''} />
-            {/* Requested: show insuranceTotalPrice in "Pos. inkl. MwSt." */}
-            <Field
-              label="Pos. inkl. MwSt."
-              value={
-                price.insuranceTotalPrice != null
-                  ? formatMoney(price.insuranceTotalPrice)
-                  : price.privatePrice != null
-                    ? formatMoney(price.privatePrice)
-                    : ''
-              }
-            />
-            <Field label="Eigenanteil" value={price.privatePrice != null ? formatMoney(price.privatePrice) : ''} />
-            <Field label="Versicherung" value={price.insuranceTotalPrice != null ? formatMoney(price.insuranceTotalPrice) : ''} />
-            <Field label="Fussanalyse Preis" value={fussanalysePreis != null ? formatMoney(fussanalysePreis) : ''} />
-            <Field label="Zwischensumme" value={price.totalPrice != null ? formatMoney(price.totalPrice) : ''} />
-            <div style={{ paddingTop: 6, borderTop: '1px solid #d1d5db' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ fontSize: 11, fontWeight: 600 }}>Gesamt</div>
-                <div style={{ fontSize: 11, fontWeight: 600 }}>{price.totalPrice != null ? formatMoney(price.totalPrice) : '—'}</div>
-              </div>
-            </div>
+          <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {/* Positionsnummer rows (match template) */}
+            {positionsnummerNet != null ? (
+              <PriceRow label="Positionsnummer netto" value={formatMoneyWithEuro(positionsnummerNet)} />
+            ) : null}
+            {/* Only show VAT line if API provides netto + vatRate */}
+            {positionsnummerNet != null && vatRate != null ? (
+              <PriceRow label={formatVatLabel(vatRate)} value="" />
+            ) : null}
+            {insuranceGross != null ? (
+              <PriceRow label="Positionsnummer (inkl. MwSt.)" value={formatMoneyWithEuro(insuranceGross)} />
+            ) : null}
+
+            {/* Other price items */}
+            {price.einlagenversorgungPreis != null ? (
+              <PriceRow label="Versorgung" value={formatMoneyWithEuro(price.einlagenversorgungPreis)} />
+            ) : null}
+            {quantityNum != null ? <PriceRow label="Menge" value={`x ${String(quantityNum)}`} /> : null}
+            {fussanalysePreis != null ? (
+              <PriceRow label="Fußanalyse" value={formatMoneyWithEuro(fussanalysePreis)} />
+            ) : null}
+            {price.privatePrice != null ? (
+              <PriceRow label="Enthält Eigenanteil (AT)" value={formatMoneyWithEuro(price.privatePrice)} />
+            ) : null}
+            {data.wirtschaftlicherAufpreis != null && Number(data.wirtschaftlicherAufpreis) !== 0 ? (
+              <PriceRow label="Wirtschaftlicher Aufpreis" value={formatMoneyWithEuro(data.wirtschaftlicherAufpreis)} />
+            ) : null}
+            {discount != null ? <PriceRow label="Rabatt" value={`${String(discount)}%`} /> : null}
+
+            {price.totalPrice != null ? (
+              <>
+                <div style={{ borderTop: '1px solid #d1d5db', marginTop: 2 }} />
+                <PriceRow label="Zwischensumme" value={formatMoneyWithEuro(price.totalPrice)} />
+              </>
+            ) : null}
+
+            {/* Total + bottom split (Privat / Versicherung) */}
+            {price.totalPrice != null ? (
+              <>
+                <div style={{ borderTop: '2px solid #9ca3af', marginTop: 4 }} />
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#111827' }}>Gesamt</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: '#16a34a' }}>
+                    {formatMoneyWithEuro(price.totalPrice)}
+                  </div>
+                </div>
+                {price.privatePrice != null || price.insuranceTotalPrice != null ? (
+                  <div
+                    style={{
+                      marginTop: 6,
+                      display: 'flex',
+                      alignItems: 'baseline',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#f97316', whiteSpace: 'nowrap' }}>
+                      {price.privatePrice != null ? `Privat ${formatMoneyWithEuro(price.privatePrice)}` : ''}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>
+                      {price.insuranceTotalPrice != null ? `Versicherung ${formatMoneyWithEuro(price.insuranceTotalPrice)}` : ''}
+                    </div>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
           </div>
         </div>
       </div>
