@@ -755,7 +755,8 @@ export default function OrderTableRow({
                                 ) : (
                                     <FileText className="h-4 w-4 text-gray-700" />
                                 )}
-                                <span>{kvaLoading ? "Verordnungsvorschlag..." : "Verordnungsvorschlag"}</span>
+                                  <span>{kvaLoading ? "Verordnungsvorschlag..." : "Verordnungsvorschlag"}</span>
+                               
                             </DropdownMenuItem>
                         )}
                         {shouldShowHalbprobePdf && (
