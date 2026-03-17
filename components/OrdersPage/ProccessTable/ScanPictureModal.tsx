@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { usePicture2324 } from '@/hooks/orders/usePicture2324';
-import { Maximize2 } from 'lucide-react';
+import { Maximize2, Printer } from 'lucide-react';
 import FullscreenImageModal from './FullscreenImageModal';
 import Image from 'next/image';
+import jsPDF from 'jspdf';
 
 interface ScanPictureModalProps {
     isOpen: boolean;
@@ -26,6 +27,8 @@ export default function ScanPictureModal({
     const { data, loading, error } = usePicture2324(orderId);
     const [selectedFoot, setSelectedFoot] = useState<'left' | 'right' | null>(null);
     const [showFullscreen, setShowFullscreen] = useState(false);
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
 
     const materials = data?.material
         ? data.material
@@ -103,6 +106,304 @@ export default function ScanPictureModal({
             return `${day}. ${month} ${year}, ${hours}:${minutes}`;
         } catch {
             return dateString;
+        }
+    };
+
+    const pdfFileName = useMemo(() => {
+        const name = (data?.customerName || customerName || '').trim();
+        const safeName = (name || 'Kunde').replace(/\s+/g, '_');
+        return `Scan_${safeName}.pdf`;
+    }, [customerName, data?.customerName]);
+
+    const revokePdfUrl = useCallback(() => {
+        setPdfUrl((prev) => {
+            if (prev) URL.revokeObjectURL(prev);
+            return null;
+        });
+    }, []);
+
+    useEffect(() => {
+        if (!isOpen) {
+            revokePdfUrl();
+        }
+    }, [isOpen, revokePdfUrl]);
+
+    const getProxyableUrl = (url: string): string => {
+        if (!url) return url;
+        if (url.startsWith('data:')) return url;
+        const absoluteUrl = url.startsWith('http')
+            ? url
+            : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+        return `/api/proxy-image?url=${encodeURIComponent(absoluteUrl)}`;
+    };
+
+    const fetchImageAsDataUrl = async (url: string): Promise<string | null> => {
+        try {
+            if (!url) return null;
+            if (url.startsWith('data:')) return url;
+            const res = await fetch(getProxyableUrl(url));
+            if (!res.ok) return null;
+            const blob = await res.blob();
+            return await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = () => resolve(null);
+                reader.readAsDataURL(blob);
+            });
+        } catch {
+            return null;
+        }
+    };
+
+    const normalizeImageDataUrlToPng = async (dataUrl: string): Promise<string | null> => {
+        try {
+            if (!dataUrl) return null;
+            if (dataUrl.startsWith('data:image/png')) return dataUrl;
+            // Convert webp/unknown formats to PNG so jsPDF always renders it
+            const img = new window.Image();
+            img.crossOrigin = 'anonymous';
+            await new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error('img load failed'));
+                img.src = dataUrl;
+            });
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return null;
+            ctx.drawImage(img, 0, 0);
+            return canvas.toDataURL('image/png');
+        } catch {
+            return null;
+        }
+    };
+
+    const getImageDimensions = async (dataUrl: string): Promise<{ w: number; h: number } | null> => {
+        try {
+            const img = new window.Image();
+            img.crossOrigin = 'anonymous';
+            await new Promise<void>((resolve, reject) => {
+                img.onload = () => resolve();
+                img.onerror = () => reject(new Error('img load failed'));
+                img.src = dataUrl;
+            });
+            return { w: img.width, h: img.height };
+        } catch {
+            return null;
+        }
+    };
+
+    const buildPrintableFields = (source: Record<string, any>) => {
+        const excluded = new Set([
+            'picture_23',
+            'picture_24',
+            'orderCategory',
+            'priceDetails',
+            'insoleStock',
+        ]);
+
+        const entries: Array<{ label: string; value: string }> = [];
+        for (const [key, value] of Object.entries(source)) {
+            if (excluded.has(key)) continue;
+            if (value === null || value === undefined || value === '') continue;
+            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                entries.push({ label: key, value: String(value) });
+            } else {
+                try {
+                    entries.push({ label: key, value: JSON.stringify(value) });
+                } catch {
+                    entries.push({ label: key, value: String(value) });
+                }
+            }
+        }
+        return entries;
+    };
+
+    const generateA3ScanPdf = async () => {
+        if (!data) return;
+
+        // A3 portrait: 297 x 420 mm
+        const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a3' });
+        const pageWidth = 297;
+        const pageHeight = 420;
+        // Print-safe margins (professional poster/design)
+        const marginX = 22; // left/right: 20–25mm
+        const marginTop = 25; // top: 20–30mm (standard 25mm)
+        const marginBottom = 25; // bottom: 20–30mm (standard 25mm)
+        const pxToMm = 0.264583; // 96 DPI pixel-to-mm (keeps 1:1 size)
+
+        // Header as overlay (does not reserve height)
+        const headerY = marginTop;
+        const headerLineGap = 6;
+
+        const textWithHalo = (
+            text: string,
+            x: number,
+            y: number,
+            opts?: { align?: 'left' | 'center' | 'right'; fontStyle?: 'normal' | 'bold' }
+        ) => {
+            const { align = 'left', fontStyle = 'normal' } = opts ?? {};
+            pdf.setFont('helvetica', fontStyle);
+            // Halo/outline effect: no background, just multi-draw
+            const d = 0.45;
+            pdf.setTextColor(255, 255, 255);
+            pdf.text(text, x - d, y, { align });
+            pdf.text(text, x + d, y, { align });
+            pdf.text(text, x, y - d, { align });
+            pdf.text(text, x, y + d, { align });
+            pdf.text(text, x - d, y - d, { align });
+            pdf.text(text, x + d, y + d, { align });
+            pdf.text(text, x - d, y + d, { align });
+            pdf.text(text, x + d, y - d, { align });
+            pdf.setTextColor(0, 0, 0);
+            pdf.text(text, x, y, { align });
+        };
+
+        pdf.setFontSize(11);
+        const createdAtText = data?.createdAt ? formatDate(data.createdAt) : '—';
+        const fertigstellungText = data?.fertigstellungBis ? formatDate(data.fertigstellungBis) : '—';
+        const kundeText = (data?.customerName || customerName || '—').toString();
+
+        // Images area
+        const bottomBlockHeight = 90;
+        const imageOffsetY = 10; // move scans a bit down
+        const topImagesY = marginTop + imageOffsetY;
+        const imagesAreaHeight = pageHeight - marginBottom - bottomBlockHeight - topImagesY;
+        const gap = 10;
+        const availableWidth = pageWidth - (marginX * 2);
+        const eachWidth = (availableWidth - gap) / 2;
+        const maxHeight = imagesAreaHeight;
+
+        const leftUrl = data?.picture_23 || null;
+        const rightUrl = data?.picture_24 || null;
+        const [leftRaw, rightRaw] = await Promise.all([
+            leftUrl ? fetchImageAsDataUrl(leftUrl) : Promise.resolve(null),
+            rightUrl ? fetchImageAsDataUrl(rightUrl) : Promise.resolve(null),
+        ]);
+        const [leftDataUrl, rightDataUrl] = await Promise.all([
+            leftRaw ? normalizeImageDataUrlToPng(leftRaw) : Promise.resolve(null),
+            rightRaw ? normalizeImageDataUrlToPng(rightRaw) : Promise.resolve(null),
+        ]);
+
+        const placeImageOneToOne = async (dataUrl: string, x: number, y: number, w: number, h: number) => {
+            const dim = await getImageDimensions(dataUrl);
+            if (!dim) return;
+            // 1:1 placement: keep original pixel size (converted to mm)
+            const drawW = dim.w * pxToMm;
+            const drawH = dim.h * pxToMm;
+            // Center horizontally, but keep top aligned (no vertical centering)
+            const cx = x + (w - drawW) / 2;
+            const cy = y;
+            pdf.addImage(dataUrl, 'PNG', cx, cy, drawW, drawH, undefined, 'FAST');
+        };
+
+        const frameY = topImagesY;
+        const frameH = maxHeight;
+
+        if (leftDataUrl) await placeImageOneToOne(leftDataUrl, marginX, frameY, eachWidth, frameH);
+        if (rightDataUrl) await placeImageOneToOne(rightDataUrl, marginX + eachWidth + gap, frameY, eachWidth, frameH);
+
+        // Header overlay must be drawn AFTER images so it stays on top
+        textWithHalo(`Erstellt am: ${createdAtText}`, marginX, headerY);
+        textWithHalo('Fertigstellung bis', marginX, headerY + headerLineGap);
+        textWithHalo(fertigstellungText, marginX, headerY + headerLineGap * 2);
+        textWithHalo('Kunde', marginX, headerY + headerLineGap * 3);
+        textWithHalo(kundeText, marginX, headerY + headerLineGap * 4, { fontStyle: 'bold' });
+
+        // No order number in header (per design requirement)
+
+        // Bottom block
+        const bottomY = pageHeight - marginBottom - bottomBlockHeight;
+
+        // No big bottom title (per requirement)
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(10);
+
+        const leftColX = marginX;
+        const rightColX = marginX + (availableWidth / 2) + 4;
+        const startY = bottomY + 20;
+        const lineGap = 5;
+        const colWidth = (availableWidth / 2) - 8;
+
+        const writeLines = (x: number, yStart: number, lines: string[]) => {
+            let y = yStart;
+            for (const raw of lines) {
+                if (y > bottomY + bottomBlockHeight - 8) break;
+                const wrapped = pdf.splitTextToSize(raw, colWidth);
+                for (const w of wrapped) {
+                    if (y > bottomY + bottomBlockHeight - 8) break;
+                    pdf.text(w, x, y);
+                    y += lineGap;
+                }
+            }
+        };
+
+        const diagnosisValue = (() => {
+            if (isSonstiges) return data?.orderCategory?.sonstiges_category || '—';
+            if (data?.ausführliche_diagnose) return String(data.ausführliche_diagnose);
+            const ds = (data as any)?.diagnosisStatus;
+            if (Array.isArray(ds) && ds.length > 0) return ds.map(String).join(', ');
+            return '—';
+        })();
+
+        const schuhmodell = (data as any)?.schuhmodell_wählen;
+
+        const leftLines: string[] = [];
+        leftLines.push('Diagnose:');
+        leftLines.push(diagnosisValue);
+        leftLines.push('');
+        leftLines.push(`Versorgung: ${primaryVersorgungDisplay || '—'}`);
+        if (quantityDisplay !== null) leftLines.push(`Menge: ${quantityDisplay}`);
+        if (schuhmodell) leftLines.push(`schuhmodell_wählen: ${String(schuhmodell)}`);
+        if (isInsole && insoleStandards.length > 0) {
+            leftLines.push('');
+            for (const item of insoleStandards) {
+                leftLines.push(formatLeftRight(item.name, item.left, item.right));
+            }
+        }
+        if (materials.length > 0) {
+            leftLines.push('');
+            leftLines.push('Materialien');
+            for (const m of materials) leftLines.push(m);
+        }
+
+        const rightLines: string[] = [];
+        if (data?.uberzug) {
+            rightLines.push('Überzug:');
+            rightLines.push(String(data.uberzug));
+            rightLines.push('');
+        }
+        if (data?.versorgung_note) {
+            rightLines.push('Notiz');
+            rightLines.push(String(data.versorgung_note));
+        }
+
+        writeLines(leftColX, startY, leftLines);
+        writeLines(rightColX, startY, rightLines);
+
+        return pdf.output('blob') as Blob;
+    };
+
+    const handleShowPdf = async () => {
+        if (!data || isGeneratingPdf) return;
+        setIsGeneratingPdf(true);
+        try {
+            revokePdfUrl();
+            const blob = await generateA3ScanPdf();
+            if (!blob) return;
+            const url = URL.createObjectURL(blob);
+            setPdfUrl(url);
+            // One smart action: show preview + trigger download with customer-name filename
+            window.open(url, '_blank', 'noopener,noreferrer');
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = pdfFileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        } finally {
+            setIsGeneratingPdf(false);
         }
     };
 
@@ -252,6 +553,24 @@ export default function ScanPictureModal({
                                             <span className="mr-2 text-lg">👣</span>
                                             Rechter Fuß
                                         </Button>
+                                    </div>
+
+                                    {/* PDF section under Foot selection */}
+                                    <div className="mt-4 rounded-xl border-2 border-gray-200 bg-white p-4">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                                            PDF Download
+                                        </h3>
+                                        <div className="flex flex-col gap-2">
+                                            <Button
+                                                onClick={handleShowPdf}
+                                                disabled={isGeneratingPdf || (!data?.picture_23 && !data?.picture_24)}
+                                                variant="default"
+                                                className="cursor-pointer w-full bg-white hover:bg-gray-50 text-gray-900 font-semibold border border-gray-200 flex items-center justify-center gap-2"
+                                            >
+                                                <Printer className="w-5 h-5" />
+                                                {isGeneratingPdf ? 'Wird vorbereitet…' : 'Drucken'}
+                                            </Button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
