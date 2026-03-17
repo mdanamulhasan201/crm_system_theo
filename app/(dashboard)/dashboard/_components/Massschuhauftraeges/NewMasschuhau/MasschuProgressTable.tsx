@@ -3,17 +3,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Check, FileText, ArrowRight, AlertCircle, History, Search, Loader2 } from 'lucide-react';
+import { Check, FileText, ArrowRight, AlertCircle, History, Search, Loader2, MoreVertical } from 'lucide-react';
 import { BsDash } from 'react-icons/bs';
 import toast from 'react-hot-toast';
 import MasschuhauNoteModal from './MasschuhauNoteModal';
 import PriorityModal from './PriorityModal';
 import MasschuHistorySidebar from './MasschuHistorySidebar';
-import { getAllMassschuheOrders, updateMassschuheOrderPriority } from '@/apis/MassschuheAddedApis';
+import { getAllMassschuheOrders, getKvaData, updateMassschuheOrderPriority } from '@/apis/MassschuheAddedApis';
 import { getAllLocations } from '@/apis/setting/locationManagementApis';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
+import KvaSheet, { KvaData } from '@/components/OrdersPage/ProccessTable/KvaPdf/KvaSheet';
 
 // API response types
 export interface ShoeOrderStepApi {
@@ -463,6 +466,33 @@ export default function MasschuProgressTable({
     const [priorityModalOrderId, setPriorityModalOrderId] = useState<string | null>(null);
     const [historySidebarOrderId, setHistorySidebarOrderId] = useState<string | null>(null);
     const [updatingPriorityId, setUpdatingPriorityId] = useState<string | null>(null);
+    const [isGeneratingKvaPdf, setIsGeneratingKvaPdf] = useState(false);
+    const [generatingKvaOrderId, setGeneratingKvaOrderId] = useState<string | null>(null);
+    const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
+    const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
+
+    const KVA_PDF_ELEMENT_ID = 'massschuhe-kva-sheet-pdf';
+    const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    const getProxyImageUrl = (externalUrl: string): string => {
+        if (!externalUrl) return externalUrl;
+        if (externalUrl.startsWith('/api/proxy-image?url=')) return externalUrl;
+        const absoluteUrl = externalUrl.startsWith('http')
+            ? externalUrl
+            : `${window.location.origin}${externalUrl.startsWith('/') ? '' : '/'}${externalUrl}`;
+        return `/api/proxy-image?url=${encodeURIComponent(absoluteUrl)}`;
+    };
+
+    const downloadBlob = (blob: Blob, fileName: string) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    };
 
     const allSelected = filteredData.length > 0 && filteredData.every(row => selectedIds.has(row.id));
     const someSelected = filteredData.some(row => selectedIds.has(row.id));
@@ -530,6 +560,43 @@ export default function MasschuProgressTable({
         const statusParam = SHOE_STEPS[row.currentStepIndex]?.replace(/\s+/g, '_') ?? 'Auftragserstellung';
         router.push(`/dashboard/massschuhauftraege/${row.id}?status=${encodeURIComponent(statusParam)}`);
         onRowClick?.(row.currentStepIndex);
+    };
+
+    const handleKvaDownload = async (orderId: string) => {
+        if (isGeneratingKvaPdf) return;
+        setIsGeneratingKvaPdf(true);
+        setGeneratingKvaOrderId(orderId);
+        try {
+            const res = await getKvaData(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'KVA Daten konnten nicht geladen werden');
+                return;
+            }
+
+            const kvaData: KvaData = res.data;
+            setKvaPdfData(kvaData);
+            setKvaPdfLogoProxy(kvaData.logo ? getProxyImageUrl(kvaData.logo) : null);
+
+            await nextFrame();
+            await nextFrame();
+
+            const pdfBlob = await generatePdfFromElement(KVA_PDF_ELEMENT_ID, pdfPresets.document);
+            const safeName = (kvaData?.customerInfo?.firstName || 'KVA')
+                .toString()
+                .trim()
+                .replace(/\s+/g, '_');
+            downloadBlob(pdfBlob, `Kostenvoranschlag_${safeName}.pdf`);
+        } catch (e) {
+            console.error('KVA PDF error:', e);
+            toast.error('Fehler beim Erstellen des KVA PDFs');
+        } finally {
+            setIsGeneratingKvaPdf(false);
+            setGeneratingKvaOrderId(null);
+            setTimeout(() => {
+                setKvaPdfData(null);
+                setKvaPdfLogoProxy(null);
+            }, 1500);
+        }
     };
 
     return (
@@ -756,44 +823,69 @@ export default function MasschuProgressTable({
                                         </div>
                                     </TableCell>
                                     <TableCell className="py-4 px-6">
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    handleOpenPriorityModal(row.id);
-                                                }}
-                                                className={`w-8 h-8 cursor-pointer flex items-center justify-center rounded transition-colors ${
-                                                    isDringend
-                                                        ? 'bg-red-100 text-red-600 hover:bg-red-200'
-                                                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                                                }`}
-                                                title={isDringend ? 'Priorität entfernen' : 'Als Dringend markieren'}
-                                                disabled={updatingPriorityId === row.id}
-                                            >
-                                                {updatingPriorityId === row.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setHistorySidebarOrderId(row.id);
-                                                }}
-                                                className="w-8 h-8 cursor-pointer flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
-                                                title="Historie anzeigen"
-                                            >
-                                                <History className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    const statusParam = SHOE_STEPS[row.currentStepIndex]?.replace(/\s+/g, '_') ?? 'Auftragserstellung';
-                                                    router.push(`/dashboard/massschuhauftraege/${row.id}?status=${encodeURIComponent(statusParam)}`);
-                                                }}
-                                                className="w-8 h-8 cursor-pointer flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
-                                                title="Details anzeigen"
-                                            >
-                                                <ArrowRight className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <button
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="w-8 h-8 cursor-pointer flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-gray-600 hover:text-gray-900"
+                                                    title="Aktionen"
+                                                    aria-label="Aktionen"
+                                                >
+                                                    <MoreVertical className="w-4 h-4" />
+                                                </button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end" className="w-64" onClick={(e) => e.stopPropagation()}>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleOpenPriorityModal(row.id);
+                                                    }}
+                                                    disabled={updatingPriorityId === row.id}
+                                                >
+                                                    {updatingPriorityId === row.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertCircle className="w-4 h-4" />}
+                                                    <span>{isDringend ? 'Priorität entfernen' : 'Als Dringend markieren'}</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setHistorySidebarOrderId(row.id);
+                                                    }}
+                                                >
+                                                    <History className="w-4 h-4" />
+                                                    <span>Historie anzeigen</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const statusParam = SHOE_STEPS[row.currentStepIndex]?.replace(/\s+/g, '_') ?? 'Auftragserstellung';
+                                                        router.push(`/dashboard/massschuhauftraege/${row.id}?status=${encodeURIComponent(statusParam)}`);
+                                                    }}
+                                                >
+                                                    <ArrowRight className="w-4 h-4" />
+                                                    <span>Details anzeigen</span>
+                                                </DropdownMenuItem>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem
+                                                    className="cursor-pointer"
+                                                    disabled={isGeneratingKvaPdf && generatingKvaOrderId === row.id}
+                                                    onSelect={(e) => e.preventDefault()}
+                                                    onClick={async (e) => {
+                                                        e.stopPropagation();
+                                                        await handleKvaDownload(row.id);
+                                                    }}
+                                                >
+                                                    {isGeneratingKvaPdf && generatingKvaOrderId === row.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <FileText className="w-4 h-4" />
+                                                    )}
+                                                    <span>{isGeneratingKvaPdf && generatingKvaOrderId === row.id ? 'KVA wird erstellt…' : 'Kostenvoranschlag (PDF)'}</span>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
                                     </TableCell>
                                 </TableRow>
                             );
@@ -874,6 +966,13 @@ export default function MasschuProgressTable({
                     />
                 );
             })()}
+
+            {/* Hidden render for KVA PDF generation */}
+            <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
+                <div id={KVA_PDF_ELEMENT_ID}>
+                    {kvaPdfData ? <KvaSheet data={kvaPdfData} logoProxyUrl={kvaPdfLogoProxy} /> : null}
+                </div>
+            </div>
         </div>
         </TooltipProvider>
     );

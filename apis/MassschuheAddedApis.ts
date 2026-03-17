@@ -222,6 +222,16 @@ export const getMassschuheOrderNote = async (orderId: string) => {
     }
 }
 
+// v2/shoe-orders/track/kva-data/:orderId
+export const getKvaData = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/shoe-orders/track/kva-data/${orderId}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}
+
 
 // update note v2/shoe-orders/update-order/:id "supply_note": "Hello"
 export const updateMassschuheOrderNote = async (orderId: string, supply_note: string) => {
@@ -243,6 +253,10 @@ export const deleteMassschuheOrderImage = async (id: string) => {
         throw error;
     }
 }
+
+
+
+
 
 const MassschuheAddedApisDefault = {
     getMassschuheOrderById,
