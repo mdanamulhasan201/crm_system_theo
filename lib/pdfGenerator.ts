@@ -96,6 +96,12 @@ export const pdfPresets = {
         quality: 0.9,
         format: 'jpeg' as const
     },
+    // Good trade-off for A4 documents: noticeably sharper than "fast" but still reasonable speed.
+    document: {
+        scale: 1.8,
+        quality: 0.9,
+        format: 'jpeg' as const
+    },
     fast: {
         scale: 1.1,
         quality: 0.75,

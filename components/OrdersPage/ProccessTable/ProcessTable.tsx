@@ -152,8 +152,8 @@ export default function ProcessTable() {
             await nextFrame();
             await nextFrame();
 
-            // Fast generation preset (improves download time)
-            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.fast);
+            // Document preset (better visual quality for A4)
+            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.document);
             const safeName = (sheetData.customerName || kundenname || 'Kunde').toString().trim().replace(/\s+/g, '_');
             downloadBlob(pdfBlob, `Werkstattzettel_${safeName}.pdf`);
         } catch (e) {
