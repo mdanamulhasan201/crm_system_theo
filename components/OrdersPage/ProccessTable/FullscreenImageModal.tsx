@@ -1,12 +1,9 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, RotateCw, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react';
-
-const TOOLBAR_HEIGHT = 56;
-const PADDING = 32;
 
 interface FullscreenImageModalProps {
     isOpen: boolean;
@@ -14,6 +11,8 @@ interface FullscreenImageModalProps {
     imageUrl: string;
     imageAlt: string;
 }
+
+const DEFAULT_ZOOM = 0.75; // 75% default zoom
 
 export default function FullscreenImageModal({
     isOpen,
@@ -24,10 +23,9 @@ export default function FullscreenImageModal({
     const [imageLoaded, setImageLoaded] = useState(false);
     const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
     const [rotation, setRotation] = useState(0); // Rotation in degrees: 0, 90, 180, 270
-    const [zoom, setZoom] = useState(1); // Zoom scale factor (1.0 = 100%)
+    const [zoom, setZoom] = useState(DEFAULT_ZOOM); // Zoom scale factor
     const [pan, setPan] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
-    const [viewportSize, setViewportSize] = useState({ width: 0, height: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
     const imageAreaRef = useRef<HTMLDivElement>(null);
     const isDraggingRef = useRef(false);
@@ -52,19 +50,10 @@ export default function FullscreenImageModal({
             setImageLoaded(false);
             setImageDimensions(null);
             setRotation(0);
-            setZoom(1);
+            setZoom(DEFAULT_ZOOM);
             setPan({ x: 0, y: 0 });
         }
     }, [isOpen, imageUrl]);
-
-    // Track viewport size for device-wise image sizing
-    useEffect(() => {
-        if (!isOpen) return;
-        const updateSize = () => setViewportSize({ width: window.innerWidth, height: window.innerHeight });
-        updateSize();
-        window.addEventListener('resize', updateSize);
-        return () => window.removeEventListener('resize', updateSize);
-    }, [isOpen]);
 
     const handleWheel = (e: React.WheelEvent) => {
         e.preventDefault();
@@ -113,7 +102,7 @@ export default function FullscreenImageModal({
     };
 
     const resetZoom = () => {
-        setZoom(1);
+        setZoom(DEFAULT_ZOOM);
         setPan({ x: 0, y: 0 });
     };
 
@@ -146,21 +135,6 @@ export default function FullscreenImageModal({
         isDraggingRef.current = false;
         setIsDragging(false);
     };
-
-    // Device-wise image size: fit to viewport; wrapper size = rotated bounding box (no extra modal width)
-    const imageDisplay = useMemo(() => {
-        if (!imageDimensions || viewportSize.width <= 0 || viewportSize.height <= 0) return null;
-        const { width: nw, height: nh } = imageDimensions;
-        const availableW = viewportSize.width - PADDING * 2;
-        const availableH = viewportSize.height - TOOLBAR_HEIGHT - PADDING * 2;
-        const scaleFit = Math.min(availableW / nw, availableH / nh, 1);
-        const displayedW = nw * scaleFit;
-        const displayedH = nh * scaleFit;
-        const is90or270 = rotation === 90 || rotation === 270;
-        const wrapperW = is90or270 ? displayedH : displayedW;
-        const wrapperH = is90or270 ? displayedW : displayedH;
-        return { displayedW, displayedH, wrapperW, wrapperH };
-    }, [imageDimensions, viewportSize, rotation]);
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -204,7 +178,7 @@ export default function FullscreenImageModal({
                                 variant="ghost"
                                 size="sm"
                                 className="cursor-pointer text-white hover:bg-black/50 h-8 px-2 text-xs"
-                                title="Zoom zurücksetzen (100%)"
+                                title="Zoom zurücksetzen (75%)"
                             >
                                 1:1
                             </Button>
@@ -241,8 +215,8 @@ export default function FullscreenImageModal({
                             <X className="w-4 h-4" />
                         </Button>
                     </div>
-                
-                    {/* Image: no scrollbars; pan with mouse drag; wheel = zoom */}
+
+                    {/* Image: original size (1:1), pan with mouse drag; wheel = zoom */}
                     <div
                         ref={imageAreaRef}
                         className="w-full h-full flex items-center justify-center overflow-hidden p-4 select-none"
@@ -253,12 +227,10 @@ export default function FullscreenImageModal({
                         onMouseLeave={handleMouseLeave}
                         onWheel={handleWheel}
                     >
-                        {imageLoaded && imageDimensions && imageDisplay ? (
+                        {imageLoaded && imageDimensions ? (
                             <div
                                 className="flex items-center justify-center shrink-0"
                                 style={{
-                                    width: imageDisplay.wrapperW,
-                                    height: imageDisplay.wrapperH,
                                     transform: `translate(${pan.x}px, ${pan.y}px)`,
                                     transition: isDragging ? 'none' : 'transform 0.1s ease-out',
                                 }}
@@ -269,8 +241,8 @@ export default function FullscreenImageModal({
                                     className="block pointer-events-none"
                                     draggable={false}
                                     style={{
-                                        width: imageDisplay.displayedW,
-                                        height: imageDisplay.displayedH,
+                                        width: imageDimensions.width,
+                                        height: imageDimensions.height,
                                         imageRendering: 'auto',
                                         objectFit: 'none',
                                         objectPosition: 'center',
