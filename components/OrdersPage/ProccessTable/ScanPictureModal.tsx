@@ -266,7 +266,7 @@ export default function ScanPictureModal({
         const kundeText = (data?.customerName || customerName || '—').toString();
 
         // Images area
-        const bottomBlockHeight = 90;
+        const bottomBlockHeight = 120;
         const imageOffsetY = 10; // move scans a bit down
         const topImagesY = marginTop + imageOffsetY;
         const imagesAreaHeight = pageHeight - marginBottom - bottomBlockHeight - topImagesY;
@@ -286,14 +286,17 @@ export default function ScanPictureModal({
             rightRaw ? normalizeImageDataUrlToPng(rightRaw) : Promise.resolve(null),
         ]);
 
-        const placeImageOneToOne = async (dataUrl: string, x: number, y: number, w: number, h: number) => {
+        const placeImageContainNoCrop = async (dataUrl: string, x: number, y: number, w: number, h: number) => {
             const dim = await getImageDimensions(dataUrl);
             if (!dim) return;
-            // 1:1 placement: keep original pixel size (converted to mm)
-            const drawW = dim.w * pxToMm;
-            const drawH = dim.h * pxToMm;
-            // Center horizontally, but keep top aligned (no vertical centering)
+            // Keep original ratio, but never crop: only scale down to fit the slot.
+            const naturalW = dim.w * pxToMm;
+            const naturalH = dim.h * pxToMm;
+            const scale = Math.min(w / naturalW, h / naturalH, 1);
+            const drawW = naturalW * scale;
+            const drawH = naturalH * scale;
             const cx = x + (w - drawW) / 2;
+            // Top-align inside the slot so the footer never feels "merged"
             const cy = y;
             pdf.addImage(dataUrl, 'PNG', cx, cy, drawW, drawH, undefined, 'FAST');
         };
@@ -301,8 +304,8 @@ export default function ScanPictureModal({
         const frameY = topImagesY;
         const frameH = maxHeight;
 
-        if (leftDataUrl) await placeImageOneToOne(leftDataUrl, marginX, frameY, eachWidth, frameH);
-        if (rightDataUrl) await placeImageOneToOne(rightDataUrl, marginX + eachWidth + gap, frameY, eachWidth, frameH);
+        if (leftDataUrl) await placeImageContainNoCrop(leftDataUrl, marginX, frameY, eachWidth, frameH);
+        if (rightDataUrl) await placeImageContainNoCrop(rightDataUrl, marginX + eachWidth + gap, frameY, eachWidth, frameH);
 
         // Header overlay must be drawn AFTER images so it stays on top
         textWithHalo(`Erstellt am: ${createdAtText}`, marginX, headerY);
@@ -321,8 +324,8 @@ export default function ScanPictureModal({
         pdf.setFontSize(10);
 
         const leftColX = marginX;
-        const rightColX = marginX + (availableWidth / 2) + 4;
-        const startY = bottomY + 20;
+        const rightColX = marginX + (availableWidth / 2) - 6;
+        const startY = bottomY + 42;
         const lineGap = 5;
         const colWidth = (availableWidth / 2) - 8;
 
