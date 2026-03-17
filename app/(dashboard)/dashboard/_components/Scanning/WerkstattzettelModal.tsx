@@ -430,6 +430,8 @@ export default function WerkstattzettelModal({
       const combinedFormData = {
         ...formData,
         ...werkstattzettelPayload,
+        // Controls whether invoice PDF download should be enabled later
+        printWerkstattzettel: shouldPrintWerkstattzettel,
         quantity: (() => {
           if (!form.quantity) return formData?.menge || formData?.quantity || undefined
           const match = form.quantity.match(/^(\d+)\s*paar/i)

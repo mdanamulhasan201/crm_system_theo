@@ -15,9 +15,10 @@ interface InvoiceGeneratePdfModalProps {
     isOpen: boolean;
     onClose: () => void;
     orderId?: string;
+    downloadEnabled?: boolean;
 }
 
-export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId }: InvoiceGeneratePdfModalProps) {
+export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId, downloadEnabled = true }: InvoiceGeneratePdfModalProps) {
     const { orderData, fetchOrderData } = useGeneratePdf();
     const [isLoading, setIsLoading] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
@@ -127,12 +128,14 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId }: In
                         {/* Action Buttons */}
                         <div className="flex gap-4 justify-center ">
                             {/* Download PDF Button - Uses InvoicePage */}
-                            <InvoicePage
-                                data={orderData}
-                                isGenerating={isGenerating}
-                                onGenerateStart={() => setIsGenerating(true)}
-                                onGenerateComplete={() => setIsGenerating(false)}
-                            />
+                            <div className={downloadEnabled ? '' : 'pointer-events-none opacity-50'}>
+                                <InvoicePage
+                                    data={orderData}
+                                    isGenerating={isGenerating}
+                                    onGenerateStart={() => setIsGenerating(true)}
+                                    onGenerateComplete={() => setIsGenerating(false)}
+                                />
+                            </div>
 
                             {/* Send to Customer Button */}
                             {/* <button

@@ -305,6 +305,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     // Modal states
     const [showPdfModal, setShowPdfModal] = useState(false);
     const [currentOrderId, setCurrentOrderId] = useState<string | undefined>(undefined);
+    const [invoiceDownloadEnabled, setInvoiceDownloadEnabled] = useState(true);
     const [showConfirmModal, setShowConfirmModal] = useState(false);
     const [autoSendToCustomer, setAutoSendToCustomer] = useState(false);
     const [realOrderData, setRealOrderData] = useState<any>(null);
@@ -1272,6 +1273,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 formData={formDataForOrder}
                 onShowOrderConfirmation={(formData) => {
                     setFormDataForOrder(formData || formDataForOrder);
+                    setInvoiceDownloadEnabled((formData as any)?.printWerkstattzettel !== false);
                     setShowConfirmModal(true);
                 }}
             />
@@ -1326,6 +1328,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 isOpen={showPdfModal}
                 onClose={handleClosePdfModal}
                 orderId={currentOrderId}
+                downloadEnabled={invoiceDownloadEnabled}
             />
 
             {/* Hidden InvoicePage component for PDF generation - Always render to ensure element exists */}

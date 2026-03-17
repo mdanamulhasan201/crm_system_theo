@@ -8,9 +8,10 @@ interface InvoicePageProps {
     isGenerating?: boolean;
     onGenerateStart?: () => void;
     onGenerateComplete?: () => void;
+    downloadEnabled?: boolean;
 }
 
-export default function InvoicePage({ data, isGenerating = false, onGenerateStart, onGenerateComplete }: InvoicePageProps) {
+export default function InvoicePage({ data, isGenerating = false, onGenerateStart, onGenerateComplete, downloadEnabled = true }: InvoicePageProps) {
     const formatDate = (dateString: string) => {
         return new Date(dateString).toLocaleDateString('de-DE');
     };
@@ -60,7 +61,7 @@ export default function InvoicePage({ data, isGenerating = false, onGenerateStar
         <div>
             <button
                 onClick={generatePdf}
-                disabled={isGenerating}
+                disabled={isGenerating || !downloadEnabled}
                 className="bg-[#62A17C] transform duration-300 cursor-pointer hover:bg-[#62A17C] text-white py-2 px-2 rounded disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 {isGenerating ? (
