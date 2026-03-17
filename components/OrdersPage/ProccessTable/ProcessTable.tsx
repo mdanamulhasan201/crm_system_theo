@@ -19,7 +19,9 @@ import { AbrechnungsuebersichtModal } from "./Abrechnungsuebersicht";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getKrankenKasseStatus, getPaymentStatus, updatePaidStatus } from '@/apis/productsOrder';
+import { getKrankenKasseStatus, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
+import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
+import WerkstattzettelSheet, { WerkstattzettelSheetData } from './WerkstattzettelPdf/WerkstattzettelSheet';
 
 import toast from 'react-hot-toast';
 
@@ -88,6 +90,10 @@ export default function ProcessTable() {
     const [isUpdatingKrankenkasseStatus, setIsUpdatingKrankenkasseStatus] = useState(false);
     const [isUpdatingPaymentStatus, setIsUpdatingPaymentStatus] = useState(false);
     const [isUpdatingPaidStatus, setIsUpdatingPaidStatus] = useState(false);
+    const [isGeneratingWerkPdf, setIsGeneratingWerkPdf] = useState(false);
+    const [generatingWerkPdfOrderId, setGeneratingWerkPdfOrderId] = useState<string | null>(null);
+    const [werkPdfData, setWerkPdfData] = useState<WerkstattzettelSheetData | null>(null);
+    const [werkPdfLogoProxy, setWerkPdfLogoProxy] = useState<string | null>(null);
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
     const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
     const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
@@ -102,6 +108,66 @@ export default function ProcessTable() {
 
     const getTableScrollContainer = () => {
         return tableWrapperRef.current?.querySelector('[data-slot="table-container"]') as HTMLDivElement | null;
+    };
+
+    const getProxyImageUrl = (externalUrl: string): string => {
+        if (!externalUrl) return externalUrl;
+        if (externalUrl.startsWith('/api/proxy-image?url=')) return externalUrl;
+        const absoluteUrl = externalUrl.startsWith('http')
+            ? externalUrl
+            : `${window.location.origin}${externalUrl.startsWith('/') ? '' : '/'}${externalUrl}`;
+        return `/api/proxy-image?url=${encodeURIComponent(absoluteUrl)}`;
+    };
+
+    const downloadBlob = (blob: Blob, fileName: string) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    };
+
+    const WERK_PDF_ELEMENT_ID = 'werkstattzettel-sheet-pdf';
+    const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    const handleWerkstattzettelDownload = async (orderId: string, kundenname?: string | null) => {
+        if (isGeneratingWerkPdf) return;
+        setIsGeneratingWerkPdf(true);
+        setGeneratingWerkPdfOrderId(orderId);
+        try {
+            const res = await getWerkstattzettelSheetPdfData(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'Werkstattzettel Daten konnten nicht geladen werden');
+                return;
+            }
+
+            const sheetData: WerkstattzettelSheetData = res.data;
+            setWerkPdfData(sheetData);
+            setWerkPdfLogoProxy(sheetData.logo ? getProxyImageUrl(sheetData.logo) : null);
+
+            // Let React commit the hidden sheet to the DOM before capturing
+            await nextFrame();
+            await nextFrame();
+
+            // Faster generation preset (reduces timeouts / slow devices)
+            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.smallSize);
+            const safeName = (sheetData.customerName || kundenname || 'Kunde').toString().trim().replace(/\s+/g, '_');
+            downloadBlob(pdfBlob, `Werkstattzettel_${safeName}.pdf`);
+        } catch (e) {
+            console.error('Werkstattzettel PDF error:', e);
+            toast.error('Fehler beim Erstellen des Werkstattzettel PDFs');
+        } finally {
+            setIsGeneratingWerkPdf(false);
+            setGeneratingWerkPdfOrderId(null);
+            // Keep data around briefly so element exists until download finishes
+            setTimeout(() => {
+                setWerkPdfData(null);
+                setWerkPdfLogoProxy(null);
+            }, 1500);
+        }
     };
 
     // Direct generate and send PDF when status is clicked
@@ -489,6 +555,8 @@ export default function ProcessTable() {
                                             onCheckboxChange={handleSelectOrder}
                                             onDelete={(id) => handleDeleteOrder(id, (id: string | null) => setSelectedOrderId(id))}
                                             onInvoiceDownload={handleInvoiceDownload}
+                                            onWerkstattzettelDownload={handleWerkstattzettelDownload}
+                                            werkstattzettelLoading={isGeneratingWerkPdf && generatingWerkPdfOrderId === order.id}
                                             onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
                                                 setBarcodeStickerOrderId(orderId);
                                                 setBarcodeStickerOrderNumber(orderNumber);
@@ -724,6 +792,13 @@ export default function ProcessTable() {
                     orderNumber={billingModalOrderNumber}
                     onInvoiceDownload={handleInvoiceDownload}
                 />
+            </div>
+
+            {/* Hidden A4 sheet render for PDF generation */}
+            <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
+                <div id={WERK_PDF_ELEMENT_ID}>
+                    {werkPdfData ? <WerkstattzettelSheet data={werkPdfData} logoProxyUrl={werkPdfLogoProxy} /> : null}
+                </div>
             </div>
         </>
     );

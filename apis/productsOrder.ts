@@ -481,3 +481,16 @@ export const getPriseDetails = async (orderId: string) => {
         throw error;
     }
 }
+
+
+
+// /get pdf order apis customer-orders/track/werkstattzettel-sheet-pdf-data/{{order Id}}
+
+export const getWerkstattzettelSheetPdfData = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/track/werkstattzettel-sheet-pdf-data/${orderId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

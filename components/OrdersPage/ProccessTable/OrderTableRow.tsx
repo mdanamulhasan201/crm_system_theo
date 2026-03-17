@@ -7,6 +7,7 @@ import {
     ClipboardEdit,
     FileText,
     History,
+    Loader2,
     MoreVertical,
     QrCode,
     Scan,
@@ -86,6 +87,8 @@ interface OrderTableRowProps {
     onCheckboxChange: (orderId: string, e: React.MouseEvent) => void;
     onDelete: (orderId: string) => void;
     onInvoiceDownload: (orderId: string) => void;
+    onWerkstattzettelDownload?: (orderId: string, customerName?: string | null) => Promise<void>;
+    werkstattzettelLoading?: boolean;
     onPriorityClick: (order: OrderData) => void;
     onHistoryClick?: (orderId: string, orderNumber: string) => void;
     onScanClick?: (orderId: string, orderNumber: string, customerName: string) => void;
@@ -105,6 +108,8 @@ export default function OrderTableRow({
     onCheckboxChange,
     onDelete,
     onInvoiceDownload,
+    onWerkstattzettelDownload,
+    werkstattzettelLoading = false,
     onPriorityClick,
     onHistoryClick,
     onScanClick,
@@ -704,8 +709,27 @@ export default function OrderTableRow({
                             }}
                         >
                             <ClipboardEdit className={`h-4 w-4 ${hasInvoice ? "text-blue-600" : "text-gray-400"}`} />
-                            <span>Dokumente</span>
+                            <span>Dokumente (Rechnung)</span>
                         </DropdownMenuItem>
+                        {onWerkstattzettelDownload && (
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                disabled={werkstattzettelLoading}
+                                // Radix DropdownMenu closes on select by default; prevent so user sees loading
+                                onSelect={(e) => e.preventDefault()}
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await onWerkstattzettelDownload(order.id, (order as any)?.kundenname ?? null);
+                                }}
+                            >
+                                {werkstattzettelLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                                ) : (
+                                    <ClipboardEdit className="h-4 w-4 text-gray-700" />
+                                )}
+                                <span>{werkstattzettelLoading ? "Werkstattzettel wird erstellt..." : "Werkstattzettel (PDF)"}</span>
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                             className="cursor-pointer"
                             onClick={(e) => {
