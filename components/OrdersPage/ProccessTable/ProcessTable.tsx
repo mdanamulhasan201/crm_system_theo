@@ -19,9 +19,10 @@ import { AbrechnungsuebersichtModal } from "./Abrechnungsuebersicht";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getKrankenKasseStatus, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
+import { getKrankenKasseStatus, getKvaData, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import WerkstattzettelSheet, { WerkstattzettelSheetData } from './WerkstattzettelPdf/WerkstattzettelSheet';
+import KvaSheet, { KvaData } from './KvaPdf/KvaSheet';
 
 import toast from 'react-hot-toast';
 
@@ -94,6 +95,10 @@ export default function ProcessTable() {
     const [generatingWerkPdfOrderId, setGeneratingWerkPdfOrderId] = useState<string | null>(null);
     const [werkPdfData, setWerkPdfData] = useState<WerkstattzettelSheetData | null>(null);
     const [werkPdfLogoProxy, setWerkPdfLogoProxy] = useState<string | null>(null);
+    const [isGeneratingKvaPdf, setIsGeneratingKvaPdf] = useState(false);
+    const [generatingKvaOrderId, setGeneratingKvaOrderId] = useState<string | null>(null);
+    const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
+    const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
     const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
     const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
@@ -131,6 +136,7 @@ export default function ProcessTable() {
     };
 
     const WERK_PDF_ELEMENT_ID = 'werkstattzettel-sheet-pdf';
+    const KVA_PDF_ELEMENT_ID = 'kva-sheet-pdf';
     const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     const handleWerkstattzettelDownload = async (orderId: string, kundenname?: string | null) => {
@@ -166,6 +172,43 @@ export default function ProcessTable() {
             setTimeout(() => {
                 setWerkPdfData(null);
                 setWerkPdfLogoProxy(null);
+            }, 1500);
+        }
+    };
+
+    const handleKvaDownload = async (orderId: string) => {
+        if (isGeneratingKvaPdf) return;
+        setIsGeneratingKvaPdf(true);
+        setGeneratingKvaOrderId(orderId);
+        try {
+            const res = await getKvaData(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'KVA Daten konnten nicht geladen werden');
+                return;
+            }
+
+            const kvaData: KvaData = res.data;
+            setKvaPdfData(kvaData);
+            setKvaPdfLogoProxy(kvaData.logo ? getProxyImageUrl(kvaData.logo) : null);
+
+            await nextFrame();
+            await nextFrame();
+
+            const pdfBlob = await generatePdfFromElement(KVA_PDF_ELEMENT_ID, pdfPresets.document);
+            const safeName = (kvaData?.customerInfo?.firstName || 'KVA')
+                .toString()
+                .trim()
+                .replace(/\s+/g, '_');
+            downloadBlob(pdfBlob, `Kostenvoranschlag_${safeName}.pdf`);
+        } catch (e) {
+            console.error('KVA PDF error:', e);
+            toast.error('Fehler beim Erstellen des KVA PDFs');
+        } finally {
+            setIsGeneratingKvaPdf(false);
+            setGeneratingKvaOrderId(null);
+            setTimeout(() => {
+                setKvaPdfData(null);
+                setKvaPdfLogoProxy(null);
             }, 1500);
         }
     };
@@ -557,6 +600,8 @@ export default function ProcessTable() {
                                             onInvoiceDownload={handleInvoiceDownload}
                                             onWerkstattzettelDownload={handleWerkstattzettelDownload}
                                             werkstattzettelLoading={isGeneratingWerkPdf && generatingWerkPdfOrderId === order.id}
+                                            onKvaDownload={handleKvaDownload}
+                                            kvaLoading={isGeneratingKvaPdf && generatingKvaOrderId === order.id}
                                             onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
                                                 setBarcodeStickerOrderId(orderId);
                                                 setBarcodeStickerOrderNumber(orderNumber);
@@ -798,6 +843,12 @@ export default function ProcessTable() {
             <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
                 <div id={WERK_PDF_ELEMENT_ID}>
                     {werkPdfData ? <WerkstattzettelSheet data={werkPdfData} logoProxyUrl={werkPdfLogoProxy} /> : null}
+                </div>
+            </div>
+
+            <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
+                <div id={KVA_PDF_ELEMENT_ID}>
+                    {kvaPdfData ? <KvaSheet data={kvaPdfData} logoProxyUrl={kvaPdfLogoProxy} /> : null}
                 </div>
             </div>
         </>

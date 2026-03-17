@@ -494,3 +494,14 @@ export const getWerkstattzettelSheetPdfData = async (orderId: string) => {
         throw error;
     }
 }
+
+
+// }customer-orders/track/kva-data/{{order id}}
+export const getKvaData = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/track/kva-data/${orderId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

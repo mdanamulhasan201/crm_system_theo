@@ -89,6 +89,8 @@ interface OrderTableRowProps {
     onInvoiceDownload: (orderId: string) => void;
     onWerkstattzettelDownload?: (orderId: string, customerName?: string | null) => Promise<void>;
     werkstattzettelLoading?: boolean;
+    onKvaDownload?: (orderId: string) => Promise<void>;
+    kvaLoading?: boolean;
     onPriorityClick: (order: OrderData) => void;
     onHistoryClick?: (orderId: string, orderNumber: string) => void;
     onScanClick?: (orderId: string, orderNumber: string, customerName: string) => void;
@@ -110,6 +112,8 @@ export default function OrderTableRow({
     onInvoiceDownload,
     onWerkstattzettelDownload,
     werkstattzettelLoading = false,
+    onKvaDownload,
+    kvaLoading = false,
     onPriorityClick,
     onHistoryClick,
     onScanClick,
@@ -727,9 +731,26 @@ export default function OrderTableRow({
                                 ) : (
                                     <ClipboardEdit className="h-4 w-4 text-gray-700" />
                                 )}
-                                <span>{werkstattzettelLoading ? "Werkstattzettel wird erstellt..." : "Werkstattzettel (PDF)"}</span>
+                                <span>{werkstattzettelLoading ? "Werkstattzettel..." : "Werkstattzettel (PDF)"}</span>
                             </DropdownMenuItem>
                         )}
+                        <DropdownMenuItem
+                            className="cursor-pointer"
+                            disabled={!onKvaDownload || kvaLoading}
+                            onSelect={(e) => e.preventDefault()}
+                            onClick={async (e) => {
+                                e.stopPropagation();
+                                if (!onKvaDownload) return;
+                                await onKvaDownload(order.id);
+                            }}
+                        >
+                            {kvaLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                            ) : (
+                                <FileText className="h-4 w-4 text-gray-700" />
+                            )}
+                            <span>{kvaLoading ? "Verordnungsvorschlag..." : "Verordnungsvorschlag"}</span>
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                             className="cursor-pointer"
                             onClick={(e) => {
