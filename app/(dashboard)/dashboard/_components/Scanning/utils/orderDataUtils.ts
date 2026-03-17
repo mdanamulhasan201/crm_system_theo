@@ -88,6 +88,7 @@ export interface CollectFormDataParams {
     versorgung_note: string;
     schuhmodell_wählen: string;
     kostenvoranschlag: boolean | null;
+    lieferschein?: boolean | null;
     selectedEmployee: string;
     selectedEmployeeId: string;
     versorgungData: any[];
@@ -113,6 +114,7 @@ export function collectFormData({
     versorgung_note,
     schuhmodell_wählen,
     kostenvoranschlag,
+    lieferschein,
     selectedEmployee,
     selectedEmployeeId,
     versorgungData,
@@ -140,7 +142,11 @@ export function collectFormData({
         versorgungsname: versorgungsname || '',
         versorgung_note: versorgung_note || '',
         schuhmodell_wählen: schuhmodell_wählen || '',
+        // Keep legacy naming + also send backend names (kva/halbprobe)
         kostenvoranschlag: kostenvoranschlag === true,
+        kva: kostenvoranschlag === true,
+        // Lieferschein must be sent as `halbprobe` (backend field name)
+        halbprobe: lieferschein === true,
         employeeName: selectedEmployee || '',
         employeeId: selectedEmployeeId || '',
         selectedVersorgungData: selectedVersorgungItem || null,

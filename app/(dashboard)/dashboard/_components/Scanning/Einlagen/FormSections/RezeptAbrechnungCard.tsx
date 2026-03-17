@@ -10,7 +10,7 @@ interface RezeptAbrechnungCardProps {
     ausführlicheDiagnoseError?: string;
     versorgung_laut_arzt: string;
     onVersorgungLautArztChange: (value: string) => void;
-    
+
     // Positionsnummer
     billingType: 'Krankenkassa' | 'Privat';
     selectedPositionsnummer: string[];
@@ -23,7 +23,7 @@ interface RezeptAbrechnungCardProps {
     itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
     onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
     vatCountry?: string;
-    
+
     // Diagnose
     selectedDiagnosis: string;
     diagnosisOptions: readonly string[];
@@ -32,7 +32,7 @@ interface RezeptAbrechnungCardProps {
     onDiagnosisSelect: (value: string) => void;
     onDiagnosisClear?: () => void;
     onCloseDiagnosisDropdown?: () => void;
-    
+
     // Employee
     selectedEmployee: string;
     employeeSearchText: string;
@@ -43,7 +43,7 @@ interface RezeptAbrechnungCardProps {
     onEmployeeDropdownChange: (open: boolean) => void;
     onEmployeeSelect: (employee: { employeeName: string; id: string }) => void;
     onEmployeeClear?: () => void;
-    
+
     // KVA & Lieferschein
     kostenvoranschlag: boolean | null;
     onKostenvoranschlagChange: (value: boolean) => void;
@@ -124,7 +124,7 @@ export default function RezeptAbrechnungCard({
     return (
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6 mb-6">
             <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-6">REZEPT & ABRECHNUNG</h2>
-            
+
             {/* Input Fields Section */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div>
@@ -306,22 +306,20 @@ export default function RezeptAbrechnungCard({
                                 <button
                                     type="button"
                                     onClick={() => onKostenvoranschlagChange(true)}
-                                    className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                                        kostenvoranschlag === true
+                                    className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${kostenvoranschlag === true
                                             ? 'bg-[#61A178] text-white'
                                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     Ja
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => onKostenvoranschlagChange(false)}
-                                    className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                                        kostenvoranschlag === false
+                                    className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${kostenvoranschlag === false
                                             ? 'bg-[#61A178] text-white'
                                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     Nein
                                 </button>
@@ -331,28 +329,26 @@ export default function RezeptAbrechnungCard({
                         {/* Lieferschein button group */}
                         <div className="flex-1">
                             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
-                                Lieferschein
+                                Verordnungsvorschlag
                             </label>
                             <div className="flex gap-1.5">
                                 <button
                                     type="button"
                                     onClick={() => onLieferscheinChange(true)}
-                                    className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                                        lieferschein === true
+                                    className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${lieferschein === true
                                             ? 'bg-[#61A178] text-white'
                                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     Ja
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => onLieferscheinChange(false)}
-                                    className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                                        lieferschein === false
+                                    className={`flex-1 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${lieferschein === false
                                             ? 'bg-[#61A178] text-white'
                                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
+                                        }`}
                                 >
                                     Nein
                                 </button>

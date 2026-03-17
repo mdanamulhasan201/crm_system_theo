@@ -64,6 +64,9 @@ interface PrefillOrderData {
     versorgung_note?: string | null;
     schuhmodell_wählen?: string | null;
     kostenvoranschlag?: boolean | null;
+    // Lieferschein (backend may return as `halbprobe`)
+    lieferschein?: boolean | null;
+    halbprobe?: boolean | null;
     // Fields that can come directly from previous order APIs
     mitarbeiter?: string | null;
     employeeId?: string | null;
@@ -380,6 +383,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         // Billing & positionsnummer
         setBillingType('Krankenkassa');
         setSelectedPositionsnummer([]);
+        setLieferschein(null);
         setItemSides({});
 
         // Insole standards back to defaults
@@ -551,6 +555,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         }
         if (typeof prefillOrderData.kostenvoranschlag !== 'undefined') {
             setKostenvoranschlag(parseBooleanValue(prefillOrderData.kostenvoranschlag));
+        }
+        if (typeof (prefillOrderData as any).halbprobe !== 'undefined') {
+            setLieferschein(parseBooleanValue((prefillOrderData as any).halbprobe));
+        } else if (typeof prefillOrderData.lieferschein !== 'undefined') {
+            setLieferschein(parseBooleanValue(prefillOrderData.lieferschein));
         }
         // Handle diagnosis prefill - support both ID and name
         const diagnosisStatus = prefillOrderData.product?.diagnosis_status;
@@ -787,6 +796,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     quantity: formDataForOrder.quantity || formDataForOrder.menge || 1,
                     versorgung_note: formDataForOrder.versorgung_note || '',
                     schuhmodell_wählen: formDataForOrder.schuhmodell_wählen || '',
+                    // Payload names requested
+                    kva: formDataForOrder.kva ?? (formDataForOrder.kostenvoranschlag === true),
+                    halbprobe: formDataForOrder.halbprobe ?? (formDataForOrder.lieferschein === true),
+                    // Keep legacy field for compatibility
                     kostenvoranschlag: formDataForOrder.kostenvoranschlag || false,
                     ausführliche_diagnose: formDataForOrder.ausführliche_diagnose || '',
                     versorgung_laut_arzt: formDataForOrder.versorgung_laut_arzt || '',
@@ -949,6 +962,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             versorgung_note,
             schuhmodell_wählen,
             kostenvoranschlag,
+            lieferschein,
             selectedEmployee,
             selectedEmployeeId,
             versorgungData,
