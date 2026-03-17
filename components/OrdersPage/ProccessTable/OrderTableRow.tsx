@@ -698,7 +698,7 @@ export default function OrderTableRow({
                                 </DropdownMenuItem>
                             )}
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem
+                            {/* <DropdownMenuItem
                             className={`cursor-pointer ${!hasInvoice ? "opacity-50 cursor-not-allowed" : ""}`}
                             disabled={!hasInvoice}
                             onClick={(e) => {
@@ -710,7 +710,7 @@ export default function OrderTableRow({
                         >
                             <ClipboardEdit className={`h-4 w-4 ${hasInvoice ? "text-blue-600" : "text-gray-400"}`} />
                             <span>Dokumente (Rechnung)</span>
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         {onWerkstattzettelDownload && (
                             <DropdownMenuItem
                                 className="cursor-pointer"

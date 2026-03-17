@@ -96,6 +96,11 @@ export const pdfPresets = {
         quality: 0.9,
         format: 'jpeg' as const
     },
+    fast: {
+        scale: 1.1,
+        quality: 0.75,
+        format: 'jpeg' as const
+    },
     smallSize: {
         scale: 1.5,
         quality: 0.8,

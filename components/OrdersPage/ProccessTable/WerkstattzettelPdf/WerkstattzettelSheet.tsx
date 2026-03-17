@@ -124,7 +124,7 @@ export default function WerkstattzettelSheet({
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div
           style={{
-            width: 160,
+            width: 190,
             height: 60,
             display: 'flex',
             alignItems: 'center',
@@ -190,7 +190,7 @@ export default function WerkstattzettelSheet({
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Field label="Einlage Typ" value={data.einlagentyp} />
             <Field
-              label="Zusatzpositionen (z.B. Reparatur, Lederdecke)"
+              label="Überzug"
               value={
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div style={{ fontSize: 11 }}>{zusatz.name || zusatz.versorgung || ''}</div>

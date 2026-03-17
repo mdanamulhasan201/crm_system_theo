@@ -152,8 +152,8 @@ export default function ProcessTable() {
             await nextFrame();
             await nextFrame();
 
-            // Faster generation preset (reduces timeouts / slow devices)
-            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.smallSize);
+            // Fast generation preset (improves download time)
+            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.fast);
             const safeName = (sheetData.customerName || kundenname || 'Kunde').toString().trim().replace(/\s+/g, '_');
             downloadBlob(pdfBlob, `Werkstattzettel_${safeName}.pdf`);
         } catch (e) {
