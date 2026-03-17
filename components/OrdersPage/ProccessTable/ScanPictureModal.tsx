@@ -286,26 +286,22 @@ export default function ScanPictureModal({
             rightRaw ? normalizeImageDataUrlToPng(rightRaw) : Promise.resolve(null),
         ]);
 
-        const placeImageContainNoCrop = async (dataUrl: string, x: number, y: number, w: number, h: number) => {
+        // 1:1 rendering: keep original pixel size (via pxToMm), no forced width/height scaling.
+        // We still "place" inside a slot to decide x-position only (no resizing).
+        const placeImageOneToOne = async (dataUrl: string, x: number, y: number, slotW: number) => {
             const dim = await getImageDimensions(dataUrl);
             if (!dim) return;
-            // Keep original ratio, but never crop: only scale down to fit the slot.
             const naturalW = dim.w * pxToMm;
             const naturalH = dim.h * pxToMm;
-            const scale = Math.min(w / naturalW, h / naturalH, 1);
-            const drawW = naturalW * scale;
-            const drawH = naturalH * scale;
-            const cx = x + (w - drawW) / 2;
-            // Top-align inside the slot so the footer never feels "merged"
-            const cy = y;
-            pdf.addImage(dataUrl, 'PNG', cx, cy, drawW, drawH, undefined, 'FAST');
+            // Center within the slot when possible; never move left of the slot.
+            const cx = Math.max(x, x + (slotW - naturalW) / 2);
+            pdf.addImage(dataUrl, 'PNG', cx, y, naturalW, naturalH, undefined, 'FAST');
         };
 
         const frameY = topImagesY;
-        const frameH = maxHeight;
 
-        if (leftDataUrl) await placeImageContainNoCrop(leftDataUrl, marginX, frameY, eachWidth, frameH);
-        if (rightDataUrl) await placeImageContainNoCrop(rightDataUrl, marginX + eachWidth + gap, frameY, eachWidth, frameH);
+        if (leftDataUrl) await placeImageOneToOne(leftDataUrl, marginX, frameY, eachWidth);
+        if (rightDataUrl) await placeImageOneToOne(rightDataUrl, marginX + eachWidth + gap, frameY, eachWidth);
 
         // Header overlay must be drawn AFTER images so it stays on top
         textWithHalo(`Erstellt am: ${createdAtText}`, marginX, headerY);
