@@ -32,6 +32,7 @@ interface PositionsnummerDropdownProps {
     itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
     onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
     vatCountry?: string;
+    disabled?: boolean;
 }
 
 export default function PositionsnummerDropdown({
@@ -47,6 +48,7 @@ export default function PositionsnummerDropdown({
     itemSides: propItemSides,
     onItemSideChange,
     vatCountry,
+    disabled = false,
 }: PositionsnummerDropdownProps) {
     const [searchQuery, setSearchQuery] = useState('');
     const searchInputRef = useRef<HTMLInputElement>(null);
@@ -182,10 +184,13 @@ export default function PositionsnummerDropdown({
                 </div>
                 <div className="relative">
                     <div
-                        className={`px-3 py-2.5 border rounded-md cursor-pointer flex justify-between items-center gap-2 ${
+                        className={`px-3 py-2.5 border rounded-md flex justify-between items-center gap-2 ${
                             error ? 'border-red-500' : 'border-gray-300'
-                        }`}
-                        onClick={onToggle}
+                        } ${disabled ? 'opacity-50 cursor-not-allowed pointer-events-none bg-gray-50' : 'cursor-pointer'}`}
+                        onClick={() => {
+                            if (disabled) return;
+                            onToggle();
+                        }}
                     >
                         <div className={`text-sm flex-1 overflow-hidden min-w-0 ${value.length > 0 ? '' : 'text-gray-400'}`}>
                             {selectedOptions.length > 0 ? (
@@ -251,7 +256,7 @@ export default function PositionsnummerDropdown({
             </div>
 
             {/* Modal */}
-            {isOpen && (
+            {isOpen && !disabled && (
                 <div 
                     className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[1000] p-4"
                     onClick={(e) => {

@@ -413,6 +413,15 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setSelectedPositionsnummer([]);
         setItemSides({});
     }, [billingType]);
+
+    // When "Verordnungsvorschlag" (lieferschein) is YES:
+    // - disable Positionsnummer selection by clearing current selection + closing dropdown
+    useEffect(() => {
+        if (lieferschein !== true) return;
+        setSelectedPositionsnummer([]);
+        setItemSides({});
+        setShowPositionsnummerDropdown(false);
+    }, [lieferschein]);
     
     // Error message for positionsnummer when not available (only for countries other than AT and IT)
     const getPositionsnummerError = () => {
@@ -946,7 +955,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         }
 
         // For Krankenkassa-Abrechnung: at least one Positionsnummer is required
-        if (billingType === 'Krankenkassa' && (!selectedPositionsnummer || selectedPositionsnummer.length === 0)) {
+        // EXCEPT when "Verordnungsvorschlag" is enabled (Positionsnummer is disabled then).
+        if (billingType === 'Krankenkassa' && lieferschein !== true && (!selectedPositionsnummer || selectedPositionsnummer.length === 0)) {
             toast.error('Bitte wählen Sie mindestens eine Positionsnummer für Krankenkasse.');
             return;
         }
@@ -1114,6 +1124,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     setSelectedPositionsnummer([]);
                     setItemSides({});
                 }}
+                positionsnummerDisabled={lieferschein === true}
                 itemSides={itemSides}
                 onItemSideChange={(posNum, side) => {
                     setItemSides(prev => ({

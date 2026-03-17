@@ -20,6 +20,7 @@ interface RezeptAbrechnungCardProps {
     onPositionsnummerToggle: () => void;
     onPositionsnummerSelect: (values: string[]) => void;
     onPositionsnummerClear?: () => void;
+    positionsnummerDisabled?: boolean;
     itemSides?: Record<string, 'L' | 'R' | 'BDS'>;
     onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
     vatCountry?: string;
@@ -65,6 +66,7 @@ export default function RezeptAbrechnungCard({
     onPositionsnummerToggle,
     onPositionsnummerSelect,
     onPositionsnummerClear,
+    positionsnummerDisabled,
     itemSides,
     onItemSideChange,
     vatCountry,
@@ -198,7 +200,7 @@ export default function RezeptAbrechnungCard({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
                 {/* Positionsnummer - Only show when Krankenkassa is selected */}
                 {billingType === 'Krankenkassa' && (
-                    <div className="lg:col-span-3">
+                    <div className={`lg:col-span-3 ${positionsnummerDisabled ? 'pointer-events-none opacity-50' : ''}`}>
                         <PositionsnummerDropdown
                             label="Positionsnummer"
                             value={selectedPositionsnummer}
@@ -206,7 +208,10 @@ export default function RezeptAbrechnungCard({
                             options={positionsnummerOptions}
                             error={positionsnummerError}
                             isOpen={showPositionsnummerDropdown}
-                            onToggle={onPositionsnummerToggle}
+                            onToggle={() => {
+                                if (positionsnummerDisabled) return;
+                                onPositionsnummerToggle();
+                            }}
                             onSelect={onPositionsnummerSelect}
                             onClear={onPositionsnummerClear}
                             itemSides={itemSides}
