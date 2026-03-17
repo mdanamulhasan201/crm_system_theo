@@ -323,17 +323,21 @@ export default function ScanPictureModal({
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10);
 
+        // Footer columns: bring right block closer to left, but avoid overlap by
+        // using independent widths for left/right and wrapping accordingly.
+        const footerColGap = 3; // mm
         const leftColX = marginX;
-        const rightColX = marginX + (availableWidth / 2) - 6;
+        const rightColX = marginX + (availableWidth / 2) - 28; // move right block left
+        const leftColWidth = Math.max(50, rightColX - leftColX - footerColGap);
+        const rightColWidth = Math.max(50, (marginX + availableWidth) - rightColX);
         const startY = bottomY + 42;
         const lineGap = 5;
-        const colWidth = (availableWidth / 2) - 8;
 
-        const writeLines = (x: number, yStart: number, lines: string[]) => {
+        const writeLines = (x: number, yStart: number, width: number, lines: string[]) => {
             let y = yStart;
             for (const raw of lines) {
                 if (y > bottomY + bottomBlockHeight - 8) break;
-                const wrapped = pdf.splitTextToSize(raw, colWidth);
+                const wrapped = pdf.splitTextToSize(raw, width);
                 for (const w of wrapped) {
                     if (y > bottomY + bottomBlockHeight - 8) break;
                     pdf.text(w, x, y);
@@ -374,16 +378,16 @@ export default function ScanPictureModal({
         const rightLines: string[] = [];
         if (data?.uberzug) {
             rightLines.push('Überzug:');
-            rightLines.push(String(data.uberzug));
+            for (const ln of String(data.uberzug).split(/\r?\n/)) rightLines.push(ln);
             rightLines.push('');
         }
         if (data?.versorgung_note) {
             rightLines.push('Notiz');
-            rightLines.push(String(data.versorgung_note));
+            for (const ln of String(data.versorgung_note).split(/\r?\n/)) rightLines.push(ln);
         }
 
-        writeLines(leftColX, startY, leftLines);
-        writeLines(rightColX, startY, rightLines);
+        writeLines(leftColX, startY, leftColWidth, leftLines);
+        writeLines(rightColX, startY, rightColWidth, rightLines);
 
         return pdf.output('blob') as Blob;
     };
