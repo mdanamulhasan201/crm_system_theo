@@ -91,6 +91,8 @@ interface OrderTableRowProps {
     werkstattzettelLoading?: boolean;
     onKvaDownload?: (orderId: string) => Promise<void>;
     kvaLoading?: boolean;
+    onHalbprobeDownload?: (orderId: string) => Promise<void>;
+    halbprobeLoading?: boolean;
     onPriorityClick: (order: OrderData) => void;
     onHistoryClick?: (orderId: string, orderNumber: string) => void;
     onScanClick?: (orderId: string, orderNumber: string, customerName: string) => void;
@@ -114,6 +116,8 @@ export default function OrderTableRow({
     werkstattzettelLoading = false,
     onKvaDownload,
     kvaLoading = false,
+    onHalbprobeDownload,
+    halbprobeLoading = false,
     onPriorityClick,
     onHistoryClick,
     onScanClick,
@@ -251,6 +255,8 @@ export default function OrderTableRow({
     const isAusgefuehrt = normalizedStatus === "Ausgeführt";
     const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
     const hasInvoice = !!order.invoice;
+    const shouldShowVerordnungsvorschlag = !!onKvaDownload && order.kva === true;
+    const shouldShowHalbprobePdf = !!onHalbprobeDownload && order.halbprobe === true;
 
     const rawBezahltValue = typeof order.bezahlt === 'string' ? order.bezahlt : '';
     const hasInsuranceAmount = Number(order.insuranceTotalPrice ?? 0) > 0;
@@ -734,23 +740,42 @@ export default function OrderTableRow({
                                 <span>{werkstattzettelLoading ? "Werkstattzettel..." : "Werkstattzettel (PDF)"}</span>
                             </DropdownMenuItem>
                         )}
-                        <DropdownMenuItem
-                            className="cursor-pointer"
-                            disabled={!onKvaDownload || kvaLoading}
-                            onSelect={(e) => e.preventDefault()}
-                            onClick={async (e) => {
-                                e.stopPropagation();
-                                if (!onKvaDownload) return;
-                                await onKvaDownload(order.id);
-                            }}
-                        >
-                            {kvaLoading ? (
-                                <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
-                            ) : (
-                                <FileText className="h-4 w-4 text-gray-700" />
-                            )}
-                            <span>{kvaLoading ? "Verordnungsvorschlag..." : "Verordnungsvorschlag"}</span>
-                        </DropdownMenuItem>
+                        {shouldShowVerordnungsvorschlag && (
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                disabled={kvaLoading}
+                                onSelect={(e) => e.preventDefault()}
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await onKvaDownload(order.id);
+                                }}
+                            >
+                                {kvaLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                                ) : (
+                                    <FileText className="h-4 w-4 text-gray-700" />
+                                )}
+                                <span>{kvaLoading ? "Verordnungsvorschlag..." : "Verordnungsvorschlag"}</span>
+                            </DropdownMenuItem>
+                        )}
+                        {shouldShowHalbprobePdf && (
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                disabled={halbprobeLoading}
+                                onSelect={(e) => e.preventDefault()}
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await onHalbprobeDownload(order.id);
+                                }}
+                            >
+                                {halbprobeLoading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                                ) : (
+                                    <FileText className="h-4 w-4 text-gray-700" />
+                                )}
+                                <span>{halbprobeLoading ? "Kostenvoranschlag..." : "Kostenvoranschlag"}</span>
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem
                             className="cursor-pointer"
                             onClick={(e) => {

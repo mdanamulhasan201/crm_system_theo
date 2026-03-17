@@ -29,6 +29,10 @@ export interface OrderData {
   status: string;
   displayStatus: string;
   preis: string;
+  /** Whether KVA/Verordnungsvorschlag is enabled for this order */
+  kva?: boolean | null;
+  /** Whether Halbprobe PDF ("Kostenvoranschlag") is enabled for this order */
+  halbprobe?: boolean | null;
   /** Private price in EUR (display only). Shown below total when present. */
   privatePrice?: number | null;
   /** Insurance total price in EUR (display only). Shown below total when present. */
@@ -161,6 +165,8 @@ const mapApiDataToOrderData = (
         : apiOrder.fußanalyse != null && apiOrder.einlagenversorgung != null
           ? `${((apiOrder.fußanalyse || 0) + (apiOrder.einlagenversorgung || 0)).toFixed(2)} €`
           : "—",
+    kva: (apiOrder as any).kva ?? null,
+    halbprobe: (apiOrder as any).halbprobe ?? null,
     privatePrice: apiOrder.privatePrice ?? null,
     insuranceTotalPrice: apiOrder.insuranceTotalPrice ?? null,
     zahlung: formatPaymentStatus(apiOrder.bezahlt),

@@ -19,10 +19,11 @@ import { AbrechnungsuebersichtModal } from "./Abrechnungsuebersicht";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getKrankenKasseStatus, getKvaData, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
+import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import WerkstattzettelSheet, { WerkstattzettelSheetData } from './WerkstattzettelPdf/WerkstattzettelSheet';
 import KvaSheet, { KvaData } from './KvaPdf/KvaSheet';
+import HalbprobeSheet, { HalbprobeData } from './HalbprobePdf/HalbprobeSheet';
 
 import toast from 'react-hot-toast';
 
@@ -99,6 +100,17 @@ export default function ProcessTable() {
     const [generatingKvaOrderId, setGeneratingKvaOrderId] = useState<string | null>(null);
     const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
     const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
+    const [isGeneratingHalbprobePdf, setIsGeneratingHalbprobePdf] = useState(false);
+    const [generatingHalbprobeOrderId, setGeneratingHalbprobeOrderId] = useState<string | null>(null);
+    const [halbprobePdfData, setHalbprobePdfData] = useState<HalbprobeData | null>(null);
+    const [halbprobePdfImages, setHalbprobePdfImages] = useState<{
+        left23?: string | null;
+        right24?: string | null;
+        sohlenLinks16?: string | null;
+        sohlenRechts17?: string | null;
+        fersenneigungLinks10?: string | null;
+        fersenneigungRechts11?: string | null;
+    } | null>(null);
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
     const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
     const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
@@ -137,6 +149,7 @@ export default function ProcessTable() {
 
     const WERK_PDF_ELEMENT_ID = 'werkstattzettel-sheet-pdf';
     const KVA_PDF_ELEMENT_ID = 'kva-sheet-pdf';
+    const HALBPROBE_PDF_ELEMENT_ID = 'halbprobe-sheet-pdf';
     const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
 
     const handleWerkstattzettelDownload = async (orderId: string, kundenname?: string | null) => {
@@ -209,6 +222,63 @@ export default function ProcessTable() {
             setTimeout(() => {
                 setKvaPdfData(null);
                 setKvaPdfLogoProxy(null);
+            }, 1500);
+        }
+    };
+
+    const handleHalbprobeDownload = async (orderId: string) => {
+        if (isGeneratingHalbprobePdf) return;
+        setIsGeneratingHalbprobePdf(true);
+        setGeneratingHalbprobeOrderId(orderId);
+        try {
+            const res = await getHalbprobeData(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'Halbprobe Daten konnten nicht geladen werden');
+                return;
+            }
+
+            const sheetData: HalbprobeData = res.data;
+            setHalbprobePdfData(sheetData);
+
+            const files = (sheetData as any)?.screenerFile ?? {};
+            const img23 = typeof files?.picture_23 === 'string' ? files.picture_23 : null;
+            const img24 = typeof files?.picture_24 === 'string' ? files.picture_24 : null;
+            const img16 = typeof files?.picture_16 === 'string' ? files.picture_16 : null;
+            const img17 = typeof files?.picture_17 === 'string' ? files.picture_17 : null;
+            const img10 = typeof files?.picture_10 === 'string' ? files.picture_10 : null;
+            const img11 = typeof files?.picture_11 === 'string' ? files.picture_11 : null;
+
+            setHalbprobePdfImages({
+                left23: img23 ? getProxyImageUrl(img23) : null,
+                right24: img24 ? getProxyImageUrl(img24) : null,
+                sohlenLinks16: img16 ? getProxyImageUrl(img16) : null,
+                sohlenRechts17: img17 ? getProxyImageUrl(img17) : null,
+                fersenneigungLinks10: img10 ? getProxyImageUrl(img10) : null,
+                fersenneigungRechts11: img11 ? getProxyImageUrl(img11) : null,
+            });
+
+            await nextFrame();
+            await nextFrame();
+
+            const pdfBlob = await generatePdfFromElement(HALBPROBE_PDF_ELEMENT_ID, pdfPresets.document);
+            const safeName = [
+                (sheetData as any)?.customerInfo?.firstName,
+                (sheetData as any)?.customerInfo?.lastName,
+            ]
+                .filter(Boolean)
+                .join('_')
+                .trim()
+                .replace(/\s+/g, '_') || 'Halbprobe';
+            downloadBlob(pdfBlob, `Kostenvoranschlag_${safeName}.pdf`);
+        } catch (e) {
+            console.error('Halbprobe PDF error:', e);
+            toast.error('Fehler beim Erstellen des Kostenvoranschlag PDFs');
+        } finally {
+            setIsGeneratingHalbprobePdf(false);
+            setGeneratingHalbprobeOrderId(null);
+            setTimeout(() => {
+                setHalbprobePdfData(null);
+                setHalbprobePdfImages(null);
             }, 1500);
         }
     };
@@ -602,6 +672,8 @@ export default function ProcessTable() {
                                             werkstattzettelLoading={isGeneratingWerkPdf && generatingWerkPdfOrderId === order.id}
                                             onKvaDownload={handleKvaDownload}
                                             kvaLoading={isGeneratingKvaPdf && generatingKvaOrderId === order.id}
+                                            onHalbprobeDownload={handleHalbprobeDownload}
+                                            halbprobeLoading={isGeneratingHalbprobePdf && generatingHalbprobeOrderId === order.id}
                                             onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
                                                 setBarcodeStickerOrderId(orderId);
                                                 setBarcodeStickerOrderNumber(orderNumber);
@@ -849,6 +921,14 @@ export default function ProcessTable() {
             <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
                 <div id={KVA_PDF_ELEMENT_ID}>
                     {kvaPdfData ? <KvaSheet data={kvaPdfData} logoProxyUrl={kvaPdfLogoProxy} /> : null}
+                </div>
+            </div>
+
+            <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
+                <div id={HALBPROBE_PDF_ELEMENT_ID}>
+                    {halbprobePdfData && halbprobePdfImages ? (
+                        <HalbprobeSheet data={halbprobePdfData} images={halbprobePdfImages} />
+                    ) : null}
                 </div>
             </div>
         </>
