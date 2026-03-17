@@ -52,6 +52,12 @@ const formatDate = (value?: string | null) => {
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 };
 
+const formatMoney = (value: unknown) => {
+  const n = typeof value === 'number' ? value : value == null ? NaN : Number(value);
+  if (!Number.isFinite(n)) return '';
+  return new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+};
+
 const HeaderLineField = ({ label, value }: { label: string; value: string }) => {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, width: '100%' }}>
@@ -232,16 +238,27 @@ export default function WerkstattzettelSheet({
             Preisübersicht
           </div>
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <Field label="Pos. Netto" value={price.einlagenversorgungPreis != null ? String(price.einlagenversorgungPreis) : ''} />
+            <Field label="Pos. Netto" value={price.einlagenversorgungPreis != null ? formatMoney(price.einlagenversorgungPreis) : ''} />
             <Field label="MwSt." value={price.vatRate != null ? `${price.vatRate}%` : ''} />
-            <Field label="Pos. inkl. MwSt." value={price.privatePrice != null ? String(price.privatePrice) : ''} />
-            <Field label="Eigenanteil" value={price.privatePrice != null ? String(price.privatePrice) : ''} />
-            <Field label="Versicherung" value={price.insuranceTotalPrice != null ? String(price.insuranceTotalPrice) : ''} />
-            <Field label="Zwischensumme" value={price.totalPrice != null ? String(price.totalPrice) : ''} />
+            {/* Requested: show insuranceTotalPrice in "Pos. inkl. MwSt." */}
+            <Field
+              label="Pos. inkl. MwSt."
+              value={
+                price.insuranceTotalPrice != null
+                  ? formatMoney(price.insuranceTotalPrice)
+                  : price.privatePrice != null
+                    ? formatMoney(price.privatePrice)
+                    : ''
+              }
+            />
+            <Field label="Eigenanteil" value={price.privatePrice != null ? formatMoney(price.privatePrice) : ''} />
+            <Field label="Versicherung" value={price.insuranceTotalPrice != null ? formatMoney(price.insuranceTotalPrice) : ''} />
+            <Field label="Fussanalyse Preis" value={fussanalysePreis != null ? formatMoney(fussanalysePreis) : ''} />
+            <Field label="Zwischensumme" value={price.totalPrice != null ? formatMoney(price.totalPrice) : ''} />
             <div style={{ paddingTop: 6, borderTop: '1px solid #d1d5db' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ fontSize: 11, fontWeight: 600 }}>Gesamt</div>
-                <div style={{ fontSize: 11, fontWeight: 600 }}>{price.totalPrice != null ? String(price.totalPrice) : '—'}</div>
+                <div style={{ fontSize: 11, fontWeight: 600 }}>{price.totalPrice != null ? formatMoney(price.totalPrice) : '—'}</div>
               </div>
             </div>
           </div>
