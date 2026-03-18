@@ -58,18 +58,18 @@ export default function HalbprobeSheet({
     ) : null;
 
   const RightSlot = ({ label, src }: { label: string; src?: string | null }) => (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ fontSize: 11, color: '#111827', marginBottom: 6 }}>{label}</div>
+    <div style={{ marginBottom: 10, flex: '1 1 0', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ fontSize: 11, color: '#111827', marginBottom: 5, flexShrink: 0 }}>{label}</div>
       <div
         style={{
-          width: '100%',
-          height: 122,
+          flex: 1,
           border: '1px solid #d1d5db',
           background: '#ffffff',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           overflow: 'hidden',
+          minHeight: 0,
         }}
       >
         {src ? <Img src={src} alt={label} /> : <div style={{ fontSize: 11, color: '#9ca3af' }}>No Preview</div>}
@@ -89,33 +89,33 @@ export default function HalbprobeSheet({
         position: 'relative',
       }}
     >
-      {/* Top header line */}
-      <div style={{ padding: '40px 48px 10px 48px' }}>
+      {/* Top header — compact */}
+      <div style={{ padding: '22px 48px 8px 48px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 18 }}>
           <div>
-            <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{genderLabel}</div>
-            <div style={{ fontSize: 16, marginTop: 2 }}>{fullName || '—'}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{genderLabel}</div>
+            <div style={{ fontSize: 14, marginTop: 2 }}>{fullName || '—'}</div>
             {customer.address ? (
-              <div style={{ fontSize: 10, marginTop: 2, color: '#374151' }}>ADRESS; {customer.address}</div>
+              <div style={{ fontSize: 9, marginTop: 2, color: '#374151' }}>ADRESS: {customer.address}</div>
             ) : null}
             {customer.phone ? (
-              <div style={{ fontSize: 10, marginTop: 2, color: '#374151' }}>TEL: {customer.phone}</div>
+              <div style={{ fontSize: 9, marginTop: 2, color: '#374151' }}>TEL: {customer.phone}</div>
             ) : null}
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: 12 }}>{today}</div>
-            {customer.birthDate ? <div style={{ fontSize: 12, marginTop: 2 }}>Geb: {customer.birthDate}</div> : null}
-            {customerNumber ? <div style={{ fontSize: 14, marginTop: 2, letterSpacing: 1 }}>{customerNumber}</div> : null}
+            <div style={{ fontSize: 11 }}>{today}</div>
+            {customer.birthDate ? <div style={{ fontSize: 11, marginTop: 2 }}>Geb: {customer.birthDate}</div> : null}
+            {customerNumber ? <div style={{ fontSize: 12, marginTop: 2, letterSpacing: 1 }}>{customerNumber}</div> : null}
           </div>
         </div>
-        <div style={{ height: 3, background: '#111827', marginTop: 12 }} />
+        <div style={{ height: 3, background: '#111827', marginTop: 8 }} />
       </div>
 
-      {/* Body split */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 10px 260px', height: 1123 - 40 - 48 }}>
+      {/* Body split — fills remaining page height */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 8px 220px', height: 1000 }}>
         {/* Left */}
-        <div style={{ padding: '8px 40px 24px 48px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18, marginTop: 10 }}>
+        <div style={{ padding: '8px 24px 16px 48px', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 18 }}>
             <div style={{ width: '100%', height: 320, overflow: 'hidden' }}>
               <Img src={images.left23} alt="Bild 23" />
             </div>
@@ -124,14 +124,12 @@ export default function HalbprobeSheet({
             </div>
           </div>
 
-          <div style={{ marginTop: 20, fontSize: 30, fontWeight: 900 }}>Versogungsvorschlag</div>
+          <div style={{ marginTop: 16, fontSize: 24, fontWeight: 900 }}>Versorgungsvorschlag</div>
 
-          <div style={{ marginTop: 14, fontSize: 14, fontWeight: 800 }}>Bitte um Verordnung:</div>
-          <div style={{ marginTop: 6, fontSize: 13, lineHeight: 1.35 }}>
+          <div style={{ marginTop: 10, fontSize: 13, fontWeight: 800 }}>Bitte um Verordnung:</div>
+          <div style={{ marginTop: 5, fontSize: 12, lineHeight: 1.4 }}>
             {qty != null ? (
-              <div>
-                {qty} Paar {einlagentyp || 'Maßeinlage'}
-              </div>
+              <div>{qty} Paar {einlagentyp || 'Maßeinlage'}</div>
             ) : einlagentyp ? (
               <div>1 Paar {einlagentyp}</div>
             ) : (
@@ -140,12 +138,12 @@ export default function HalbprobeSheet({
             {diagnosisLine ? <div style={{ marginTop: 4 }}>{diagnosisLine}</div> : null}
           </div>
 
-          <div style={{ marginTop: 12, fontSize: 11, color: '#374151', lineHeight: 1.35, maxWidth: 420 }}>
+          <div style={{ marginTop: 10, fontSize: 10, color: '#374151', lineHeight: 1.4, maxWidth: 380 }}>
             Wir weisen ausdrücklich darauf hin, dass es sich hierbei um eine Empfehlung aus handwerklich Sicht handelt.
             Über eine medizinische Notwendigkeit hat ausschließlich der Arzt zu entscheiden.
           </div>
 
-          <div style={{ position: 'absolute', left: 48, bottom: 24, fontSize: 10, color: '#111827' }}>
+          <div style={{ position: 'absolute', left: 48, bottom: 18, fontSize: 10, color: '#111827' }}>
             LOGO COMPANY
           </div>
         </div>
@@ -153,13 +151,13 @@ export default function HalbprobeSheet({
         {/* Divider */}
         <div style={{ background: '#111827' }} />
 
-        {/* Right */}
-        <div style={{ padding: '20px 40px 24px 24px' }}>
+        {/* Right — 4 image slots sharing the full height equally */}
+        <div style={{ padding: '12px 18px 28px 16px', display: 'flex', flexDirection: 'column', height: '100%', boxSizing: 'border-box' }}>
           <RightSlot label="Sohlen Index (Links)" src={images.sohlenLinks16} />
           <RightSlot label="Sohlen Index (Rechts)" src={images.sohlenRechts17} />
           <RightSlot label="Fersenneigung (Links)" src={images.fersenneigungLinks10} />
           <RightSlot label="Fersenneigung (Rechts)" src={images.fersenneigungRechts11} />
-          <div style={{ position: 'absolute', right: 48, bottom: 24, fontSize: 12, color: '#111827' }}>1</div>
+          <div style={{ position: 'absolute', right: 18, bottom: 8, fontSize: 11, color: '#111827' }}>1</div>
         </div>
       </div>
     </div>
