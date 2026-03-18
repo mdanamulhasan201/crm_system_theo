@@ -227,14 +227,14 @@ export default function ScanPictureModal({
         const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a3' });
         const pageWidth = 297;
         const pageHeight = 420;
-        // Print-safe margins (professional poster/design)
-        const marginX = 22; // left/right: 20–25mm
-        const marginTop = 25; // top: 20–30mm (standard 25mm)
-        const marginBottom = 25; // bottom: 20–30mm (standard 25mm)
+        // No page margins — images go edge-to-edge
+        const marginX = 0;
+        const marginTop = 0;
+        const marginBottom = 0;
         const pxToMm = 0.264583; // 96 DPI pixel-to-mm (keeps 1:1 size)
 
-        // Header as overlay (does not reserve height)
-        const headerY = marginTop;
+        // Header overlay anchored to very top of page
+        const headerY = 6; // 6mm from top edge
         const headerLineGap = 6;
 
         const textWithHalo = (
@@ -265,13 +265,12 @@ export default function ScanPictureModal({
         const fertigstellungText = data?.fertigstellungBis ? formatDate(data.fertigstellungBis) : '—';
         const kundeText = (data?.customerName || customerName || '—').toString();
 
-        // Images area
-        const bottomBlockHeight = 120;
-        const imageOffsetY = 10; // move scans a bit down
-        const topImagesY = marginTop + imageOffsetY;
-        const imagesAreaHeight = pageHeight - marginBottom - bottomBlockHeight - topImagesY;
-        const gap = 10;
-        const availableWidth = pageWidth - (marginX * 2);
+        // Images area — edge-to-edge, no offset
+        const bottomBlockHeight = 50; // footer text height reserved at bottom
+        const topImagesY = 0;         // images start from the very top
+        const imagesAreaHeight = pageHeight - bottomBlockHeight - topImagesY;
+        const gap = 4;
+        const availableWidth = pageWidth;
         const eachWidth = (availableWidth - gap) / 2;
         const maxHeight = imagesAreaHeight;
 
@@ -286,56 +285,63 @@ export default function ScanPictureModal({
             rightRaw ? normalizeImageDataUrlToPng(rightRaw) : Promise.resolve(null),
         ]);
 
-        // 1:1 rendering: keep original pixel size (via pxToMm), no forced width/height scaling.
-        // We still "place" inside a slot to decide x-position only (no resizing).
-        const placeImageOneToOne = async (dataUrl: string, x: number, y: number, slotW: number) => {
+        // Contain + center: scale image to fit fully within its slot, centered both axes
+        const placeImageContainCenter = async (
+            dataUrl: string,
+            slotX: number,
+            slotY: number,
+            slotW: number,
+            slotH: number
+        ) => {
             const dim = await getImageDimensions(dataUrl);
             if (!dim) return;
-            const naturalW = dim.w * pxToMm;
-            const naturalH = dim.h * pxToMm;
-            // Center within the slot when possible; never move left of the slot.
-            const cx = Math.max(x, x + (slotW - naturalW) / 2);
-            pdf.addImage(dataUrl, 'PNG', cx, y, naturalW, naturalH, undefined, 'FAST');
+            const aspect = dim.w / dim.h;
+            let imgW = slotW;
+            let imgH = imgW / aspect;
+            if (imgH > slotH) {
+                imgH = slotH;
+                imgW = imgH * aspect;
+            }
+            const cx = slotX + (slotW - imgW) / 2;
+            const cy = slotY + (slotH - imgH) / 2;
+            pdf.addImage(dataUrl, 'PNG', cx, cy, imgW, imgH, undefined, 'FAST');
         };
 
         const frameY = topImagesY;
 
-        if (leftDataUrl) await placeImageOneToOne(leftDataUrl, marginX, frameY, eachWidth);
-        if (rightDataUrl) await placeImageOneToOne(rightDataUrl, marginX + eachWidth + gap, frameY, eachWidth);
+        if (leftDataUrl) await placeImageContainCenter(leftDataUrl, 0, frameY, eachWidth, maxHeight);
+        if (rightDataUrl) await placeImageContainCenter(rightDataUrl, eachWidth + gap, frameY, eachWidth, maxHeight);
 
         // Header overlay must be drawn AFTER images so it stays on top
-        textWithHalo(`Erstellt am: ${createdAtText}`, marginX, headerY);
-        textWithHalo('Fertigstellung bis', marginX, headerY + headerLineGap);
-        textWithHalo(fertigstellungText, marginX, headerY + headerLineGap * 2);
-        textWithHalo('Kunde', marginX, headerY + headerLineGap * 3);
-        textWithHalo(kundeText, marginX, headerY + headerLineGap * 4, { fontStyle: 'bold' });
+        const textPadX = 5;
+        textWithHalo(`Erstellt am: ${createdAtText}`, textPadX, headerY);
+        textWithHalo('Fertigstellung bis', textPadX, headerY + headerLineGap);
+        textWithHalo(fertigstellungText, textPadX, headerY + headerLineGap * 2);
+        textWithHalo('Kunde', textPadX, headerY + headerLineGap * 3);
+        textWithHalo(kundeText, textPadX, headerY + headerLineGap * 4, { fontStyle: 'bold' });
 
         // No order number in header (per design requirement)
 
-        // Bottom block
-        const bottomY = pageHeight - marginBottom - bottomBlockHeight;
-
-        // No big bottom title (per requirement)
+        // Footer block — anchored to very bottom of page
+        const bottomY = pageHeight - bottomBlockHeight;
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(10);
 
-        // Footer columns: bring right block closer to left, but avoid overlap by
-        // using independent widths for left/right and wrapping accordingly.
-        const footerColGap = 3; // mm
-        const leftColX = marginX;
-        const rightColX = marginX + (availableWidth / 2) - 28; // move right block left
-        const leftColWidth = Math.max(50, rightColX - leftColX - footerColGap);
-        const rightColWidth = Math.max(50, (marginX + availableWidth) - rightColX);
-        const startY = bottomY + 42;
+        const footerColGap = 4;
+        const leftColX = textPadX;
+        const rightColX = availableWidth / 2 + footerColGap;
+        const leftColWidth = availableWidth / 2 - textPadX - footerColGap;
+        const rightColWidth = availableWidth / 2 - textPadX;
+        const startY = bottomY + 8; // start 8mm into the footer block
         const lineGap = 5;
 
         const writeLines = (x: number, yStart: number, width: number, lines: string[]) => {
             let y = yStart;
             for (const raw of lines) {
-                if (y > bottomY + bottomBlockHeight - 8) break;
+                if (y > pageHeight - 4) break;
                 const wrapped = pdf.splitTextToSize(raw, width);
                 for (const w of wrapped) {
-                    if (y > bottomY + bottomBlockHeight - 8) break;
+                    if (y > pageHeight - 4) break;
                     pdf.text(w, x, y);
                     y += lineGap;
                 }
