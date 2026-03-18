@@ -36,6 +36,11 @@ export interface KvaData {
     phone?: string | null;
     email?: string | null;
   } | null;
+  prescriptionInfo?: {
+    doctorName?: string | null;
+    doctorLocation?: string | null;
+  } | null;
+  shippingAddressesForKv?: string | null;
   insurancesInfo?: KvaItem[] | null;
 }
 
@@ -78,6 +83,7 @@ export default function KvaSheet({
 
   const partner = data.partnerInfo ?? {};
   const customer = data.customerInfo ?? {};
+  const prescription = data.prescriptionInfo ?? {};
   const customerName = [customer.firstName, customer.lastName].filter(Boolean).join(' ').trim();
 
   return (
@@ -87,7 +93,7 @@ export default function KvaSheet({
         color: '#111827',
         width: 794,
         height: 1123,
-        padding: '96px 72px', // print margins
+        padding: '96px 72px',
         boxSizing: 'border-box',
         fontFamily: 'Arial, Helvetica, sans-serif',
       }}
@@ -115,6 +121,7 @@ export default function KvaSheet({
             {(partner.orderLocation as any)?.address ? <div>{(partner.orderLocation as any).address}</div> : null}
             {(partner.orderLocation as any)?.desc ? <div>{(partner.orderLocation as any).desc}</div> : null}
             {(partner.orderLocation as any)?.description ? <div>{(partner.orderLocation as any).description}</div> : null}
+            {data.shippingAddressesForKv ? <div>{data.shippingAddressesForKv}</div> : null}
             {partner.phone ? <div>Tel: {partner.phone}</div> : null}
             {partner.email ? <div>{partner.email}</div> : null}
           </div>
@@ -136,14 +143,28 @@ export default function KvaSheet({
         </div>
       </div>
 
-      {/* Recipient */}
-      <div style={{ marginTop: 22 }}>
-        <div style={{ fontSize: 11, color: '#6b7280', letterSpacing: 1, fontWeight: 700 }}>EMPFÄNGER</div>
-        <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5 }}>
-          <div style={{ fontWeight: 700 }}>{customerName || '—'}</div>
-          {customer.address ? <div>{customer.address}</div> : null}
-          {customer.birthDate ? <div>Geb. am: {customer.birthDate}</div> : null}
+      {/* Recipient + Prescription side by side */}
+      <div style={{ marginTop: 22, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 18 }}>
+        {/* Left: EMPFÄNGER */}
+        <div>
+          <div style={{ fontSize: 11, color: '#6b7280', letterSpacing: 1, fontWeight: 700 }}>EMPFÄNGER</div>
+          <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5 }}>
+            <div style={{ fontWeight: 700 }}>{customerName || '—'}</div>
+            {customer.address ? <div>{customer.address}</div> : null}
+            {customer.birthDate ? <div>Geb. am: {customer.birthDate}</div> : null}
+          </div>
         </div>
+
+        {/* Right: VERORDNUNG (prescription info) */}
+        {(prescription.doctorName || prescription.doctorLocation) ? (
+          <div style={{ textAlign: 'right', minWidth: 220 }}>
+            <div style={{ fontSize: 11, color: '#6b7280', letterSpacing: 1, fontWeight: 700 }}>VERORDNUNG</div>
+            <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5 }}>
+              {prescription.doctorName ? <div style={{ fontWeight: 700 }}>{prescription.doctorName}</div> : null}
+              {prescription.doctorLocation ? <div>{prescription.doctorLocation}</div> : null}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Items table */}
@@ -202,7 +223,7 @@ export default function KvaSheet({
                       paddingTop: 2,
                       paddingBottom: 2,
                       lineHeight: '20px',
-                      maxHeight: 40, // 2 lines (20px * 2)
+                      maxHeight: 40,
                       minHeight: 20,
                     }}
                   >
@@ -263,4 +284,3 @@ export default function KvaSheet({
     </div>
   );
 }
-
