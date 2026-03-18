@@ -74,12 +74,30 @@ export default function KvaSheet({
   const items = data.insurancesInfo ?? [];
   const vatRate = guessVatRate(items?.[0]?.vat_country);
 
+  // Expand BDS rows into separate L and R rows (price halved per side so total stays the same)
+  const expandedItems = useMemo(() => {
+    return items.flatMap((it) => {
+      const seite =
+        typeof it?.description === 'object' && it?.description
+          ? (it.description as any).Seite
+          : null;
+      if (typeof seite === 'string' && seite.toUpperCase() === 'BDS') {
+        const halfPrice = (Number(it?.price) || 0) / 2;
+        return [
+          { ...it, price: halfPrice, description: { ...(it.description as object), Seite: 'L' } },
+          { ...it, price: halfPrice, description: { ...(it.description as object), Seite: 'R' } },
+        ];
+      }
+      return [it];
+    });
+  }, [items]);
+
   const totals = useMemo(() => {
-    const gross = items.reduce((sum, it) => sum + (Number(it?.price) || 0), 0);
+    const gross = expandedItems.reduce((sum, it) => sum + (Number(it?.price) || 0), 0);
     const net = vatRate > 0 ? gross / (1 + vatRate) : gross;
     const vat = gross - net;
     return { gross, net, vat };
-  }, [items, vatRate]);
+  }, [expandedItems, vatRate]);
 
   const partner = data.partnerInfo ?? {};
   const customer = data.customerInfo ?? {};
@@ -111,21 +129,25 @@ export default function KvaSheet({
             {(partner.orderLocation as any)?.address ? <div>{(partner.orderLocation as any).address}</div> : null}
             {(partner.orderLocation as any)?.desc ? <div>{(partner.orderLocation as any).desc}</div> : null}
             {(partner.orderLocation as any)?.description ? <div>{(partner.orderLocation as any).description}</div> : null}
-            {data.shippingAddressesForKv ? <div>{data.shippingAddressesForKv}</div> : null}
             {partner.phone ? <div>Tel: {partner.phone}</div> : null}
             {partner.email ? <div>{partner.email}</div> : null}
           </div>
 
-          {/* Right: date & tax */}
+          {/* Right: tax only (date moved to title row) */}
           <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.6, textAlign: 'right' }}>
-            <div>Datum: {formatDateDE()}</div>
             {partner.vat_number ? <div>Steuernummer: {partner.vat_number}</div> : null}
             {(partner.orderLocation as any)?.title ? <div style={{ color: '#6b7280' }}>{(partner.orderLocation as any).title}</div> : null}
           </div>
         </div>
 
-        {/* Logo below business info */}
-        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+        {/* Logo row: address on the left, logo in the center */}
+        <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 18 }}>
+          {/* Left: shipping address */}
+          <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.5 }}>
+            {data.shippingAddressesForKv ? <div>{data.shippingAddressesForKv}</div> : null}
+          </div>
+
+          {/* Center: logo */}
           <div style={{ width: 260, height: 90, overflow: 'hidden' }}>
             {logoProxyUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -136,14 +158,22 @@ export default function KvaSheet({
               />
             ) : null}
           </div>
+
+          {/* Right: spacer */}
+          <div />
         </div>
       </div>
 
       {/* Title */}
-      <div style={{ marginTop: 28 }}>
-        <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 0.5 }}>KOSTENVORANSCHLAG</div>
-        <div style={{ marginTop: 6, fontSize: 12, color: '#374151' }}>
-          Nummer: <span style={{ fontWeight: 700 }}>{data.kviNumber || '—'}</span>
+      <div style={{ marginTop: 28, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <div>
+          <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 0.5 }}>KOSTENVORANSCHLAG</div>
+          <div style={{ marginTop: 6, fontSize: 12, color: '#374151' }}>
+            Nummer: <span style={{ fontWeight: 700 }}>{data.kviNumber || '—'}</span>
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: '#374151', fontWeight: 600, whiteSpace: 'nowrap' }}>
+          Datum: {formatDateDE()}
         </div>
       </div>
 
@@ -194,8 +224,8 @@ export default function KvaSheet({
         </div>
 
         <div style={{ fontSize: 12 }}>
-          {items.length ? (
-            items.map((it, idx) => {
+          {expandedItems.length ? (
+            expandedItems.map((it, idx) => {
               const price = Number(it?.price) || 0;
               const pos =
                 typeof it?.description === 'object' && it?.description
@@ -243,6 +273,7 @@ export default function KvaSheet({
           ) : (
             <div style={{ padding: '12px 0', color: '#6b7280' }}>—</div>
           )}
+
         </div>
 
         {/* Totals */}
