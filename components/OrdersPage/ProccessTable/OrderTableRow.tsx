@@ -759,7 +759,7 @@ export default function OrderTableRow({
                                 ) : (
                                     <FileText className="h-4 w-4 text-gray-700" />
                                 )}
-                                  <span>{kvaLoading ? "Verordnungsvorschlag..." : "Verordnungsvorschlag"}</span>
+                                  <span>{kvaLoading ? "Kostenvoranschlag..." : "Kostenvoranschlag"}</span>
                                
                             </DropdownMenuItem>
                         )}
@@ -778,7 +778,7 @@ export default function OrderTableRow({
                                 ) : (
                                     <FileText className="h-4 w-4 text-gray-700" />
                                 )}
-                                <span>{halbprobeLoading ? "Kostenvoranschlag..." : "Kostenvoranschlag"}</span>
+                                <span>{halbprobeLoading ? "Verordnungsvorschlag..." : "Verordnungsvorschlag"}</span>
                             </DropdownMenuItem>
                         )}
                         {onWerkstattzettelA3Download && (

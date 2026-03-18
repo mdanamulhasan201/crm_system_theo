@@ -272,10 +272,10 @@ export default function ProcessTable() {
                 .join('_')
                 .trim()
                 .replace(/\s+/g, '_') || 'Halbprobe';
-            downloadBlob(pdfBlob, `Kostenvoranschlag_${safeName}.pdf`);
+            downloadBlob(pdfBlob, `Verordnungsvorschlag_${safeName}.pdf`);
         } catch (e) {
             console.error('Halbprobe PDF error:', e);
-            toast.error('Fehler beim Erstellen des Kostenvoranschlag PDFs');
+            toast.error('Fehler beim Erstellen des Verordnungsvorschlag PDFs');
         } finally {
             setIsGeneratingHalbprobePdf(false);
             setGeneratingHalbprobeOrderId(null);
