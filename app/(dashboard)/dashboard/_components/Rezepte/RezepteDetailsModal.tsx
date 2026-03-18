@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dialog'
 import { getSingleRecipe } from '@/apis/rezepteApis'
 import type { Prescription } from '@/apis/rezepteApis'
-import { Loader2, Shield, User, FileText, Stethoscope, Calendar } from 'lucide-react'
+import { Loader2, Shield, User, FileText, Stethoscope, Calendar, ImageIcon } from 'lucide-react'
 
 function formatDateDE(iso?: string): string {
     if (!iso) return '–'
@@ -137,6 +137,25 @@ export default function RezepteDetailsModal({
 
                 {!loading && !error && data && (
                     <div className='space-y-4 pt-2'>
+                        {/* Image Section — view only */}
+                        {data.image && (
+                            <div className='rounded-xl border border-gray-200 bg-gray-50/80 p-4'>
+                                <div className='flex items-center gap-2 mb-3'>
+                                    <div className='flex h-8 w-8 items-center justify-center rounded-lg bg-[#61A07B]/15 text-[#61A07B]'>
+                                        <ImageIcon className='h-4 w-4' />
+                                    </div>
+                                    <h3 className='text-sm font-semibold text-gray-800'>Rezeptbild</h3>
+                                </div>
+                                <div className='rounded-lg border border-gray-200 overflow-hidden'>
+                                    <img
+                                        src={data.image}
+                                        alt='Rezeptbild'
+                                        className='w-full max-h-60 object-contain bg-white'
+                                    />
+                                </div>
+                            </div>
+                        )}
+
                         <DetailSection
                             title='Versicherung'
                             icon={Shield}

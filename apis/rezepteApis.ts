@@ -2,6 +2,7 @@ import axiosClient from "@/lib/axiosClient";
 
 /** Request body for creating a prescription (v2/insurance/prescription/create) */
 export interface CreateRecipeBody {
+    image: File;
     customerId: string;
     insurance_provider: string;
     insurance_number: string;
@@ -21,10 +22,14 @@ export interface CreateRecipeBody {
     is_work_accident: boolean;
 }
 
-// create recipe v2/insurance/prescription/create
-export const createRecipe = async (recipeData: CreateRecipeBody) => {
+// create recipe v2/insurance/prescription/create form data 
+export const createRecipe = async (formData: FormData) => {
     try {
-        const response = await axiosClient.post('/v2/insurance/prescription/create', recipeData);
+        const response = await axiosClient.post('/v2/insurance/prescription/create', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     } catch (error) {
         throw error;
@@ -35,6 +40,7 @@ export const createRecipe = async (recipeData: CreateRecipeBody) => {
 export interface Prescription {
     id: string;
     customerId?: string;
+    image?: string;
     insurance_provider?: string;
     insurance_number?: string;
     prescription_date?: string;
@@ -85,9 +91,13 @@ export const getRecipe = async (
 
 
 // update recipe v2/insurance/prescription/update/:recipeId
-export const updateRecipe = async (recipeId: string, recipeData: Partial<CreateRecipeBody>) => {
+export const updateRecipe = async (recipeId: string, formData: FormData) => {
     try {
-        const response = await axiosClient.patch(`/v2/insurance/prescription/update/${recipeId}`, recipeData);
+        const response = await axiosClient.patch(`/v2/insurance/prescription/update/${recipeId}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
         return response.data;
     } catch (error) {
         throw error;

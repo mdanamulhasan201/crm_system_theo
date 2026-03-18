@@ -17,12 +17,11 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from '@/components/ui/popover'
-import { Check, CalendarIcon } from 'lucide-react'
+import { Check, CalendarIcon, ImageIcon, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
     createRecipe,
     updateRecipe,
-    type CreateRecipeBody,
     type Prescription,
 } from '@/apis/rezepteApis'
 
@@ -128,6 +127,8 @@ export default function RezepteModal({
     )
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [submitError, setSubmitError] = useState<string | null>(null)
+    const [imageFile, setImageFile] = useState<File | null>(null)
+    const [imagePreview, setImagePreview] = useState<string | null>(null)
 
     const update = useCallback(
         (field: keyof typeof form, value: string | boolean) => {
@@ -143,10 +144,27 @@ export default function RezepteModal({
             rezeptdatum: formatDateDE(new Date()),
         })
         setSubmitError(null)
+        setImageFile(null)
+        setImagePreview(null)
+    }, [])
+
+    const handleImageChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0] ?? null
+        if (!file) return
+        setImageFile(file)
+        const url = URL.createObjectURL(file)
+        setImagePreview(url)
+    }, [])
+
+    const removeImage = useCallback(() => {
+        setImageFile(null)
+        setImagePreview(null)
     }, [])
 
     React.useEffect(() => {
         if (!open) return
+        setImageFile(null)
+        setImagePreview(null)
         if (editRecipe?.id) {
             setForm(prescriptionToForm(editRecipe))
         } else {
@@ -170,29 +188,30 @@ export default function RezepteModal({
         setSubmitError(null)
         setIsSubmitting(true)
         try {
-            const body: CreateRecipeBody = {
-                customerId,
-                insurance_provider: form.kostentraeger,
-                insurance_number: form.versicherungsnummer,
-                prescription_date: rezeptdatumToISO(form.rezeptdatum),
-                prescription_number: form.arzt,
-                proved_number: form.proved_number,
-                referencen_number: form.referencen_number,
-                doctor_location: form.ortArzt,
-                doctor_name: form.arztnummer,
-                establishment_number: form.betriebsstaettennummer,
-                medical_diagnosis: form.diagnose,
-                type_of_deposit: form.artEinlage,
-                validity_weeks: parseValidityWeeks(form.gueltigkeit),
-                cost_bearer_id: form.kostentraegererkennung,
-                status_number: form.statusnummer,
-                aid_code: form.bvhCode,
-                is_work_accident: form.arbeitsunfall,
-            }
+            const fd = new FormData()
+            if (imageFile) fd.append('image', imageFile)
+            fd.append('customerId', customerId)
+            fd.append('insurance_provider', form.kostentraeger)
+            fd.append('insurance_number', form.versicherungsnummer)
+            fd.append('prescription_date', rezeptdatumToISO(form.rezeptdatum))
+            fd.append('prescription_number', form.arzt)
+            fd.append('proved_number', form.proved_number)
+            fd.append('referencen_number', form.referencen_number)
+            fd.append('doctor_location', form.ortArzt)
+            fd.append('doctor_name', form.arztnummer)
+            fd.append('establishment_number', form.betriebsstaettennummer)
+            fd.append('medical_diagnosis', form.diagnose)
+            fd.append('type_of_deposit', form.artEinlage)
+            fd.append('validity_weeks', String(parseValidityWeeks(form.gueltigkeit)))
+            fd.append('cost_bearer_id', form.kostentraegererkennung)
+            fd.append('status_number', form.statusnummer)
+            fd.append('aid_code', form.bvhCode)
+            fd.append('is_work_accident', String(form.arbeitsunfall))
+
             if (isEdit && editRecipe?.id) {
-                await updateRecipe(editRecipe.id, body)
+                await updateRecipe(editRecipe.id, fd)
             } else {
-                await createRecipe(body)
+                await createRecipe(fd)
             }
             handleOpenChange(false)
             onSuccess?.()
@@ -226,6 +245,58 @@ export default function RezepteModal({
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className='space-y-6 pt-2'>
+                    {/* Rezeptbild */}
+                    <div>
+                        <h2 className='text-lg font-semibold tracking-tight text-gray-900 mb-4'>
+                            Rezeptbild
+                        </h2>
+                        <div className='space-y-3'>
+                            {isEdit && editRecipe?.image && !imagePreview && (
+                                <div className='rounded-xl border border-gray-200 overflow-hidden'>
+                                    <img
+                                        src={editRecipe.image}
+                                        alt='Aktuelles Rezeptbild'
+                                        className='w-full max-h-52 object-contain bg-gray-50'
+                                    />
+                                    <p className='text-xs text-gray-500 px-3 py-2'>Aktuelles Bild</p>
+                                </div>
+                            )}
+                            {imagePreview && (
+                                <div className='relative rounded-xl border border-gray-200 overflow-hidden'>
+                                    <img
+                                        src={imagePreview}
+                                        alt='Vorschau'
+                                        className='w-full max-h-52 object-contain bg-gray-50'
+                                    />
+                                    <button
+                                        type='button'
+                                        onClick={removeImage}
+                                        className='absolute top-2 right-2 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition-colors'
+                                    >
+                                        <X className='w-3.5 h-3.5' />
+                                    </button>
+                                    <p className='text-xs text-gray-500 px-3 py-2'>{imageFile?.name}</p>
+                                </div>
+                            )}
+                            <label className='flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors'>
+                                <div className='flex flex-col items-center justify-center py-4'>
+                                    <ImageIcon className='w-7 h-7 text-gray-400 mb-1.5' />
+                                    <p className='text-sm text-gray-500'>
+                                        <span className='font-medium text-[#61A07B]'>Bild auswählen</span>
+                                        {' '}oder hierher ziehen
+                                    </p>
+                                    <p className='text-xs text-gray-400 mt-1'>PNG, JPG, WEBP bis 10 MB</p>
+                                </div>
+                                <input
+                                    type='file'
+                                    accept='image/*'
+                                    onChange={handleImageChange}
+                                    className='hidden'
+                                />
+                            </label>
+                        </div>
+                    </div>
+
                     {/* Versicherungsdaten */}
                     <div>
                         <h2 className='text-lg font-semibold tracking-tight text-gray-900 mb-4'>
