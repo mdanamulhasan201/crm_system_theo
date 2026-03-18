@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useGeneratePdf } from '@/hooks/orders/useGeneratePdf';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { pdfSendToCustomer } from '@/apis/productsOrder';
+import { getWerkstattzettelSheetPdfData, pdfSendToCustomer } from '@/apis/productsOrder';
 import InvoicePage from './InvoicePage';
 import toast from 'react-hot-toast';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
+import WerkstattzettelSheet, { WerkstattzettelSheetData } from '@/components/OrdersPage/ProccessTable/WerkstattzettelPdf/WerkstattzettelSheet';
 import {
     FileText,
     Send,
@@ -18,11 +19,36 @@ interface InvoiceGeneratePdfModalProps {
     downloadEnabled?: boolean;
 }
 
+const WERK_PDF_ELEMENT_ID = 'invoice-modal-werkstattzettel-pdf';
+const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+const downloadBlob = (blob: Blob, fileName: string) => {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10_000);
+};
+
+const getProxyImageUrl = (externalUrl: string): string => {
+    if (!externalUrl) return externalUrl;
+    if (externalUrl.startsWith('/api/proxy-image?url=')) return externalUrl;
+    const absoluteUrl = externalUrl.startsWith('http')
+        ? externalUrl
+        : `${window.location.origin}${externalUrl.startsWith('/') ? '' : '/'}${externalUrl}`;
+    return `/api/proxy-image?url=${encodeURIComponent(absoluteUrl)}`;
+};
+
 export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId, downloadEnabled = true }: InvoiceGeneratePdfModalProps) {
     const { orderData, fetchOrderData } = useGeneratePdf();
     const [isLoading, setIsLoading] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [isSending, setIsSending] = useState(false);
+    const [werkPdfData, setWerkPdfData] = useState<WerkstattzettelSheetData | null>(null);
+    const [werkPdfLogoProxy, setWerkPdfLogoProxy] = useState<string | null>(null);
 
     useEffect(() => {
         if (isOpen && orderId) {
@@ -30,6 +56,37 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId, down
             fetchOrderData(orderId).finally(() => setIsLoading(false));
         }
     }, [isOpen, orderId, fetchOrderData]);
+
+    const handleDownloadPdf = async () => {
+        if (!orderId || isGenerating) return;
+        setIsGenerating(true);
+        try {
+            const res = await getWerkstattzettelSheetPdfData(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'Werkstattzettel Daten konnten nicht geladen werden');
+                return;
+            }
+            const sheetData: WerkstattzettelSheetData = res.data;
+            setWerkPdfData(sheetData);
+            setWerkPdfLogoProxy(sheetData.logo ? getProxyImageUrl(sheetData.logo) : null);
+
+            await nextFrame();
+            await nextFrame();
+
+            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.document);
+            const safeName = (sheetData.customerName || 'Kunde').toString().trim().replace(/\s+/g, '_');
+            downloadBlob(pdfBlob, `Werkstattzettel_${safeName}.pdf`);
+        } catch (e) {
+            console.error('Werkstattzettel PDF error:', e);
+            toast.error('Fehler beim Erstellen des Werkstattzettel PDFs');
+        } finally {
+            setIsGenerating(false);
+            setTimeout(() => {
+                setWerkPdfData(null);
+                setWerkPdfLogoProxy(null);
+            }, 1500);
+        }
+    };
 
     const handleGenerateAndSend = async () => {
         if (!orderData) return;
@@ -78,6 +135,7 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId, down
     };
 
     return (
+        <>
         <Dialog open={isOpen} onOpenChange={onClose}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
@@ -114,7 +172,7 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId, down
                                 Kunde: {orderData.customer.vorname} {orderData.customer.nachname}
                             </p>
                             <p className="text-gray-600">
-                            Preis: {orderData.totalPrice.toFixed(2)} €
+                                Preis: {orderData.totalPrice.toFixed(2)} €
                             </p>
                         </div>
 
@@ -129,12 +187,27 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId, down
                         <div className="flex gap-4 justify-center ">
                             {/* Download PDF Button - Uses InvoicePage */}
                             <div className={downloadEnabled ? '' : 'pointer-events-none opacity-50'}>
-                                <InvoicePage
+                                {/* <InvoicePage
                                     data={orderData}
                                     isGenerating={isGenerating}
                                     onGenerateStart={() => setIsGenerating(true)}
                                     onGenerateComplete={() => setIsGenerating(false)}
-                                />
+                                /> */}
+
+                                <button
+                                    onClick={handleDownloadPdf}
+                                    disabled={isGenerating || !orderId}
+                                    className='bg-[#62A17C] px-4 py-2 text-white rounded-md hover:bg-[#4A8A5F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center cursor-pointer'
+                                >
+                                    {isGenerating ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2 inline-block"></div>
+                                            Generiere PDF...
+                                        </>
+                                    ) : (
+                                        'Download PDF'
+                                    )}
+                                </button>
                             </div>
 
                             {/* Send to Customer Button */}
@@ -160,5 +233,13 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId, down
                 )}
             </DialogContent>
         </Dialog>
+
+        {/* Hidden sheet for Werkstattzettel PDF capture */}
+        <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
+            <div id={WERK_PDF_ELEMENT_ID}>
+                {werkPdfData ? <WerkstattzettelSheet data={werkPdfData} logoProxyUrl={werkPdfLogoProxy} /> : null}
+            </div>
+        </div>
+        </>
     );
 }
