@@ -14,6 +14,7 @@ import {
     HelpCircle,
     Bell,
     Calendar,
+    CalendarDays,
 
 } from "lucide-react";
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -60,6 +61,7 @@ export default function SettingsProfileLayout({
             if (path.endsWith("/fragen")) return HelpCircle;
             if (path.endsWith("/automatische-orders")) return GrOrderedList;
             if (path.endsWith("/automatisches")) return GrOrderedList;
+            if (path.endsWith("/abholung-terminplanung")) return Calendar;
 
             return Settings;
         };
@@ -175,6 +177,12 @@ export default function SettingsProfileLayout({
                     icon: Calendar,
                     label: "Scheduling Konfiguration",
                     href: "/dashboard/settings-profile/scheduling-config"
+                },
+                {
+                    id: "abholung-terminplanung",
+                    icon: CalendarDays,
+                    label: "Abholung Terminplanung",
+                    href: "/dashboard/settings-profile/abholung-terminplanung"
                 }
             ];
         }
@@ -186,6 +194,16 @@ export default function SettingsProfileLayout({
                 icon: Calendar,
                 label: "Terminkalender Einstellungen",
                 href: "/dashboard/settings-profile/scheduling-config",
+            });
+        }
+
+        // Always show Abholung Terminplanung in sidebar (append if not from API)
+        if (!items.some((item) => item.id === "abholung-terminplanung")) {
+            items.push({
+                id: "abholung-terminplanung",
+                icon: CalendarDays,
+                label: "Abholung Terminplanung",
+                href: "/dashboard/settings-profile/abholung-terminplanung",
             });
         }
 
