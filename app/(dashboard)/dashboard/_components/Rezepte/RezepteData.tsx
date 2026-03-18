@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import { ScanLine, Pencil, Trash2, Loader2, ChevronDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -84,13 +84,15 @@ export default function RezepteData({
     const [nextCursor, setNextCursor] = useState<string | null | undefined>(undefined)
     const [hasMore, setHasMore] = useState(false)
 
+    const prevCustomerIdRef = useRef(customerId)
+
     const fetchList = useCallback(
-        async (cursor?: string | null, append = false) => {
+        async (cursor?: string | null, append = false, silent = false) => {
             if (!customerId) return
-            if (!append) {
+            if (!append && !silent) {
                 setLoading(true)
                 setError(null)
-            } else {
+            } else if (append) {
                 setLoadingMore(true)
             }
             try {
@@ -108,12 +110,12 @@ export default function RezepteData({
                     err && typeof err === 'object' && 'message' in err
                         ? String((err as { message: unknown }).message)
                         : 'Fehler beim Laden.'
-                if (!append) {
+                if (!append && !silent) {
                     setError(msg)
                     setList([])
                 }
             } finally {
-                setLoading(false)
+                if (!silent) setLoading(false)
                 setLoadingMore(false)
             }
         },
@@ -121,9 +123,16 @@ export default function RezepteData({
     )
 
     useEffect(() => {
-        setList([])
-        setNextCursor(undefined)
-        fetchList(null, false)
+        const isCustomerChange = prevCustomerIdRef.current !== customerId
+        prevCustomerIdRef.current = customerId
+
+        if (isCustomerChange) {
+            setList([])
+            setNextCursor(undefined)
+            fetchList(null, false, false)
+        } else {
+            fetchList(null, false, true)
+        }
     }, [customerId, refetchTrigger, fetchList])
 
     const loadMore = useCallback(() => {
@@ -141,13 +150,14 @@ export default function RezepteData({
 
     const handleConfirmDelete = async () => {
         if (!deleteConfirmRecipe?.id) return
-        setDeletingId(deleteConfirmRecipe.id)
+        const idToDelete = deleteConfirmRecipe.id
+        setDeletingId(idToDelete)
         try {
-            await deleteRecipe(deleteConfirmRecipe.id)
+            await deleteRecipe(idToDelete)
+            setList((prev) => prev.filter((r) => r.id !== idToDelete))
             setDeleteConfirmRecipe(null)
-            await fetchList(null, false)
         } catch {
-            setDeletingId(null)
+            // keep list as-is on error
         } finally {
             setDeletingId(null)
         }
