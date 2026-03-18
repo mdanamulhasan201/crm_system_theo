@@ -225,7 +225,7 @@ export default function LastScanTable({ onCustomerDeleted }: LastScanTableProps)
                         address: loc.address.trim()
                     }))
                     .filter((loc: { description: string; address: string }, index: number, self: Array<{ description: string; address: string }>) => 
-                        self.findIndex(l => l.address === loc.address) === index
+                        self.findIndex(l => l.description === loc.description) === index
                     )
                     .sort((a: { description: string; address: string }, b: { description: string; address: string }) => 
                         a.description.localeCompare(b.description)
