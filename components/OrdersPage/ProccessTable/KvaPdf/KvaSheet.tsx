@@ -98,25 +98,15 @@ export default function KvaSheet({
         fontFamily: 'Arial, Helvetica, sans-serif',
       }}
     >
-      {/* Header (logo centered, then left/right blocks) */}
+      {/* Header: business info row first, then logo */}
       <div>
-        <div style={{ display: 'flex', justifyContent: 'center' }}>
-          <div style={{ width: 260, height: 90, overflow: 'hidden' }}>
-            {logoProxyUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logoProxyUrl}
-                alt="logo"
-                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' }}
-              />
-            ) : null}
-          </div>
-        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'flex-start', gap: 18 }}>
+          {/* Left: spacer */}
+          <div />
 
-        <div style={{ marginTop: 18, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 18 }}>
-          {/* Left block */}
-          <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.35, maxWidth: 320 }}>
-            <div style={{ fontWeight: 700 }}>{partner.busnessName || partner.name || ''}</div>
+          {/* Center: business info */}
+          <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.5, textAlign: 'center' }}>
+            <div style={{ fontWeight: 700, fontSize: 12 }}>{partner.busnessName || partner.name || ''}</div>
             {(partner.orderLocation as any)?.title ? <div>{(partner.orderLocation as any).title}</div> : null}
             {(partner.orderLocation as any)?.address ? <div>{(partner.orderLocation as any).address}</div> : null}
             {(partner.orderLocation as any)?.desc ? <div>{(partner.orderLocation as any).desc}</div> : null}
@@ -126,11 +116,25 @@ export default function KvaSheet({
             {partner.email ? <div>{partner.email}</div> : null}
           </div>
 
-          {/* Right block */}
-          <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.6, textAlign: 'right', minWidth: 220 }}>
+          {/* Right: date & tax */}
+          <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.6, textAlign: 'right' }}>
             <div>Datum: {formatDateDE()}</div>
             {partner.vat_number ? <div>Steuernummer: {partner.vat_number}</div> : null}
             {(partner.orderLocation as any)?.title ? <div style={{ color: '#6b7280' }}>{(partner.orderLocation as any).title}</div> : null}
+          </div>
+        </div>
+
+        {/* Logo below business info */}
+        <div style={{ marginTop: 16, display: 'flex', justifyContent: 'center' }}>
+          <div style={{ width: 260, height: 90, overflow: 'hidden' }}>
+            {logoProxyUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={logoProxyUrl}
+                alt="logo"
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', display: 'block', margin: '0 auto' }}
+              />
+            ) : null}
           </div>
         </div>
       </div>
