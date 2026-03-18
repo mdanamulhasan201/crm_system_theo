@@ -519,3 +519,12 @@ export const getHalbprobeData = async (orderId: string) => {
 }
 
 
+// customer-orders/track/werkstattzettel-a3-pdf/{{order id}}
+export const getWerkstattzettelA3Pdf = async (orderId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/track/werkstattzettel-a3-pdf/${orderId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

@@ -19,7 +19,8 @@ import { AbrechnungsuebersichtModal } from "./Abrechnungsuebersicht";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
+import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getPaymentStatus, getWerkstattzettelA3Pdf, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
+import jsPDF from 'jspdf';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import WerkstattzettelSheet, { WerkstattzettelSheetData } from './WerkstattzettelPdf/WerkstattzettelSheet';
 import KvaSheet, { KvaData } from './KvaPdf/KvaSheet';
@@ -111,6 +112,8 @@ export default function ProcessTable() {
         fersenneigungLinks10?: string | null;
         fersenneigungRechts11?: string | null;
     } | null>(null);
+    const [isGeneratingWerkA3Pdf, setIsGeneratingWerkA3Pdf] = useState(false);
+    const [generatingWerkA3OrderId, setGeneratingWerkA3OrderId] = useState<string | null>(null);
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
     const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
     const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
@@ -280,6 +283,168 @@ export default function ProcessTable() {
                 setHalbprobePdfData(null);
                 setHalbprobePdfImages(null);
             }, 1500);
+        }
+    };
+
+    const handleWerkstattzettelA3Download = async (orderId: string) => {
+        if (isGeneratingWerkA3Pdf) return;
+        setIsGeneratingWerkA3Pdf(true);
+        setGeneratingWerkA3OrderId(orderId);
+        try {
+            const res = await getWerkstattzettelA3Pdf(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'Werkstattzettel A3 Daten konnten nicht geladen werden');
+                return;
+            }
+            const d = res.data;
+
+            const fetchImg = async (url: string): Promise<string | null> => {
+                try {
+                    if (!url) return null;
+                    if (url.startsWith('data:')) return url;
+                    const r = await fetch(getProxyImageUrl(url));
+                    if (!r.ok) return null;
+                    const b = await r.blob();
+                    return await new Promise((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.onerror = () => resolve(null);
+                        reader.readAsDataURL(b);
+                    });
+                } catch { return null; }
+            };
+
+            const toPng = async (dataUrl: string): Promise<string | null> => {
+                try {
+                    if (!dataUrl) return null;
+                    if (dataUrl.startsWith('data:image/png')) return dataUrl;
+                    const img = new window.Image();
+                    img.crossOrigin = 'anonymous';
+                    await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(); img.src = dataUrl; });
+                    const c = document.createElement('canvas');
+                    c.width = img.width; c.height = img.height;
+                    const ctx = c.getContext('2d');
+                    if (!ctx) return null;
+                    ctx.drawImage(img, 0, 0);
+                    return c.toDataURL('image/png');
+                } catch { return null; }
+            };
+
+            const getDim = async (dataUrl: string): Promise<{ w: number; h: number } | null> => {
+                try {
+                    const img = new window.Image();
+                    img.crossOrigin = 'anonymous';
+                    await new Promise<void>((res, rej) => { img.onload = () => res(); img.onerror = () => rej(); img.src = dataUrl; });
+                    return { w: img.width, h: img.height };
+                } catch { return null; }
+            };
+
+            const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a3' });
+            const pageWidth = 297;
+            const pageHeight = 420;
+            const marginX = 22;
+            const marginTop = 25;
+            const marginBottom = 25;
+            const pxToMm = 0.264583;
+
+            const textWithHalo = (text: string, x: number, y: number, opts?: { align?: 'left' | 'center' | 'right'; fontStyle?: 'normal' | 'bold' }) => {
+                const { align = 'left', fontStyle = 'normal' } = opts ?? {};
+                pdf.setFont('helvetica', fontStyle);
+                const delta = 0.45;
+                pdf.setTextColor(255, 255, 255);
+                [[-delta, 0], [delta, 0], [0, -delta], [0, delta], [-delta, -delta], [delta, delta], [-delta, delta], [delta, -delta]].forEach(([dx, dy]) => {
+                    pdf.text(text, x + dx, y + dy, { align });
+                });
+                pdf.setTextColor(0, 0, 0);
+                pdf.text(text, x, y, { align });
+            };
+
+            const bottomBlockHeight = 120;
+            const imageOffsetY = 10;
+            const topImagesY = marginTop + imageOffsetY;
+            const gap = 10;
+            const availableWidth = pageWidth - marginX * 2;
+            const eachWidth = (availableWidth - gap) / 2;
+
+            const leftUrl = d.screenerFile?.picture_23 || null;
+            const rightUrl = d.screenerFile?.picture_24 || null;
+            const [leftRaw, rightRaw] = await Promise.all([
+                leftUrl ? fetchImg(leftUrl) : Promise.resolve(null),
+                rightUrl ? fetchImg(rightUrl) : Promise.resolve(null),
+            ]);
+            const [leftPng, rightPng] = await Promise.all([
+                leftRaw ? toPng(leftRaw) : Promise.resolve(null),
+                rightRaw ? toPng(rightRaw) : Promise.resolve(null),
+            ]);
+
+            const placeImage = async (dataUrl: string, x: number, y: number, slotW: number) => {
+                const dim = await getDim(dataUrl);
+                if (!dim) return;
+                const nw = dim.w * pxToMm;
+                const nh = dim.h * pxToMm;
+                const cx = Math.max(x, x + (slotW - nw) / 2);
+                pdf.addImage(dataUrl, 'PNG', cx, y, nw, nh, undefined, 'FAST');
+            };
+
+            if (leftPng) await placeImage(leftPng, marginX, topImagesY, eachWidth);
+            if (rightPng) await placeImage(rightPng, marginX + eachWidth + gap, topImagesY, eachWidth);
+
+            // Header overlay (drawn after images)
+            pdf.setFontSize(11);
+            const headerLineGap = 6;
+            const customerName = [d.customerInfo?.firstName, d.customerInfo?.lastName].filter(Boolean).join(' ').trim() || '—';
+            textWithHalo(`Auftrag: ${d.orderNumber ?? '—'}`, marginX, marginTop);
+            textWithHalo('Kunde', marginX, marginTop + headerLineGap);
+            textWithHalo(customerName, marginX, marginTop + headerLineGap * 2, { fontStyle: 'bold' });
+
+            // Bottom block
+            const bottomY = pageHeight - marginBottom - bottomBlockHeight;
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(10);
+            const leftColX = marginX;
+            const rightColX = marginX + availableWidth / 2 - 28;
+            const leftColWidth = Math.max(50, rightColX - leftColX - 3);
+            const rightColWidth = Math.max(50, marginX + availableWidth - rightColX);
+            const startY = bottomY + 42;
+            const lineGap = 5;
+
+            const writeLines = (x: number, yStart: number, width: number, lines: string[]) => {
+                let ly = yStart;
+                for (const raw of lines) {
+                    if (ly > bottomY + bottomBlockHeight - 8) break;
+                    for (const w of pdf.splitTextToSize(raw, width)) {
+                        if (ly > bottomY + bottomBlockHeight - 8) break;
+                        pdf.text(w, x, ly);
+                        ly += lineGap;
+                    }
+                }
+            };
+
+            const leftLines: string[] = [];
+            leftLines.push('Diagnose / Versorgung:');
+            leftLines.push(d.diagnosisInfo?.productName || '—');
+            leftLines.push('');
+            leftLines.push(`Versorgung: ${d.diagnosisInfo?.versorgung || '—'}`);
+            if (d.quantity) leftLines.push(`Menge: ${d.quantity}`);
+            if (d.diagnosisInfo?.material) { leftLines.push(''); leftLines.push('Material:'); leftLines.push(d.diagnosisInfo.material); }
+            if (d.footSize) leftLines.push(`Fußgröße: ${d.footSize}`);
+
+            const rightLines: string[] = [];
+            if (d.customerInfo?.address) { rightLines.push('Adresse:'); rightLines.push(d.customerInfo.address); rightLines.push(''); }
+            if (d.customerInfo?.birthDate) rightLines.push(`Geb.: ${d.customerInfo.birthDate}`);
+
+            writeLines(leftColX, startY, leftColWidth, leftLines);
+            writeLines(rightColX, startY, rightColWidth, rightLines);
+
+            const blob = pdf.output('blob') as Blob;
+            const safeName = customerName.replace(/\s+/g, '_');
+            downloadBlob(blob, `Werkstattzettel_A3_${safeName}.pdf`);
+        } catch (e) {
+            console.error('Werkstattzettel A3 PDF error:', e);
+            toast.error('Fehler beim Erstellen des Werkstattzettel A3 PDFs');
+        } finally {
+            setIsGeneratingWerkA3Pdf(false);
+            setGeneratingWerkA3OrderId(null);
         }
     };
 
@@ -674,6 +839,8 @@ export default function ProcessTable() {
                                             kvaLoading={isGeneratingKvaPdf && generatingKvaOrderId === order.id}
                                             onHalbprobeDownload={handleHalbprobeDownload}
                                             halbprobeLoading={isGeneratingHalbprobePdf && generatingHalbprobeOrderId === order.id}
+                                            onWerkstattzettelA3Download={handleWerkstattzettelA3Download}
+                                            werkstattzettelA3Loading={isGeneratingWerkA3Pdf && generatingWerkA3OrderId === order.id}
                                             onBarcodeStickerClick={(orderId, orderNumber, autoGenerate) => {
                                                 setBarcodeStickerOrderId(orderId);
                                                 setBarcodeStickerOrderNumber(orderNumber);

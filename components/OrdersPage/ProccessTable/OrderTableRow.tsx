@@ -93,6 +93,8 @@ interface OrderTableRowProps {
     kvaLoading?: boolean;
     onHalbprobeDownload?: (orderId: string) => Promise<void>;
     halbprobeLoading?: boolean;
+    onWerkstattzettelA3Download?: (orderId: string) => Promise<void>;
+    werkstattzettelA3Loading?: boolean;
     onPriorityClick: (order: OrderData) => void;
     onHistoryClick?: (orderId: string, orderNumber: string) => void;
     onScanClick?: (orderId: string, orderNumber: string, customerName: string) => void;
@@ -118,6 +120,8 @@ export default function OrderTableRow({
     kvaLoading = false,
     onHalbprobeDownload,
     halbprobeLoading = false,
+    onWerkstattzettelA3Download,
+    werkstattzettelA3Loading = false,
     onPriorityClick,
     onHistoryClick,
     onScanClick,
@@ -775,6 +779,24 @@ export default function OrderTableRow({
                                     <FileText className="h-4 w-4 text-gray-700" />
                                 )}
                                 <span>{halbprobeLoading ? "Kostenvoranschlag..." : "Kostenvoranschlag"}</span>
+                            </DropdownMenuItem>
+                        )}
+                        {onWerkstattzettelA3Download && (
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                disabled={werkstattzettelA3Loading}
+                                onSelect={(e) => e.preventDefault()}
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await onWerkstattzettelA3Download(order.id);
+                                }}
+                            >
+                                {werkstattzettelA3Loading ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                                ) : (
+                                    <FileText className="h-4 w-4 text-gray-700" />
+                                )}
+                                <span>{werkstattzettelA3Loading ? "Werkstattzettel A3..." : "Werkstattzettel A3 (PDF)"}</span>
                             </DropdownMenuItem>
                         )}
                         <DropdownMenuItem
