@@ -24,6 +24,7 @@ export interface HalbprobeData {
 export default function HalbprobeSheet({
   data,
   images,
+  logoUrl,
 }: {
   data: HalbprobeData;
   images: {
@@ -34,6 +35,7 @@ export default function HalbprobeSheet({
     fersenneigungLinks10?: string | null;
     fersenneigungRechts11?: string | null;
   };
+  logoUrl?: string | null;
 }) {
   const customer = data.customerInfo ?? {};
   const product = data.productInfo ?? {};
@@ -95,6 +97,7 @@ export default function HalbprobeSheet({
           <div>
             <div style={{ fontSize: 18, fontWeight: 800, lineHeight: 1 }}>{genderLabel}</div>
             <div style={{ fontSize: 14, marginTop: 2 }}>{fullName || '—'}</div>
+            {customer.birthDate ? <div style={{ fontSize: 9, marginTop: 2, color: '#374151' }}>Geb: {customer.birthDate}</div> : null}
             {customer.address ? (
               <div style={{ fontSize: 9, marginTop: 2, color: '#374151' }}>ADRESS: {customer.address}</div>
             ) : null}
@@ -104,7 +107,6 @@ export default function HalbprobeSheet({
           </div>
           <div style={{ textAlign: 'right' }}>
             <div style={{ fontSize: 11 }}>{today}</div>
-            {customer.birthDate ? <div style={{ fontSize: 11, marginTop: 2 }}>Geb: {customer.birthDate}</div> : null}
             {customerNumber ? <div style={{ fontSize: 12, marginTop: 2, letterSpacing: 1 }}>{customerNumber}</div> : null}
           </div>
         </div>
@@ -143,8 +145,11 @@ export default function HalbprobeSheet({
             Über eine medizinische Notwendigkeit hat ausschließlich der Arzt zu entscheiden.
           </div>
 
-          <div style={{ position: 'absolute', left: 48, bottom: 18, fontSize: 10, color: '#111827' }}>
-            LOGO COMPANY
+          <div style={{ position: 'absolute', left: 48, bottom: 18 }}>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt="Logo" style={{ height: 70, maxWidth: 200, objectFit: 'contain', display: 'block' }} />
+            ) : null}
           </div>
         </div>
 

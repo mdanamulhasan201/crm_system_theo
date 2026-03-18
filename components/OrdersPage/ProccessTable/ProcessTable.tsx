@@ -112,6 +112,7 @@ export default function ProcessTable() {
         fersenneigungLinks10?: string | null;
         fersenneigungRechts11?: string | null;
     } | null>(null);
+    const [halbprobeLogoProxy, setHalbprobeLogoProxy] = useState<string | null>(null);
     const [isGeneratingWerkA3Pdf, setIsGeneratingWerkA3Pdf] = useState(false);
     const [generatingWerkA3OrderId, setGeneratingWerkA3OrderId] = useState<string | null>(null);
     const [openNoteModalId, setOpenNoteModalId] = useState<string | null>(null);
@@ -243,6 +244,9 @@ export default function ProcessTable() {
             const sheetData: HalbprobeData = res.data;
             setHalbprobePdfData(sheetData);
 
+            const partnerLogoUrl = (sheetData as any)?.partnerInfo?.image ?? null;
+            setHalbprobeLogoProxy(partnerLogoUrl ? getProxyImageUrl(partnerLogoUrl) : null);
+
             const files = (sheetData as any)?.screenerFile ?? {};
             const img23 = typeof files?.picture_23 === 'string' ? files.picture_23 : null;
             const img24 = typeof files?.picture_24 === 'string' ? files.picture_24 : null;
@@ -282,6 +286,7 @@ export default function ProcessTable() {
             setTimeout(() => {
                 setHalbprobePdfData(null);
                 setHalbprobePdfImages(null);
+                setHalbprobeLogoProxy(null);
             }, 1500);
         }
     };
@@ -1094,7 +1099,7 @@ export default function ProcessTable() {
             <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
                 <div id={HALBPROBE_PDF_ELEMENT_ID}>
                     {halbprobePdfData && halbprobePdfImages ? (
-                        <HalbprobeSheet data={halbprobePdfData} images={halbprobePdfImages} />
+                        <HalbprobeSheet data={halbprobePdfData} images={halbprobePdfImages} logoUrl={halbprobeLogoProxy} />
                     ) : null}
                 </div>
             </div>
