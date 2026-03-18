@@ -207,7 +207,7 @@ export default function Einstellungen() {
 
 
                 {/* Pelottenposition automatisch berechnen - 1st position */}
-                <div className="p-4 sm:p-5 md:p-6 pb-0">
+                {/* <div className="p-4 sm:p-5 md:p-6 pb-0">
                     <label className="font-semibold block mb-2 text-gray-900">
                         Pelottenposition automatisch berechnen
                     </label>
@@ -243,7 +243,7 @@ export default function Einstellungen() {
                             </Select>
                         </div>
                     
-                </div>
+                </div> */}
 
                 <div className="p-4 sm:p-5 md:p-6 pt-4">
                     {isLoading ? (
