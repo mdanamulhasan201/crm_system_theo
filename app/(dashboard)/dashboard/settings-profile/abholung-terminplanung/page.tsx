@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   CalendarClock,
@@ -20,16 +20,34 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import WohnortInput from "../../_components/Customers/WohnortInput";
+import toast from "react-hot-toast";
+import { createAuftragszettel, getAuftragszettel } from "@/apis/auftragszettelApis";
+
+type HydratedValues = {
+  isEnabled: boolean;
+  processingDays: string;
+  autoCreateEnabled: boolean;
+  assigneeOption: "creator" | "fixed-per-location";
+  respectWorkTimes: boolean;
+  respectExistingAppointments: boolean;
+  pickupLocation: string;
+};
 
 export default function AbholungTerminplanungPage() {
+  const saveTimerRef = useRef<number | null>(null);
+  // Stores the last values loaded from the API so we can skip saving when
+  // nothing has actually changed after hydration.
+  const hydratedValuesRef = useRef<HydratedValues | null>(null);
+
   const [isEnabled, setIsEnabled] = useState(true);
   const [calculationBase, setCalculationBase] =
     useState<"fixed-processing-time">("fixed-processing-time");
   const [processingDays, setProcessingDays] = useState<string>("5");
   const [autoCreateEnabled, setAutoCreateEnabled] = useState(false);
-  const [assigneeCreator, setAssigneeCreator] = useState(true);
-  const [assigneeFixedPerLocation, setAssigneeFixedPerLocation] =
-    useState(false);
+  const [assigneeOption, setAssigneeOption] = useState<
+    "creator" | "fixed-per-location"
+  >("creator");
   const [respectWorkTimes, setRespectWorkTimes] = useState(true);
   const [respectExistingAppointments, setRespectExistingAppointments] =
     useState(true);
@@ -38,6 +56,135 @@ export default function AbholungTerminplanungPage() {
     "fixed-employee" | "creator"
   >("fixed-employee");
   const [kvEmployee, setKvEmployee] = useState("");
+  const [pickupLocation, setPickupLocation] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const buildPayload = () => {
+    const insoleDays = Number.parseInt(processingDays || "0", 10);
+    return {
+      isInsolePickupDateLine: Boolean(isEnabled),
+      insolePickupDateLine: Number.isFinite(insoleDays) ? insoleDays : 0,
+      order_creation_appomnent: Boolean(autoCreateEnabled),
+      pickupAssignmentMode: assigneeOption === "creator",
+      lookWorkTime: Boolean(respectWorkTimes),
+      appomnentOverlap: Boolean(respectExistingAppointments),
+      shipping_addresses_for_kv: pickupLocation || "",
+    };
+  };
+
+  const saveSettings = async () => {
+    try {
+      setIsSaving(true);
+      const res = await createAuftragszettel(buildPayload());
+      if (res?.success) return;
+      throw new Error(res?.message || "Update failed");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(
+        error?.response?.data?.message || error?.message || "Fehler beim Speichern."
+      );
+      throw error;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Hydrate from API on mount
+  useEffect(() => {
+    const hydrate = async () => {
+      try {
+        setIsLoading(true);
+        const res = await getAuftragszettel();
+        const data = res?.data;
+        if (res?.success && data) {
+          const loaded: HydratedValues = {
+            isEnabled: Boolean(data.isInsolePickupDateLine),
+            processingDays:
+              data.insolePickupDateLine != null
+                ? String(data.insolePickupDateLine)
+                : "0",
+            autoCreateEnabled: Boolean(data.order_creation_appomnent),
+            assigneeOption: Boolean(data.pickupAssignmentMode)
+              ? "creator"
+              : "fixed-per-location",
+            respectWorkTimes: Boolean(data.lookWorkTime),
+            respectExistingAppointments: Boolean(data.appomnentOverlap),
+            pickupLocation: String(data.shipping_addresses_for_kv ?? ""),
+          };
+
+          // Store loaded values BEFORE applying them to state so the
+          // auto-save effect can detect that nothing has actually changed.
+          hydratedValuesRef.current = loaded;
+
+          setIsEnabled(loaded.isEnabled);
+          setProcessingDays(loaded.processingDays);
+          setAutoCreateEnabled(loaded.autoCreateEnabled);
+          setAssigneeOption(loaded.assigneeOption);
+          setRespectWorkTimes(loaded.respectWorkTimes);
+          setRespectExistingAppointments(loaded.respectExistingAppointments);
+          setPickupLocation(loaded.pickupLocation);
+        }
+      } catch (error) {
+        console.error(error);
+        toast.error("Fehler beim Laden der Einstellungen.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void hydrate();
+  }, []);
+
+  // Debounced auto-save — only runs when the user actually changes a value.
+  // If current state matches what was just loaded from the API, skip saving.
+  useEffect(() => {
+    if (isLoading) return;
+
+    const h = hydratedValuesRef.current;
+    if (h) {
+      const unchanged =
+        isEnabled === h.isEnabled &&
+        processingDays === h.processingDays &&
+        autoCreateEnabled === h.autoCreateEnabled &&
+        assigneeOption === h.assigneeOption &&
+        respectWorkTimes === h.respectWorkTimes &&
+        respectExistingAppointments === h.respectExistingAppointments &&
+        pickupLocation === h.pickupLocation;
+
+      if (unchanged) return;
+
+      // A real user change happened — clear the guard so future changes save normally.
+      hydratedValuesRef.current = null;
+    }
+
+    if (saveTimerRef.current) {
+      window.clearTimeout(saveTimerRef.current);
+    }
+
+    saveTimerRef.current = window.setTimeout(async () => {
+      try {
+        await saveSettings();
+        toast.success("Einstellungen gespeichert.");
+      } catch {
+        // toast handled in saveSettings
+      }
+    }, 700);
+
+    return () => {
+      if (saveTimerRef.current) window.clearTimeout(saveTimerRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    isEnabled,
+    processingDays,
+    autoCreateEnabled,
+    assigneeOption,
+    respectWorkTimes,
+    respectExistingAppointments,
+    pickupLocation,
+    isLoading,
+  ]);
 
   return (
     <div className="w-full px-5 py-6 space-y-6 mb-20">
@@ -73,6 +220,7 @@ export default function AbholungTerminplanungPage() {
               checked={isEnabled}
               onCheckedChange={setIsEnabled}
               className="cursor-pointer"
+              disabled={isLoading}
             />
           </div>
         </CardHeader>
@@ -87,7 +235,7 @@ export default function AbholungTerminplanungPage() {
               onValueChange={(value) =>
                 setCalculationBase(value as "fixed-processing-time")
               }
-              disabled={!isEnabled}
+              disabled={!isEnabled || isLoading}
             >
               <SelectTrigger className="w-full bg-white">
                 <SelectValue placeholder="Bitte wählen" />
@@ -109,7 +257,7 @@ export default function AbholungTerminplanungPage() {
               min={0}
               value={processingDays}
               onChange={(e) => setProcessingDays(e.target.value)}
-              disabled={!isEnabled}
+              disabled={!isEnabled || isLoading}
               className="bg-white"
             />
           </div>
@@ -137,6 +285,7 @@ export default function AbholungTerminplanungPage() {
             checked={autoCreateEnabled}
             onCheckedChange={setAutoCreateEnabled}
             className="cursor-pointer"
+            disabled={isLoading}
           />
         </CardHeader>
         <CardContent className="pt-1">
@@ -167,20 +316,18 @@ export default function AbholungTerminplanungPage() {
           <div className="space-y-3">
             <label className="flex items-center gap-3 text-sm text-gray-800 cursor-pointer">
               <Checkbox
-                checked={assigneeCreator}
-                onChange={(event) =>
-                  setAssigneeCreator(event.target.checked)
-                }
+                checked={assigneeOption === "creator"}
+                onChange={() => setAssigneeOption("creator")}
+                disabled={isLoading}
               />
               <span>Auftragsersteller übernimmt Abholung</span>
             </label>
 
             <label className="flex items-center gap-3 text-sm text-gray-800 cursor-pointer">
               <Checkbox
-                checked={assigneeFixedPerLocation}
-                onChange={(event) =>
-                  setAssigneeFixedPerLocation(event.target.checked)
-                }
+                checked={assigneeOption === "fixed-per-location"}
+                onChange={() => setAssigneeOption("fixed-per-location")}
+                disabled={isLoading}
               />
               <span>Fester Mitarbeiter pro Standort</span>
             </label>
@@ -213,6 +360,7 @@ export default function AbholungTerminplanungPage() {
                 onChange={(event) =>
                   setRespectWorkTimes(event.target.checked)
                 }
+                disabled={isLoading}
               />
               <span>Arbeitszeiten berücksichtigen</span>
             </label>
@@ -223,6 +371,7 @@ export default function AbholungTerminplanungPage() {
                 onChange={(event) =>
                   setRespectExistingAppointments(event.target.checked)
                 }
+                disabled={isLoading}
               />
               <span>Bestehende Termine berücksichtigen</span>
             </label>
@@ -235,6 +384,7 @@ export default function AbholungTerminplanungPage() {
             <Select
               value={calendarSource}
               onValueChange={(value) => setCalendarSource(value)}
+              disabled={isLoading}
             >
               <SelectTrigger className="w-full bg-white">
                 <SelectValue placeholder="Kalender wählen" />
@@ -273,29 +423,16 @@ export default function AbholungTerminplanungPage() {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-1 space-y-3">
-          {/* Option 1 */}
-          <button
-            type="button"
-            onClick={() => setKvAssignmentMode("fixed-employee")}
-            className={`w-full rounded-xl border px-4 py-3 text-left transition ${
-              kvAssignmentMode === "fixed-employee"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200 bg-white hover:bg-gray-50"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <span
-                className={`mt-1 inline-flex h-4 w-4 items-center justify-center rounded-full border ${
-                  kvAssignmentMode === "fixed-employee"
-                    ? "border-blue-500 bg-blue-500"
-                    : "border-gray-300 bg-white"
-                }`}
-              >
-                {kvAssignmentMode === "fixed-employee" && (
-                  <span className="h-2 w-2 rounded-full bg-white" />
-                )}
-              </span>
+        <CardContent className="pt-1 space-y-4">
+          {/* Option 1: Fester Mitarbeiter */}
+          <div className="rounded-xl border px-4 py-3 bg-white">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={kvAssignmentMode === "fixed-employee"}
+                onChange={() => setKvAssignmentMode("fixed-employee")}
+                className="mt-1"
+                disabled={isLoading}
+              />
               <div className="space-y-2 w-full">
                 <div className="text-sm font-medium text-gray-900">
                   Fester Mitarbeiter für KV-Erstellungen
@@ -304,40 +441,36 @@ export default function AbholungTerminplanungPage() {
                   Alle KV-Aufträge werden automatisch einem festgelegten
                   Mitarbeiter zugewiesen.
                 </p>
-                {kvAssignmentMode === "fixed-employee" && (
-                  <Input
-                    value={kvEmployee}
-                    onChange={(e) => setKvEmployee(e.target.value)}
-                    placeholder="Mitarbeiter auswählen"
-                    className="mt-1"
-                  />
-                )}
+                <Select
+                  value={kvEmployee}
+                  onValueChange={(value) => {
+                    setKvAssignmentMode("fixed-employee");
+                    setKvEmployee(value);
+                  }}
+                  disabled={kvAssignmentMode !== "fixed-employee"}
+                >
+                  <SelectTrigger className="mt-1 bg-white">
+                    <SelectValue placeholder="Mitarbeiter auswählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mitarbeiter-1">Mitarbeiter 1</SelectItem>
+                    <SelectItem value="mitarbeiter-2">Mitarbeiter 2</SelectItem>
+                    <SelectItem value="team-kv">Team KV</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
-          </button>
+            </label>
+          </div>
 
-          {/* Option 2 */}
-          <button
-            type="button"
-            onClick={() => setKvAssignmentMode("creator")}
-            className={`w-full rounded-xl border px-4 py-3 text-left transition ${
-              kvAssignmentMode === "creator"
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200 bg-white hover:bg-gray-50"
-            }`}
-          >
-            <div className="flex items-start gap-3">
-              <span
-                className={`mt-1 inline-flex h-4 w-4 items-center justify-center rounded-full border ${
-                  kvAssignmentMode === "creator"
-                    ? "border-blue-500 bg-blue-500"
-                    : "border-gray-300 bg-white"
-                }`}
-              >
-                {kvAssignmentMode === "creator" && (
-                  <span className="h-2 w-2 rounded-full bg-white" />
-                )}
-              </span>
+          {/* Option 2: Auftragsersteller */}
+          <div className="rounded-xl border px-4 py-3 bg-white">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={kvAssignmentMode === "creator"}
+                onChange={() => setKvAssignmentMode("creator")}
+                className="mt-1"
+                disabled={isLoading}
+              />
               <div>
                 <div className="text-sm font-medium text-gray-900">
                   Auftragsersteller erhält den KV-Auftrag
@@ -347,8 +480,41 @@ export default function AbholungTerminplanungPage() {
                   automatisch für die KV-Erstellung verantwortlich.
                 </p>
               </div>
+            </label>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Abholort / Standortsuche */}
+      <Card className="border-gray-200 shadow-sm">
+        <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
+          <div className="flex items-center gap-4">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <CalendarDays className="h-6 w-6" />
             </div>
-          </button>
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">
+                Abholort suchen
+              </h2>
+              <p className="text-xs text-gray-500">
+                Standort über die Standortsuche auswählen
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-1 space-y-2">
+          <WohnortInput
+            value={pickupLocation}
+            onChange={setPickupLocation}
+            hideLabel
+            placeholder="Abhol-Standort suchen (Straße, PLZ, Stadt, Land)"
+          />
+
+          {(isLoading || isSaving) && (
+            <p className="text-xs text-gray-500">
+              {isLoading ? "Lade Einstellungen..." : "Speichere..."}
+            </p>
+          )}
         </CardContent>
       </Card>
     </div>
