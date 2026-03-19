@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { getPriseDetails } from '@/apis/productsOrder';
-import { FileText, Receipt, ShieldCheck, History } from 'lucide-react';
+import { FileText, Receipt, ShieldCheck } from 'lucide-react';
 
 export interface PriceDetailPosition {
     id: string;
@@ -16,6 +16,8 @@ export interface PriceDetailPosition {
 export interface PriceDetailsData {
     discount?: number;
     addonPrices?: number;
+    /** Eigenanteil (AT) in EUR. When null, do NOT show the AT row in Zahlungsaufteilung. */
+    austria_price?: number | null;
     insuranceTotalPrice?: number;
     privatePrice?: number | null;
     bezahlt?: string;
@@ -189,22 +191,29 @@ export default function AbrechnungsuebersichtModal({
     const genehmigtTag = bezahltValue === 'Krankenkasse_Genehmigt' ? 'Genehmigt' : null;
 
     const positions = data?.customerOrderInsurances ?? [];
+    const positionsTotalPrice = positions.reduce((sum, row) => sum + (Number(row.price) || 0), 0);
+    const positionsNettoTotal = vatDivisor > 0 && vatRate > 0 ? positionsTotalPrice / vatDivisor : positionsTotalPrice;
+    const positionsMwstTotal = positionsTotalPrice - positionsNettoTotal;
     const totalPrice = data?.totalPrice ?? 0;
     const quantity = Math.max(data?.quantity ?? 1, 1);
     const versorgungPrice = data?.einlagenversorgungPreis ?? ((data?.Versorgungen?.supplyStatus?.price ?? 0) * quantity);
     const footAnalysisPrice = data?.fussanalysePreis ?? 0;
+    const hasAddonPrices = data?.addonPrices != null;
     const addonPrices = data?.addonPrices ?? 0;
     const discount = data?.discount ?? 0;
     const vatCountry = data?.partner?.accountInfos?.[0]?.vat_country ?? null;
     const isAustriaAccount = vatCountry === 'Österreich (AT)';
-    const fallbackInsuranceTotal = positions.reduce((sum, row) => sum + (Number(row.price) || 0), 0);
-    const displayInsuranceTotal =
-        insuranceTotalPrice > 0
+    const isInsoleCategory = data?.orderCategory === 'insole';
+    const fallbackInsuranceTotal = positionsTotalPrice;
+    const displayInsuranceTotal = isInsoleCategory
+        ? positionsTotalPrice
+        : insuranceTotalPrice > 0
             ? insuranceTotalPrice
             : bezahltValue.includes('Krankenkasse')
                 ? fallbackInsuranceTotal
                 : 0;
-    const displayPrivateTotal =
+    const displayPrivateTotalDerived = Math.max(totalPrice - displayInsuranceTotal, 0);
+    const displayPrivateTotalBase =
         privatePrice > 0
             ? privatePrice
             : bezahltValue.includes('Privat') && !bezahltValue.includes('Krankenkasse')
@@ -212,216 +221,253 @@ export default function AbrechnungsuebersichtModal({
                 : displayInsuranceTotal > 0 && totalPrice > displayInsuranceTotal
                     ? (totalPrice - displayInsuranceTotal)
                     : 0;
+    // For insole we need a consistent split where Privat + Versicherung = totalPrice.
+    const displayPrivateTotal = isInsoleCategory ? displayPrivateTotalDerived : displayPrivateTotalBase;
     const subtotalBeforeEigenanteil = Math.max(versorgungPrice + footAnalysisPrice + addonPrices - discount, 0);
-    const eigenanteilAt = isAustriaAccount ? Math.max(totalPrice - subtotalBeforeEigenanteil, 0) : 0;
+    // Use backend-provided eigenanteil (AT) as the single source of truth.
+    // If austria_price is null, we treat it as "no eigenanteil" and hide the row.
+    const eigenanteilAt =
+        data?.austria_price != null ? Math.max(Number(data.austria_price) || 0, 0) : 0;
     const summarySubtotal = Math.max(totalPrice - eigenanteilAt, 0);
+
+    // Backend's privatePrice already includes: Fußanalyse + Eigenanteil (AT) + Wirtschaftlicher Aufpreis
+    // So we can derive Wirtschaftlicher Aufpreis reliably from the same fields.
+    const wirtschaftlicherAufpreis =
+        Math.max(privatePrice - eigenanteilAt - footAnalysisPrice, 0);
 
     return (
         <>
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-            <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto p-0 gap-0">
-                <DialogHeader className="px-6 pt-6 pb-3 border-b border-gray-100">
-                    <DialogTitle className="text-xl font-semibold text-gray-900">
-                        Abrechnungsübersicht
-                    </DialogTitle>
-                    <p className="text-sm text-gray-600 mt-1">
-                        {customerName} #{orderNumber}
-                    </p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                        {categoryLabel && (
-                            <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                                {categoryLabel}
-                            </span>
-                        )}
-                        {paymentTags.map((tag) => (
-                            <span key={tag} className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                                {tag}
-                            </span>
-                        ))}
-                        {genehmigtTag && (
-                            <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800">
-                                {genehmigtTag}
-                            </span>
-                        )}
-                    </div>
-                </DialogHeader>
-
-                <div className="px-6 py-5 space-y-6">
-                    {loading && (
-                        <div className="flex justify-center py-12">
-                            <div className="animate-spin rounded-full h-10 w-10 border-2 border-emerald-200 border-t-emerald-600" />
+            <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+                <DialogContent className="sm:max-w-5xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+                    <DialogHeader className="px-6 pt-6 pb-3 border-b border-gray-100">
+                        <DialogTitle className="text-xl font-semibold text-gray-900">
+                            Abrechnungsübersicht
+                        </DialogTitle>
+                        <p className="text-sm text-gray-600 mt-1">
+                            {customerName} #{orderNumber}
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-2">
+                            {categoryLabel && (
+                                <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+                                    {categoryLabel}
+                                </span>
+                            )}
+                            {paymentTags.map((tag) => (
+                                <span key={tag} className="px-2.5 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+                                    {tag}
+                                </span>
+                            ))}
+                            {genehmigtTag && (
+                                <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-emerald-100 text-emerald-800">
+                                    {genehmigtTag}
+                                </span>
+                            )}
                         </div>
-                    )}
-                    {error && (
-                        <p className="text-sm text-red-600">{error}</p>
-                    )}
-                    {!loading && !error && data && (
-                        <>
-                            {/* GESAMTBETRAG */}
-                            <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
-                                <h3 className="text-xs font-semibold text-black uppercase tracking-wide mb-2">
-                                    Gesamtbetrag
-                                </h3>
-                                <p className="text-2xl font-bold text-black">
-                                    {formatEuro(data.totalPrice)}
-                                </p>
-                                {(displayInsuranceTotal > 0 || displayPrivateTotal > 0) && (
+                    </DialogHeader>
+
+                    <div className="px-6 py-5 space-y-6">
+                        {loading && (
+                            <div className="flex justify-center py-12">
+                                <div className="animate-spin rounded-full h-10 w-10 border-2 border-emerald-200 border-t-emerald-600" />
+                            </div>
+                        )}
+                        {error && (
+                            <p className="text-sm text-red-600">{error}</p>
+                        )}
+                        {!loading && !error && data && (
+                            <>
+                                {/* GESAMTBETRAG */}
+                                <div className="rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+                                    <h3 className="text-xs font-semibold text-black uppercase tracking-wide mb-2">
+                                        Gesamtbetrag
+                                    </h3>
+                                    <p className="text-2xl font-bold text-black">
+                                        {formatEuro(data.totalPrice)}
+                                    </p>
                                     <div className="mt-3 space-y-1.5">
-                                        {displayInsuranceTotal > 0 && (
-                                            <div className={`text-lg font-semibold ${insuranceAmountColorClass}`}>
-                                                KK: {formatEuro(displayInsuranceTotal)}
-                                            </div>
-                                        )}
-                                        {displayPrivateTotal > 0 && (
-                                            <div className={`text-lg font-semibold ${privateAmountColorClass}`}>
-                                                Privat: {formatEuro(displayPrivateTotal)}
-                                            </div>
-                                        )}
+                                        <div className={`text-lg font-semibold ${insuranceAmountColorClass}`}>
+                                            KK: {formatEuro(displayInsuranceTotal)}
+                                        </div>
+                                        <div className={`text-lg font-semibold ${privateAmountColorClass}`}>
+                                            Privat: {formatEuro(displayPrivateTotal)}
+                                        </div>
                                     </div>
-                                )}
-                                {/* <p className="text-sm text-gray-600 mt-1">
+                                    {/* <p className="text-sm text-gray-600 mt-1">
                                     Netto {formatEuro(netto)} · MwSt 19% ({formatEuro(mwst)})
                                 </p> */}
-                            </div>
-
-                            {/* ZAHLUNGSAUFTEILUNG */}
-                            <div className="rounded-xl border border-gray-200 bg-[#f6f7f8] p-0 overflow-hidden">
-                                <div className="px-4 py-3 border-b border-gray-200 bg-white">
-                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                                        Zahlungsaufteilung
-                                    </h3>
                                 </div>
-                                <div className="px-5 py-4">
-                                    <div className="space-y-4 text-sm">
-                                        {data.orderCategory === 'insole' && (
-                                            <>
-                                                <div className="flex items-center justify-between gap-4">
-                                                    <span className="text-gray-700">Versorgung</span>
-                                                    <span className="font-medium text-gray-900">{formatEuroCompact(versorgungPrice)}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between gap-4">
-                                                    <span className="text-gray-700">Menge</span>
-                                                    <span className="font-medium text-gray-900">× {quantity}</span>
-                                                </div>
-                                                <div className="flex items-center justify-between gap-4">
-                                                    <span className="text-gray-700">Fußanalyse</span>
-                                                    <span className="font-medium text-gray-900">{formatEuroCompact(footAnalysisPrice)}</span>
-                                                </div>
-                                                {addonPrices > 0 && (
+
+                                {/* ZAHLUNGSAUFTEILUNG */}
+                                <div className="rounded-xl border border-gray-200 bg-[#f6f7f8] p-0 overflow-hidden">
+                                    <div className="px-4 py-3 border-b border-gray-200 bg-white">
+                                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                            Zahlungsaufteilung
+                                        </h3>
+                                    </div>
+                                    <div className="px-5 py-4">
+                                        <div className="space-y-4 text-sm">
+                                            {data.orderCategory === 'insole' && (
+                                                <>
+                                                    {positions.length > 0 && (
+                                                        <>
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <span className="text-gray-700">Netto:</span>
+                                                                <span className="font-medium text-gray-900">{formatEuroCompact(positionsNettoTotal)}</span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <span className="text-gray-700">+ {vatRate}% MwSt.:</span>
+                                                                <span className="font-medium text-gray-900">{formatEuroCompact(positionsMwstTotal)}</span>
+                                                            </div>
+                                                            <div className="flex items-center justify-between gap-4">
+                                                                <span className="text-gray-700">Positionen (inkl. MwSt.)</span>
+                                                                <span className="font-medium text-gray-900">{formatEuroCompact(positionsTotalPrice)}</span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                     <div className="flex items-center justify-between gap-4">
-                                                        <span className="text-gray-700">Aufpreis</span>
-                                                        <span className="font-medium text-gray-900">{formatEuroCompact(addonPrices)}</span>
+                                                        <span className="text-gray-700">Einlagenversorgung</span>
+                                                        <span className="font-medium text-gray-900">{formatEuroCompact(versorgungPrice)}</span>
                                                     </div>
-                                                )}
-                                                {eigenanteilAt > 0 && (
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-gray-700">Menge</span>
+                                                        <span className="font-medium text-gray-900">× {quantity}</span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-gray-700">Fußanalyse</span>
+                                                        <span className="font-medium text-gray-900">{formatEuroCompact(footAnalysisPrice)}</span>
+                                                    </div>
+                                                    {discount !== 0 && (
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <span className="text-gray-700">Rabatt</span>
+                                                            <span className="font-medium text-gray-900">{formatEuroCompact(-discount)}</span>
+                                                        </div>
+                                                    )}
+                                                    {hasAddonPrices ? (
+                                                        <div className="flex items-center justify-between gap-4">
+                                                            <span className="text-gray-700">Aufpreis</span>
+                                                            <span className="font-medium text-gray-900">{formatEuroCompact(addonPrices)}</span>
+                                                        </div>
+                                                    ): null}
                                                     <div className="flex items-center justify-between gap-4">
                                                         <span className="text-gray-700">Enthält Eigenanteil (AT)</span>
                                                         <span className="font-medium text-amber-600">{formatEuroCompact(eigenanteilAt)}</span>
                                                     </div>
-                                                )}
-                                            </>
-                                        )}
-                                        {data.orderCategory !== 'insole' && (
-                                            <>
-                                                {displayPrivateTotal > 0 && (
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-gray-700">Wirtschaftlicher Aufpreis</span>
+                                                        <span className="font-medium text-gray-900">{formatEuroCompact(wirtschaftlicherAufpreis)}</span>
+                                                    </div>
+                                                </>
+                                            )}
+                                            {data.orderCategory !== 'insole' && (
+                                                <>
                                                     <div className="flex items-center justify-between gap-4">
                                                         <span className="text-gray-700">Privat</span>
                                                         <span className="font-medium text-gray-900">{formatEuroCompact(displayPrivateTotal)}</span>
                                                     </div>
-                                                )}
-                                                {displayInsuranceTotal > 0 && (
                                                     <div className="flex items-center justify-between gap-4">
                                                         <span className="text-gray-700">Krankenkasse</span>
                                                         <span className="font-medium text-gray-900">{formatEuroCompact(displayInsuranceTotal)}</span>
                                                     </div>
-                                                )}
-                                            </>
-                                        )}
-                                        <div className="border-t border-gray-300 pt-4">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <span className="text-base font-medium text-gray-700">Zwischensumme</span>
-                                                <span className="text-base font-semibold text-gray-900">{formatEuroCompact(summarySubtotal)}</span>
+                                                </>
+                                            )}
+                                            <div className="border-t border-gray-300 pt-4">
+                                                <div className="flex items-center justify-between gap-4">
+                                                    <span className="text-base font-medium text-gray-700">Zwischensumme</span>
+                                                    <span className="text-base font-semibold text-gray-900">{formatEuroCompact(summarySubtotal)}</span>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div className="border-t border-gray-400 pt-4">
-                                            <div className="flex items-center justify-between gap-4">
-                                                <span className="text-xl font-bold text-gray-900">Gesamt</span>
-                                                <span className="text-2xl font-bold text-emerald-600">{formatEuroCompact(totalPrice)}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* POSITIONEN */}
-                            <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                                <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-                                    <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                                        Positionen
-                                    </h3>
-                                </div>
-                                <div className="p-4 bg-[#f5f5f5] space-y-3">
-                                    {positions.length === 0 ? (
-                                        <div className="rounded-lg bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-500 text-center flex items-center justify-center min-h-[96px]">
-                                            Daten sind derzeit nicht verfugbar.
-                                        </div>
-                                    ) : (
-                                        positions.map((row, idx) => {
-                                            const posNum = getPositionsnummerFromDescription(row.description) ?? (idx + 1).toString().padStart(2, '0');
-                                            const desc = formatDescription(row.description);
-                                            const seite = getSeiteFromDescription(row.description);
-                                            const rowNetto = row.price / vatDivisor;
-                                            const rowMwst = row.price - rowNetto;
-                                            return (
-                                                <div
-                                                    key={row.id}
-                                                    className="rounded-lg bg-white border border-gray-100 shadow-sm p-4 flex flex-wrap items-start justify-between gap-4"
-                                                >
-                                                    <div className="min-w-0 flex-1">
-                                                        <p className="text-sm text-gray-800 leading-snug">
-                                                            <span className="font-semibold text-gray-900">{posNum}</span>
-                                                            <span className="text-gray-700"> — </span>
-                                                            <span
-                                                                className="cursor-pointer hover:text-gray-600 transition-colors text-gray-700"
-                                                                onClick={() => setFullDescriptionText(desc)}
-                                                                title="Klicken für vollständige Beschreibung"
-                                                            >
-                                                                {truncateDescription(desc)}
-                                                            </span>
-                                                        </p>
+                                            {data.orderCategory === 'insole' ? (
+                                                <div className="border-t border-gray-400 pt-4 space-y-2">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-gray-700">Privat</span>
+                                                        <span className={`font-medium ${privateAmountColorClass}`}>{formatEuroCompact(displayPrivateTotal)}</span>
                                                     </div>
-                                                    <div className="flex flex-col items-end gap-2 text-sm shrink-0">
-                                                        {seite && seite !== '—' && (
-                                                            <span className="inline-flex px-2.5 py-1 rounded-md text-emerald-700 bg-emerald-100 text-xs font-medium">
-                                                                Seite: {seite}
-                                                            </span>
-                                                        )}
-                                                        <span className="text-gray-600">Netto: {formatEuroLeading(rowNetto)}</span>
-                                                        <span className="text-gray-600">+ {vatRate}% MwSt.: {formatEuroLeading(rowMwst)}</span>
-                                                        <span className="font-bold text-emerald-600">Gesamt: {formatEuroLeading(row.price)}</span>
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-gray-700">Versicherung</span>
+                                                        <span className={`font-medium ${insuranceAmountColorClass}`}>{formatEuroCompact(displayInsuranceTotal)}</span>
                                                     </div>
                                                 </div>
-                                            );
-                                        })
-                                    )}
-                                </div>
-                                {positions.length > 0 && (
-                                    <div className="px-4 py-4 bg-white rounded-b-xl border-t border-gray-100">
-                                        <div className="flex justify-between text-sm font-bold text-gray-900">
-                                        <span>Gesamt:</span>
-                                        <span className="text-emerald-600">{formatEuroLeading(data.totalPrice)}</span>
+                                            ) : (
+                                                <div className="border-t border-gray-400 pt-4">
+                                                    <div className="flex items-center justify-between gap-4">
+                                                        <span className="text-xl font-bold text-gray-900">Gesamt</span>
+                                                        <span className="text-2xl font-bold text-emerald-600">{formatEuroCompact(totalPrice)}</span>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                )}
-                            </div>
+                                </div>
 
-                            {/* DOKUMENTE */}
-                            <div className="rounded-xl border border-gray-200 p-4">
-                                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                                    Dokumente
-                                </h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {/* {onInvoiceDownload && orderId && (
+                                {/* POSITIONEN */}
+                                <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                                    <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                                        <h3 className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                                            Positionen
+                                        </h3>
+                                    </div>
+                                    <div className="p-4 bg-[#f5f5f5] space-y-3">
+                                        {positions.length === 0 ? (
+                                            <div className="rounded-lg bg-white border border-gray-100 shadow-sm p-6 text-sm text-gray-500 text-center flex items-center justify-center min-h-[96px]">
+                                                Daten sind derzeit nicht verfugbar.
+                                            </div>
+                                        ) : (
+                                            positions.map((row, idx) => {
+                                                const posNum = getPositionsnummerFromDescription(row.description) ?? (idx + 1).toString().padStart(2, '0');
+                                                const desc = formatDescription(row.description);
+                                                const seite = getSeiteFromDescription(row.description);
+                                                const rowNetto = row.price / vatDivisor;
+                                                const rowMwst = row.price - rowNetto;
+                                                return (
+                                                    <div
+                                                        key={row.id}
+                                                        className="rounded-lg bg-white border border-gray-100 shadow-sm p-4 flex flex-wrap items-start justify-between gap-4"
+                                                    >
+                                                        <div className="min-w-0 flex-1">
+                                                            <p className="text-sm text-gray-800 leading-snug">
+                                                                <span className="font-semibold text-gray-900">{posNum}</span>
+                                                                <span className="text-gray-700"> — </span>
+                                                                <span
+                                                                    className="cursor-pointer hover:text-gray-600 transition-colors text-gray-700"
+                                                                    onClick={() => setFullDescriptionText(desc)}
+                                                                    title="Klicken für vollständige Beschreibung"
+                                                                >
+                                                                    {truncateDescription(desc)}
+                                                                </span>
+                                                            </p>
+                                                        </div>
+                                                        <div className="flex flex-col items-end gap-2 text-sm shrink-0">
+                                                            {seite && seite !== '—' && (
+                                                                <span className="inline-flex px-2.5 py-1 rounded-md text-emerald-700 bg-emerald-100 text-xs font-medium">
+                                                                    Seite: {seite}
+                                                                </span>
+                                                            )}
+                                                            <span className="text-gray-600">Netto: {formatEuroLeading(rowNetto)}</span>
+                                                            <span className="text-gray-600">+ {vatRate}% MwSt.: {formatEuroLeading(rowMwst)}</span>
+                                                            <span className="font-bold text-emerald-600">Gesamt: {formatEuroLeading(row.price)}</span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
+                                    {positions.length > 0 && (
+                                        <div className="px-4 py-4 bg-white rounded-b-xl border-t border-gray-100">
+                                            <div className="flex justify-between text-sm font-bold text-gray-900">
+                                                <span>Gesamt:</span>
+                                                <span className="text-emerald-600">{formatEuroLeading(positionsTotalPrice)}</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* DOKUMENTE */}
+                                <div className="rounded-xl border border-gray-200 p-4">
+                                    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                                        Dokumente
+                                    </h3>
+                                    <div className="flex flex-wrap gap-2">
+                                        {/* {onInvoiceDownload && orderId && (
                                         <Button
                                             variant="outline"
                                             size="sm"
@@ -432,46 +478,42 @@ export default function AbrechnungsuebersichtModal({
                                             Rechnung öffnen
                                         </Button>
                                     )} */}
-                                     <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
-                                     <Receipt className="w-4 h-4" />
-                                        Rechnung öffnen
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
-                                        <FileText className="w-4 h-4" />
-                                        KVA öffnen
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
-                                        <ShieldCheck className="w-4 h-4" />
-                                        Bewilligung öffnen
-                                    </Button>
-                                    <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
-                                        <History className="w-4 h-4" />
-                                        Zahlungshistorie
-                                    </Button>
+                                        <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
+                                            <FileText className="w-4 h-4" />
+                                            KVA
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
+                                            <FileText className="w-4 h-4" />
+                                            Werkstattzettel
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
+                                            <ShieldCheck className="w-4 h-4" />
+                                            Historie
+                                        </Button>
+                                    </div>
                                 </div>
-                            </div>
-                        </>
-                    )}
-                </div>
-            </DialogContent>
-        </Dialog>
+                            </>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
 
-        {/* Full description popup on click */}
-        <Dialog open={!!fullDescriptionText} onOpenChange={(open) => !open && setFullDescriptionText(null)}>
-            <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
-                <DialogHeader>
-                    <DialogTitle className="text-base">Beschreibung</DialogTitle>
-                </DialogHeader>
-                <div className="overflow-y-auto py-2 pr-2 -mr-2">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{fullDescriptionText}</p>
-                </div>
-                <div className="flex justify-end pt-2 border-t border-gray-100">
-                    <Button variant="outline" size="sm" onClick={() => setFullDescriptionText(null)} className="cursor-pointer">
-                        Schließen
-                    </Button>
-                </div>
-            </DialogContent>
-        </Dialog>
+            {/* Full description popup on click */}
+            <Dialog open={!!fullDescriptionText} onOpenChange={(open) => !open && setFullDescriptionText(null)}>
+                <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="text-base">Beschreibung</DialogTitle>
+                    </DialogHeader>
+                    <div className="overflow-y-auto py-2 pr-2 -mr-2">
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{fullDescriptionText}</p>
+                    </div>
+                    <div className="flex justify-end pt-2 border-t border-gray-100">
+                        <Button variant="outline" size="sm" onClick={() => setFullDescriptionText(null)} className="cursor-pointer">
+                            Schließen
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </>
     );
 }
