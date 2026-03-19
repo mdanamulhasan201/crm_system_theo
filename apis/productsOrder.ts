@@ -529,6 +529,17 @@ export const getWerkstattzettelA3Pdf = async (orderId: string) => {
     }
 }
 
+// /customer-orders/manage/get-kva-number/{{order id}}
+
+export const getKvaNumber = async (orderId: string) => {
+    try {
+        const response = await axiosClient.post(`/customer-orders/manage/get-kva-number/${orderId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 
 // customer-orders/update/{{order Id}}
 export const updateOrder = async (orderId: string, payload: Record<string, any>) => {

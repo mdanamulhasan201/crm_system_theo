@@ -2,6 +2,9 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { OrderData, useOrders } from "@/contexts/OrdersContext";
 import Link from "next/link";
 import { getPaymentStatusColor } from "@/lib/paymentStatusUtils";
+import { useState } from "react";
+import toast from "react-hot-toast";
+import { getKvaNumber } from "@/apis/productsOrder";
 import {
     AlertTriangle,
     ClipboardEdit,
@@ -131,7 +134,8 @@ export default function OrderTableRow({
     onNoteClick,
     onPriceClick,
 }: OrderTableRowProps) {
-    const { selectedType } = useOrders();
+    const { selectedType, refreshOrderData } = useOrders();
+    const [isGettingKvaNumber, setIsGettingKvaNumber] = useState(false);
     // Prefer API `u_orderType` for the small type badge beside the checkbox.
     const rawOrderType = (order.uOrderType ?? order.orderType ?? selectedType ?? '').toString().trim();
     const normalizedOrderType = rawOrderType.toLowerCase();
@@ -260,6 +264,7 @@ export default function OrderTableRow({
     const showBarcodeAction = (isAbholbereit || isAusgefuehrt) && !!onBarcodeStickerClick;
     const hasInvoice = !!order.invoice;
     const shouldShowVerordnungsvorschlag = !!onKvaDownload && order.kva === true;
+    const kvaNumberAvailable = (order as any).kvaNumber != null;
     const shouldShowHalbprobePdf = !!onHalbprobeDownload && order.halbprobe === true;
 
     const rawBezahltValue = typeof order.bezahlt === 'string' ? order.bezahlt : '';
@@ -745,23 +750,52 @@ export default function OrderTableRow({
                             </DropdownMenuItem>
                         )}
                         {shouldShowVerordnungsvorschlag && (
-                            <DropdownMenuItem
-                                className="cursor-pointer"
-                                disabled={kvaLoading}
-                                onSelect={(e) => e.preventDefault()}
-                                onClick={async (e) => {
-                                    e.stopPropagation();
-                                    await onKvaDownload(order.id);
-                                }}
-                            >
-                                {kvaLoading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
-                                ) : (
-                                    <FileText className="h-4 w-4 text-gray-700" />
-                                )}
-                                  <span>{kvaLoading ? "Kostenvoranschlag..." : "Kostenvoranschlag"}</span>
-                               
-                            </DropdownMenuItem>
+                            <TooltipProvider delayDuration={200}>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <DropdownMenuItem
+                                            className={kvaNumberAvailable ? "cursor-pointer" : "cursor-pointer opacity-50"}
+                                            disabled={kvaLoading || isGettingKvaNumber}
+                                            onSelect={(e) => e.preventDefault()}
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if (kvaNumberAvailable) {
+                                                    await onKvaDownload(order.id);
+                                                } else {
+                                                    setIsGettingKvaNumber(true);
+                                                    try {
+                                                        const res = await getKvaNumber(order.id);
+                                                        if (res?.success) {
+                                                            toast.success(res.message || 'KVA number fetched successfully');
+                                                            await refreshOrderData(order.id);
+                                                        } else {
+                                                            toast.error(res?.message || 'Fehler beim Abrufen der KVA-Nummer');
+                                                        }
+                                                    } catch {
+                                                        toast.error('Fehler beim Abrufen der KVA-Nummer');
+                                                    } finally {
+                                                        setIsGettingKvaNumber(false);
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            {(kvaLoading || isGettingKvaNumber) ? (
+                                                <Loader2 className="h-4 w-4 animate-spin text-gray-700" />
+                                            ) : (
+                                                <FileText className="h-4 w-4 text-gray-700" />
+                                            )}
+                                            <span>
+                                                {kvaLoading ? "Kostenvoranschlag..." : isGettingKvaNumber ? "KVA Nummer wird generiert..." : "Kostenvoranschlag"}
+                                            </span>
+                                        </DropdownMenuItem>
+                                    </TooltipTrigger>
+                                    {!kvaNumberAvailable && !isGettingKvaNumber && (
+                                        <TooltipContent side="top" align="center" sideOffset={4} className="text-xs px-2 py-1">
+                                            KVA-Nummer generieren
+                                        </TooltipContent>
+                                    )}
+                                </Tooltip>
+                            </TooltipProvider>
                         )}
                         {shouldShowHalbprobePdf && (
                             <DropdownMenuItem
