@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X, Check } from 'lucide-react';
 import PositionsnummerDropdown from '../Dropdowns/PositionsnummerDropdown';
 import EmployeeDropdown from '../../Common/EmployeeDropdown';
 
@@ -25,8 +25,8 @@ interface RezeptAbrechnungCardProps {
     onItemSideChange?: (posNum: string, side: 'L' | 'R' | 'BDS') => void;
     vatCountry?: string;
 
-    // Diagnose
-    selectedDiagnosis: string;
+    // Diagnose (multi-select)
+    selectedDiagnosisList: string[];
     diagnosisOptions: readonly string[];
     showDiagnosisDropdown: boolean;
     onDiagnosisToggle: () => void;
@@ -70,7 +70,7 @@ export default function RezeptAbrechnungCard({
     itemSides,
     onItemSideChange,
     vatCountry,
-    selectedDiagnosis,
+    selectedDiagnosisList,
     diagnosisOptions,
     showDiagnosisDropdown,
     onDiagnosisToggle,
@@ -221,60 +221,104 @@ export default function RezeptAbrechnungCard({
                     </div>
                 )}
 
-                {/* Diagnose */}
+                {/* Diagnose (smart multi-select — fixed height) */}
                 <div className={billingType === 'Krankenkassa' ? 'lg:col-span-3' : 'lg:col-span-4'} ref={diagnosisRef}>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Diagnose
                     </label>
                     <div className="relative">
-                        <button
-                            type="button"
+                        {/* Fixed-height trigger: shows first tag + overflow count */}
+                        <div
+                            role="button"
+                            tabIndex={0}
                             onClick={onDiagnosisToggle}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent cursor-pointer flex items-center justify-between gap-2"
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onDiagnosisToggle(); } }}
+                            className={`h-[42px] w-full px-2.5 border rounded-md bg-white cursor-pointer flex items-center gap-1.5 focus:outline-none transition-colors overflow-hidden ${showDiagnosisDropdown ? 'border-[#61A178] ring-2 ring-[#61A178]/20' : 'border-gray-300 hover:border-gray-400'}`}
                         >
-                            <span className={`truncate flex-1 ${selectedDiagnosis ? 'text-gray-900' : 'text-gray-400'}`}>
-                                {selectedDiagnosis || 'Auswählen...'}
-                            </span>
-                            <div className="flex items-center shrink-0">
-                                {selectedDiagnosis && onDiagnosisClear ? (
+                            {selectedDiagnosisList.length === 0 ? (
+                                <span className="text-gray-400 text-sm flex-1 select-none">Auswählen...</span>
+                            ) : (
+                                <>
+                                    {/* First selected tag */}
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[#61A178]/10 text-[#61A178] border border-[#61A178]/25 flex-shrink-0 max-w-[55%]">
+                                        <span className="truncate">{selectedDiagnosisList[0]}</span>
+                                        <span
+                                            role="button"
+                                            tabIndex={-1}
+                                            onClick={(e) => { e.stopPropagation(); onDiagnosisSelect(selectedDiagnosisList[0]); }}
+                                            className="cursor-pointer text-[#61A178]/60 hover:text-[#61A178] transition-colors flex-shrink-0"
+                                            aria-label={`${selectedDiagnosisList[0]} entfernen`}
+                                        >
+                                            <X className="h-3 w-3" />
+                                        </span>
+                                    </span>
+                                    {/* Overflow badge */}
+                                    {selectedDiagnosisList.length > 1 && (
+                                        <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 flex-shrink-0">
+                                            +{selectedDiagnosisList.length - 1}
+                                        </span>
+                                    )}
+                                    <span className="flex-1" />
+                                </>
+                            )}
+                            {/* Right-side icons */}
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                                {selectedDiagnosisList.length > 0 && onDiagnosisClear && (
                                     <span
                                         role="button"
                                         tabIndex={-1}
-                                        onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            onDiagnosisClear();
-                                        }}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter' || e.key === ' ') {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                onDiagnosisClear();
-                                            }
-                                        }}
-                                        className="rounded p-0.5 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors cursor-pointer"
-                                        aria-label="Auswahl löschen"
+                                        onClick={(e) => { e.stopPropagation(); onDiagnosisClear(); }}
+                                        className="rounded p-0.5 hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                                        aria-label="Alle löschen"
                                     >
-                                        <X className="h-4 w-4" />
+                                        <X className="h-3.5 w-3.5" />
                                     </span>
-                                ) : (
-                                    <ChevronDown className="h-4 w-4 opacity-50" />
                                 )}
+                                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-150 ${showDiagnosisDropdown ? 'rotate-180' : ''}`} />
                             </div>
-                        </button>
+                        </div>
+
                         {showDiagnosisDropdown && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                                {diagnosisOptions.map((option, index) => (
-                                    <div
-                                        key={`diagnosis-${index}-${option}`}
-                                        onClick={() => {
-                                            onDiagnosisSelect(option);
-                                        }}
-                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                    >
-                                        {option}
+                            <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden">
+                                {/* Selected summary header (when 2+ selected) */}
+                                {selectedDiagnosisList.length > 1 && (
+                                    <div className="px-3 py-2 border-b border-gray-100 flex flex-wrap gap-1">
+                                        {selectedDiagnosisList.map((name) => (
+                                            <span
+                                                key={name}
+                                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-[#61A178]/10 text-[#61A178] border border-[#61A178]/25"
+                                            >
+                                                <span className="max-w-[140px] truncate">{name}</span>
+                                                <span
+                                                    role="button"
+                                                    tabIndex={-1}
+                                                    onClick={(e) => { e.stopPropagation(); onDiagnosisSelect(name); }}
+                                                    className="cursor-pointer text-[#61A178]/60 hover:text-[#61A178] flex-shrink-0"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </span>
+                                            </span>
+                                        ))}
                                     </div>
-                                ))}
+                                )}
+                                {/* Options list */}
+                                <div className="max-h-52 overflow-auto">
+                                    {diagnosisOptions.map((option, index) => {
+                                        const isSelected = selectedDiagnosisList.includes(option);
+                                        return (
+                                            <div
+                                                key={`diagnosis-${index}-${option}`}
+                                                onClick={(e) => { e.stopPropagation(); onDiagnosisSelect(option); }}
+                                                className={`px-3 py-2.5 cursor-pointer text-sm flex items-center gap-2.5 transition-colors ${isSelected ? 'bg-[#61A178]/5 hover:bg-[#61A178]/10' : 'hover:bg-gray-50'}`}
+                                            >
+                                                <div className={`flex-shrink-0 w-4 h-4 rounded border-[1.5px] flex items-center justify-center transition-all ${isSelected ? 'bg-[#61A178] border-[#61A178]' : 'border-gray-300 bg-white'}`}>
+                                                    {isSelected && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
+                                                </div>
+                                                <span className={isSelected ? 'font-medium text-gray-900' : 'text-gray-700'}>{option}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         )}
                     </div>

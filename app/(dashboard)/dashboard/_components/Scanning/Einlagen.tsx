@@ -86,6 +86,7 @@ interface PrefillOrderData {
         versorgung?: string | null;
         diagnosis_status?: string | null;
     };
+    diagnosisList?: string[];
 }
 
 interface ScanningFormProps {
@@ -260,6 +261,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         clearDiagnosisAndReloadOptions,
         resolveVersorgungIdFromText,
     } = useScanningFormData(customer, onCustomerUpdate);
+
+    // Multi-select diagnosis list (names for display + payload)
+    const [selectedDiagnosisList, setSelectedDiagnosisList] = React.useState<string[]>([]);
 
     // Custom form hook
     const formHook = useEinlagenForm({ selectedEinlage });
@@ -577,8 +581,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             // Check if it's an ID (UUID format) or a name
             const isId = typeof diagnosisStatus === 'string' && diagnosisStatus.includes('-');
             if (isId) {
-                // It's an ID, use it directly
                 setSelectedDiagnosis(diagnosisStatus);
+                const matchingName = diagnosisOptionsFull?.find(d => d.id === diagnosisStatus)?.name;
+                if (matchingName) setSelectedDiagnosisList([matchingName]);
             } else {
                 // It's a name or old code format, find matching diagnosis
                 const matchingDiagnosis = diagnosisOptionsFull?.find(
@@ -586,8 +591,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 );
                 if (matchingDiagnosis) {
                     setSelectedDiagnosis(matchingDiagnosis.id);
+                    setSelectedDiagnosisList([matchingDiagnosis.name]);
                 }
             }
+        }
+        // Prefill diagnosisList if available
+        if (Array.isArray(prefillOrderData.diagnosisList) && prefillOrderData.diagnosisList.length > 0) {
+            setSelectedDiagnosisList(prefillOrderData.diagnosisList);
         }
         const supplyValue =
             prefillOrderData.werkstattzettel?.versorgung ||
@@ -645,6 +655,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setSchuhmodell_wählen,
         setKostenvoranschlag,
         setSelectedDiagnosis,
+        setSelectedDiagnosisList,
         setSupply,
         setSelectedVersorgungId,
         setInsoleStandards,
@@ -842,6 +853,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                         ? Number(formDataForOrder.insuranceTotalPrice)
                         : calculateInsuranceTotalPrice(buildInsurancesArray()),
                     insoleStandards: formDataForOrder.insoleStandards || [],
+                    diagnosisList: formDataForOrder.diagnosisList || [],
                     notiz_hinzufügen: formDataForOrder.notiz_hinzufügen || undefined,
                     ...(privatePrice !== undefined && { privatePrice: Number(privatePrice) }),
                     ...(formDataForOrder.vat_rate !== undefined && { vat_rate: Number(formDataForOrder.vat_rate) }),
@@ -999,6 +1011,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             ...formData,
             isCustomVersorgung: activeVersorgungTab === 'einmalig',
             ...(einlagetypPriceForPrivat != null && { einlagetypPriceForPrivat }),
+            diagnosisList: selectedDiagnosisList,
         };
         
         setFormDataForOrder(formDataWithFlag);
@@ -1134,19 +1147,26 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     }));
                 }}
                 vatCountry={user?.accountInfo?.vat_country || undefined}
-                selectedDiagnosis={selectedDiagnosis ? getDiagnosisNameById(selectedDiagnosis) : ''}
+                selectedDiagnosisList={selectedDiagnosisList}
                 diagnosisOptions={diagnosisOptions}
                 showDiagnosisDropdown={showDiagnosisDropdown}
                 onDiagnosisToggle={() => setShowDiagnosisDropdown(!showDiagnosisDropdown)}
-                onDiagnosisSelect={(value) => {
-                    // Find diagnosis ID from name
-                    const selectedDiagnosisObj = diagnosisOptionsFull?.find(d => d.name === value);
-                    if (selectedDiagnosisObj) {
-                        handleDiagnosisSelect(selectedDiagnosisObj.id);
+                onDiagnosisSelect={(name) => {
+                    // Toggle the name in the list
+                    setSelectedDiagnosisList((prev) =>
+                        prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+                    );
+                    // Keep the hook's selectedDiagnosis updated for versorgung fetching
+                    const diagnosisObj = diagnosisOptionsFull?.find(d => d.name === name);
+                    if (diagnosisObj) {
+                        handleDiagnosisSelect(diagnosisObj.id);
                     }
-                    setShowDiagnosisDropdown(false);
+                    // Do NOT close dropdown — multi-select stays open
                 }}
-                onDiagnosisClear={() => setSelectedDiagnosis('')}
+                onDiagnosisClear={() => {
+                    setSelectedDiagnosisList([]);
+                    setSelectedDiagnosis('');
+                }}
                 onCloseDiagnosisDropdown={() => setShowDiagnosisDropdown(false)}
                 selectedEmployee={selectedEmployee}
                 employeeSearchText={employeeSearchText}

@@ -44,6 +44,7 @@ interface FormData {
   insuranceTotalPrice?: number
   vat_rate?: number
   insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>
+  diagnosisList?: string[]
   bezahlt?: string
   paymentStatus?: string
   printWerkstattzettel?: boolean
@@ -426,10 +427,11 @@ export default function WerkstattzettelModal({
         scanData.id
       )
 
-      // Combine formData with werkstattzettel payload
+        // Combine formData with werkstattzettel payload
       const combinedFormData = {
         ...formData,
         ...werkstattzettelPayload,
+        diagnosisList: formData?.diagnosisList || [],
         // Controls whether invoice PDF download should be enabled later
         printWerkstattzettel: shouldPrintWerkstattzettel,
         quantity: (() => {
