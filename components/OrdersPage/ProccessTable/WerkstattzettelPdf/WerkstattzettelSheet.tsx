@@ -257,15 +257,15 @@ export default function WerkstattzettelSheet({
           <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 10 }}>
             <Field label="Einlage Typ" value={data.einlagentyp} />
             <Field
-              label="Überzug"
+              label="Versorgung"
               value={
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div style={{ fontSize: 11 }}>{zusatz.name || zusatz.versorgung || ''}</div>
-                  <div style={{ fontSize: 10, color: '#4b5563' }}>
+                  {/* <div style={{ fontSize: 10, color: '#4b5563' }}>
                     {[diagnosisStatus ? `Diagnose: ${diagnosisStatus}` : null, zusatz.material ? `Material: ${zusatz.material}` : null]
                       .filter(Boolean)
                       .join(' • ')}
-                  </div>
+                  </div> */}
                   <div style={{ fontSize: 10, color: '#4b5563' }}>
                     {[zusatz.rohlingHersteller ? `Rohling: ${zusatz.rohlingHersteller}` : null, zusatz.artikelHersteller ? `Artikel: ${zusatz.artikelHersteller}` : null]
                       .filter(Boolean)
@@ -275,7 +275,7 @@ export default function WerkstattzettelSheet({
                 </div>
               }
             />
-            {data.überzug ? <Field label="\u00dcberzug" value={data.überzug} /> : null}
+            {data.überzug ? <Field label="überzug" value={data.überzug} /> : null}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 20, rowGap: 10 }}>
               <Field label="Grösse" value={data.grösse != null ? String(data.grösse) : ''} />
