@@ -2,8 +2,7 @@
 
 import { useCallback, useState } from 'react';
 import toast from 'react-hot-toast';
-import { createOrder as createOrderApi, saveInvoicePdf, pdfSendToCustomer, getSingleOrder, customOrderCreate } from '@/apis/productsOrder';
-import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
+import { createOrder as createOrderApi, pdfSendToCustomer, customOrderCreate } from '@/apis/productsOrder';
 
 export const useCreateOrder = () => {
     const [isCreating, setIsCreating] = useState(false);
@@ -51,67 +50,6 @@ export const useCreateOrder = () => {
             // Allow UI (e.g. confirmation modal button) to stop showing loading
             setIsCreating(false);
 
-            try {
-                const orderResponse = await getSingleOrder(orderId);
-                if (!orderResponse.success) {
-                    throw new Error('Failed to fetch order data');
-                }
-
-                const updateEvent = new CustomEvent('orderDataUpdated', {
-                    detail: { orderData: orderResponse.data }
-                });
-                window.dispatchEvent(updateEvent);
-
-                // Run PDF generation and optional sending in the background
-                (async () => {
-                    try {
-                        // Wait for the DOM to update and ensure the invoice-print-area element exists
-                        let retries = 0;
-                        const maxRetries = 10;
-                        while (retries < maxRetries) {
-                            const element = document.getElementById('invoice-print-area');
-                            if (element) {
-                                break;
-                            }
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                            retries++;
-                        }
-
-                        // Additional delay to ensure React has rendered the updated data
-                        await new Promise(resolve => setTimeout(resolve, 200));
-
-                        const element = document.getElementById('invoice-print-area');
-                        if (!element) {
-                            throw new Error('Invoice print area element not found. Please try generating PDF from the order details page.');
-                        }
-
-                        const pdfBlob = await generatePdfFromElement('invoice-print-area', pdfPresets.balanced);
-
-                        // Save the PDF
-                        const pdfFormData = new FormData();
-                        pdfFormData.append('invoice', pdfBlob, `order_${orderId}.pdf`);
-                        await saveInvoicePdf(orderId, pdfFormData);
-
-                        if (autoSendToCustomer) {
-                            try {
-                                await sendPdfToCustomer(orderId);
-                                toast.success('PDF sent to customer successfully!');
-                            } catch (sendError) {
-                                console.error('Failed to send PDF to customer', sendError);
-                                toast.error('PDF saved but failed to send to customer');
-                            }
-                        }
-                    } catch (pdfError) {
-                        console.error('Failed to generate/save PDF:', pdfError);
-                        toast.error('PDF generation failed');
-                    }
-                })();
-            } catch (pdfError) {
-                // console.error('Failed to prepare order data for PDF:', pdfError);
-                // Order is already created; only notify about PDF problem
-                toast.error('PDF generation preparation failed');
-            }
-
             return response;
         } catch (error: any) {
             console.error('Failed to create order', error);
@@ -127,20 +65,8 @@ export const useCreateOrder = () => {
         }
     }, []);
 
-    const generatePdfFromInvoicePage = useCallback(async (orderId: string) => {
-        try {
-            // Use shared PDF generation utility
-            const pdfBlob = await generatePdfFromElement('invoice-print-area', pdfPresets.balanced);
-
-            const formData = new FormData();
-            formData.append('invoice', pdfBlob, `order_${orderId}.pdf`);
-
-            await saveInvoicePdf(orderId, formData);
-
-        } catch (error) {
-            console.error('Failed to generate and save PDF:', error);
-            throw error;
-        }
+    const generatePdfFromInvoicePage = useCallback(async (_orderId: string) => {
+        // PDF generation is now handled via InvoiceGeneratePdfModal (Werkstattzettel design)
     }, []);
 
     const sendPdfToCustomer = useCallback(async (orderId: string) => {

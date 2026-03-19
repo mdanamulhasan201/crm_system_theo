@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useGeneratePdf } from '@/hooks/orders/useGeneratePdf';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { getWerkstattzettelSheetPdfData, pdfSendToCustomer } from '@/apis/productsOrder';
+import { getWerkstattzettelSheetPdfData, pdfSendToCustomer, saveInvoicePdf } from '@/apis/productsOrder';
 import InvoicePage from './InvoicePage';
 import toast from 'react-hot-toast';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
@@ -75,7 +75,18 @@ export default function InvoiceGeneratePdfModal({ isOpen, onClose, orderId, down
 
             const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.document);
             const safeName = (sheetData.customerName || 'Kunde').toString().trim().replace(/\s+/g, '_');
+
+            // Download to user
             downloadBlob(pdfBlob, `Werkstattzettel_${safeName}.pdf`);
+
+            // Also upload the new Werkstattzettel PDF to upload-invoice-only
+            try {
+                const uploadFormData = new FormData();
+                uploadFormData.append('invoice', pdfBlob, `order_${orderId}.pdf`);
+                await saveInvoicePdf(orderId, uploadFormData);
+            } catch (uploadErr) {
+                console.error('PDF upload to upload-invoice-only failed:', uploadErr);
+            }
         } catch (e) {
             console.error('Werkstattzettel PDF error:', e);
             toast.error('Fehler beim Erstellen des Werkstattzettel PDFs');
