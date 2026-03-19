@@ -33,6 +33,7 @@ export interface WerkstattzettelSheetData {
   rabatt?: number | string | null;
   versorgungNote?: string | null;
   preisuebersicht?: {
+    net_price?: number | null;
     vatRate?: number | null;
     privatePrice?: number | null;
     insuranceTotalPrice?: number | null;
@@ -133,12 +134,39 @@ export default function WerkstattzettelSheet({
   })();
   const zusatz = data.zusatzpositionen ?? {};
   const diagnosisStatus = (zusatz.diagnosis_status ?? []).filter(Boolean).join(', ');
-  const fussanalysePreis = (data as any)?.fussanalysePreis ?? (price as any)?.fussanalysePreis;
-  const quantityNum = (price as any)?.quantity;
-  const insuranceGross = (price as any)?.insuranceTotalPrice;
-  const vatRate = (price as any)?.vatRate;
-  const positionsnummerNet = (price as any)?.net_price;
-  const discount = (price as any)?.discount;
+  const fussanalysePreis = (data as any)?.fussanalysePreis ?? (price as any)?.fussanalysePreis ?? 0;
+  const quantityNum = (price as any)?.quantity ?? null;
+  const insuranceGross: number | null = (price as any)?.insuranceTotalPrice ?? null;
+  const vatRate: number | null = (price as any)?.vatRate ?? null;
+  const discount: number | null = (price as any)?.discount ?? null;
+
+  // Derive net price when backend returns null
+  const positionsnummerNet: number | null = (() => {
+    const raw = (price as any)?.net_price;
+    if (raw != null && Number.isFinite(Number(raw))) return Number(raw);
+    if (insuranceGross != null && vatRate != null && vatRate > 0) {
+      return insuranceGross / (1 + vatRate / 100);
+    }
+    return null;
+  })();
+
+  const vatAmount: number | null =
+    positionsnummerNet != null && insuranceGross != null
+      ? insuranceGross - positionsnummerNet
+      : null;
+
+  // Zwischensumme = back-calculated pre-discount total (Gesamt = Zwischensumme × (1 - discount/100))
+  const zwischensumme: number | null = (() => {
+    const total = (price as any)?.totalPrice;
+    if (total == null || !Number.isFinite(Number(total))) return null;
+    if (discount != null && discount > 0) return Number(total) / (1 - discount / 100);
+    return Number(total);
+  })();
+
+  const rabattAmount: number | null =
+    zwischensumme != null && discount != null && discount > 0
+      ? zwischensumme * (discount / 100)
+      : null;
 
   return (
     <div
@@ -265,43 +293,59 @@ export default function WerkstattzettelSheet({
             Preisübersicht
           </div>
           <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {/* Positionsnummer rows (match template) */}
-            {positionsnummerNet != null ? (
+            {/* Positionsnummer netto */}
+            {positionsnummerNet != null && (
               <PriceRow label="Positionsnummer netto" value={formatMoneyWithEuro(positionsnummerNet)} />
-            ) : null}
-            {/* Only show VAT line if API provides netto + vatRate */}
-            {positionsnummerNet != null && vatRate != null ? (
-              <PriceRow label={formatVatLabel(vatRate)} value="" />
-            ) : null}
-            {insuranceGross != null ? (
+            )}
+            {/* + VAT% MwSt. with actual amount */}
+            {vatAmount != null && vatRate != null && (
+              <PriceRow
+                label={`+ ${vatRate}% MwSt.`}
+                value={formatMoneyWithEuro(vatAmount)}
+              />
+            )}
+            {/* Positionsnummer inkl. MwSt. */}
+            {insuranceGross != null && (
               <PriceRow label="Positionsnummer (inkl. MwSt.)" value={formatMoneyWithEuro(insuranceGross)} />
-            ) : null}
-
-            {/* Other price items */}
-            {price.einlagenversorgungPreis != null ? (
+            )}
+            {/* Versorgung */}
+            {price.einlagenversorgungPreis != null && (
               <PriceRow label="Versorgung" value={formatMoneyWithEuro(price.einlagenversorgungPreis)} />
-            ) : null}
-            {quantityNum != null ? <PriceRow label="Menge" value={`x ${String(quantityNum)}`} /> : null}
-            {fussanalysePreis != null ? (
+            )}
+            {/* Menge with × symbol */}
+            {quantityNum != null && (
+              <PriceRow label="Menge" value={`\u00d7 ${String(quantityNum)}`} />
+            )}
+            {/* Fußanalyse */}
+            {fussanalysePreis != null && (
               <PriceRow label="Fußanalyse" value={formatMoneyWithEuro(fussanalysePreis)} />
-            ) : null}
-            {price.privatePrice != null ? (
+            )}
+            {/* Eigenanteil (private price = patient co-payment) */}
+            {price.privatePrice != null && (
               <PriceRow label="Enthält Eigenanteil (AT)" value={formatMoneyWithEuro(price.privatePrice)} />
-            ) : null}
-            {data.wirtschaftlicherAufpreis != null && Number(data.wirtschaftlicherAufpreis) !== 0 ? (
+            )}
+            {/* Wirtschaftlicher Aufpreis */}
+            {data.wirtschaftlicherAufpreis != null && Number(data.wirtschaftlicherAufpreis) !== 0 && (
               <PriceRow label="Wirtschaftlicher Aufpreis" value={formatMoneyWithEuro(data.wirtschaftlicherAufpreis)} />
-            ) : null}
-            {discount != null ? <PriceRow label="Rabatt" value={`${String(discount)}%`} /> : null}
+            )}
 
-            {price.totalPrice != null ? (
+            {/* Separator + Zwischensumme */}
+            {zwischensumme != null && (
               <>
                 <div style={{ borderTop: '1px solid #d1d5db', marginTop: 2 }} />
-                <PriceRow label="Zwischensumme" value={formatMoneyWithEuro(price.totalPrice)} />
+                <PriceRow label="Zwischensumme" value={formatMoneyWithEuro(zwischensumme)} />
               </>
-            ) : null}
+            )}
+            {/* Rabatt (X%): -amount */}
+            {rabattAmount != null && discount != null && (
+              <PriceRow
+                label={`Rabatt (${discount}%)`}
+                value={`-${formatMoneyWithEuro(rabattAmount)}`}
+              />
+            )}
 
-            {/* Total + bottom split (Privat / Versicherung) */}
-            {price.totalPrice != null ? (
+            {/* Gesamt */}
+            {price.totalPrice != null && (
               <>
                 <div style={{ borderTop: '2px solid #9ca3af', marginTop: 4 }} />
                 <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
@@ -310,7 +354,8 @@ export default function WerkstattzettelSheet({
                     {formatMoneyWithEuro(price.totalPrice)}
                   </div>
                 </div>
-                {price.privatePrice != null || price.insuranceTotalPrice != null ? (
+                {/* Privat / Versicherung split */}
+                {(price.privatePrice != null || price.totalPrice != null) && (
                   <div
                     style={{
                       marginTop: 6,
@@ -325,12 +370,16 @@ export default function WerkstattzettelSheet({
                       {price.privatePrice != null ? `Privat ${formatMoneyWithEuro(price.privatePrice)}` : ''}
                     </div>
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#059669', whiteSpace: 'nowrap' }}>
-                      {price.insuranceTotalPrice != null ? `Versicherung ${formatMoneyWithEuro(price.insuranceTotalPrice)}` : ''}
+                      {price.privatePrice != null && price.totalPrice != null
+                        ? `Versicherung ${formatMoneyWithEuro(Number(price.totalPrice) - Number(price.privatePrice))}`
+                        : insuranceGross != null
+                          ? `Versicherung ${formatMoneyWithEuro(insuranceGross)}`
+                          : ''}
                     </div>
                   </div>
-                ) : null}
+                )}
               </>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
