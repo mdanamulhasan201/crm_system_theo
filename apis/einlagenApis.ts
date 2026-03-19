@@ -101,14 +101,16 @@ export const createCustomVersorgung = async (payload: Record<string, any>) => {
 
 
 
-// versorgungen/diagnosis?insoleType=COPPY&diagnosis=ADD,B1&limit=1000&cursor=<uuid>
+// versorgungen/diagnosis?insoleType=COPPY&diagnosis=ADD,B1&limit=10&cursor=<uuid>
+// Both insoleType and diagnosis are optional — pass only what is selected
 export const getAllSupplyStatuses = async (insoleType: string, diagnosis: string, limit: number = 10, cursor?: string) => {
     try {
-        let url = `/versorgungen/diagnosis?insoleType=${encodeURIComponent(insoleType)}&diagnosis=${encodeURIComponent(diagnosis)}&limit=${limit}`;
-        if (cursor) {
-            url += `&cursor=${cursor}`;
-        }
-        const response = await axiosClient.get(url);
+        const params = new URLSearchParams();
+        if (insoleType) params.set('insoleType', insoleType);
+        if (diagnosis) params.set('diagnosis', diagnosis);
+        params.set('limit', String(limit));
+        if (cursor) params.set('cursor', cursor);
+        const response = await axiosClient.get(`/versorgungen/diagnosis?${params.toString()}`);
         return response.data;
     } catch (error) {
         throw error;

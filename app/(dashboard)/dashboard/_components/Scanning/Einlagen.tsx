@@ -363,7 +363,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     // Re-fetch whenever Einlagetyp or selected diagnoses change
     useEffect(() => {
         const fetchStandardVersorgungen = async () => {
-            if (!einlagentyp) {
+            // Need at least one filter to call the API
+            if (!einlagentyp && selectedDiagnosisList.length === 0) {
                 setStandardVersorgungData([]);
                 setHasStandardDataLoaded(false);
                 return;
