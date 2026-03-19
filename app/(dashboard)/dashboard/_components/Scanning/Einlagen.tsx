@@ -25,7 +25,7 @@ import VersorgungsnotizCard from './Einlagen/FormSections/VersorgungsnotizCard';
 import WerkstattzettelModal from './WerkstattzettelModal';
 import SpringerDialog from './SpringerDialog';
 import SuggestSupplyAndStockModal, { type SuggestSupplyAndStockData } from './SuggestSupplyAndStockModal';
-import { getSettingData } from '@/apis/einlagenApis';
+import { getSettingData, getAllSupplyStatuses } from '@/apis/einlagenApis';
 import { suggestSupplyAndStockByRequiredLength, createOrderWithoutSupplyOrStore } from '@/apis/productsOrder';
 // import PositionsnummerDropdown from './Einlagen/Dropdowns/PositionsnummerDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -354,7 +354,54 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
     // Track active tab to determine which versorgung to use
     const [activeVersorgungTab, setActiveVersorgungTab] = useState<'standard' | 'einmalig' | 'springer' | 'manuell'>('standard');
-    
+
+    // Standard versorgung data fetched from the new diagnosis-based API
+    const [standardVersorgungData, setStandardVersorgungData] = useState<any[]>([]);
+    const [loadingStandardVersorgung, setLoadingStandardVersorgung] = useState(false);
+    const [hasStandardDataLoaded, setHasStandardDataLoaded] = useState(false);
+
+    // Re-fetch whenever Einlagetyp or selected diagnoses change
+    useEffect(() => {
+        const fetchStandardVersorgungen = async () => {
+            if (!einlagentyp) {
+                setStandardVersorgungData([]);
+                setHasStandardDataLoaded(false);
+                return;
+            }
+
+            setLoadingStandardVersorgung(true);
+            try {
+                const diagnosisParam = selectedDiagnosisList.join(',');
+                const allItems: any[] = [];
+                let cursor: string | undefined = undefined;
+
+                while (true) {
+                    const response = await getAllSupplyStatuses(einlagentyp, diagnosisParam, 10, cursor);
+                    const pageItems = response.data || [];
+                    allItems.push(...pageItems);
+
+                    const pagination = response.pagination;
+                    if (!pagination?.hasMore || !pagination?.nextCursor) {
+                        break;
+                    }
+                    cursor = pagination.nextCursor;
+                }
+
+                setStandardVersorgungData(allItems);
+                setHasStandardDataLoaded(true);
+            } catch (error) {
+                console.error('Error fetching standard versorgungen:', error);
+                setStandardVersorgungData([]);
+                setHasStandardDataLoaded(false);
+            } finally {
+                setLoadingStandardVersorgung(false);
+            }
+        };
+
+        void fetchStandardVersorgungen();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [einlagentyp, selectedDiagnosisList]);
+
     // Check localStorage for custom versorgung ID on mount
     useEffect(() => {
         const storedId = localStorage.getItem('key');
@@ -1240,9 +1287,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
             {/* Versorgung Konfigurieren Card */}
             <VersorgungKonfigurierenCard
-                versorgungData={versorgungData}
-                loadingVersorgung={loadingVersorgung}
-                hasDataLoaded={hasDataLoaded}
+                versorgungData={standardVersorgungData}
+                loadingVersorgung={loadingStandardVersorgung}
+                hasDataLoaded={hasStandardDataLoaded}
                 selectedVersorgungId={selectedVersorgungId}
                 supply={supply}
                 onVersorgungCardSelect={handleVersorgungCardSelect}
