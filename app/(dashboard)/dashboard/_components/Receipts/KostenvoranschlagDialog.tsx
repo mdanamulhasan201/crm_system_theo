@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { identifyKvaData } from '@/apis/productsOrder'
-import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator'
+import { generatePdfFromElement } from '@/lib/pdfGenerator'
 import KvaSheet, { KvaData } from '@/components/OrdersPage/ProccessTable/KvaPdf/KvaSheet'
 
 const KVA_PDF_ELEMENT_ID = 'kva-customer-history-pdf';
@@ -59,9 +59,8 @@ export default function KostenvoranschlagDialog({ open, onOpenChange, customerId
                 setKvaPdfLogoProxy(kvaData.logo ? getProxyImageUrl(kvaData.logo as string) : null);
 
                 await nextFrame();
-                await nextFrame();
 
-                const pdfBlob = await generatePdfFromElement(KVA_PDF_ELEMENT_ID, pdfPresets.document);
+                const pdfBlob = await generatePdfFromElement(KVA_PDF_ELEMENT_ID, { scale: 1.5, quality: 0.88, format: 'jpeg' });
                 const safeName = (kvaData?.customerInfo?.firstName || 'KVA')
                     .toString()
                     .trim()
