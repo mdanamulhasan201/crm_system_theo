@@ -904,6 +904,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     notiz_hinzufügen: formDataForOrder.notiz_hinzufügen || undefined,
                     ...(privatePrice !== undefined && { privatePrice: Number(privatePrice) }),
                     ...(formDataForOrder.vat_rate !== undefined && { vat_rate: Number(formDataForOrder.vat_rate) }),
+                    ...(formDataForOrder.austria_price !== undefined && { austria_price: Number(formDataForOrder.austria_price) }),
                 };
 
                 // Add versorgungId OR key based on active tab

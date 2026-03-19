@@ -370,7 +370,7 @@ export default function WerkstattzettelModal({
       // Krankenkasse + AT: Gesamt (total_price) includes Eigenanteil 43
       const vatCountry = user?.accountInfo?.vat_country
       const isKrankenkasseAt = formData?.billingType === 'Krankenkassa' && vatCountry === 'Österreich (AT)'
-      const eigenanteilForTotal = isKrankenkasseAt ? 43 : 0
+      const eigenanteilForTotal = isKrankenkasseAt ? 46.20 : 0
       const totalPriceOverride = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
 
       // privatePrice: Krankenkasse + AT = Fußanalyse + Eigenanteil (43) + Wirtschaftlicher Aufpreis; Privat = full total

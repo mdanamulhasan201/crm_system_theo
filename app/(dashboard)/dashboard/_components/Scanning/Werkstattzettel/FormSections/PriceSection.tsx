@@ -223,8 +223,8 @@ export default function PriceSection({
   const discountAmount = discountType === 'percentage' && discountValue
     ? (subtotal * parseFloat(discountValue)) / 100
     : 0
-  // Krankenkasse + AT: Gesamt includes Eigenanteil 43 (customer pays this; also sent as privatePrice)
-  const eigenanteil = (!isVerordnungsvorschlag && isInsuranceMode && vatCountry === 'Österreich (AT)') ? 43 : 0
+  // Krankenkasse + AT: Gesamt includes Eigenanteil 46.20 (customer pays this; also sent as privatePrice)
+  const eigenanteil = (!isVerordnungsvorschlag && isInsuranceMode && vatCountry === 'Österreich (AT)') ? 46.20 : 0
   const total = subtotal - discountAmount + eigenanteil
 
   // Report Gesamt (total) to parent so it can be used as total_price
