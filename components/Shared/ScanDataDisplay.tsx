@@ -309,10 +309,13 @@ export default function ScanDataDisplay({
 
     // Helper function to get field value
     const getFieldValue = (fieldName: string): any => {
-        // Only use screenerFile data if a specific date is selected
-        // Otherwise, use main customer data
+        // Prefer screenerFile data when a specific date is selected
+        // Fall back to main customer data when screenerFile has null/empty for this field
         if (hasScreenerFile && selectedScanData) {
-            return (selectedScanData as any)[fieldName];
+            const screenerValue = (selectedScanData as any)[fieldName];
+            if (screenerValue !== null && screenerValue !== undefined && screenerValue !== '') {
+                return screenerValue;
+            }
         }
         return scanData[fieldName as keyof ScanData];
     };
