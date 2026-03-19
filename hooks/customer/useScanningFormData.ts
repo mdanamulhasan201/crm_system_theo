@@ -185,21 +185,14 @@ export const useScanningFormData = (
 
         try {
             const response = await getAllEinlagen(1, 1000);
-            // Get status names from response.status
-            const statusNames = response.status || [];
-            // Get full data with prices from response.data
-            const dataItems = response.data || [];
+            // Get full data with prices and IDs directly from response.data
+            const dataItems: Array<{ id: string; name: string; price?: number }> = response.data || [];
             
-            // Map status names to objects with prices and IDs
-            const optionsWithPrices = statusNames.map((statusName: string) => {
-                // Find matching data item by name
-                const dataItem = dataItems.find((item: any) => item.name === statusName);
-                return {
-                    id: dataItem?.id,
-                    name: statusName,
-                    price: dataItem?.price !== undefined ? dataItem.price : undefined
-                };
-            });
+            const optionsWithPrices = dataItems.map((item) => ({
+                id: item.id,
+                name: item.name,
+                price: item.price !== undefined ? item.price : undefined,
+            }));
             
             setEinlageOptions(optionsWithPrices);
             // No default selection - user must explicitly select Einlagetyp

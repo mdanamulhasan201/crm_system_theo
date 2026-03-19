@@ -78,6 +78,8 @@ interface PriceSectionProps {
   mwstAmount?: number
   // Report calculated Gesamt (total) so parent can use it as total_price
   onTotalChange?: (total: number) => void
+  // When Verordnungsvorschlag (lieferschein) is YES, show all prices as 0
+  isVerordnungsvorschlag?: boolean
 }
 
 // Helper function to format price in German format
@@ -154,6 +156,7 @@ export default function PriceSection({
   steuersatz,
   mwstAmount,
   onTotalChange,
+  isVerordnungsvorschlag = false,
 }: PriceSectionProps) {
   // Build unique option keys so only ONE item can ever appear selected,
   // even if multiple items share the same numeric price.
@@ -184,20 +187,22 @@ export default function PriceSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [footAnalysisPrice, footOptions])
 
-  // Calculate prices
-  const versorgungPrice = parseFloat(insoleSupplyPrice) || 0
-  const footPrice =
-    footAnalysisPrice === 'custom'
+  // Calculate prices – when Verordnungsvorschlag is YES all prices are forced to 0
+  const versorgungPrice = isVerordnungsvorschlag ? 0 : (parseFloat(insoleSupplyPrice) || 0)
+  const footPrice = isVerordnungsvorschlag
+    ? 0
+    : footAnalysisPrice === 'custom'
       ? (parseFloat(customFootPrice) || 0)
       : (parseFloat(footAnalysisPrice) || 0)
   const quantityNum = parseInt(quantity?.match(/\d+/)?.[0] || '1', 10)
 
   // Parse addon prices - supports single number or comma-separated (e.g. "10" or "10, 20, 5")
   const addonPricesTotal = useMemo(() => {
+    if (isVerordnungsvorschlag) return 0
     if (!addonPrices || typeof addonPrices !== 'string') return 0
     const parts = addonPrices.split(/[,\s]+/).filter(Boolean)
     return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
-  }, [addonPrices])
+  }, [addonPrices, isVerordnungsvorschlag])
 
   // Positionsnummer VAT breakdown & insurance/customer split (using account vat_country)
   const { user } = useAuth()
@@ -208,18 +213,18 @@ export default function PriceSection({
     if (vatCountry === 'Österreich (AT)') return 20
     return 0
   }
-  const positionsnummerGross = positionsnummerPrice || 0
+  const positionsnummerGross = isVerordnungsvorschlag ? 0 : (positionsnummerPrice || 0)
   const positionsVatRate = getVatRate()
   const positionsnummerNet =
     positionsVatRate > 0 ? positionsnummerGross / (1 + positionsVatRate / 100) : positionsnummerGross
   const positionsnummerVatAmount = positionsnummerGross - positionsnummerNet
 
-  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal + (positionsnummerPrice || 0)
+  const subtotal = (versorgungPrice * quantityNum) + footPrice + addonPricesTotal + positionsnummerGross
   const discountAmount = discountType === 'percentage' && discountValue
     ? (subtotal * parseFloat(discountValue)) / 100
     : 0
   // Krankenkasse + AT: Gesamt includes Eigenanteil 43 (customer pays this; also sent as privatePrice)
-  const eigenanteil = isInsuranceMode && vatCountry === 'Österreich (AT)' ? 43 : 0
+  const eigenanteil = (!isVerordnungsvorschlag && isInsuranceMode && vatCountry === 'Österreich (AT)') ? 43 : 0
   const total = subtotal - discountAmount + eigenanteil
 
   // Report Gesamt (total) to parent so it can be used as total_price

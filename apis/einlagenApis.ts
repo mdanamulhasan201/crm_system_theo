@@ -14,7 +14,7 @@ export const createEinlage = async (formData: FormData) => {
     }
 }
 
-// get all einlagen
+// get all einlagen versorgungen/supply-status?limit=1&cursor=33684347-e22f-43c8-9c7f-e2ead8457cb4
 export const getAllEinlagen = async (page: number, limit: number) => {
     try {
         const response = await axiosClient.get(`/versorgungen/supply-status?page=${page}&limit=${limit}`);

@@ -48,6 +48,7 @@ interface FormData {
   bezahlt?: string
   paymentStatus?: string
   printWerkstattzettel?: boolean
+  halbprobe?: boolean
 }
 
 interface UserInfoUpdateModalProps {
@@ -582,6 +583,7 @@ export default function WerkstattzettelModal({
               steuersatz={steuersatz > 0 ? steuersatz : undefined}
               mwstAmount={mwstAmount}
               onTotalChange={setCalculatedTotal}
+              isVerordnungsvorschlag={formData?.halbprobe === true}
             />
           </div>
 
