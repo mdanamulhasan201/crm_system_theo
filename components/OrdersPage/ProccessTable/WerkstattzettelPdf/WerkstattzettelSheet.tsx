@@ -45,6 +45,7 @@ export interface WerkstattzettelSheetData {
     addonPrices?: number | null;
     discount?: number | null;
     quantity?: number | null;
+    austria_price?: number | null;
   } | null;
 }
 
@@ -326,9 +327,9 @@ export default function WerkstattzettelSheet({
             {fussanalysePreis != null && (
               <PriceRow label="Fußanalyse" value={formatMoneyWithEuro(fussanalysePreis)} />
             )}
-            {/* Eigenanteil (private price = patient co-payment) */}
-            {price.privatePrice != null && (
-              <PriceRow label="Enthält Eigenanteil (AT)" value={formatMoneyWithEuro(price.privatePrice)} />
+            {/* Eigenanteil AT — only shown when austria_price is explicitly set */}
+            {price.austria_price != null && (
+              <PriceRow label="Enthält Eigenanteil (AT)" value={formatMoneyWithEuro(price.austria_price)} />
             )}
             {/* Wirtschaftlicher Aufpreis */}
             {data.wirtschaftlicherAufpreis != null && Number(data.wirtschaftlicherAufpreis) !== 0 && (
