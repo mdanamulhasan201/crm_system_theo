@@ -884,7 +884,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     bezahlt: paymentStatusValue ?? bezahltValue, // Required by API; use normalized single status when dual was selected
                     fussanalysePreis: fussanalysePreis,
                     einlagenversorgungPreis: einlagenversorgungPreis,
-                    fußanalyse: fussanalysePreis, 
                     einlagenversorgung: einlagenversorgungPreis,
                     // Gesamt aus Werkstattzettel ("totalPrice") immer mit senden, falls vorhanden
                     totalPrice: formDataForOrder.totalPrice !== undefined

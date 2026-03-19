@@ -435,11 +435,12 @@ export default function WerkstattzettelModal({
         diagnosisList: formData?.diagnosisList || [],
         // Controls whether invoice PDF download should be enabled later
         printWerkstattzettel: shouldPrintWerkstattzettel,
-        quantity: (() => {
-          if (!form.quantity) return formData?.menge || formData?.quantity || undefined
-          const match = form.quantity.match(/^(\d+)\s*paar/i)
-          return match ? parseInt(match[1], 10) : undefined
-        })(),
+        // ── Individual price fields ──────────────────────────────────────
+        fussanalysePreis: Math.round(footPriceForTotal * 100) / 100,
+        einlagenversorgungPreis: Math.round(versorgungPriceForTotal * 100) / 100,
+        quantity: quantityNum,
+        addonPrices: Math.round(addonPricesTotalForTotal * 100) / 100,
+        totalPrice: Math.round(totalPriceOverride * 100) / 100,
         discount: (() => {
           if (!form.discountValue || form.discountValue.trim() === '') return undefined
           const parsed = parseFloat(form.discountValue)
@@ -450,6 +451,7 @@ export default function WerkstattzettelModal({
         ...(privatePrice !== undefined && { privatePrice: Math.round(privatePrice * 100) / 100 }),
         ...(insuranceTotalPrice !== undefined && { insuranceTotalPrice: Math.round(insuranceTotalPrice * 100) / 100 }),
         ...(vatRate !== undefined && { vat_rate: vatRate }),
+        ...(eigenanteilForTotal > 0 && { austria_price: eigenanteilForTotal }),
       }
 
       // Do NOT close the Werkstattzettel modal here.

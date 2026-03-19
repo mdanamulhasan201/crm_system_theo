@@ -132,7 +132,6 @@ export function createWerkstattzettelPayload(
     paymentStatus: paymentStatus, // New field
     fussanalysePreis,
     einlagenversorgungPreis,
-    fußanalyse: fussanalysePreis,
     einlagenversorgung: einlagenversorgungPreis,
     quantity: formData.quantity || undefined,
     discount: validDiscount,
