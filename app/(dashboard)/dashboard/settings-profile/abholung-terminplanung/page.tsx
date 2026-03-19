@@ -503,12 +503,19 @@ export default function AbholungTerminplanungPage() {
           </div>
         </CardHeader>
         <CardContent className="pt-1 space-y-2">
-          <WohnortInput
-            value={pickupLocation}
-            onChange={setPickupLocation}
-            hideLabel
-            placeholder="Abhol-Standort suchen (Straße, PLZ, Stadt, Land)"
-          />
+
+          <div className="space-y-1">
+            <Label className="text-xs font-medium text-gray-600">
+              {/* german name adress */}
+              Adresse
+            </Label>
+            <WohnortInput
+              value={pickupLocation}
+              onChange={setPickupLocation}
+              hideLabel
+              placeholder="Abhol-Standort suchen (Straße, PLZ, Stadt, Land)"
+            />
+          </div>
 
           {(isLoading || isSaving) && (
             <p className="text-xs text-gray-500">
