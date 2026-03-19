@@ -338,24 +338,29 @@ export default function WerkstattzettelModal({
     // ✅ No validation - proceed directly
     try {
       // Calculate total exactly like PriceSection (Gesamt), with Krankenkassa logic for Versorgung
+      // When Verordnungsvorschlag (halbprobe) is YES → all prices are 0 (mirrors PriceSection isVerordnungsvorschlag logic)
+      const isVerordnungsvorschlag = formData?.halbprobe === true
+
       const quantityNum = (() => {
         if (!form.quantity) return formData?.menge || formData?.quantity || 1
         const match = form.quantity.match(/^(\d+)\s*paar/i)
         return match ? parseInt(match[1], 10) : 1
       })()
-      const versorgungPriceForTotal =
-        formData?.billingType === 'Privat' ? (parseFloat(form.insoleSupplyPrice) || 0) : 0
-      const footPriceForTotal =
-        form.footAnalysisPrice === 'custom'
+      const versorgungPriceForTotal = isVerordnungsvorschlag
+        ? 0
+        : formData?.billingType === 'Privat' ? (parseFloat(form.insoleSupplyPrice) || 0) : 0
+      const footPriceForTotal = isVerordnungsvorschlag
+        ? 0
+        : form.footAnalysisPrice === 'custom'
           ? (parseFloat(form.customFootPrice) || 0)
           : (parseFloat(form.footAnalysisPrice) || 0)
-      const addonPricesTotalForTotal = (() => {
+      const addonPricesTotalForTotal = isVerordnungsvorschlag ? 0 : (() => {
         const raw = form.addonPrices
         if (!raw || typeof raw !== 'string') return 0
         const parts = raw.split(/[,\s]+/).filter(Boolean)
         return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
       })()
-      const positionsnummerTotalForTotal = formData?.positionsnummerTotal || 0
+      const positionsnummerTotalForTotal = isVerordnungsvorschlag ? 0 : (formData?.positionsnummerTotal || 0)
       const subtotalForTotal =
         versorgungPriceForTotal * quantityNum +
         footPriceForTotal +
@@ -367,14 +372,15 @@ export default function WerkstattzettelModal({
           : 0
       const discountAmountForTotal =
         discountPercent > 0 ? (subtotalForTotal * discountPercent) / 100 : 0
-      // Krankenkasse + AT: Gesamt (total_price) includes Eigenanteil 43
+      // Krankenkasse + AT: Gesamt includes Eigenanteil — only when NOT Verordnungsvorschlag (mirrors PriceSection)
       const vatCountry = user?.accountInfo?.vat_country
-      const isKrankenkasseAt = formData?.billingType === 'Krankenkassa' && vatCountry === 'Österreich (AT)'
+      const isKrankenkasseAt = !isVerordnungsvorschlag && formData?.billingType === 'Krankenkassa' && vatCountry === 'Österreich (AT)'
       const eigenanteilForTotal = isKrankenkasseAt ? 46.20 : 0
       const totalPriceOverride = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
 
-      // privatePrice: Krankenkasse + AT = Fußanalyse + Eigenanteil (43) + Wirtschaftlicher Aufpreis; Privat = full total
-      const isPrivat = formData?.billingType === 'Privat'
+      // privatePrice: Krankenkasse + AT = Fußanalyse + Eigenanteil + Wirtschaftlicher Aufpreis; Privat = full total
+      // When Verordnungsvorschlag → no privatePrice
+      const isPrivat = !isVerordnungsvorschlag && formData?.billingType === 'Privat'
       const totalForPayload = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
       const privatePrice = isKrankenkasseAt
         ? footPriceForTotal + eigenanteilForTotal + addonPricesTotalForTotal
@@ -441,12 +447,12 @@ export default function WerkstattzettelModal({
         quantity: quantityNum,
         addonPrices: Math.round(addonPricesTotalForTotal * 100) / 100,
         totalPrice: Math.round(totalPriceOverride * 100) / 100,
-        discount: (() => {
+        discount: isVerordnungsvorschlag ? undefined : (() => {
           if (!form.discountValue || form.discountValue.trim() === '') return undefined
           const parsed = parseFloat(form.discountValue)
           return isNaN(parsed) ? undefined : parsed
         })(),
-        discountType: form.discountType || undefined,
+        discountType: isVerordnungsvorschlag ? undefined : (form.discountType || undefined),
         notiz_hinzufügen: notizText?.trim() || undefined,
         ...(privatePrice !== undefined && { privatePrice: Math.round(privatePrice * 100) / 100 }),
         ...(insuranceTotalPrice !== undefined && { insuranceTotalPrice: Math.round(insuranceTotalPrice * 100) / 100 }),
