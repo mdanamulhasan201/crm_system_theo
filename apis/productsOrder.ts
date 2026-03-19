@@ -528,3 +528,25 @@ export const getWerkstattzettelA3Pdf = async (orderId: string) => {
         throw error;
     }
 }
+
+
+// customer-orders/update/{{order Id}}
+export const updateOrder = async (orderId: string, payload: Record<string, any>) => {
+    try {
+        const response = await axiosClient.patch(`/customer-orders/update/${orderId}`, payload);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// customer-orders/track/identify-kva-data/{{customer Id}}\
+export const identifyKvaData = async (customerId: string) => {
+    try {
+        const response = await axiosClient.get(`/customer-orders/track/identify-kva-data/${customerId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

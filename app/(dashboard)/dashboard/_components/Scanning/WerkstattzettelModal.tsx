@@ -39,10 +39,10 @@ interface FormData {
   selectedPositionsnummer?: string[]
   positionsnummerOptions?: Array<{ positionsnummer?: string; description?: string | Record<string, unknown>; price?: number }>
   notiz_hinzufügen?: string
-  totalPrice?: number
-  privatePrice?: number
-  insuranceTotalPrice?: number
-  vat_rate?: number
+  totalPrice?: number | null
+  privatePrice?: number | null
+  insuranceTotalPrice?: number | null
+  vat_rate?: number | null
   insoleStandards?: Array<{ name: string; left: number; right: number; isFavorite?: boolean }>
   diagnosisList?: string[]
   bezahlt?: string
@@ -442,22 +442,23 @@ export default function WerkstattzettelModal({
         // Controls whether invoice PDF download should be enabled later
         printWerkstattzettel: shouldPrintWerkstattzettel,
         // ── Individual price fields ──────────────────────────────────────
-        fussanalysePreis: Math.round(footPriceForTotal * 100) / 100,
-        einlagenversorgungPreis: Math.round(versorgungPriceForTotal * 100) / 100,
+        // When Verordnungsvorschlag (halbprobe) = YES → all price fields are null
+        fussanalysePreis: isVerordnungsvorschlag ? null : Math.round(footPriceForTotal * 100) / 100,
+        einlagenversorgungPreis: isVerordnungsvorschlag ? null : Math.round(versorgungPriceForTotal * 100) / 100,
         quantity: quantityNum,
-        addonPrices: Math.round(addonPricesTotalForTotal * 100) / 100,
-        totalPrice: Math.round(totalPriceOverride * 100) / 100,
-        discount: isVerordnungsvorschlag ? undefined : (() => {
+        addonPrices: isVerordnungsvorschlag ? null : Math.round(addonPricesTotalForTotal * 100) / 100,
+        totalPrice: isVerordnungsvorschlag ? null : Math.round(totalPriceOverride * 100) / 100,
+        discount: isVerordnungsvorschlag ? null : (() => {
           if (!form.discountValue || form.discountValue.trim() === '') return undefined
           const parsed = parseFloat(form.discountValue)
           return isNaN(parsed) ? undefined : parsed
         })(),
-        discountType: isVerordnungsvorschlag ? undefined : (form.discountType || undefined),
+        discountType: isVerordnungsvorschlag ? null : (form.discountType || undefined),
         notiz_hinzufügen: notizText?.trim() || undefined,
-        ...(privatePrice !== undefined && { privatePrice: Math.round(privatePrice * 100) / 100 }),
-        ...(insuranceTotalPrice !== undefined && { insuranceTotalPrice: Math.round(insuranceTotalPrice * 100) / 100 }),
-        ...(vatRate !== undefined && { vat_rate: vatRate }),
-        ...(eigenanteilForTotal > 0 && { austria_price: eigenanteilForTotal }),
+        privatePrice: isVerordnungsvorschlag ? null : (privatePrice !== undefined ? Math.round(privatePrice * 100) / 100 : undefined),
+        insuranceTotalPrice: isVerordnungsvorschlag ? null : (insuranceTotalPrice !== undefined ? Math.round(insuranceTotalPrice * 100) / 100 : undefined),
+        vat_rate: isVerordnungsvorschlag ? null : (vatRate !== undefined ? vatRate : undefined),
+        austria_price: isVerordnungsvorschlag ? null : (eigenanteilForTotal > 0 ? eigenanteilForTotal : undefined),
       }
 
       // Do NOT close the Werkstattzettel modal here.

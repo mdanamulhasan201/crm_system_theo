@@ -857,6 +857,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 // Resolve privatePrice (amount customer pays privately)
                 const privatePrice = formDataForOrder.privatePrice;
 
+                // When Verordnungsvorschlag (halbprobe) = YES → all prices go as null
+                const isHalbprobeOrder = formDataForOrder.halbprobe === true || formDataForOrder.lieferschein === true;
+
                 // Build base payload
                 const orderPayload: any = {
                     customerId: customer.id,
@@ -882,29 +885,29 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     fertigstellungBis: formDataForOrder.fertigstellungBis || '',
                     versorgung: formDataForOrder.versorgung || '',
                     bezahlt: paymentStatusValue ?? bezahltValue, // Required by API; use normalized single status when dual was selected
-                    fussanalysePreis: fussanalysePreis,
-                    einlagenversorgungPreis: einlagenversorgungPreis,
-                    einlagenversorgung: einlagenversorgungPreis,
-                    // Gesamt aus Werkstattzettel ("totalPrice") immer mit senden, falls vorhanden
-                    totalPrice: formDataForOrder.totalPrice !== undefined
+                    fussanalysePreis: isHalbprobeOrder ? null : fussanalysePreis,
+                    einlagenversorgungPreis: isHalbprobeOrder ? null : einlagenversorgungPreis,
+                    einlagenversorgung: isHalbprobeOrder ? null : einlagenversorgungPreis,
+                    // Gesamt aus Werkstattzettel ("totalPrice") — null when halbprobe
+                    totalPrice: isHalbprobeOrder ? null : (formDataForOrder.totalPrice !== undefined
                         ? Number(formDataForOrder.totalPrice)
-                        : undefined,
+                        : undefined),
                     werkstattEmployeeId: formDataForOrder.employeeId || formDataForOrder.werkstattEmployeeId || '',
                     screenerId: formDataForOrder.screenerId || null,
-                    discount: formDataForOrder.discount !== undefined && formDataForOrder.discount !== null 
+                    discount: isHalbprobeOrder ? null : (formDataForOrder.discount !== undefined && formDataForOrder.discount !== null 
                         ? (typeof formDataForOrder.discount === 'number' ? formDataForOrder.discount : Number(formDataForOrder.discount))
-                        : undefined,
-                    discountType: formDataForOrder.discountType || undefined,
+                        : undefined),
+                    discountType: isHalbprobeOrder ? null : (formDataForOrder.discountType || undefined),
                     insurances: buildInsurancesArray(),
-                    insuranceTotalPrice: formDataForOrder.insuranceTotalPrice !== undefined && formDataForOrder.insuranceTotalPrice !== null
+                    insuranceTotalPrice: isHalbprobeOrder ? null : (formDataForOrder.insuranceTotalPrice !== undefined && formDataForOrder.insuranceTotalPrice !== null
                         ? Number(formDataForOrder.insuranceTotalPrice)
-                        : calculateInsuranceTotalPrice(buildInsurancesArray()),
+                        : calculateInsuranceTotalPrice(buildInsurancesArray())),
                     insoleStandards: formDataForOrder.insoleStandards || [],
                     diagnosisList: formDataForOrder.diagnosisList || [],
                     notiz_hinzufügen: formDataForOrder.notiz_hinzufügen || undefined,
-                    ...(privatePrice !== undefined && { privatePrice: Number(privatePrice) }),
-                    ...(formDataForOrder.vat_rate !== undefined && { vat_rate: Number(formDataForOrder.vat_rate) }),
-                    ...(formDataForOrder.austria_price !== undefined && { austria_price: Number(formDataForOrder.austria_price) }),
+                    privatePrice: isHalbprobeOrder ? null : (privatePrice !== undefined && privatePrice !== null ? Number(privatePrice) : undefined),
+                    ...(isHalbprobeOrder ? { vat_rate: null } : (formDataForOrder.vat_rate !== undefined && { vat_rate: Number(formDataForOrder.vat_rate) })),
+                    ...(isHalbprobeOrder ? { austria_price: null } : (formDataForOrder.austria_price !== undefined && formDataForOrder.austria_price !== null && { austria_price: Number(formDataForOrder.austria_price) })),
                 };
 
                 // Add versorgungId OR key based on active tab

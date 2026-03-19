@@ -405,7 +405,7 @@ export default function CustomerHistory() {
             <KostenvoranschlagDialog
                 open={isKostenvoranschlagOpen}
                 onOpenChange={setIsKostenvoranschlagOpen}
-                customerData={scanData}
+                customerId={String(params.id)}
             />
 
             <RechnungErstellenDialog
