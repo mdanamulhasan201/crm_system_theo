@@ -24,7 +24,7 @@ export const buyStore = async (body: {
 // buy single store store/add-storage-from-admin
 export const buySingleStore = async (body: { storeId: string, admin_store_id: string, groessenMengen: BuyStoreGroessenMengen }) => {
     try {
-        const response = await axiosClient.post(`/store/add-storage-from-admin`, body);
+        const response = await axiosClient.post(`/store/send-order-to-admin`, body);
         return response.data;
     } catch (error: any) {
         throw error;
