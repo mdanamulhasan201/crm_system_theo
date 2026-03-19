@@ -298,6 +298,7 @@ export default function CustomerHistory() {
                 data={{
                     ...scanData,
                     customerNumber: (scanData as any).customerNumber ?? scanData.id,
+                    prescription: (scanData as any).prescription ?? null,
                 }}
                 editFormData={editFormData}
                 isEditing={isEditing}

@@ -126,6 +126,10 @@ export interface CustomerDetailsPageProps {
     firmenOrt?: string | null;
     firmenLand?: string | null;
     firmenUID?: string | null;
+    prescription?: {
+      prescription_number?: string | null;
+      insurance_provider?: string | null;
+    } | null;
   };
   /** Form state when editing */
   editFormData: {
@@ -287,22 +291,13 @@ export default function CustomerDetailsPage({
         <Card title="Versicherung">
           <Field
             label="Versichertennummer"
-            value={isEditing ? (editFormData.land ?? '') : (data.land || '')}
-            isEditing={isEditing}
-            onChange={(v) => onInputChange('land', v)}
-            placeholder="Versichertennummer"
+            value={data.prescription?.prescription_number || (isEditing ? (editFormData.land ?? '') : (data.land || ''))}
+            isEditing={false}
           />
           <Field
             label="Kostenträger"
-            value={isEditing ? (editFormData.billingType ?? '') : billingDisplay}
-            isEditing={isEditing}
-            onChange={(v) => onInputChange('billingType', v)}
-            asSelect
-            selectValue={editFormData.billingType}
-            selectOptions={[
-              { value: 'krankenkasse', label: 'Krankenkasse' },
-              { value: 'privat', label: 'Privat' },
-            ]}
+            value={data.prescription?.insurance_provider || billingDisplay}
+            isEditing={false}
           />
         </Card>
 
