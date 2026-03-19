@@ -176,7 +176,7 @@ export const useScanningFormData = (
         }
     }, []);
 
-    // Fetch supply statuses from the supply-status API (memoized)
+    // Fetch supply statuses from the supply-status API (cursor pagination, fetches all pages)
     const fetchSupplyStatuses = useCallback(async () => {
         if (hasFetchedSupplyStatuses.current) {
             return;
@@ -184,18 +184,29 @@ export const useScanningFormData = (
         hasFetchedSupplyStatuses.current = true;
 
         try {
-            const response = await getAllEinlagen(1, 1000);
-            // Get full data with prices and IDs directly from response.data
-            const dataItems: Array<{ id: string; name: string; price?: number }> = response.data || [];
-            
-            const optionsWithPrices = dataItems.map((item) => ({
+            const allItems: Array<{ id: string; name: string; price?: number }> = [];
+            let cursor: string | undefined = undefined;
+
+            // Loop through all pages using cursor-based pagination
+            while (true) {
+                const response = await getAllEinlagen(1000, cursor);
+                const pageItems: Array<{ id: string; name: string; price?: number }> = response.data || [];
+                allItems.push(...pageItems);
+
+                const pagination = response.pagination;
+                if (!pagination?.hasMore || !pagination?.nextCursor) {
+                    break;
+                }
+                cursor = pagination.nextCursor;
+            }
+
+            const optionsWithPrices = allItems.map((item) => ({
                 id: item.id,
                 name: item.name,
                 price: item.price !== undefined ? item.price : undefined,
             }));
-            
+
             setEinlageOptions(optionsWithPrices);
-            // No default selection - user must explicitly select Einlagetyp
         } catch (error) {
             console.error('Error fetching supply statuses:', error);
             setEinlageOptions([]);

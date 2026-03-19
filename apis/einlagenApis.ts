@@ -14,10 +14,15 @@ export const createEinlage = async (formData: FormData) => {
     }
 }
 
-// get all einlagen versorgungen/supply-status?limit=1&cursor=33684347-e22f-43c8-9c7f-e2ead8457cb4
-export const getAllEinlagen = async (page: number, limit: number) => {
+// get all einlagen versorgungen/supply-status?limit=10&cursor=<uuid>
+export const getAllEinlagen = async (limit: number = 10, cursor?: string) => {
     try {
-        const response = await axiosClient.get(`/versorgungen/supply-status?page=${page}&limit=${limit}`);
+        const params = new URLSearchParams();
+        params.set('limit', String(limit));
+        if (cursor) {
+            params.set('cursor', cursor);
+        }
+        const response = await axiosClient.get(`/versorgungen/supply-status?${params.toString()}`);
         return response.data;
     } catch (error) {
         throw error;

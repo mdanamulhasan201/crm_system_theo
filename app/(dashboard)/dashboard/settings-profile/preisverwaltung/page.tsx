@@ -36,7 +36,7 @@ export default function PreisverwaltungPage() {
     // Fetch Einlagen
     const fetchEinlagen = useCallback(async () => {
         try {
-            const response = await getAll(1, 100);
+            const response = await getAll(1000);
             if (response?.data) {
                 const formattedInsoles: Insole[] = response.data.map((item: any) => ({
                     id: item.id,

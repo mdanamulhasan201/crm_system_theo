@@ -106,12 +106,12 @@ export const useEinlagen = () => {
         }
     }, []);
 
-    // Get all einlagen
-    const getAll = useCallback(async (page: number = 1, limit: number = 10) => {
+    // Get all einlagen (cursor-based pagination)
+    const getAll = useCallback(async (limit: number = 10, cursor?: string) => {
         setIsLoading(true);
         setError(null);
         try {
-            const response = await getAllEinlagen(page, limit);
+            const response = await getAllEinlagen(limit, cursor);
             setEinlagen(response.data || []);
             return response;
         } catch (err: any) {

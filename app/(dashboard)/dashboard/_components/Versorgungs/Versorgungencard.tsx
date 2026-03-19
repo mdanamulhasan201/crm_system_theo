@@ -356,21 +356,32 @@ export default function Versorgungencard() {
     const [error, setError] = useState<string | null>(null);
     const [einlagenData, setEinlagenData] = useState<Array<{ id: string; name: string }>>([]);
 
-    // Fetch data from getAllEinlagen API
+    // Fetch data from getAllEinlagen API (cursor-based pagination, fetches all pages)
     const fetchEinlagen = async () => {
         try {
             setError(null);
-            const response = await getAllEinlagen(1, 1000);
+            const allItems: Array<{ id: string; name: string }> = [];
+            let cursor: string | undefined = undefined;
 
-            if (response.success && response.data && Array.isArray(response.data)) {
-                const namesData = response.data.map((item: any) => ({
-                    id: item.id,
-                    name: item.name || 'Unnamed',
-                }));
-                setEinlagenData(namesData);
-            } else {
-                setEinlagenData([]);
+            while (true) {
+                const response = await getAllEinlagen(1000, cursor);
+
+                if (response.data && Array.isArray(response.data)) {
+                    const pageItems = response.data.map((item: any) => ({
+                        id: item.id,
+                        name: item.name || 'Unnamed',
+                    }));
+                    allItems.push(...pageItems);
+                }
+
+                const pagination = response.pagination;
+                if (!pagination?.hasMore || !pagination?.nextCursor) {
+                    break;
+                }
+                cursor = pagination.nextCursor;
             }
+
+            setEinlagenData(allItems);
         } catch (err: any) {
             setError(err.response?.data?.message || 'Failed to fetch data');
             toast.error('Failed to fetch einlagen data');
