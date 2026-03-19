@@ -102,6 +102,7 @@ export default function WerkstattzettelModal({
   }, [formData?.billingType])
 
   // Set default bezahlt value based on billingType from formData
+  // When nothing selected in Kostenträger, default to Privat_offen
   useEffect(() => {
     if (!isOpen) return
 
@@ -112,9 +113,9 @@ export default function WerkstattzettelModal({
         ? 'Krankenkasse_Genehmigt'
         : formData?.billingType === 'Privat'
           ? 'Privat_Bezahlt'
-          : '')
+          : 'Privat_offen')
 
-    if (bezahltValue && !bezahltState) {
+    if (!bezahltState) {
       setBezahlt(bezahltValue)
     }
   }, [isOpen, formData?.bezahlt, formData?.paymentStatus, formData?.billingType, bezahltState, setBezahlt])

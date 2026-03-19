@@ -106,7 +106,11 @@ export function createWerkstattzettelPayload(
     typeof overrideTotal === 'number' && !isNaN(overrideTotal) ? overrideTotal : totalPrice
 
   // Map bezahlt to paymentStatus - keep both for API compatibility
-  const bezahltValue = formData.bezahlt && formData.bezahlt.trim() !== '' ? formData.bezahlt : undefined
+  // When nothing selected in Kostenträger, default to Privat_offen
+  const bezahltValue =
+    formData.bezahlt && formData.bezahlt.trim() !== ''
+      ? formData.bezahlt
+      : 'Privat_offen'
   const paymentStatus = bezahltValue
 
   return {

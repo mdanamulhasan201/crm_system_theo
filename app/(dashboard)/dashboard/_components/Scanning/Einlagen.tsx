@@ -884,7 +884,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     mitarbeiter: formDataForOrder.mitarbeiter || '',
                     fertigstellungBis: formDataForOrder.fertigstellungBis || '',
                     versorgung: formDataForOrder.versorgung || '',
-                    bezahlt: paymentStatusValue ?? bezahltValue, // Required by API; use normalized single status when dual was selected
+                    bezahlt: paymentStatusValue ?? (bezahltValue || 'Privat_offen'), // Required by API; default Privat_offen when nothing selected in Kostenträger
                     fussanalysePreis: isHalbprobeOrder ? null : fussanalysePreis,
                     einlagenversorgungPreis: isHalbprobeOrder ? null : einlagenversorgungPreis,
                     einlagenversorgung: isHalbprobeOrder ? null : einlagenversorgungPreis,
