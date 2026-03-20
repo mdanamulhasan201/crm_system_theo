@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { ArrowLeft, Package, Loader2 } from 'lucide-react'
+import { ArrowLeft, Package, Loader2, ListChecks, ClipboardList } from 'lucide-react'
 import {
   createInventory,
   updateInventory,
@@ -23,6 +23,7 @@ import {
 } from '@/apis/warenwirtschaftApis'
 import toast from 'react-hot-toast'
 import LieferantSelect from './LieferantSelect'
+import PositionenSidebar from './PositionenSidebar'
 
 const STATUS_OPTIONS: { value: InventoryStatus; label: string }[] = [
   { value: 'Ordered', label: 'Ordered' },
@@ -85,6 +86,7 @@ export default function ManuellSection({
   const [weLinked, setWeLinked] = useState<boolean>(initialData?.we_linked ?? false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [positionenOpen, setPositionenOpen] = useState(false)
 
   const isInvoices = inventoryType === 'Invoices'
   const supplier = supplierNameState
@@ -128,6 +130,10 @@ export default function ManuellSection({
 
   return (
     <div className="flex flex-col h-full">
+      <PositionenSidebar
+        open={positionenOpen}
+        onOpenChange={setPositionenOpen}
+      />
       <div className="flex items-center gap-2 mb-4">
         <Button
           type="button"
@@ -186,6 +192,19 @@ export default function ManuellSection({
             className="w-full"
           />
         </div>
+
+        {/* Positionen button */}
+        <button
+          type="button"
+          onClick={() => setPositionenOpen(true)}
+          className="flex w-full items-center gap-3 rounded-lg border border-dashed border-[#1a7fc1]/40 bg-[#1a7fc1]/5 px-4 py-3 text-sm font-medium text-[#1a7fc1] hover:bg-[#1a7fc1]/10 hover:border-[#1a7fc1]/60 transition-colors cursor-pointer"
+        >
+          <div className="flex size-7 items-center justify-center rounded-md bg-[#1a7fc1]/10">
+            <ClipboardList className="h-4 w-4" />
+          </div>
+          <span>Positionen prüfen &amp; buchen</span>
+          <ListChecks className="ml-auto h-4 w-4 opacity-60" />
+        </button>
 
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">Status</Label>

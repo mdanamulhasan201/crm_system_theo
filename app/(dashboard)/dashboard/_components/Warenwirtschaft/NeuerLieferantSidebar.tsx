@@ -1,13 +1,16 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import * as SheetPrimitive from '@radix-ui/react-dialog'
 import {
   Sheet,
-  SheetContent,
+  SheetPortal,
+  SheetOverlay,
   SheetHeader,
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet'
+import { X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -176,10 +179,11 @@ export default function NeuerLieferantSidebar({
 
   return (
     <Sheet open={open} onOpenChange={handleClose}>
-      <SheetContent
-        side="right"
-        className="flex w-full flex-col border-l border-gray-200 bg-white p-0 sm:max-w-lg"
-      >
+      <SheetPortal>
+        <SheetOverlay className="bg-black/40" />
+        <SheetPrimitive.Content
+          className="fixed inset-y-0 right-0 z-50 flex h-full w-full flex-col border-l border-gray-200 bg-white p-0 shadow-xl transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right data-[state=closed]:duration-300 data-[state=open]:duration-500 sm:max-w-lg"
+        >
         <SheetHeader className="border-b border-gray-100 px-6 py-5 text-left">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-lg bg-[#62A17C]/10">
@@ -338,7 +342,13 @@ export default function NeuerLieferantSidebar({
             </Button>
           </div>
         </form>
-      </SheetContent>
+          {/* Close button */}
+          <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-white transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2 disabled:pointer-events-none">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
+        </SheetPrimitive.Content>
+      </SheetPortal>
     </Sheet>
   )
 }
