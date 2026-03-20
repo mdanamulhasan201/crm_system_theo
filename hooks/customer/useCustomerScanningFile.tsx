@@ -13,6 +13,7 @@ interface UseCustomerScanningFileReturn {
     filePreviews: FilePreview[];
     isSubmitting: boolean;
     handleFileUpload: (fieldName: string, event: React.ChangeEvent<HTMLInputElement>) => File | null;
+    setFileDirectly: (fieldName: string, file: File) => void;
     removeFile: (fieldName: string) => void;
     submitScanningFile: (customerId: string, data: any) => Promise<boolean>;
     resetForm: () => void;
@@ -48,6 +49,20 @@ export const useCustomerScanningFile = (): UseCustomerScanningFileReturn => {
         }
 
         return file;
+    };
+
+    const setFileDirectly = (fieldName: string, file: File) => {
+        setFilePreviews(prev => prev.filter(p => p.fieldName !== fieldName));
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const preview = e.target?.result as string;
+                setFilePreviews(prev => [...prev, { fieldName, preview, file }]);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setFilePreviews(prev => [...prev, { fieldName, preview: '', file }]);
+        }
     };
 
     const removeFile = (fieldName: string) => {
@@ -143,6 +158,7 @@ export const useCustomerScanningFile = (): UseCustomerScanningFileReturn => {
         filePreviews,
         isSubmitting,
         handleFileUpload,
+        setFileDirectly,
         removeFile,
         submitScanningFile,
         resetForm,
