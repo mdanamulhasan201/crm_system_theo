@@ -191,7 +191,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         const vatCountry = user?.accountInfo?.vat_country;
         
         // If Österreich (AT), show Austrian data
-        if (vatCountry === 'Österreich (AT)') {
+        if (vatCountry === 'Österreich (AT)' || vatCountry === 'Austria (AT)') {
             return positionsnummerAustriaData;
         }
         
@@ -483,7 +483,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         const vatCountry = user?.accountInfo?.vat_country;
         
         // No error for Österreich (AT) - data available
-        if (vatCountry === 'Österreich (AT)') {
+        if (vatCountry === 'Österreich (AT)' || vatCountry === 'Austria (AT)') {
             return undefined;
         }
         
@@ -775,7 +775,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     if (vatCountry === 'Italien (IT)') {
                         return 4; // 4% VAT for Italy
                     }
-                    if (vatCountry === 'Österreich (AT)') {
+                    if (vatCountry === 'Österreich (AT)' || vatCountry === 'Austria (AT)') {
                         return 20; // 20% VAT for Austria
                     }
                     return 0; // No VAT for other countries

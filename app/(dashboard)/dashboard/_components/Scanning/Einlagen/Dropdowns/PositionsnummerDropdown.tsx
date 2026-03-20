@@ -52,7 +52,7 @@ export default function PositionsnummerDropdown({
     disabled = false,
 }: PositionsnummerDropdownProps) {
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<'all' | 'Einlagen' | 'Maßschuhe' | 'Schuhzurichtungen'>('all');
+    const [selectedCategory, setSelectedCategory] = useState<'Einlagen' | 'Maßschuhe' | 'Schuhzurichtungen'>('Einlagen');
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [internalItemSides, setInternalItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
     
@@ -101,14 +101,35 @@ export default function PositionsnummerDropdown({
     };
 
     const categoryButtons: Array<'Einlagen' | 'Maßschuhe' | 'Schuhzurichtungen'> = ['Einlagen', 'Maßschuhe', 'Schuhzurichtungen'];
-    const isAustriaVatCountry = vatCountry === 'Österreich (AT)';
+    const isAustriaVatCountry =
+        vatCountry === 'Österreich (AT)' ||
+        vatCountry === 'Austria (AT)';
     const hasCategoryData = options.some((option) => Boolean(option.category));
-    const showAustriaCategoryFilters = isAustriaVatCountry && hasCategoryData;
+    const hasKnownAustriaCategories = options.some((option) =>
+        ['Einlagen', 'Maßschuhe', 'Schuhzurichtungen'].includes(option.category || '')
+    );
+    const showAustriaCategoryFilters =
+        hasCategoryData && (isAustriaVatCountry || hasKnownAustriaCategories);
+
+    const normalizeCategory = (category?: string): string => {
+        if (!category) return '';
+        return category
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '');
+    };
+
+    const isCategoryMatch = (optionCategory: string | undefined, activeCategory: 'Einlagen' | 'Maßschuhe' | 'Schuhzurichtungen') => {
+        const normalizedOption = normalizeCategory(optionCategory);
+        const normalizedActive = normalizeCategory(activeCategory);
+        return normalizedOption === normalizedActive;
+    };
 
     // Filter options based on category + search
     const filteredOptions = options.filter(option => {
-        const matchesCategory =
-            selectedCategory === 'all' || option.category === selectedCategory;
+        const matchesCategory = showAustriaCategoryFilters
+            ? isCategoryMatch(option.category, selectedCategory)
+            : true;
         const posNum = getPositionsnummer(option);
         const descText = getDescriptionText(option);
         const matchesSearch =
@@ -186,7 +207,7 @@ export default function PositionsnummerDropdown({
             // Clear search when modal closes
             setSearchQuery('');
             // Reset category filter when modal closes
-            setSelectedCategory('all');
+            setSelectedCategory('Einlagen');
         }
     }, [isOpen]);
 
@@ -326,17 +347,6 @@ export default function PositionsnummerDropdown({
                         >
                             {showAustriaCategoryFilters && (
                                 <div className="mb-4 flex flex-wrap gap-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedCategory('all')}
-                                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
-                                            selectedCategory === 'all'
-                                                ? 'bg-[#61A178] text-white'
-                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                        }`}
-                                    >
-                                        Alle
-                                    </button>
                                     {categoryButtons.map((category) => (
                                         <button
                                             key={category}

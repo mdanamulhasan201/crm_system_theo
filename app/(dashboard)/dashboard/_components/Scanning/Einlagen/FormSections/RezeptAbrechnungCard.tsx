@@ -96,7 +96,7 @@ export default function RezeptAbrechnungCard({
     // VAT helpers (match PositionsnummerDropdown: country-wise)
     const getVatRate = (): number => {
         if (vatCountry === 'Italien (IT)') return 4;
-        if (vatCountry === 'Österreich (AT)') return 20;
+        if (vatCountry === 'Österreich (AT)' || vatCountry === 'Austria (AT)') return 20;
         return 0;
     };
     const calculateSubtotal = (): number =>
