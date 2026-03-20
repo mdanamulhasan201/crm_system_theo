@@ -409,11 +409,18 @@ export default function ProcessTable() {
             if (leftPng) await placeImageContainCenter(leftPng, 0, topImagesY, eachWidth, maxHeight);
             if (rightPng) await placeImageContainCenter(rightPng, eachWidth + gap, topImagesY, eachWidth, maxHeight);
 
+            // Fetch partner logo
+            const partnerLogoUrl = d.partnerInfo?.image || null;
+            const partnerLogoRaw = partnerLogoUrl ? await fetchImg(partnerLogoUrl) : null;
+            const partnerLogoPng = partnerLogoRaw ? await toPng(partnerLogoRaw) : null;
+
             // Header overlay drawn AFTER images so it stays on top
             pdf.setFontSize(11);
             const headerY = 6;
             const headerLineGap = 6;
             const textPadX = 5;
+
+            // Left side: customer info
             textWithHalo(`Datum: ${todayText}`, textPadX, headerY);
             textWithHalo(`Auftrag: ${d.orderNumber ?? '—'}`, textPadX, headerY + headerLineGap);
             textWithHalo('Kunde', textPadX, headerY + headerLineGap * 2);
@@ -421,12 +428,31 @@ export default function ProcessTable() {
             if (d.customerInfo?.customerNumber) textWithHalo(`Kundennr.: ${d.customerInfo.customerNumber}`, textPadX, headerY + headerLineGap * 4);
             if (d.customerInfo?.phone) textWithHalo(`Tel.: ${d.customerInfo.phone}`, textPadX, headerY + headerLineGap * (d.customerInfo?.customerNumber ? 5 : 4));
 
+            // Right side: partner info (logo + name + address)
+            const rightPadX = pageWidth - 5;
+            const logoSize = 18; // mm square
+            const logoX = pageWidth - logoSize - 5;
+            const logoY = 4;
+            if (partnerLogoPng) {
+                const logoDim = await getDim(partnerLogoPng);
+                if (logoDim) {
+                    const aspect = logoDim.w / logoDim.h;
+                    const lw = aspect >= 1 ? logoSize : logoSize * aspect;
+                    const lh = aspect >= 1 ? logoSize / aspect : logoSize;
+                    pdf.addImage(partnerLogoPng, 'PNG', logoX + (logoSize - lw) / 2, logoY + (logoSize - lh) / 2, lw, lh, undefined, 'FAST');
+                }
+            }
+            const partnerTextY = logoY + logoSize + 3;
+            if (d.partnerInfo?.busnessName) textWithHalo(d.partnerInfo.busnessName, rightPadX, partnerTextY, { align: 'right', fontStyle: 'bold' });
+            const partnerAddress = d.partnerInfo?.storeLocations?.[0]?.address || '';
+            if (partnerAddress) textWithHalo(partnerAddress, rightPadX, partnerTextY + headerLineGap, { align: 'right' });
+
             // Footer block anchored to very bottom — same as ScanPictureModal
             const bottomY = pageHeight - bottomBlockHeight;
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(10);
             const leftColX = textPadX;
-            const rightColX = availableWidth / 2 - 30;
+            const rightColX = availableWidth / 2 - 60;
             const leftColWidth = rightColX - leftColX - 4;
             const rightColWidth = availableWidth - rightColX - textPadX;
             const startY = bottomY + 8;
