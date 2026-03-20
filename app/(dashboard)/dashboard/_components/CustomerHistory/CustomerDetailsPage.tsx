@@ -129,6 +129,7 @@ export interface CustomerDetailsPageProps {
     prescription?: {
       prescription_number?: string | null;
       insurance_provider?: string | null;
+      insurance_number?: string | null;
     } | null;
   };
   /** Form state when editing */
@@ -291,7 +292,7 @@ export default function CustomerDetailsPage({
         <Card title="Versicherung">
           <Field
             label="Versichertennummer"
-            value={data.prescription?.prescription_number || (isEditing ? (editFormData.land ?? '') : (data.land || ''))}
+            value={data.prescription?.insurance_number || ''}
             isEditing={false}
           />
           <Field
