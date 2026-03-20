@@ -199,3 +199,60 @@ export const updateDocumentsClaims = async (id: string, documentsClaimsData: any
   }
 }
 
+
+
+
+// ==================================New goods receipt ==================
+
+// create v2/inventory-supplier/create
+export const createInventorySupplier = async (inventorySupplierData: any) => {
+  try {
+    const response = await axiosClient.post(`/v2/inventory-supplier/create`, inventorySupplierData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+// get onkly the name v2/inventory-supplier/get-only-name-and-id
+export const getOnlyNamedata = async (limit: number, cursor: string) => {
+  try {
+    const response = await axiosClient.get(`/v2/inventory-supplier/get-only-name-and-id?limit=${limit}&cursor=${cursor}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+// get single v2/inventory-supplier/details/cmmym4jza00004fkugcenwjnw
+export const getSingleInventorySupplier = async (id: string) => {
+  try {
+    const response = await axiosClient.get(`/v2/inventory-supplier/details/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// delete v2/inventory-supplier/delete/{{id}}
+export const deleteInventorySupplier = async (id: string) => {
+  try {
+    const response = await axiosClient.delete(`/v2/inventory-supplier/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// update v2/inventory-supplier/update/{{id}}
+export const updateInventorySupplier = async (id: string, inventorySupplierData: any) => {
+  try {
+    const response = await axiosClient.patch(`/v2/inventory-supplier/update/${id}`, inventorySupplierData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
