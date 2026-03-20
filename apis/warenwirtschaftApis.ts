@@ -226,7 +226,7 @@ export const getOnlyNamedata = async (limit: number, cursor: string) => {
 }
 
 
-// get single v2/inventory-supplier/details/cmmym4jza00004fkugcenwjnw
+// get single v2/inventory-supplier/details/:id
 export const getSingleInventorySupplier = async (id: string) => {
   try {
     const response = await axiosClient.get(`/v2/inventory-supplier/details/${id}`);
@@ -236,7 +236,7 @@ export const getSingleInventorySupplier = async (id: string) => {
   }
 }
 
-// delete v2/inventory-supplier/delete/{{id}}
+// delete v2/inventory-supplier/delete/:id
 export const deleteInventorySupplier = async (id: string) => {
   try {
     const response = await axiosClient.delete(`/v2/inventory-supplier/delete/${id}`);
@@ -246,7 +246,7 @@ export const deleteInventorySupplier = async (id: string) => {
   }
 }
 
-// update v2/inventory-supplier/update/{{id}}
+// update v2/inventory-supplier/update/:id
 export const updateInventorySupplier = async (id: string, inventorySupplierData: any) => {
   try {
     const response = await axiosClient.patch(`/v2/inventory-supplier/update/${id}`, inventorySupplierData);
@@ -255,4 +255,5 @@ export const updateInventorySupplier = async (id: string, inventorySupplierData:
     throw error;
   }
 }
+
 

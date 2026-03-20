@@ -22,6 +22,7 @@ import {
   type PaymentStatus,
 } from '@/apis/warenwirtschaftApis'
 import toast from 'react-hot-toast'
+import LieferantSelect from './LieferantSelect'
 
 const STATUS_OPTIONS: { value: InventoryStatus; label: string }[] = [
   { value: 'Ordered', label: 'Ordered' },
@@ -56,7 +57,6 @@ export interface LieferantOption {
 interface ManuellSectionProps {
   inventoryType: InventoryType
   supplierName?: string
-  lieferanten: LieferantOption[]
   onBack: () => void
   onSuccess?: () => void
   initialData?: InventoryItem
@@ -66,17 +66,17 @@ interface ManuellSectionProps {
 export default function ManuellSection({
   inventoryType,
   supplierName,
-  lieferanten,
   onBack,
   onSuccess,
   initialData,
   editId,
 }: ManuellSectionProps) {
   const isEdit = Boolean(editId && initialData)
-  const [supplierId, setSupplierId] = useState<string>(() => {
-    if (initialData) return lieferanten.find((l) => l.name === initialData.supplier)?.id ?? ''
-    return supplierName ? lieferanten.find((l) => l.name === supplierName)?.id ?? '' : ''
-  })
+  // We track (id, name) separately — LieferantSelect gives us both via onChange(id, name)
+  const [supplierId, setSupplierId] = useState<string>('')
+  const [supplierNameState, setSupplierNameState] = useState<string>(
+    initialData?.supplier ?? supplierName ?? ''
+  )
   const [date, setDate] = useState<string>(() => (initialData ? dateToInput(initialData.date) : todayISO()))
   const [amount, setAmount] = useState<number>(initialData?.amount ?? 0)
   const [status, setStatus] = useState<InventoryStatus>(initialData?.status ?? 'Delivered')
@@ -87,7 +87,7 @@ export default function ManuellSection({
   const [error, setError] = useState<string | null>(null)
 
   const isInvoices = inventoryType === 'Invoices'
-  const supplier = lieferanten.find((l) => l.id === supplierId)?.name ?? initialData?.supplier ?? ''
+  const supplier = supplierNameState
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -144,23 +144,18 @@ export default function ManuellSection({
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 space-y-4">
-        {/* Lieferant: Dropdown für beide (Rechnung + Bestellung) */}
+        {/* Lieferant: shared custom dropdown with search + "Neu anlegen" */}
         <div className="space-y-2">
-          <Label htmlFor="manuell-lieferant" className="text-sm font-medium text-gray-700">
+          <Label className="text-sm font-medium text-gray-700">
             Lieferant <span className="text-red-500">*</span>
           </Label>
-          <Select value={supplierId || undefined} onValueChange={setSupplierId} required>
-            <SelectTrigger id="manuell-lieferant" className="w-full">
-              <SelectValue placeholder="Lieferant auswählen..." />
-            </SelectTrigger>
-            <SelectContent>
-              {lieferanten.map((l) => (
-                <SelectItem key={l.id} value={l.id} className="focus:bg-[#62A17C]/10 focus:text-[#62A17C]">
-                  {l.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <LieferantSelect
+            value={supplierId}
+            onChange={(id, name) => {
+              setSupplierId(id)
+              setSupplierNameState(name ?? '')
+            }}
+          />
         </div>
 
         <div className="space-y-2">

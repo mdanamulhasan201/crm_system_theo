@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   Sheet,
   SheetContent,
@@ -13,14 +13,33 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Building2, Loader2 } from 'lucide-react'
-import { createInventorySupplier } from '@/apis/warenwirtschaftApis'
+import { createInventorySupplier, updateInventorySupplier } from '@/apis/warenwirtschaftApis'
 import toast from 'react-hot-toast'
+
+export interface LieferantFormData {
+  id?: string
+  name?: string
+  contactName?: string
+  email?: string
+  phone?: string
+  street?: string
+  postalCode?: string
+  city?: string
+  country?: string
+  vatIdNumber?: string
+  paymentTargetDays?: number | string
+  notes?: string
+}
 
 interface NeuerLieferantSidebarProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  /** Called after successful creation with the new supplier {id, name} */
+  /** Pass to enable edit mode — pre-fills the form */
+  editData?: LieferantFormData | null
+  /** Called after successful creation */
   onCreated?: (supplier: { id: string; name: string }) => void
+  /** Called after successful update */
+  onUpdated?: (supplier: { id: string; name: string }) => void
 }
 
 interface FormState {
@@ -51,19 +70,48 @@ const EMPTY_FORM: FormState = {
   notes: '',
 }
 
+function dataToForm(data: LieferantFormData): FormState {
+  return {
+    name: data.name ?? '',
+    contactName: data.contactName ?? '',
+    email: data.email ?? '',
+    phone: data.phone ?? '',
+    street: data.street ?? '',
+    postalCode: data.postalCode ?? '',
+    city: data.city ?? '',
+    country: data.country ?? 'Deutschland',
+    vatIdNumber: data.vatIdNumber ?? '',
+    paymentTargetDays: data.paymentTargetDays != null ? String(data.paymentTargetDays) : '14',
+    notes: data.notes ?? '',
+  }
+}
+
 export default function NeuerLieferantSidebar({
   open,
   onOpenChange,
+  editData,
   onCreated,
+  onUpdated,
 }: NeuerLieferantSidebarProps) {
-  const [form, setForm] = useState<FormState>(EMPTY_FORM)
+  const isEdit = Boolean(editData?.id)
+
+  const [form, setForm] = useState<FormState>(editData ? dataToForm(editData) : EMPTY_FORM)
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const set = (field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }))
-    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }))
-  }
+  // Re-populate form when editData changes or sidebar opens
+  useEffect(() => {
+    if (open) {
+      setForm(editData ? dataToForm(editData) : EMPTY_FORM)
+      setErrors({})
+    }
+  }, [open, editData])
+
+  const set = (field: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setForm((prev) => ({ ...prev, [field]: e.target.value }))
+      if (errors[field]) setErrors((prev) => ({ ...prev, [field]: undefined }))
+    }
 
   const validate = (): boolean => {
     const next: typeof errors = {}
@@ -78,36 +126,43 @@ export default function NeuerLieferantSidebar({
     return Object.keys(next).length === 0
   }
 
+  const buildPayload = () => {
+    const payload: Record<string, any> = { name: form.name.trim() }
+    if (form.contactName.trim()) payload.contactName = form.contactName.trim()
+    if (form.email.trim()) payload.email = form.email.trim()
+    if (form.phone.trim()) payload.phone = form.phone.trim()
+    if (form.street.trim()) payload.street = form.street.trim()
+    if (form.postalCode.trim()) payload.postalCode = form.postalCode.trim()
+    if (form.city.trim()) payload.city = form.city.trim()
+    if (form.country.trim()) payload.country = form.country.trim()
+    if (form.vatIdNumber.trim()) payload.vatIdNumber = form.vatIdNumber.trim()
+    if (form.paymentTargetDays) payload.paymentTargetDays = Number(form.paymentTargetDays)
+    if (form.notes.trim()) payload.notes = form.notes.trim()
+    return payload
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!validate()) return
 
     setIsSubmitting(true)
     try {
-      const payload: Record<string, any> = {
-        name: form.name.trim(),
+      if (isEdit && editData?.id) {
+        await updateInventorySupplier(editData.id, buildPayload())
+        toast.success(`Lieferant "${form.name}" wurde aktualisiert!`)
+        onUpdated?.({ id: editData.id, name: form.name.trim() })
+      } else {
+        const res = await createInventorySupplier(buildPayload())
+        const created = res?.data ?? res
+        toast.success(`Lieferant "${form.name}" wurde erfolgreich angelegt!`)
+        onCreated?.({ id: created?.id ?? created?._id ?? '', name: form.name.trim() })
       }
-      if (form.contactName.trim()) payload.contactName = form.contactName.trim()
-      if (form.email.trim()) payload.email = form.email.trim()
-      if (form.phone.trim()) payload.phone = form.phone.trim()
-      if (form.street.trim()) payload.street = form.street.trim()
-      if (form.postalCode.trim()) payload.postalCode = form.postalCode.trim()
-      if (form.city.trim()) payload.city = form.city.trim()
-      if (form.country.trim()) payload.country = form.country.trim()
-      if (form.vatIdNumber.trim()) payload.vatIdNumber = form.vatIdNumber.trim()
-      if (form.paymentTargetDays) payload.paymentTargetDays = Number(form.paymentTargetDays)
-      if (form.notes.trim()) payload.notes = form.notes.trim()
-
-      const res = await createInventorySupplier(payload)
-      const created = res?.data ?? res
-
-      toast.success(`Lieferant "${form.name}" wurde erfolgreich angelegt!`)
-      onCreated?.({ id: created?.id ?? created?._id ?? '', name: form.name.trim() })
-      setForm(EMPTY_FORM)
-      setErrors({})
       onOpenChange(false)
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Fehler beim Anlegen des Lieferanten'
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        (isEdit ? 'Fehler beim Aktualisieren' : 'Fehler beim Anlegen des Lieferanten')
       toast.error(msg)
     } finally {
       setIsSubmitting(false)
@@ -116,8 +171,6 @@ export default function NeuerLieferantSidebar({
 
   const handleClose = () => {
     if (isSubmitting) return
-    setForm(EMPTY_FORM)
-    setErrors({})
     onOpenChange(false)
   }
 
@@ -134,10 +187,10 @@ export default function NeuerLieferantSidebar({
             </div>
             <div>
               <SheetTitle className="text-xl font-semibold text-gray-900">
-                Neuen Lieferanten anlegen
+                {isEdit ? 'Lieferant bearbeiten' : 'Neuen Lieferanten anlegen'}
               </SheetTitle>
               <SheetDescription className="mt-0.5 text-sm text-gray-500">
-                Lieferantendaten erfassen und speichern
+                {isEdit ? 'Lieferantendaten aktualisieren' : 'Lieferantendaten erfassen und speichern'}
               </SheetDescription>
             </div>
           </div>
@@ -219,53 +272,25 @@ export default function NeuerLieferantSidebar({
             {/* PLZ + Ort */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="lieferant-plz" className="text-sm font-medium text-gray-700">
-                  PLZ
-                </Label>
-                <Input
-                  id="lieferant-plz"
-                  value={form.postalCode}
-                  onChange={set('postalCode')}
-                  placeholder="12345"
-                />
+                <Label htmlFor="lieferant-plz" className="text-sm font-medium text-gray-700">PLZ</Label>
+                <Input id="lieferant-plz" value={form.postalCode} onChange={set('postalCode')} placeholder="12345" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="lieferant-city" className="text-sm font-medium text-gray-700">
-                  Ort
-                </Label>
-                <Input
-                  id="lieferant-city"
-                  value={form.city}
-                  onChange={set('city')}
-                  placeholder="Berlin"
-                />
+                <Label htmlFor="lieferant-city" className="text-sm font-medium text-gray-700">Ort</Label>
+                <Input id="lieferant-city" value={form.city} onChange={set('city')} placeholder="Berlin" />
               </div>
             </div>
 
             {/* Land */}
             <div className="space-y-1.5">
-              <Label htmlFor="lieferant-country" className="text-sm font-medium text-gray-700">
-                Land
-              </Label>
-              <Input
-                id="lieferant-country"
-                value={form.country}
-                onChange={set('country')}
-                placeholder="Deutschland"
-              />
+              <Label htmlFor="lieferant-country" className="text-sm font-medium text-gray-700">Land</Label>
+              <Input id="lieferant-country" value={form.country} onChange={set('country')} placeholder="Deutschland" />
             </div>
 
             {/* USt-IdNr. */}
             <div className="space-y-1.5">
-              <Label htmlFor="lieferant-vat" className="text-sm font-medium text-gray-700">
-                USt-IdNr.
-              </Label>
-              <Input
-                id="lieferant-vat"
-                value={form.vatIdNumber}
-                onChange={set('vatIdNumber')}
-                placeholder="DE123456789"
-              />
+              <Label htmlFor="lieferant-vat" className="text-sm font-medium text-gray-700">USt-IdNr.</Label>
+              <Input id="lieferant-vat" value={form.vatIdNumber} onChange={set('vatIdNumber')} placeholder="DE123456789" />
             </div>
 
             {/* Zahlungsziel */}
@@ -282,16 +307,12 @@ export default function NeuerLieferantSidebar({
                 placeholder="14"
                 className={errors.paymentTargetDays ? 'border-red-500' : ''}
               />
-              {errors.paymentTargetDays && (
-                <p className="text-xs text-red-500">{errors.paymentTargetDays}</p>
-              )}
+              {errors.paymentTargetDays && <p className="text-xs text-red-500">{errors.paymentTargetDays}</p>}
             </div>
 
             {/* Notizen */}
             <div className="space-y-1.5">
-              <Label htmlFor="lieferant-notes" className="text-sm font-medium text-gray-700">
-                Notizen
-              </Label>
+              <Label htmlFor="lieferant-notes" className="text-sm font-medium text-gray-700">Notizen</Label>
               <Textarea
                 id="lieferant-notes"
                 value={form.notes}
@@ -305,27 +326,14 @@ export default function NeuerLieferantSidebar({
 
           {/* Footer */}
           <div className="border-t border-gray-100 px-6 py-4 flex justify-end gap-3 bg-white">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleClose}
-              disabled={isSubmitting}
-              className="cursor-pointer"
-            >
+            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting} className="cursor-pointer">
               Abbrechen
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-gray-900 hover:bg-gray-800 cursor-pointer text-white"
-            >
+            <Button type="submit" disabled={isSubmitting} className="bg-gray-900 hover:bg-gray-800 cursor-pointer text-white">
               {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Speichern...
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />{isEdit ? 'Speichern...' : 'Anlegen...'}</>
               ) : (
-                'Speichern'
+                isEdit ? 'Speichern' : 'Anlegen'
               )}
             </Button>
           </div>
