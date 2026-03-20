@@ -7,6 +7,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 interface PositionsnummerItem {
     id: string;
     positionsnummer?: string;
+    category?: string;
     description: string | {
         positionsnummer?: string;
         title?: string;
@@ -51,6 +52,7 @@ export default function PositionsnummerDropdown({
     disabled = false,
 }: PositionsnummerDropdownProps) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<'all' | 'Einlagen' | 'Maßschuhe' | 'Schuhzurichtungen'>('all');
     const searchInputRef = useRef<HTMLInputElement>(null);
     const [internalItemSides, setInternalItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
     
@@ -98,12 +100,22 @@ export default function PositionsnummerDropdown({
         return title || subtitle || '';
     };
 
-    // Filter options based on search
+    const categoryButtons: Array<'Einlagen' | 'Maßschuhe' | 'Schuhzurichtungen'> = ['Einlagen', 'Maßschuhe', 'Schuhzurichtungen'];
+    const isAustriaVatCountry = vatCountry === 'Österreich (AT)';
+    const hasCategoryData = options.some((option) => Boolean(option.category));
+    const showAustriaCategoryFilters = isAustriaVatCountry && hasCategoryData;
+
+    // Filter options based on category + search
     const filteredOptions = options.filter(option => {
+        const matchesCategory =
+            selectedCategory === 'all' || option.category === selectedCategory;
         const posNum = getPositionsnummer(option);
         const descText = getDescriptionText(option);
-        return posNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        const matchesSearch =
+            posNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
             descText.toLowerCase().includes(searchQuery.toLowerCase());
+
+        return matchesCategory && matchesSearch;
     });
 
     // Handle checkbox toggle
@@ -173,6 +185,8 @@ export default function PositionsnummerDropdown({
         } else {
             // Clear search when modal closes
             setSearchQuery('');
+            // Reset category filter when modal closes
+            setSelectedCategory('all');
         }
     }, [isOpen]);
 
@@ -310,6 +324,35 @@ export default function PositionsnummerDropdown({
                             onClick={(e) => e.stopPropagation()}
                             onMouseDown={(e) => e.stopPropagation()}
                         >
+                            {showAustriaCategoryFilters && (
+                                <div className="mb-4 flex flex-wrap gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedCategory('all')}
+                                        className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                                            selectedCategory === 'all'
+                                                ? 'bg-[#61A178] text-white'
+                                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        Alle
+                                    </button>
+                                    {categoryButtons.map((category) => (
+                                        <button
+                                            key={category}
+                                            type="button"
+                                            onClick={() => setSelectedCategory(category)}
+                                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all cursor-pointer ${
+                                                selectedCategory === category
+                                                    ? 'bg-[#61A178] text-white'
+                                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            {category}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                             <div className="relative">
                                 <IoSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-lg" />
                                 <Input
