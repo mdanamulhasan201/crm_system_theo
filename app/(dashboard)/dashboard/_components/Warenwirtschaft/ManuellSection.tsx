@@ -58,7 +58,10 @@ export interface LieferantOption {
 
 interface ManuellSectionProps {
   inventoryType: InventoryType
+  supplierId?: string
   supplierName?: string
+  /** PDF file for delivery note (Lieferschein) — sent as deleveary_note in FormData */
+  deliveryNoteFile?: File
   onBack: () => void
   onSuccess?: () => void
   initialData?: InventoryItem
@@ -67,7 +70,9 @@ interface ManuellSectionProps {
 
 export default function ManuellSection({
   inventoryType,
+  supplierId: supplierIdProp,
   supplierName,
+  deliveryNoteFile,
   onBack,
   onSuccess,
   initialData,
@@ -75,7 +80,8 @@ export default function ManuellSection({
 }: ManuellSectionProps) {
   const isEdit = Boolean(editId && initialData)
   // We track (id, name) separately — LieferantSelect gives us both via onChange(id, name)
-  const [supplierId, setSupplierId] = useState<string>('')
+  const [supplierId, setSupplierId] = useState<string>(supplierIdProp ?? '')
+  // supplierId initialized from prop so LieferantSelect shows pre-selected supplier
   const [supplierNameState, setSupplierNameState] = useState<string>(
     initialData?.supplier ?? supplierName ?? ''
   )
@@ -86,9 +92,11 @@ export default function ManuellSection({
   const [paymentDate, setPaymentDate] = useState<string>(() => (initialData ? dateToInput(initialData.payment_date) : todayISO()))
   const [weLinked, setWeLinked] = useState<boolean>(initialData?.we_linked ?? false)
   const [inventoryPositions, setInventoryPositions] = useState<InventoryPosition[]>([])
+  const [deliveryFile, setDeliveryFile] = useState<File | null>(deliveryNoteFile ?? null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [positionenOpen, setPositionenOpen] = useState(false)
+
 
   const isInvoices = inventoryType === 'Invoices'
   const supplier = supplierNameState
@@ -96,10 +104,6 @@ export default function ManuellSection({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
-    if (!supplier) {
-      setError('Bitte wählen Sie einen Lieferanten.')
-      return
-    }
     const payload: CreateInventoryPayload = {
       inventory_type: inventoryType,
       supplier,
@@ -110,6 +114,7 @@ export default function ManuellSection({
       payment_date: paymentDate,
       we_linked: weLinked,
       ...(inventoryPositions.length > 0 && { inventory_positions: inventoryPositions }),
+      ...(deliveryFile && { deleveary_note: deliveryFile }),
     }
     setSubmitting(true)
     try {
@@ -159,7 +164,7 @@ export default function ManuellSection({
         {/* Lieferant: shared custom dropdown with search + "Neu anlegen" */}
         <div className="space-y-2">
           <Label className="text-sm font-medium text-gray-700">
-            Lieferant <span className="text-red-500">*</span>
+            Lieferant
           </Label>
           <LieferantSelect
             value={supplierId}

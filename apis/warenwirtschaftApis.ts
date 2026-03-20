@@ -25,15 +25,39 @@ export interface CreateInventoryPayload {
   payment_date: string; // YYYY-MM-DD
   we_linked: boolean;
   inventory_positions?: InventoryPosition[];
+  deleveary_note?: File; // PDF delivery note (only for FormData upload)
+}
+
+function buildInventoryFormData(data: CreateInventoryPayload): FormData {
+  const fd = new FormData();
+  fd.append("inventory_type", data.inventory_type);
+  fd.append("supplier", data.supplier);
+  fd.append("date", data.date);
+  fd.append("amount", String(data.amount));
+  fd.append("status", data.status);
+  fd.append("payment_status", data.payment_status);
+  fd.append("payment_date", data.payment_date);
+  fd.append("we_linked", String(data.we_linked));
+  if (data.inventory_positions?.length) {
+    fd.append("inventory_positions", JSON.stringify(data.inventory_positions));
+  }
+  if (data.deleveary_note) {
+    fd.append("deleveary_note", data.deleveary_note);
+  }
+  return fd;
 }
 
 /** POST /v2/inventory-management/create-inventory */
 export const createInventory = async (
   inventoryData: CreateInventoryPayload
 ) => {
+  const isMultipart = inventoryData.deleveary_note instanceof File;
+  const body = isMultipart ? buildInventoryFormData(inventoryData) : inventoryData;
+  const headers = isMultipart ? { "Content-Type": "multipart/form-data" } : undefined;
   const response = await axiosClient.post<unknown>(
     "/v2/inventory-management/create-inventory",
-    inventoryData
+    body,
+    headers ? { headers } : undefined
   );
   return response.data;
 };
@@ -106,9 +130,13 @@ export const updateInventory = async (
   id: string,
   inventoryData: CreateInventoryPayload
 ): Promise<{ success: boolean; data: InventoryItem }> => {
+  const isMultipart = inventoryData.deleveary_note instanceof File;
+  const body = isMultipart ? buildInventoryFormData(inventoryData) : inventoryData;
+  const headers = isMultipart ? { "Content-Type": "multipart/form-data" } : undefined;
   const response = await axiosClient.patch<{ success: boolean; data: InventoryItem }>(
     `/v2/inventory-management/update-inventory/${id}`,
-    inventoryData
+    body,
+    headers ? { headers } : undefined
   );
   return response.data;
 };

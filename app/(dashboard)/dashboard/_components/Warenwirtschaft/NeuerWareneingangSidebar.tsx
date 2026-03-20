@@ -11,7 +11,8 @@ import {
   SheetDescription,
 } from '@/components/ui/sheet'
 import { Label } from '@/components/ui/label'
-import { Package, FileText, Upload, Pencil, LucideIcon, Loader2, X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Package, FileText, Upload, Pencil, LucideIcon, Loader2, X, ArrowRight, CheckCircle2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ManuellSection from './ManuellSection'
 import LieferantSelect, { type LieferantOption } from './LieferantSelect'
@@ -31,7 +32,9 @@ const QUELLE_OPTIONS: { value: Quelle; label: string; icon: LucideIcon }[] = [
 
 export type ManuellContext = {
   inventoryType: InventoryType
+  supplierId?: string
   supplierName?: string
+  deliveryNoteFile?: File
 }
 
 interface NeuerWareneingangSidebarProps {
@@ -50,12 +53,15 @@ export default function NeuerWareneingangSidebar({
   const [quelle, setQuelle] = useState<Quelle | null>(null)
   const [lieferantId, setLieferantId] = useState<string>('')
   const [lieferantName, setLieferantName] = useState<string>('')
+  const [deliveryNoteFile, setDeliveryNoteFile] = useState<File | null>(null)
   const [showManuellSection, setShowManuellSection] = useState(false)
   const [manuellContext, setManuellContext] = useState<ManuellContext | null>(null)
   const [lieferantError, setLieferantError] = useState<string>('')
   const [editData, setEditData] = useState<InventoryItem | null>(null)
   const [editLoading, setEditLoading] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // Edit: load single inventory when editInventoryId is set
   useEffect(() => {
@@ -81,17 +87,35 @@ export default function NeuerWareneingangSidebar({
       setLieferantError('')
       setLieferantId('')
       setLieferantName('')
+      setDeliveryNoteFile(null)
       setEditData(null)
       setEditError(null)
     }
   }, [open])
 
-  const handleManuellClick = () => {
+  const handleProceed = () => {
     setManuellContext({
       inventoryType: quelle === 'rechnung' ? 'Invoices' : 'Orders',
+      supplierId: lieferantId || undefined,
       supplierName: lieferantName || undefined,
+      deliveryNoteFile: deliveryNoteFile ?? undefined,
     })
     setShowManuellSection(true)
+  }
+
+  const handleQuelleClick = (value: Quelle) => {
+    setLieferantError('')
+    if (value === 'manuell') {
+      // Manuell = proceed with current state
+      handleProceed()
+      return
+    }
+    // Toggle selection for Rechnung / Lieferschein
+    setQuelle((prev) => (prev === value ? null : value))
+    // For Lieferschein: also open file picker
+    if (value === 'lieferschein') {
+      fileInputRef.current?.click()
+    }
   }
 
   return (
@@ -138,12 +162,26 @@ export default function NeuerWareneingangSidebar({
           ) : showManuellSection && manuellContext ? (
             <ManuellSection
               inventoryType={manuellContext.inventoryType}
+              supplierId={manuellContext.supplierId}
               supplierName={manuellContext.supplierName}
+              deliveryNoteFile={manuellContext.deliveryNoteFile}
               onBack={() => { setShowManuellSection(false); setManuellContext(null) }}
               onSuccess={() => { onOpenChange(false); onSuccess?.() }}
             />
           ) : (
             <>
+              {/* Hidden file input for Lieferschein */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  setDeliveryNoteFile(e.target.files?.[0] ?? null)
+                  e.target.value = ''
+                }}
+              />
+
               {/* Quelle wählen */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium text-gray-700">Quelle wählen</Label>
@@ -151,18 +189,14 @@ export default function NeuerWareneingangSidebar({
                   {QUELLE_OPTIONS.map((opt) => {
                     const Icon = opt.icon
                     const isSelected = quelle === opt.value
+                    const hasFile = opt.value === 'lieferschein' && deliveryNoteFile
                     return (
                       <button
                         key={opt.value}
                         type="button"
-                        onClick={() => {
-                          setLieferantError('')
-                          if (quelle === opt.value) { setQuelle(null); return }
-                          if (opt.value === 'manuell') handleManuellClick()
-                          setQuelle(opt.value)
-                        }}
+                        onClick={() => handleQuelleClick(opt.value)}
                         className={cn(
-                          'flex flex-col cursor-pointer items-center gap-2 rounded-lg border px-3 py-4 text-sm font-medium transition-colors',
+                          'relative flex flex-col cursor-pointer items-center gap-2 rounded-lg border px-3 py-4 text-sm font-medium transition-colors',
                           isSelected
                             ? 'border-[#62A17C] bg-white text-gray-900 shadow-sm'
                             : 'border-gray-200 bg-gray-50/80 text-gray-600 hover:border-gray-300 hover:bg-gray-100'
@@ -170,17 +204,33 @@ export default function NeuerWareneingangSidebar({
                       >
                         <Icon className="size-5 shrink-0" strokeWidth={1.5} />
                         <span>{opt.label}</span>
+                        {hasFile && (
+                          <CheckCircle2 className="absolute top-1.5 right-1.5 h-3.5 w-3.5 text-[#62A17C]" />
+                        )}
                       </button>
                     )
                   })}
                 </div>
+
+                {/* Selected file row — Lieferschein only */}
+                {quelle === 'lieferschein' && deliveryNoteFile && (
+                  <div className="flex items-center gap-2 rounded-md bg-gray-50 border border-gray-100 px-3 py-2 text-xs text-gray-600">
+                    <FileText className="h-3.5 w-3.5 shrink-0 text-[#1a7fc1]" />
+                    <span className="truncate flex-1">{deliveryNoteFile.name}</span>
+                    <button
+                      type="button"
+                      onClick={() => setDeliveryNoteFile(null)}
+                      className="shrink-0 text-gray-400 hover:text-red-500 cursor-pointer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Lieferant */}
+              {/* Lieferant — always visible */}
               <div className="mt-6 space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
-                  Lieferant <span className="text-red-500">*</span>
-                </Label>
+                <Label className="text-sm font-medium text-gray-700">Lieferant</Label>
                 <LieferantSelect
                   value={lieferantId}
                   onChange={(id, name) => {
@@ -195,9 +245,6 @@ export default function NeuerWareneingangSidebar({
                   }}
                   error={lieferantError}
                 />
-                {lieferantError && (
-                  <p className="text-sm text-red-500">{lieferantError}</p>
-                )}
               </div>
             </>
           )}
