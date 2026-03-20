@@ -349,13 +349,10 @@ export default function ProcessTable() {
                 } catch { return null; }
             };
 
+            // A3 portrait: 297 x 420 mm — same as ScanPictureModal design
             const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a3' });
             const pageWidth = 297;
             const pageHeight = 420;
-            const marginX = 22;
-            const marginTop = 25;
-            const marginBottom = 25;
-            const pxToMm = 0.264583;
 
             const textWithHalo = (text: string, x: number, y: number, opts?: { align?: 'left' | 'center' | 'right'; fontStyle?: 'normal' | 'bold' }) => {
                 const { align = 'left', fontStyle = 'normal' } = opts ?? {};
@@ -369,12 +366,21 @@ export default function ProcessTable() {
                 pdf.text(text, x, y, { align });
             };
 
-            const bottomBlockHeight = 120;
-            const imageOffsetY = 10;
-            const topImagesY = marginTop + imageOffsetY;
-            const gap = 10;
-            const availableWidth = pageWidth - marginX * 2;
+            // Today's date formatted (German style)
+            const now = new Date();
+            const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+            const todayText = `${String(now.getDate()).padStart(2, '0')}. ${months[now.getMonth()]} ${now.getFullYear()}`;
+
+            const customerName = [d.customerInfo?.firstName, d.customerInfo?.lastName].filter(Boolean).join(' ').trim() || '—';
+
+            // Images: edge-to-edge, no margins — same as ScanPictureModal
+            const bottomBlockHeight = 50;
+            const topImagesY = 0;
+            const imagesAreaHeight = pageHeight - bottomBlockHeight - topImagesY;
+            const gap = 4;
+            const availableWidth = pageWidth;
             const eachWidth = (availableWidth - gap) / 2;
+            const maxHeight = imagesAreaHeight;
 
             const leftUrl = d.screenerFile?.picture_23 || null;
             const rightUrl = d.screenerFile?.picture_24 || null;
@@ -387,43 +393,51 @@ export default function ProcessTable() {
                 rightRaw ? toPng(rightRaw) : Promise.resolve(null),
             ]);
 
-            const placeImage = async (dataUrl: string, x: number, y: number, slotW: number) => {
+            // Contain + center: scale image to fit fully within its slot
+            const placeImageContainCenter = async (dataUrl: string, slotX: number, slotY: number, slotW: number, slotH: number) => {
                 const dim = await getDim(dataUrl);
                 if (!dim) return;
-                const nw = dim.w * pxToMm;
-                const nh = dim.h * pxToMm;
-                const cx = Math.max(x, x + (slotW - nw) / 2);
-                pdf.addImage(dataUrl, 'PNG', cx, y, nw, nh, undefined, 'FAST');
+                const aspect = dim.w / dim.h;
+                let imgW = slotW;
+                let imgH = imgW / aspect;
+                if (imgH > slotH) { imgH = slotH; imgW = imgH * aspect; }
+                const cx = slotX + (slotW - imgW) / 2;
+                const cy = slotY + (slotH - imgH) / 2;
+                pdf.addImage(dataUrl, 'PNG', cx, cy, imgW, imgH, undefined, 'FAST');
             };
 
-            if (leftPng) await placeImage(leftPng, marginX, topImagesY, eachWidth);
-            if (rightPng) await placeImage(rightPng, marginX + eachWidth + gap, topImagesY, eachWidth);
+            if (leftPng) await placeImageContainCenter(leftPng, 0, topImagesY, eachWidth, maxHeight);
+            if (rightPng) await placeImageContainCenter(rightPng, eachWidth + gap, topImagesY, eachWidth, maxHeight);
 
-            // Header overlay (drawn after images)
+            // Header overlay drawn AFTER images so it stays on top
             pdf.setFontSize(11);
+            const headerY = 6;
             const headerLineGap = 6;
-            const customerName = [d.customerInfo?.firstName, d.customerInfo?.lastName].filter(Boolean).join(' ').trim() || '—';
-            textWithHalo(`Auftrag: ${d.orderNumber ?? '—'}`, marginX, marginTop);
-            textWithHalo('Kunde', marginX, marginTop + headerLineGap);
-            textWithHalo(customerName, marginX, marginTop + headerLineGap * 2, { fontStyle: 'bold' });
+            const textPadX = 5;
+            textWithHalo(`Datum: ${todayText}`, textPadX, headerY);
+            textWithHalo(`Auftrag: ${d.orderNumber ?? '—'}`, textPadX, headerY + headerLineGap);
+            textWithHalo('Kunde', textPadX, headerY + headerLineGap * 2);
+            textWithHalo(customerName, textPadX, headerY + headerLineGap * 3, { fontStyle: 'bold' });
+            if (d.customerInfo?.customerNumber) textWithHalo(`Kundennr.: ${d.customerInfo.customerNumber}`, textPadX, headerY + headerLineGap * 4);
+            if (d.customerInfo?.phone) textWithHalo(`Tel.: ${d.customerInfo.phone}`, textPadX, headerY + headerLineGap * (d.customerInfo?.customerNumber ? 5 : 4));
 
-            // Bottom block
-            const bottomY = pageHeight - marginBottom - bottomBlockHeight;
+            // Footer block anchored to very bottom — same as ScanPictureModal
+            const bottomY = pageHeight - bottomBlockHeight;
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(10);
-            const leftColX = marginX;
-            const rightColX = marginX + availableWidth / 2 - 28;
-            const leftColWidth = Math.max(50, rightColX - leftColX - 3);
-            const rightColWidth = Math.max(50, marginX + availableWidth - rightColX);
-            const startY = bottomY + 42;
+            const leftColX = textPadX;
+            const rightColX = availableWidth / 2 - 30;
+            const leftColWidth = rightColX - leftColX - 4;
+            const rightColWidth = availableWidth - rightColX - textPadX;
+            const startY = bottomY + 8;
             const lineGap = 5;
 
             const writeLines = (x: number, yStart: number, width: number, lines: string[]) => {
                 let ly = yStart;
                 for (const raw of lines) {
-                    if (ly > bottomY + bottomBlockHeight - 8) break;
+                    if (ly > pageHeight - 4) break;
                     for (const w of pdf.splitTextToSize(raw, width)) {
-                        if (ly > bottomY + bottomBlockHeight - 8) break;
+                        if (ly > pageHeight - 4) break;
                         pdf.text(w, x, ly);
                         ly += lineGap;
                     }
@@ -433,15 +447,19 @@ export default function ProcessTable() {
             const leftLines: string[] = [];
             leftLines.push('Diagnose / Versorgung:');
             leftLines.push(d.diagnosisInfo?.productName || '—');
-            leftLines.push('');
-            leftLines.push(`Versorgung: ${d.diagnosisInfo?.versorgung || '—'}`);
+            if (d.diagnosisInfo?.versorgung) leftLines.push(`Versorgung: ${d.diagnosisInfo.versorgung}`);
             if (d.quantity) leftLines.push(`Menge: ${d.quantity}`);
-            if (d.diagnosisInfo?.material) { leftLines.push(''); leftLines.push('Material:'); leftLines.push(d.diagnosisInfo.material); }
+            if (d.diagnosisInfo?.material) {
+                leftLines.push('Material:');
+                leftLines.push(d.diagnosisInfo.material);
+            }
             if (d.footSize) leftLines.push(`Fußgröße: ${d.footSize}`);
 
             const rightLines: string[] = [];
-            if (d.customerInfo?.address) { rightLines.push('Adresse:'); rightLines.push(d.customerInfo.address); rightLines.push(''); }
-            if (d.customerInfo?.birthDate) rightLines.push(`Geb.: ${d.customerInfo.birthDate}`);
+            if (d.uberzug) {
+                rightLines.push('Überzug:');
+                for (const ln of String(d.uberzug).split(/\r?\n/)) rightLines.push(ln);
+            }
 
             writeLines(leftColX, startY, leftColWidth, leftLines);
             writeLines(rightColX, startY, rightColWidth, rightLines);
