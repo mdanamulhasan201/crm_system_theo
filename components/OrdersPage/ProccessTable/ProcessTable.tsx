@@ -16,6 +16,7 @@ import ScanPictureModal from "./ScanPictureModal";
 import BarcodeStickerModal from "./BarcodeSticker/BarcodeStickerModal";
 import StatusNoteModal from "./StatusNoteModal";
 import { AbrechnungsuebersichtModal } from "./Abrechnungsuebersicht";
+import PriceEditModal from "./PriceEditModal/PriceEditModal";
 import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
@@ -50,6 +51,7 @@ export default function ProcessTable() {
         updateBulkPaymentStatus,
         updateBulkPaidStatus,
         orderIdFromSearch, // Get orderId from URL
+        refreshOrderData,
     } = useOrders();
 
     const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -119,6 +121,9 @@ export default function ProcessTable() {
     const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
     const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
     const [billingModalOrderNumber, setBillingModalOrderNumber] = useState<string>('');
+    const [priceEditModalOrderId, setPriceEditModalOrderId] = useState<string | null>(null);
+    const [priceEditModalCustomerName, setPriceEditModalCustomerName] = useState<string>('');
+    const [priceEditModalOrderNumber, setPriceEditModalOrderNumber] = useState<string>('');
     const tableWrapperRef = useRef<HTMLDivElement | null>(null);
     const dragScrollStateRef = useRef({
         isDragging: false,
@@ -883,6 +888,11 @@ export default function ProcessTable() {
                                                 setBillingModalCustomerName(customerName);
                                                 setBillingModalOrderNumber(orderNumber);
                                             }}
+                                            onHalbprobePriceClick={(orderId, customerName, orderNumber) => {
+                                                setPriceEditModalOrderId(orderId);
+                                                setPriceEditModalCustomerName(customerName);
+                                                setPriceEditModalOrderNumber(orderNumber);
+                                            }}
                                         />
                                     ))
                                 )}
@@ -1080,6 +1090,24 @@ export default function ProcessTable() {
                     customerName={billingModalCustomerName}
                     orderNumber={billingModalOrderNumber}
                     onInvoiceDownload={handleInvoiceDownload}
+                />
+
+                {/* Price Edit Modal – opens on "Preis bearbeiten" button (only when halbprobe=true) */}
+                <PriceEditModal
+                    isOpen={!!priceEditModalOrderId}
+                    onClose={() => {
+                        setPriceEditModalOrderId(null);
+                        setPriceEditModalCustomerName('');
+                        setPriceEditModalOrderNumber('');
+                    }}
+                    orderId={priceEditModalOrderId}
+                    customerName={priceEditModalCustomerName}
+                    orderNumber={priceEditModalOrderNumber}
+                    onUpdated={() => {
+                        if (priceEditModalOrderId) {
+                            refreshOrderData(priceEditModalOrderId);
+                        }
+                    }}
                 />
             </div>
 

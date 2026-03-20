@@ -106,6 +106,7 @@ interface OrderTableRowProps {
     onStatusClickGenerateAndSend?: (orderId: string, orderNumber: string) => void;
     onNoteClick?: (orderId: string) => void;
     onPriceClick?: (orderId: string, customerName: string, orderNumber: string) => void;
+    onHalbprobePriceClick?: (orderId: string, customerName: string, orderNumber: string) => void;
 }
 
 export default function OrderTableRow({
@@ -133,6 +134,7 @@ export default function OrderTableRow({
     onStatusClickGenerateAndSend,
     onNoteClick,
     onPriceClick,
+    onHalbprobePriceClick,
 }: OrderTableRowProps) {
     const { selectedType, refreshOrderData } = useOrders();
     const [isGettingKvaNumber, setIsGettingKvaNumber] = useState(false);
@@ -549,6 +551,18 @@ export default function OrderTableRow({
                         <span className={`text-xs font-medium ${privateAmountColorClass}`}>
                             Privat: {Number(order.privatePrice).toFixed(2)} €
                         </span>
+                    )}
+                    {order.halbprobe === true && onHalbprobePriceClick && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onHalbprobePriceClick(order.id, order.kundenname, order.bestellnummer);
+                            }}
+                            className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium bg-emerald-100 text-emerald-700 hover:bg-emerald-200 transition-colors cursor-pointer border border-emerald-200"
+                        >
+                            Preis bearbeiten
+                        </button>
                     )}
                 </div>
             </TableCell>
