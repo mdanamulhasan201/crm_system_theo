@@ -1,17 +1,27 @@
 "use client"
-import React from 'react'
-import { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { X, Upload, FileImage, File, FileText } from 'lucide-react'
+import { X, Upload, FileImage, File, FileText, Crop } from 'lucide-react'
 import { getSingleCustomer } from '@/apis/customerApis'
 import { useCustomerScanningFile } from '@/hooks/customer/useCustomerScanningFile'
 import { useUpdateScanningData } from '@/hooks/customer/useUpdateScanningData'
 import Image from 'next/image'
+import ImageCropModal from '@/components/ImageCropModal/ImageCropModal'
+
+/** Fields that require the crop step before upload */
+const CROP_FIELDS = ['picture_23', 'picture_24']
 
 interface ScanningDataUpdateProps {
     customerId: string
     onDataUpdate?: () => void
+}
+
+interface CropTarget {
+    fieldName: string
+    imageSrc: string
+    fileName: string
+    fileType: string
 }
 
 export default function ScanningDataUpdate({ customerId, onDataUpdate }: ScanningDataUpdateProps) {
@@ -19,11 +29,14 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
     const [customer, setCustomer] = useState<any>(null)
     const [selectedDate, setSelectedDate] = useState<string>('')
     const [selectedScreenerData, setSelectedScreenerData] = useState<any>(null)
+    const [cropTarget, setCropTarget] = useState<CropTarget | null>(null)
+    const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({})
 
     const {
         filePreviews,
         isSubmitting,
         handleFileUpload,
+        setFileDirectly,
         removeFile,
         resetForm,
         getFileIcon,
@@ -53,20 +66,15 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                 if (!mounted) return
                 setCustomer(payload)
             } catch (e) {
-                // noop - surface via UI if needed later
+                // noop
             } finally {
                 if (mounted) setLoading(false)
             }
         }
         void fetchData()
-        return () => {
-            mounted = false
-        }
+        return () => { mounted = false }
     }, [customerId])
 
-
-
-    // German translation for file labels
     const getGermanFileLabel = (fieldName: string): string => {
         const germanLabels: Record<string, string> = {
             picture_10: 'Bild 10',
@@ -85,14 +93,10 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
     const renderFileIcon = (fieldName: string) => {
         const iconType = getFileIcon(fieldName)
         switch (iconType) {
-            case 'image':
-                return <FileImage className="w-4 h-4" />
-            case '3d':
-                return <File className="w-4 h-4" />
-            case 'csv':
-                return <FileText className="w-4 h-4" />
-            default:
-                return <File className="w-4 h-4" />
+            case 'image': return <FileImage className="w-4 h-4" />
+            case '3d': return <File className="w-4 h-4" />
+            case 'csv': return <FileText className="w-4 h-4" />
+            default: return <File className="w-4 h-4" />
         }
     }
 
@@ -106,35 +110,51 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
             .sort((a, b) => new Date(b.updatedAt || b.createdAt).getTime() - new Date(a.updatedAt || a.createdAt).getTime())
     }, [customer?.screenerFile])
 
-    // Auto-select the latest (most recent) scanning data
     useEffect(() => {
         if (screenerItems.length > 0 && !selectedScreenerData) {
-            const latestItem = screenerItems[0] // First item is the latest due to sorting
+            const latestItem = screenerItems[0]
             setSelectedDate(latestItem.id)
             setSelectedScreenerData(latestItem)
         }
     }, [screenerItems, selectedScreenerData])
 
-    const handleUpdateScanningData = async () => {
-        if (!selectedScreenerData || filePreviews.length === 0) {
-            return
+    /** For crop fields: read file → open crop modal */
+    const handleCropFieldChange = (fieldName: string, e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const reader = new FileReader()
+        reader.onload = (evt) => {
+            setCropTarget({
+                fieldName,
+                imageSrc: evt.target?.result as string,
+                fileName: file.name,
+                fileType: file.type || 'image/jpeg',
+            })
         }
+        reader.readAsDataURL(file)
+        // Reset so same file can be re-selected after cancel
+        if (fileInputRefs.current[fieldName]) {
+            fileInputRefs.current[fieldName]!.value = ''
+        }
+    }
+
+    const handleCropConfirm = (croppedFile: File) => {
+        if (!cropTarget) return
+        setFileDirectly(cropTarget.fieldName, croppedFile)
+        setCropTarget(null)
+    }
+
+    const handleUpdateScanningData = async () => {
+        if (!selectedScreenerData || filePreviews.length === 0) return
 
         const formData = new FormData()
-        
-        // Add all file previews to FormData
         filePreviews.forEach(preview => {
             formData.append(preview.fieldName, preview.file)
         })
 
-        const success = await updateScanningData(
-            customerId, 
-            selectedScreenerData.id, 
-            formData
-        )
+        const success = await updateScanningData(customerId, selectedScreenerData.id, formData)
 
         if (success) {
-            // Refresh customer data to show updated files
             const response = await getSingleCustomer(customerId)
             const payload = Array.isArray((response as any)?.data)
                 ? (response as any).data[0]
@@ -143,39 +163,155 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                     : (response as any)?.data ?? response
             setCustomer(payload)
             resetForm()
-            
-            // Re-select the current date to show updated data
+
             const updatedItem = payload.screenerFile.find((item: any) => item.id === selectedScreenerData.id)
-            if (updatedItem) {
-                setSelectedScreenerData(updatedItem)
-            }
-            
-            // Notify parent component to refresh data
-            if (onDataUpdate) {
-                onDataUpdate()
-            }
+            if (updatedItem) setSelectedScreenerData(updatedItem)
+
+            if (onDataUpdate) onDataUpdate()
         }
     }
 
-    const ALL_FIELDS = useMemo(
-        () => [
-            'picture_10',
-            'picture_11',
-            'picture_16',
-            'picture_17',
-            'picture_23',
-            'picture_24',
-            'threed_model_left',
-            'threed_model_right',
-            'csvFile',
-        ],
-        [],
-    )
+    /** Renders a single image field with crop support for Bild 23/24 */
+    const renderImageField = (fieldName: string) => {
+        const preview = filePreviews.find(p => p.fieldName === fieldName)
+        const existingFile = selectedScreenerData?.[fieldName]
+        const isCropField = CROP_FIELDS.includes(fieldName)
 
-    const formatDate = (iso?: string) => {
-        if (!iso) return 'Unbekanntes Datum'
-        const d = new Date(iso)
-        return d.toLocaleString()
+        const cropBadge = isCropField && (
+            <span className="inline-flex items-center gap-0.5 text-[10px] font-medium bg-[#62A07C]/10 text-[#62A07C] px-1.5 py-0.5 rounded-full ml-1">
+                <Crop className="w-2.5 h-2.5" />
+                Zuschnitt
+            </span>
+        )
+
+        const hiddenInput = (
+            <input
+                type="file"
+                accept={getFileAccept(fieldName)}
+                onChange={(e) =>
+                    isCropField
+                        ? handleCropFieldChange(fieldName, e)
+                        : handleFileUpload(fieldName, e)
+                }
+                className="hidden"
+                id={`file-${fieldName}`}
+                ref={(el) => { fileInputRefs.current[fieldName] = el }}
+            />
+        )
+
+        return (
+            <div key={fieldName} className="space-y-2">
+                <Label className="text-sm font-medium flex items-center">
+                    {getGermanFileLabel(fieldName)}
+                    {cropBadge}
+                </Label>
+
+                {!preview ? (
+                    existingFile ? (
+                        /* Existing file — click to replace */
+                        <div
+                            className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#62A07C] transition-colors cursor-pointer bg-gray-50"
+                            onClick={() => fileInputRefs.current[fieldName]?.click()}
+                        >
+                            {hiddenInput}
+                            <div className="space-y-2">
+                                <div className="flex items-center space-x-2 justify-center">
+                                    {isCropField
+                                        ? <Crop className="w-4 h-4 text-[#62A07C]" />
+                                        : renderFileIcon(fieldName)
+                                    }
+                                    <div>
+                                        <p className="text-xs font-medium text-gray-700">
+                                            Vorhanden {getGermanFileLabel(fieldName)}
+                                        </p>
+                                        <p className="text-xs text-gray-500">
+                                            {isCropField ? 'Klicken zum Ersetzen & Zuschneiden' : 'Klicken Sie, um zu ersetzen'}
+                                        </p>
+                                    </div>
+                                </div>
+                                <Image
+                                    width={200}
+                                    height={80}
+                                    src={existingFile}
+                                    alt="Vorhanden"
+                                    className="w-full h-20 object-cover rounded border"
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        /* No existing file — upload area */
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#62A07C] transition-colors">
+                            {hiddenInput}
+                            <label htmlFor={`file-${fieldName}`} className="cursor-pointer block">
+                                {isCropField
+                                    ? <Crop className="mx-auto h-8 w-8 text-[#62A07C] mb-2" />
+                                    : <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                                }
+                                <p className="text-xs text-gray-600">{getGermanFileLabel(fieldName)} hochladen</p>
+                                {isCropField && (
+                                    <p className="text-[10px] text-[#62A07C] mt-1">Bild wird nach Auswahl zugeschnitten</p>
+                                )}
+                            </label>
+                        </div>
+                    )
+                ) : (
+                    /* New file selected (after crop or normal upload) */
+                    <div className="border border-gray-200 rounded-lg p-3 relative group">
+                        <button
+                            type="button"
+                            onClick={() => removeFile(fieldName)}
+                            className="absolute cursor-pointer -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                            <X className="w-3 h-3" />
+                        </button>
+
+                        <div className="flex items-center space-x-2">
+                            {renderFileIcon(fieldName)}
+                            <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium truncate">{preview.file.name}</p>
+                                <p className="text-xs text-gray-500">
+                                    {(preview.file.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                            </div>
+                            {/* Re-crop button for crop fields */}
+                            {isCropField && (
+                                <button
+                                    type="button"
+                                    title="Erneut zuschneiden"
+                                    onClick={() => {
+                                        const reader = new FileReader()
+                                        reader.onload = (evt) => {
+                                            setCropTarget({
+                                                fieldName,
+                                                imageSrc: evt.target?.result as string,
+                                                fileName: preview.file.name,
+                                                fileType: preview.file.type || 'image/jpeg',
+                                            })
+                                        }
+                                        reader.readAsDataURL(preview.file)
+                                    }}
+                                    className="p-1 rounded hover:bg-gray-100 cursor-pointer transition"
+                                >
+                                    <Crop className="w-3.5 h-3.5 text-[#62A07C]" />
+                                </button>
+                            )}
+                        </div>
+
+                        {preview.preview && (
+                            <div className="mt-2">
+                                <Image
+                                    width={200}
+                                    height={80}
+                                    src={preview.preview}
+                                    alt="Vorschau"
+                                    className="w-full h-20 object-cover rounded border"
+                                />
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+        )
     }
 
     if (loading) {
@@ -183,12 +319,23 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
     }
 
     return (
-        <div className="space-y-6 border-t-2 ">
+        <div className="space-y-6 border-t-2">
+            {/* Crop Modal */}
+            <ImageCropModal
+                isOpen={!!cropTarget}
+                onClose={() => setCropTarget(null)}
+                imageSrc={cropTarget?.imageSrc ?? ''}
+                fileName={cropTarget?.fileName ?? ''}
+                fileType={cropTarget?.fileType ?? 'image/jpeg'}
+                aspect={undefined}
+                label={`${getGermanFileLabel(cropTarget?.fieldName ?? '')} zuschneiden`}
+                onCropComplete={handleCropConfirm}
+            />
+
             {/* Screener Files - Date wise */}
             <div className='mt-5'>
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="text-lg font-semibold">Scandaten</h3>
-
                 </div>
 
                 <div className="w-full mb-5">
@@ -196,14 +343,10 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                         {screenerItems.map((item) => {
                             const date = new Date(item.updatedAt || item.createdAt)
                             const formattedDate = date.toLocaleDateString('en-GB', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric'
+                                day: '2-digit', month: 'short', year: 'numeric'
                             })
                             const formattedTime = date.toLocaleTimeString('en-GB', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
+                                hour: '2-digit', minute: '2-digit', hour12: true
                             })
                             const isSelected = selectedDate === item.id
 
@@ -230,23 +373,17 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                     </div>
                 </div>
 
-                {/* Selected Date Information */}
                 {selectedScreenerData && (
                     <div className="mb-4">
                         <p className="text-xs text-gray-600">
                             Zuletzt aktualisiert: {new Date(selectedScreenerData.updatedAt).toLocaleString('en-GB', {
-                                day: '2-digit',
-                                month: 'short',
-                                year: 'numeric',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
+                                day: '2-digit', month: 'short', year: 'numeric',
+                                hour: '2-digit', minute: '2-digit', hour12: true
                             })}
                         </p>
                     </div>
                 )}
 
-                {/* Error Display */}
                 {updateError && (
                     <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                         <p className="text-sm text-red-600">{updateError}</p>
@@ -259,9 +396,8 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                     </div>
                 ) : (
                     <div className="mb-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                        {/* 3D Model Files */}
+                        {/* 3D Model Fields */}
                         <div className="space-y-2 mb-4">
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {threeDModelFields.map((fieldName) => {
                                     const preview = filePreviews.find(p => p.fieldName === fieldName)
@@ -271,7 +407,6 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                         <div key={fieldName} className="space-y-2">
                                             <Label className="text-sm font-medium">{getGermanFileLabel(fieldName)}</Label>
 
-                                            {/* Show existing file or upload area */}
                                             {!preview ? (
                                                 existingFile ? (
                                                     <div
@@ -288,12 +423,8 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                         <div className="flex items-center space-x-2 justify-center">
                                                             {renderFileIcon(fieldName)}
                                                             <div>
-                                                                <p className="text-xs font-medium text-gray-700">
-                                                                    Vorhanden {getGermanFileLabel(fieldName)}
-                                                                </p>
-                                                                <p className="text-xs text-gray-500">
-                                                                    Klicken Sie, um zu ersetzen
-                                                                </p>
+                                                                <p className="text-xs font-medium text-gray-700">Vorhanden {getGermanFileLabel(fieldName)}</p>
+                                                                <p className="text-xs text-gray-500">Klicken Sie, um zu ersetzen</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -308,9 +439,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                         />
                                                         <label htmlFor={`file-${fieldName}`} className="cursor-pointer">
                                                             <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                                            <p className="text-xs text-gray-600">
-                                                                {getGermanFileLabel(fieldName)} hochladen
-                                                            </p>
+                                                            <p className="text-xs text-gray-600">{getGermanFileLabel(fieldName)} hochladen</p>
                                                         </label>
                                                     </div>
                                                 )
@@ -323,16 +452,11 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                     >
                                                         <X className="w-3 h-3" />
                                                     </button>
-
                                                     <div className="flex items-center space-x-2">
                                                         {renderFileIcon(fieldName)}
                                                         <div className="flex-1 min-w-0">
-                                                            <p className="text-xs font-medium truncate">
-                                                                {preview.file.name}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500">
-                                                                {(preview.file.size / 1024 / 1024).toFixed(2)} MB
-                                                            </p>
+                                                            <p className="text-xs font-medium truncate">{preview.file.name}</p>
+                                                            <p className="text-xs text-gray-500">{(preview.file.size / 1024 / 1024).toFixed(2)} MB</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -343,109 +467,12 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                             </div>
                         </div>
 
-                        {/* Picture Files */}
+                        {/* Picture Fields — crop applied to Bild 23 & 24 */}
                         <div className="space-y-2 mb-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                {fileFields.filter(field => field !== 'csvFile').map((fieldName) => {
-                                    const preview = filePreviews.find(p => p.fieldName === fieldName)
-                                    const existingFile = selectedScreenerData?.[fieldName]
-
-                                    return (
-                                        <div key={fieldName} className="space-y-2">
-                                            <Label className="text-sm font-medium">{getGermanFileLabel(fieldName)}</Label>
-
-                                            {/* Show existing file or upload area */}
-                                            {!preview ? (
-                                                existingFile ? (
-                                                    <div
-                                                        className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors cursor-pointer bg-gray-50"
-                                                        onClick={() => document.getElementById(`file-${fieldName}`)?.click()}
-                                                    >
-                                                        <input
-                                                            type="file"
-                                                            accept={getFileAccept(fieldName)}
-                                                            onChange={(e) => handleFileUpload(fieldName, e)}
-                                                            className="hidden"
-                                                            id={`file-${fieldName}`}
-                                                        />
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center space-x-2 justify-center">
-                                                                {renderFileIcon(fieldName)}
-                                                                <div>
-                                                                    <p className="text-xs font-medium text-gray-700">
-                                                                        Vorhanden {getGermanFileLabel(fieldName)}
-                                                                    </p>
-                                                                    <p className="text-xs text-gray-500">
-                                                                        Klicken Sie, um zu ersetzen
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div className="mt-2">
-                                                                <Image
-                                                                    width={100}
-                                                                    height={100}
-                                                                    src={existingFile}
-                                                                    alt="Vorhanden"
-                                                                    className="w-full h-20 object-cover rounded border"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-gray-400 transition-colors">
-                                                        <input
-                                                            type="file"
-                                                            accept={getFileAccept(fieldName)}
-                                                            onChange={(e) => handleFileUpload(fieldName, e)}
-                                                            className="hidden"
-                                                            id={`file-${fieldName}`}
-                                                        />
-                                                        <label htmlFor={`file-${fieldName}`} className="cursor-pointer">
-                                                            <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                                            <p className="text-xs text-gray-600">
-                                                                {getGermanFileLabel(fieldName)} hochladen
-                                                            </p>
-                                                        </label>
-                                                    </div>
-                                                )
-                                            ) : (
-                                                <div className="border border-gray-200 rounded-lg p-3 relative group">
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => removeFile(fieldName)}
-                                                        className="absolute cursor-pointer -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </button>
-
-                                                    <div className="flex items-center space-x-2">
-                                                        {renderFileIcon(fieldName)}
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-xs font-medium truncate">
-                                                                {preview.file.name}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500">
-                                                                {(preview.file.size / 1024 / 1024).toFixed(2)} MB
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {preview.preview && (
-                                                        <div className="mt-2">
-                                                            <Image
-                                                                width={100}
-                                                                height={100}
-                                                                src={preview.preview}
-                                                                alt="Vorschau"
-                                                                className="w-full h-20 object-cover rounded border"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    )
-                                })}
+                                {fileFields.filter(field => field !== 'csvFile').map((fieldName) =>
+                                    renderImageField(fieldName)
+                                )}
                             </div>
                         </div>
 
@@ -473,12 +500,8 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                 <div className="flex items-center space-x-2 justify-center">
                                                     <FileText className="w-4 h-4" />
                                                     <div>
-                                                        <p className="text-xs font-medium text-gray-700">
-                                                            Vorhandene CSV-Datei
-                                                        </p>
-                                                        <p className="text-xs text-gray-500">
-                                                            Klicken Sie, um zu ersetzen
-                                                        </p>
+                                                        <p className="text-xs font-medium text-gray-700">Vorhandene CSV-Datei</p>
+                                                        <p className="text-xs text-gray-500">Klicken Sie, um zu ersetzen</p>
                                                     </div>
                                                 </div>
                                             </div>
@@ -493,9 +516,7 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                                 />
                                                 <label htmlFor="file-csvFile" className="cursor-pointer">
                                                     <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                                    <p className="text-xs text-gray-600">
-                                                        CSV-Datei hochladen
-                                                    </p>
+                                                    <p className="text-xs text-gray-600">CSV-Datei hochladen</p>
                                                 </label>
                                             </div>
                                         )
@@ -508,16 +529,11 @@ export default function ScanningDataUpdate({ customerId, onDataUpdate }: Scannin
                                             >
                                                 <X className="w-3 h-3" />
                                             </button>
-
                                             <div className="flex items-center space-x-2">
                                                 <FileText className="w-4 h-4" />
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-xs font-medium truncate">
-                                                        {csvPreview.file.name}
-                                                    </p>
-                                                    <p className="text-xs text-gray-500">
-                                                        {(csvPreview.file.size / 1024 / 1024).toFixed(2)} MB
-                                                    </p>
+                                                    <p className="text-xs font-medium truncate">{csvPreview.file.name}</p>
+                                                    <p className="text-xs text-gray-500">{(csvPreview.file.size / 1024 / 1024).toFixed(2)} MB</p>
                                                 </div>
                                             </div>
                                         </div>
