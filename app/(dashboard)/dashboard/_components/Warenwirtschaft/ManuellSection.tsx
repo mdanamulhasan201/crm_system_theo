@@ -20,6 +20,7 @@ import {
   type InventoryType,
   type InventoryStatus,
   type PaymentStatus,
+  type InventoryPosition,
 } from '@/apis/warenwirtschaftApis'
 import toast from 'react-hot-toast'
 import LieferantSelect from './LieferantSelect'
@@ -84,6 +85,7 @@ export default function ManuellSection({
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(initialData?.payment_status ?? 'Paid')
   const [paymentDate, setPaymentDate] = useState<string>(() => (initialData ? dateToInput(initialData.payment_date) : todayISO()))
   const [weLinked, setWeLinked] = useState<boolean>(initialData?.we_linked ?? false)
+  const [inventoryPositions, setInventoryPositions] = useState<InventoryPosition[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [positionenOpen, setPositionenOpen] = useState(false)
@@ -107,6 +109,7 @@ export default function ManuellSection({
       payment_status: paymentStatus,
       payment_date: paymentDate,
       we_linked: weLinked,
+      ...(inventoryPositions.length > 0 && { inventory_positions: inventoryPositions }),
     }
     setSubmitting(true)
     try {
@@ -133,6 +136,9 @@ export default function ManuellSection({
       <PositionenSidebar
         open={positionenOpen}
         onOpenChange={setPositionenOpen}
+        inventoryId={isEdit ? editId : undefined}
+        initialPositions={isEdit ? (initialData?.inventoryPositions ?? []) : undefined}
+        onConfirm={isEdit ? undefined : (positions) => setInventoryPositions(positions)}
       />
       <div className="flex items-center gap-2 mb-4">
         <Button
@@ -203,7 +209,14 @@ export default function ManuellSection({
             <ClipboardList className="h-4 w-4" />
           </div>
           <span>Positionen prüfen &amp; buchen</span>
-          <ListChecks className="ml-auto h-4 w-4 opacity-60" />
+          {inventoryPositions.length > 0 ? (
+            <span className="ml-auto flex items-center gap-1.5 rounded-full bg-[#1a7fc1] px-2 py-0.5 text-xs font-semibold text-white">
+              <ListChecks className="h-3 w-3" />
+              {inventoryPositions.length}
+            </span>
+          ) : (
+            <ListChecks className="ml-auto h-4 w-4 opacity-60" />
+          )}
         </button>
 
         <div className="space-y-2">

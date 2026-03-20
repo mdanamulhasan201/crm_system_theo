@@ -4,6 +4,17 @@ export type InventoryType = "Invoices" | "Orders";
 export type InventoryStatus = "Ordered" | "Delivered" | "Partially";
 export type PaymentStatus = "Open" | "Paid";
 
+export interface InventoryPosition {
+  id?: string;           // present for server-saved positions
+  inventoryId?: string;  // required when adding a new position to an existing inventory
+  article: string;
+  category: string;
+  quantity: number;
+  unit: number;
+  unit_price: number;
+  total_price: number;
+}
+
 export interface CreateInventoryPayload {
   inventory_type: InventoryType;
   supplier: string;
@@ -13,6 +24,7 @@ export interface CreateInventoryPayload {
   payment_status: PaymentStatus;
   payment_date: string; // YYYY-MM-DD
   we_linked: boolean;
+  inventory_positions?: InventoryPosition[];
 }
 
 /** POST /v2/inventory-management/create-inventory */
@@ -40,6 +52,7 @@ export interface InventoryItem {
   partnerId: string;
   createdAt: string;
   updatedAt: string;
+  inventoryPositions?: InventoryPosition[];
 }
 
 export interface GetAllInventoriesResponse {
@@ -250,6 +263,39 @@ export const deleteInventorySupplier = async (id: string) => {
 export const updateInventorySupplier = async (id: string, inventorySupplierData: any) => {
   try {
     const response = await axiosClient.patch(`/v2/inventory-supplier/update/${id}`, inventorySupplierData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+
+//==================== inventory position =============
+
+// v2/inventory-management/inventory-positions/add
+export const addInventoryPosition = async (inventoryPositionData: InventoryPosition) => {
+  try {
+    const response = await axiosClient.post(`/v2/inventory-management/inventory-positions/add`, inventoryPositionData);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// v2/inventory-management/inventory-positions/delete/{{position id}}
+export const deleteInventoryPosition = async (id: string) => {
+  try {
+    const response = await axiosClient.delete(`/v2/inventory-management/inventory-positions/delete/${id}`);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+}
+
+// v2/inventory-management/inventory-positions/update/{{position id}}
+export const updateInventoryPosition = async (id: string, inventoryPositionData: InventoryPosition) => {
+  try {
+    const response = await axiosClient.patch(`/v2/inventory-management/inventory-positions/update/${id}`, inventoryPositionData);
     return response.data;
   } catch (error) {
     throw error;
