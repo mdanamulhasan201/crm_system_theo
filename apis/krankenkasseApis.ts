@@ -187,9 +187,9 @@ export interface ValidateChangelogResponse {
 }
 
 // body: excl upload v2/insurance/validate-insurance-changelog?response=simple (multipart/form-data)
-export const validateInsuranceChangelog = async (excl: File): Promise<ValidateChangelogResponse> => {
+export const validateInsuranceChangelog = async (file: File): Promise<ValidateChangelogResponse> => {
     const formData = new FormData();
-    formData.append('excl', excl);
+    formData.append('file', file);
     const response = await axiosClient.post<ValidateChangelogResponse>(
         '/v2/insurance/validate-insurance-changelog?response=simple',
         formData,

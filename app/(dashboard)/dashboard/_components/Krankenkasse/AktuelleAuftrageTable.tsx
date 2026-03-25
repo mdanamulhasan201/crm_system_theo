@@ -11,7 +11,6 @@ import {
     TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import SearchFilter from './SearchFilter'
@@ -80,39 +79,25 @@ function mapOrderToRow(item: KrankenkasseOrderItem): OrderRow {
     }
 }
 
-const STATUS_STYLES: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-700 border-0',
-    approved: 'bg-green-100 text-green-700 border-0',
-    genehmigt: 'bg-green-100 text-green-700 border-0',
-    rejected: 'bg-red-100 text-red-700 border-0',
-    abgelehnt: 'bg-red-100 text-red-700 border-0',
-    gesendet: 'bg-blue-100 text-blue-700 border-0',
-    sent: 'bg-blue-100 text-blue-700 border-0',
-    offen: 'bg-gray-100 text-gray-600 border-0',
-}
-
-/** API status → German label for display in Status column */
-const STATUS_LABELS_DE: Record<string, string> = {
-    pending: 'Umänderung',
-    rejected: 'Abgelehnt',
-    approved: 'Genehmigt',
-    sent: 'Gesendet',
-    offen: 'Offen',
-}
-
-function getStatusLabel(status: string): string {
-    if (!status) return '–'
-    const key = status.toLowerCase()
-    return STATUS_LABELS_DE[key] ?? status
+const STATUS_CONFIG: Record<string, { label: string; dot: string; badge: string }> = {
+    pending:   { label: 'Umänderung', dot: 'bg-orange-500',  badge: 'bg-orange-50 text-orange-700 border border-orange-200' },
+    approved:  { label: 'Genehmigt',  dot: 'bg-green-500',   badge: 'bg-green-50 text-green-700 border border-green-200'   },
+    genehmigt: { label: 'Genehmigt',  dot: 'bg-green-500',   badge: 'bg-green-50 text-green-700 border border-green-200'   },
+    rejected:  { label: 'Abgelehnt',  dot: 'bg-red-500',     badge: 'bg-red-50 text-red-700 border border-red-200'         },
+    abgelehnt: { label: 'Abgelehnt',  dot: 'bg-red-500',     badge: 'bg-red-50 text-red-700 border border-red-200'         },
+    sent:      { label: 'Gesendet',   dot: 'bg-blue-500',    badge: 'bg-blue-50 text-blue-700 border border-blue-200'      },
+    gesendet:  { label: 'Gesendet',   dot: 'bg-blue-500',    badge: 'bg-blue-50 text-blue-700 border border-blue-200'      },
+    offen:     { label: 'Offen',      dot: 'bg-gray-400',    badge: 'bg-gray-100 text-gray-600 border border-gray-200'     },
 }
 
 function StatusBadge({ status }: { status: string }) {
     const key = (status || '').toLowerCase()
-    const label = getStatusLabel(status)
+    const cfg = STATUS_CONFIG[key] ?? { label: status || '–', dot: 'bg-gray-400', badge: 'bg-gray-100 text-gray-600 border border-gray-200' }
     return (
-        <Badge variant="outline" className={cn('rounded-md font-medium', STATUS_STYLES[key] ?? 'bg-gray-100 text-gray-600')}>
-            {label}
-        </Badge>
+        <span className={cn('inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium', cfg.badge)}>
+            <span className={cn('size-1.5 rounded-full shrink-0', cfg.dot)} />
+            {cfg.label}
+        </span>
     )
 }
 
