@@ -1,14 +1,13 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { usePicture2324 } from '@/hooks/orders/usePicture2324';
-import { Maximize2, Printer } from 'lucide-react';
+import { useWerkstattzettelA3Download } from '@/hooks/orders/useWerkstattzettelA3Download';
+import { Download, Maximize2 } from 'lucide-react';
 import FullscreenImageModal from './FullscreenImageModal';
 import Image from 'next/image';
-import jsPDF from 'jspdf';
-
 interface ScanPictureModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -27,8 +26,11 @@ export default function ScanPictureModal({
     const { data, loading, error } = usePicture2324(orderId);
     const [selectedFoot, setSelectedFoot] = useState<'left' | 'right' | null>(null);
     const [showFullscreen, setShowFullscreen] = useState(false);
-    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-    const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+    const {
+        isGeneratingWerkA3Pdf,
+        handleWerkstattzettelA3Download,
+    } = useWerkstattzettelA3Download();
 
     const materials = data?.material
         ? data.material
@@ -109,24 +111,6 @@ export default function ScanPictureModal({
         }
     };
 
-    const pdfFileName = useMemo(() => {
-        const name = (data?.customerName || customerName || '').trim();
-        const safeName = (name || 'Kunde').replace(/\s+/g, '_');
-        return `Scan_${safeName}.pdf`;
-    }, [customerName, data?.customerName]);
-
-    const revokePdfUrl = useCallback(() => {
-        setPdfUrl((prev) => {
-            if (prev) URL.revokeObjectURL(prev);
-            return null;
-        });
-    }, []);
-
-    useEffect(() => {
-        if (!isOpen) {
-            revokePdfUrl();
-        }
-    }, [isOpen, revokePdfUrl]);
 
     const getProxyableUrl = (url: string): string => {
         if (!url) return url;
@@ -218,202 +202,6 @@ export default function ScanPictureModal({
             }
         }
         return entries;
-    };
-
-    const generateA3ScanPdf = async () => {
-        if (!data) return;
-
-        // A3 portrait: 297 x 420 mm
-        const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a3' });
-        const pageWidth = 297;
-        const pageHeight = 420;
-        // No page margins — images go edge-to-edge
-        const marginX = 0;
-        const marginTop = 0;
-        const marginBottom = 0;
-        const pxToMm = 0.264583; // 96 DPI pixel-to-mm (keeps 1:1 size)
-
-        // Header overlay anchored to very top of page
-        const headerY = 6; // 6mm from top edge
-        const headerLineGap = 6;
-
-        const textWithHalo = (
-            text: string,
-            x: number,
-            y: number,
-            opts?: { align?: 'left' | 'center' | 'right'; fontStyle?: 'normal' | 'bold' }
-        ) => {
-            const { align = 'left', fontStyle = 'normal' } = opts ?? {};
-            pdf.setFont('helvetica', fontStyle);
-            // Halo/outline effect: no background, just multi-draw
-            const d = 0.45;
-            pdf.setTextColor(255, 255, 255);
-            pdf.text(text, x - d, y, { align });
-            pdf.text(text, x + d, y, { align });
-            pdf.text(text, x, y - d, { align });
-            pdf.text(text, x, y + d, { align });
-            pdf.text(text, x - d, y - d, { align });
-            pdf.text(text, x + d, y + d, { align });
-            pdf.text(text, x - d, y + d, { align });
-            pdf.text(text, x + d, y - d, { align });
-            pdf.setTextColor(0, 0, 0);
-            pdf.text(text, x, y, { align });
-        };
-
-        pdf.setFontSize(11);
-        const createdAtText = data?.createdAt ? formatDate(data.createdAt) : '—';
-        const fertigstellungText = data?.fertigstellungBis ? formatDate(data.fertigstellungBis) : '—';
-        const kundeText = (data?.customerName || customerName || '—').toString();
-
-        // Images area — edge-to-edge, no offset
-        const bottomBlockHeight = 50; // footer text height reserved at bottom
-        const topImagesY = 0;         // images start from the very top
-        const imagesAreaHeight = pageHeight - bottomBlockHeight - topImagesY;
-        const gap = 4;
-        const availableWidth = pageWidth;
-        const eachWidth = (availableWidth - gap) / 2;
-        const maxHeight = imagesAreaHeight;
-
-        const leftUrl = data?.picture_23 || null;
-        const rightUrl = data?.picture_24 || null;
-        const [leftRaw, rightRaw] = await Promise.all([
-            leftUrl ? fetchImageAsDataUrl(leftUrl) : Promise.resolve(null),
-            rightUrl ? fetchImageAsDataUrl(rightUrl) : Promise.resolve(null),
-        ]);
-        const [leftDataUrl, rightDataUrl] = await Promise.all([
-            leftRaw ? normalizeImageDataUrlToPng(leftRaw) : Promise.resolve(null),
-            rightRaw ? normalizeImageDataUrlToPng(rightRaw) : Promise.resolve(null),
-        ]);
-
-        // Contain + center: scale image to fit fully within its slot, centered both axes
-        const placeImageContainCenter = async (
-            dataUrl: string,
-            slotX: number,
-            slotY: number,
-            slotW: number,
-            slotH: number
-        ) => {
-            const dim = await getImageDimensions(dataUrl);
-            if (!dim) return;
-            const aspect = dim.w / dim.h;
-            let imgW = slotW;
-            let imgH = imgW / aspect;
-            if (imgH > slotH) {
-                imgH = slotH;
-                imgW = imgH * aspect;
-            }
-            const cx = slotX + (slotW - imgW) / 2;
-            const cy = slotY + (slotH - imgH) / 2;
-            pdf.addImage(dataUrl, 'PNG', cx, cy, imgW, imgH, undefined, 'FAST');
-        };
-
-        const frameY = topImagesY;
-
-        if (leftDataUrl) await placeImageContainCenter(leftDataUrl, 0, frameY, eachWidth, maxHeight);
-        if (rightDataUrl) await placeImageContainCenter(rightDataUrl, eachWidth + gap, frameY, eachWidth, maxHeight);
-
-        // Header overlay must be drawn AFTER images so it stays on top
-        const textPadX = 5;
-        textWithHalo(`Erstellt am: ${createdAtText}`, textPadX, headerY);
-        textWithHalo('Fertigstellung bis', textPadX, headerY + headerLineGap);
-        textWithHalo(fertigstellungText, textPadX, headerY + headerLineGap * 2);
-        textWithHalo('Kunde', textPadX, headerY + headerLineGap * 3);
-        textWithHalo(kundeText, textPadX, headerY + headerLineGap * 4, { fontStyle: 'bold' });
-
-        // No order number in header (per design requirement)
-
-        // Footer block — anchored to very bottom of page
-        const bottomY = pageHeight - bottomBlockHeight;
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(10);
-
-        const footerColGap = 4;
-        const leftColX = textPadX;
-        const rightColX = availableWidth / 2 + footerColGap;
-        const leftColWidth = availableWidth / 2 - textPadX - footerColGap;
-        const rightColWidth = availableWidth / 2 - textPadX;
-        const startY = bottomY + 8; // start 8mm into the footer block
-        const lineGap = 5;
-
-        const writeLines = (x: number, yStart: number, width: number, lines: string[]) => {
-            let y = yStart;
-            for (const raw of lines) {
-                if (y > pageHeight - 4) break;
-                const wrapped = pdf.splitTextToSize(raw, width);
-                for (const w of wrapped) {
-                    if (y > pageHeight - 4) break;
-                    pdf.text(w, x, y);
-                    y += lineGap;
-                }
-            }
-        };
-
-        const diagnosisValue = (() => {
-            if (isSonstiges) return data?.orderCategory?.sonstiges_category || '—';
-            if (data?.ausführliche_diagnose) return String(data.ausführliche_diagnose);
-            const ds = (data as any)?.diagnosisStatus;
-            if (Array.isArray(ds) && ds.length > 0) return ds.map(String).join(', ');
-            return '—';
-        })();
-
-        const schuhmodell = (data as any)?.schuhmodell_wählen;
-
-        const leftLines: string[] = [];
-        leftLines.push('Diagnose:');
-        leftLines.push(diagnosisValue);
-        leftLines.push('');
-        leftLines.push(`Versorgung: ${primaryVersorgungDisplay || '—'}`);
-        if (quantityDisplay !== null) leftLines.push(`Menge: ${quantityDisplay}`);
-        if (schuhmodell) leftLines.push(`schuhmodell_wählen: ${String(schuhmodell)}`);
-        if (isInsole && insoleStandards.length > 0) {
-            leftLines.push('');
-            for (const item of insoleStandards) {
-                leftLines.push(formatLeftRight(item.name, item.left, item.right));
-            }
-        }
-        if (materials.length > 0) {
-            leftLines.push('');
-            leftLines.push('Materialien');
-            for (const m of materials) leftLines.push(m);
-        }
-
-        const rightLines: string[] = [];
-        if (data?.uberzug) {
-            rightLines.push('Überzug:');
-            for (const ln of String(data.uberzug).split(/\r?\n/)) rightLines.push(ln);
-            rightLines.push('');
-        }
-        if (data?.versorgung_note) {
-            rightLines.push('Notiz');
-            for (const ln of String(data.versorgung_note).split(/\r?\n/)) rightLines.push(ln);
-        }
-
-        writeLines(leftColX, startY, leftColWidth, leftLines);
-        writeLines(rightColX, startY, rightColWidth, rightLines);
-
-        return pdf.output('blob') as Blob;
-    };
-
-    const handleShowPdf = async () => {
-        if (!data || isGeneratingPdf) return;
-        setIsGeneratingPdf(true);
-        try {
-            revokePdfUrl();
-            const blob = await generateA3ScanPdf();
-            if (!blob) return;
-            const url = URL.createObjectURL(blob);
-            setPdfUrl(url);
-            // One smart action: show preview + trigger download with customer-name filename
-            window.open(url, '_blank', 'noopener,noreferrer');
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = pdfFileName;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-        } finally {
-            setIsGeneratingPdf(false);
-        }
     };
 
     // Determine which image to show based on selected foot
@@ -571,13 +359,13 @@ export default function ScanPictureModal({
                                         </h3>
                                         <div className="flex flex-col gap-2">
                                             <Button
-                                                onClick={handleShowPdf}
-                                                disabled={isGeneratingPdf || (!data?.picture_23 && !data?.picture_24)}
+                                                onClick={() => orderId && handleWerkstattzettelA3Download(orderId)}
+                                                disabled={isGeneratingWerkA3Pdf || !orderId}
                                                 variant="default"
                                                 className="cursor-pointer w-full bg-white hover:bg-gray-50 text-gray-900 font-semibold border border-gray-200 flex items-center justify-center gap-2"
                                             >
-                                                <Printer className="w-5 h-5" />
-                                                {isGeneratingPdf ? 'Wird vorbereitet…' : 'Drucken'}
+                                                <Download className="w-5 h-5" />
+                                                {isGeneratingWerkA3Pdf ? 'Wird vorbereitet…' : 'Drucken'}
                                             </Button>
                                         </div>
                                     </div>
