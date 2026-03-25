@@ -181,7 +181,7 @@ export const useWerkstattzettelA3Download = () => {
             }
             // Name and address start just below the logo
             const maxPartnerTextWidth = 100; // mm – cap right-side header text width
-            const partnerTextY = logoY + logoSize + 2;
+            const partnerTextY = logoY + logoSize + 6;
             if (d.partnerInfo?.busnessName) {
                 const nameLines: string[] = pdf.splitTextToSize(d.partnerInfo.busnessName, maxPartnerTextWidth);
                 nameLines.forEach((line: string, i: number) => {
