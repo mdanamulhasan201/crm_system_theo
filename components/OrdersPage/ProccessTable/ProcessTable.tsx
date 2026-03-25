@@ -21,7 +21,7 @@ import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { useWerkstattzettelA3Download } from "@/hooks/orders/useWerkstattzettelA3Download";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
+import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getOrderSettingsShippingAddressesForKv, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import WerkstattzettelSheet, { WerkstattzettelSheetData } from './WerkstattzettelPdf/WerkstattzettelSheet';
 import KvaSheet, { KvaData } from './KvaPdf/KvaSheet';
@@ -103,6 +103,11 @@ export default function ProcessTable() {
     const [generatingKvaOrderId, setGeneratingKvaOrderId] = useState<string | null>(null);
     const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
     const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
+    const [showKvaLocationModal, setShowKvaLocationModal] = useState(false);
+    const [kvaLocationOrderId, setKvaLocationOrderId] = useState<string | null>(null);
+    const [kvaShippingAddresses, setKvaShippingAddresses] = useState<{ address: string }[]>([]);
+    const [isLoadingKvaAddresses, setIsLoadingKvaAddresses] = useState(false);
+    const [isDownloadingKvaAfterSelect, setIsDownloadingKvaAfterSelect] = useState(false);
     const [isGeneratingHalbprobePdf, setIsGeneratingHalbprobePdf] = useState(false);
     const [generatingHalbprobeOrderId, setGeneratingHalbprobeOrderId] = useState<string | null>(null);
     const [halbprobePdfData, setHalbprobePdfData] = useState<HalbprobeData | null>(null);
@@ -197,11 +202,35 @@ export default function ProcessTable() {
     };
 
     const handleKvaDownload = async (orderId: string) => {
-        if (isGeneratingKvaPdf) return;
+        if (isGeneratingKvaPdf || isLoadingKvaAddresses) return;
+        setIsLoadingKvaAddresses(true);
+        setGeneratingKvaOrderId(orderId);
+        try {
+            const res = await getOrderSettingsShippingAddressesForKv();
+            if (!res?.success || !res?.data?.shipping_addresses_for_kv) {
+                toast.error(res?.message || 'Versandadressen konnten nicht geladen werden');
+                return;
+            }
+            setKvaShippingAddresses(res.data.shipping_addresses_for_kv);
+            setKvaLocationOrderId(orderId);
+            setShowKvaLocationModal(true);
+        } catch (e) {
+            console.error('KVA address fetch error:', e);
+            toast.error('Fehler beim Laden der Versandadressen');
+        } finally {
+            setIsLoadingKvaAddresses(false);
+        }
+    };
+
+    const handleKvaWithAddress = async (address: string) => {
+        const orderId = kvaLocationOrderId;
+        if (!orderId) return;
+        setShowKvaLocationModal(false);
+        setIsDownloadingKvaAfterSelect(true);
         setIsGeneratingKvaPdf(true);
         setGeneratingKvaOrderId(orderId);
         try {
-            const res = await getKvaData(orderId);
+            const res = await getKvaData(orderId, address);
             if (!res?.success || !res?.data) {
                 toast.error(res?.message || 'KVA Daten konnten nicht geladen werden');
                 return;
@@ -225,7 +254,9 @@ export default function ProcessTable() {
             toast.error('Fehler beim Erstellen des KVA PDFs');
         } finally {
             setIsGeneratingKvaPdf(false);
+            setIsDownloadingKvaAfterSelect(false);
             setGeneratingKvaOrderId(null);
+            setKvaLocationOrderId(null);
             setTimeout(() => {
                 setKvaPdfData(null);
                 setKvaPdfLogoProxy(null);
@@ -687,7 +718,7 @@ export default function ProcessTable() {
                                             onWerkstattzettelDownload={handleWerkstattzettelDownload}
                                             werkstattzettelLoading={isGeneratingWerkPdf && generatingWerkPdfOrderId === order.id}
                                             onKvaDownload={handleKvaDownload}
-                                            kvaLoading={isGeneratingKvaPdf && generatingKvaOrderId === order.id}
+                                            kvaLoading={(isLoadingKvaAddresses || isGeneratingKvaPdf || isDownloadingKvaAfterSelect) && generatingKvaOrderId === order.id}
                                             onHalbprobeDownload={handleHalbprobeDownload}
                                             halbprobeLoading={isGeneratingHalbprobePdf && generatingHalbprobeOrderId === order.id}
                                             onWerkstattzettelA3Download={handleWerkstattzettelA3Download}
@@ -853,6 +884,46 @@ export default function ProcessTable() {
                                 disabled={isPriorityUpdating}
                             >
                                 {isPriorityUpdating ? 'Aktualisiere...' : 'Speichern'}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                {/* KVA Location Selection Modal */}
+                <Dialog open={showKvaLocationModal} onOpenChange={(open) => {
+                    if (!open) {
+                        setShowKvaLocationModal(false);
+                        setKvaLocationOrderId(null);
+                        setKvaShippingAddresses([]);
+                    }
+                }}>
+                    <DialogContent className="sm:max-w-lg">
+                        <DialogHeader>
+                            <DialogTitle>Versandadresse auswählen</DialogTitle>
+                        </DialogHeader>
+                        <p className="text-sm text-gray-500">Bitte wählen Sie eine Versandadresse für den Kostenvoranschlag aus.</p>
+                        <div className="grid grid-cols-1 gap-3 mt-2 max-h-72 overflow-y-auto pr-1">
+                            {kvaShippingAddresses.length === 0 ? (
+                                <p className="text-sm text-gray-400 text-center py-4">Keine Adressen verfügbar</p>
+                            ) : (
+                                kvaShippingAddresses.map((item, idx) => (
+                                    <button
+                                        key={idx}
+                                        className="w-full text-left border border-gray-200 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 transition cursor-pointer"
+                                        onClick={() => handleKvaWithAddress(item.address)}
+                                    >
+                                        {item.address}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" className="cursor-pointer" onClick={() => {
+                                setShowKvaLocationModal(false);
+                                setKvaLocationOrderId(null);
+                                setKvaShippingAddresses([]);
+                            }}>
+                                Abbrechen
                             </Button>
                         </DialogFooter>
                     </DialogContent>
