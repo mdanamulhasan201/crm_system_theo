@@ -27,24 +27,20 @@ import {
 import toast from "react-hot-toast";
 
 // 0=Sunday .. 6=Saturday – all days for Tag dropdown and cards
-const DAYS = ["Sonntag", "Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag"] as const;
-const DEFAULT_TITLE = "Arbeitszeit";
+const DAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"] as const;
+const DEFAULT_TITLE = "Werkstattzeit";
 const EMPLOYEES_PER_PAGE = 6;
 
 // Predefined title options for dropdown (Titel)
 const TITLE_OPTIONS = [
-  "Arbeitszeit",
-  "Pause",
+  "Werkstattzeit",
+  "Hausbesuch",
   "Mittagspause",
-  "Lunch",
-  "Break",
-  "Vormittag",
-  "Nachmittag",
-  "Abend",
-  "Frühschicht",
-  "Spätschicht",
-  "Ganztags",
+  "Blockiert",
 ] as const;
+
+// Titles that represent breaks/blocks → isActive: false in payload
+const BREAK_TITLES = new Set(["Mittagspause", "Blockiert"]);
 
 // API: 0=Sunday, 1=Monday, 2=Tuesday, 3=Wednesday, 4=Thursday, 5=Friday, 6=Saturday
 const DAY_NAME_TO_WEEK: Record<string, number> = {
@@ -394,10 +390,12 @@ export default function StaffAvailability() {
       if (editingSlotId) {
         // Update existing time slot
         if (!editSlotRow) return;
+        const editTitle = editSlotRow.title?.trim() || DEFAULT_TITLE;
         await updateEmployeeAvailabilityTime(editingSlotId, {
-          title: editSlotRow.title?.trim() || DEFAULT_TITLE,
+          title: editTitle,
           startTime: editSlotRow.start,
           endTime: editSlotRow.end,
+          ...(BREAK_TITLES.has(editTitle) ? { isActive: false } : {}),
         });
         toast.success("Arbeitszeit aktualisiert.");
         setAddModalOpen(false);
@@ -406,10 +404,12 @@ export default function StaffAvailability() {
       } else {
         // New time slots for all selected days
         if (modalSelectedDays.length === 0) return;
+        const addTitle = modalTitle?.trim() || DEFAULT_TITLE;
         const payloadTime = {
-          title: modalTitle?.trim() || DEFAULT_TITLE,
+          title: addTitle,
           startTime: modalStart,
           endTime: modalEnd,
+          ...(BREAK_TITLES.has(addTitle) ? { isActive: false } : {}),
         };
         await Promise.all(
           modalSelectedDays.map((dayName) => {

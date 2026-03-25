@@ -124,7 +124,7 @@ export const useAppoinment = () => {
 
     // Create new appointment
     const createNewAppointment = useCallback(async (data: SubmittedAppointmentData) => {
-        const loadingToastId = toast.loading('Creating appointment...');
+        const loadingToastId = toast.loading('Termin wird erstellt…');
         try {
             const isCustomerAppointment = Boolean(data.isClientEvent);
             if ((isCustomerAppointment && !data.kunde) || !data.uhrzeit || !data.selectedEventDate || !data.termin) {
@@ -184,7 +184,7 @@ export const useAppoinment = () => {
                 await fetchAppointments();
                 setRefreshKey(prev => prev + 1);
                 toast.dismiss(loadingToastId);
-                toast.success('Appointment created successfully', {
+                toast.success(safeToastMessage(response.message) || 'Termin erfolgreich erstellt', {
                     duration: 3000,
                 });
                 return true;
