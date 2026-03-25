@@ -115,7 +115,7 @@ export default function RezepteData({
                     setList([])
                 }
             } finally {
-                if (!silent) setLoading(false)
+                setLoading(false)
                 setLoadingMore(false)
             }
         },
@@ -191,12 +191,12 @@ export default function RezepteData({
 
     return (
         <div className='space-y-6'>
-            <h2 className='font-sans text-xl font-semibold tracking-tight text-gray-900 mb-4'>
+            {/* <h2 className='font-sans text-xl font-semibold tracking-tight text-gray-900 mb-4'>
                 Rezepte
-            </h2>
+            </h2> */}
 
             {list.length === 0 ? (
-                <p className='text-sm text-gray-500 py-6'>
+                <p className='text-sm text-gray-500 py-6 text-center'>
                     Noch keine Rezepte. Fügen Sie ein neues Rezept hinzu.
                 </p>
             ) : (
