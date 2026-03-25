@@ -7,7 +7,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DAY_ABBR: Record<string, string> = {
@@ -25,6 +25,13 @@ const WEEKEND = ["Samstag", "Sonntag"];
 
 interface EditSlot {
   slotId: string;
+  title: string;
+  start: string;
+  end: string;
+}
+
+interface AddRow {
+  id: string;
   title: string;
   start: string;
   end: string;
@@ -54,6 +61,10 @@ interface CreateAvailabilityModalProps {
   // Add mode only
   selectedDays?: string[];
   onDayToggle?: (day: string) => void;
+  rows?: AddRow[];
+  onAddRow?: () => void;
+  onUpdateRow?: (id: string, field: string, value: string) => void;
+  onRemoveRow?: (id: string) => void;
   // Single-slot edit (read-only day display)
   editDay?: string;
   // Multi-slot edit (from getSingleAvailability)
@@ -81,6 +92,10 @@ export default function CrearteAvailabilityModal({
   onEndChange,
   selectedDays = [],
   onDayToggle,
+  rows = [],
+  onAddRow,
+  onUpdateRow,
+  onRemoveRow,
   editDay,
   editDaySlots = [],
   editDayFetching = false,
@@ -317,33 +332,70 @@ export default function CrearteAvailabilityModal({
             </div>
           )}
 
-          {/* ── ADD MODE: shared time section ── */}
+          {/* ── ADD MODE: multi-row time section ── */}
           {!editMode && (
-            <div className="flex flex-col gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50/50">
-              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Zeitraum</span>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="grid gap-1.5 min-w-0">
-                  <label className="text-xs font-medium text-gray-600">Titel</label>
-                  <select
-                    value={title}
-                    onChange={(e) => onTitleChange(e.target.value)}
-                    className="h-9 rounded-md border border-gray-200 bg-white px-2.5 text-sm w-full"
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Zeiträume</span>
+                <button
+                  type="button"
+                  onClick={onAddRow}
+                  className="flex items-center gap-1 text-xs font-medium text-[#61A07B] hover:text-[#61A07B]/80 cursor-pointer transition-colors"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Weitere Zeile hinzufügen
+                </button>
+              </div>
+              <div className="flex flex-col gap-2">
+                {rows.map((row, idx) => (
+                  <div
+                    key={row.id}
+                    className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_1fr_auto] gap-2 p-3 rounded-lg border border-gray-200 bg-gray-50/50 items-end"
                   >
-                    {titleOptions.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="grid gap-1.5 min-w-0">
-                  <label className="text-xs font-medium text-gray-600">Start</label>
-                  <TimeInputWithIcon value={start} onChange={onStartChange} className="h-9 text-sm w-full" />
-                </div>
-                <div className="grid gap-1.5 min-w-0">
-                  <label className="text-xs font-medium text-gray-600">Ende</label>
-                  <TimeInputWithIcon value={end} onChange={onEndChange} className="h-9 text-sm w-full" />
-                </div>
+                    <div className="grid gap-1.5 min-w-0">
+                      {idx === 0 && <label className="text-xs font-medium text-gray-600">Titel</label>}
+                      <select
+                        value={row.title}
+                        onChange={(e) => onUpdateRow?.(row.id, "title", e.target.value)}
+                        className="h-9 rounded-md border border-gray-200 bg-white px-2.5 text-sm w-full"
+                      >
+                        {titleOptions.map((opt) => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="grid gap-1.5 min-w-0">
+                      {idx === 0 && <label className="text-xs font-medium text-gray-600">Start</label>}
+                      <TimeInputWithIcon
+                        value={row.start}
+                        onChange={(v) => onUpdateRow?.(row.id, "start", v)}
+                        className="h-9 text-sm w-full"
+                      />
+                    </div>
+                    <div className="grid gap-1.5 min-w-0">
+                      {idx === 0 && <label className="text-xs font-medium text-gray-600">Ende</label>}
+                      <TimeInputWithIcon
+                        value={row.end}
+                        onChange={(v) => onUpdateRow?.(row.id, "end", v)}
+                        className="h-9 text-sm w-full"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => onRemoveRow?.(row.id)}
+                      disabled={rows.length <= 1}
+                      className={cn(
+                        "h-9 w-9 flex items-center justify-center rounded-lg transition-colors shrink-0",
+                        rows.length > 1
+                          ? "text-gray-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
+                          : "text-gray-200 cursor-not-allowed"
+                      )}
+                      aria-label="Zeile entfernen"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -361,7 +413,7 @@ export default function CrearteAvailabilityModal({
           <Button
             type="button"
             onClick={onSave}
-            disabled={saving || editDayFetching || (!editMode && dayCount === 0)}
+            disabled={saving || editDayFetching || (!editMode && (dayCount === 0 || rows.length === 0))}
             className="bg-[#61A07B] hover:bg-[#61A07B]/90"
           >
             {saving ? "Speichern…" : buttonLabel}
