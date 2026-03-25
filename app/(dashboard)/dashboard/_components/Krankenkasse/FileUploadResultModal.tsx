@@ -1,14 +1,15 @@
 'use client'
 
-import React from 'react'
+import React, { useState } from 'react'
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { CheckCircle2, FileText, AlertTriangle } from 'lucide-react'
-import type { ValidateChangelogResponse } from '@/apis/krankenkasseApis'
+import { CheckCircle2, FileText, AlertTriangle, ChevronDown, ChevronUp, User, Stethoscope, ShoppingBag } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import type { ValidateChangelogResponse, InsuranceChangelogMatchOrder, InsuranceChangelogPartialOrder } from '@/apis/krankenkasseApis'
 
 interface FileUploadResultModalProps {
     open: boolean
@@ -16,12 +17,256 @@ interface FileUploadResultModalProps {
     data: ValidateChangelogResponse | null
 }
 
-function formatProblemField(path: string): string {
-    return path
-        .replace(/\./g, ' → ')
-        .replace(/([A-Z])/g, ' $1')
-        .replace(/^./, (s) => s.toUpperCase())
-        .trim()
+function isProblem(problemFields: string[], key: string): boolean {
+    return problemFields.includes(key)
+}
+
+function fmt(value: string | number | boolean | null | undefined): string {
+    if (value === null || value === undefined || value === '') return '—'
+    if (typeof value === 'boolean') return value ? 'Ja' : 'Nein'
+    return String(value)
+}
+
+function fmtDate(iso: string | null | undefined): string {
+    if (!iso) return '—'
+    return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function fmtCurrency(val: number | null | undefined): string {
+    if (val === null || val === undefined) return '—'
+    return val.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })
+}
+
+interface FieldRowProps {
+    label: string
+    value: string
+    problem?: boolean
+}
+
+function FieldRow({ label, value, problem }: FieldRowProps) {
+    return (
+        <div className={cn(
+            'flex items-start justify-between gap-3 py-1.5 px-2 rounded-md text-xs',
+            problem ? 'bg-red-50 ring-1 ring-red-200' : 'bg-transparent'
+        )}>
+            <span className={cn('text-gray-500 shrink-0 w-40', problem && 'text-red-600 font-medium')}>{label}</span>
+            <span className={cn('text-gray-900 text-right font-medium break-all', problem && 'text-red-700')}>{value}</span>
+            {problem && (
+                <span className="shrink-0 inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 ml-1">
+                    ⚠ Problem
+                </span>
+            )}
+        </div>
+    )
+}
+
+type AnyOrder = InsuranceChangelogMatchOrder | InsuranceChangelogPartialOrder
+
+function isPartial(order: AnyOrder): order is InsuranceChangelogPartialOrder {
+    return 'problemFields' in order
+}
+
+interface OrderCardProps {
+    order: AnyOrder
+    variant: 'matched' | 'partial'
+}
+
+function OrderCard({ order, variant }: OrderCardProps) {
+    const [expanded, setExpanded] = useState(true)
+    const problemFields: string[] = isPartial(order) ? order.problemFields ?? [] : []
+    const { prescription: rx, customer } = order
+
+    return (
+        <div className={cn(
+            'rounded-xl border bg-white overflow-hidden shadow-sm',
+            variant === 'partial' ? 'border-red-200' : 'border-green-200'
+        )}>
+            {/* Header */}
+            <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left cursor-pointer hover:bg-gray-50/70 transition-colors"
+            >
+                <div className="flex items-center gap-2.5 min-w-0">
+                    <span className={cn(
+                        'shrink-0 inline-flex size-6 items-center justify-center rounded-full text-white text-[10px] font-bold',
+                        variant === 'partial' ? 'bg-red-500' : 'bg-green-500'
+                    )}>
+                        {variant === 'partial' ? '!' : '✓'}
+                    </span>
+                    <div className="min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">
+                            Auftrag #{order.orderNumber}
+                            <span className="ml-2 text-xs font-normal text-gray-500">· {order.insuranceType}</span>
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">
+                            {customer?.vorname} {customer?.nachname}
+                            {customer?.telefon ? ` · ${customer.telefon}` : ''}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                    {problemFields.length > 0 && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-700">
+                            <AlertTriangle className="size-2.5" />
+                            {problemFields.length} Problem{problemFields.length > 1 ? 'e' : ''}
+                        </span>
+                    )}
+                    {expanded ? <ChevronUp className="size-4 text-gray-400" /> : <ChevronDown className="size-4 text-gray-400" />}
+                </div>
+            </button>
+
+            {expanded && (
+                <div className="border-t border-gray-100 px-4 py-3 space-y-4">
+                    {/* Order */}
+                    <section>
+                        <h5 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                            <ShoppingBag className="size-3" /> Auftrag
+                        </h5>
+                        <div className="space-y-0.5">
+                            <FieldRow label="Auftragsnummer" value={fmt(order.orderNumber)} />
+                            <FieldRow label="Zahlungsart" value={fmt(order.paymnentType)} />
+                            <FieldRow
+                                label="Gesamtpreis"
+                                value={fmtCurrency(order.totalPrice)}
+                                problem={isProblem(problemFields, 'totalPrice')}
+                            />
+                            <FieldRow
+                                label="KV-Betrag"
+                                value={fmtCurrency(order.insuranceTotalPrice)}
+                                problem={isProblem(problemFields, 'insuranceTotalPrice')}
+                            />
+                            <FieldRow label="Versicherungsstatus" value={fmt(order.insurance_status)} />
+                            <FieldRow label="MwSt.-Satz" value={order.vatRate !== undefined ? `${order.vatRate} %` : '—'} />
+                            <FieldRow label="Erstellt am" value={fmtDate(order.createdAt)} />
+                            <FieldRow
+                                label="Privat bezahlt"
+                                value={fmt(order.private_payed)}
+                                problem={isProblem(problemFields, 'private_payed')}
+                            />
+                        </div>
+                    </section>
+
+                    {/* Customer */}
+                    {customer && (
+                        <section>
+                            <h5 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                                <User className="size-3" /> Kunde
+                            </h5>
+                            <div className="space-y-0.5">
+                                <FieldRow
+                                    label="Vorname"
+                                    value={fmt(customer.vorname)}
+                                    problem={isProblem(problemFields, 'customer.vorname')}
+                                />
+                                <FieldRow
+                                    label="Nachname"
+                                    value={fmt(customer.nachname)}
+                                    problem={isProblem(problemFields, 'customer.nachname')}
+                                />
+                                <FieldRow
+                                    label="Telefon"
+                                    value={fmt(customer.telefon)}
+                                    problem={isProblem(problemFields, 'customer.telefon')}
+                                />
+                            </div>
+                        </section>
+                    )}
+
+                    {/* Prescription */}
+                    {rx && (
+                        <section>
+                            <h5 className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                                <Stethoscope className="size-3" /> Rezept
+                            </h5>
+                            <div className="space-y-0.5">
+                                <FieldRow
+                                    label="Krankenkasse"
+                                    value={fmt(rx.insurance_provider)}
+                                    problem={isProblem(problemFields, 'prescription.insurance_provider')}
+                                />
+                                <FieldRow
+                                    label="KV-Nummer"
+                                    value={fmt((rx as { insurance_number?: string | null }).insurance_number)}
+                                    problem={isProblem(problemFields, 'prescription.insurance_number')}
+                                />
+                                <FieldRow
+                                    label="Rezept-Datum"
+                                    value={fmtDate(rx.prescription_date)}
+                                    problem={isProblem(problemFields, 'prescription.prescription_date')}
+                                />
+                                <FieldRow
+                                    label="Arzt"
+                                    value={fmt(rx.doctor_name)}
+                                    problem={isProblem(problemFields, 'prescription.doctor_name')}
+                                />
+                                <FieldRow
+                                    label="Arztort"
+                                    value={fmt(rx.doctor_location)}
+                                    problem={isProblem(problemFields, 'prescription.doctor_location')}
+                                />
+                                <FieldRow
+                                    label="Rezept-Nr."
+                                    value={fmt(rx.prescription_number)}
+                                    problem={isProblem(problemFields, 'prescription.prescription_number')}
+                                />
+                                <FieldRow
+                                    label="Betriebsstätten-Nr."
+                                    value={fmt(rx.establishment_number)}
+                                    problem={isProblem(problemFields, 'prescription.establishment_number')}
+                                />
+                                <FieldRow
+                                    label="Geprüfte Nr."
+                                    value={fmt(rx.proved_number)}
+                                    problem={isProblem(problemFields, 'prescription.proved_number')}
+                                />
+                                <FieldRow
+                                    label="Referenz-Nr."
+                                    value={fmt(rx.referencen_number)}
+                                    problem={isProblem(problemFields, 'prescription.referencen_number')}
+                                />
+                                <FieldRow
+                                    label="Diagnose"
+                                    value={fmt(rx.medical_diagnosis)}
+                                    problem={isProblem(problemFields, 'prescription.medical_diagnosis')}
+                                />
+                                <FieldRow
+                                    label="Einlagentyp"
+                                    value={fmt((rx as { type_of_deposit?: string | null }).type_of_deposit)}
+                                    problem={isProblem(problemFields, 'prescription.type_of_deposit')}
+                                />
+                                <FieldRow
+                                    label="Gültigkeit (Wochen)"
+                                    value={fmt(rx.validity_weeks)}
+                                    problem={isProblem(problemFields, 'prescription.validity_weeks')}
+                                />
+                                <FieldRow
+                                    label="Kostenträger-ID"
+                                    value={fmt((rx as { cost_bearer_id?: string | null }).cost_bearer_id)}
+                                    problem={isProblem(problemFields, 'prescription.cost_bearer_id')}
+                                />
+                                <FieldRow
+                                    label="Status-Nr."
+                                    value={fmt((rx as { status_number?: string | null }).status_number)}
+                                    problem={isProblem(problemFields, 'prescription.status_number')}
+                                />
+                                <FieldRow
+                                    label="Hilfsmittelkennzeichen"
+                                    value={fmt(rx.aid_code)}
+                                    problem={isProblem(problemFields, 'prescription.aid_code')}
+                                />
+                                <FieldRow
+                                    label="Arbeitsunfall"
+                                    value={fmt((rx as { is_work_accident?: boolean }).is_work_accident)}
+                                    problem={isProblem(problemFields, 'prescription.is_work_accident')}
+                                />
+                            </div>
+                        </section>
+                    )}
+                </div>
+            )}
+        </div>
+    )
 }
 
 export default function FileUploadResultModal({
@@ -32,119 +277,80 @@ export default function FileUploadResultModal({
     if (!data) return null
 
     const { matched, partialMatched } = data
-    const fullCount = matched.length
-    const partialCount = partialMatched.length
 
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="max-h-[85vh] overflow-hidden flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl sm:max-w-2xl [&>button]:right-4 [&>button]:top-4">
+            <DialogContent className="max-h-[88vh] overflow-hidden flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl sm:max-w-2xl [&>button]:right-4 [&>button]:top-4">
                 <DialogHeader className="shrink-0">
                     <DialogTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                         <FileText className="size-5 text-[#61A175]" />
                         Abgleichsergebnis
                     </DialogTitle>
                     <p className="text-sm text-gray-500 font-normal">
-                        Auswertung aus dem hochgeladenen Dokument (KI-Extraktion).
+                        KI-Auswertung aus dem hochgeladenen Dokument.
                     </p>
                 </DialogHeader>
 
+                {/* Summary */}
                 <div className="flex flex-wrap gap-3 shrink-0">
-                    <div className="flex-1 min-w-[140px] rounded-lg border border-green-200 bg-green-50/80 px-3 py-2 flex items-center gap-2">
+                    <div className="flex-1 min-w-[140px] rounded-lg border border-green-200 bg-green-50 px-3 py-2 flex items-center gap-2">
                         <CheckCircle2 className="size-4 text-green-600 shrink-0" />
-                        <div className="min-w-0">
-                            <span className="text-xs text-gray-600 block">Vollständig</span>
-                            <span className="text-sm font-bold text-green-800">{fullCount}</span>
+                        <div>
+                            <span className="text-[10px] text-gray-500 block uppercase tracking-wide">Vollständig</span>
+                            <span className="text-sm font-bold text-green-800">{matched.length}</span>
                         </div>
                     </div>
-                    <div className="flex-1 min-w-[140px] rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 flex items-center gap-2">
-                        <AlertTriangle className="size-4 text-amber-600 shrink-0" />
-                        <div className="min-w-0">
-                            <span className="text-xs text-gray-600 block">Teilweise</span>
-                            <span className="text-sm font-bold text-amber-900">{partialCount}</span>
+                    <div className="flex-1 min-w-[140px] rounded-lg border border-red-200 bg-red-50 px-3 py-2 flex items-center gap-2">
+                        <AlertTriangle className="size-4 text-red-500 shrink-0" />
+                        <div>
+                            <span className="text-[10px] text-gray-500 block uppercase tracking-wide">Teilweise</span>
+                            <span className="text-sm font-bold text-red-700">{partialMatched.length}</span>
                         </div>
                     </div>
                 </div>
 
-                {partialMatched.length > 0 && (
-                    <div className="min-h-0 flex flex-col">
-                        <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                            <AlertTriangle className="size-3.5 text-amber-600" />
-                            Teilweise übereinstimmend ({partialMatched.length})
-                        </h4>
-                        <ul className="space-y-2 overflow-y-auto pr-1 border border-amber-100 rounded-lg bg-amber-50/30 p-2 max-h-48">
-                            {partialMatched.map((order) => (
-                                <li
-                                    key={order.id}
-                                    className="rounded-lg border border-amber-200/80 bg-white p-2.5 text-xs"
-                                >
-                                    <div className="font-medium text-gray-900">
-                                        #{order.orderNumber} · {order.customer?.vorname}{' '}
-                                        {order.customer?.nachname}
-                                    </div>
-                                    {order.prescription?.insurance_provider && (
-                                        <p className="text-gray-600 mt-0.5">
-                                            {order.prescription.insurance_provider}
-                                        </p>
-                                    )}
-                                    {order.problemFields?.length ? (
-                                        <div className="mt-2 flex flex-wrap gap-1">
-                                            {order.problemFields.map((f) => (
-                                                <span
-                                                    key={f}
-                                                    className="inline-flex rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900"
-                                                >
-                                                    {formatProblemField(f)}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    ) : null}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
+                {/* Lists */}
+                <div className="min-h-0 overflow-y-auto space-y-3 pr-1">
+                    {partialMatched.length > 0 && (
+                        <div>
+                            <h4 className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                                <AlertTriangle className="size-3.5 text-red-500" />
+                                Teilweise übereinstimmend ({partialMatched.length})
+                            </h4>
+                            <div className="space-y-3">
+                                {partialMatched.map((order) => (
+                                    <OrderCard key={order.id} order={order} variant="partial" />
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                {matched.length > 0 && (
-                    <div className="min-h-0 flex flex-col">
-                        <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                            <CheckCircle2 className="size-3.5 text-green-600" />
-                            Vollständig übereinstimmend ({matched.length})
-                        </h4>
-                        <ul className="space-y-2 overflow-y-auto pr-1 border border-green-100 rounded-lg bg-green-50/30 p-2 max-h-48">
-                            {matched.map((order) => (
-                                <li
-                                    key={order.id}
-                                    className="rounded-lg border border-green-100 bg-white p-2.5 text-xs text-gray-700"
-                                >
-                                    <div className="font-medium text-gray-900">
-                                        #{order.orderNumber} · {order.customer?.vorname}{' '}
-                                        {order.customer?.nachname}
-                                    </div>
-                                    {order.prescription?.insurance_provider && (
-                                        <p className="text-gray-600 mt-0.5">
-                                            {order.prescription.insurance_provider}
-                                            {order.prescription.medical_diagnosis
-                                                ? ` · ${order.prescription.medical_diagnosis}`
-                                                : ''}
-                                        </p>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
+                    {matched.length > 0 && (
+                        <div>
+                            <h4 className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+                                <CheckCircle2 className="size-3.5 text-green-600" />
+                                Vollständig übereinstimmend ({matched.length})
+                            </h4>
+                            <div className="space-y-3">
+                                {matched.map((order) => (
+                                    <OrderCard key={order.id} order={order} variant="matched" />
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                {matched.length === 0 && partialMatched.length === 0 && (
-                    <p className="text-sm text-gray-500 py-2">
-                        Keine Aufträge in dieser Antwort — bitte Dokument oder Daten prüfen.
-                    </p>
-                )}
+                    {matched.length === 0 && partialMatched.length === 0 && (
+                        <p className="text-sm text-gray-500 py-4 text-center">
+                            Keine Aufträge in dieser Antwort — bitte Datei oder Daten prüfen.
+                        </p>
+                    )}
+                </div>
 
-                <div className="shrink-0 flex justify-end pt-2">
+                <div className="shrink-0 flex justify-end pt-2 border-t border-gray-100">
                     <button
                         type="button"
                         onClick={onClose}
-                        className="rounded-lg bg-[#61A175] px-4 py-2 text-sm font-medium text-white hover:bg-[#61A175]/90"
+                        className="rounded-lg bg-[#61A175] px-5 py-2 text-sm font-medium text-white hover:bg-[#61A175]/90 transition-colors"
                     >
                         Schließen
                     </button>

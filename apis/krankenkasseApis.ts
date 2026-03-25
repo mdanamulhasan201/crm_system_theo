@@ -4,7 +4,9 @@ import axiosClient from "@/lib/axiosClient";
 
 export interface KrankenkassePrescription {
     id: string;
+    customerId?: string;
     insurance_provider: string;
+    insurance_number?: string | null;
     prescription_number: string | null;
     proved_number: string | null;
     referencen_number: string | null;
@@ -13,9 +15,15 @@ export interface KrankenkassePrescription {
     prescription_date: string;
     validity_weeks: number;
     establishment_number: string;
+    practice_number?: string | null;
     aid_code: string;
-    /** Present on validate-changelog / full API payloads */
     medical_diagnosis?: string | null;
+    type_of_deposit?: string | null;
+    cost_bearer_id?: string | null;
+    status_number?: string | null;
+    is_work_accident?: boolean;
+    createdAt?: string;
+    image?: string | null;
 }
 
 export interface KrankenkasseCustomer {
