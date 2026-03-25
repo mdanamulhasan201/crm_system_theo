@@ -149,9 +149,10 @@ export const useWerkstattzettelA3Download = () => {
             const partnerLogoPng = partnerLogoRaw ? await toPng(partnerLogoRaw) : null;
 
             pdf.setFontSize(11);
-            const headerY = 6;
+            const pad = 8; // uniform padding on all four sides (mm)
+            const headerY = pad;
             const headerLineGap = 6;
-            const textPadX = 5;
+            const textPadX = pad;
 
             // Left side: customer info
             textWithHalo(`Datum: ${todayText}`, textPadX, headerY);
@@ -163,11 +164,11 @@ export const useWerkstattzettelA3Download = () => {
             textWithHalo(customerDisplayName, textPadX, headerY + headerLineGap * 3, { fontStyle: 'bold' });
             if (d.customerInfo?.phone) textWithHalo(`Tel.: ${d.customerInfo.phone}`, textPadX, headerY + headerLineGap * 4);
 
-            // Right side: partner info (logo + name + address)
-            const rightPadX = pageWidth - 5;
+            // Right side: [LOGO] on top, then name, then address — all right-aligned from headerY
+            const rightPadX = pageWidth - pad;
             const logoSize = 18;
-            const logoX = pageWidth - logoSize - 5;
-            const logoY = 4;
+            const logoX = pageWidth - pad - logoSize;
+            const logoY = headerY;
             if (partnerLogoPng) {
                 const logoDim = await getDim(partnerLogoPng);
                 if (logoDim) {
@@ -177,8 +178,9 @@ export const useWerkstattzettelA3Download = () => {
                     pdf.addImage(partnerLogoPng, 'PNG', logoX + (logoSize - lw) / 2, logoY + (logoSize - lh) / 2, lw, lh, undefined, 'FAST');
                 }
             }
-            const partnerTextY = logoY + logoSize + 3;
+            // Name and address start just below the logo
             const maxPartnerTextWidth = 100; // mm – cap right-side header text width
+            const partnerTextY = logoY + logoSize + 2;
             if (d.partnerInfo?.busnessName) {
                 const nameLines: string[] = pdf.splitTextToSize(d.partnerInfo.busnessName, maxPartnerTextWidth);
                 nameLines.forEach((line: string, i: number) => {
@@ -200,11 +202,11 @@ export const useWerkstattzettelA3Download = () => {
             const bottomY = pageHeight - bottomBlockHeight;
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(10);
-            const leftColX = textPadX;
+            const leftColX = pad;
             const rightColX = availableWidth / 2 - 60;
             const leftColWidth = rightColX - leftColX - 4;
-            const rightColWidth = availableWidth - rightColX - textPadX;
-            const startY = bottomY + 8;
+            const rightColWidth = availableWidth - rightColX - pad;
+            const startY = bottomY + pad;
             const lineGap = 5;
 
             const writeLines = (x: number, yStart: number, width: number, lines: string[]) => {
