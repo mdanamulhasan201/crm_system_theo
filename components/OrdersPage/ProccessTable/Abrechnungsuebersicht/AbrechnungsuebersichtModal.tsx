@@ -3,8 +3,11 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { getPriseDetails } from '@/apis/productsOrder';
-import { FileText, Receipt, ShieldCheck } from 'lucide-react';
+import { getKvaData, getPriseDetails } from '@/apis/productsOrder';
+import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
+import KvaSheet, { KvaData } from '../KvaPdf/KvaSheet';
+import { FileText, Loader2, ShieldCheck } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export interface PriceDetailPosition {
     id: string;
@@ -111,6 +114,61 @@ export default function AbrechnungsuebersichtModal({
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [fullDescriptionText, setFullDescriptionText] = useState<string | null>(null);
+    const [isGeneratingKvaPdf, setIsGeneratingKvaPdf] = useState(false);
+    const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
+    const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
+    const KVA_PDF_ELEMENT_ID = 'kva-sheet-pdf-billing-modal';
+
+    const getProxyImageUrl = (url: string) => {
+        if (!url) return url;
+        if (url.startsWith('/api/proxy-image?url=')) return url;
+        const abs = url.startsWith('http') ? url : `${window.location.origin}${url.startsWith('/') ? '' : '/'}${url}`;
+        return `/api/proxy-image?url=${encodeURIComponent(abs)}`;
+    };
+
+    const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    const downloadBlob = (blob: Blob, fileName: string) => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    };
+
+    const handleKvaDownload = async () => {
+        if (!orderId || isGeneratingKvaPdf) return;
+        setIsGeneratingKvaPdf(true);
+        try {
+            const res = await getKvaData(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'KVA Daten konnten nicht geladen werden');
+                return;
+            }
+            const kvaData: KvaData = res.data;
+            setKvaPdfData(kvaData);
+            setKvaPdfLogoProxy(kvaData.logo ? getProxyImageUrl(kvaData.logo) : null);
+
+            await nextFrame();
+            await nextFrame();
+
+            const pdfBlob = await generatePdfFromElement(KVA_PDF_ELEMENT_ID, pdfPresets.document);
+            const safeName = (kvaData?.customerInfo?.firstName || 'KVA').toString().trim().replace(/\s+/g, '_');
+            downloadBlob(pdfBlob, `Kostenvoranschlag_${safeName}.pdf`);
+        } catch (e) {
+            console.error('KVA PDF error:', e);
+            toast.error('Fehler beim Erstellen des KVA PDFs');
+        } finally {
+            setIsGeneratingKvaPdf(false);
+            setTimeout(() => {
+                setKvaPdfData(null);
+                setKvaPdfLogoProxy(null);
+            }, 1500);
+        }
+    };
 
     useEffect(() => {
         if (!isOpen || !orderId) {
@@ -478,9 +536,18 @@ export default function AbrechnungsuebersichtModal({
                                             Rechnung öffnen
                                         </Button>
                                     )} */}
-                                        <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
-                                            <FileText className="w-4 h-4" />
-                                            KVA
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-2 cursor-pointer"
+                                            onClick={handleKvaDownload}
+                                            disabled={isGeneratingKvaPdf}
+                                        >
+                                            {isGeneratingKvaPdf
+                                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                : <FileText className="w-4 h-4" />
+                                            }
+                                            {isGeneratingKvaPdf ? 'Wird erstellt...' : 'KVA'}
                                         </Button>
                                         <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
                                             <FileText className="w-4 h-4" />
@@ -497,6 +564,13 @@ export default function AbrechnungsuebersichtModal({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Hidden KVA sheet for PDF generation */}
+            <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
+                <div id={KVA_PDF_ELEMENT_ID}>
+                    {kvaPdfData ? <KvaSheet data={kvaPdfData} logoProxyUrl={kvaPdfLogoProxy} /> : null}
+                </div>
+            </div>
 
             {/* Full description popup on click */}
             <Dialog open={!!fullDescriptionText} onOpenChange={(open) => !open && setFullDescriptionText(null)}>
