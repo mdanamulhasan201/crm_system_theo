@@ -111,7 +111,8 @@ export const useWerkstattzettelA3Download = () => {
             const customerName = [d.customerInfo?.firstName, d.customerInfo?.lastName].filter(Boolean).join(' ').trim() || '—';
 
             const bottomBlockHeight = 50;
-            const topImagesY = 0;
+            // Start slot at 50mm so images are vertically centered at the true middle of the page (420/2 = 210mm)
+            const topImagesY = 50;
             const imagesAreaHeight = pageHeight - bottomBlockHeight - topImagesY;
             const gap = 4;
             const availableWidth = pageWidth;
@@ -129,20 +130,20 @@ export const useWerkstattzettelA3Download = () => {
                 rightRaw ? toPng(rightRaw) : Promise.resolve(null),
             ]);
 
-            const placeImageContainCenter = async (dataUrl: string, slotX: number, slotY: number, slotW: number, slotH: number) => {
+            // Place image at original size (px → mm at 96 dpi), centered in slot — no scaling
+            const placeImageNaturalCenter = async (dataUrl: string, slotX: number, slotY: number, slotW: number, slotH: number) => {
                 const dim = await getDim(dataUrl);
                 if (!dim) return;
-                const aspect = dim.w / dim.h;
-                let imgW = slotW;
-                let imgH = imgW / aspect;
-                if (imgH > slotH) { imgH = slotH; imgW = imgH * aspect; }
+                const mmPerPx = 25.4 / 96;
+                const imgW = dim.w * mmPerPx;
+                const imgH = dim.h * mmPerPx;
                 const cx = slotX + (slotW - imgW) / 2;
                 const cy = slotY + (slotH - imgH) / 2;
                 pdf.addImage(dataUrl, 'PNG', cx, cy, imgW, imgH, undefined, 'FAST');
             };
 
-            if (leftPng) await placeImageContainCenter(leftPng, 0, topImagesY, eachWidth, maxHeight);
-            if (rightPng) await placeImageContainCenter(rightPng, eachWidth + gap, topImagesY, eachWidth, maxHeight);
+            if (leftPng) await placeImageNaturalCenter(leftPng, 0, topImagesY, eachWidth, maxHeight);
+            if (rightPng) await placeImageNaturalCenter(rightPng, eachWidth + gap, topImagesY, eachWidth, maxHeight);
 
             const partnerLogoUrl = d.partnerInfo?.image || null;
             const partnerLogoRaw = partnerLogoUrl ? await fetchImg(partnerLogoUrl) : null;
