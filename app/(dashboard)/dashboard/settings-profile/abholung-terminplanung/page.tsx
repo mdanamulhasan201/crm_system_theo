@@ -7,6 +7,9 @@ import {
   Users,
   SlidersHorizontal,
   ClipboardList,
+  MapPin,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -20,9 +23,13 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import WohnortInput from "../../_components/Customers/WohnortInput";
 import toast from "react-hot-toast";
 import { createAuftragszettel, getAuftragszettel } from "@/apis/auftragszettelApis";
+import { getAllLocations } from "@/apis/setting/locationManagementApis";
+
+type PickupAddress = { address: string };
 
 type HydratedValues = {
   isEnabled: boolean;
@@ -31,7 +38,7 @@ type HydratedValues = {
   assigneeOption: "creator" | "fixed-per-location";
   respectWorkTimes: boolean;
   respectExistingAppointments: boolean;
-  pickupLocation: string;
+  pickupLocations: PickupAddress[];
 };
 
 export default function AbholungTerminplanungPage() {
@@ -56,7 +63,10 @@ export default function AbholungTerminplanungPage() {
     "fixed-employee" | "creator"
   >("fixed-employee");
   const [kvEmployee, setKvEmployee] = useState("");
-  const [pickupLocation, setPickupLocation] = useState("");
+  const [pickupLocations, setPickupLocations] = useState<PickupAddress[]>([]);
+  const [newAddress, setNewAddress] = useState("");
+  const [storeLocations, setStoreLocations] = useState<Array<{ id: string; address: string; description?: string }>>([]);
+  const [locationsLoading, setLocationsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -69,7 +79,7 @@ export default function AbholungTerminplanungPage() {
       pickupAssignmentMode: assigneeOption === "creator",
       lookWorkTime: Boolean(respectWorkTimes),
       appomnentOverlap: Boolean(respectExistingAppointments),
-      shipping_addresses_for_kv: pickupLocation || "",
+      shipping_addresses_for_kv: pickupLocations,
     };
   };
 
@@ -98,6 +108,36 @@ export default function AbholungTerminplanungPage() {
         const res = await getAuftragszettel();
         const data = res?.data;
         if (res?.success && data) {
+          // Parse shipping_addresses_for_kv — may be array, JSON string, or plain string
+          let parsedLocations: PickupAddress[] = [];
+          const raw = data.shipping_addresses_for_kv;
+          if (Array.isArray(raw)) {
+            parsedLocations = raw
+              .map((item: any) =>
+                typeof item === "string"
+                  ? { address: item }
+                  : { address: String(item?.address ?? "") }
+              )
+              .filter((loc) => loc.address.trim());
+          } else if (typeof raw === "string" && raw.trim()) {
+            try {
+              const parsed = JSON.parse(raw);
+              if (Array.isArray(parsed)) {
+                parsedLocations = parsed
+                  .map((item: any) =>
+                    typeof item === "string"
+                      ? { address: item }
+                      : { address: String(item?.address ?? "") }
+                  )
+                  .filter((loc) => loc.address.trim());
+              } else {
+                parsedLocations = [{ address: raw }];
+              }
+            } catch {
+              parsedLocations = [{ address: raw }];
+            }
+          }
+
           const loaded: HydratedValues = {
             isEnabled: Boolean(data.isInsolePickupDateLine),
             processingDays:
@@ -110,7 +150,7 @@ export default function AbholungTerminplanungPage() {
               : "fixed-per-location",
             respectWorkTimes: Boolean(data.lookWorkTime),
             respectExistingAppointments: Boolean(data.appomnentOverlap),
-            pickupLocation: String(data.shipping_addresses_for_kv ?? ""),
+            pickupLocations: parsedLocations,
           };
 
           // Store loaded values BEFORE applying them to state so the
@@ -123,7 +163,7 @@ export default function AbholungTerminplanungPage() {
           setAssigneeOption(loaded.assigneeOption);
           setRespectWorkTimes(loaded.respectWorkTimes);
           setRespectExistingAppointments(loaded.respectExistingAppointments);
-          setPickupLocation(loaded.pickupLocation);
+          setPickupLocations(loaded.pickupLocations);
         }
       } catch (error) {
         console.error(error);
@@ -150,7 +190,7 @@ export default function AbholungTerminplanungPage() {
         assigneeOption === h.assigneeOption &&
         respectWorkTimes === h.respectWorkTimes &&
         respectExistingAppointments === h.respectExistingAppointments &&
-        pickupLocation === h.pickupLocation;
+        JSON.stringify(pickupLocations) === JSON.stringify(h.pickupLocations);
 
       if (unchanged) return;
 
@@ -182,7 +222,7 @@ export default function AbholungTerminplanungPage() {
     assigneeOption,
     respectWorkTimes,
     respectExistingAppointments,
-    pickupLocation,
+    pickupLocations,
     isLoading,
   ]);
 
@@ -490,33 +530,87 @@ export default function AbholungTerminplanungPage() {
         <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
           <div className="flex items-center gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
-              <CalendarDays className="h-6 w-6" />
+              <MapPin className="h-6 w-6" />
             </div>
             <div>
               <h2 className="text-base font-semibold text-gray-900">
-                Abholort suchen
+                Abholorte
               </h2>
               <p className="text-xs text-gray-500">
-                Standort über die Standortsuche auswählen
+                Mehrere Abhol-Standorte hinzufügen
               </p>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-1 space-y-2">
-
-          <div className="space-y-1">
-            <Label className="text-xs font-medium text-gray-600">
-              {/* german name adress */}
-              Adresse
-            </Label>
-            <WohnortInput
-              value={pickupLocation}
-              onChange={setPickupLocation}
-              hideLabel
-              placeholder="Abhol-Standort suchen (Straße, PLZ, Stadt, Land)"
-            />
+        <CardContent className="pt-1 space-y-4">
+          {/* Input row */}
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs font-medium text-gray-600">
+                Neue Adresse
+              </Label>
+              <WohnortInput
+                value={newAddress}
+                onChange={setNewAddress}
+                hideLabel
+                placeholder="Abhol-Standort suchen (Straße, PLZ, Stadt, Land)"
+              />
+            </div>
+            <Button
+              type="button"
+              size="sm"
+              disabled={!newAddress.trim() || isLoading}
+              onClick={() => {
+                const trimmed = newAddress.trim();
+                if (!trimmed) return;
+                setPickupLocations((prev) => [...prev, { address: trimmed }]);
+                setNewAddress("");
+              }}
+              className="h-9 shrink-0 bg-[#61A07B] hover:bg-[#4e8d6a] text-white cursor-pointer"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Hinzufügen
+            </Button>
           </div>
 
+          {/* List of added locations */}
+          {pickupLocations.length > 0 && (
+            <ul className="flex flex-col gap-2">
+              {pickupLocations.map((loc, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5"
+                >
+                  <MapPin className="h-4 w-4 shrink-0 text-gray-400" />
+                  <span className="flex-1 text-sm text-gray-800 break-all">
+                    {loc.address}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPickupLocations((prev) =>
+                        prev.filter((_, i) => i !== idx)
+                      )
+                    }
+                    className="shrink-0 p-1 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                    aria-label="Adresse entfernen"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {pickupLocations.length === 0 && !isLoading && (
+            <p className="text-xs text-gray-400 text-center py-3 border border-dashed border-gray-200 rounded-lg">
+              Noch keine Abholorte hinzugefügt.
+            </p>
+          )}
+
+         
+
+      
           {(isLoading || isSaving) && (
             <p className="text-xs text-gray-500">
               {isLoading ? "Lade Einstellungen..." : "Speichere..."}
