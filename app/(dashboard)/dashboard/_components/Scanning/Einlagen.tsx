@@ -213,6 +213,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         handleSubmit,
         formState: { errors },
         setValue,
+        setError,
+        clearErrors,
         watch,
         trigger,
         reset,
@@ -339,6 +341,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [selectedPositionsnummer, setSelectedPositionsnummer] = useState<string[]>([]);
     const [showPositionsnummerDropdown, setShowPositionsnummerDropdown] = useState(false);
     const [lieferschein, setLieferschein] = useState<boolean | null>(null);
+    const [positionsnummerValidationError, setPositionsnummerValidationError] = useState<string | undefined>(undefined);
     const [itemSides, setItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
     
     // Insole Standards state (Zusätze/Custom Fields) - Initialize with default fields
@@ -441,6 +444,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setSelectedPositionsnummer([]);
         setLieferschein(null);
         setItemSides({});
+        setPositionsnummerValidationError(undefined);
 
         // Insole standards back to defaults
         setInsoleStandards([
@@ -567,6 +571,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         kostenvoranschlag,
         selectedEmployee,
         setValue,
+        setError,
+        clearErrors,
     ]);
 
     // Sync einlagentyp only when selectedEinlage changes (e.g. user clicks an Einlage button).
@@ -1014,30 +1020,36 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             toast.error('Bitte erstellen Sie zuerst eine einmalige Versorgung, indem Sie auf "Add" klicken');
             return;
         }
-        
-        // Validate standard fields
+
+        // Run ALL validations simultaneously — collect errors, don't early-return
+        let hasExtraErrors = false;
+
+        // 1. Zod schema fields (ausführliche_diagnose, einlagentyp, überzug, menge, selectedEmployee …)
         const isValid = await trigger();
-        
-        if (!isValid) {
-            const firstError = Object.values(errors)[0];
-            if (firstError?.message) {
-                toast.error(firstError.message as string);
-            } else {
-                toast.error('Bitte füllen Sie alle erforderlichen Felder aus');
-            }
-            return;
-        }
 
-        // Additional validation for standard tab: versorgung is required
+        // 2. Standardversorgung — set form error so red border shows on VersorgungKonfigurierenCard
         if (activeVersorgungTab === 'standard' && !supply) {
-            toast.error('Versorgung ist erforderlich');
-            return;
+            setError('versorgung', { type: 'manual', message: 'Versorgung ist erforderlich' });
+            hasExtraErrors = true;
+        } else {
+            clearErrors('versorgung');
         }
 
-        // For Krankenkassa-Abrechnung: at least one Positionsnummer is required
-        // EXCEPT when "Verordnungsvorschlag" is enabled (Positionsnummer is disabled then).
-        if (billingType === 'Krankenkassa' && lieferschein !== true && (!selectedPositionsnummer || selectedPositionsnummer.length === 0)) {
-            toast.error('Bitte wählen Sie mindestens eine Positionsnummer für Krankenkasse.');
+        // 3. Positionsnummer for Krankenkassa
+        const posNrMissing =
+            billingType === 'Krankenkassa' &&
+            lieferschein !== true &&
+            (!selectedPositionsnummer || selectedPositionsnummer.length === 0);
+        if (posNrMissing) {
+            setPositionsnummerValidationError('Bitte wählen Sie mindestens eine Positionsnummer für Krankenkasse.');
+            hasExtraErrors = true;
+        } else {
+            setPositionsnummerValidationError(undefined);
+        }
+
+        // Stop if any validation failed — all red borders + error messages are already set above
+        if (!isValid || hasExtraErrors) {
+            toast.error('Bitte füllen Sie alle erforderlichen Felder aus');
             return;
         }
 
@@ -1197,10 +1209,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 billingType={billingType}
                 selectedPositionsnummer={selectedPositionsnummer}
                 positionsnummerOptions={filteredPositionsnummerData}
-                positionsnummerError={positionsnummerError}
+                positionsnummerError={positionsnummerValidationError || positionsnummerError}
                 showPositionsnummerDropdown={showPositionsnummerDropdown}
                 onPositionsnummerToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
-                onPositionsnummerSelect={setSelectedPositionsnummer}
+                onPositionsnummerSelect={(values) => {
+                    setSelectedPositionsnummer(values);
+                    if (values.length > 0) setPositionsnummerValidationError(undefined);
+                }}
                 onPositionsnummerClear={() => {
                     setSelectedPositionsnummer([]);
                     setItemSides({});
@@ -1313,7 +1328,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 hasDataLoaded={hasStandardDataLoaded}
                 selectedVersorgungId={selectedVersorgungId}
                 supply={supply}
-                onVersorgungCardSelect={handleVersorgungCardSelect}
+                onVersorgungCardSelect={(item) => {
+                    handleVersorgungCardSelect(item);
+                    clearErrors('versorgung');
+                }}
                 versorgungError={activeVersorgungTab === 'standard' ? errors.versorgung?.message : undefined}
                 showSupplyDropdown={showSupplyDropdown}
                 onSupplyDropdownToggle={handleSupplyDropdownToggle}
