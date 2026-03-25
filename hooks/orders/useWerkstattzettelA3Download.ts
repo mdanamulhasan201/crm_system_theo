@@ -156,10 +156,12 @@ export const useWerkstattzettelA3Download = () => {
             // Left side: customer info
             textWithHalo(`Datum: ${todayText}`, textPadX, headerY);
             textWithHalo(`Auftrag: ${d.orderNumber ?? '—'}`, textPadX, headerY + headerLineGap);
+            const customerDisplayName = d.customerInfo?.customerNumber
+                ? `${customerName} (${d.customerInfo.customerNumber})`
+                : customerName;
             textWithHalo('Kunde', textPadX, headerY + headerLineGap * 2);
-            textWithHalo(customerName, textPadX, headerY + headerLineGap * 3, { fontStyle: 'bold' });
-            if (d.customerInfo?.customerNumber) textWithHalo(`Kundennr.: ${d.customerInfo.customerNumber}`, textPadX, headerY + headerLineGap * 4);
-            if (d.customerInfo?.phone) textWithHalo(`Tel.: ${d.customerInfo.phone}`, textPadX, headerY + headerLineGap * (d.customerInfo?.customerNumber ? 5 : 4));
+            textWithHalo(customerDisplayName, textPadX, headerY + headerLineGap * 3, { fontStyle: 'bold' });
+            if (d.customerInfo?.phone) textWithHalo(`Tel.: ${d.customerInfo.phone}`, textPadX, headerY + headerLineGap * 4);
 
             // Right side: partner info (logo + name + address)
             const rightPadX = pageWidth - 5;
