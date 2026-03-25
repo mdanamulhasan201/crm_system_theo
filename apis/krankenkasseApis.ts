@@ -14,6 +14,8 @@ export interface KrankenkassePrescription {
     validity_weeks: number;
     establishment_number: string;
     aid_code: string;
+    /** Present on validate-changelog / full API payloads */
+    medical_diagnosis?: string | null;
 }
 
 export interface KrankenkasseCustomer {
@@ -145,7 +147,7 @@ export const manageKrankenkassePrescription = async (type: string, orderId: stri
 }
 
 
-/** Rejected item from validate-insurance-changelog */
+/** Rejected item (legacy Excel validation shape; kept for reference) */
 export interface ValidateChangelogRejectedItem {
     rowIndex: number;
     orderNumber: number;
@@ -158,21 +160,46 @@ export interface ValidateChangelogRejectedItem {
     order?: KrankenkasseOrderItem;
 }
 
+/** Order row returned from validate-insurance-changelog?response=simple */
+export interface InsuranceChangelogMatchOrder extends KrankenkasseOrderItem {
+    vatRate?: number;
+}
+
+export interface InsuranceChangelogPartialOrder extends InsuranceChangelogMatchOrder {
+    problemFields: string[];
+}
+
+/** Response from POST /v2/insurance/validate-insurance-changelog?response=simple (multipart field: excl) */
 export interface ValidateChangelogResponse {
     success: boolean;
-    message: string;
-    approved: KrankenkasseOrderItem[];
-    rejected: ValidateChangelogRejectedItem[];
-    summary: { total: number; approved: number; rejected: number };
+    matched: InsuranceChangelogMatchOrder[];
+    matchCount: number;
+    partialMatched: InsuranceChangelogPartialOrder[];
+    partialMatchCount: number;
 }
 
 // file upload v2/insurance/validate-insurance-changelog (multipart/form-data)
+// export const validateInsuranceChangelog = async (file: File): Promise<ValidateChangelogResponse> => {
+//     const formData = new FormData();
+//     formData.append('file', file);
+//     const response = await axiosClient.post<ValidateChangelogResponse>(
+//         '/v2/insurance/validate-insurance-changelog',
+//         formData
+//     );
+//     return response.data;
+// }
+// body: excl upload v2/insurance/validate-insurance-changelog?response=simple (multipart/form-data)
 export const validateInsuranceChangelog = async (file: File): Promise<ValidateChangelogResponse> => {
     const formData = new FormData();
     formData.append('file', file);
     const response = await axiosClient.post<ValidateChangelogResponse>(
-        '/v2/insurance/validate-insurance-changelog',
-        formData
+        '/v2/insurance/validate-insurance-changelog?response=simple',
+        formData,
+        {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        }
     );
     return response.data;
 }

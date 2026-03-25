@@ -7,13 +7,21 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { CheckCircle2, XCircle, FileText, AlertCircle } from 'lucide-react'
+import { CheckCircle2, FileText, AlertTriangle } from 'lucide-react'
 import type { ValidateChangelogResponse } from '@/apis/krankenkasseApis'
 
 interface FileUploadResultModalProps {
     open: boolean
     onClose: () => void
     data: ValidateChangelogResponse | null
+}
+
+function formatProblemField(path: string): string {
+    return path
+        .replace(/\./g, ' → ')
+        .replace(/([A-Z])/g, ' $1')
+        .replace(/^./, (s) => s.toUpperCase())
+        .trim()
 }
 
 export default function FileUploadResultModal({
@@ -23,65 +31,101 @@ export default function FileUploadResultModal({
 }: FileUploadResultModalProps) {
     if (!data) return null
 
-    const { message, approved, rejected, summary } = data
+    const { matched, partialMatched } = data
+    const fullCount = matched.length
+    const partialCount = partialMatched.length
 
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="max-h-[85vh] overflow-hidden flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl sm:max-w-lg [&>button]:right-4 [&>button]:top-4">
+            <DialogContent className="max-h-[85vh] overflow-hidden flex flex-col rounded-xl border border-gray-200 bg-white shadow-xl sm:max-w-2xl [&>button]:right-4 [&>button]:top-4">
                 <DialogHeader className="shrink-0">
                     <DialogTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                         <FileText className="size-5 text-[#61A175]" />
-                        Validierungsergebnis
+                        Abgleichsergebnis
                     </DialogTitle>
+                    <p className="text-sm text-gray-500 font-normal">
+                        Auswertung aus dem hochgeladenen Dokument (KI-Extraktion).
+                    </p>
                 </DialogHeader>
-                {/* <p className="text-sm text-gray-600 -mt-1 shrink-0">
-                    {message}
-                </p> */}
 
-                {/* Summary */}
-                <div className="flex gap-3 shrink-0">
-                    <div className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 flex items-center gap-2">
-                        <span className="text-xs text-gray-500">Gesamt</span>
-                        <span className="text-sm font-bold text-gray-900">{summary.total}</span>
-                    </div>
-                    <div className="flex-1 rounded-lg border border-green-200 bg-green-50/80 px-3 py-2 flex items-center gap-2">
+                <div className="flex flex-wrap gap-3 shrink-0">
+                    <div className="flex-1 min-w-[140px] rounded-lg border border-green-200 bg-green-50/80 px-3 py-2 flex items-center gap-2">
                         <CheckCircle2 className="size-4 text-green-600 shrink-0" />
-                        <span className="text-xs text-gray-600">Genehmigt</span>
-                        <span className="text-sm font-bold text-green-700">{summary.approved}</span>
+                        <div className="min-w-0">
+                            <span className="text-xs text-gray-600 block">Vollständig</span>
+                            <span className="text-sm font-bold text-green-800">{fullCount}</span>
+                        </div>
                     </div>
-                    <div className="flex-1 rounded-lg border border-red-200 bg-red-50/80 px-3 py-2 flex items-center gap-2">
-                        <XCircle className="size-4 text-red-600 shrink-0" />
-                        <span className="text-xs text-gray-600">Abgelehnt</span>
-                        <span className="text-sm font-bold text-red-700">{summary.rejected}</span>
+                    <div className="flex-1 min-w-[140px] rounded-lg border border-amber-200 bg-amber-50/80 px-3 py-2 flex items-center gap-2">
+                        <AlertTriangle className="size-4 text-amber-600 shrink-0" />
+                        <div className="min-w-0">
+                            <span className="text-xs text-gray-600 block">Teilweise</span>
+                            <span className="text-sm font-bold text-amber-900">{partialCount}</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Rejected list */}
-                {rejected.length > 0 && (
+                {partialMatched.length > 0 && (
                     <div className="min-h-0 flex flex-col">
                         <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                            <AlertCircle className="size-3.5" />
-                            Abgelehnt ({rejected.length})
+                            <AlertTriangle className="size-3.5 text-amber-600" />
+                            Teilweise übereinstimmend ({partialMatched.length})
                         </h4>
-                        <ul className="space-y-2 overflow-y-auto pr-1 border border-gray-200 rounded-lg bg-gray-50/50 p-2">
-                            {rejected.map((item, i) => (
+                        <ul className="space-y-2 overflow-y-auto pr-1 border border-amber-100 rounded-lg bg-amber-50/30 p-2 max-h-48">
+                            {partialMatched.map((order) => (
                                 <li
-                                    key={`${item.rowIndex}-${item.orderNumber}-${i}`}
-                                    className="rounded-lg border border-red-100 bg-white p-2.5 text-xs"
+                                    key={order.id}
+                                    className="rounded-lg border border-amber-200/80 bg-white p-2.5 text-xs"
                                 >
-                                    <div className="flex justify-between items-start gap-2">
-                                        <span className="font-medium text-gray-900">
-                                            Zeile {item.rowIndex} · Auftrag #{item.orderNumber}
-                                        </span>
-                                        {item.type && (
-                                            <span className="shrink-0 text-gray-500">{item.type}</span>
-                                        )}
+                                    <div className="font-medium text-gray-900">
+                                        #{order.orderNumber} · {order.customer?.vorname}{' '}
+                                        {order.customer?.nachname}
                                     </div>
-                                    <p className="mt-1 text-red-700 font-medium">{item.reason}</p>
-                                    <p className="mt-0.5 text-gray-600">{item.message}</p>
-                                    {item.excelData && (
-                                        <p className="mt-1 text-gray-500">
-                                            Excel: Betrag {item.excelData.betrag ?? '–'}
+                                    {order.prescription?.insurance_provider && (
+                                        <p className="text-gray-600 mt-0.5">
+                                            {order.prescription.insurance_provider}
+                                        </p>
+                                    )}
+                                    {order.problemFields?.length ? (
+                                        <div className="mt-2 flex flex-wrap gap-1">
+                                            {order.problemFields.map((f) => (
+                                                <span
+                                                    key={f}
+                                                    className="inline-flex rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-900"
+                                                >
+                                                    {formatProblemField(f)}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : null}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
+                {matched.length > 0 && (
+                    <div className="min-h-0 flex flex-col">
+                        <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                            <CheckCircle2 className="size-3.5 text-green-600" />
+                            Vollständig übereinstimmend ({matched.length})
+                        </h4>
+                        <ul className="space-y-2 overflow-y-auto pr-1 border border-green-100 rounded-lg bg-green-50/30 p-2 max-h-48">
+                            {matched.map((order) => (
+                                <li
+                                    key={order.id}
+                                    className="rounded-lg border border-green-100 bg-white p-2.5 text-xs text-gray-700"
+                                >
+                                    <div className="font-medium text-gray-900">
+                                        #{order.orderNumber} · {order.customer?.vorname}{' '}
+                                        {order.customer?.nachname}
+                                    </div>
+                                    {order.prescription?.insurance_provider && (
+                                        <p className="text-gray-600 mt-0.5">
+                                            {order.prescription.insurance_provider}
+                                            {order.prescription.medical_diagnosis
+                                                ? ` · ${order.prescription.medical_diagnosis}`
+                                                : ''}
                                         </p>
                                     )}
                                 </li>
@@ -90,24 +134,10 @@ export default function FileUploadResultModal({
                     </div>
                 )}
 
-                {/* Approved list (compact) */}
-                {approved.length > 0 && (
-                    <div className="min-h-0 flex flex-col">
-                        <h4 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-1.5 mb-2">
-                            <CheckCircle2 className="size-3.5 text-green-600" />
-                            Genehmigt ({approved.length})
-                        </h4>
-                        <ul className="space-y-1 overflow-y-auto pr-1 border border-gray-200 rounded-lg bg-gray-50/50 p-2 max-h-32">
-                            {approved.map((order) => (
-                                <li
-                                    key={order.id}
-                                    className="text-xs text-gray-700 py-1"
-                                >
-                                    #{order.orderNumber} · {order.customer?.vorname} {order.customer?.nachname}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+                {matched.length === 0 && partialMatched.length === 0 && (
+                    <p className="text-sm text-gray-500 py-2">
+                        Keine Aufträge in dieser Antwort — bitte Dokument oder Daten prüfen.
+                    </p>
                 )}
 
                 <div className="shrink-0 flex justify-end pt-2">
