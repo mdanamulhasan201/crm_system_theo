@@ -40,7 +40,7 @@ export interface KvaData {
     doctorName?: string | null;
     doctorLocation?: string | null;
   } | null;
-  shippingAddressesForKv?: string | null;
+  shippingAddressesForKv?: Array<{ address: string }> | string | null;
   insurancesInfo?: KvaItem[] | null;
 }
 
@@ -142,9 +142,18 @@ export default function KvaSheet({
 
         {/* Logo row: address on the left, logo in the center */}
         <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 18 }}>
-          {/* Left: shipping address */}
+          {/* Left: shipping address — show first entry only */}
           <div style={{ fontSize: 11, color: '#374151', lineHeight: 1.5 }}>
-            {data.shippingAddressesForKv ? <div>{data.shippingAddressesForKv}</div> : null}
+            {(() => {
+              const raw = data.shippingAddressesForKv;
+              if (!raw) return null;
+              const address = Array.isArray(raw)
+                ? (raw[0]?.address ?? '')
+                : typeof raw === 'string'
+                ? raw
+                : '';
+              return address ? <div>{address}</div> : null;
+            })()}
           </div>
 
           {/* Center: logo */}

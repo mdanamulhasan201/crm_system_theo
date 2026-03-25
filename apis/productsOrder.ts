@@ -496,10 +496,21 @@ export const getWerkstattzettelSheetPdfData = async (orderId: string) => {
 }
 
 
-// }customer-orders/track/kva-data/{{order id}}
-export const getKvaData = async (orderId: string) => {
+// }customer-orders/track/kva-data/{{order id}}  customer-orders/track/kva-data/2a50f240-dca6-4c54-9546-6cdac2ad9b04?kv_location= {{address string}}
+export const getKvaData = async (orderId: string, address?: string) => {
     try {
-        const response = await axiosClient.get(`/customer-orders/track/kva-data/${orderId}`);
+        const response = await axiosClient.get(`/customer-orders/track/kva-data/${orderId}?kv_location=${address}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+
+// v2/order_settings/manage?fields=shipping_addresses_for_kv
+export const getOrderSettingsShippingAddressesForKv = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/order_settings/manage?fields=shipping_addresses_for_kv`);
         return response.data;
     } catch (error) {
         throw error;

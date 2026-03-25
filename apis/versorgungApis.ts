@@ -121,12 +121,3 @@ export const getOrderSettings = async () => {
 
 
 
-// v2/order_settings/manage?fields=shipping_addresses_for_kv
-export const getOrderSettingsShippingAddressesForKv = async () => {
-    try {
-        const response = await axiosClient.get(`/v2/order_settings/manage?fields=shipping_addresses_for_kv`);
-        return response.data;
-    } catch (error) {
-        throw error;
-    }
-}
