@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { useOrders, OrderData } from "@/contexts/OrdersContext";
 import ConfirmModal from '../ConfirmModal/ConfirmModal';
 import StatusFilterBar from "./StatusFilterBar";
-import SearchBarIWithFilterInsole from "./SearchBarIWithFilterInsole";
+// import SearchBarIWithFilterInsole from "./SearchBarIWithFilterInsole";
 import BulkActionsBar from "./BulkActionsBar";
 import OrderTableHeader from "./OrderTableHeader";
 import OrderTableRow from "./OrderTableRow";

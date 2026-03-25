@@ -1,18 +1,60 @@
-import React from 'react'
-import { Wallet, TrendingUp, AlertTriangle, FileText } from 'lucide-react'
-import { cn } from '@/lib/utils'
+'use client'
 
-const CARDS = [
-    { label: 'OFFENE FORDERUNGEN', value: '20.218,00 €', icon: Wallet },
-    { label: 'ERWARTETE EINGÄNGE (30 TAGE)', value: '13.018,00 €', icon: TrendingUp, trend: '+12%' },
-    { label: 'ÜBERFÄLLIGE BETRÄGE', value: '7.200,00 €', icon: AlertTriangle, variant: 'negative' as const },
-    { label: 'ZAHLUNGSEINGÄNGE (MONAT)', value: '18.102,00 €', icon: FileText, trend: '+8%' },
-]
+import React, { useEffect, useState } from 'react'
+import { Wallet, TrendingUp, AlertTriangle, FileText, Loader2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { getCalculationExtraData } from '@/apis/krankenkasseApis'
+
+interface ExtraData {
+    openReceivablesAmount: number
+    expectedIn30DaysAmount: number
+    overdueAmount: number
+    revenueThisMonth: number
+}
+
+const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(value)
 
 export default function FinanzubersichtCard() {
+    const [data, setData] = useState<ExtraData | null>(null)
+    const [loading, setLoading] = useState(true)
+
+    useEffect(() => {
+        getCalculationExtraData()
+            .then((res) => {
+                if (res?.success && res?.data) setData(res.data)
+            })
+            .catch(() => {})
+            .finally(() => setLoading(false))
+    }, [])
+
+    const cards = [
+        {
+            label: 'OFFENE FORDERUNGEN',
+            value: data ? formatCurrency(data.openReceivablesAmount) : '—',
+            icon: Wallet,
+        },
+        {
+            label: 'ERWARTETE EINGÄNGE (30 TAGE)',
+            value: data ? formatCurrency(data.expectedIn30DaysAmount) : '—',
+            icon: TrendingUp,
+        },
+        {
+            label: 'ÜBERFÄLLIGE BETRÄGE',
+            value: data ? formatCurrency(data.overdueAmount) : '—',
+            icon: AlertTriangle,
+            variant: 'negative' as const,
+        },
+        {
+            label: 'ZAHLUNGSEINGÄNGE (MONAT)',
+            value: data ? formatCurrency(data.revenueThisMonth) : '—',
+            icon: FileText,
+        },
+    ]
+
     return (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {CARDS.map((card, index) => {
+            {cards.map((card, index) => {
                 const Icon = card.icon
                 return (
                     <div
@@ -32,19 +74,17 @@ export default function FinanzubersichtCard() {
                         <span className="mb-2 text-xs font-medium uppercase tracking-wide text-gray-500">
                             {card.label}
                         </span>
-                        <span
-                            className={cn(
-                                'text-xl font-bold sm:text-2xl',
-                                card.variant === 'negative' ? 'text-red-600' : 'text-gray-900'
-                            )}
-                        >
-                            {card.value}
-                        </span>
-                        {card.trend && (
-                            <div className="mt-2 flex items-center gap-1 text-sm font-medium text-green-600">
-                                <TrendingUp className="size-4" />
-                                {card.trend}
-                            </div>
+                        {loading ? (
+                            <Loader2 className="mt-1 size-5 animate-spin text-gray-400" />
+                        ) : (
+                            <span
+                                className={cn(
+                                    'text-xl font-bold sm:text-2xl',
+                                    card.variant === 'negative' ? 'text-red-600' : 'text-gray-900'
+                                )}
+                            >
+                                {card.value}
+                            </span>
                         )}
                     </div>
                 )

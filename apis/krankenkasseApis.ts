@@ -214,3 +214,15 @@ export const approvedKrankenkasseData = async (approvedIds: { id: string, type: 
     });
     return response.data;
 }
+
+
+// get card daya v2/insurance/get-calculation-extra
+
+export const getCalculationExtraData = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/insurance/get-calculation-extra`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
