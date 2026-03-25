@@ -227,10 +227,6 @@ export const useWerkstattzettelA3Download = () => {
             leftLines.push(d.diagnosisInfo?.productName || '—');
             if (d.diagnosisInfo?.versorgung) leftLines.push(`Versorgung: ${d.diagnosisInfo.versorgung}`);
             if (d.quantity) leftLines.push(`Menge: ${d.quantity}`);
-            if (d.diagnosisInfo?.material) {
-                leftLines.push('Material:');
-                leftLines.push(d.diagnosisInfo.material);
-            }
             if (d.footSize) leftLines.push(`Fußgröße: ${d.footSize}`);
             if (d.foorSize != null) leftLines.push(`Schuhgröße: ${d.foorSize}`);
 
@@ -238,6 +234,10 @@ export const useWerkstattzettelA3Download = () => {
             if (d.uberzug) {
                 rightLines.push('Überzug:');
                 for (const ln of String(d.uberzug).split(/\r?\n/)) rightLines.push(ln);
+            }
+            if (d.diagnosisInfo?.material) {
+                rightLines.push('Material:');
+                rightLines.push(d.diagnosisInfo.material);
             }
 
             writeLines(leftColX, startY, leftColWidth, leftLines);
