@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Info, Clock, CalendarX, Calendar } from "lucide-react";
+import { Check, Clock, CalendarX, Calendar } from "lucide-react";
 import { createBookingRule, getAllBookingRules } from "@/apis/employeeaApis";
 import toast from "react-hot-toast";
 
@@ -128,31 +128,30 @@ export default function BookingRules() {
           </div>
         </div>
 
-        {/* Slot Length — read-only info card */}
-        <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
+        {/* Slot Length — editable card */}
+        <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.08)]">
           <div className="flex flex-row items-start gap-4">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-200/80 text-gray-600">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
               <Calendar className="h-5 w-5" />
             </div>
-            <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex-1 min-w-0 space-y-2">
               <Label className="text-sm font-semibold text-gray-900">
                 Slot-Länge
               </Label>
-              <p className="text-sm text-gray-500 flex items-center gap-1.5">
-                <span className="font-medium text-gray-700">
-                  {defaultSlotMinutes} Minuten
-                </span>
-                <span
-                  className="text-gray-400"
-                  title="Alle Terminslots sind auf 30 Minuten festgelegt. Die Dauer kann bei der Erstellung von Terminen angepasst werden."
-                >
-                  <Info className="h-4 w-4 shrink-0" />
-                </span>
+              <p className="text-sm text-gray-500">
+                Standard-Dauer eines Terminslots in Minuten.
               </p>
-              <p className="text-xs text-gray-500">
-                Alle Terminslots sind auf 30 Minuten festgelegt. Die Dauer kann
-                bei der Erstellung von Terminen angepasst werden.
-              </p>
+              <div className="flex items-center gap-2 pt-1">
+                <Input
+                  type="number"
+                  min={0}
+                  value={defaultSlotMinutes}
+                  onChange={(e) => setDefaultSlotMinutes(e.target.value)}
+                  disabled={loading}
+                  className="h-9 w-24 rounded-md border-gray-200 bg-white"
+                />
+                <span className="text-sm text-gray-600">Minuten</span>
+              </div>
             </div>
           </div>
         </div>
