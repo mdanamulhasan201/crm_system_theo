@@ -124,12 +124,7 @@ export default function HistoryModal({ isOpen, onClose, orderId, orderNumber }: 
                         <DialogTitle className="text-lg font-medium text-gray-900">
                             Historie & Analyse{orderNumber ? ` - ${orderNumber}` : ''}
                         </DialogTitle>
-                        <button
-                            onClick={onClose}
-                            className="p-1 hover:bg-gray-100 rounded transition-colors cursor-pointer"
-                        >
-                            <X className="h-5 w-5 text-gray-600" />
-                        </button>
+                        
                     </div>
                 </DialogHeader>
 

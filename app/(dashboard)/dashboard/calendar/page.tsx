@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, type Resolver } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { format, addDays } from 'date-fns'
@@ -164,8 +164,7 @@ export default function Calendar() {
   const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
   const appointmentForm = useForm<AppointmentFormData>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(appointmentSchema) as any,
+    resolver: zodResolver(appointmentSchema) as Resolver<AppointmentFormData>,
     defaultValues: {
       isClientEvent: true,
       kunde: '',
@@ -183,8 +182,7 @@ export default function Calendar() {
   })
 
   const updateAppointmentForm = useForm<AppointmentFormData>({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    resolver: zodResolver(appointmentSchema) as any,
+    resolver: zodResolver(appointmentSchema) as Resolver<AppointmentFormData>,
     defaultValues: {
       isClientEvent: true,
       kunde: '',
