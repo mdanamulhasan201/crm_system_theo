@@ -150,7 +150,9 @@ export default function MillingBlocks({ type = 'milling_block', setProductCount,
             sizeQuantities: Object.fromEntries(
                 Object.entries(normalizedGroessenMengen).map(([size, data]: [string, any]) => [
                     size,
-                    typeof data === 'object' ? data.quantity : data
+                    typeof data === 'object' && data !== null
+                        ? (typeof data.quantity === 'number' ? data.quantity : 0)
+                        : (typeof data === 'number' ? data : 0)
                 ])
             ),
             Status: apiProduct.Status,

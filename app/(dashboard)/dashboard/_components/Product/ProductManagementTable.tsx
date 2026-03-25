@@ -71,10 +71,32 @@ interface Product {
 }
 
 // Helper function to get quantity from sizeQuantities (handles both old and new format)
+// Guards against corrupted API data where quantity itself may be an object
 const getQuantity = (sizeData: number | SizeData | undefined): number => {
-    if (sizeData === undefined) return 0;
+    if (sizeData === undefined || sizeData === null) return 0;
     if (typeof sizeData === 'number') return sizeData;
-    return sizeData.quantity || 0;
+    const qty = (sizeData as any).quantity;
+    return typeof qty === 'number' ? qty : 0;
+}
+
+// Sanitize raw groessenMengen from API so quantity/length are always numbers
+const sanitizeGroessenMengen = (raw: any): { [key: string]: number | SizeData } => {
+    if (!raw || typeof raw !== 'object') return {};
+    const result: { [key: string]: number | SizeData } = {};
+    Object.entries(raw).forEach(([size, data]: [string, any]) => {
+        if (typeof data === 'number') {
+            result[size] = data;
+        } else if (typeof data === 'object' && data !== null) {
+            result[size] = {
+                ...data,
+                quantity: typeof data.quantity === 'number' ? data.quantity : 0,
+                length: typeof data.length === 'number' ? data.length : 0,
+            };
+        } else {
+            result[size] = { quantity: 0, length: 0 } as SizeData;
+        }
+    });
+    return result;
 }
 
 // Helper function to truncate text to 3 characters with ".."
@@ -136,7 +158,7 @@ export default function ProductManagementTable({
         Hersteller: data.hersteller,
         Lagerort: data.lagerort,
         minStockLevel: data.mindestbestand,
-        sizeQuantities: data.groessenMengen || {},
+        sizeQuantities: sanitizeGroessenMengen(data.groessenMengen),
         Status: data.Status,
         image: data.image,
         create_status: data.create_status,
@@ -479,7 +501,7 @@ export default function ProductManagementTable({
                                 Hersteller: apiProduct.hersteller,
                                 Lagerort: apiProduct.lagerort,
                                 minStockLevel: apiProduct.mindestbestand,
-                                sizeQuantities: apiProduct.groessenMengen,
+                                sizeQuantities: sanitizeGroessenMengen(apiProduct.groessenMengen),
                                 Status: apiProduct.Status,
                                 image: apiProduct.image ?? previousProduct?.image,
                                 features: normalizedFeatures.length > 0
