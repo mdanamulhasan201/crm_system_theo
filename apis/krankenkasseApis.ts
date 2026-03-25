@@ -186,20 +186,10 @@ export interface ValidateChangelogResponse {
     partialMatchCount: number;
 }
 
-// file upload v2/insurance/validate-insurance-changelog (multipart/form-data)
-// export const validateInsuranceChangelog = async (file: File): Promise<ValidateChangelogResponse> => {
-//     const formData = new FormData();
-//     formData.append('file', file);
-//     const response = await axiosClient.post<ValidateChangelogResponse>(
-//         '/v2/insurance/validate-insurance-changelog',
-//         formData
-//     );
-//     return response.data;
-// }
 // body: excl upload v2/insurance/validate-insurance-changelog?response=simple (multipart/form-data)
-export const validateInsuranceChangelog = async (file: File): Promise<ValidateChangelogResponse> => {
+export const validateInsuranceChangelog = async (excl: File): Promise<ValidateChangelogResponse> => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('excl', excl);
     const response = await axiosClient.post<ValidateChangelogResponse>(
         '/v2/insurance/validate-insurance-changelog?response=simple',
         formData,
@@ -209,5 +199,18 @@ export const validateInsuranceChangelog = async (file: File): Promise<ValidateCh
             },
         }
     );
+    return response.data;
+}
+
+// approved /v2/insurance/approved-data
+// body: JSON.stringify({
+//     approvedIds: [{ id: orderId, type: "insole" }],
+//     rejectedIds: [{ id: otherOrderId, type: "shoe" }],
+//   }),
+export const approvedKrankenkasseData = async (approvedIds: { id: string, type: string }[], rejectedIds: { id: string, type: string }[]) => {
+    const response = await axiosClient.post(`/v2/insurance/approved-data`, {
+        approvedIds,
+        rejectedIds,
+    });
     return response.data;
 }

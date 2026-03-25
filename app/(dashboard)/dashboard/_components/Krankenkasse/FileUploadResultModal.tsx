@@ -7,14 +7,17 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog'
-import { CheckCircle2, FileText, AlertTriangle, ChevronDown, ChevronUp, User, Stethoscope, ShoppingBag } from 'lucide-react'
+import { CheckCircle2, FileText, AlertTriangle, ChevronDown, ChevronUp, User, Stethoscope, ShoppingBag, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import toast from 'react-hot-toast'
+import { approvedKrankenkasseData } from '@/apis/krankenkasseApis'
 import type { ValidateChangelogResponse, InsuranceChangelogMatchOrder, InsuranceChangelogPartialOrder } from '@/apis/krankenkasseApis'
 
 interface FileUploadResultModalProps {
     open: boolean
     onClose: () => void
     data: ValidateChangelogResponse | null
+    onApproved?: () => void
 }
 
 function isProblem(problemFields: string[], key: string): boolean {
@@ -273,10 +276,32 @@ export default function FileUploadResultModal({
     open,
     onClose,
     data,
+    onApproved,
 }: FileUploadResultModalProps) {
+    const [approving, setApproving] = useState(false)
+
     if (!data) return null
 
     const { matched, partialMatched } = data
+
+    const handleApprove = async () => {
+        const approvedIds = matched.map((o) => ({ id: o.id, type: o.insuranceType }))
+        const rejectedIds = partialMatched.map((o) => ({ id: o.id, type: o.insuranceType }))
+        setApproving(true)
+        try {
+            await approvedKrankenkasseData(approvedIds, rejectedIds)
+            toast.success('Erfolgreich gespeichert!')
+            onClose()
+            onApproved?.()
+        } catch (err: unknown) {
+            const msg = err && typeof err === 'object' && 'message' in err
+                ? String((err as { message: unknown }).message)
+                : 'Fehler beim Speichern.'
+            toast.error(msg)
+        } finally {
+            setApproving(false)
+        }
+    }
 
     return (
         <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -346,14 +371,40 @@ export default function FileUploadResultModal({
                     )}
                 </div>
 
-                <div className="shrink-0 flex justify-end pt-2 border-t border-gray-100">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        className="rounded-lg bg-[#61A175] px-5 py-2 text-sm font-medium text-white hover:bg-[#61A175]/90 transition-colors"
-                    >
-                        Schließen
-                    </button>
+                <div className="shrink-0 flex items-center justify-between gap-3 pt-3 border-t border-gray-100">
+                    <p className="text-xs text-gray-500 leading-snug">
+                        <span className="font-medium text-green-700">{matched.length} vollständig</span>
+                        {' · '}
+                        <span className="font-medium text-red-600">{partialMatched.length} teilweise</span>
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            disabled={approving}
+                            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50"
+                        >
+                            Schließen
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleApprove}
+                            disabled={approving || (matched.length === 0 && partialMatched.length === 0)}
+                            className="inline-flex items-center gap-2 rounded-lg bg-[#61A175] px-5 py-2 text-sm font-semibold text-white hover:bg-[#61A175]/90 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                            {approving ? (
+                                <>
+                                    <Loader2 className="size-4 animate-spin" />
+                                    Wird gespeichert …
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle2 className="size-4" />
+                                    Speichern
+                                </>
+                            )}
+                        </button>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
