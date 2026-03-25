@@ -232,6 +232,7 @@ export const useWerkstattzettelA3Download = () => {
                 leftLines.push(d.diagnosisInfo.material);
             }
             if (d.footSize) leftLines.push(`Fußgröße: ${d.footSize}`);
+            if (d.foorSize != null) leftLines.push(`Schuhgröße: ${d.foorSize}`);
 
             const rightLines: string[] = [];
             if (d.uberzug) {
