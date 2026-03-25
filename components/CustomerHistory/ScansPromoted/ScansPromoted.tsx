@@ -59,7 +59,7 @@ export default function ScansPromoted({ customerData }: ScansPromotedProps) {
 
     return (
         <div className="py-8 px-4 md:px-10">
-            <h1 className="text-2xl font-bold capitalize">DURCHGEFÜHRTE SCANS</h1>
+            {/* <h1 className="text-2xl font-bold capitalize">DURCHGEFÜHRTE SCANS</h1> */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                 {screenerFiles.map((scan) => {
                     const location = getLocation(customerData.wohnort);

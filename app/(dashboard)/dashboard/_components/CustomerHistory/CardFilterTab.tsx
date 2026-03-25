@@ -8,8 +8,9 @@ export type TabId = 'scans' | 'shoes' | 'versorgungen' | 'reviews';
 
 const TABS: { id: TabId; label: string; icon: React.ComponentType<React.SVGAttributes<SVGElement> & { size?: number }> }[] = [
   { id: 'scans', label: 'Durchgeführte Scans', icon: ScanLine },
-  { id: 'shoes', label: 'Schuhkäufe', icon: ShoppingBag },
   { id: 'versorgungen', label: 'Versorgungen', icon: Wrench },
+  { id: 'shoes', label: 'Schuhkäufe', icon: ShoppingBag },
+
   { id: 'reviews', label: 'Bewertungen', icon: Star },
 ];
 
