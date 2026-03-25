@@ -100,10 +100,10 @@ export function useWerkstattzettelForm(
       formData?.paymentStatus ||
       initialized.bezahlt ||
       (formData?.billingType === 'Krankenkassa'
-        ? 'Krankenkasse_Genehmigt'
+        ? 'Krankenkasse_Ungenehmigt'
         : formData?.billingType === 'Privat'
-          ? 'Privat_Bezahlt'
-          : '')
+          ? 'Privat_offen'
+          : 'Privat_offen')
     setBezahlt(preferredBezahlt)
     setFootAnalysisPrice(initialized.footAnalysisPrice)
     setInsoleSupplyPrice(initialized.insoleSupplyPrice)

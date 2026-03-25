@@ -98,14 +98,14 @@ export default function PaymentStatusSection({
         setPaymentType(newType)
 
         if (newType === 'Privat') {
-            setStatus('Bezahlt')
-            onChange('Privat_Bezahlt')
+            setStatus('Offen')
+            onChange('Privat_offen')
             return
         }
 
         if (newType === 'Krankenkasse') {
-            setStatus('Genehmigt')
-            onChange('Krankenkasse_Genehmigt')
+            setStatus('Ungenehmigt')
+            onChange('Krankenkasse_Ungenehmigt')
             return
         }
 
@@ -142,6 +142,24 @@ export default function PaymentStatusSection({
         if (disabledOptions.includes(type)) return
 
         if (allowDualSelection) {
+            const currentTypeStatus = type === 'Privat' ? privatStatus : krankenkasseStatus
+            // Toggle off if already selected
+            if (currentTypeStatus === newStatus) {
+                if (type === 'Privat') setPrivatStatus('')
+                if (type === 'Krankenkasse') setKrankenkasseStatus('')
+                const remainingPrivat = type === 'Privat' ? '' : privatStatus
+                const remainingKrankenkasse = type === 'Krankenkasse' ? '' : krankenkasseStatus
+                const privatPart = remainingPrivat ? `Privat_${remainingPrivat === 'Offen' ? 'offen' : remainingPrivat}` : null
+                const krankenkassePart = remainingKrankenkasse ? `Krankenkasse_${remainingKrankenkasse}` : null
+                const parts = [privatPart, krankenkassePart].filter(Boolean) as string[]
+                if (parts.length === 0) {
+                    setPaymentType('')
+                    setStatus('')
+                }
+                onChange(parts.join('|'))
+                return
+            }
+
             const nextPrivatStatus = type === 'Privat' ? newStatus : privatStatus
             const nextKrankenkasseStatus = type === 'Krankenkasse' ? newStatus : krankenkasseStatus
 
@@ -156,6 +174,15 @@ export default function PaymentStatusSection({
             const krankenkassePart = nextKrankenkasseStatus ? `Krankenkasse_${nextKrankenkasseStatus}` : null
             const parts: string[] = type === 'Privat' ? [krankenkassePart, privatPart].filter(Boolean) as string[] : [privatPart, krankenkassePart].filter(Boolean) as string[]
             onChange(parts.join('|'))
+            return
+        }
+
+        // Single selection: toggle off if already selected
+        const currentSelected = paymentType === type ? status : ''
+        if (currentSelected === newStatus) {
+            setPaymentType('')
+            setStatus('')
+            onChange('')
             return
         }
 

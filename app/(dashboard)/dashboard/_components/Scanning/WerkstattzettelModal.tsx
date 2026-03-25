@@ -102,24 +102,26 @@ export default function WerkstattzettelModal({
     return []
   }, [formData?.billingType])
 
-  // Set default bezahlt value based on billingType from formData
-  // When nothing selected in Kostenträger, default to Privat_offen
+  // Set default bezahlt ONCE per modal open — use a ref so deselection (empty string) is not overridden
+  const hasInitializedBezahlt = useRef(false)
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) {
+      hasInitializedBezahlt.current = false
+      return
+    }
+    if (hasInitializedBezahlt.current) return
+    hasInitializedBezahlt.current = true
 
     const bezahltValue =
       formData?.bezahlt ||
       formData?.paymentStatus ||
       (formData?.billingType === 'Krankenkassa'
-        ? 'Krankenkasse_Genehmigt'
-        : formData?.billingType === 'Privat'
-          ? 'Privat_Bezahlt'
-          : 'Privat_offen')
+        ? 'Krankenkasse_Ungenehmigt'
+        : 'Privat_offen')
 
-    if (!bezahltState) {
-      setBezahlt(bezahltValue)
-    }
-  }, [isOpen, formData?.bezahlt, formData?.paymentStatus, formData?.billingType, bezahltState, setBezahlt])
+    setBezahlt(bezahltValue)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen])
 
   // ✅ Local validation removed - backend handles all validation
  
