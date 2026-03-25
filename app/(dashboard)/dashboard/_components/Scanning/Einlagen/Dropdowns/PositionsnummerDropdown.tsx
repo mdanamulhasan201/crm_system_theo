@@ -284,9 +284,7 @@ export default function PositionsnummerDropdown({
                             )}
                         </div>
                     </div>
-                    {error && (
-                        <p className="text-red-500 text-sm mt-1">{error}</p>
-                    )}
+                    {/* Error message rendered by parent for stable layout */}
                 </div>
             </div>
 

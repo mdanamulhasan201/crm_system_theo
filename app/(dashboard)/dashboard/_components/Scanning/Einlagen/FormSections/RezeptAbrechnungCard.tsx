@@ -199,7 +199,7 @@ export default function RezeptAbrechnungCard({
             </div>
 
             {/* Single Row with Positionsnummer, Diagnose, Durchgeführt von, and KVA */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                 {/* Positionsnummer - Only show when Krankenkassa is selected */}
                 {billingType === 'Krankenkassa' && (
                     <div className={`lg:col-span-3 ${positionsnummerDisabled ? 'pointer-events-none opacity-50' : ''}`}>
@@ -220,6 +220,10 @@ export default function RezeptAbrechnungCard({
                             onItemSideChange={onItemSideChange}
                             vatCountry={vatCountry}
                         />
+                        {/* Reserve fixed height for error so layout doesn't shift */}
+                        <p className="text-red-500 text-xs mt-1 min-h-[16px]">
+                            {positionsnummerError ? positionsnummerError : ''}
+                        </p>
                     </div>
                 )}
 
@@ -229,6 +233,7 @@ export default function RezeptAbrechnungCard({
                         Diagnose
                     </label>
                     <div className="relative">
+
                         {/* Fixed-height trigger: shows first tag + overflow count */}
                         <div
                             role="button"
@@ -324,6 +329,8 @@ export default function RezeptAbrechnungCard({
                             </div>
                         )}
                     </div>
+                    {/* Reserve fixed height so layout matches error-bearing columns */}
+                    <p className="min-h-[16px] mt-1" />
                 </div>
 
                 {/* Durchgeführt von */}
@@ -344,14 +351,15 @@ export default function RezeptAbrechnungCard({
                         placeholder="Mitarbeiter..."
                         error={selectedEmployeeError}
                     />
-                    {selectedEmployeeError && (
-                        <p className="text-red-500 text-xs mt-1">{selectedEmployeeError}</p>
-                    )}
+                    <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${selectedEmployeeError ? 'visible' : 'invisible'}`}>
+                        {selectedEmployeeError}
+                    </p>
                 </div>
 
                 {/* KVA & Lieferschein - Two separate button groups */}
                 <div className={billingType === 'Krankenkassa' ? 'lg:col-span-3' : 'lg:col-span-4'}>
                     <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+
                         {/* KVA button group */}
                         <div className="flex-1">
                             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
@@ -410,6 +418,8 @@ export default function RezeptAbrechnungCard({
                             </div>
                         </div>
                     </div>
+                    {/* Reserve fixed height to match other columns */}
+                    <p className="min-h-[16px] mt-1" />
                 </div>
             </div>
 
