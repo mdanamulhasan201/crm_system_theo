@@ -226,3 +226,14 @@ export const getCalculationExtraData = async () => {
         throw error;
     }
 }
+
+
+// /v2/insurance/get-calculation
+export const getCalculationData = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/insurance/get-calculation`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
