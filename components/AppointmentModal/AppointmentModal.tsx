@@ -1,7 +1,7 @@
 import React from "react";
 import { X, CalendarIcon, Loader2, CalendarDays, Search } from "lucide-react";
 import { Button } from "../ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel } from "../ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../ui/form";
 import { Input } from "../ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 import { Textarea } from "../ui/textarea";
@@ -343,12 +343,6 @@ export default function AppointmentModal({
     if (!isOpen) return null;
 
     const handleFormSubmit = async (data: AppointmentFormData) => {
-        // Validate that at least one employee is selected
-        if (!data.employees || data.employees.length === 0) {
-            toast.error('Bitte wählen Sie mindestens einen Mitarbeiter aus');
-            return;
-        }
-        
         const formattedData: SubmittedAppointmentData = {
             ...data,
             // send Date directly without ISO conversion
@@ -445,12 +439,14 @@ export default function AppointmentModal({
                         />
 
                         {/* Row 1: Kunde + Grund */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
                             {isClientEvent && (
                                 <FormField
                                     control={form.control}
                                     name="kunde"
-                                    render={({ field }) => (
+                                    render={({ field }) => {
+                                        const kundeError = form.formState.errors.kunde;
+                                        return (
                                         <FormItem className="min-w-0">
                                             <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Kunde <span className="text-red-500">*</span></FormLabel>
                                             <div className="relative mt-1" ref={kundeContainerRef}>
@@ -465,7 +461,7 @@ export default function AppointmentModal({
                                                         form.setValue('kunde', e.target.value);
                                                         form.setValue('customerId', undefined);
                                                     }}
-                                                    className="w-full pl-9 rounded-xl border-gray-200 focus:border-[#61A07B] focus:ring-[#61A07B]/20"
+                                                    className={cn("w-full pl-9 rounded-xl focus:border-[#61A07B] focus:ring-[#61A07B]/20", kundeError ? "border-red-500" : "border-gray-200")}
                                                 />
                                                 {suggestionLoading && (
                                                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
@@ -491,19 +487,23 @@ export default function AppointmentModal({
                                                     </div>
                                                 )}
                                             </div>
+                                            <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${kundeError ? 'visible' : 'invisible'}`}>
+                                                {kundeError?.message}
+                                            </p>
                                         </FormItem>
-                                    )}
+                                        );
+                                    }}
                                 />
                             )}
                             <FormField
                                 control={form.control}
                                 name="termin"
-                                render={({ field }) => (
+                                render={({ field, fieldState }) => (
                                     <FormItem className={cn("min-w-0", !isClientEvent && "sm:col-span-2")}>
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Grund <span className="text-red-500">*</span></FormLabel>
                                         <Select onValueChange={field.onChange} defaultValue={field.value}>
                                             <FormControl>
-                                                <SelectTrigger className="cursor-pointer w-full rounded-xl border-gray-200 mt-1">
+                                                <SelectTrigger className={cn("cursor-pointer w-full rounded-xl mt-1", fieldState.error ? "border-red-500" : "border-gray-200")}>
                                                     <SelectValue placeholder="Termingrund wählen" />
                                                 </SelectTrigger>
                                             </FormControl>
@@ -515,17 +515,20 @@ export default function AppointmentModal({
                                                 ))}
                                             </SelectContent>
                                         </Select>
+                                        <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${form.formState.errors.termin ? 'visible' : 'invisible'}`}>
+                                            {form.formState.errors.termin?.message}
+                                        </p>
                                     </FormItem>
                                 )}
                             />
                         </div>
 
                         {/* Row 2: Mitarbeiter + Datum */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
                             <FormField
                                 control={form.control}
                                 name="employees"
-                                render={({ field }) => (
+                                render={({ field, fieldState }) => (
                                     <FormItem className="min-w-0">
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Mitarbeiter <span className="text-red-500">*</span></FormLabel>
                                         <div
@@ -534,7 +537,9 @@ export default function AppointmentModal({
                                                 "relative mt-1 border rounded-xl bg-white transition-all duration-150 cursor-text",
                                                 showEmployeeSuggestions && filteredEmployeeSuggestions.length > 0
                                                     ? "border-[#61A07B] ring-2 ring-[#61A07B]/15"
-                                                    : "border-gray-200 hover:border-gray-300"
+                                                    : fieldState.error
+                                                        ? "border-red-500"
+                                                        : "border-gray-200 hover:border-gray-300"
                                             )}
                                         >
                                             <div className="flex flex-wrap gap-1.5 p-2 min-h-[42px] items-center">
@@ -598,6 +603,9 @@ export default function AppointmentModal({
                                                 </div>
                                             )}
                                         </div>
+                                        <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${form.formState.errors.employees ? 'visible' : 'invisible'}`}>
+                                            {form.formState.errors.employees?.message as string}
+                                        </p>
                                     </FormItem>
                                 )}
                             />
@@ -605,7 +613,9 @@ export default function AppointmentModal({
                             <FormField
                                 control={form.control}
                                 name="selectedEventDate"
-                                render={({ field }) => (
+                                render={({ field }) => {
+                                    const datumError = form.formState.errors.selectedEventDate;
+                                    return (
                                     <FormItem className="flex flex-col">
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Datum <span className="text-red-400">*</span>
@@ -620,7 +630,7 @@ export default function AppointmentModal({
                                                             className={cn(
                                                                 "w-full pl-3 text-left font-normal rounded-xl mt-1 transition-colors",
                                                                 datumEnabled
-                                                                    ? "cursor-pointer border-gray-200 bg-white text-gray-700"
+                                                                    ? cn("cursor-pointer bg-white text-gray-700", datumError ? "border-red-500" : "border-gray-200")
                                                                     : "cursor-not-allowed border-gray-200 bg-gray-50 text-gray-400"
                                                             )}
                                                         >
@@ -648,17 +658,23 @@ export default function AppointmentModal({
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
+                                        <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${datumError ? 'visible' : 'invisible'}`}>
+                                            {datumError?.message as string}
+                                        </p>
                                     </FormItem>
-                                )}
+                                    );
+                                }}
                             />
                         </div>
 
                         {/* Row 3: Dauer + Uhrzeit */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
                             <FormField
                                 control={form.control}
                                 name="duration"
-                                render={({ field }) => (
+                                render={({ field }) => {
+                                    const dauerError = form.formState.errors.duration;
+                                    return (
                                     <FormItem>
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Dauer <span className="text-red-400">*</span>
@@ -671,10 +687,10 @@ export default function AppointmentModal({
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className={cn(
-                                                        "w-full rounded-xl border-gray-200 mt-1 transition-colors",
+                                                        "w-full rounded-xl mt-1 transition-colors",
                                                         dauerEnabled
-                                                            ? "cursor-pointer bg-white text-gray-700"
-                                                            : "cursor-not-allowed bg-gray-50 text-gray-400"
+                                                            ? cn("cursor-pointer bg-white text-gray-700", dauerError ? "border-red-500" : "border-gray-200")
+                                                            : "cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200"
                                                     )}>
                                                         <SelectValue placeholder="Dauer wählen" />
                                                     </SelectTrigger>
@@ -688,14 +704,20 @@ export default function AppointmentModal({
                                                 </SelectContent>
                                             </Select>
                                         </div>
+                                        <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${dauerError ? 'visible' : 'invisible'}`}>
+                                            {dauerError?.message}
+                                        </p>
                                     </FormItem>
-                                )}
+                                    );
+                                }}
                             />
 
                             <FormField
                                 control={form.control}
                                 name="uhrzeit"
-                                render={({ field }) => (
+                                render={({ field }) => {
+                                    const uhrzeitError = form.formState.errors.uhrzeit;
+                                    return (
                                     <FormItem>
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide flex items-center gap-2">
                                             Uhrzeit <span className="text-red-400">*</span>
@@ -714,10 +736,10 @@ export default function AppointmentModal({
                                                 >
                                                     <FormControl>
                                                         <SelectTrigger className={cn(
-                                                            "w-full rounded-xl border-gray-200 mt-1 transition-colors",
+                                                            "w-full rounded-xl mt-1 transition-colors",
                                                             uhrzeitEnabled && !slotsLoading
-                                                                ? "cursor-pointer bg-white text-gray-700"
-                                                                : "cursor-not-allowed bg-gray-50 text-gray-400"
+                                                                ? cn("cursor-pointer bg-white text-gray-700", uhrzeitError ? "border-red-500" : "border-gray-200")
+                                                                : "cursor-not-allowed bg-gray-50 text-gray-400 border-gray-200"
                                                         )}>
                                                             <SelectValue placeholder={
                                                                 slotsLoading ? "Lade verfügbare Zeiten..." : "Uhrzeit wählen"
@@ -756,8 +778,12 @@ export default function AppointmentModal({
                                                 </Select>
                                             )}
                                         </div>
+                                        <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${uhrzeitError ? 'visible' : 'invisible'}`}>
+                                            {uhrzeitError?.message}
+                                        </p>
                                     </FormItem>
-                                )}
+                                    );
+                                }}
                             />
                         </div>
 

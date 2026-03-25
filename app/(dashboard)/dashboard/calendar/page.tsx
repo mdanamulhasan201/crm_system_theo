@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { format, addDays } from 'date-fns'
 import CalendarMainNav from '../_components/MainCalendar/CalendarMainNav'
 import CalendarNav, { type CalendarViewMode } from '../_components/MainCalendar/CalendarNav'
@@ -33,7 +35,39 @@ interface AppointmentFormData {
   employeeId?: string
   employees?: Employee[]
   reminder?: number | null
+  appomnentRoom?: string
 }
+
+const appointmentSchema = z.object({
+  isClientEvent: z.boolean(),
+  kunde: z.string().optional(),
+  uhrzeit: z.string().min(1, 'Uhrzeit ist erforderlich'),
+  selectedEventDate: z
+    .any()
+    .refine((val) => val instanceof Date, { message: 'Datum ist erforderlich' }),
+  termin: z.string().min(1, 'Termingrund ist erforderlich'),
+  mitarbeiter: z.string().optional(),
+  bemerk: z.string().optional(),
+  duration: z.number({ required_error: 'Dauer ist erforderlich' }).positive('Dauer ist erforderlich'),
+  customerId: z.string().optional(),
+  employeeId: z.string().optional(),
+  employees: z
+    .array(z.object({ employeeId: z.string(), assignedTo: z.string() }))
+    .optional()
+    .refine((arr) => arr && arr.length >= 1, {
+      message: 'Mindestens ein Mitarbeiter ist erforderlich',
+    }),
+  reminder: z.number().nullable().optional(),
+  appomnentRoom: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.isClientEvent && (!data.kunde || data.kunde.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Kunde ist erforderlich',
+      path: ['kunde'],
+    })
+  }
+})
 
 export interface CalendarAppointment {
   id: string
@@ -130,6 +164,8 @@ export default function Calendar() {
   const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
   const appointmentForm = useForm<AppointmentFormData>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(appointmentSchema) as any,
     defaultValues: {
       isClientEvent: true,
       kunde: '',
@@ -147,6 +183,8 @@ export default function Calendar() {
   })
 
   const updateAppointmentForm = useForm<AppointmentFormData>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(appointmentSchema) as any,
     defaultValues: {
       isClientEvent: true,
       kunde: '',
@@ -394,7 +432,7 @@ export default function Calendar() {
               setIsAddModalOpen(false)
               appointmentForm.reset()
             }}
-            form={appointmentForm}
+            form={appointmentForm as any}
             onSubmit={handleAppointmentSubmit}
             title="Neuer Termin"
             buttonText="Termin bestätigen"
@@ -410,7 +448,7 @@ export default function Calendar() {
               setSelectedAppointmentId(null)
               updateAppointmentForm.reset()
             }}
-            form={updateAppointmentForm}
+            form={updateAppointmentForm as any}
             onSubmit={handleUpdateSubmit}
             title="Termin bearbeiten"
             buttonText="Aktualisieren"
