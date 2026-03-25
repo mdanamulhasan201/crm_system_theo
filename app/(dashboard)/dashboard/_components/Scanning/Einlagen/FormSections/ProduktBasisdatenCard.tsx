@@ -129,25 +129,29 @@ export default function ProduktBasisdatenCard({
                             </div>
                         </button>
                         {showEinlageDropdown && (
-                            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
-                                {einlageOptions.map((option) => (
-                                    <div
-                                        key={option.id || option.name}
-                                        onClick={() => {
-                                            onEinlageSelect(option.name, option.id);
-                                        }}
-                                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
-                                    >
-                                        <div className="flex items-center justify-between gap-2">
-                                            <span className="text-gray-900">{option.name}</span>
-                                            {option.price !== undefined && (
-                                                <span className="text-green-600 font-semibold whitespace-nowrap">
-                                                    € {option.price.toFixed(2).replace('.', ',')}
-                                                </span>
-                                            )}
+                            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                                {einlageOptions.length === 0 ? (
+                                    <div className="px-3 py-2 text-sm text-gray-400">Keine Optionen verfügbar</div>
+                                ) : (
+                                    einlageOptions.map((option) => (
+                                        <div
+                                            key={option.id || option.name}
+                                            onClick={() => {
+                                                onEinlageSelect(option.name, option.id);
+                                            }}
+                                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                        >
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-gray-900">{option.name}</span>
+                                                {option.price !== undefined && (
+                                                    <span className="text-green-600 font-semibold whitespace-nowrap">
+                                                        € {option.price.toFixed(2).replace('.', ',')}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         )}
                     </div>

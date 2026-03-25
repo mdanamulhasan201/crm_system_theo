@@ -268,6 +268,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     // Custom form hook
     const formHook = useEinlagenForm({ selectedEinlage });
     const prefillHandledRef = useRef<string | null>(null);
+    const prefillEinlagentypHandledRef = useRef<string | null>(null);
     const {
         ausführliche_diagnose,
         versorgung_laut_arzt,
@@ -577,8 +578,26 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     useEffect(() => {
         if (!prefillOrderData) {
             prefillHandledRef.current = null;
+            prefillEinlagentypHandledRef.current = null;
         }
     }, [prefillOrderData]);
+
+    // Prefill einlagentyp separately — runs whenever einlageOptions loads/changes so it works
+    // even if options weren't available when the main prefill ran.
+    useEffect(() => {
+        if (!prefillOrderData?.einlagentyp) return;
+        if (prefillEinlagentypHandledRef.current === prefillOrderData.id) return;
+        if (!einlageOptions || einlageOptions.length === 0) return;
+
+        prefillEinlagentypHandledRef.current = prefillOrderData.id;
+        const derivedEinlage = mapEinlageType(prefillOrderData.einlagentyp, einlageOptions);
+        if (derivedEinlage) {
+            handleEinlageButtonClick(derivedEinlage);
+            setEinlagentyp(derivedEinlage);
+            const matchedOpt = einlageOptions.find((o: { name: string; id?: string }) => o.name === derivedEinlage) as { id?: string } | undefined;
+            if (matchedOpt?.id) setSelectedEinlageId(matchedOpt.id);
+        }
+    }, [prefillOrderData, einlageOptions, handleEinlageButtonClick, setEinlagentyp]);
 
     // Prefill form fields when an order is provided
     useEffect(() => {
@@ -592,16 +611,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         if (typeof prefillOrderData.versorgung_laut_arzt !== 'undefined') {
             setVersorgung_laut_arzt(prefillOrderData.versorgung_laut_arzt ?? '');
         }
-        // Only map einlagentyp if einlageOptions are available
-        if (einlageOptions && einlageOptions.length > 0) {
-            const derivedEinlage = mapEinlageType(prefillOrderData.einlagentyp, einlageOptions);
-            if (derivedEinlage) {
-                handleEinlageButtonClick(derivedEinlage);
-                setEinlagentyp(derivedEinlage);
-                const matchedOpt = einlageOptions.find((o: { name: string; id?: string }) => o.name === derivedEinlage) as { id?: string } | undefined;
-                if (matchedOpt?.id) setSelectedEinlageId(matchedOpt.id);
-            }
-        }
+        // einlagentyp is handled by a separate effect above (prefillEinlagentypHandledRef)
+        // to handle the race condition where einlageOptions may not be loaded yet
         if (typeof prefillOrderData.überzug !== 'undefined') {
             setÜberzug(prefillOrderData.überzug ?? '');
         }
@@ -708,7 +719,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setSelectedVersorgungId,
         setInsoleStandards,
         setBillingType,
-        einlageOptions,
         diagnosisOptionsFull,
     ]);
 
