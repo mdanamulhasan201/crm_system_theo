@@ -121,12 +121,6 @@ function TimeInputWithIcon({
   );
 }
 
-const newModalRow = (): ModalRow => ({
-  day: DAYS[0],
-  title: DEFAULT_TITLE,
-  start: "09:00",
-  end: "17:00",
-});
 
 export default function StaffAvailability() {
   const [staffMembers, setStaffMembers] = useState<StaffMember[]>([]);
@@ -136,7 +130,13 @@ export default function StaffAvailability() {
   const [scheduleEntries, setScheduleEntries] = useState<Record<string, ScheduleEntry[]>>({});
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [editingSlotId, setEditingSlotId] = useState<string | null>(null);
-  const [modalRows, setModalRows] = useState<ModalRow[]>([newModalRow()]);
+  // Add mode: multi-day + single time
+  const [modalSelectedDays, setModalSelectedDays] = useState<string[]>([DAYS[1]]);
+  const [modalTitle, setModalTitle] = useState<string>(DEFAULT_TITLE);
+  const [modalStart, setModalStart] = useState<string>("09:00");
+  const [modalEnd, setModalEnd] = useState<string>("17:00");
+  // Edit mode: single row
+  const [editSlotRow, setEditSlotRow] = useState<ModalRow | null>(null);
   const [dayEnabled, setDayEnabled] = useState<DayEnabledMap>({});
   const [dayMeta, setDayMeta] = useState<DayMetaMap>({});
   const [togglingDay, setTogglingDay] = useState<string | null>(null);
@@ -307,27 +307,33 @@ export default function StaffAvailability() {
 
   const openAddModal = () => {
     setEditingSlotId(null);
-    setModalRows([newModalRow()]);
+    setModalSelectedDays([DAYS[1]]);
+    setModalTitle(DEFAULT_TITLE);
+    setModalStart("09:00");
+    setModalEnd("17:00");
+    setEditSlotRow(null);
     setAddModalOpen(true);
   };
 
   const openAddModalForDay = (day: string) => {
     setEditingSlotId(null);
-    setModalRows([{ day, title: DEFAULT_TITLE, start: "09:00", end: "17:00" }]);
+    setModalSelectedDays([day]);
+    setModalTitle(DEFAULT_TITLE);
+    setModalStart("09:00");
+    setModalEnd("17:00");
+    setEditSlotRow(null);
     setAddModalOpen(true);
   };
 
   const openEditModal = (entry: ScheduleEntry) => {
     if (!entry.slotId) return;
     setEditingSlotId(entry.slotId);
-    setModalRows([
-      {
-        day: entry.day,
-        title: entry.title || DEFAULT_TITLE,
-        start: entry.start,
-        end: entry.end,
-      },
-    ]);
+    setEditSlotRow({
+      day: entry.day,
+      title: entry.title || DEFAULT_TITLE,
+      start: entry.start,
+      end: entry.end,
+    });
     setAddModalOpen(true);
   };
 
@@ -342,18 +348,10 @@ export default function StaffAvailability() {
     }
   };
 
-  const addModalRow = () => {
-    setModalRows((prev) => [...prev, newModalRow()]);
-  };
-
-  const updateModalRow = (index: number, field: keyof ModalRow, value: string) => {
-    setModalRows((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
+  const toggleModalDay = (day: string) => {
+    setModalSelectedDays((prev) =>
+      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
     );
-  };
-
-  const removeModalRow = (index: number) => {
-    setModalRows((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev));
   };
 
   const refetchAvailability = async () => {
@@ -389,69 +387,55 @@ export default function StaffAvailability() {
   };
 
   const saveModalEntries = async () => {
-    const valid = modalRows.filter((r) => r.start && r.end);
-    if (valid.length === 0 || !selectedStaffId) return;
+    if (!selectedStaffId) return;
 
     setSaving(true);
     try {
       if (editingSlotId) {
-        // Update existing time slot: PATCH /v2/employee-availability/update-availability-time/{availabilityId}
-        const row = valid[0];
+        // Update existing time slot
+        if (!editSlotRow) return;
         await updateEmployeeAvailabilityTime(editingSlotId, {
-          title: row.title?.trim() || DEFAULT_TITLE,
-          startTime: row.start,
-          endTime: row.end,
+          title: editSlotRow.title?.trim() || DEFAULT_TITLE,
+          startTime: editSlotRow.start,
+          endTime: editSlotRow.end,
         });
         toast.success("Arbeitszeit aktualisiert.");
         setAddModalOpen(false);
         setEditingSlotId(null);
         await refetchAvailability();
       } else {
-        // New time slots:
-        // - if day already exists (has eavailabilityId): POST /v2/employee-availability/add-availability-time
-        // - if day does NOT exist yet: POST /v2/employee-availability/create/{employeeId}
-        const byDay: Record<string, { title: string; start: string; end: string }[]> = {};
-        valid.forEach((r) => {
-          const day = r.day;
-          if (!byDay[day]) byDay[day] = [];
-          byDay[day].push({
-            title: r.title?.trim() || DEFAULT_TITLE,
-            start: r.start,
-            end: r.end,
-          });
-        });
+        // New time slots for all selected days
+        if (modalSelectedDays.length === 0) return;
+        const payloadTime = {
+          title: modalTitle?.trim() || DEFAULT_TITLE,
+          startTime: modalStart,
+          endTime: modalEnd,
+        };
         await Promise.all(
-          Object.entries(byDay).map(([dayName, slots]) => {
+          modalSelectedDays.map((dayName) => {
             const dayOfWeek = DAY_NAME_TO_WEEK[dayName];
             if (dayOfWeek == null) return Promise.resolve();
-
             const existingDay =
               selectedStaffId && dayMeta[selectedStaffId]
                 ? dayMeta[selectedStaffId][dayName]
                 : undefined;
-
-            const payloadTimes = slots.map((s) => ({
-              title: s.title,
-              startTime: s.start,
-              endTime: s.end,
-            }));
-
-            // Existing day from API but no times yet (availability_time: [])
             if (existingDay?.eavailabilityId) {
               return addEmployeeAvailabilityTime({
                 availability_id: existingDay.eavailabilityId,
-                availability_time: payloadTimes,
+                availability_time: [payloadTime],
               });
             }
-
-            // Day not yet created for this employee
             return createEmployeeAvailability(selectedStaffId, {
               dayOfWeek,
-              availability_time: payloadTimes,
+              availability_time: [payloadTime],
             });
           })
         );
-        toast.success("Arbeitszeiten gespeichert.");
+        toast.success(
+          modalSelectedDays.length > 1
+            ? `Arbeitszeiten für ${modalSelectedDays.length} Tage gespeichert.`
+            : "Arbeitszeit gespeichert."
+        );
         setAddModalOpen(false);
         await refetchAvailability();
       }
@@ -536,17 +520,36 @@ export default function StaffAvailability() {
           if (!open) setEditingSlotId(null);
           setAddModalOpen(open);
         }}
-        rows={modalRows}
         days={Array.from(DAYS)}
         titleOptions={Array.from(TITLE_OPTIONS)}
         saving={saving}
-        onAddRow={addModalRow}
-        onRemoveRow={removeModalRow}
-        onChangeRow={updateModalRow}
         onSave={saveModalEntries}
         TimeInputWithIcon={TimeInputWithIcon}
         editMode={!!editingSlotId}
-        saveButtonLabel={editingSlotId ? "Speichern" : "Hinzufügen"}
+        // Add mode
+        selectedDays={modalSelectedDays}
+        onDayToggle={toggleModalDay}
+        // Edit mode
+        editDay={editSlotRow?.day}
+        // Shared fields – route to the correct state
+        title={editingSlotId ? (editSlotRow?.title ?? DEFAULT_TITLE) : modalTitle}
+        start={editingSlotId ? (editSlotRow?.start ?? "09:00") : modalStart}
+        end={editingSlotId ? (editSlotRow?.end ?? "17:00") : modalEnd}
+        onTitleChange={(v) =>
+          editingSlotId
+            ? setEditSlotRow((prev) => (prev ? { ...prev, title: v } : prev))
+            : setModalTitle(v)
+        }
+        onStartChange={(v) =>
+          editingSlotId
+            ? setEditSlotRow((prev) => (prev ? { ...prev, start: v } : prev))
+            : setModalStart(v)
+        }
+        onEndChange={(v) =>
+          editingSlotId
+            ? setEditSlotRow((prev) => (prev ? { ...prev, end: v } : prev))
+            : setModalEnd(v)
+        }
       />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
