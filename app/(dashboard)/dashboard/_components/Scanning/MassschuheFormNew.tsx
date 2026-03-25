@@ -205,6 +205,11 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     const [customerFittingData, setCustomerFittingData] = useState<CustomerFittingData>({ fittingDate: undefined });
     const [submitAttempted, setSubmitAttempted] = useState(false);
 
+    // Validation error states
+    const [employeeError, setEmployeeError] = useState<string | undefined>(undefined);
+    const [ärztlicheDiagnoseError, setÄrztlicheDiagnoseError] = useState<string | undefined>(undefined);
+    const [positionsnummerValidationError, setPositionsnummerValidationError] = useState<string | undefined>(undefined);
+
     // Fetch locations on mount
     useEffect(() => {
         const fetchLocations = async () => {
@@ -299,6 +304,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
         setSelectedEmployee(employee.employeeName);
         setSelectedEmployeeId(employee.id);
         setIsEmployeeDropdownOpen(false);
+        setEmployeeError(undefined);
     };
 
     const handleEmployeeDropdownChange = (open: boolean) => {
@@ -345,24 +351,46 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
     // Handle form submission - Show order creation modal
     const handleSubmit = () => {
         setSubmitAttempted(true);
-        // Validation
+
         if (!customer?.id) {
             toast.error('Kunde-ID fehlt');
             return;
         }
 
+        // Collect ALL errors at once
+        let hasErrors = false;
+
         if (!selectedEmployeeId) {
-            toast.error('Bitte wählen Sie einen Mitarbeiter aus');
-            return;
+            setEmployeeError('Durchgeführt von ist erforderlich');
+            hasErrors = true;
+        } else {
+            setEmployeeError(undefined);
         }
 
         if (!ärztlicheDiagnose.trim()) {
-            toast.error('Bitte geben Sie eine ärztliche Diagnose ein');
-            return;
+            setÄrztlicheDiagnoseError('Ärztliche Diagnose ist erforderlich');
+            hasErrors = true;
+        } else {
+            setÄrztlicheDiagnoseError(undefined);
+        }
+
+        const posNrMissing =
+            billingType === 'Krankenkassa' &&
+            (!selectedPositionsnummer || selectedPositionsnummer.length === 0);
+        if (posNrMissing) {
+            setPositionsnummerValidationError('Bitte wählen Sie mindestens eine Positionsnummer für Krankenkasse.');
+            hasErrors = true;
+        } else {
+            setPositionsnummerValidationError(undefined);
         }
 
         if (bettungErforderlich === true && !isBettungValid) {
             toast.error('Bitte eine Ausführungsart wählen und alle Pflichtfelder zur Bettung ausfüllen.');
+            hasErrors = true;
+        }
+
+        if (hasErrors) {
+            toast.error('Bitte füllen Sie alle erforderlichen Felder aus');
             return;
         }
 
@@ -395,6 +423,9 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
             setInternalPrepData({ notes: '' });
             setCustomerFittingData({ fittingDate: undefined });
             setSubmitAttempted(false);
+            setEmployeeError(undefined);
+            setÄrztlicheDiagnoseError(undefined);
+            setPositionsnummerValidationError(undefined);
             if (onDataRefresh) onDataRefresh();
         }
     };
@@ -432,16 +463,17 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                 {/* Rezept Card */}
                 <RezeptCard
                     ärztlicheDiagnose={ärztlicheDiagnose}
-                    onÄrztlicheDiagnoseChange={setÄrztlicheDiagnose}
+                    onÄrztlicheDiagnoseChange={(v) => { setÄrztlicheDiagnose(v); if (v.trim()) setÄrztlicheDiagnoseError(undefined); }}
+                    ärztlicheDiagnoseError={ärztlicheDiagnoseError}
                     ausführlicheDiagnose={ausführlicheDiagnose}
                     onAusführlicheDiagnoseChange={setAusführlicheDiagnose}
                     billingType={billingType}
                     selectedPositionsnummer={selectedPositionsnummer}
                     positionsnummerOptions={filteredPositionsnummerData}
-                    positionsnummerError={positionsnummerError}
+                    positionsnummerError={positionsnummerValidationError || positionsnummerError}
                     showPositionsnummerDropdown={showPositionsnummerDropdown}
                     onPositionsnummerToggle={() => setShowPositionsnummerDropdown(!showPositionsnummerDropdown)}
-                    onPositionsnummerSelect={setSelectedPositionsnummer}
+                    onPositionsnummerSelect={(values) => { setSelectedPositionsnummer(values); if (values.length > 0) setPositionsnummerValidationError(undefined); }}
                     onPositionsnummerClear={() => { setSelectedPositionsnummer([]); setItemSides({}); }}
                     itemSides={itemSides}
                     onItemSideChange={(posNum: string, side: 'L' | 'R' | 'BDS') => setItemSides(prev => ({ ...prev, [posNum]: side }))}
@@ -462,6 +494,7 @@ export default function MassschuheFormNew({ customer, onCustomerUpdate, onDataRe
                     onEmployeeDropdownChange={handleEmployeeDropdownChange}
                     onEmployeeSelect={handleEmployeeSelect}
                     onEmployeeClear={() => { setSelectedEmployee(''); setSelectedEmployeeId(''); }}
+                    selectedEmployeeError={employeeError}
                     halbprobeGeplant={halbprobeGeplant}
                     onHalbprobeGeplantChange={setHalbprobeGeplant}
                     kostenvoranschlag={kostenvoranschlag}

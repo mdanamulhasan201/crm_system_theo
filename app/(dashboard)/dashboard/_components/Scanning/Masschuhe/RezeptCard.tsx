@@ -9,6 +9,7 @@ import LocationDropdown from '../Werkstattzettel/Dropdowns/LocationDropdown';
 interface RezeptCardProps {
     ärztlicheDiagnose: string;
     onÄrztlicheDiagnoseChange: (value: string) => void;
+    ärztlicheDiagnoseError?: string;
     ausführlicheDiagnose: string;
     onAusführlicheDiagnoseChange: (value: string) => void;
 
@@ -42,6 +43,7 @@ interface RezeptCardProps {
     onEmployeeDropdownChange: (open: boolean) => void;
     onEmployeeSelect: (employee: { employeeName: string; id: string }) => void;
     onEmployeeClear?: () => void;
+    selectedEmployeeError?: string;
 
     halbprobeGeplant: boolean | null;
     onHalbprobeGeplantChange: (value: boolean) => void;
@@ -70,6 +72,7 @@ interface RezeptCardProps {
 export default function RezeptCard({
     ärztlicheDiagnose,
     onÄrztlicheDiagnoseChange,
+    ärztlicheDiagnoseError,
     ausführlicheDiagnose,
     onAusführlicheDiagnoseChange,
     billingType,
@@ -99,6 +102,7 @@ export default function RezeptCard({
     onEmployeeDropdownChange,
     onEmployeeSelect,
     onEmployeeClear,
+    selectedEmployeeError,
     halbprobeGeplant,
     onHalbprobeGeplantChange,
     kostenvoranschlag,
@@ -149,7 +153,7 @@ export default function RezeptCard({
                             value={ärztlicheDiagnose}
                             onChange={(e) => onÄrztlicheDiagnoseChange(e.target.value)}
                             placeholder="Diagnose eingeben..."
-                            className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                            className={`w-full px-3 py-2 pr-9 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent ${ärztlicheDiagnoseError ? 'border-red-500' : 'border-gray-300'}`}
                         />
                         {ärztlicheDiagnose && (
                             <span
@@ -164,6 +168,9 @@ export default function RezeptCard({
                             </span>
                         )}
                     </div>
+                    <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${ärztlicheDiagnoseError ? 'visible' : 'invisible'}`}>
+                        {ärztlicheDiagnoseError}
+                    </p>
                 </div>
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -197,7 +204,7 @@ export default function RezeptCard({
             {billingType === 'Krankenkassa' && (
                 <>
                     {/* First Row: Positionsnummer and Standort (same line) */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end mb-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start mb-4">
                         {/* Positionsnummer */}
                         <div className="lg:col-span-6">
                             <PositionsnummerDropdown
@@ -214,6 +221,9 @@ export default function RezeptCard({
                                 onItemSideChange={onItemSideChange}
                                 vatCountry={vatCountry}
                             />
+                            <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${positionsnummerError ? 'visible' : 'invisible'}`}>
+                                {positionsnummerError}
+                            </p>
                         </div>
 
                         {/* Standort */}
@@ -230,11 +240,12 @@ export default function RezeptCard({
                                 onSelect={onLocationSelect}
                                 onClear={onLocationClear}
                             />
+                            <p className="min-h-[16px] mt-1" />
                         </div>
                     </div>
 
                     {/* Second Row: Durchgeführt von and Halbprobe & KVA */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                         {/* Durchgeführt von */}
                         <div className="lg:col-span-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -251,7 +262,11 @@ export default function RezeptCard({
                                 onEmployeeSelect={onEmployeeSelect}
                                 onClear={onEmployeeClear}
                                 placeholder="Mitarbeiter..."
+                                error={selectedEmployeeError}
                             />
+                            <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${selectedEmployeeError ? 'visible' : 'invisible'}`}>
+                                {selectedEmployeeError}
+                            </p>
                         </div>
 
                         {/* Halbprobe & KVA */}
@@ -317,6 +332,7 @@ export default function RezeptCard({
                                     </div>
                                 </div>
                             </div>
+                            <p className="min-h-[16px] mt-1" />
                         </div>
                     </div>
 
@@ -558,7 +574,7 @@ export default function RezeptCard({
                     </div>
 
                     {/* Standort row */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end mb-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start mb-4">
                         {/* Partner Location */}
                         <div className="lg:col-span-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -573,11 +589,12 @@ export default function RezeptCard({
                                 onSelect={onLocationSelect}
                                 onClear={onLocationClear}
                             />
+                            <p className="min-h-[16px] mt-1" />
                         </div>
                     </div>
 
                     {/* Third Row: Durchgeführt von, KVA, and Halbprobe */}
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
                         {/* Durchgeführt von */}
                         <div className="lg:col-span-6">
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -594,7 +611,11 @@ export default function RezeptCard({
                                 onEmployeeSelect={onEmployeeSelect}
                                 onClear={onEmployeeClear}
                                 placeholder="Mitarbeiter..."
+                                error={selectedEmployeeError}
                             />
+                            <p className={`text-red-500 text-xs mt-1 min-h-[16px] ${selectedEmployeeError ? 'visible' : 'invisible'}`}>
+                                {selectedEmployeeError}
+                            </p>
                         </div>
 
                         {/* KVA */}
@@ -626,6 +647,7 @@ export default function RezeptCard({
                                     Nein
                                 </button>
                             </div>
+                            <p className="min-h-[16px] mt-1" />
                         </div>
 
                         {/* Halbprobe */}
@@ -657,6 +679,7 @@ export default function RezeptCard({
                                     Nein
                                 </button>
                             </div>
+                            <p className="min-h-[16px] mt-1" />
                         </div>
                     </div>
                 </>
