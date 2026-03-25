@@ -3,9 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { getKvaData, getPriseDetails } from '@/apis/productsOrder';
+import { getKvaData, getPriseDetails, getWerkstattzettelSheetPdfData } from '@/apis/productsOrder';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import KvaSheet, { KvaData } from '../KvaPdf/KvaSheet';
+import WerkstattzettelSheet, { WerkstattzettelSheetData } from '../WerkstattzettelPdf/WerkstattzettelSheet';
 import { FileText, Loader2, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -118,6 +119,10 @@ export default function AbrechnungsuebersichtModal({
     const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
     const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
     const KVA_PDF_ELEMENT_ID = 'kva-sheet-pdf-billing-modal';
+    const [isGeneratingWerkPdf, setIsGeneratingWerkPdf] = useState(false);
+    const [werkPdfData, setWerkPdfData] = useState<WerkstattzettelSheetData | null>(null);
+    const [werkPdfLogoProxy, setWerkPdfLogoProxy] = useState<string | null>(null);
+    const WERK_PDF_ELEMENT_ID = 'werk-sheet-pdf-billing-modal';
 
     const getProxyImageUrl = (url: string) => {
         if (!url) return url;
@@ -166,6 +171,37 @@ export default function AbrechnungsuebersichtModal({
             setTimeout(() => {
                 setKvaPdfData(null);
                 setKvaPdfLogoProxy(null);
+            }, 1500);
+        }
+    };
+
+    const handleWerkstattzettelDownload = async () => {
+        if (!orderId || isGeneratingWerkPdf) return;
+        setIsGeneratingWerkPdf(true);
+        try {
+            const res = await getWerkstattzettelSheetPdfData(orderId);
+            if (!res?.success || !res?.data) {
+                toast.error(res?.message || 'Werkstattzettel Daten konnten nicht geladen werden');
+                return;
+            }
+            const sheetData: WerkstattzettelSheetData = res.data;
+            setWerkPdfData(sheetData);
+            setWerkPdfLogoProxy(sheetData.logo ? getProxyImageUrl(sheetData.logo) : null);
+
+            await nextFrame();
+            await nextFrame();
+
+            const pdfBlob = await generatePdfFromElement(WERK_PDF_ELEMENT_ID, pdfPresets.document);
+            const safeName = (sheetData.customerName || 'Kunde').toString().trim().replace(/\s+/g, '_');
+            downloadBlob(pdfBlob, `Werkstattzettel_${safeName}.pdf`);
+        } catch (e) {
+            console.error('Werkstattzettel PDF error:', e);
+            toast.error('Fehler beim Erstellen des Werkstattzettel PDFs');
+        } finally {
+            setIsGeneratingWerkPdf(false);
+            setTimeout(() => {
+                setWerkPdfData(null);
+                setWerkPdfLogoProxy(null);
             }, 1500);
         }
     };
@@ -549,9 +585,18 @@ export default function AbrechnungsuebersichtModal({
                                             }
                                             {isGeneratingKvaPdf ? 'Wird erstellt...' : 'KVA'}
                                         </Button>
-                                        <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
-                                            <FileText className="w-4 h-4" />
-                                            Werkstattzettel
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-2 cursor-pointer"
+                                            onClick={handleWerkstattzettelDownload}
+                                            disabled={isGeneratingWerkPdf}
+                                        >
+                                            {isGeneratingWerkPdf
+                                                ? <Loader2 className="w-4 h-4 animate-spin" />
+                                                : <FileText className="w-4 h-4" />
+                                            }
+                                            {isGeneratingWerkPdf ? 'Wird erstellt...' : 'Werkstattzettel'}
                                         </Button>
                                         <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
                                             <ShieldCheck className="w-4 h-4" />
@@ -569,6 +614,13 @@ export default function AbrechnungsuebersichtModal({
             <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
                 <div id={KVA_PDF_ELEMENT_ID}>
                     {kvaPdfData ? <KvaSheet data={kvaPdfData} logoProxyUrl={kvaPdfLogoProxy} /> : null}
+                </div>
+            </div>
+
+            {/* Hidden Werkstattzettel sheet for PDF generation */}
+            <div className="fixed left-[-10000px] top-0 opacity-0 pointer-events-none">
+                <div id={WERK_PDF_ELEMENT_ID}>
+                    {werkPdfData ? <WerkstattzettelSheet data={werkPdfData} logoProxyUrl={werkPdfLogoProxy} /> : null}
                 </div>
             </div>
 
