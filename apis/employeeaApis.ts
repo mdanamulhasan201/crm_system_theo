@@ -257,3 +257,15 @@ export const deleteAppointmentRoom = async (roomId: string) => {
         throw error;
     }
 }
+
+
+
+// get signle v2/employee-availability/availability-single/:employeeId/:dayOfWeek ///2/employee-availability/availability-single/3931f18d-834d-4c58-bdfd-687121a65dec/6
+export const getSingleAvailability = async (employeeId: string, dayOfWeek: string) => {
+    try {
+        const response = await axiosClient.get(`/v2/employee-availability/availability-single/${employeeId}/${dayOfWeek}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}

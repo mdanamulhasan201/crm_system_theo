@@ -7,6 +7,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const DAY_ABBR: Record<string, string> = {
@@ -22,6 +23,13 @@ const DAY_ABBR: Record<string, string> = {
 const WORKDAYS = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag"];
 const WEEKEND = ["Samstag", "Sonntag"];
 
+interface EditSlot {
+  slotId: string;
+  title: string;
+  start: string;
+  end: string;
+}
+
 interface CreateAvailabilityModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,7 +44,7 @@ interface CreateAvailabilityModalProps {
   }>;
   editMode?: boolean;
   saveButtonLabel?: string;
-  // Shared fields (add + edit)
+  // Shared fields (add + single-slot edit)
   title: string;
   start: string;
   end: string;
@@ -46,8 +54,13 @@ interface CreateAvailabilityModalProps {
   // Add mode only
   selectedDays?: string[];
   onDayToggle?: (day: string) => void;
-  // Edit mode only (read-only display)
+  // Single-slot edit (read-only day display)
   editDay?: string;
+  // Multi-slot edit (from getSingleAvailability)
+  editDaySlots?: EditSlot[];
+  editDayFetching?: boolean;
+  editDayNameMulti?: string;
+  onSlotChange?: (slotId: string, field: string, value: string) => void;
 }
 
 export default function CrearteAvailabilityModal({
@@ -69,6 +82,10 @@ export default function CrearteAvailabilityModal({
   selectedDays = [],
   onDayToggle,
   editDay,
+  editDaySlots = [],
+  editDayFetching = false,
+  editDayNameMulti,
+  onSlotChange,
 }: CreateAvailabilityModalProps) {
   const allSelected = days.every((d) => selectedDays.includes(d));
   const workdaysSelected = WORKDAYS.every((d) => selectedDays.includes(d));
@@ -94,6 +111,10 @@ export default function CrearteAvailabilityModal({
   };
 
   const dayCount = selectedDays.length;
+
+  // In multi-slot edit mode
+  const isMultiEdit = editMode && (editDayFetching || editDaySlots.length > 0);
+
   const buttonLabel = saveButtonLabel
     ? saveButtonLabel
     : editMode
@@ -195,55 +216,137 @@ export default function CrearteAvailabilityModal({
             </div>
           )}
 
-          {/* ── EDIT MODE: read-only day badge ── */}
-          {editMode && editDay && (
+          {/* ── EDIT MODE: day badge ── */}
+          {editMode && (editDayNameMulti || editDay) && (
             <div className="flex flex-col gap-1.5">
               <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Tag</span>
               <div className="inline-flex h-9 items-center px-3 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-700 w-fit">
-                {editDay}
+                {editDayNameMulti ?? editDay}
               </div>
             </div>
           )}
 
-          {/* ── SHARED: Titel + Start + Ende ── */}
-          <div className="flex flex-col gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50/50">
-            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Zeitraum</span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Titel */}
-              <div className="grid gap-1.5 min-w-0">
-                <label className="text-xs font-medium text-gray-600">Titel</label>
-                <select
-                  value={title}
-                  onChange={(e) => onTitleChange(e.target.value)}
-                  className="h-9 rounded-md border border-gray-200 bg-white px-2.5 text-sm w-full"
+          {/* ── EDIT MODE: loading spinner ── */}
+          {editMode && editDayFetching && (
+            <div className="flex items-center justify-center py-6 gap-2 text-sm text-gray-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Daten werden geladen…
+            </div>
+          )}
+
+          {/* ── EDIT MODE (MULTI-SLOT): list of all slots ── */}
+          {editMode && !editDayFetching && isMultiEdit && editDaySlots.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Zeiträume ({editDaySlots.length})
+              </span>
+              {editDaySlots.map((slot, idx) => (
+                <div
+                  key={slot.slotId}
+                  className="flex flex-col gap-2 p-4 rounded-lg border border-gray-200 bg-gray-50/50"
                 >
-                  {titleOptions.map((opt) => (
-                    <option key={opt} value={opt}>
-                      {opt}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {/* Start */}
-              <div className="grid gap-1.5 min-w-0">
-                <label className="text-xs font-medium text-gray-600">Start</label>
-                <TimeInputWithIcon
-                  value={start}
-                  onChange={onStartChange}
-                  className="h-9 text-sm w-full"
-                />
-              </div>
-              {/* Ende */}
-              <div className="grid gap-1.5 min-w-0">
-                <label className="text-xs font-medium text-gray-600">Ende</label>
-                <TimeInputWithIcon
-                  value={end}
-                  onChange={onEndChange}
-                  className="h-9 text-sm w-full"
-                />
+                  <span className="text-xs font-medium text-gray-400">Eintrag {idx + 1}</span>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {/* Titel */}
+                    <div className="grid gap-1.5 min-w-0">
+                      <label className="text-xs font-medium text-gray-600">Titel</label>
+                      <select
+                        value={slot.title}
+                        onChange={(e) => onSlotChange?.(slot.slotId, "title", e.target.value)}
+                        className="h-9 rounded-md border border-gray-200 bg-white px-2.5 text-sm w-full"
+                      >
+                        {titleOptions.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {/* Start */}
+                    <div className="grid gap-1.5 min-w-0">
+                      <label className="text-xs font-medium text-gray-600">Start</label>
+                      <TimeInputWithIcon
+                        value={slot.start}
+                        onChange={(v) => onSlotChange?.(slot.slotId, "start", v)}
+                        className="h-9 text-sm w-full"
+                      />
+                    </div>
+                    {/* Ende */}
+                    <div className="grid gap-1.5 min-w-0">
+                      <label className="text-xs font-medium text-gray-600">Ende</label>
+                      <TimeInputWithIcon
+                        value={slot.end}
+                        onChange={(v) => onSlotChange?.(slot.slotId, "end", v)}
+                        className="h-9 text-sm w-full"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ── EDIT MODE (SINGLE-SLOT): one row ── */}
+          {editMode && !editDayFetching && !isMultiEdit && (
+            <div className="flex flex-col gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50/50">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Zeitraum</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid gap-1.5 min-w-0">
+                  <label className="text-xs font-medium text-gray-600">Titel</label>
+                  <select
+                    value={title}
+                    onChange={(e) => onTitleChange(e.target.value)}
+                    className="h-9 rounded-md border border-gray-200 bg-white px-2.5 text-sm w-full"
+                  >
+                    {titleOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid gap-1.5 min-w-0">
+                  <label className="text-xs font-medium text-gray-600">Start</label>
+                  <TimeInputWithIcon value={start} onChange={onStartChange} className="h-9 text-sm w-full" />
+                </div>
+                <div className="grid gap-1.5 min-w-0">
+                  <label className="text-xs font-medium text-gray-600">Ende</label>
+                  <TimeInputWithIcon value={end} onChange={onEndChange} className="h-9 text-sm w-full" />
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* ── ADD MODE: shared time section ── */}
+          {!editMode && (
+            <div className="flex flex-col gap-3 p-4 rounded-lg border border-gray-200 bg-gray-50/50">
+              <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">Zeitraum</span>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid gap-1.5 min-w-0">
+                  <label className="text-xs font-medium text-gray-600">Titel</label>
+                  <select
+                    value={title}
+                    onChange={(e) => onTitleChange(e.target.value)}
+                    className="h-9 rounded-md border border-gray-200 bg-white px-2.5 text-sm w-full"
+                  >
+                    {titleOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid gap-1.5 min-w-0">
+                  <label className="text-xs font-medium text-gray-600">Start</label>
+                  <TimeInputWithIcon value={start} onChange={onStartChange} className="h-9 text-sm w-full" />
+                </div>
+                <div className="grid gap-1.5 min-w-0">
+                  <label className="text-xs font-medium text-gray-600">Ende</label>
+                  <TimeInputWithIcon value={end} onChange={onEndChange} className="h-9 text-sm w-full" />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <DialogFooter>
@@ -258,7 +361,7 @@ export default function CrearteAvailabilityModal({
           <Button
             type="button"
             onClick={onSave}
-            disabled={saving || (!editMode && dayCount === 0)}
+            disabled={saving || editDayFetching || (!editMode && dayCount === 0)}
             className="bg-[#61A07B] hover:bg-[#61A07B]/90"
           >
             {saving ? "Speichern…" : buttonLabel}
