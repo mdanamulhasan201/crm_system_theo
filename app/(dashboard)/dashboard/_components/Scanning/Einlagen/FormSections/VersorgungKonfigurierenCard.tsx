@@ -207,7 +207,7 @@ export default function VersorgungKonfigurierenCard({
                     >
                         ⚙️ Einmalige Versorgung
                     </button>
-                    <button
+                    {/* <button
                         type="button"
                         onClick={() => {
                             if (onSpringerClick) {
@@ -220,7 +220,7 @@ export default function VersorgungKonfigurierenCard({
                             }`}
                     >
                         🛒 Springer
-                    </button>
+                    </button> */}
                
                 </div>
             </div>
