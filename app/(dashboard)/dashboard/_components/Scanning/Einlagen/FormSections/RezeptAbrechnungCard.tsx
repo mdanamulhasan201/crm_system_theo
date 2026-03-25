@@ -44,6 +44,7 @@ interface RezeptAbrechnungCardProps {
     onEmployeeDropdownChange: (open: boolean) => void;
     onEmployeeSelect: (employee: { employeeName: string; id: string }) => void;
     onEmployeeClear?: () => void;
+    selectedEmployeeError?: string;
 
     // KVA & Lieferschein
     kostenvoranschlag: boolean | null;
@@ -86,6 +87,7 @@ export default function RezeptAbrechnungCard({
     onEmployeeDropdownChange,
     onEmployeeSelect,
     onEmployeeClear,
+    selectedEmployeeError,
     kostenvoranschlag,
     onKostenvoranschlagChange,
     lieferschein,
@@ -340,7 +342,11 @@ export default function RezeptAbrechnungCard({
                         onEmployeeSelect={onEmployeeSelect}
                         onClear={onEmployeeClear}
                         placeholder="Mitarbeiter..."
+                        error={selectedEmployeeError}
                     />
+                    {selectedEmployeeError && (
+                        <p className="text-red-500 text-xs mt-1">{selectedEmployeeError}</p>
+                    )}
                 </div>
 
                 {/* KVA & Lieferschein - Two separate button groups */}

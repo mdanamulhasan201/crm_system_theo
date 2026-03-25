@@ -96,7 +96,9 @@ export default function ProduktBasisdatenCard({
                         <button
                             type="button"
                             onClick={onEinlageToggle}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent cursor-pointer flex items-center justify-between gap-2"
+                            className={`w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent cursor-pointer flex items-center justify-between gap-2 ${
+                                einlagentypError ? 'border-red-500' : 'border-gray-300'
+                            }`}
                         >
                             <span className={`truncate flex-1 ${einlagentyp ? 'text-gray-900' : 'text-gray-400'}`}>
                                 {einlagentyp || 'Auswählen...'}
@@ -169,7 +171,9 @@ export default function ProduktBasisdatenCard({
                         <button
                             type="button"
                             onClick={onUberzugToggle}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent cursor-pointer flex items-center justify-between gap-2"
+                            className={`w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent cursor-pointer flex items-center justify-between gap-2 ${
+                                überzugError ? 'border-red-500' : 'border-gray-300'
+                            }`}
                         >
                             <span className={`truncate flex-1 ${überzug ? 'text-gray-900' : 'text-gray-400'}`}>
                                 {überzug || 'Auswählen...'}
@@ -231,7 +235,9 @@ export default function ProduktBasisdatenCard({
                         <button
                             type="button"
                             onClick={onMengeToggle}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent cursor-pointer flex items-center justify-between gap-2"
+                            className={`w-full px-3 py-2 border rounded-md text-left bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent cursor-pointer flex items-center justify-between gap-2 ${
+                                mengeError ? 'border-red-500' : 'border-gray-300'
+                            }`}
                         >
                             <span className={`truncate flex-1 ${menge ? 'text-gray-900' : 'text-gray-400'}`}>
                                 {menge || 'Auswählen...'}

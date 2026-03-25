@@ -111,6 +111,7 @@ const einlagenFormSchema = z.object({
     versorgung_note: z.string().optional(),
     schuhmodell_wählen: z.string().optional(),
     kostenvoranschlag: z.boolean().nullable().optional(),
+    selectedEmployee: z.string().min(1, 'Durchgeführt von ist erforderlich'),
 });
 
 type EinlagenFormData = z.infer<typeof einlagenFormSchema>;
@@ -228,6 +229,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             versorgung_note: '',
             schuhmodell_wählen: '',
             kostenvoranschlag: null,
+            selectedEmployee: '',
         },
     });
 
@@ -550,6 +552,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         if (kostenvoranschlag !== undefined) {
             setValue('kostenvoranschlag', kostenvoranschlag);
         }
+        if (selectedEmployee !== undefined) {
+            setValue('selectedEmployee', selectedEmployee);
+        }
     }, [
         ausführliche_diagnose,
         versorgung_laut_arzt,
@@ -560,6 +565,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         versorgung_note,
         schuhmodell_wählen,
         kostenvoranschlag,
+        selectedEmployee,
         setValue,
     ]);
 
@@ -1238,6 +1244,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 onEmployeeDropdownChange={handleEmployeeDropdownChange}
                 onEmployeeSelect={handleEmployeeSelect}
                 onEmployeeClear={handleEmployeeClear}
+                selectedEmployeeError={errors.selectedEmployee?.message}
                 kostenvoranschlag={kostenvoranschlag}
                 onKostenvoranschlagChange={setKostenvoranschlag}
                 lieferschein={lieferschein}

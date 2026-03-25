@@ -22,6 +22,7 @@ interface EmployeeDropdownProps {
     onClear?: () => void;
     placeholder?: string;
     className?: string;
+    error?: string;
 }
 
 export default function EmployeeDropdown({
@@ -36,6 +37,7 @@ export default function EmployeeDropdown({
     onClear,
     placeholder = "Mitarbeiter...",
     className = "w-full",
+    error,
 }: EmployeeDropdownProps) {
     return (
         <Popover open={isEmployeeDropdownOpen} onOpenChange={onEmployeeDropdownChange}>
@@ -44,7 +46,9 @@ export default function EmployeeDropdown({
                     variant="outline"
                     role="combobox"
                     aria-expanded={isEmployeeDropdownOpen}
-                    className={`${className} cursor-pointer justify-between font-normal h-10 bg-white border-gray-300`}
+                    className={`${className} cursor-pointer justify-between font-normal h-10 bg-white ${
+                        error ? 'border-red-500 focus:ring-red-500' : 'border-gray-300'
+                    }`}
                 >
                     <span className={`truncate flex-1 text-left ${selectedEmployee ? 'text-gray-900' : 'text-gray-400'}`}>
                         {selectedEmployee || placeholder}
@@ -77,7 +81,7 @@ export default function EmployeeDropdown({
                     </div>
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+            <PopoverContent className="w-(--radix-popover-trigger-width) p-0" align="start">
                 <div className="p-2">
                     <Input
                         placeholder="Mitarbeiter suchen..."
