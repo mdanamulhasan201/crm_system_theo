@@ -615,20 +615,21 @@ export default function HistorySidebar({
                                 {(data.changeLog && data.changeLog.length > 0) || (data.scannerInfo && data.scannerInfo.hasScanner) ? (
                                     <Accordion type="single" collapsible defaultValue="aenderungsprotokoll" className="w-full">
                                         <AccordionItem value="aenderungsprotokoll" className="border-none">
-                                            <AccordionTrigger className="text-base font-normal text-gray-900 py-0 hover:no-underline [&[data-state=open]>svg]:rotate-180">
-                                                <div className="flex items-center justify-between w-full pr-4">
+                                            <div className="flex w-full items-center gap-2">
+                                                <AccordionTrigger className="flex-1 text-base font-normal text-gray-900 py-0 hover:no-underline [&[data-state=open]>svg]:rotate-180">
                                                     <span className="font-semibold">Änderungsprotokoll</span>
-                                                    <Button
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="flex cursor-pointer items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50 shrink-0"
-                                                    >
-                                                        <Download className="h-4 w-4" />
-                                                        CSV Export
-                                                    </Button>
-                                                </div>
-                                            </AccordionTrigger>
+                                                </AccordionTrigger>
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="flex shrink-0 cursor-pointer items-center gap-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+                                                    onClick={handleCSVExport}
+                                                >
+                                                    <Download className="h-4 w-4" />
+                                                    CSV Export
+                                                </Button>
+                                            </div>
                                             <AccordionContent className="pt-4 pb-0">
                                                 <div className="relative">
                                             {/* Continuous background line */}

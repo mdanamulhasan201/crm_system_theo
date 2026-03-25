@@ -7,6 +7,7 @@ import { getKvaData, getPriseDetails, getWerkstattzettelSheetPdfData } from '@/a
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import KvaSheet, { KvaData } from '../KvaPdf/KvaSheet';
 import WerkstattzettelSheet, { WerkstattzettelSheetData } from '../WerkstattzettelPdf/WerkstattzettelSheet';
+import HistoryModal from './HistoryModal';
 import { FileText, Loader2, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -123,6 +124,7 @@ export default function AbrechnungsuebersichtModal({
     const [werkPdfData, setWerkPdfData] = useState<WerkstattzettelSheetData | null>(null);
     const [werkPdfLogoProxy, setWerkPdfLogoProxy] = useState<string | null>(null);
     const WERK_PDF_ELEMENT_ID = 'werk-sheet-pdf-billing-modal';
+    const [showHistorieModal, setShowHistorieModal] = useState(false);
 
     const getProxyImageUrl = (url: string) => {
         if (!url) return url;
@@ -598,7 +600,12 @@ export default function AbrechnungsuebersichtModal({
                                             }
                                             {isGeneratingWerkPdf ? 'Wird erstellt...' : 'Werkstattzettel'}
                                         </Button>
-                                        <Button variant="outline" size="sm" className="gap-2 cursor-pointer" disabled>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-2 cursor-pointer"
+                                            onClick={() => setShowHistorieModal(true)}
+                                        >
                                             <ShieldCheck className="w-4 h-4" />
                                             Historie
                                         </Button>
@@ -623,6 +630,14 @@ export default function AbrechnungsuebersichtModal({
                     {werkPdfData ? <WerkstattzettelSheet data={werkPdfData} logoProxyUrl={werkPdfLogoProxy} /> : null}
                 </div>
             </div>
+
+            {/* Historie Modal */}
+            <HistoryModal
+                isOpen={showHistorieModal}
+                onClose={() => setShowHistorieModal(false)}
+                orderId={orderId}
+                orderNumber={orderNumber}
+            />
 
             {/* Full description popup on click */}
             <Dialog open={!!fullDescriptionText} onOpenChange={(open) => !open && setFullDescriptionText(null)}>
