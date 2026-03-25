@@ -16,15 +16,19 @@ async function fetchImageAsDataUrl(url: string): Promise<string> {
     if (url.startsWith('data:')) {
         return url;
     }
-    
-    const response = await fetch(url, { mode: 'cors' });
+
+    // Route through the server-side proxy to avoid CORS issues with S3/external URLs
+    const fetchUrl = url.startsWith('blob:')
+        ? url
+        : `/api/proxy-image?url=${encodeURIComponent(url)}`;
+
+    const response = await fetch(fetchUrl);
     const blob = await response.blob();
     return new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(blob);
     });
-
 }
 
 async function generateCombinedFeetPdf(params: {

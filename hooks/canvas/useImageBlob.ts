@@ -65,29 +65,15 @@ export function useImageBlob({
                         imageBlob = await response.blob()
                     }
                 } else {
-                    // Fetch with CORS mode first
+                    // Route external URLs through the server-side proxy to bypass CORS
+                    const fetchUrl = `/api/proxy-image?url=${encodeURIComponent(imageUrl)}`
                     try {
-                        const response = await fetch(imageUrl, { 
-                            mode: 'cors', 
-                            credentials: 'omit',
-                            cache: 'default'
-                        })
+                        const response = await fetch(fetchUrl)
                         if (response.ok) {
                             imageBlob = await response.blob()
                         }
-                    } catch (corsError) {
-                        // If CORS fails, try no-cors (may work for same-origin)
-                        try {
-                            const response = await fetch(imageUrl, { 
-                                mode: 'no-cors',
-                                credentials: 'omit'
-                            })
-                            if (response.ok || response.type === 'opaque') {
-                                imageBlob = await response.blob()
-                            }
-                        } catch (noCorsError) {
-                            console.warn('Could not fetch image blob:', noCorsError)
-                        }
+                    } catch (proxyError) {
+                        console.warn('Could not fetch image via proxy:', proxyError)
                     }
                 }
 
