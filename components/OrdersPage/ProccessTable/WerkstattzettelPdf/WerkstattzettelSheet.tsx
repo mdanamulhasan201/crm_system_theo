@@ -27,6 +27,7 @@ export interface WerkstattzettelSheetData {
     status?: string | null;
   } | null;
   grösse?: number | string | null;
+  foorSize?: number | string | null;
   werkstattzettel?: boolean | null;
   wirtschaftlicherAufpreis?: number | string | null;
   manage?: number | string | null;
@@ -278,7 +279,7 @@ export default function WerkstattzettelSheet({
             {data.überzug ? <Field label="überzug" value={data.überzug} /> : null}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', columnGap: 20, rowGap: 10 }}>
-              <Field label="Grösse" value={data.grösse != null ? String(data.grösse) : ''} />
+              <Field label="Grösse" value={data.foorSize != null ? String(data.foorSize) : ''} />
               <Field label="Menge" value={price.quantity != null ? String(price.quantity) : ''} />
               <Field
                 label="Fussanalyse (Ja / Nein)"
