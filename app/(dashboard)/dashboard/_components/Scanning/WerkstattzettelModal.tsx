@@ -12,6 +12,7 @@ import PriceSection from './Werkstattzettel/FormSections/PriceSection'
 import { createWerkstattzettelPayload } from './utils/formDataUtils'
 import { getSettingData } from '@/apis/einlagenApis'
 import { getAllLocations } from '@/apis/setting/locationManagementApis'
+import { getOrderSettings } from '@/apis/versorgungApis'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -298,6 +299,31 @@ export default function WerkstattzettelModal({
       }
     }
     fetchLocations()
+  }, [isOpen])
+
+  // Fetch insolePickupDateLine from order settings and set Fertigstellung default
+  useEffect(() => {
+    if (!isOpen) return
+    let cancelled = false
+    getOrderSettings()
+      .then((res: any) => {
+        if (cancelled) return
+        const pickupDays = res?.data?.insolePickupDateLine ?? null
+        const today = new Date()
+        const target = new Date(today)
+        if (pickupDays != null && !isNaN(Number(pickupDays))) {
+          target.setDate(today.getDate() + Number(pickupDays))
+        }
+        form.setFertigstellungBis(target.toISOString().slice(0, 10))
+      })
+      .catch(() => {
+        if (!cancelled) {
+          // Fallback to today
+          form.setFertigstellungBis(new Date().toISOString().slice(0, 10))
+        }
+      })
+    return () => { cancelled = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
   // Get workshopNote settings

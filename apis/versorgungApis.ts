@@ -109,3 +109,12 @@ export const deleteDiagnosis = async (id: string) => {
 
 
 
+// v2/order_settings/manage?fields=insolePickupDateLine
+export const getOrderSettings = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/order_settings/manage?fields=insolePickupDateLine`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
