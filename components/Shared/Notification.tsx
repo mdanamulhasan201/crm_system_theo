@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useCallback, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Checkbox } from "@/components/ui/checkbox"
 import { IoNotificationsOutline } from "react-icons/io5"
 import { HiOutlineTrash, HiChevronRight } from "react-icons/hi2"
 import { useNotifications } from "@/contexts/NotificationContext"
@@ -23,6 +24,9 @@ function NotificationRow({
     onActivate,
     onDelete,
     isDeleting,
+    selectionMode,
+    selected,
+    onToggleSelect,
 }: {
     notification: {
         id: string
@@ -34,6 +38,9 @@ function NotificationRow({
     onActivate: () => void | Promise<void>
     onDelete: () => void | Promise<void>
     isDeleting: boolean
+    selectionMode: boolean
+    selected: boolean
+    onToggleSelect: (id: string) => void
 }) {
     const unreadStyle = !notification.deepRead
 
@@ -45,18 +52,58 @@ function NotificationRow({
                     unreadStyle
                         ? "font-semibold text-slate-900"
                         : "font-normal text-slate-600",
-                    clickable && "group-hover:text-blue-600",
+                    !selectionMode &&
+                        clickable &&
+                        "group-hover/item:text-blue-600 cursor-pointer",
+                    selectionMode && selected && "text-blue-700",
                 ]
                     .filter(Boolean)
                     .join(" ")}
             >
                 {notification.title}
             </p>
-            <p className="mt-1 text-[11px] tabular-nums text-slate-400">
+            <p
+                className={[
+                    "mt-1 text-[11px] tabular-nums text-slate-400 transition-colors",
+                    !selectionMode && clickable && "group-hover/item:text-blue-500",
+                ]
+                    .filter(Boolean)
+                    .join(" ")}
+            >
                 {notification.time}
             </p>
         </div>
     )
+
+    if (selectionMode) {
+        return (
+            <div
+                className={`flex items-stretch border-b border-slate-100/80 last:border-b-0 ${
+                    selected ? "bg-blue-50/40" : "hover:bg-slate-50/80"
+                }`}
+            >
+                <label className="flex shrink-0 cursor-pointer items-start py-3.5 pl-3 pr-1">
+                    <Checkbox
+                        checked={selected}
+                        onChange={(e) => {
+                            e.stopPropagation()
+                            onToggleSelect(notification.id)
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="rounded border-slate-300"
+                        aria-label="Auswählen"
+                    />
+                </label>
+                <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-start gap-2 py-3.5 pr-4 text-left"
+                    onClick={() => onToggleSelect(notification.id)}
+                >
+                    {content}
+                </button>
+            </div>
+        )
+    }
 
     const rowShell = (child: React.ReactNode) => (
         <div className="group/item relative flex items-stretch border-b border-slate-100/80 last:border-b-0">
@@ -70,7 +117,7 @@ function NotificationRow({
                         e.stopPropagation()
                         void onDelete()
                     }}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-rose-50 hover:text-rose-600 group-hover/item:opacity-100 disabled:pointer-events-none disabled:opacity-30"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-rose-50 hover:text-rose-600 group-hover/item:opacity-100 disabled:pointer-events-none disabled:opacity-30 cursor-pointer"
                     aria-label="Benachrichtigung löschen"
                     title="Löschen"
                 >
@@ -119,15 +166,62 @@ export default function NotificationPage() {
     const router = useRouter()
     const [open, setOpen] = useState(false)
     const [deletingId, setDeletingId] = useState<string | null>(null)
+    const [selectionMode, setSelectionMode] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set())
+    const [bulkDeleting, setBulkDeleting] = useState(false)
+
+    const visibleIds = useMemo(
+        () => notifications.map((n) => n.id),
+        [notifications]
+    )
+
+    const allVisibleSelected =
+        visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id))
+
+    const toggleSelect = useCallback((id: string) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            return next
+        })
+    }, [])
+
+    const toggleSelectAll = useCallback(() => {
+        setSelectedIds((prev) => {
+            if (visibleIds.length === 0) return prev
+            if (visibleIds.every((id) => prev.has(id))) return new Set()
+            return new Set(visibleIds)
+        })
+    }, [visibleIds])
+
+    const exitSelectionMode = useCallback(() => {
+        setSelectionMode(false)
+        setSelectedIds(new Set())
+    }, [])
 
     const handleDeleteOne = async (id: string) => {
         setDeletingId(id)
         try {
             await deleteNotifications([id])
         } catch {
-            /* keep row; optional: toast */
+            /* optional toast */
         } finally {
             setDeletingId(null)
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.size === 0) return
+        setBulkDeleting(true)
+        try {
+            await deleteNotifications(Array.from(selectedIds))
+            setSelectedIds(new Set())
+            setSelectionMode(false)
+        } catch {
+            /* optional toast */
+        } finally {
+            setBulkDeleting(false)
         }
     }
 
@@ -147,18 +241,23 @@ export default function NotificationPage() {
         router.push(targetRoute)
     }
 
+    const selectedCount = selectedIds.size
+
     return (
         <Popover
             open={open}
             onOpenChange={(nextOpen) => {
                 setOpen(nextOpen)
+                if (!nextOpen) {
+                    exitSelectionMode()
+                }
                 if (nextOpen) void onOpenNotificationPanel()
             }}
         >
             <PopoverTrigger asChild>
                 <button
                     type="button"
-                    className="relative rounded-lg p-1 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    className="relative rounded-lg p-1 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 cursor-pointer"
                     aria-label="Benachrichtigungen"
                 >
                     <IoNotificationsOutline className="text-2xl" />
@@ -171,9 +270,9 @@ export default function NotificationPage() {
                 sideOffset={10}
             >
                 <header className="border-b border-slate-100 bg-white px-4 py-4">
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center justify-between gap-2">
                         <div className="flex min-w-0 items-center gap-3">
-                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-md">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#61A175] text-white shadow-md">
                                 <IoNotificationsOutline className="text-xl opacity-90" />
                             </div>
                             <div className="min-w-0">
@@ -187,17 +286,66 @@ export default function NotificationPage() {
                                 </p>
                             </div>
                         </div>
-                        {unreadCount > 0 && (
-                            <button
-                                type="button"
-                                onClick={() => void markAllAsRead()}
-                                className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-                            >
-                                Alle gelesen
-                            </button>
-                        )}
+                        <div className="flex shrink-0 flex-col items-end gap-1.5">
+                            {unreadCount > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() => void markAllAsRead()}
+                                    className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
+                                >
+                                    Alle gelesen
+                                </button>
+                            )}
+                            {!isLoading && notifications.length > 0 && (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        selectionMode
+                                            ? exitSelectionMode()
+                                            : setSelectionMode(true)
+                                    }
+                                    className="text-xs cursor-pointer font-medium text-blue-600 transition-colors hover:text-blue-800"
+                                >
+                                    {selectionMode ? "Fertig" : "Mehrere auswählen"}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </header>
+
+                {selectionMode && notifications.length > 0 && (
+                    <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-slate-50/90 px-3 py-2">
+                        <button
+                            type="button"
+                            onClick={toggleSelectAll}
+                            className="text-xs cursor-pointer font-medium text-slate-600 hover:text-slate-900"
+                        >
+                            {allVisibleSelected ? "Auswahl aufheben" : "Alle auswählen"}
+                        </button>
+                        {selectedCount > 0 && (
+                            <span className="text-xs font-medium text-slate-500">
+                                {selectedCount} markiert
+                            </span>
+                        )}
+                    </div>
+                )}
+
+                {selectionMode && selectedCount > 0 && (
+                    <div className="flex items-center justify-between gap-2 border-b border-rose-100/90 bg-rose-50/95 px-4 py-2.5">
+                        <span className="text-sm font-medium text-rose-950">
+                            {selectedCount} zum Löschen markiert
+                        </span>
+                        <button
+                            type="button"
+                            disabled={bulkDeleting}
+                            onClick={() => void handleBulkDelete()}
+                            className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-rose-700 disabled:opacity-60"
+                        >
+                            <HiOutlineTrash className="text-sm" />
+                            {bulkDeleting ? "Löschen…" : "Löschen"}
+                        </button>
+                    </div>
+                )}
 
                 <div className="max-h-112 overflow-y-auto bg-white">
                     {isLoading ? (
@@ -229,6 +377,9 @@ export default function NotificationPage() {
                                         key={notification.id}
                                         notification={notification}
                                         clickable={clickable}
+                                        selectionMode={selectionMode}
+                                        selected={selectedIds.has(notification.id)}
+                                        onToggleSelect={toggleSelect}
                                         isDeleting={deletingId === notification.id}
                                         onDelete={() => handleDeleteOne(notification.id)}
                                         onActivate={() =>
@@ -253,7 +404,7 @@ export default function NotificationPage() {
                             type="button"
                             disabled={isLoadingMore}
                             onClick={() => void loadMoreNotifications()}
-                            className="w-full rounded-xl py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-white hover:text-slate-900 disabled:opacity-50"
+                            className="w-full cursor-pointer rounded-xl py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-white hover:text-slate-900 disabled:opacity-50"
                         >
                             {isLoadingMore ? "Wird geladen…" : "Weitere laden"}
                         </button>
