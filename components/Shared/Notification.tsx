@@ -1,130 +1,261 @@
 "use client"
-import React from 'react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { IoNotificationsOutline } from 'react-icons/io5'
-import { useNotifications } from '@/contexts/NotificationContext'
 
-// Badge component for notification count
+import React, { useState } from "react"
+import { useRouter } from "next/navigation"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { IoNotificationsOutline } from "react-icons/io5"
+import { HiOutlineTrash, HiChevronRight } from "react-icons/hi2"
+import { useNotifications } from "@/contexts/NotificationContext"
+import { getNotificationClickRoute } from "@/lib/notificationRoutes"
+
 const Badge = ({ count }: { count: number }) => {
     if (count === 0) return null
-
     return (
-        <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-semibold shadow-lg">
-            {count > 99 ? '99+' : count}
+        <div className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-rose-500 text-white text-[10px] leading-5 rounded-full flex items-center justify-center font-bold shadow-md tabular-nums">
+            {count > 99 ? "99+" : count}
         </div>
     )
 }
 
-// Notification item component
-const NotificationItem = ({
-    notification
+function NotificationRow({
+    notification,
+    clickable,
+    onActivate,
+    onDelete,
+    isDeleting,
 }: {
     notification: {
         id: string
         title: string
-        message: string
         time: string
-        isRead: boolean
-        type: 'info' | 'success' | 'warning' | 'error'
+        deepRead: boolean
     }
-}) => {
-    return (
-        <div className="py-2.5 px-4">
-            <div className="flex items-start gap-3">
-                {/* Simple blue bullet point */}
-                <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                
-                <div className="flex-1 min-w-0">
-                    <p className={`text-sm ${!notification.isRead ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
-                        {notification.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                        {notification.time}
-                    </p>
-                </div>
+    clickable: boolean
+    onActivate: () => void | Promise<void>
+    onDelete: () => void | Promise<void>
+    isDeleting: boolean
+}) {
+    const unreadStyle = !notification.deepRead
+
+    const content = (
+        <div className="min-w-0 flex-1">
+            <p
+                className={[
+                    "text-[13px] leading-snug transition-colors",
+                    unreadStyle
+                        ? "font-semibold text-slate-900"
+                        : "font-normal text-slate-600",
+                    clickable && "group-hover:text-blue-600",
+                ]
+                    .filter(Boolean)
+                    .join(" ")}
+            >
+                {notification.title}
+            </p>
+            <p className="mt-1 text-[11px] tabular-nums text-slate-400">
+                {notification.time}
+            </p>
+        </div>
+    )
+
+    const rowShell = (child: React.ReactNode) => (
+        <div className="group/item relative flex items-stretch border-b border-slate-100/80 last:border-b-0">
+            {child}
+            <div className="flex shrink-0 items-center pe-2">
+                <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        void onDelete()
+                    }}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-400 opacity-0 transition-all hover:bg-rose-50 hover:text-rose-600 group-hover/item:opacity-100 disabled:pointer-events-none disabled:opacity-30"
+                    aria-label="Benachrichtigung löschen"
+                    title="Löschen"
+                >
+                    {isDeleting ? (
+                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-200 border-t-rose-500" />
+                    ) : (
+                        <HiOutlineTrash className="text-lg" />
+                    )}
+                </button>
             </div>
         </div>
+    )
+
+    if (clickable) {
+        return rowShell(
+            <button
+                type="button"
+                className="flex min-w-0 flex-1 items-start gap-2 px-4 py-3.5 text-left transition-colors hover:bg-slate-50/95"
+                onClick={() => void onActivate()}
+            >
+                {content}
+                <HiChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-slate-300 transition-colors group-hover/item:text-blue-500" />
+            </button>
+        )
+    }
+
+    return rowShell(
+        <div className="flex min-w-0 flex-1 items-start px-4 py-3.5">{content}</div>
     )
 }
 
 export default function NotificationPage() {
-    /**
-     * Pulls live notifications from the NotificationContext.
-     * - `notifications` are loaded once from the REST API and then updated via Socket.IO.
-     * - `unreadCount` is derived in the context for convenience.
-     * - Action handlers update the local UI state (and can later call backend APIs).
-     */
     const {
         notifications,
         unreadCount,
         markAllAsRead,
+        onOpenNotificationPanel,
+        markNotificationDeepRead,
+        deleteNotifications,
         isLoading,
+        isLoadingMore,
+        hasMoreNotifications,
+        loadMoreNotifications,
     } = useNotifications()
 
+    const router = useRouter()
+    const [open, setOpen] = useState(false)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
+
+    const handleDeleteOne = async (id: string) => {
+        setDeletingId(id)
+        try {
+            await deleteNotifications([id])
+        } catch {
+            /* keep row; optional: toast */
+        } finally {
+            setDeletingId(null)
+        }
+    }
+
+    const handleNotificationActivate = async (
+        notificationId: string,
+        targetRoute: string,
+        alreadyDeepRead: boolean
+    ) => {
+        try {
+            if (!alreadyDeepRead) {
+                await markNotificationDeepRead(notificationId)
+            }
+        } catch {
+            return
+        }
+        setOpen(false)
+        router.push(targetRoute)
+    }
+
     return (
-        <Popover>
+        <Popover
+            open={open}
+            onOpenChange={(nextOpen) => {
+                setOpen(nextOpen)
+                if (nextOpen) void onOpenNotificationPanel()
+            }}
+        >
             <PopoverTrigger asChild>
-                <div className="relative cursor-pointer">
-                    <IoNotificationsOutline className='text-2xl text-gray-600 hover:text-gray-800 transition-colors' />
+                <button
+                    type="button"
+                    className="relative rounded-lg p-1 text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+                    aria-label="Benachrichtigungen"
+                >
+                    <IoNotificationsOutline className="text-2xl" />
                     <Badge count={unreadCount} />
-                </div>
+                </button>
             </PopoverTrigger>
-            <PopoverContent className="w-96 p-0 shadow-xl border-gray-200" align="end" sideOffset={8}>
-                {/* Header */}
-                <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-white">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <IoNotificationsOutline className="w-5 h-5 text-gray-700" />
-                            <h3 className="font-bold text-gray-900 text-base">Benachrichtigungen</h3>
-                            {unreadCount > 0 && (
-                                <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                                    {unreadCount} neu
-                                </span>
-                            )}
+            <PopoverContent
+                className="w-[min(100vw-1.25rem,24rem)] overflow-hidden rounded-2xl border border-slate-200/90 p-0 shadow-2xl shadow-slate-300/25"
+                align="end"
+                sideOffset={10}
+            >
+                <header className="border-b border-slate-100 bg-white px-4 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                        <div className="flex min-w-0 items-center gap-3">
+                            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white shadow-md">
+                                <IoNotificationsOutline className="text-xl opacity-90" />
+                            </div>
+                            <div className="min-w-0">
+                                <h3 className="truncate text-[15px] font-semibold tracking-tight text-slate-900">
+                                    Benachrichtigungen
+                                </h3>
+                                <p className="mt-0.5 text-xs text-slate-500">
+                                    {unreadCount > 0
+                                        ? `${unreadCount} ungelesen`
+                                        : "Sie sind auf dem neuesten Stand"}
+                                </p>
+                            </div>
                         </div>
                         {unreadCount > 0 && (
                             <button
-                                onClick={markAllAsRead}
-                                className="text-xs text-blue-600 hover:text-blue-700 font-semibold transition-colors px-2 py-1 rounded-md hover:bg-blue-50"
+                                type="button"
+                                onClick={() => void markAllAsRead()}
+                                className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
                             >
-                                Alle markieren
+                                Alle gelesen
                             </button>
                         )}
                     </div>
-                </div>
+                </header>
 
-                {/* Notifications List */}
-                <div className="max-h-[28rem] overflow-y-auto">
+                <div className="max-h-112 overflow-y-auto bg-white">
                     {isLoading ? (
-                        <div className="text-center py-12">
-                            <div className="inline-block animate-spin rounded-full h-8 w-8 border-4 border-gray-200 border-t-blue-600 mb-3"></div>
-                            <p className="text-sm text-gray-500">Lädt Benachrichtigungen...</p>
+                        <div className="flex flex-col items-center py-16">
+                            <div className="mb-3 h-8 w-8 animate-spin rounded-full border-2 border-slate-100 border-t-slate-800" />
+                            <p className="text-sm text-slate-500">Wird geladen…</p>
                         </div>
                     ) : notifications.length === 0 ? (
-                        <div className="text-center py-12 px-4">
-                            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <IoNotificationsOutline className="w-8 h-8 text-gray-400" />
+                        <div className="px-6 py-16 text-center">
+                            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 ring-1 ring-slate-100">
+                                <IoNotificationsOutline className="text-2xl text-slate-300" />
                             </div>
-                            <p className="text-gray-500 text-sm font-medium">Keine Benachrichtigungen</p>
-                            <p className="text-gray-400 text-xs mt-1">Sie haben derzeit keine neuen Benachrichtigungen</p>
+                            <p className="text-sm font-medium text-slate-800">
+                                Keine Benachrichtigungen
+                            </p>
+                            <p className="mx-auto mt-1 max-w-[220px] text-xs leading-relaxed text-slate-500">
+                                Neue Meldungen zu Terminen und Bestellungen erscheinen hier.
+                            </p>
                         </div>
                     ) : (
                         <div>
-                            {notifications.map(notification => (
-                                <NotificationItem
-                                    key={notification.id}
-                                    notification={notification}
-                                />
-                            ))}
+                            {notifications.map((notification) => {
+                                const targetRoute = getNotificationClickRoute(
+                                    notification.backendType
+                                )
+                                const clickable = targetRoute !== null
+                                return (
+                                    <NotificationRow
+                                        key={notification.id}
+                                        notification={notification}
+                                        clickable={clickable}
+                                        isDeleting={deletingId === notification.id}
+                                        onDelete={() => handleDeleteOne(notification.id)}
+                                        onActivate={() =>
+                                            targetRoute
+                                                ? handleNotificationActivate(
+                                                      notification.id,
+                                                      targetRoute,
+                                                      notification.deepRead
+                                                  )
+                                                : undefined
+                                        }
+                                    />
+                                )
+                            })}
                         </div>
                     )}
                 </div>
 
-                {/* Footer */}
-                {notifications.length > 0 && (
-                    <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
-                        <button className="w-full text-center text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors py-2 rounded-md hover:bg-blue-50">
-                            Alle Benachrichtigungen anzeigen
+                {notifications.length > 0 && hasMoreNotifications && (
+                    <div className="border-t border-slate-100 bg-slate-50/80 px-3 py-2.5">
+                        <button
+                            type="button"
+                            disabled={isLoadingMore}
+                            onClick={() => void loadMoreNotifications()}
+                            className="w-full rounded-xl py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-white hover:text-slate-900 disabled:opacity-50"
+                        >
+                            {isLoadingMore ? "Wird geladen…" : "Weitere laden"}
                         </button>
                     </div>
                 )}

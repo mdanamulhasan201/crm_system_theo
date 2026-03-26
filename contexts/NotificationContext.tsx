@@ -9,7 +9,37 @@ import {
   ReactNode,
 } from "react";
 import { initSocket, getSocket } from "@/lib/socket";
-import { getAllNotifications, getUnreadCount, markAsRead as markAsReadApi } from "@/apis/Notifications/NotificationsApis";
+import {
+  getAllNotifications,
+  getUnreadCount,
+  markAsRead as markAsReadApi,
+  markAsDeepRead as markAsDeepReadApi,
+  deleteNotification as deleteNotificationsApi,
+} from "@/apis/Notifications/NotificationsApis";
+
+const NOTIFICATION_PAGE_LIMIT = 20;
+
+function parseNotificationPage(response: any): {
+  rows: any[];
+  nextCursor: string | null;
+} {
+  const rows = Array.isArray(response?.data) ? response.data : [];
+  const p = response?.pagination ?? {};
+  if (p.nextCursor != null && String(p.nextCursor).trim() !== "") {
+    return { rows, nextCursor: String(p.nextCursor) };
+  }
+  if (p.cursor != null && String(p.cursor).trim() !== "") {
+    return { rows, nextCursor: String(p.cursor) };
+  }
+  if (p.hasNextPage === true && rows.length > 0) {
+    const last = rows[rows.length - 1];
+    return {
+      rows,
+      nextCursor: last?.id != null ? String(last.id) : null,
+    };
+  }
+  return { rows, nextCursor: null };
+}
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
@@ -25,16 +55,28 @@ export interface Notification {
   message: string;
   time: string; // Already formatted for display (e.g. "18.12.2025, 15:23")
   isRead: boolean;
+  /** false = still visually emphasized until user deep-reads (e.g. opened detail) */
+  deepRead: boolean;
   type: "info" | "success" | "warning" | "error";
-  route?: string; // Optional route to navigate on click (e.g. "/appointments/123")
+  /** Raw API `type` (e.g. Appointment_Created) — used for routing / click rules */
+  backendType: string;
+  route?: string; // Optional route from API (fallback; UI uses type-based routes where defined)
 }
 
 interface NotificationContextValue {
   notifications: Notification[];
   unreadCount: number;
   isLoading: boolean;
+  isLoadingMore: boolean;
+  hasMoreNotifications: boolean;
+  loadMoreNotifications: () => Promise<void>;
+  /** When the notification popover opens — PATCH mark-as-read and merge API `data`. */
+  onOpenNotificationPanel: () => Promise<void>;
   markAsRead: (id: string) => Promise<void>;
-  deleteNotification: (id: string) => void;
+  /** PATCH mark-as-deep-read for the given id; merges API `data` when present. */
+  markNotificationDeepRead: (id: string) => Promise<void>;
+  /** DELETE /v2/notifications/delete for the given ids; updates local list and unread count. */
+  deleteNotifications: (ids: string[]) => Promise<void>;
   markAllAsRead: () => Promise<void>;
 }
 
@@ -75,6 +117,8 @@ function mapApiNotification(apiNotification: any): Notification {
   else if (rawType.includes("error") || rawType.includes("fail"))
     mappedType = "error";
 
+  const backendType = (apiNotification.type ?? "").toString();
+
   return {
     id: apiNotification.id,
     // Simple default: show the message as the title; you can refine this later.
@@ -82,9 +126,42 @@ function mapApiNotification(apiNotification: any): Notification {
     message: apiNotification.message || "",
     time: formattedTime,
     isRead: Boolean(apiNotification.isRead),
+    deepRead: Boolean(apiNotification.deepRead),
     type: mappedType,
+    backendType,
     route: apiNotification.route,
   };
+}
+
+function mergeStateAfterMarkAsRead(
+  prev: Notification[],
+  apiRows: any[]
+): Notification[] {
+  const byId = new Map(
+    apiRows.map((row) => [row.id, mapApiNotification(row)])
+  );
+  return prev.map((n) =>
+    byId.has(n.id) ? byId.get(n.id)! : { ...n, isRead: true }
+  );
+}
+
+function mergeStateAfterDeepRead(
+  prev: Notification[],
+  apiRows: any[]
+): Notification[] {
+  if (apiRows.length === 0) return prev;
+  const byId = new Map(
+    apiRows.map((row) => [row.id, mapApiNotification(row)])
+  );
+  return prev.map((n) => (byId.has(n.id) ? byId.get(n.id)! : n));
+}
+
+function normalizeNotificationRows(data: unknown): any[] {
+  if (Array.isArray(data)) return data;
+  if (data && typeof data === "object" && "id" in (data as object)) {
+    return [data];
+  }
+  return [];
 }
 
 /**
@@ -99,6 +176,8 @@ function mapApiNotification(apiNotification: any): Notification {
 export function NotificationProvider({ children }: NotificationProviderProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [serverUnreadCount, setServerUnreadCount] = useState<number>(0);
   const { user } = useAuth();
 
@@ -109,22 +188,23 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     // Skip notifications for employees - they don't have access to this endpoint
     if (user?.role === 'EMPLOYEE') {
       console.log('[Notifications] Skipping notification fetch for employee user');
+      setNotifications([]);
+      setNextCursor(null);
       return;
     }
 
     const loadInitialNotifications = async () => {
       try {
         setIsLoading(true);
-        // Adjust page/limit depending on how many notifications you want initially
-        const response = await getAllNotifications(1, 20);
-
-        const apiNotifications = Array.isArray(response.data)
-          ? response.data
-          : [];
-
+        const response = await getAllNotifications(
+          NOTIFICATION_PAGE_LIMIT,
+          ""
+        );
         if (!isMounted) return;
 
-        setNotifications(apiNotifications.map(mapApiNotification));
+        const { rows, nextCursor: next } = parseNotificationPage(response);
+        setNotifications(rows.map(mapApiNotification));
+        setNextCursor(next);
       } catch (error: any) {
         // Handle 403 errors gracefully for employees
         if (error.response?.status === 403) {
@@ -192,8 +272,14 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
 
     const handleNewNotification = async (payload: any) => {
     //   console.log("[NotificationContext] Received notification:", payload);
-      const mapped = mapApiNotification(payload);
-      setNotifications((prev) => [mapped, ...prev]);
+      const mapped = mapApiNotification({
+        ...payload,
+        deepRead: payload?.deepRead ?? false,
+      });
+      setNotifications((prev) => {
+        if (prev.some((n) => n.id === mapped.id)) return prev;
+        return [mapped, ...prev];
+      });
       
       // Update unread count when new notification arrives
       if (!mapped.isRead) {
@@ -217,7 +303,16 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       if (!payload?.id) return;
       setNotifications((prev) =>
         prev.map((n) =>
-          n.id === payload.id ? { ...n, isRead: true } : n
+          n.id === payload.id
+            ? {
+                ...n,
+                isRead: true,
+                deepRead:
+                  payload.deepRead !== undefined
+                    ? Boolean(payload.deepRead)
+                    : n.deepRead,
+              }
+            : n
         )
       );
     };
@@ -256,49 +351,113 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
     }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  const markNotificationDeepRead = async (id: string) => {
+    if (user?.role === "EMPLOYEE") return;
 
-    // TODO: Call delete API here when available.
+    try {
+      const response = await markAsDeepReadApi([id]);
+      const rows = normalizeNotificationRows(response?.data);
+      if (rows.length > 0) {
+        setNotifications((prev) => mergeStateAfterDeepRead(prev, rows));
+      } else {
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === id ? { ...n, deepRead: true } : n))
+        );
+      }
+    } catch (error) {
+      console.error(
+        "[NotificationProvider] Failed to mark notification deep read:",
+        error
+      );
+      throw error;
+    }
+  };
+
+  const loadMoreNotifications = async () => {
+    if (user?.role === "EMPLOYEE") return;
+    if (nextCursor == null || isLoadingMore) return;
+
+    try {
+      setIsLoadingMore(true);
+      const response = await getAllNotifications(
+        NOTIFICATION_PAGE_LIMIT,
+        nextCursor
+      );
+      const { rows, nextCursor: next } = parseNotificationPage(response);
+      const mapped = rows.map(mapApiNotification);
+      setNotifications((prev) => {
+        const seen = new Set(prev.map((n) => n.id));
+        const appended = mapped.filter((n) => !seen.has(n.id));
+        return [...prev, ...appended];
+      });
+      setNextCursor(next);
+    } catch (error) {
+      console.error(
+        "[NotificationProvider] Failed to load more notifications:",
+        error
+      );
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  const deleteNotifications = async (ids: string[]) => {
+    if (user?.role === "EMPLOYEE") {
+      throw new Error("Benachrichtigungen für diesen Benutzer nicht verfügbar.");
+    }
+    if (ids.length === 0) return;
+
+    await deleteNotificationsApi(ids);
+    setNotifications((prev) => prev.filter((n) => !ids.includes(n.id)));
+    try {
+      const response = await getUnreadCount();
+      const count = response.data?.count ?? response.count ?? 0;
+      setServerUnreadCount(count);
+    } catch (error) {
+      console.error(
+        "[NotificationProvider] Failed to refresh unread count after delete:",
+        error
+      );
+    }
   };
 
   const markAllAsRead = async () => {
     const unreadCount = notifications.filter((n) => !n.isRead).length;
-    
+
     if (unreadCount === 0) return;
+
+    if (user?.role === "EMPLOYEE") return;
 
     // Optimistically update UI
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setServerUnreadCount(0);
 
-    // Call backend API to mark all notifications as read
     try {
-      await markAsReadApi();
-      // Refresh unread count from server to ensure sync
-      const response = await getUnreadCount();
-      const count = response.data?.count ?? response.count ?? 0;
+      const response = await markAsReadApi();
+      const rows = Array.isArray(response?.data) ? response.data : [];
+      setNotifications((prev) => mergeStateAfterMarkAsRead(prev, rows));
+      const countRes = await getUnreadCount();
+      const count = countRes.data?.count ?? countRes.count ?? 0;
       setServerUnreadCount(count);
-      // Reload notifications to get accurate read status from server
-      const notificationsResponse = await getAllNotifications(1, 20);
-      const apiNotifications = Array.isArray(notificationsResponse.data)
-        ? notificationsResponse.data
-        : [];
-      setNotifications(apiNotifications.map(mapApiNotification));
     } catch (error) {
       console.error("[NotificationProvider] Failed to mark all as read:", error);
-      // Refresh unread count to get accurate value
       try {
         const response = await getUnreadCount();
         const count = response.data?.count ?? response.count ?? 0;
         setServerUnreadCount(count);
-        // Reload notifications to get accurate read status
-        const notificationsResponse = await getAllNotifications(1, 20);
-        const apiNotifications = Array.isArray(notificationsResponse.data)
-          ? notificationsResponse.data
-          : [];
-        setNotifications(apiNotifications.map(mapApiNotification));
+        const notificationsResponse = await getAllNotifications(
+          NOTIFICATION_PAGE_LIMIT,
+          ""
+        );
+        const { rows, nextCursor: next } =
+          parseNotificationPage(notificationsResponse);
+        setNotifications(rows.map(mapApiNotification));
+        setNextCursor(next);
       } catch (err) {
-        console.error("[NotificationProvider] Failed to refresh after mark all as read:", err);
+        console.error(
+          "[NotificationProvider] Failed to refresh after mark all as read:",
+          err
+        );
       }
     }
   };
@@ -312,12 +471,46 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
       : notifications.filter((n) => !n.isRead).length;
   }, [notifications, serverUnreadCount]);
 
+  const hasMoreNotifications = nextCursor != null;
+
+  const onOpenNotificationPanel = async () => {
+    if (user?.role === "EMPLOYEE") return;
+    if (unreadCount === 0) return;
+
+    try {
+      const response = await markAsReadApi();
+      const rows = Array.isArray(response?.data) ? response.data : [];
+      setNotifications((prev) => mergeStateAfterMarkAsRead(prev, rows));
+      setServerUnreadCount(0);
+      try {
+        const countRes = await getUnreadCount();
+        const count = countRes.data?.count ?? countRes.count ?? 0;
+        setServerUnreadCount(count);
+      } catch (error) {
+        console.error(
+          "[NotificationProvider] Failed to refresh unread count after panel open:",
+          error
+        );
+      }
+    } catch (error) {
+      console.error(
+        "[NotificationProvider] Failed to mark as read on panel open:",
+        error
+      );
+    }
+  };
+
   const value: NotificationContextValue = {
     notifications,
     unreadCount,
     isLoading,
+    isLoadingMore,
+    hasMoreNotifications,
+    loadMoreNotifications,
+    onOpenNotificationPanel,
     markAsRead,
-    deleteNotification,
+    markNotificationDeepRead,
+    deleteNotifications,
     markAllAsRead,
   };
 
