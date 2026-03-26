@@ -192,17 +192,36 @@ function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): stri
   } else {
     parts.push("Hinweis: Fersenhöhe kleiner als Ballenhöhe (ungültige Kombination)")
   }
-  if (v.absatzform) {
-    const map: Record<string, string> = {
-      keilabsatz: "Keilabsatz",
-      stegkeil: "Stegkeil",
-      absatzkeil: "Absatzkeil",
-    }
-    parts.push(`Absatzform: ${map[v.absatzform] ?? v.absatzform}`)
-  }
   parts.push(`Farbkonzept: ${v.farbModus === "einheitlich" ? "Eine Farbe pro Bereich" : "Individuell pro Lage"}`)
   parts.push(`Zwischensohle – Aufteilung: ${v.zwSplit.mode}, Lagen: ${v.zwSplit.layers.join(" / ") || "–"}`)
   parts.push(`Absatz – Aufteilung: ${v.abSplit.mode}, Lagen: ${v.abSplit.layers.join(" / ") || "–"}`)
+  const shoreMod = v.shoreModus === "individuell" ? "individuell" : "einheitlich"
+  parts.push(
+    `Material / Shore-Härte: ${shoreMod === "individuell" ? "Individuell pro Bereich" : "Einheitlich für gesamten Aufbau"}`
+  )
+  if (shoreMod === "einheitlich") {
+    parts.push(`Shore (gesamt): ${v.globalShore ?? "53"}`)
+  } else {
+    if (zw > 0) parts.push(`Shore Zwischensohle: ${v.shorePerArea?.zwischensohle ?? "53"}`)
+    if (ab > 0) parts.push(`Shore Absatz: ${v.shorePerArea?.absatz ?? "53"}`)
+  }
+  const layerSplitUi =
+    v.farbModus === "individuell" && (v.zwSplit.mode !== "einteilig" || v.abSplit.mode !== "einteilig")
+  if (layerSplitUi && shoreMod === "individuell" && v.shorePerLayer) {
+    const zwN = v.zwSplit.mode === "einteilig" ? 1 : v.zwSplit.layers.length
+    const abN = v.abSplit.mode === "einteilig" ? 1 : v.abSplit.layers.length
+    if (zw > 0 && zwN > 1 && v.shorePerLayer.zwLayers?.length) {
+      parts.push(`Shore pro Lage Zwischensohle: ${v.shorePerLayer.zwLayers.map((s, i) => `L${i + 1}=${s}`).join(", ")}`)
+    }
+    if (ab > 0 && abN > 1 && v.shorePerLayer.abLayers?.length) {
+      parts.push(`Shore pro Lage Absatz: ${v.shorePerLayer.abLayers.map((s, i) => `L${i + 1}=${s}`).join(", ")}`)
+    }
+  }
+  if (v.verschalungHoehe) {
+    parts.push(`Verschalung / Gürtel – Höhe: ${v.verschalungHoehe} mm`)
+    if (v.verschalungAusfuehrung === "oberleder") parts.push("Verschalung: Am Oberleder geführt (klassisch)")
+    if (v.verschalungAusfuehrung === "gesamt") parts.push("Verschalung: Über gesamten Aufbau")
+  }
   return parts
 }
 

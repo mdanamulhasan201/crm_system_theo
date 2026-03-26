@@ -128,7 +128,13 @@ export default function SolePreview3D({ data }: { data: SohlenaufbauPreviewData 
   const totalHeight = layers.reduce((s, l) => s + l.height, 0)
 
   return (
-    <Canvas camera={{ position: [4, 3, 4], fov: 35 }} dpr={[1, 2]}>
+    <Canvas
+      className="h-full w-full cursor-grab touch-none select-none active:cursor-grabbing"
+      camera={{ position: [4, 3, 4], fov: 35 }}
+      dpr={[1, 2]}
+      gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
+      frameloop="always"
+    >
       <ambientLight intensity={0.6} />
       <directionalLight position={[5, 8, 5]} intensity={0.8} />
       <directionalLight position={[-3, 4, -2]} intensity={0.3} />
@@ -139,11 +145,17 @@ export default function SolePreview3D({ data }: { data: SohlenaufbauPreviewData 
       </group>
       <OrbitControls
         enablePan={false}
-        enableZoom={true}
+        enableZoom
+        enableDamping
+        dampingFactor={0.035}
+        rotateSpeed={0.6}
+        zoomSpeed={0.55}
         minDistance={3}
         maxDistance={10}
+        minPolarAngle={0.35}
+        maxPolarAngle={Math.PI - 0.35}
         autoRotate
-        autoRotateSpeed={1.5}
+        autoRotateSpeed={0.65}
       />
     </Canvas>
   )

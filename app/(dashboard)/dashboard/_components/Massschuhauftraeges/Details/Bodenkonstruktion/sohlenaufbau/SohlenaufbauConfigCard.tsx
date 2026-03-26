@@ -5,14 +5,21 @@ import { useCallback, useMemo } from "react"
 import { Layers } from "lucide-react"
 import ConfigCard from "../shared/ConfigCard"
 import { RadioOption } from "../shared/RadioOption"
-import InfoTooltip from "../shared/InfoTooltip"
 import type { SohlenaufbauData, SohlenaufbauFarbModus } from "../FormFields"
 import SohlenaufbauColorPicker from "./SohlenaufbauColorPicker"
 import SohlenaufbauLayerSplitControl from "./SohlenaufbauLayerSplitControl"
 import SohlenaufbauHeightGrid from "./SohlenaufbauHeightGrid"
-import { ABSATZ_OPTIONS } from "./constants"
+import SohlenaufbauShoreSection from "./SohlenaufbauShoreSection"
+import SohlenaufbauVerschalungSubsection from "./SohlenaufbauVerschalungSubsection"
+import SohlenaufbauBiomechanicsPanel from "./SohlenaufbauBiomechanicsPanel"
+import SohlenaufbauProductionOptionsPanel from "./SohlenaufbauProductionOptionsPanel"
 import { parseSohlenaufbauNum } from "./utils"
 import type { SohlenaufbauPreviewData } from "./SolePreview3D"
+import {
+  getSohlenaufbauShoreForColor,
+  sanitizeSohlenaufbauColorsForShore,
+  syncSohlenaufbauShoreLayerLengths,
+} from "./shoreHelpers"
 
 const SolePreview3D = dynamic(() => import("./SolePreview3D"), {
   ssr: false,
@@ -28,19 +35,32 @@ export default function SohlenaufbauConfigCard({
   value: SohlenaufbauData
   onChange: (next: SohlenaufbauData) => void
 }) {
-  const patch = useCallback((partial: Partial<SohlenaufbauData>) => {
-    onChange({ ...value, ...partial })
-  }, [value, onChange])
+  const apply = useCallback(
+    (partial: Partial<SohlenaufbauData>) => {
+      let next: SohlenaufbauData = { ...value, ...partial }
+      if (partial.verschalungHoehe === "") {
+        next.verschalungAusfuehrung = ""
+      }
+      next = syncSohlenaufbauShoreLayerLengths(next)
+      next = sanitizeSohlenaufbauColorsForShore(next)
+      onChange(next)
+    },
+    [value, onChange]
+  )
 
   const handleModeChange = useCallback(
     (mode: "gleich" | "unterschiedlich") => {
       if (mode === "unterschiedlich" && value.mode === "gleich") {
-        onChange({ ...value, mode, rechts: { ...value.links } })
+        onChange(
+          sanitizeSohlenaufbauColorsForShore(
+            syncSohlenaufbauShoreLayerLengths({ ...value, mode, rechts: { ...value.links } })
+          )
+        )
       } else {
-        patch({ mode })
+        apply({ mode })
       }
     },
-    [value, onChange, patch]
+    [value, onChange, apply]
   )
 
   const primary = value.links
@@ -48,26 +68,42 @@ export default function SohlenaufbauConfigCard({
   const calc = useMemo(() => {
     const ferse = parseSohlenaufbauNum(primary.ferse)
     const ballen = parseSohlenaufbauNum(primary.ballen)
+    const spitze = parseSohlenaufbauNum(primary.spitze)
     const zwischensohle = ballen
     const absatz = Math.max(0, ferse - ballen)
     const valid = ferse >= ballen
-    return { zwischensohle, absatz, valid, ferse, ballen }
-  }, [primary.ferse, primary.ballen])
+    return { zwischensohle, absatz, valid, ferse, ballen, spitze }
+  }, [primary.ferse, primary.ballen, primary.spitze])
 
   const hasValues = parseSohlenaufbauNum(primary.ferse) > 0 || parseSohlenaufbauNum(primary.ballen) > 0
+
+  const warnings = useMemo(() => {
+    const w: string[] = []
+    if (!hasValues || !calc.valid) return w
+    if (calc.ballen > 0 && calc.ferse > 0 && calc.ballen < calc.ferse * 0.2) {
+      w.push("Ballenhöhe sehr niedrig im Verhältnis zur Absatzhöhe.")
+    }
+    if (calc.absatz > 0 && calc.absatz < 3) {
+      w.push("Materialblock für saubere Fertigung möglicherweise zu gering.")
+    }
+    if (calc.spitze > calc.ballen) {
+      w.push("Spitzenhöhe sollte nicht größer als Ballenhöhe sein.")
+    }
+    return w
+  }, [hasValues, calc])
 
   const updateZwLayerFarbe = (idx: number, c: string) => {
     const next = [...value.zwLayerFarben]
     while (next.length <= idx) next.push("#1a1a1a")
     next[idx] = c
-    patch({ zwLayerFarben: next })
+    apply({ zwLayerFarben: next })
   }
 
   const updateAbLayerFarbe = (idx: number, c: string) => {
     const next = [...value.abLayerFarben]
     while (next.length <= idx) next.push("#1a1a1a")
     next[idx] = c
-    patch({ abLayerFarben: next })
+    apply({ abLayerFarben: next })
   }
 
   const previewData: SohlenaufbauPreviewData = useMemo(() => {
@@ -77,9 +113,7 @@ export default function SohlenaufbauConfigCard({
         : value.zwSplit.layers.map((v, i) => ({
             height: parseSohlenaufbauNum(v),
             color:
-              value.farbModus === "individuell"
-                ? value.zwLayerFarben[i] || "#1a1a1a"
-                : value.zwFarbe,
+              value.farbModus === "individuell" ? value.zwLayerFarben[i] || "#1a1a1a" : value.zwFarbe,
           }))
 
     const abLayers =
@@ -88,9 +122,7 @@ export default function SohlenaufbauConfigCard({
         : value.abSplit.layers.map((v, i) => ({
             height: parseSohlenaufbauNum(v),
             color:
-              value.farbModus === "individuell"
-                ? value.abLayerFarben[i] || "#1a1a1a"
-                : value.abFarbe,
+              value.farbModus === "individuell" ? value.abLayerFarben[i] || "#1a1a1a" : value.abFarbe,
           }))
 
     return {
@@ -98,16 +130,26 @@ export default function SohlenaufbauConfigCard({
       abLayers,
       ballenHeight: calc.zwischensohle,
       ferseHeight: calc.ferse,
-      absatzform: value.absatzform || "keilabsatz",
+      absatzform: "keilabsatz",
     }
-  }, [calc, value.zwSplit, value.abSplit, value.farbModus, value.zwFarbe, value.abFarbe, value.zwLayerFarben, value.abLayerFarben, value.absatzform])
+  }, [calc, value.zwSplit, value.abSplit, value.farbModus, value.zwFarbe, value.abFarbe, value.zwLayerFarben, value.abLayerFarben])
 
-  const setFarbModus = (farbModus: SohlenaufbauFarbModus) => patch({ farbModus })
+  const setFarbModus = (farbModus: SohlenaufbauFarbModus) => apply({ farbModus })
+
+  const getShore = (area: "zw" | "ab", layerIdx?: number) =>
+    getSohlenaufbauShoreForColor(value, area, layerIdx)
+
+  const hasLayerSplit =
+    value.farbModus === "individuell" &&
+    (value.zwSplit.mode !== "einteilig" || value.abSplit.mode !== "einteilig")
+
+  const zwLayerCount = value.zwSplit.mode === "einteilig" ? 1 : value.zwSplit.layers.length
+  const abLayerCount = value.abSplit.mode === "einteilig" ? 1 : value.abSplit.layers.length
 
   return (
     <ConfigCard
       title="Sohlenaufbau"
-      subtitle="Höhen, Form, Schichtaufbau, Farben & Vorschau"
+      subtitle="Höhen, Form, Verschalung, Farben, Shore/Material & Vorschau"
       icon={<Layers size={20} />}
     >
       <div className="space-y-5">
@@ -128,16 +170,16 @@ export default function SohlenaufbauConfigCard({
         </div>
 
         {value.mode === "gleich" ? (
-          <SohlenaufbauHeightGrid values={value.links} onChange={(links) => patch({ links })} />
+          <SohlenaufbauHeightGrid values={value.links} onChange={(links) => apply({ links })} />
         ) : (
           <div className="space-y-4">
-            <SohlenaufbauHeightGrid values={value.links} onChange={(links) => patch({ links })} label="Links" />
-            <SohlenaufbauHeightGrid values={value.rechts} onChange={(rechts) => patch({ rechts })} label="Rechts" />
+            <SohlenaufbauHeightGrid values={value.links} onChange={(links) => apply({ links })} label="Links" />
+            <SohlenaufbauHeightGrid values={value.rechts} onChange={(rechts) => apply({ rechts })} label="Rechts" />
           </div>
         )}
 
         {hasValues ? (
-          <div className="rounded-lg bg-gray-50 p-4 space-y-3">
+          <div className="space-y-3 rounded-lg bg-gray-50 p-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
               Automatisch berechneter Sohlenaufbau
             </p>
@@ -153,8 +195,17 @@ export default function SohlenaufbauConfigCard({
                 </div>
               </div>
             ) : (
-              <p className="text-xs text-red-600">Fersenhöhe muss ≥ Ballenhöhe sein</p>
+              <p className="text-xs text-red-600">Ballenhöhe darf nicht größer als Absatzhöhe sein.</p>
             )}
+            {calc.valid && warnings.length > 0 ? (
+              <div className="space-y-1 pt-2">
+                {warnings.map((w, i) => (
+                  <p key={i} className="flex items-center gap-1.5 text-xs text-amber-600">
+                    <span aria-hidden>💡</span> {w}
+                  </p>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
 
@@ -166,7 +217,7 @@ export default function SohlenaufbauConfigCard({
                 label="Zwischensohle"
                 total={calc.zwischensohle}
                 split={value.zwSplit}
-                onChange={(zwSplit) => patch({ zwSplit })}
+                onChange={(zwSplit) => apply({ zwSplit })}
               />
             ) : null}
             {calc.absatz > 0 ? (
@@ -174,29 +225,24 @@ export default function SohlenaufbauConfigCard({
                 label="Absatz"
                 total={calc.absatz}
                 split={value.abSplit}
-                onChange={(abSplit) => patch({ abSplit })}
+                onChange={(abSplit) => apply({ abSplit })}
               />
             ) : null}
           </div>
         ) : null}
 
         {hasValues && calc.valid ? (
-          <div className="space-y-3 border-t border-gray-200 pt-4">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-gray-700">Absatzform</p>
-              <InfoTooltip content="Die gewählte Absatzform beeinflusst die Fertigung und die schematische Form des Fersenbereichs in der 3D-Vorschau." />
-            </div>
-            <div className="flex flex-wrap gap-x-6 gap-y-2">
-              {ABSATZ_OPTIONS.map((opt) => (
-                <RadioOption
-                  key={opt.value}
-                  selected={value.absatzform === opt.value}
-                  onClick={() => patch({ absatzform: opt.value })}
-                  label={opt.label}
-                />
-              ))}
-            </div>
-          </div>
+          <SohlenaufbauVerschalungSubsection
+            hoehe={value.verschalungHoehe}
+            ausfuehrung={value.verschalungAusfuehrung}
+            onHoeheChange={(verschalungHoehe) =>
+              apply({
+                verschalungHoehe,
+                verschalungAusfuehrung: verschalungHoehe ? value.verschalungAusfuehrung : "",
+              })
+            }
+            onAusfuehrungChange={(verschalungAusfuehrung) => apply({ verschalungAusfuehrung })}
+          />
         ) : null}
 
         {hasValues && calc.valid ? (
@@ -220,10 +266,20 @@ export default function SohlenaufbauConfigCard({
             {value.farbModus === "einheitlich" ? (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {calc.zwischensohle > 0 ? (
-                  <SohlenaufbauColorPicker value={value.zwFarbe} onChange={(zwFarbe) => patch({ zwFarbe })} label="Zwischensohle" />
+                  <SohlenaufbauColorPicker
+                    value={value.zwFarbe}
+                    onChange={(zwFarbe) => apply({ zwFarbe })}
+                    label="Zwischensohle"
+                    shore={getShore("zw")}
+                  />
                 ) : null}
                 {calc.absatz > 0 ? (
-                  <SohlenaufbauColorPicker value={value.abFarbe} onChange={(abFarbe) => patch({ abFarbe })} label="Absatz" />
+                  <SohlenaufbauColorPicker
+                    value={value.abFarbe}
+                    onChange={(abFarbe) => apply({ abFarbe })}
+                    label="Absatz"
+                    shore={getShore("ab")}
+                  />
                 ) : null}
               </div>
             ) : (
@@ -237,6 +293,7 @@ export default function SohlenaufbauConfigCard({
                         value={value.zwLayerFarben[idx] || "#1a1a1a"}
                         onChange={(c) => updateZwLayerFarbe(idx, c)}
                         label={value.zwSplit.mode === "einteilig" ? undefined : `Lage ${idx + 1}`}
+                        shore={getShore("zw", idx)}
                       />
                     ))}
                   </div>
@@ -250,6 +307,7 @@ export default function SohlenaufbauConfigCard({
                         value={value.abLayerFarben[idx] || "#1a1a1a"}
                         onChange={(c) => updateAbLayerFarbe(idx, c)}
                         label={value.abSplit.mode === "einteilig" ? undefined : `Lage ${idx + 1}`}
+                        shore={getShore("ab", idx)}
                       />
                     ))}
                   </div>
@@ -260,13 +318,41 @@ export default function SohlenaufbauConfigCard({
         ) : null}
 
         {hasValues && calc.valid ? (
+          <SohlenaufbauShoreSection
+            modus={value.shoreModus}
+            onModusChange={(shoreModus) => apply({ shoreModus })}
+            globalShore={value.globalShore}
+            onGlobalShoreChange={(globalShore) => apply({ globalShore })}
+            perArea={value.shorePerArea}
+            onPerAreaChange={(shorePerArea) => apply({ shorePerArea })}
+            perLayer={value.shorePerLayer}
+            onPerLayerChange={(shorePerLayer) => apply({ shorePerLayer })}
+            hasZwischensohle={calc.zwischensohle > 0}
+            hasAbsatz={calc.absatz > 0}
+            hasLayerSplit={hasLayerSplit}
+            zwLayerCount={zwLayerCount}
+            abLayerCount={abLayerCount}
+          />
+        ) : null}
+
+        {hasValues && calc.valid ? (
           <div className="border-t border-gray-200 pt-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">3D-Vorschau</p>
-            <div className="overflow-hidden rounded-lg bg-gray-100" style={{ height: 280 }}>
+            <div className="relative h-[280px] w-full overflow-hidden rounded-lg bg-gray-100">
               <SolePreview3D data={previewData} />
             </div>
             <p className="mt-2 text-xs text-gray-500">Schematische Darstellung – nicht maßstabsgetreu</p>
           </div>
+        ) : null}
+
+        {hasValues && calc.valid ? <SohlenaufbauProductionOptionsPanel /> : null}
+
+        {hasValues && calc.valid ? (
+          <SohlenaufbauBiomechanicsPanel
+            ferseHeight={calc.ferse}
+            ballenHeight={calc.ballen}
+            spitzeHeight={calc.spitze}
+          />
         ) : null}
       </div>
     </ConfigCard>

@@ -944,7 +944,20 @@ export function normalizeSohlenversteifungData(raw: unknown): SohlenversteifungD
 // Sohlenaufbau – Höhen, Schichten, Absatzform, Farben, 3D-Vorschau
 export type SohlenaufbauSplitMode = "einteilig" | "gleichmaessig" | "individuell"
 export type SohlenaufbauFarbModus = "einheitlich" | "individuell"
-export type SohlenaufbauAbsatzform = "" | "keilabsatz" | "stegkeil" | "absatzkeil"
+export type SohlenaufbauShoreValue = "30" | "53" | "58"
+export type SohlenaufbauShoreModus = "einheitlich" | "individuell"
+export type SohlenaufbauVerschalungHoehe = "" | "15" | "20" | "25" | "30"
+export type SohlenaufbauVerschalungAusfuehrung = "" | "oberleder" | "gesamt"
+
+export type SohlenaufbauShorePerArea = {
+    zwischensohle: SohlenaufbauShoreValue
+    absatz: SohlenaufbauShoreValue
+}
+
+export type SohlenaufbauShorePerLayer = {
+    zwLayers: SohlenaufbauShoreValue[]
+    abLayers: SohlenaufbauShoreValue[]
+}
 
 export type SohlenaufbauSideHeights = { ferse: string; ballen: string; spitze: string }
 
@@ -959,12 +972,17 @@ export type SohlenaufbauData = {
     rechts: SohlenaufbauSideHeights
     zwSplit: SohlenaufbauLayerSplit
     abSplit: SohlenaufbauLayerSplit
-    absatzform: SohlenaufbauAbsatzform
     farbModus: SohlenaufbauFarbModus
     zwFarbe: string
     abFarbe: string
     zwLayerFarben: string[]
     abLayerFarben: string[]
+    shoreModus: SohlenaufbauShoreModus
+    globalShore: SohlenaufbauShoreValue
+    shorePerArea: SohlenaufbauShorePerArea
+    shorePerLayer: SohlenaufbauShorePerLayer
+    verschalungHoehe: SohlenaufbauVerschalungHoehe
+    verschalungAusfuehrung: SohlenaufbauVerschalungAusfuehrung
 }
 
 function defaultSideHeights(): SohlenaufbauSideHeights {
@@ -978,12 +996,17 @@ export function defaultSohlenaufbauData(): SohlenaufbauData {
         rechts: defaultSideHeights(),
         zwSplit: { mode: "einteilig", layers: ["0"] },
         abSplit: { mode: "einteilig", layers: ["0"] },
-        absatzform: "",
         farbModus: "einheitlich",
         zwFarbe: "#1a1a1a",
         abFarbe: "#1a1a1a",
         zwLayerFarben: ["#1a1a1a"],
         abLayerFarben: ["#1a1a1a"],
+        shoreModus: "einheitlich",
+        globalShore: "53",
+        shorePerArea: { zwischensohle: "53", absatz: "53" },
+        shorePerLayer: { zwLayers: ["53"], abLayers: ["53"] },
+        verschalungHoehe: "",
+        verschalungAusfuehrung: "",
     }
 }
 
@@ -1019,9 +1042,6 @@ export function normalizeSohlenaufbauData(raw: unknown): SohlenaufbauData {
     d.rechts = normalizeSideHeights(o.rechts, d.rechts)
     d.zwSplit = normalizeLayerSplit(o.zwSplit, d.zwSplit)
     d.abSplit = normalizeLayerSplit(o.abSplit, d.abSplit)
-    if (o.absatzform === "" || o.absatzform === "keilabsatz" || o.absatzform === "stegkeil" || o.absatzform === "absatzkeil") {
-        d.absatzform = o.absatzform
-    }
     if (o.farbModus === "einheitlich" || o.farbModus === "individuell") d.farbModus = o.farbModus
     if (typeof o.zwFarbe === "string") d.zwFarbe = o.zwFarbe
     if (typeof o.abFarbe === "string") d.abFarbe = o.abFarbe
@@ -1033,6 +1053,43 @@ export function normalizeSohlenaufbauData(raw: unknown): SohlenaufbauData {
         d.abLayerFarben = o.abLayerFarben.filter((x): x is string => typeof x === "string")
         if (!d.abLayerFarben.length) d.abLayerFarben = ["#1a1a1a"]
     }
+    if (o.shoreModus === "einheitlich" || o.shoreModus === "individuell") d.shoreModus = o.shoreModus
+    const shoreVals = ["30", "53", "58"] as const
+    const parseShore = (x: unknown): SohlenaufbauShoreValue | null =>
+        typeof x === "string" && (shoreVals as readonly string[]).includes(x) ? (x as SohlenaufbauShoreValue) : null
+    const shoreActive = (s: SohlenaufbauShoreValue) => (s === "58" ? "53" : s)
+    const gs = parseShore(o.globalShore)
+    if (gs) d.globalShore = shoreActive(gs)
+    if (o.shorePerArea && typeof o.shorePerArea === "object") {
+        const pa = o.shorePerArea as Record<string, unknown>
+        const z = parseShore(pa.zwischensohle)
+        const a = parseShore(pa.absatz)
+        d.shorePerArea = {
+            zwischensohle: shoreActive(z ?? d.shorePerArea.zwischensohle),
+            absatz: shoreActive(a ?? d.shorePerArea.absatz),
+        }
+    }
+    if (o.shorePerLayer && typeof o.shorePerLayer === "object") {
+        const pl = o.shorePerLayer as Record<string, unknown>
+        if (Array.isArray(pl.zwLayers)) {
+            const arr = pl.zwLayers
+                .map((x) => parseShore(x))
+                .filter((x): x is SohlenaufbauShoreValue => x !== null)
+                .map(shoreActive)
+            if (arr.length) d.shorePerLayer = { ...d.shorePerLayer, zwLayers: arr }
+        }
+        if (Array.isArray(pl.abLayers)) {
+            const arr = pl.abLayers
+                .map((x) => parseShore(x))
+                .filter((x): x is SohlenaufbauShoreValue => x !== null)
+                .map(shoreActive)
+            if (arr.length) d.shorePerLayer = { ...d.shorePerLayer, abLayers: arr }
+        }
+    }
+    const vh = o.verschalungHoehe
+    if (vh === "" || vh === "15" || vh === "20" || vh === "25" || vh === "30") d.verschalungHoehe = vh
+    const va = o.verschalungAusfuehrung
+    if (va === "" || va === "oberleder" || va === "gesamt") d.verschalungAusfuehrung = va
     return d
 }
 
