@@ -10,6 +10,13 @@ import WerkstattzettelSheet, { WerkstattzettelSheetData } from '../Werkstattzett
 import HistoryModal from './HistoryModal';
 import { FileText, Loader2, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { cn } from '@/lib/utils';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export interface PriceDetailPosition {
     id: string;
@@ -57,6 +64,15 @@ interface AbrechnungsuebersichtModalProps {
     customerName?: string;
     orderNumber?: string;
     onInvoiceDownload?: (orderId: string) => void;
+    /** When false, Kostenvoranschlag is hidden (same rule as ProcessTable actions: `order.kva === true`). */
+    kvaEligible?: boolean;
+    /** When false, first action generates KVA number (table parity). Ignored when `onKvaDownload` is not passed. */
+    kvaNumberAvailable?: boolean;
+    /** Uses ProcessTable flow (shipping address modal + PDF). When omitted, modal keeps inline KVA PDF. */
+    onKvaDownload?: (orderId: string) => void | Promise<void>;
+    kvaDownloadLoading?: boolean;
+    onGenerateKvaNumber?: () => void | Promise<void>;
+    isGeneratingKvaNumber?: boolean;
 }
 
 function formatEuro(value: number): string {
@@ -111,7 +127,15 @@ export default function AbrechnungsuebersichtModal({
     customerName = '',
     orderNumber = '',
     onInvoiceDownload,
+    kvaEligible = true,
+    kvaNumberAvailable = true,
+    onKvaDownload,
+    kvaDownloadLoading = false,
+    onGenerateKvaNumber,
+    isGeneratingKvaNumber = false,
 }: AbrechnungsuebersichtModalProps) {
+    const useTableKvaFlow = onKvaDownload != null;
+    const showKvaButton = !useTableKvaFlow || kvaEligible;
     const [data, setData] = useState<PriceDetailsData | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -574,19 +598,70 @@ export default function AbrechnungsuebersichtModal({
                                             Rechnung öffnen
                                         </Button>
                                     )} */}
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="gap-2 cursor-pointer"
-                                            onClick={handleKvaDownload}
-                                            disabled={isGeneratingKvaPdf}
-                                        >
-                                            {isGeneratingKvaPdf
-                                                ? <Loader2 className="w-4 h-4 animate-spin" />
-                                                : <FileText className="w-4 h-4" />
-                                            }
-                                            {isGeneratingKvaPdf ? 'Wird erstellt...' : 'KVA'}
-                                        </Button>
+                                        {showKvaButton &&
+                                            (useTableKvaFlow ? (
+                                                <TooltipProvider delayDuration={200}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <Button
+                                                                variant="outline"
+                                                                size="sm"
+                                                                className={cn(
+                                                                    'gap-2 cursor-pointer',
+                                                                    !kvaNumberAvailable &&
+                                                                        !isGeneratingKvaNumber &&
+                                                                        'opacity-50'
+                                                                )}
+                                                                disabled={kvaDownloadLoading || isGeneratingKvaNumber}
+                                                                onClick={async () => {
+                                                                    if (!orderId) return;
+                                                                    if (kvaNumberAvailable) {
+                                                                        await onKvaDownload(orderId);
+                                                                    } else {
+                                                                        await onGenerateKvaNumber?.();
+                                                                    }
+                                                                }}
+                                                            >
+                                                                {kvaDownloadLoading || isGeneratingKvaNumber ? (
+                                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                                ) : (
+                                                                    <FileText className="w-4 h-4" />
+                                                                )}
+                                                                {kvaDownloadLoading
+                                                                    ? 'KVA...'
+                                                                    : isGeneratingKvaNumber
+                                                                      ? 'KVA Nummer wird generiert...'
+                                                                      : 'KVA'}
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        {!kvaNumberAvailable && !isGeneratingKvaNumber && (
+                                                            <TooltipContent
+                                                                side="top"
+                                                                align="center"
+                                                                sideOffset={4}
+                                                                className="text-xs px-2 py-1"
+                                                            >
+                                                                KVA-Nummer generieren
+                                                            </TooltipContent>
+                                                        )}
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                            ) : (
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2 cursor-pointer"
+                                                    onClick={handleKvaDownload}
+                                                    disabled={isGeneratingKvaPdf}
+                                                >
+                                                    {isGeneratingKvaPdf ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <FileText className="w-4 h-4" />
+                                                    )}
+                                                    {isGeneratingKvaPdf ? 'Wird erstellt...' : 'KVA'}
+                                                </Button>
+                                            ))}
                                         <Button
                                             variant="outline"
                                             size="sm"

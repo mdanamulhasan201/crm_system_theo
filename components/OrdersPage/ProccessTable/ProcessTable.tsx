@@ -21,7 +21,7 @@ import { useOrderActions } from "@/hooks/orders/useOrderActions";
 import { useWerkstattzettelA3Download } from "@/hooks/orders/useWerkstattzettelA3Download";
 import { getLabelFromApiStatus } from "@/lib/orderStatusMappings";
 import { getBarCodeData } from '@/apis/barCodeGenerateApis';
-import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getOrderSettingsShippingAddressesForKv, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
+import { getHalbprobeData, getKrankenKasseStatus, getKvaData, getKvaNumber, getOrderSettingsShippingAddressesForKv, getPaymentStatus, getWerkstattzettelSheetPdfData, updatePaidStatus } from '@/apis/productsOrder';
 import { generatePdfFromElement, pdfPresets } from '@/lib/pdfGenerator';
 import WerkstattzettelSheet, { WerkstattzettelSheetData } from './WerkstattzettelPdf/WerkstattzettelSheet';
 import KvaSheet, { KvaData } from './KvaPdf/KvaSheet';
@@ -124,6 +124,7 @@ export default function ProcessTable() {
     const [billingModalOrderId, setBillingModalOrderId] = useState<string | null>(null);
     const [billingModalCustomerName, setBillingModalCustomerName] = useState<string>('');
     const [billingModalOrderNumber, setBillingModalOrderNumber] = useState<string>('');
+    const [billingModalKvaNumberLoading, setBillingModalKvaNumberLoading] = useState(false);
     const [priceEditModalOrderId, setPriceEditModalOrderId] = useState<string | null>(null);
     const [priceEditModalCustomerName, setPriceEditModalCustomerName] = useState<string>('');
     const [priceEditModalOrderNumber, setPriceEditModalOrderNumber] = useState<string>('');
@@ -374,6 +375,34 @@ export default function ProcessTable() {
 
     // Memoized orders
     const memoizedOrders = useMemo(() => orders, [orders]);
+
+    const billingOrder = useMemo(
+        () => (billingModalOrderId ? memoizedOrders.find((o) => o.id === billingModalOrderId) ?? null : null),
+        [billingModalOrderId, memoizedOrders]
+    );
+
+    const handleBillingModalGenerateKvaNumber = async () => {
+        if (!billingModalOrderId) return;
+        setBillingModalKvaNumberLoading(true);
+        try {
+            const res = await getKvaNumber(billingModalOrderId);
+            if (res?.success) {
+                toast.success(res.message || 'KVA-Nummer erfolgreich abgerufen');
+                await refreshOrderData(billingModalOrderId);
+            } else {
+                toast.error(res?.message || 'Fehler beim Abrufen der KVA-Nummer');
+            }
+        } catch {
+            toast.error('Fehler beim Abrufen der KVA-Nummer');
+        } finally {
+            setBillingModalKvaNumberLoading(false);
+        }
+    };
+
+    const billingKvaDownloadLoading =
+        !!billingModalOrderId &&
+        generatingKvaOrderId === billingModalOrderId &&
+        (isLoadingKvaAddresses || isGeneratingKvaPdf || isDownloadingKvaAfterSelect);
 
     // Handle status filter
     const handleStatusFilter = (status: string) => {
@@ -1002,6 +1031,12 @@ export default function ProcessTable() {
                     customerName={billingModalCustomerName}
                     orderNumber={billingModalOrderNumber}
                     onInvoiceDownload={handleInvoiceDownload}
+                    kvaEligible={!!billingOrder && billingOrder.kva === true}
+                    kvaNumberAvailable={billingOrder != null && billingOrder.kvaNumber != null}
+                    onKvaDownload={handleKvaDownload}
+                    kvaDownloadLoading={billingKvaDownloadLoading}
+                    onGenerateKvaNumber={handleBillingModalGenerateKvaNumber}
+                    isGeneratingKvaNumber={billingModalKvaNumberLoading}
                 />
 
                 {/* Price Edit Modal – opens on "Preis bearbeiten" button (only when halbprobe=true) */}
