@@ -13,6 +13,7 @@ import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import {
     defaultSohlenversteifungData,
+    defaultSohlenaufbauData,
     type HeelWidthAdjustmentData,
     type VorderkappeSideData,
     type RahmenData,
@@ -20,6 +21,7 @@ import {
     type HinterkappeSideData,
     type BrandsohleSideData,
     type SohlenversteifungData,
+    type SohlenaufbauData,
 } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 // Components
@@ -57,6 +59,7 @@ export default function BodenkonstruktionPage() {
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
     const [sohlenversteifung, setSohlenversteifung] = useState<SohlenversteifungData>(defaultSohlenversteifungData)
+    const [sohlenaufbau, setSohlenaufbau] = useState<SohlenaufbauData>(defaultSohlenaufbauData)
 
     // Orthopedic fields
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
@@ -456,6 +459,7 @@ export default function BodenkonstruktionPage() {
             sohlenversteifung: getSelectedValue(selected.sohlenversteifung) || "nein",
             Sohlenversteifung: getSelectedValue(selected.sohlenversteifung) || "nein",
             sohlenversteifung_detail: sohlenversteifung,
+            sohlenaufbau_detail: sohlenaufbau,
 
             // === 6. Konstruktionsart ===
             Konstruktionsart: getSelectedValue(selected.Konstruktionsart) || "",
@@ -774,6 +778,9 @@ export default function BodenkonstruktionPage() {
                 sohlenversteifungUnifiedConfigUi={true}
                 sohlenversteifung={sohlenversteifung}
                 onSohlenversteifungChange={setSohlenversteifung}
+                sohlenaufbauUnifiedConfigUi={true}
+                sohlenaufbau={sohlenaufbau}
+                onSohlenaufbauChange={setSohlenaufbau}
                 konstruktionsartUnifiedConfigUi={true}
                 rahmenUnifiedConfigUi={true}
             />
@@ -801,6 +808,7 @@ export default function BodenkonstruktionPage() {
                     hinterkappeSide={hinterkappeSide}
                     brandsohleSide={brandsohleSide}
                     sohlenversteifung={sohlenversteifung}
+                    sohlenaufbau={sohlenaufbau}
                 />
             )}
 

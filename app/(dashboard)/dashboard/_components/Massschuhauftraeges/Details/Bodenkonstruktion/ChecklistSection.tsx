@@ -1,11 +1,12 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, YesNoField, VorderkappeSideField, RahmenField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, defaultSohlenversteifungData, type HeelWidthAdjustmentData, type VorderkappeSideData, type RahmenData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData, type SohlenversteifungData } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, YesNoField, VorderkappeSideField, RahmenField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, defaultSohlenversteifungData, defaultSohlenaufbauData, type HeelWidthAdjustmentData, type VorderkappeSideData, type RahmenData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData, type SohlenversteifungData, type SohlenaufbauData } from "./FormFields"
 import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
 import VorderkappeUnifiedConfigCard from "./VorderkappeUnifiedConfigCard"
 import BrandsohleUnifiedConfigCard from "./BrandsohleUnifiedConfigCard"
 import VerbindungslederConfigCard from "./VerbindungslederConfigCard"
 import SohlenversteifungConfigCard from "./SohlenversteifungConfigCard"
+import SohlenaufbauConfigCard from "./sohlenaufbau/SohlenaufbauConfigCard"
 import KonstruktionsartConfigCard from "./KonstruktionsartConfigCard"
 import RahmenUnifiedConfigCard from "./RahmenUnifiedConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
@@ -54,6 +55,10 @@ interface ChecklistSectionProps {
     sohlenversteifungUnifiedConfigUi?: boolean
     sohlenversteifung?: SohlenversteifungData | null
     onSohlenversteifungChange?: (value: SohlenversteifungData) => void
+    /** When true: „Sohlenaufbau“ ConfigCard (Höhen, Schichten, Farben, 3D). */
+    sohlenaufbauUnifiedConfigUi?: boolean
+    sohlenaufbau?: SohlenaufbauData | null
+    onSohlenaufbauChange?: (value: SohlenaufbauData) => void
     /** When true: „Konstruktionsart“ als ConfigCard (RadioOption; Optionen aus ShoeData). */
     konstruktionsartUnifiedConfigUi?: boolean
     /** When true: „Rahmen“ als ConfigCard (Rahmentyp + Verschalung mit Bildern). */
@@ -105,6 +110,9 @@ export default function ChecklistSection({
     sohlenversteifungUnifiedConfigUi = false,
     sohlenversteifung = null,
     onSohlenversteifungChange,
+    sohlenaufbauUnifiedConfigUi = false,
+    sohlenaufbau = null,
+    onSohlenaufbauChange,
     konstruktionsartUnifiedConfigUi = false,
     rahmenUnifiedConfigUi = false,
     onHinterkappeChange,
@@ -188,6 +196,11 @@ export default function ChecklistSection({
                                     onSohlenversteifungChange?.(v)
                                     onSetGroup(g.id, v.enabled ? "ja" : "nein")
                                 }}
+                            />
+                        ) : g.fieldType === "sohlenaufbau" && sohlenaufbauUnifiedConfigUi ? (
+                            <SohlenaufbauConfigCard
+                                value={sohlenaufbau ?? defaultSohlenaufbauData()}
+                                onChange={(v) => onSohlenaufbauChange?.(v)}
                             />
                         ) : g.fieldType === "yesNo" ? (
                             g.id === "verbindungsleder" && verbindungslederUnifiedConfigUi ? (

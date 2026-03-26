@@ -19,8 +19,8 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "./Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData, SohlenversteifungData } from "./Bodenkonstruktion/FormFields"
-import { defaultSohlenversteifungData } from "./Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData, SohlenversteifungData, SohlenaufbauData } from "./Bodenkonstruktion/FormFields"
+import { defaultSohlenversteifungData, defaultSohlenaufbauData } from "./Bodenkonstruktion/FormFields"
 
 // Components
 import ProductHeader from "./Bodenkonstruktion/ProductHeader"
@@ -61,6 +61,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
     const [sohlenversteifung, setSohlenversteifung] = useState<SohlenversteifungData>(defaultSohlenversteifungData)
+    const [sohlenaufbau, setSohlenaufbau] = useState<SohlenaufbauData>(defaultSohlenaufbauData)
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
     const [rahmen, setRahmen] = useState<RahmenData | null>(null)
     const [hinterkappeMusterSide, setHinterkappeMusterSide] = useState<HinterkappeMusterSideData | null>(null)
@@ -792,6 +793,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             "sohlenversteifung": getSelectedValue(selected.sohlenversteifung) || "nein",
             "Sohlenversteifung": getSelectedValue(selected.sohlenversteifung) || "nein",
             "sohlenversteifung_detail": sohlenversteifung,
+            "sohlenaufbau_detail": sohlenaufbau,
             "Konstruktionsart": getSelectedValue(selected.Konstruktionsart) || "",
             "Konstruktionsart_price": 0.0,
             "brandsohle": getSelectedValue(selected.brandsohle) || "",
@@ -1039,6 +1041,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
 
         formData.append('Sohlenversteifung', getSelectedValue(selected.sohlenversteifung) || 'nein')
         formData.append('sohlenversteifung_detail', JSON.stringify(sohlenversteifung))
+        formData.append('sohlenaufbau_detail', JSON.stringify(sohlenaufbau))
 
         // Farbauswahl_Bodenkonstruktion
         const farbauswahl = getSelectedValue(selected.farbauswahl)
@@ -1219,6 +1222,9 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 sohlenversteifungUnifiedConfigUi={true}
                 sohlenversteifung={sohlenversteifung}
                 onSohlenversteifungChange={setSohlenversteifung}
+                sohlenaufbauUnifiedConfigUi={true}
+                sohlenaufbau={sohlenaufbau}
+                onSohlenaufbauChange={setSohlenaufbau}
                 konstruktionsartUnifiedConfigUi={true}
                 rahmenUnifiedConfigUi={true}
             />
@@ -1247,6 +1253,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                     hinterkappeSide={hinterkappeSide}
                     brandsohleSide={brandsohleSide}
                     sohlenversteifung={sohlenversteifung}
+                    sohlenaufbau={sohlenaufbau}
                 />
             )}
 

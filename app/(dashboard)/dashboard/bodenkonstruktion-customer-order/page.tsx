@@ -11,8 +11,8 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData, SohlenversteifungData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
-import { defaultSohlenversteifungData, normalizeSohlenversteifungData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData, SohlenversteifungData, SohlenaufbauData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import { defaultSohlenversteifungData, normalizeSohlenversteifungData, defaultSohlenaufbauData, normalizeSohlenaufbauData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 // Components
 import SoleSelectionSection from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/SoleSelectionSection"
@@ -50,6 +50,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
     const [sohlenversteifung, setSohlenversteifung] = useState<SohlenversteifungData>(defaultSohlenversteifungData)
+    const [sohlenaufbau, setSohlenaufbau] = useState<SohlenaufbauData>(defaultSohlenaufbauData)
 
     // Orthopedic fields
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
@@ -141,6 +142,11 @@ export default function BodenkonstruktionCustomerOrderPage() {
                     setSohlenversteifung(normalizeSohlenversteifungData(json.sohlenversteifung_detail))
                 } else if (json.sohlenversteifung != null && typeof json.sohlenversteifung === "object" && !Array.isArray(json.sohlenversteifung)) {
                     setSohlenversteifung(normalizeSohlenversteifungData(json.sohlenversteifung))
+                }
+                if (json.sohlenaufbau_detail != null) {
+                    setSohlenaufbau(normalizeSohlenaufbauData(json.sohlenaufbau_detail))
+                } else if (json.sohlenaufbau != null && typeof json.sohlenaufbau === "object" && !Array.isArray(json.sohlenaufbau)) {
+                    setSohlenaufbau(normalizeSohlenaufbauData(json.sohlenaufbau))
                 }
                 if (json.optionInputs && typeof json.optionInputs === "object") setOptionInputs(json.optionInputs as OptionInputsState)
                 if (json.textAreas && typeof json.textAreas === "object") setTextAreas((prev) => ({ ...prev, ...json.textAreas } as TextAreasState))
@@ -331,6 +337,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
         customerName,
         heelWidthAdjustment,
         sohlenversteifung_detail: sohlenversteifung,
+        sohlenaufbau_detail: sohlenaufbau,
         vorderkappeSide,
         rahmen,
         hinterkappeMusterSide,
@@ -556,6 +563,9 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 sohlenversteifungUnifiedConfigUi={true}
                 sohlenversteifung={sohlenversteifung}
                 onSohlenversteifungChange={setSohlenversteifung}
+                sohlenaufbauUnifiedConfigUi={true}
+                sohlenaufbau={sohlenaufbau}
+                onSohlenaufbauChange={setSohlenaufbau}
                 hideBrandsohlePrice={true}
                 hideRahmenPrice={true}
                 hideOptionPricesForGroupIds={["laufsohle_lose_beilegen"]}
@@ -584,6 +594,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
                     hinterkappeSide={hinterkappeSide}
                     brandsohleSide={brandsohleSide}
                     sohlenversteifung={sohlenversteifung}
+                    sohlenaufbau={sohlenaufbau}
                 />
             )}
 

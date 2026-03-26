@@ -29,7 +29,7 @@ type GroupDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenversteifung" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
+    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenversteifung" | "sohlenaufbau" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
 }
 
 export type HeelWidthAdjustmentData = {
@@ -938,6 +938,101 @@ export function normalizeSohlenversteifungData(raw: unknown): SohlenversteifungD
     if (typeof o.gleichMm === "string") d.gleichMm = o.gleichMm
     if (typeof o.linksMm === "string") d.linksMm = o.linksMm
     if (typeof o.rechtsMm === "string") d.rechtsMm = o.rechtsMm
+    return d
+}
+
+// Sohlenaufbau – Höhen, Schichten, Absatzform, Farben, 3D-Vorschau
+export type SohlenaufbauSplitMode = "einteilig" | "gleichmaessig" | "individuell"
+export type SohlenaufbauFarbModus = "einheitlich" | "individuell"
+export type SohlenaufbauAbsatzform = "" | "keilabsatz" | "stegkeil" | "absatzkeil"
+
+export type SohlenaufbauSideHeights = { ferse: string; ballen: string; spitze: string }
+
+export type SohlenaufbauLayerSplit = {
+    mode: SohlenaufbauSplitMode
+    layers: string[]
+}
+
+export type SohlenaufbauData = {
+    mode: "gleich" | "unterschiedlich"
+    links: SohlenaufbauSideHeights
+    rechts: SohlenaufbauSideHeights
+    zwSplit: SohlenaufbauLayerSplit
+    abSplit: SohlenaufbauLayerSplit
+    absatzform: SohlenaufbauAbsatzform
+    farbModus: SohlenaufbauFarbModus
+    zwFarbe: string
+    abFarbe: string
+    zwLayerFarben: string[]
+    abLayerFarben: string[]
+}
+
+function defaultSideHeights(): SohlenaufbauSideHeights {
+    return { ferse: "", ballen: "", spitze: "" }
+}
+
+export function defaultSohlenaufbauData(): SohlenaufbauData {
+    return {
+        mode: "gleich",
+        links: defaultSideHeights(),
+        rechts: defaultSideHeights(),
+        zwSplit: { mode: "einteilig", layers: ["0"] },
+        abSplit: { mode: "einteilig", layers: ["0"] },
+        absatzform: "",
+        farbModus: "einheitlich",
+        zwFarbe: "#1a1a1a",
+        abFarbe: "#1a1a1a",
+        zwLayerFarben: ["#1a1a1a"],
+        abLayerFarben: ["#1a1a1a"],
+    }
+}
+
+function normalizeSideHeights(raw: unknown, fallback: SohlenaufbauSideHeights): SohlenaufbauSideHeights {
+    if (!raw || typeof raw !== "object") return { ...fallback }
+    const o = raw as Record<string, unknown>
+    return {
+        ferse: typeof o.ferse === "string" ? o.ferse : fallback.ferse,
+        ballen: typeof o.ballen === "string" ? o.ballen : fallback.ballen,
+        spitze: typeof o.spitze === "string" ? o.spitze : fallback.spitze,
+    }
+}
+
+function normalizeLayerSplit(raw: unknown, fallback: SohlenaufbauLayerSplit): SohlenaufbauLayerSplit {
+    if (!raw || typeof raw !== "object") return { ...fallback, layers: [...fallback.layers] }
+    const o = raw as Record<string, unknown>
+    const mode =
+        o.mode === "einteilig" || o.mode === "gleichmaessig" || o.mode === "individuell"
+            ? o.mode
+            : fallback.mode
+    const layers = Array.isArray(o.layers)
+        ? o.layers.filter((x): x is string => typeof x === "string")
+        : [...fallback.layers]
+    return { mode, layers: layers.length ? layers : [...fallback.layers] }
+}
+
+export function normalizeSohlenaufbauData(raw: unknown): SohlenaufbauData {
+    const d = defaultSohlenaufbauData()
+    if (!raw || typeof raw !== "object") return d
+    const o = raw as Record<string, unknown>
+    if (o.mode === "gleich" || o.mode === "unterschiedlich") d.mode = o.mode
+    d.links = normalizeSideHeights(o.links, d.links)
+    d.rechts = normalizeSideHeights(o.rechts, d.rechts)
+    d.zwSplit = normalizeLayerSplit(o.zwSplit, d.zwSplit)
+    d.abSplit = normalizeLayerSplit(o.abSplit, d.abSplit)
+    if (o.absatzform === "" || o.absatzform === "keilabsatz" || o.absatzform === "stegkeil" || o.absatzform === "absatzkeil") {
+        d.absatzform = o.absatzform
+    }
+    if (o.farbModus === "einheitlich" || o.farbModus === "individuell") d.farbModus = o.farbModus
+    if (typeof o.zwFarbe === "string") d.zwFarbe = o.zwFarbe
+    if (typeof o.abFarbe === "string") d.abFarbe = o.abFarbe
+    if (Array.isArray(o.zwLayerFarben)) {
+        d.zwLayerFarben = o.zwLayerFarben.filter((x): x is string => typeof x === "string")
+        if (!d.zwLayerFarben.length) d.zwLayerFarben = ["#1a1a1a"]
+    }
+    if (Array.isArray(o.abLayerFarben)) {
+        d.abLayerFarben = o.abLayerFarben.filter((x): x is string => typeof x === "string")
+        if (!d.abLayerFarben.length) d.abLayerFarben = ["#1a1a1a"]
+    }
     return d
 }
 

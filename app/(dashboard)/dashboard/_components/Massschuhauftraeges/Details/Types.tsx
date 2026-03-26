@@ -16,7 +16,7 @@ export type GroupDef2 = {
   id: string
   question: string
   options: OptionDef[]
-  fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenversteifung" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
+  fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenversteifung" | "sohlenaufbau" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
   multiSelect?: boolean
   subOptions?: {
     [key: string]: Array<{

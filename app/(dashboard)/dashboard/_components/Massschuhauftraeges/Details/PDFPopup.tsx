@@ -12,8 +12,9 @@ import type {
   BrandsohleSideData,
   RahmenData,
   SohlenversteifungData,
+  SohlenaufbauData,
 } from "./Bodenkonstruktion/FormFields"
-import { defaultSohlenversteifungData } from "./Bodenkonstruktion/FormFields"
+import { defaultSohlenversteifungData, defaultSohlenaufbauData } from "./Bodenkonstruktion/FormFields"
 
 const HINTERKAPPE_MUSTERART_LABELS: Record<string, string> = {
   normal: "Normal",
@@ -157,6 +158,54 @@ function buildSohlenversteifungPdfLines(d: SohlenversteifungData | null | undefi
   return parts
 }
 
+function pdfParseMm(v: string): number {
+  const n = parseFloat(v)
+  return Number.isNaN(n) ? 0 : n
+}
+
+function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): string[] {
+  const v = d ?? defaultSohlenaufbauData()
+  const parts: string[] = []
+  const has =
+    pdfParseMm(v.links.ferse) > 0 ||
+    pdfParseMm(v.links.ballen) > 0 ||
+    pdfParseMm(v.links.spitze) > 0
+  if (!has) {
+    parts.push("Noch keine Höhenangaben")
+    return parts
+  }
+  parts.push(v.mode === "gleich" ? "Ausführung: Beidseitig identisch" : "Ausführung: Links und rechts unterschiedlich")
+  parts.push(
+    `Links – Ferse/Absatz: ${v.links.ferse || "–"} mm, Ballen: ${v.links.ballen || "–"} mm, Spitze: ${v.links.spitze || "–"} mm`
+  )
+  if (v.mode === "unterschiedlich") {
+    parts.push(
+      `Rechts – Ferse/Absatz: ${v.rechts.ferse || "–"} mm, Ballen: ${v.rechts.ballen || "–"} mm, Spitze: ${v.rechts.spitze || "–"} mm`
+    )
+  }
+  const ferse = pdfParseMm(v.links.ferse)
+  const ballen = pdfParseMm(v.links.ballen)
+  const zw = ballen
+  const ab = Math.max(0, ferse - ballen)
+  if (ferse >= ballen) {
+    parts.push(`Berechnung – Zwischensohle: ${zw} mm, Absatz: ${ab} mm`)
+  } else {
+    parts.push("Hinweis: Fersenhöhe kleiner als Ballenhöhe (ungültige Kombination)")
+  }
+  if (v.absatzform) {
+    const map: Record<string, string> = {
+      keilabsatz: "Keilabsatz",
+      stegkeil: "Stegkeil",
+      absatzkeil: "Absatzkeil",
+    }
+    parts.push(`Absatzform: ${map[v.absatzform] ?? v.absatzform}`)
+  }
+  parts.push(`Farbkonzept: ${v.farbModus === "einheitlich" ? "Eine Farbe pro Bereich" : "Individuell pro Lage"}`)
+  parts.push(`Zwischensohle – Aufteilung: ${v.zwSplit.mode}, Lagen: ${v.zwSplit.layers.join(" / ") || "–"}`)
+  parts.push(`Absatz – Aufteilung: ${v.abSplit.mode}, Lagen: ${v.abSplit.layers.join(" / ") || "–"}`)
+  return parts
+}
+
 // Order data interface for dynamic PDF content
 export interface OrderDataForPDF {
   orderNumber?: string
@@ -210,6 +259,7 @@ interface PDFPopupProps {
   hinterkappeSide?: HinterkappeSideData | null
   brandsohleSide?: BrandsohleSideData | null
   sohlenversteifung?: SohlenversteifungData | null
+  sohlenaufbau?: SohlenaufbauData | null
 }
 
 type OptionDef = { id: string; label: string }
@@ -287,6 +337,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   hinterkappeSide,
   brandsohleSide,
   sohlenversteifung,
+  sohlenaufbau,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
@@ -976,6 +1027,22 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       )
                     }
                     
+                    if (g.fieldType === "sohlenaufbau") {
+                      const parts = buildSohlenaufbauPdfLines(sohlenaufbau ?? undefined)
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {parts.map((part, idx) => (
+                              <div key={idx} className="mb-1">
+                                <ModalCheckbox isSelected={true} label={part} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
                     // Handle yesNo field type (e.g., verbindungsleder)
                     if (g.fieldType === "yesNo") {
                       const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
@@ -1377,6 +1444,22 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 
                 if (g.fieldType === "sohlenversteifung") {
                   const parts = buildSohlenversteifungPdfLines(sohlenversteifung ?? undefined)
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {parts.map((part, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={part} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                
+                if (g.fieldType === "sohlenaufbau") {
+                  const parts = buildSohlenaufbauPdfLines(sohlenaufbau ?? undefined)
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>

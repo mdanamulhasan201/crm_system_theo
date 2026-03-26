@@ -35,7 +35,7 @@ export function useBodenkonstruktionCalculations(
         let totalExtraPrice = 0
 
         for (const group of GROUPS2) {
-            if (group.fieldType === "sohlenversteifung") {
+            if (group.fieldType === "sohlenversteifung" || group.fieldType === "sohlenaufbau") {
                 continue
             }
 

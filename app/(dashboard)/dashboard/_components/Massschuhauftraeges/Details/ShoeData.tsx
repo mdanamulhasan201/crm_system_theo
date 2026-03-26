@@ -351,6 +351,13 @@ export const GROUPS2: GroupDef2[] = [
     ],
   },
 
+  {
+    id: "sohlenaufbau",
+    question: "Sohlenaufbau",
+    fieldType: "sohlenaufbau",
+    options: [],
+  },
+
   // {
   //   id: "farbauswahl",
   //   question: "Farbauswahl Bodenkonstruktion",
