@@ -1232,6 +1232,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 brandsohleSide={brandsohleSide}
                 brandsohleUnifiedConfigUi={true}
                 verbindungslederUnifiedConfigUi={true}
+                konstruktionsartUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

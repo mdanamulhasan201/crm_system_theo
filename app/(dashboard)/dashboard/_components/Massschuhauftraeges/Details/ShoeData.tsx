@@ -329,7 +329,8 @@ export const GROUPS2: GroupDef2[] = [
     fieldType: "checkbox",
     options: [
       { id: "geldakt", label: "Geklebt" },
-      { id: "reimmargandritt", label: "Rahmengenäht (Maschine) (+30 € Aufpreis)", disabled: true },
+      { id: "genaeht", label: "Genäht (+29,99 €)", disabled: true },
+      { id: "schaft_aufgezwickt", label: "Schaft nur aufgezwickt (-69,99 €)", disabled: true },
     ],
   },
   

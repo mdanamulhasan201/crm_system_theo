@@ -5,6 +5,7 @@ import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
 import VorderkappeUnifiedConfigCard from "./VorderkappeUnifiedConfigCard"
 import BrandsohleUnifiedConfigCard from "./BrandsohleUnifiedConfigCard"
 import VerbindungslederConfigCard from "./VerbindungslederConfigCard"
+import KonstruktionsartConfigCard from "./KonstruktionsartConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -51,6 +52,8 @@ interface ChecklistSectionProps {
     brandsohleUnifiedConfigUi?: boolean
     /** When true: „Verbindungsleder“ als ConfigCard (Ja/Nein mit RadioOption). */
     verbindungslederUnifiedConfigUi?: boolean
+    /** When true: „Konstruktionsart“ als ConfigCard (RadioOption; Optionen aus ShoeData). */
+    konstruktionsartUnifiedConfigUi?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -99,6 +102,7 @@ export default function ChecklistSection({
     vorderkappeUnifiedConfigUi = false,
     brandsohleUnifiedConfigUi = false,
     verbindungslederUnifiedConfigUi = false,
+    konstruktionsartUnifiedConfigUi = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -296,6 +300,14 @@ export default function ChecklistSection({
                         ) : g.id === "sohlenhoehe_differenziert" ? (
                             // Hide this field if Sohlenmaterial is not selected
                             null
+                        ) : g.id === "Konstruktionsart" &&
+                          konstruktionsartUnifiedConfigUi &&
+                          g.fieldType === "checkbox" ? (
+                            <KonstruktionsartConfigCard
+                                options={g.options}
+                                selected={normalizedSelected}
+                                onSelect={(optId) => onSetGroup(g.id, optId)}
+                            />
                         ) : (
                             <>
                                 <OptionGroup
