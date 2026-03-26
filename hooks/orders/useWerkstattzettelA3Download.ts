@@ -108,10 +108,35 @@ export const useWerkstattzettelA3Download = () => {
             const months = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
             const todayText = `${String(now.getDate()).padStart(2, '0')}. ${months[now.getMonth()]} ${now.getFullYear()}`;
 
+            const formatFinishDateGerman = (iso: string | null | undefined): string | null => {
+                if (!iso) return null;
+                const dt = new Date(iso);
+                if (Number.isNaN(dt.getTime())) return null;
+                try {
+                    return dt.toLocaleString('de-DE', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                    });
+                } catch {
+                    const day = String(dt.getDate()).padStart(2, '0');
+                    const mon = months[dt.getMonth()];
+                    const year = dt.getFullYear();
+                    const h = String(dt.getHours()).padStart(2, '0');
+                    const min = String(dt.getMinutes()).padStart(2, '0');
+                    return `${day}. ${mon} ${year}, ${h}:${min} Uhr`;
+                }
+            };
+
+            const finishDateText = formatFinishDateGerman(
+                (d as { finishDate?: string | null }).finishDate
+            );
+
             const customerName = [d.customerInfo?.firstName, d.customerInfo?.lastName].filter(Boolean).join(' ').trim() || '—';
 
             const bottomBlockHeight = 50;
-            // Start slot at 50mm so images are vertically centered at the true middle of the page (420/2 = 210mm)
             const topImagesY = 50;
             const imagesAreaHeight = pageHeight - bottomBlockHeight - topImagesY;
             const gap = 4;
@@ -150,52 +175,74 @@ export const useWerkstattzettelA3Download = () => {
             const partnerLogoPng = partnerLogoRaw ? await toPng(partnerLogoRaw) : null;
 
             pdf.setFontSize(11);
-            const pad = 8; // uniform padding on all four sides (mm)
-            const headerY = pad;
+            const pad = 8;
+            // Left header (Datum, …) — right column sits a bit higher for visual balance
+            const headerY = pad + 8;
+            const rightHeaderLiftMm = 4;
             const headerLineGap = 6;
             const textPadX = pad;
 
-            // Left side: customer info
-            textWithHalo(`Datum: ${todayText}`, textPadX, headerY);
-            textWithHalo(`Auftrag: ${d.orderNumber ?? '—'}`, textPadX, headerY + headerLineGap);
+            // Left side: Datum first, then Fertigstellung (same line rhythm as right)
+            let leftLine = 0;
+            textWithHalo(`Datum: ${todayText}`, textPadX, headerY + headerLineGap * leftLine);
+            leftLine += 1;
+            if (finishDateText) {
+                textWithHalo(`Fertigstellung: ${finishDateText}`, textPadX, headerY + headerLineGap * leftLine);
+                leftLine += 1;
+            }
+            textWithHalo(`Auftrag: ${d.orderNumber ?? '—'}`, textPadX, headerY + headerLineGap * leftLine);
+            leftLine += 1;
             const customerDisplayName = d.customerInfo?.customerNumber
                 ? `${customerName} (${d.customerInfo.customerNumber})`
                 : customerName;
-            textWithHalo('Kunde', textPadX, headerY + headerLineGap * 2);
-            textWithHalo(customerDisplayName, textPadX, headerY + headerLineGap * 3, { fontStyle: 'bold' });
-            if (d.customerInfo?.phone) textWithHalo(`Tel.: ${d.customerInfo.phone}`, textPadX, headerY + headerLineGap * 4);
+            textWithHalo(customerDisplayName, textPadX, headerY + headerLineGap * leftLine, { fontStyle: 'bold' });
+            leftLine += 1;
+            if (d.customerInfo?.phone) textWithHalo(`Tel.: ${d.customerInfo.phone}`, textPadX, headerY + headerLineGap * leftLine);
 
-            // Right side: [LOGO] on top, then name, then address — all right-aligned from headerY
+            // Right side: logo + partner text slightly higher than left block
             const rightPadX = pageWidth - pad;
-            const logoSize = 18;
-            const logoX = pageWidth - pad - logoSize;
-            const logoY = headerY;
+            const logoBoxMm = 18;
+            const logoX = pageWidth - pad - logoBoxMm;
+            const logoY = headerY - rightHeaderLiftMm;
+
             if (partnerLogoPng) {
                 const logoDim = await getDim(partnerLogoPng);
                 if (logoDim) {
                     const aspect = logoDim.w / logoDim.h;
-                    const lw = aspect >= 1 ? logoSize : logoSize * aspect;
-                    const lh = aspect >= 1 ? logoSize / aspect : logoSize;
-                    pdf.addImage(partnerLogoPng, 'PNG', logoX + (logoSize - lw) / 2, logoY + (logoSize - lh) / 2, lw, lh, undefined, 'FAST');
+                    const lw = aspect >= 1 ? logoBoxMm : logoBoxMm * aspect;
+                    const lh = aspect >= 1 ? logoBoxMm / aspect : logoBoxMm;
+                    pdf.addImage(
+                        partnerLogoPng,
+                        'PNG',
+                        logoX + (logoBoxMm - lw) / 2,
+                        logoY + (logoBoxMm - lh) / 2,
+                        lw,
+                        lh,
+                        undefined,
+                        'FAST'
+                    );
                 }
             }
-            // Name and address start just below the logo
-            const maxPartnerTextWidth = 100; // mm – cap right-side header text width
-            const partnerTextY = logoY + logoSize + 6;
-            if (d.partnerInfo?.busnessName) {
-                const nameLines: string[] = pdf.splitTextToSize(d.partnerInfo.busnessName, maxPartnerTextWidth);
-                nameLines.forEach((line: string, i: number) => {
-                    textWithHalo(line, rightPadX, partnerTextY + i * headerLineGap, { align: 'right', fontStyle: 'bold' });
+
+            const maxPartnerTextWidth = 100;
+            const partnerTextY = logoY + logoBoxMm + 6;
+            const nameLines: string[] = d.partnerInfo?.busnessName
+                ? (pdf.splitTextToSize(d.partnerInfo.busnessName, maxPartnerTextWidth) as string[])
+                : [];
+            nameLines.forEach((line: string, i: number) => {
+                textWithHalo(line, rightPadX, partnerTextY + i * headerLineGap, {
+                    align: 'right',
+                    fontStyle: 'bold',
                 });
-            }
+            });
             const partnerAddress = d.partnerInfo?.storeLocations?.[0]?.address || '';
             if (partnerAddress) {
                 const addrLines: string[] = pdf.splitTextToSize(partnerAddress, maxPartnerTextWidth);
-                const nameLineCount = d.partnerInfo?.busnessName
-                    ? (pdf.splitTextToSize(d.partnerInfo.busnessName, maxPartnerTextWidth) as string[]).length
-                    : 1;
+                const nameLineCount = nameLines.length;
                 addrLines.forEach((line: string, i: number) => {
-                    textWithHalo(line, rightPadX, partnerTextY + (nameLineCount + i) * headerLineGap, { align: 'right' });
+                    textWithHalo(line, rightPadX, partnerTextY + (nameLineCount + i) * headerLineGap, {
+                        align: 'right',
+                    });
                 });
             }
 
