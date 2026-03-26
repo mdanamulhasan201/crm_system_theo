@@ -13,8 +13,10 @@ import type {
   RahmenData,
   SohlenversteifungData,
   SohlenaufbauData,
+  SohlenaufbauShoreValue,
 } from "./Bodenkonstruktion/FormFields"
 import { defaultSohlenversteifungData, defaultSohlenaufbauData } from "./Bodenkonstruktion/FormFields"
+import { evaShoreLabel } from "./Bodenkonstruktion/sohlenaufbau/shoreDisplay"
 
 const HINTERKAPPE_MUSTERART_LABELS: Record<string, string> = {
   normal: "Normal",
@@ -199,11 +201,15 @@ function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): stri
   parts.push(
     `Material / Shore-Härte: ${shoreMod === "individuell" ? "Individuell pro Bereich" : "Einheitlich für gesamten Aufbau"}`
   )
+  const pdfEvaShore = (raw: string | undefined): string => {
+    const x = raw === "30" || raw === "53" || raw === "58" ? raw : "53"
+    return evaShoreLabel(x as SohlenaufbauShoreValue)
+  }
   if (shoreMod === "einheitlich") {
-    parts.push(`Shore (gesamt): ${v.globalShore ?? "53"}`)
+    parts.push(`Shore (gesamt): ${pdfEvaShore(v.globalShore)}`)
   } else {
-    if (zw > 0) parts.push(`Shore Zwischensohle: ${v.shorePerArea?.zwischensohle ?? "53"}`)
-    if (ab > 0) parts.push(`Shore Absatz: ${v.shorePerArea?.absatz ?? "53"}`)
+    if (zw > 0) parts.push(`Shore Zwischensohle: ${pdfEvaShore(v.shorePerArea?.zwischensohle)}`)
+    if (ab > 0) parts.push(`Shore Absatz: ${pdfEvaShore(v.shorePerArea?.absatz)}`)
   }
   const layerSplitUi =
     v.farbModus === "individuell" && (v.zwSplit.mode !== "einteilig" || v.abSplit.mode !== "einteilig")
@@ -211,10 +217,14 @@ function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): stri
     const zwN = v.zwSplit.mode === "einteilig" ? 1 : v.zwSplit.layers.length
     const abN = v.abSplit.mode === "einteilig" ? 1 : v.abSplit.layers.length
     if (zw > 0 && zwN > 1 && v.shorePerLayer.zwLayers?.length) {
-      parts.push(`Shore pro Lage Zwischensohle: ${v.shorePerLayer.zwLayers.map((s, i) => `L${i + 1}=${s}`).join(", ")}`)
+      parts.push(
+        `Shore pro Lage Zwischensohle: ${v.shorePerLayer.zwLayers.map((s, i) => `L${i + 1}=${pdfEvaShore(s)}`).join(", ")}`
+      )
     }
     if (ab > 0 && abN > 1 && v.shorePerLayer.abLayers?.length) {
-      parts.push(`Shore pro Lage Absatz: ${v.shorePerLayer.abLayers.map((s, i) => `L${i + 1}=${s}`).join(", ")}`)
+      parts.push(
+        `Shore pro Lage Absatz: ${v.shorePerLayer.abLayers.map((s, i) => `L${i + 1}=${pdfEvaShore(s)}`).join(", ")}`
+      )
     }
   }
   if (v.verschalungHoehe) {

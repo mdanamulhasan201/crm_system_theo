@@ -3,6 +3,7 @@
 import type { SohlenaufbauShoreValue } from "../FormFields"
 import { SOLE_COLORS } from "./constants"
 import { isSohlenaufbauColorAllowedForShore } from "./shoreColorRules"
+import { evaShoreLabel } from "./shoreDisplay"
 
 export default function SohlenaufbauColorPicker({
   value,
@@ -26,7 +27,9 @@ export default function SohlenaufbauColorPicker({
             <button
               key={c.value}
               type="button"
-              title={allowed ? c.label : `${c.label} – nicht verfügbar mit Shore ${activeShore}`}
+              title={
+                allowed ? c.label : `${c.label} – nicht verfügbar mit ${evaShoreLabel(activeShore)}`
+              }
               disabled={!allowed}
               onClick={() => onChange(c.value)}
               className={`h-8 w-8 rounded-full border-2 transition-all ${
@@ -42,7 +45,7 @@ export default function SohlenaufbauColorPicker({
         })}
       </div>
       {activeShore === "30" ? (
-        <p className="text-xs text-gray-500">Shore 30 ist nur mit Schwarz und Dunkelbraun verfügbar.</p>
+        <p className="text-xs text-gray-500">EVA Shore 30 ist nur mit Schwarz und Dunkelbraun verfügbar.</p>
       ) : null}
     </div>
   )

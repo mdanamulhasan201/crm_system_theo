@@ -8,11 +8,12 @@ import type {
   SohlenaufbauShorePerLayer,
   SohlenaufbauShoreValue,
 } from "../FormFields"
+import { EVA_SHORE_LABEL } from "./shoreDisplay"
 
 const SHORE_OPTIONS: { value: SohlenaufbauShoreValue; label: string; sub: string; disabled?: boolean }[] = [
-  { value: "30", label: "Shore 30", sub: "weich · nur Schwarz / Braun" },
-  { value: "53", label: "Shore 53", sub: "Standard" },
-  { value: "58", label: "Shore 58", sub: "fest · bald verfügbar", disabled: true },
+  { value: "30", label: EVA_SHORE_LABEL["30"], sub: "weich · nur Schwarz / Braun" },
+  { value: "53", label: EVA_SHORE_LABEL["53"], sub: "Standard" },
+  { value: "58", label: EVA_SHORE_LABEL["58"], sub: "", disabled: true },
 ]
 
 function ShoreChip({
@@ -38,7 +39,7 @@ function ShoreChip({
       }`}
     >
       <span className="block text-sm font-medium">{opt.label}</span>
-      <span className="text-xs text-gray-500">{opt.sub}</span>
+      {opt.sub ? <span className="text-xs text-gray-500">{opt.sub}</span> : null}
     </button>
   )
 }
@@ -88,7 +89,7 @@ export default function SohlenaufbauShoreSection({
       <div className="space-y-2">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium text-gray-700">Material / Shore-Härte</p>
-          <InfoTooltip content="Shore 30 ist nur mit Schwarz und Dunkelbraun verfügbar. Shore 58 wird aktuell nicht angeboten." />
+          <InfoTooltip content="EVA Shore 30 ist nur mit Schwarz und Dunkelbraun verfügbar. EVA Shore 58 wird aktuell nicht angeboten." />
         </div>
         <div className="flex flex-wrap gap-x-6 gap-y-2">
           <RadioOption
