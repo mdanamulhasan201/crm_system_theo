@@ -3,13 +3,21 @@ import { ChevronDown, X, Check } from 'lucide-react';
 import PositionsnummerDropdown from '../Dropdowns/PositionsnummerDropdown';
 import EmployeeDropdown from '../../Common/EmployeeDropdown';
 
+function RequiredMark({ show }: { show: boolean }) {
+    if (!show) return null;
+    return <span className="text-red-500 ml-0.5" aria-hidden>*</span>;
+}
+
 interface RezeptAbrechnungCardProps {
     // Diagnosis fields
     ausführliche_diagnose: string;
     onAusführlicheDiagnoseChange: (value: string) => void;
     ausführlicheDiagnoseError?: string;
+    requireAusführlicheDiagnose?: boolean;
     versorgung_laut_arzt: string;
     onVersorgungLautArztChange: (value: string) => void;
+    versorgungLautArztError?: string;
+    requireVersorgungLautArzt?: boolean;
 
     // Positionsnummer
     billingType: 'Krankenkassa' | 'Privat';
@@ -45,6 +53,14 @@ interface RezeptAbrechnungCardProps {
     onEmployeeSelect: (employee: { employeeName: string; id: string }) => void;
     onEmployeeClear?: () => void;
     selectedEmployeeError?: string;
+    requireEmployee?: boolean;
+    requireDiagnosisList?: boolean;
+    diagnosisListError?: string;
+    requirePositionsnummer?: boolean;
+    requireKva?: boolean;
+    requireHalbprobe?: boolean;
+    kvaFieldError?: string;
+    halbprobeFieldError?: string;
 
     // KVA & Lieferschein
     kostenvoranschlag: boolean | null;
@@ -88,6 +104,17 @@ export default function RezeptAbrechnungCard({
     onEmployeeSelect,
     onEmployeeClear,
     selectedEmployeeError,
+    requireAusführlicheDiagnose = true,
+    requireVersorgungLautArzt = false,
+    versorgungLautArztError,
+    requireEmployee = true,
+    requireDiagnosisList = false,
+    diagnosisListError,
+    requirePositionsnummer = true,
+    requireKva = false,
+    requireHalbprobe = false,
+    kvaFieldError,
+    halbprobeFieldError,
     kostenvoranschlag,
     onKostenvoranschlagChange,
     lieferschein,
@@ -134,6 +161,7 @@ export default function RezeptAbrechnungCard({
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Ärztliche Diagnose
+                        <RequiredMark show={requireAusführlicheDiagnose} />
                     </label>
                     <div className="relative">
                         <input
@@ -168,6 +196,7 @@ export default function RezeptAbrechnungCard({
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Versorgung laut Arzt
+                        <RequiredMark show={requireVersorgungLautArzt} />
                     </label>
                     <div className="relative">
                         <input
@@ -195,6 +224,9 @@ export default function RezeptAbrechnungCard({
                             </span>
                         )}
                     </div>
+                    {versorgungLautArztError && (
+                        <p className="text-red-500 text-xs mt-1">{versorgungLautArztError}</p>
+                    )}
                 </div>
             </div>
 
@@ -204,7 +236,12 @@ export default function RezeptAbrechnungCard({
                 {billingType === 'Krankenkassa' && (
                     <div className={`lg:col-span-3 ${positionsnummerDisabled ? 'pointer-events-none opacity-50' : ''}`}>
                         <PositionsnummerDropdown
-                            label="Positionsnummer"
+                            label={
+                                <>
+                                    Positionsnummer
+                                    <RequiredMark show={requirePositionsnummer && !positionsnummerDisabled} />
+                                </>
+                            }
                             value={selectedPositionsnummer}
                             placeholder="Pos.-Nr."
                             options={positionsnummerOptions}
@@ -231,6 +268,7 @@ export default function RezeptAbrechnungCard({
                 <div className={billingType === 'Krankenkassa' ? 'lg:col-span-3' : 'lg:col-span-4'} ref={diagnosisRef}>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Diagnose
+                        <RequiredMark show={requireDiagnosisList} />
                     </label>
                     <div className="relative">
 
@@ -330,13 +368,16 @@ export default function RezeptAbrechnungCard({
                         )}
                     </div>
                     {/* Reserve fixed height so layout matches error-bearing columns */}
-                    <p className="min-h-[16px] mt-1" />
+                    <p className="text-red-500 text-xs min-h-[16px] mt-1">
+                        {diagnosisListError ?? ''}
+                    </p>
                 </div>
 
                 {/* Durchgeführt von */}
                 <div className={billingType === 'Krankenkassa' ? 'lg:col-span-3' : 'lg:col-span-4'}>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Durchgeführt von
+                        <RequiredMark show={requireEmployee} />
                     </label>
                     <EmployeeDropdown
                         selectedEmployee={selectedEmployee}
@@ -364,6 +405,7 @@ export default function RezeptAbrechnungCard({
                         <div className="flex-1">
                             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                 KVA
+                                <RequiredMark show={requireKva} />
                             </label>
                             <div className="flex gap-1.5">
                                 <button
@@ -387,12 +429,16 @@ export default function RezeptAbrechnungCard({
                                     Nein
                                 </button>
                             </div>
+                            {kvaFieldError ? (
+                                <p className="text-red-500 text-xs mt-1">{kvaFieldError}</p>
+                            ) : null}
                         </div>
 
                         {/* Lieferschein button group */}
                         <div className="flex-1">
                             <label className="block text-xs font-semibold text-gray-700 mb-1.5">
                                 Verordnungsvorschlag
+                                <RequiredMark show={requireHalbprobe} />
                             </label>
                             <div className="flex gap-1.5">
                                 <button
@@ -416,6 +462,9 @@ export default function RezeptAbrechnungCard({
                                     Nein
                                 </button>
                             </div>
+                            {halbprobeFieldError ? (
+                                <p className="text-red-500 text-xs mt-1">{halbprobeFieldError}</p>
+                            ) : null}
                         </div>
                     </div>
                     {/* Reserve fixed height to match other columns */}

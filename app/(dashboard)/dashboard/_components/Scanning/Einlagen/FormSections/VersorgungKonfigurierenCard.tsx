@@ -36,6 +36,8 @@ interface VersorgungKonfigurierenCardProps {
     onCustomVersorgungCreated?: (versorgungId: string, versorgungsname?: string) => void;
     onActiveTabChange?: (tab: 'standard' | 'einmalig' | 'springer' | 'manuell') => void;
     onSpringerClick?: () => void;
+    /** Partner setting: Standardversorgung Auswahl Pflicht */
+    requireStandardVersorgung?: boolean;
 }
 
 export default function VersorgungKonfigurierenCard({
@@ -58,6 +60,7 @@ export default function VersorgungKonfigurierenCard({
     onCustomVersorgungCreated,
     onActiveTabChange,
     onSpringerClick,
+    requireStandardVersorgung = true,
 }: VersorgungKonfigurierenCardProps) {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -231,7 +234,14 @@ export default function VersorgungKonfigurierenCard({
                     {/* Versorgung Section */}
                     <div className="mb-6">
                         <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-base font-semibold text-gray-700">Standardversorgung</h3>
+                            <h3 className="text-base font-semibold text-gray-700">
+                                Standardversorgung
+                                {requireStandardVersorgung ? (
+                                    <span className="text-red-500 ml-0.5" aria-hidden>
+                                        *
+                                    </span>
+                                ) : null}
+                            </h3>
                             <button
                                 type="button"
                                 onClick={onSupplyDropdownToggle}

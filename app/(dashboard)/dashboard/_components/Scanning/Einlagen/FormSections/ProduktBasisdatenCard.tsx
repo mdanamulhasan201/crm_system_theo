@@ -30,6 +30,11 @@ interface ProduktBasisdatenCardProps {
     mengeError?: string;
     schuhmodell_wählen: string;
     onSchuhmodellChange: (value: string) => void;
+    schuhmodellError?: string;
+    requireEinlagentyp?: boolean;
+    requireUberzug?: boolean;
+    requireMenge?: boolean;
+    requireSchuhmodell?: boolean;
 }
 
 export default function ProduktBasisdatenCard({
@@ -60,6 +65,11 @@ export default function ProduktBasisdatenCard({
     mengeError,
     schuhmodell_wählen,
     onSchuhmodellChange,
+    schuhmodellError,
+    requireEinlagentyp = true,
+    requireUberzug = true,
+    requireMenge = true,
+    requireSchuhmodell = false,
 }: ProduktBasisdatenCardProps) {
     const einlageRef = useRef<HTMLDivElement>(null);
     const uberzugRef = useRef<HTMLDivElement>(null);
@@ -91,6 +101,9 @@ export default function ProduktBasisdatenCard({
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Einlagetyp
+                        {requireEinlagentyp ? (
+                            <span className="text-red-500 ml-0.5" aria-hidden>*</span>
+                        ) : null}
                     </label>
                     <div className="relative" ref={einlageRef}>
                         <button
@@ -166,6 +179,9 @@ export default function ProduktBasisdatenCard({
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Überzug
+                        {requireUberzug ? (
+                            <span className="text-red-500 ml-0.5" aria-hidden>*</span>
+                        ) : null}
                     </label>
                     <div className="relative" ref={uberzugRef}>
                         <button
@@ -230,6 +246,9 @@ export default function ProduktBasisdatenCard({
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Menge
+                        {requireMenge ? (
+                            <span className="text-red-500 ml-0.5" aria-hidden>*</span>
+                        ) : null}
                     </label>
                     <div className="relative" ref={mengeRef}>
                         <button
@@ -294,6 +313,9 @@ export default function ProduktBasisdatenCard({
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">
                         Schuhmodell
+                        {requireSchuhmodell ? (
+                            <span className="text-red-500 ml-0.5" aria-hidden>*</span>
+                        ) : null}
                     </label>
                     <div className="relative">
                         <input
@@ -301,7 +323,9 @@ export default function ProduktBasisdatenCard({
                             value={schuhmodell_wählen}
                             onChange={(e) => onSchuhmodellChange(e.target.value)}
                             placeholder="Marke, Modell, Größe"
-                            className="w-full px-3 py-2 pr-9 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent"
+                            className={`w-full px-3 py-2 pr-9 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#61A178] focus:border-transparent ${
+                                schuhmodellError ? 'border-red-500' : 'border-gray-300'
+                            }`}
                         />
                         {schuhmodell_wählen && (
                             <span
@@ -321,6 +345,9 @@ export default function ProduktBasisdatenCard({
                             </span>
                         )}
                     </div>
+                    {schuhmodellError ? (
+                        <p className="text-red-500 text-xs mt-1">{schuhmodellError}</p>
+                    ) : null}
                 </div>
             </div>
         </div>

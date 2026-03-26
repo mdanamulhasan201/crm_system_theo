@@ -20,7 +20,7 @@ interface PositionsnummerItem {
 }
 
 interface PositionsnummerDropdownProps {
-    label: string;
+    label: React.ReactNode;
     value: string[];
     placeholder: string;
     options: PositionsnummerItem[];

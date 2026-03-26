@@ -196,7 +196,7 @@ export default function OrdersFieldSettings() {
     <div>
       <div className="mb-10 rounded-lg border bg-white p-4 shadow-sm">
         <h1 className="mb-1 flex items-center gap-2 text-2xl font-bold">
-          Bestellung & Auftrag
+          Bestellung 
         </h1>
         <p className="mb-4 mt-2 text-base font-semibold">Pflichtfelder für Aufträge</p>
 

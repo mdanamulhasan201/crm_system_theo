@@ -27,6 +27,12 @@ import SpringerDialog from './SpringerDialog';
 import SuggestSupplyAndStockModal, { type SuggestSupplyAndStockData } from './SuggestSupplyAndStockModal';
 import { getSettingData, getAllSupplyStatuses } from '@/apis/einlagenApis';
 import { suggestSupplyAndStockByRequiredLength, createOrderWithoutSupplyOrStore } from '@/apis/productsOrder';
+import { getOrdersFieldSettings } from '@/apis/setting/basicSettingsApis';
+import {
+    FALLBACK_ORDER_REQUIRED_FIELDS,
+    parseOrderRequiredFieldsFromApiBody,
+    type OrderRequiredFieldKey,
+} from '@/lib/orderRequiredFields';
 // import PositionsnummerDropdown from './Einlagen/Dropdowns/PositionsnummerDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
@@ -100,18 +106,18 @@ interface ScanningFormProps {
 // Constants
 const MENGE_OPTIONS = ['1 paar', '2 paar', '3 paar', '4 paar', '5 paar'];
 
-// Validation Schema
+// Base schema — required rules come from GET /v2/order-required-fields/get (validated on submit)
 const einlagenFormSchema = z.object({
-    ausführliche_diagnose: z.string().min(1, 'Ausführliche Diagnose ist erforderlich'),
+    ausführliche_diagnose: z.string().optional(),
     versorgung_laut_arzt: z.string().optional(),
-    einlagentyp: z.string().min(1, 'Einlagentyp ist erforderlich'),
-    überzug: z.string().min(1, 'Überzug ist erforderlich'),
-    menge: z.string().min(1, 'Menge ist erforderlich'),
-    versorgung: z.string().optional(), // Made optional, will validate conditionally
+    einlagentyp: z.string().optional(),
+    überzug: z.string().optional(),
+    menge: z.string().optional(),
+    versorgung: z.string().optional(),
     versorgung_note: z.string().optional(),
     schuhmodell_wählen: z.string().optional(),
     kostenvoranschlag: z.boolean().nullable().optional(),
-    selectedEmployee: z.string().min(1, 'Durchgeführt von ist erforderlich'),
+    selectedEmployee: z.string().optional(),
 });
 
 type EinlagenFormData = z.infer<typeof einlagenFormSchema>;
@@ -206,7 +212,34 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     };
     
     const filteredPositionsnummerData = getFilteredPositionsnummerData();
-    
+
+    const [orderRequiredFields, setOrderRequiredFields] = useState<
+        Record<OrderRequiredFieldKey, boolean>
+    >(() => ({ ...FALLBACK_ORDER_REQUIRED_FIELDS }));
+    const [diagnosisListError, setDiagnosisListError] = useState<string | undefined>();
+    const [kvaFieldError, setKvaFieldError] = useState<string | undefined>();
+    const [halbprobeFieldError, setHalbprobeFieldError] = useState<string | undefined>();
+
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            try {
+                const body = await getOrdersFieldSettings();
+                const parsed = parseOrderRequiredFieldsFromApiBody(body);
+                if (!cancelled) {
+                    setOrderRequiredFields(parsed ?? { ...FALLBACK_ORDER_REQUIRED_FIELDS });
+                }
+            } catch {
+                if (!cancelled) {
+                    setOrderRequiredFields({ ...FALLBACK_ORDER_REQUIRED_FIELDS });
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     // React Hook Form setup
     const {
         register,
@@ -216,7 +249,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setError,
         clearErrors,
         watch,
-        trigger,
         reset,
     } = useForm<EinlagenFormData>({
         resolver: zodResolver(einlagenFormSchema),
@@ -268,6 +300,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
     // Multi-select diagnosis list (names for display + payload)
     const [selectedDiagnosisList, setSelectedDiagnosisList] = React.useState<string[]>([]);
+
+    useEffect(() => {
+        setDiagnosisListError(undefined);
+    }, [selectedDiagnosisList]);
 
     // Custom form hook
     const formHook = useEinlagenForm({ selectedEinlage });
@@ -342,6 +378,14 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [showPositionsnummerDropdown, setShowPositionsnummerDropdown] = useState(false);
     const [lieferschein, setLieferschein] = useState<boolean | null>(null);
     const [positionsnummerValidationError, setPositionsnummerValidationError] = useState<string | undefined>(undefined);
+
+    useEffect(() => {
+        setKvaFieldError(undefined);
+    }, [kostenvoranschlag]);
+
+    useEffect(() => {
+        setHalbprobeFieldError(undefined);
+    }, [lieferschein]);
     const [itemSides, setItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
     
     // Insole Standards state (Zusätze/Custom Fields) - Initialize with default fields
@@ -445,6 +489,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setLieferschein(null);
         setItemSides({});
         setPositionsnummerValidationError(undefined);
+        setDiagnosisListError(undefined);
+        setKvaFieldError(undefined);
+        setHalbprobeFieldError(undefined);
 
         // Insole standards back to defaults
         setInsoleStandards([
@@ -1023,20 +1070,81 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
         // Run ALL validations simultaneously — collect errors, don't early-return
         let hasExtraErrors = false;
+        const req = orderRequiredFields;
 
-        // 1. Zod schema fields (ausführliche_diagnose, einlagentyp, überzug, menge, selectedEmployee …)
-        const isValid = await trigger();
+        const requireStr = (key: OrderRequiredFieldKey, value: string | undefined | null, message: string, field: keyof EinlagenFormData) => {
+            if (!req[key]) {
+                clearErrors(field as any);
+                return;
+            }
+            if (!String(value ?? '').trim()) {
+                setError(field as any, { type: 'manual', message });
+                hasExtraErrors = true;
+            } else {
+                clearErrors(field as any);
+            }
+        };
 
-        // 2. Standardversorgung — set form error so red border shows on VersorgungKonfigurierenCard
-        if (activeVersorgungTab === 'standard' && !supply) {
+        requireStr('ausführliche_diagnose', ausführliche_diagnose, 'Ausführliche Diagnose ist erforderlich', 'ausführliche_diagnose');
+        requireStr('versorgung_laut_arzt', versorgung_laut_arzt, 'Versorgung laut Arzt ist erforderlich', 'versorgung_laut_arzt');
+        requireStr('einlagentyp', einlagentyp, 'Einlagentyp ist erforderlich', 'einlagentyp');
+        requireStr('überzug', überzug, 'Überzug ist erforderlich', 'überzug');
+        if (req.quantity) {
+            if (!String(menge ?? '').trim()) {
+                setError('menge', { type: 'manual', message: 'Menge ist erforderlich' });
+                hasExtraErrors = true;
+            } else {
+                clearErrors('menge');
+            }
+        } else {
+            clearErrors('menge');
+        }
+        requireStr('schuhmodell_wählen', schuhmodell_wählen, 'Schuhmodell ist erforderlich', 'schuhmodell_wählen');
+        requireStr('versorgung_note', versorgung_note, 'Versorgungsnotiz ist erforderlich', 'versorgung_note');
+
+        if (req.employeeId) {
+            if (!String(selectedEmployee ?? '').trim()) {
+                setError('selectedEmployee', { type: 'manual', message: 'Durchgeführt von ist erforderlich' });
+                hasExtraErrors = true;
+            } else {
+                clearErrors('selectedEmployee');
+            }
+        } else {
+            clearErrors('selectedEmployee');
+        }
+
+        if (req.diagnosisList && selectedDiagnosisList.length === 0) {
+            setDiagnosisListError('Mindestens eine Diagnose auswählen.');
+            hasExtraErrors = true;
+        } else {
+            setDiagnosisListError(undefined);
+        }
+
+        if (req.kva && kostenvoranschlag === null) {
+            setKvaFieldError('Bitte KVA (Ja/Nein) auswählen.');
+            hasExtraErrors = true;
+        } else {
+            setKvaFieldError(undefined);
+        }
+
+        if (req.halbprobe && lieferschein === null) {
+            setHalbprobeFieldError('Bitte Verordnungsvorschlag (Ja/Nein) auswählen.');
+            hasExtraErrors = true;
+        } else {
+            setHalbprobeFieldError(undefined);
+        }
+
+        // Standardversorgung — only when API marks `versorgung` required (Standard-Vorlage tab)
+        if (req.versorgung && activeVersorgungTab === 'standard' && !supply) {
             setError('versorgung', { type: 'manual', message: 'Versorgung ist erforderlich' });
             hasExtraErrors = true;
         } else {
             clearErrors('versorgung');
         }
 
-        // 3. Positionsnummer for Krankenkassa
+        // Positionsnummer for Krankenkassa (when API marks it required)
         const posNrMissing =
+            req.positionsnummer &&
             billingType === 'Krankenkassa' &&
             lieferschein !== true &&
             (!selectedPositionsnummer || selectedPositionsnummer.length === 0);
@@ -1047,8 +1155,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             setPositionsnummerValidationError(undefined);
         }
 
-        // Stop if any validation failed — all red borders + error messages are already set above
-        if (!isValid || hasExtraErrors) {
+        if (hasExtraErrors) {
             toast.error('Bitte füllen Sie alle erforderlichen Felder aus');
             return;
         }
@@ -1204,8 +1311,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 ausführliche_diagnose={ausführliche_diagnose}
                 onAusführlicheDiagnoseChange={setAusführliche_diagnose}
                 ausführlicheDiagnoseError={errors.ausführliche_diagnose?.message}
+                requireAusführlicheDiagnose={orderRequiredFields.ausführliche_diagnose}
                 versorgung_laut_arzt={versorgung_laut_arzt}
                 onVersorgungLautArztChange={setVersorgung_laut_arzt}
+                versorgungLautArztError={errors.versorgung_laut_arzt?.message}
+                requireVersorgungLautArzt={orderRequiredFields.versorgung_laut_arzt}
                 billingType={billingType}
                 selectedPositionsnummer={selectedPositionsnummer}
                 positionsnummerOptions={filteredPositionsnummerData}
@@ -1260,6 +1370,14 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 onEmployeeSelect={handleEmployeeSelect}
                 onEmployeeClear={handleEmployeeClear}
                 selectedEmployeeError={errors.selectedEmployee?.message}
+                requireEmployee={orderRequiredFields.employeeId}
+                requireDiagnosisList={orderRequiredFields.diagnosisList}
+                diagnosisListError={diagnosisListError}
+                requirePositionsnummer={orderRequiredFields.positionsnummer}
+                requireKva={orderRequiredFields.kva}
+                requireHalbprobe={orderRequiredFields.halbprobe}
+                kvaFieldError={kvaFieldError}
+                halbprobeFieldError={halbprobeFieldError}
                 kostenvoranschlag={kostenvoranschlag}
                 onKostenvoranschlagChange={setKostenvoranschlag}
                 lieferschein={lieferschein}
@@ -1319,6 +1437,11 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 mengeError={errors.menge?.message}
                 schuhmodell_wählen={schuhmodell_wählen}
                 onSchuhmodellChange={setSchuhmodell_wählen}
+                schuhmodellError={errors.schuhmodell_wählen?.message}
+                requireEinlagentyp={orderRequiredFields.einlagentyp}
+                requireUberzug={orderRequiredFields.überzug}
+                requireMenge={orderRequiredFields.quantity}
+                requireSchuhmodell={orderRequiredFields.schuhmodell_wählen}
             />
 
             {/* Versorgung Konfigurieren Card */}
@@ -1332,7 +1455,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     handleVersorgungCardSelect(item);
                     clearErrors('versorgung');
                 }}
-                versorgungError={activeVersorgungTab === 'standard' ? errors.versorgung?.message : undefined}
+                versorgungError={
+                    activeVersorgungTab === 'standard' && orderRequiredFields.versorgung
+                        ? errors.versorgung?.message
+                        : undefined
+                }
+                requireStandardVersorgung={orderRequiredFields.versorgung}
                 showSupplyDropdown={showSupplyDropdown}
                 onSupplyDropdownToggle={handleSupplyDropdownToggle}
                 selectedDiagnosis={selectedDiagnosis ? getDiagnosisNameById(selectedDiagnosis) : ''}
@@ -1351,6 +1479,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
             <VersorgungsnotizCard
                 versorgung_note={versorgung_note}
                 onVersorgungNoteChange={setVersorgung_note}
+                requireVersorgungNote={orderRequiredFields.versorgung_note}
+                versorgungNoteError={errors.versorgung_note?.message}
             />
 
             {/* Save Button */}
