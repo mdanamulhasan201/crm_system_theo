@@ -109,8 +109,12 @@ async function generateCombinedFeetPdf(params: {
             pdf.setFontSize(10);
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(0, 0, 0);
-            pdf.text(`Pelottenposition ${footSide} = Fusslänge data not available`,
-                margin, footerY, { align: 'left' });
+            pdf.text(
+                `Pelottenposition ${footSide} = Fußlängeninformationen nicht verfügbar`,
+                margin,
+                footerY,
+                { align: 'left' }
+            );
         }
     };
 
@@ -180,13 +184,13 @@ async function generateCombinedFeetPdf(params: {
 
     // Page 1: Right Foot
     await addFootImage(rightImageUrl, 'L');
-    await addHeaderOverlay('Left Foot');
+    await addHeaderOverlay('Linker Fuß');
     addFooterOverlay('L');
 
     // Page 2: Left Foot
     pdf.addPage();
     await addFootImage(leftImageUrl, 'R');
-    await addHeaderOverlay('Right Foot');
+    await addHeaderOverlay('Rechter Fuß');
     addFooterOverlay('R');
 
 
