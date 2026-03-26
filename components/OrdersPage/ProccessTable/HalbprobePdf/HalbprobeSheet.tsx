@@ -19,6 +19,8 @@ export interface HalbprobeData {
     einlagentyp?: string | null;
   } | null;
   screenerFile?: Record<string, string | null> | null;
+  /** Full diagnosis list from API; preferred over productInfo.diagnosisStatus for display */
+  diagnosisList?: string[] | null;
 }
 
 export default function HalbprobeSheet({
@@ -45,10 +47,15 @@ export default function HalbprobeSheet({
   const today = new Date().toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
   const customerNumber = customer.customerNumber != null ? String(customer.customerNumber).padStart(6, '0') : '';
 
-  const diagnosisLine =
+  const diagnosesFromList =
+    Array.isArray(data.diagnosisList) && data.diagnosisList.length
+      ? data.diagnosisList.filter(Boolean)
+      : [];
+  const diagnosesFromProduct =
     Array.isArray(product.diagnosisStatus) && product.diagnosisStatus.length
-      ? product.diagnosisStatus.filter(Boolean).join(' • ')
-      : '';
+      ? product.diagnosisStatus.filter(Boolean)
+      : [];
+  const diagnosisItems = diagnosesFromList.length ? diagnosesFromList : diagnosesFromProduct;
 
   const qty = product.quantity != null ? product.quantity : null;
   const einlagentyp = product.einlagentyp ?? '';
@@ -133,17 +140,23 @@ export default function HalbprobeSheet({
             {qty != null ? (
               <div>{qty} Paar {einlagentyp || 'Maßeinlage'}</div>
             ) : einlagentyp ? (
-              <div>1 Paar {einlagentyp}</div>
+              <div> {einlagentyp}</div>
             ) : (
-              <div>1 Paar Maßeinlage</div>
+              <div></div>
             )}
-            {diagnosisLine ? <div style={{ marginTop: 4 }}>{diagnosisLine}</div> : null}
+            {diagnosisItems.length ? (
+              <div style={{ marginTop: 4 }}>
+                {diagnosisItems.map((d, i) => (
+                  <div key={`${i}-${d}`}>{d}</div>
+                ))}
+              </div>
+            ) : null}
           </div>
 
-          <div style={{ marginTop: 10, fontSize: 10, color: '#374151', lineHeight: 1.4, maxWidth: 380 }}>
+          {/* <div style={{ marginTop: 10, fontSize: 10, color: '#374151', lineHeight: 1.4, maxWidth: 380 }}>
             Wir weisen ausdrücklich darauf hin, dass es sich hierbei um eine Empfehlung aus handwerklich Sicht handelt.
             Über eine medizinische Notwendigkeit hat ausschließlich der Arzt zu entscheiden.
-          </div>
+          </div> */}
 
           <div style={{ position: 'absolute', left: 48, bottom: 18 }}>
             {logoUrl ? (
