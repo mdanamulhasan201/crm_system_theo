@@ -573,6 +573,25 @@ export const getKvaDataByCustomerId = async (customerId: string) => {
     }
 }
 
+
+// upload pdf customers/extra-info/add-kva-pdf/{{customer id}}
+
+// body-Type: Form Data  kvaPdf: File
+
+export const uploadKvaPdf = async (customerId: string, kvaPdf: File) => {
+    try {
+        const formData = new FormData();
+        formData.append('kvaPdf', kvaPdf, 'kvaPdf.pdf');
+        const response = await axiosClient.post(
+            `/customers/extra-info/add-kva-pdf/${customerId}`,
+            formData
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 // customer-orders/track/identify-kva-data/{{customer Id}}\
 export const identifyKvaData = async (customerId: string) => {
     try {

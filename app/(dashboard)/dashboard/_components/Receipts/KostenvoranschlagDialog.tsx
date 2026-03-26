@@ -7,7 +7,7 @@ import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import toast from 'react-hot-toast'
 import PositionsnummerDropdown from '@/app/(dashboard)/dashboard/_components/Scanning/Einlagen/Dropdowns/PositionsnummerDropdown'
-import { getKvaDataByCustomerId } from '@/apis/productsOrder'
+import { getKvaDataByCustomerId, uploadKvaPdf } from '@/apis/productsOrder'
 import { generatePdfFromElement } from '@/lib/pdfGenerator'
 import type { KvaData } from '@/components/OrdersPage/ProccessTable/KvaPdf/KvaSheet'
 import KostenvoranschlagPdf from '@/components/OrdersPage/ProccessTable/KvaPdf/KostenvoranschlagPdf'
@@ -182,8 +182,26 @@ export default function KostenvoranschlagDialog({
                 format: 'jpeg',
             })
             const safeName = (merged?.customerInfo?.firstName || 'KVA').toString().trim().replace(/\s+/g, '_')
-            downloadBlob(pdfBlob, `Kostenvoranschlag_${safeName}.pdf`)
-            toast.success('PDF erfolgreich erstellt')
+            const pdfFileName = `Kostenvoranschlag_${safeName}.pdf`
+            downloadBlob(pdfBlob, pdfFileName)
+
+            const pdfFile = new File([pdfBlob], pdfFileName, { type: 'application/pdf' })
+            try {
+                const uploadRes = await uploadKvaPdf(customerId, pdfFile)
+                if (uploadRes && typeof uploadRes === 'object' && 'success' in uploadRes && uploadRes.success === false) {
+                    throw new Error(
+                        (uploadRes as { message?: string }).message || 'Upload fehlgeschlagen'
+                    )
+                }
+                toast.success('PDF heruntergeladen und gespeichert')
+            } catch (uploadErr) {
+                console.error('KVA PDF upload:', uploadErr)
+                toast.error(
+                    'PDF wurde heruntergeladen, der Upload zum Server ist fehlgeschlagen.'
+                )
+            }
+
+            onClearCodexSelection()
             onOpenChange(false)
         } catch (e) {
             console.error('Kostenvoranschlag PDF:', e)
@@ -214,8 +232,8 @@ export default function KostenvoranschlagDialog({
                         </div>
                         <div className="flex flex-wrap items-end justify-between gap-2 mt-2">
                             <p className="text-sm text-gray-500 font-normal text-left flex-1 min-w-0">
-                                Auswahl bleibt gespeichert, bis Sie sie leeren. Anschließend PDF mit KVA-Daten
-                                erstellen.
+                                Nach erfolgreichem PDF wird die Positionsauswahl geleert. Mit „Auswahl leeren“
+                                jederzeit zurücksetzen.
                             </p>
                             {selectedPositionsnummer.length > 0 && (
                                 <button
