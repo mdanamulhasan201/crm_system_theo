@@ -7,6 +7,44 @@ import type { GroupDef2 } from "./ShoeData"
 import { getVorderkappeMaterialLabel } from "./Bodenkonstruktion/FormFields"
 import type { VorderkappeSideData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "./Bodenkonstruktion/FormFields"
 
+const HINTERKAPPE_MUSTERART_LABELS: Record<string, string> = {
+  normal: "Normal",
+  knoechelkappe: "Knöchelkappe",
+  achillessehne: "Achillessehnenfrei",
+  peronaeus: "Peronaeus / T-Form",
+  arthrodese: "Arthrodese",
+}
+
+function buildHinterkappeMusterPdfLines(h: HinterkappeMusterSideData | null | undefined): string[] {
+  const parts: string[] = []
+  if (!h) return parts
+  if (h.musterErstellung) {
+    if (h.musterErstellung === "ja") {
+      parts.push("Soll ein Muster erstellt werden?: Ja, ein Muster erstellen (+4,99 €)")
+      if (h.musterart) {
+        parts.push(
+          `Musterart: ${HINTERKAPPE_MUSTERART_LABELS[h.musterart] ?? h.musterart}`
+        )
+      }
+    } else if (h.musterErstellung === "nein") {
+      parts.push("Soll ein Muster erstellt werden?: Nein, Muster liefern wir selbst")
+    } else {
+      parts.push("Soll ein Muster erstellt werden?: Wird auf dem Leisten gekennzeichnet")
+    }
+    return parts
+  }
+  if (h.mode) {
+    parts.push(`Ausführung: ${h.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
+    if (h.mode === "gleich" && h.sameValue) {
+      parts.push(`Hinterkappe (beide Seiten): ${h.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein"}`)
+    } else if (h.mode === "unterschiedlich") {
+      if (h.leftValue) parts.push(`Hinterkappe links: ${h.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
+      if (h.rightValue) parts.push(`Hinterkappe rechts: ${h.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
+    }
+  }
+  return parts
+}
+
 // Order data interface for dynamic PDF content
 export interface OrderDataForPDF {
   orderNumber?: string
@@ -593,16 +631,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     
                     // Handle hinterkappeMusterSide field type - always show in PDF
                     if (g.fieldType === "hinterkappeMusterSide") {
-                      const parts: string[] = []
-                      if (hinterkappeMusterSide?.mode) {
-                        parts.push(`Ausführung: ${hinterkappeMusterSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
-                        if (hinterkappeMusterSide.mode === "gleich" && hinterkappeMusterSide.sameValue) {
-                          parts.push(`Hinterkappe (beide Seiten): ${hinterkappeMusterSide.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein"}`)
-                        } else if (hinterkappeMusterSide.mode === "unterschiedlich") {
-                          if (hinterkappeMusterSide.leftValue) parts.push(`Hinterkappe links: ${hinterkappeMusterSide.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
-                          if (hinterkappeMusterSide.rightValue) parts.push(`Hinterkappe rechts: ${hinterkappeMusterSide.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
-                        }
-                      }
+                      const parts = buildHinterkappeMusterPdfLines(hinterkappeMusterSide)
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
@@ -1090,16 +1119,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 
                 // Handle hinterkappeMusterSide field type - always show in PDF
                 if (g.fieldType === "hinterkappeMusterSide") {
-                  const parts: string[] = []
-                  if (hinterkappeMusterSide?.mode) {
-                    parts.push(`Ausführung: ${hinterkappeMusterSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
-                    if (hinterkappeMusterSide.mode === "gleich" && hinterkappeMusterSide.sameValue) {
-                      parts.push(`Hinterkappe (beide Seiten): ${hinterkappeMusterSide.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein"}`)
-                    } else if (hinterkappeMusterSide.mode === "unterschiedlich") {
-                      if (hinterkappeMusterSide.leftValue) parts.push(`Hinterkappe links: ${hinterkappeMusterSide.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
-                      if (hinterkappeMusterSide.rightValue) parts.push(`Hinterkappe rechts: ${hinterkappeMusterSide.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
-                    }
-                  }
+                  const parts = buildHinterkappeMusterPdfLines(hinterkappeMusterSide)
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>

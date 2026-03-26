@@ -87,13 +87,16 @@ export function useBodenkonstruktionCalculations(
         
         // Add orthopedic field prices
         // 1. Hinterkappe Muster (mode: gleich | unterschiedlich): Ja = +4,99€ or +2,49€ per side
-        if (hinterkappeMusterSide?.mode === "gleich" && hinterkappeMusterSide.sameValue === "ja") {
-            totalExtraPrice += 4.99
-        } else if (hinterkappeMusterSide?.mode === "unterschiedlich") {
-            if (hinterkappeMusterSide.leftValue === "ja") totalExtraPrice += 2.49
-            if (hinterkappeMusterSide.rightValue === "ja") totalExtraPrice += 2.49
-        } else if (selected.hinterkappe_muster === "nein") {
-            totalExtraPrice += 4.99
+        const musterNoAufpreis =
+            hinterkappeMusterSide?.musterErstellung === "nein" ||
+            hinterkappeMusterSide?.musterErstellung === "leisten"
+        if (!musterNoAufpreis) {
+            if (hinterkappeMusterSide?.mode === "gleich" && hinterkappeMusterSide.sameValue === "ja") {
+                totalExtraPrice += 4.99
+            } else if (hinterkappeMusterSide?.mode === "unterschiedlich") {
+                if (hinterkappeMusterSide.leftValue === "ja") totalExtraPrice += 2.49
+                if (hinterkappeMusterSide.rightValue === "ja") totalExtraPrice += 2.49
+            }
         }
         
         // 2. Rahmen: "gummi" = +20.00€

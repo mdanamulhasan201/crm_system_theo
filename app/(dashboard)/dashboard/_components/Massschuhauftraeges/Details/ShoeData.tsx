@@ -264,9 +264,34 @@ export const GROUPS2: GroupDef2[] = [
     ],
     subOptions: {
       leder: [
-        { id: "leder_duenn", label: "Leder Dünn (+4,99 €)", price: 4.99 },
-        { id: "leder_normal", label: "Leder Normal (+7,99 €)", price: 7.99 },
-        { id: "leder_stark", label: "Leder Stark (+9,99 €)", price: 9.99 },
+        {
+          id: "leder_duenn",
+          thicknessTitle: "Dünn",
+          desc: "1,0 – 1,2 mm",
+          label: "Leder Dünn (+2,99 € / Seite)",
+          price: 2.99,
+        },
+        {
+          id: "leder_normal",
+          thicknessTitle: "Mittel",
+          desc: "1,9 – 2,1 mm",
+          label: "Leder Mittel (+5,99 € / Seite)",
+          price: 5.99,
+        },
+        {
+          id: "leder_stark",
+          thicknessTitle: "Stark",
+          desc: "2,4 – 2,5 mm",
+          label: "Leder Stark (+7,99 € / Seite)",
+          price: 7.99,
+        },
+        {
+          id: "leder_stark_verstaerkung",
+          thicknessTitle: "Stark + Verstärkung",
+          desc: "sehr steif",
+          label: "Stark + Verstärkung (+11,99 € / Seite)",
+          price: 11.99,
+        },
       ],
     },
   },

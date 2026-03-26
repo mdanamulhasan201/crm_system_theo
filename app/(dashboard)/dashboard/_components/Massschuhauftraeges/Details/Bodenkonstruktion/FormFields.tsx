@@ -1356,6 +1356,9 @@ export function SohlenhoeheDifferenziertField({
 // Common type for side selection
 export type SideSelection = "links" | "rechts" | "beidseitig" | null
 
+/** Drei Optionen für „Soll ein Muster erstellt werden?“ (Config-Card UI) */
+export type HinterkappeMusterErstellung = "ja" | "nein" | "leisten"
+
 // 1. Hinterkappe Muster Side Field - only 2 modes: Beidseitig – gleich | Beidseitig – unterschiedlich
 export type HinterkappeMusterSideData = {
     mode: GleichUnterschiedlichMode
@@ -1364,6 +1367,10 @@ export type HinterkappeMusterSideData = {
     /** For mode "unterschiedlich": left/right separate. Each Ja = +2.50€, max 5€ total */
     leftValue?: "ja" | "nein" | null
     rightValue?: "ja" | "nein" | null
+    /** Optional: explizite UI-Wahl (ja / nein selbst liefern / Leisten-Kennzeichnung) */
+    musterErstellung?: HinterkappeMusterErstellung | null
+    /** Nur bei musterErstellung === "ja" – Musterart (z. B. normal, peronaeus) */
+    musterart?: string | null
 }
 
 export function HinterkappeMusterSideField({

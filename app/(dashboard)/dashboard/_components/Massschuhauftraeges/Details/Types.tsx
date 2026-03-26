@@ -19,7 +19,15 @@ export type GroupDef2 = {
   fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenhoeheDifferenziert" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
   multiSelect?: boolean
   subOptions?: {
-    [key: string]: Array<{ id: string; label: string; price: number }>
+    [key: string]: Array<{
+      id: string
+      label: string
+      price: number
+      /** z. B. mm-Angabe für Lederstärke-Karten */
+      desc?: string
+      /** Kurztitel auf der Karte (z. B. „Dünn“, „Mittel“) */
+      thicknessTitle?: string
+    }>
   }
   tooltipText?: string
 }

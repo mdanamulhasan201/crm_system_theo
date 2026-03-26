@@ -425,6 +425,8 @@ export default function BodenkonstruktionPage() {
                 sameValue: hinterkappeMusterSide?.sameValue ?? "",
                 leftValue: hinterkappeMusterSide?.leftValue ?? "",
                 rightValue: hinterkappeMusterSide?.rightValue ?? "",
+                musterErstellung: hinterkappeMusterSide?.musterErstellung ?? "",
+                musterart: hinterkappeMusterSide?.musterart ?? "",
                 ...(hinterkappeMusterSide?.mode === "gleich" && {
                     samePrice: hinterkappeMusterSide?.sameValue === "ja" ? 4.99 : 0,
                 }),
@@ -781,7 +783,7 @@ export default function BodenkonstruktionPage() {
                 sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
-                hinterkappeMusterSimple={true}
+                hinterkappeSplitConfigUi={true}
                 onHinterkappeChange={setHinterkappeSide}
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}

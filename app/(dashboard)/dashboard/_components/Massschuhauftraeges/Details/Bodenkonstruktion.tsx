@@ -752,6 +752,8 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 sameValue: hinterkappeMusterSide?.sameValue ?? "",
                 leftValue: hinterkappeMusterSide?.leftValue ?? "",
                 rightValue: hinterkappeMusterSide?.rightValue ?? "",
+                musterErstellung: hinterkappeMusterSide?.musterErstellung ?? "",
+                musterart: hinterkappeMusterSide?.musterart ?? "",
                 samePrice: hinterkappeMusterSide?.mode === "gleich" ? (hinterkappeMusterSide?.sameValue === "ja" ? 4.99 : 0) : 0,
                 leftPrice: hinterkappeMusterSide?.mode === "unterschiedlich" ? (hinterkappeMusterSide?.leftValue === "ja" ? 2.49 : 0) : 0,
                 rightPrice: hinterkappeMusterSide?.mode === "unterschiedlich" ? (hinterkappeMusterSide?.rightValue === "ja" ? 2.49 : 0) : 0,

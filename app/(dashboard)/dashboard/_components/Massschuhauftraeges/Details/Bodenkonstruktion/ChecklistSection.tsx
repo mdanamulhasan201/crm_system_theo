@@ -1,6 +1,7 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
 import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
+import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -39,6 +40,8 @@ interface ChecklistSectionProps {
     hinterkappeMusterSide?: HinterkappeMusterSideData | null
     /** When true, show simple Ja/Nein for Hinterkappe Muster only (no Left/Right). Used e.g. on bodenkonstruktion page. */
     hinterkappeMusterSimple?: boolean
+    /** When true: single „Hinterkappe“ config card (Muster + Musterart + Ausführung + Material). */
+    hinterkappeSplitConfigUi?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -83,6 +86,7 @@ export default function ChecklistSection({
     onHinterkappeMusterChange,
     hinterkappeMusterSide,
     hinterkappeMusterSimple = false,
+    hinterkappeSplitConfigUi = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -115,6 +119,8 @@ export default function ChecklistSection({
         }
         return !!schlemmaterialValue
     })()
+
+    const hinterkappeMaterialGroupDef = GROUPS2.find((x) => x.id === "hinterkappe")
 
     return (
         <div className="bg-white rounded-lg p-4 w-full">
@@ -194,7 +200,15 @@ export default function ChecklistSection({
                                 )}
                             />
                         ) : g.fieldType === "hinterkappeMusterSide" && showOrthopedicFields ? (
-                            hinterkappeMusterSimple ? (
+                            hinterkappeSplitConfigUi && hinterkappeMaterialGroupDef ? (
+                                <HinterkappeUnifiedConfigCard
+                                    materialDef={hinterkappeMaterialGroupDef}
+                                    musterValue={hinterkappeMusterSide || null}
+                                    materialValue={hinterkappeSide || null}
+                                    onMusterChange={onHinterkappeMusterChange || (() => {})}
+                                    onMaterialChange={onHinterkappeChange || (() => {})}
+                                />
+                            ) : hinterkappeMusterSimple ? (
                                 <HinterkappeMusterSimpleField
                                     def={g}
                                     value={hinterkappeMusterSide || null}
@@ -208,11 +222,13 @@ export default function ChecklistSection({
                                 />
                             )
                         ) : g.fieldType === "hinterkappeSide" && showOrthopedicFields ? (
-                            <HinterkappeSideField
-                                def={g}
-                                value={hinterkappeSide || null}
-                                onChange={onHinterkappeChange || (() => {})}
-                            />
+                            hinterkappeSplitConfigUi ? null : (
+                                <HinterkappeSideField
+                                    def={g}
+                                    value={hinterkappeSide || null}
+                                    onChange={onHinterkappeChange || (() => {})}
+                                />
+                            )
                         ) : g.fieldType === "brandsohleSide" ? (
                             <BrandsohleSideField
                                 def={g}
@@ -278,7 +294,9 @@ export default function ChecklistSection({
                                 )}
                             </>
                         )}
-                        <hr className="border-gray-200 my-4" />
+                        {!(hinterkappeSplitConfigUi && g.id === "hinterkappe") && (
+                            <hr className="border-gray-200 my-4" />
+                        )}
                     </React.Fragment>
                 )
             })}
