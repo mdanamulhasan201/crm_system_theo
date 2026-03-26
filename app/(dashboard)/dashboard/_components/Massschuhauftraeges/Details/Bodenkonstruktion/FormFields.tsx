@@ -905,21 +905,25 @@ export type VorderkappeMatSel = "leicht" | "normal" | "doppelt" | null
 export const getVorderkappeMaterialLabel = (material: VorderkappeMatSel): string => {
     switch (material) {
         case "leicht":
-            return "Leicht 0,5-0,6mm"
+            return "Leicht (0,5 – 0,6 mm)"
         case "normal":
-            return "Normal 1-1,1mm"
+            return "Normal (1,0 – 1,1 mm)"
         case "doppelt":
-            return "Doppelt 2-2,20mm"
+            return "Doppelt (2,0 – 2,2 mm, +2,99 € / Seite)"
         default:
             return ""
     }
 }
+
+export type VorderkappeLaenge = "normal" | "kurz" | null
 
 export type VorderkappeSideData = {
     mode: GleichUnterschiedlichMode
     sameMaterial?: VorderkappeMatSel
     leftMaterial?: VorderkappeMatSel
     rightMaterial?: VorderkappeMatSel
+    /** Länge der Vorderkappe (unified Config UI) */
+    laenge?: VorderkappeLaenge
 }
 
 export function VorderkappeSideField({

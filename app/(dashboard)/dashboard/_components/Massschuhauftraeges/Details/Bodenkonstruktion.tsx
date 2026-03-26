@@ -150,7 +150,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
     }, [contextData, orderDataForPDF.totalPrice])
 
     // Calculations - use basePrice which includes shaft price (hinterkappeSide for Leder options price)
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide, vorderkappeSide)
 
     // Sync contextData to customShaftData when landing from redirect (so payload has full data)
     React.useEffect(() => {
@@ -779,6 +779,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 sameMaterial: vorderkappeSide?.sameMaterial ?? "",
                 leftMaterial: vorderkappeSide?.leftMaterial ?? "",
                 rightMaterial: vorderkappeSide?.rightMaterial ?? "",
+                laenge: vorderkappeSide?.laenge ?? "",
             },
             "rahmen": {
                 type: rahmen?.type ?? "",
@@ -1220,6 +1221,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
+                vorderkappeUnifiedConfigUi={true}
                 onHinterkappeChange={setHinterkappeSide}
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}

@@ -106,7 +106,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
     const basePrice = 189.99
 
     // Calculations (include hinterkappeSide so Leder options e.g. Leder Dünn +4,99 € update sticky price)
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide, vorderkappeSide)
 
     // Prepare order data for PDF (use grandTotal so modal/PDF show correct price)
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {

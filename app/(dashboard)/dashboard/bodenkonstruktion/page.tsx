@@ -101,7 +101,7 @@ export default function BodenkonstruktionPage() {
     const basePrice = 194.99
 
     // Calculations (include hinterkappeSide so Leder options e.g. Leder Dünn +4,99 € update sticky price)
-    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide)
+    const { grandTotal } = useBodenkonstruktionCalculations(selected, basePrice, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide, vorderkappeSide)
 
     // Prepare order data for PDF (use grandTotal so modal/PDF show correct price)
     const orderDataForPDF: OrderDataForPDF = useMemo(() => {
@@ -634,7 +634,8 @@ export default function BodenkonstruktionPage() {
                 mode: vorderkappeSide.mode,
                 sameMaterial: vorderkappeSide.sameMaterial || "",
                 leftMaterial: vorderkappeSide.leftMaterial || "",
-                rightMaterial: vorderkappeSide.rightMaterial || ""
+                rightMaterial: vorderkappeSide.rightMaterial || "",
+                laenge: vorderkappeSide.laenge ?? "normal",
             }
         }
 
@@ -784,6 +785,7 @@ export default function BodenkonstruktionPage() {
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
                 hinterkappeSplitConfigUi={true}
+                vorderkappeUnifiedConfigUi={true}
                 onHinterkappeChange={setHinterkappeSide}
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}

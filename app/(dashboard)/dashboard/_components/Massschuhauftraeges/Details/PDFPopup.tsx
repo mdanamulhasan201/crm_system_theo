@@ -851,6 +851,8 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                         if (vorderkappeSide.leftMaterial) parts.push(`Material (Links): ${getVorderkappeMaterialLabel(vorderkappeSide.leftMaterial)}`)
                         if (vorderkappeSide.rightMaterial) parts.push(`Material (Rechts): ${getVorderkappeMaterialLabel(vorderkappeSide.rightMaterial)}`)
                       }
+                      const vkLen = vorderkappeSide.laenge ?? "normal"
+                      parts.push(`Länge: ${vkLen === "kurz" ? "Kurz" : "Normal"}`)
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                           <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
@@ -1339,6 +1341,8 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     if (vorderkappeSide.leftMaterial) parts.push(`Material (Links): ${getVorderkappeMaterialLabel(vorderkappeSide.leftMaterial)}`)
                     if (vorderkappeSide.rightMaterial) parts.push(`Material (Rechts): ${getVorderkappeMaterialLabel(vorderkappeSide.rightMaterial)}`)
                   }
+                  const vkLenPrint = vorderkappeSide.laenge ?? "normal"
+                  parts.push(`Länge: ${vkLenPrint === "kurz" ? "Kurz" : "Normal"}`)
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>

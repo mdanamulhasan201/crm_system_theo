@@ -7,7 +7,7 @@ export type SelectedState = {
 }
 
 // Import orthopedic field types
-import type { RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData, VorderkappeSideData } from "@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 /**
  * Custom hook to calculate prices for Bodenkonstruktion configuration.
@@ -18,6 +18,7 @@ import type { RahmenData, HinterkappeMusterSideData, HinterkappeSideData, Brands
  * @param hinterkappeMusterSide - Hinterkappe Muster (mode: gleich | unterschiedlich). Ja = +5€ or +2.50€ per side
  * @param hinterkappeSide - Hinterkappe (beide Seiten): Leder sub-options (e.g. Leder Dünn +4,99 €)
  * @param brandsohleSide - Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
+ * @param vorderkappeSide - Vorderkappe „Doppelt“ = +2,99 € pro betroffener Seite (bei gleich: beide Schuhe)
  * @returns Object containing extraPriceTotal (sum of option prices) and grandTotal (base + extras)
  */
 export function useBodenkonstruktionCalculations(
@@ -26,7 +27,8 @@ export function useBodenkonstruktionCalculations(
     rahmen?: RahmenData | null,
     hinterkappeMusterSide?: HinterkappeMusterSideData | null,
     hinterkappeSide?: HinterkappeSideData | null,
-    brandsohleSide?: BrandsohleSideData | null
+    brandsohleSide?: BrandsohleSideData | null,
+    vorderkappeSide?: VorderkappeSideData | null,
 ) {
     // Calculate the sum of all selected option prices (can be positive or negative)
     const extraPriceTotal = useMemo(() => {
@@ -137,10 +139,19 @@ export function useBodenkonstruktionCalculations(
             }
         }
 
-        // Note: vorderkappe and sohlenhoehe_differenziert have no price impact
+        // 4. Vorderkappe: „Doppelt“ +2,99 € / Seite (bei beidseitig gleich: beide Schuhe = 2 × 2,99 €)
+        const vkDoppelt = 2.99
+        if (vorderkappeSide?.mode === "gleich" && vorderkappeSide.sameMaterial === "doppelt") {
+            totalExtraPrice += vkDoppelt * 2
+        } else if (vorderkappeSide?.mode === "unterschiedlich") {
+            if (vorderkappeSide.leftMaterial === "doppelt") totalExtraPrice += vkDoppelt
+            if (vorderkappeSide.rightMaterial === "doppelt") totalExtraPrice += vkDoppelt
+        }
+
+        // Note: sohlenhoehe_differenziert has no price impact
 
         return totalExtraPrice
-    }, [selected, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide])
+    }, [selected, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide, vorderkappeSide])
 
     // Calculate grand total: base price + extra prices from selected options
     const grandTotal = useMemo(() => {

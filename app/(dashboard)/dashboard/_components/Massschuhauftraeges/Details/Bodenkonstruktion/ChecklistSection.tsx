@@ -2,6 +2,7 @@ import React from "react"
 import { GROUPS2 } from "../ShoeData"
 import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
 import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
+import VorderkappeUnifiedConfigCard from "./VorderkappeUnifiedConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -42,6 +43,8 @@ interface ChecklistSectionProps {
     hinterkappeMusterSimple?: boolean
     /** When true: single „Hinterkappe“ config card (Muster + Musterart + Ausführung + Material). */
     hinterkappeSplitConfigUi?: boolean
+    /** When true: „Vorderkappe“ als eine ConfigCard (Ausführung + Material + Länge). */
+    vorderkappeUnifiedConfigUi?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -87,6 +90,7 @@ export default function ChecklistSection({
     hinterkappeMusterSide,
     hinterkappeMusterSimple = false,
     hinterkappeSplitConfigUi = false,
+    vorderkappeUnifiedConfigUi = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -237,11 +241,18 @@ export default function ChecklistSection({
                                 hidePrice={hideBrandsohlePrice}
                             />
                         ) : g.fieldType === "vorderkappeSide" && showOrthopedicFields ? (
-                            <VorderkappeSideField
-                                def={g}
-                                value={vorderkappeSide || null}
-                                onChange={onVorderkappeChange || (() => {})}
-                            />
+                            vorderkappeUnifiedConfigUi ? (
+                                <VorderkappeUnifiedConfigCard
+                                    value={vorderkappeSide || null}
+                                    onChange={onVorderkappeChange || (() => {})}
+                                />
+                            ) : (
+                                <VorderkappeSideField
+                                    def={g}
+                                    value={vorderkappeSide || null}
+                                    onChange={onVorderkappeChange || (() => {})}
+                                />
+                            )
                         ) : g.fieldType === "rahmen" && showOrthopedicFields ? (
                             <RahmenField
                                 def={g}
