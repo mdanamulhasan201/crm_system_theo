@@ -110,9 +110,9 @@ export default function BasicSettings() {
     };
 
     return (
-        <div className="py-8">
+        <div>
             {/* Customer Data & Management – Required Fields */}
-            <div className="bg-white p-6 rounded-lg mb-10 shadow-sm">
+            <div className="bg-white p-4 border rounded-lg mb-10 shadow-sm">
                 <h1 className="text-2xl font-bold mb-1 flex items-center gap-2">
                     Kundendaten & Verwaltung
                 </h1>

@@ -1,5 +1,10 @@
-import BasicSettings from "@/components/DashboardSettings/BasicSettings";
+import { Suspense } from "react";
+import SettingsProfileTabs from "@/components/DashboardSettings/SettingsProfileTabs";
 
 export default function SettingsProfilePage() {
-    return <BasicSettings />;
+  return (
+    <Suspense fallback={null}>
+      <SettingsProfileTabs />
+    </Suspense>
+  );
 }

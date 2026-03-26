@@ -21,3 +21,24 @@ export const getBasicSettings = async () => {
         throw error;
     }
 }
+
+
+// orders field v2/order-required-fields/get
+export const getOrdersFieldSettings = async () => {
+    try {
+        const response = await axiosClient.get('/v2/order-required-fields/get');
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+// update v2/order-required-fields/manage
+export const updateOrdersFieldSettings = async (ordersFieldSettings: any) => {
+    try {
+        const response = await axiosClient.patch('/v2/order-required-fields/manage', ordersFieldSettings);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
