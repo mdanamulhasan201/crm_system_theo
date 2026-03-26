@@ -563,10 +563,14 @@ export const updateOrder = async (orderId: string, payload: Record<string, any>)
 }
 
 
-// customers/extra-info/kva-data/{{customer Id}}
-export const getKvaDataByCustomerId = async (customerId: string) => {
+// customers/extra-info/kva-data/{{customer Id}} — optional kv_location (same semantics as order KVA)
+export const getKvaDataByCustomerId = async (customerId: string, kvLocation?: string) => {
     try {
-        const response = await axiosClient.get(`/customers/extra-info/kva-data/${customerId}`);
+        const qs =
+            kvLocation != null && kvLocation !== ''
+                ? `?kv_location=${encodeURIComponent(kvLocation)}`
+                : '';
+        const response = await axiosClient.get(`/customers/extra-info/kva-data/${customerId}${qs}`);
         return response.data;
     } catch (error) {
         throw error;

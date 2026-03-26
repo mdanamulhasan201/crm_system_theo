@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Loader2 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -52,6 +52,25 @@ const downloadBlob = (blob: Blob, fileName: string) => {
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()))
 
+/** KVA API may return camelCase or snake_case; modal needs `{ address }[]`. */
+function normalizeKvShippingList(data: Record<string, unknown> | null | undefined): { address: string }[] {
+    const raw =
+        (data as { shippingAddressesForKv?: unknown; shipping_addresses_for_kv?: unknown } | undefined)
+            ?.shippingAddressesForKv ??
+        (data as { shipping_addresses_for_kv?: unknown } | undefined)?.shipping_addresses_for_kv
+    if (!raw || !Array.isArray(raw)) return []
+    return raw
+        .map((x: unknown) => {
+            if (typeof x === 'string') return { address: x }
+            if (x && typeof x === 'object' && 'address' in x) {
+                const a = (x as { address: unknown }).address
+                return { address: typeof a === 'string' ? a : '' }
+            }
+            return { address: '' }
+        })
+        .filter((x) => x.address.length > 0)
+}
+
 export interface KostenvoranschlagDialogProps {
     open: boolean
     onOpenChange: (open: boolean) => void
@@ -83,6 +102,11 @@ export default function KostenvoranschlagDialog({
     const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null)
     const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null)
     const [pdfGenerating, setPdfGenerating] = useState(false)
+    const [showKvaLocationModal, setShowKvaLocationModal] = useState(false)
+    const [kvaShippingAddresses, setKvaShippingAddresses] = useState<{ address: string }[]>([])
+    const [isLoadingKvaAddresses, setIsLoadingKvaAddresses] = useState(false)
+    /** Base payload from first `getKvaDataByCustomerId` (before user picks Versandadresse). */
+    const [pendingKvaBaseData, setPendingKvaBaseData] = useState<KvaData | null>(null)
 
     useEffect(() => {
         const loadPositionsnummerData = async () => {
@@ -107,6 +131,15 @@ export default function KostenvoranschlagDialog({
         }
         loadPositionsnummerData()
     }, [])
+
+    useEffect(() => {
+        if (!open) {
+            setShowKvaLocationModal(false)
+            setKvaShippingAddresses([])
+            setIsLoadingKvaAddresses(false)
+            setPendingKvaBaseData(null)
+        }
+    }, [open])
 
     const clearSelection = () => {
         onClearCodexSelection()
@@ -135,7 +168,14 @@ export default function KostenvoranschlagDialog({
             ? 'Positionsnummer ist für Ihr Land nicht verfügbar'
             : null
 
-    const handleCreatePdf = async () => {
+    const discardLocationFlow = () => {
+        setShowKvaLocationModal(false)
+        setKvaShippingAddresses([])
+        setPendingKvaBaseData(null)
+    }
+
+    /** Step 1: load KVA without location; use `shippingAddressesForKv` from response for the modal. */
+    const handleRequestPdfWithLocation = async () => {
         if (!customerId) {
             toast.error('Kunden-ID fehlt')
             return
@@ -145,7 +185,7 @@ export default function KostenvoranschlagDialog({
             return
         }
 
-        setPdfGenerating(true)
+        setIsLoadingKvaAddresses(true)
         try {
             const res = await getKvaDataByCustomerId(customerId)
             if (!res?.success || !res?.data) {
@@ -153,6 +193,41 @@ export default function KostenvoranschlagDialog({
                 return
             }
 
+            const addresses = normalizeKvShippingList(res.data as Record<string, unknown>)
+            if (!addresses.length) {
+                toast.error('Keine Versandadressen in den KVA-Daten. Bitte Backend prüfen.')
+                return
+            }
+
+            setPendingKvaBaseData(res.data as KvaData)
+            setKvaShippingAddresses(addresses)
+            setShowKvaLocationModal(true)
+        } catch (e) {
+            console.error('KVA fetch (Codex):', e)
+            toast.error('Fehler beim Laden der KVA-Daten')
+        } finally {
+            setIsLoadingKvaAddresses(false)
+        }
+    }
+
+    /** Step 2: merge stored base KVA + selected Versandadresse (PDF shows first `shippingAddressesForKv` entry). */
+    const handleCreatePdfWithKvLocation = async (kvLocation: string) => {
+        const base = pendingKvaBaseData
+        if (!customerId) {
+            toast.error('Kunden-ID fehlt')
+            return
+        }
+        if (!base) {
+            toast.error('KVA-Daten fehlen. Bitte erneut „PDF erstellen“ wählen.')
+            return
+        }
+
+        setShowKvaLocationModal(false)
+        setKvaShippingAddresses([])
+        setPendingKvaBaseData(null)
+
+        setPdfGenerating(true)
+        try {
             const insurancesInfo = buildKvaInsurancesFromCodexSelection(
                 selectedPositionsnummer,
                 itemSides,
@@ -167,7 +242,8 @@ export default function KostenvoranschlagDialog({
             }
 
             const merged: KvaData = {
-                ...res.data,
+                ...base,
+                shippingAddressesForKv: [{ address: kvLocation }],
                 insurancesInfo,
             }
 
@@ -279,24 +355,25 @@ export default function KostenvoranschlagDialog({
                                     variant="outline"
                                     className="cursor-pointer"
                                     onClick={() => onOpenChange(false)}
-                                    disabled={pdfGenerating}
+                                    disabled={pdfGenerating || isLoadingKvaAddresses}
                                 >
                                     Schließen
                                 </Button>
                                 <Button
                                     type="button"
                                     className="cursor-pointer bg-emerald-600 hover:bg-emerald-700"
-                                    onClick={handleCreatePdf}
+                                    onClick={handleRequestPdfWithLocation}
                                     disabled={
                                         pdfGenerating ||
+                                        isLoadingKvaAddresses ||
                                         !customerId ||
                                         selectedPositionsnummer.length === 0
                                     }
                                 >
-                                    {pdfGenerating ? (
+                                    {pdfGenerating || isLoadingKvaAddresses ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                            PDF wird erstellt…
+                                            {isLoadingKvaAddresses ? 'Adressen werden geladen…' : 'PDF wird erstellt…'}
                                         </>
                                     ) : (
                                         'PDF erstellen'
@@ -305,6 +382,50 @@ export default function KostenvoranschlagDialog({
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={showKvaLocationModal}
+                onOpenChange={(next) => {
+                    if (!next) discardLocationFlow()
+                }}
+            >
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>Versandadresse auswählen</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-gray-500">
+                        Bitte wählen Sie eine Versandadresse für den Kostenvoranschlag aus.
+                    </p>
+                    <div className="grid max-h-72 grid-cols-1 gap-3 overflow-y-auto pr-1 mt-2">
+                        {kvaShippingAddresses.length === 0 ? (
+                            <p className="text-sm text-gray-400 text-center py-4">Keine Adressen verfügbar</p>
+                        ) : (
+                            kvaShippingAddresses.map((item, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    className="w-full text-left border border-gray-200 rounded-lg px-4 py-3 text-sm font-medium text-gray-700 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 transition cursor-pointer"
+                                    onClick={() => void handleCreatePdfWithKvLocation(item.address)}
+                                    disabled={pdfGenerating}
+                                >
+                                    {item.address}
+                                </button>
+                            ))
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="cursor-pointer"
+                            onClick={discardLocationFlow}
+                            disabled={pdfGenerating}
+                        >
+                            Abbrechen
+                        </Button>
+                    </DialogFooter>
                 </DialogContent>
             </Dialog>
 
