@@ -4,6 +4,7 @@ import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElev
 import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
 import VorderkappeUnifiedConfigCard from "./VorderkappeUnifiedConfigCard"
 import BrandsohleUnifiedConfigCard from "./BrandsohleUnifiedConfigCard"
+import VerbindungslederConfigCard from "./VerbindungslederConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -48,6 +49,8 @@ interface ChecklistSectionProps {
     vorderkappeUnifiedConfigUi?: boolean
     /** When true: „Brandsohle“ als eine ConfigCard (Ausführung + OptionCards + erweiterte Korkeinlage). */
     brandsohleUnifiedConfigUi?: boolean
+    /** When true: „Verbindungsleder“ als ConfigCard (Ja/Nein mit RadioOption). */
+    verbindungslederUnifiedConfigUi?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -95,6 +98,7 @@ export default function ChecklistSection({
     hinterkappeSplitConfigUi = false,
     vorderkappeUnifiedConfigUi = false,
     brandsohleUnifiedConfigUi = false,
+    verbindungslederUnifiedConfigUi = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -197,16 +201,27 @@ export default function ChecklistSection({
                                 onChange={onSoleElevationChange || (() => {})}
                             />
                         ) : g.fieldType === "yesNo" ? (
-                            <YesNoField
-                                def={g}
-                                selected={normalizedSelected}
-                                onSelect={(optId) => onSetGroup(g.id, optId)}
-                                tooltipText={g.tooltipText || (
-                                    g.id === "verbindungsleder"
-                                        ? "Lederstück zur Verbindung von Vorder- und Hinterkappe für zusätzliche Stabilität im Schaftbereich."
-                                        : undefined
-                                )}
-                            />
+                            g.id === "verbindungsleder" && verbindungslederUnifiedConfigUi ? (
+                                <VerbindungslederConfigCard
+                                    selected={normalizedSelected}
+                                    onSelect={(optId) => onSetGroup(g.id, optId)}
+                                    subtitle={
+                                        g.tooltipText ||
+                                        "Lederstück zur Verbindung von Vorder- und Hinterkappe für zusätzliche Stabilität im Schaftbereich."
+                                    }
+                                />
+                            ) : (
+                                <YesNoField
+                                    def={g}
+                                    selected={normalizedSelected}
+                                    onSelect={(optId) => onSetGroup(g.id, optId)}
+                                    tooltipText={g.tooltipText || (
+                                        g.id === "verbindungsleder"
+                                            ? "Lederstück zur Verbindung von Vorder- und Hinterkappe für zusätzliche Stabilität im Schaftbereich."
+                                            : undefined
+                                    )}
+                                />
+                            )
                         ) : g.fieldType === "hinterkappeMusterSide" && showOrthopedicFields ? (
                             hinterkappeSplitConfigUi && hinterkappeMaterialGroupDef ? (
                                 <HinterkappeUnifiedConfigCard

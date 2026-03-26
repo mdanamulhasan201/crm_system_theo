@@ -795,6 +795,7 @@ export default function BodenkonstruktionPage() {
                 onBrandsohleChange={setBrandsohleSide}
                 brandsohleSide={brandsohleSide}
                 brandsohleUnifiedConfigUi={true}
+                verbindungslederUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

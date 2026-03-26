@@ -1231,6 +1231,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 onBrandsohleChange={setBrandsohleSide}
                 brandsohleSide={brandsohleSide}
                 brandsohleUnifiedConfigUi={true}
+                verbindungslederUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}
