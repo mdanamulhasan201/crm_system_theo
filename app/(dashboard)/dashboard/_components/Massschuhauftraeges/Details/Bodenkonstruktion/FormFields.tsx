@@ -29,7 +29,7 @@ type GroupDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
+    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenversteifung" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
 }
 
 export type HeelWidthAdjustmentData = {
@@ -908,6 +908,37 @@ export function OptionGroup({
             </div>
         </div>
     )
+}
+
+// Sohlenversteifung – optional stiffening (Nein / Ja + Ausführung + mm)
+export type SohlenversteifungData = {
+    enabled: boolean
+    mode: "gleich" | "unterschiedlich"
+    gleichMm: string
+    linksMm: string
+    rechtsMm: string
+}
+
+export function defaultSohlenversteifungData(): SohlenversteifungData {
+    return {
+        enabled: false,
+        mode: "gleich",
+        gleichMm: "",
+        linksMm: "",
+        rechtsMm: "",
+    }
+}
+
+export function normalizeSohlenversteifungData(raw: unknown): SohlenversteifungData {
+    const d = defaultSohlenversteifungData()
+    if (!raw || typeof raw !== "object") return d
+    const o = raw as Record<string, unknown>
+    if (typeof o.enabled === "boolean") d.enabled = o.enabled
+    if (o.mode === "gleich" || o.mode === "unterschiedlich") d.mode = o.mode
+    if (typeof o.gleichMm === "string") d.gleichMm = o.gleichMm
+    if (typeof o.linksMm === "string") d.linksMm = o.linksMm
+    if (typeof o.rechtsMm === "string") d.rechtsMm = o.rechtsMm
+    return d
 }
 
 // Vorderkappe Field - mode: gleich | unterschiedlich (only 2 options)

@@ -11,7 +11,9 @@ import type {
   HinterkappeSideData,
   BrandsohleSideData,
   RahmenData,
+  SohlenversteifungData,
 } from "./Bodenkonstruktion/FormFields"
+import { defaultSohlenversteifungData } from "./Bodenkonstruktion/FormFields"
 
 const HINTERKAPPE_MUSTERART_LABELS: Record<string, string> = {
   normal: "Normal",
@@ -133,6 +135,28 @@ function buildRahmenPdfLines(rahmen: RahmenData): string[] {
   return parts
 }
 
+function buildSohlenversteifungPdfLines(d: SohlenversteifungData | null | undefined): string[] {
+  const parts: string[] = []
+  const v = d ?? defaultSohlenversteifungData()
+  if (!v.enabled) {
+    parts.push("Sohlenversteifung gewünscht: Nein")
+    return parts
+  }
+  parts.push("Sohlenversteifung gewünscht: Ja")
+  parts.push(
+    v.mode === "gleich"
+      ? "Ausführung: Beidseitig identisch"
+      : "Ausführung: Links und rechts unterschiedlich"
+  )
+  if (v.mode === "gleich") {
+    if (v.gleichMm.trim()) parts.push(`Versteifung: ${v.gleichMm.trim()} mm`)
+  } else {
+    if (v.linksMm.trim()) parts.push(`Versteifung links: ${v.linksMm.trim()} mm`)
+    if (v.rechtsMm.trim()) parts.push(`Versteifung rechts: ${v.rechtsMm.trim()} mm`)
+  }
+  return parts
+}
+
 // Order data interface for dynamic PDF content
 export interface OrderDataForPDF {
   orderNumber?: string
@@ -185,6 +209,7 @@ interface PDFPopupProps {
   hinterkappeMusterSide?: HinterkappeMusterSideData | null
   hinterkappeSide?: HinterkappeSideData | null
   brandsohleSide?: BrandsohleSideData | null
+  sohlenversteifung?: SohlenversteifungData | null
 }
 
 type OptionDef = { id: string; label: string }
@@ -261,6 +286,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   hinterkappeMusterSide,
   hinterkappeSide,
   brandsohleSide,
+  sohlenversteifung,
 }) => {
   const pdfContentRef = useRef<HTMLDivElement>(null)
   const [pdfBlob, setPdfBlob] = React.useState<Blob | null>(null)
@@ -934,6 +960,22 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       )
                     }
                     
+                    if (g.fieldType === "sohlenversteifung") {
+                      const parts = buildSohlenversteifungPdfLines(sohlenversteifung ?? undefined)
+                      return (
+                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
+                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
+                          <div className="flex-1 leading-loose">
+                            {parts.map((part, idx) => (
+                              <div key={idx} className="mb-1">
+                                <ModalCheckbox isSelected={true} label={part} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )
+                    }
+                    
                     // Handle yesNo field type (e.g., verbindungsleder)
                     if (g.fieldType === "yesNo") {
                       const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
@@ -1319,6 +1361,22 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     return null
                   }
                   const parts = buildRahmenPdfLines(rahmen)
+                  return (
+                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
+                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
+                      <div style={{ flex: 1, lineHeight: 1.8 }}>
+                        {parts.map((part, idx) => (
+                          <div key={idx} style={{ marginBottom: '4px' }}>
+                            <PDFCheckbox isSelected={true} label={part} />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                }
+                
+                if (g.fieldType === "sohlenversteifung") {
+                  const parts = buildSohlenversteifungPdfLines(sohlenversteifung ?? undefined)
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>

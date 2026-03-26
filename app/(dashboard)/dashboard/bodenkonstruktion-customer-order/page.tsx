@@ -11,7 +11,8 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData, SohlenversteifungData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import { defaultSohlenversteifungData, normalizeSohlenversteifungData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 // Components
 import SoleSelectionSection from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/SoleSelectionSection"
@@ -48,6 +49,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
         besondere_hinweise: "",
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
+    const [sohlenversteifung, setSohlenversteifung] = useState<SohlenversteifungData>(defaultSohlenversteifungData)
 
     // Orthopedic fields
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
@@ -135,6 +137,11 @@ export default function BodenkonstruktionCustomerOrderPage() {
                     return
                 }
                 if (json.selected && typeof json.selected === "object") setSelected(json.selected as SelectedState)
+                if (json.sohlenversteifung_detail != null) {
+                    setSohlenversteifung(normalizeSohlenversteifungData(json.sohlenversteifung_detail))
+                } else if (json.sohlenversteifung != null && typeof json.sohlenversteifung === "object" && !Array.isArray(json.sohlenversteifung)) {
+                    setSohlenversteifung(normalizeSohlenversteifungData(json.sohlenversteifung))
+                }
                 if (json.optionInputs && typeof json.optionInputs === "object") setOptionInputs(json.optionInputs as OptionInputsState)
                 if (json.textAreas && typeof json.textAreas === "object") setTextAreas((prev) => ({ ...prev, ...json.textAreas } as TextAreasState))
                 if (typeof json.customerName === "string") setCustomerName(json.customerName)
@@ -323,6 +330,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
         textAreas,
         customerName,
         heelWidthAdjustment,
+        sohlenversteifung_detail: sohlenversteifung,
         vorderkappeSide,
         rahmen,
         hinterkappeMusterSide,
@@ -546,6 +554,8 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 brandsohleSide={brandsohleSide}
                 verbindungslederUnifiedConfigUi={true}
                 sohlenversteifungUnifiedConfigUi={true}
+                sohlenversteifung={sohlenversteifung}
+                onSohlenversteifungChange={setSohlenversteifung}
                 hideBrandsohlePrice={true}
                 hideRahmenPrice={true}
                 hideOptionPricesForGroupIds={["laufsohle_lose_beilegen"]}
@@ -573,6 +583,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
                     hinterkappeMusterSide={hinterkappeMusterSide}
                     hinterkappeSide={hinterkappeSide}
                     brandsohleSide={brandsohleSide}
+                    sohlenversteifung={sohlenversteifung}
                 />
             )}
 

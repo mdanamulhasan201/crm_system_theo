@@ -35,6 +35,10 @@ export function useBodenkonstruktionCalculations(
         let totalExtraPrice = 0
 
         for (const group of GROUPS2) {
+            if (group.fieldType === "sohlenversteifung") {
+                continue
+            }
+
             const selectedValue = selected[group.id]
             
             // Skip if no option is selected for this group

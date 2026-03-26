@@ -344,7 +344,7 @@ export const GROUPS2: GroupDef2[] = [
   {
     id: "sohlenversteifung",
     question: "Sohlenversteifung",
-    fieldType: "yesNo",
+    fieldType: "sohlenversteifung",
     options: [
       { id: "ja", label: "Ja" },
       { id: "nein", label: "Nein" },

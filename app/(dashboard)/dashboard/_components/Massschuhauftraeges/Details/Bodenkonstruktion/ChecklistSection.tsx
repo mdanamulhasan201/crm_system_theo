@@ -1,6 +1,6 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, YesNoField, VorderkappeSideField, RahmenField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type VorderkappeSideData, type RahmenData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, YesNoField, VorderkappeSideField, RahmenField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, defaultSohlenversteifungData, type HeelWidthAdjustmentData, type VorderkappeSideData, type RahmenData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData, type SohlenversteifungData } from "./FormFields"
 import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
 import VorderkappeUnifiedConfigCard from "./VorderkappeUnifiedConfigCard"
 import BrandsohleUnifiedConfigCard from "./BrandsohleUnifiedConfigCard"
@@ -50,8 +50,10 @@ interface ChecklistSectionProps {
     brandsohleUnifiedConfigUi?: boolean
     /** When true: „Verbindungsleder“ als ConfigCard (Ja/Nein mit RadioOption). */
     verbindungslederUnifiedConfigUi?: boolean
-    /** When true: „Sohlenversteifung“ als ConfigCard (Ja/Nein, Standard Nein). */
+    /** When true: „Sohlenversteifung“ als ConfigCard (Ja/Nein + mm, Standard Nein). */
     sohlenversteifungUnifiedConfigUi?: boolean
+    sohlenversteifung?: SohlenversteifungData | null
+    onSohlenversteifungChange?: (value: SohlenversteifungData) => void
     /** When true: „Konstruktionsart“ als ConfigCard (RadioOption; Optionen aus ShoeData). */
     konstruktionsartUnifiedConfigUi?: boolean
     /** When true: „Rahmen“ als ConfigCard (Rahmentyp + Verschalung mit Bildern). */
@@ -101,6 +103,8 @@ export default function ChecklistSection({
     brandsohleUnifiedConfigUi = false,
     verbindungslederUnifiedConfigUi = false,
     sohlenversteifungUnifiedConfigUi = false,
+    sohlenversteifung = null,
+    onSohlenversteifungChange,
     konstruktionsartUnifiedConfigUi = false,
     rahmenUnifiedConfigUi = false,
     onHinterkappeChange,
@@ -177,6 +181,14 @@ export default function ChecklistSection({
                                 value={heelWidthAdjustment || null}
                                 onChange={onHeelWidthChange || (() => {})}
                             />
+                        ) : g.fieldType === "sohlenversteifung" && sohlenversteifungUnifiedConfigUi ? (
+                            <SohlenversteifungConfigCard
+                                value={sohlenversteifung ?? defaultSohlenversteifungData()}
+                                onChange={(v) => {
+                                    onSohlenversteifungChange?.(v)
+                                    onSetGroup(g.id, v.enabled ? "ja" : "nein")
+                                }}
+                            />
                         ) : g.fieldType === "yesNo" ? (
                             g.id === "verbindungsleder" && verbindungslederUnifiedConfigUi ? (
                                 <VerbindungslederConfigCard
@@ -186,11 +198,6 @@ export default function ChecklistSection({
                                         g.tooltipText ||
                                         "Lederstück zur Verbindung von Vorder- und Hinterkappe für zusätzliche Stabilität im Schaftbereich."
                                     }
-                                />
-                            ) : g.id === "sohlenversteifung" && sohlenversteifungUnifiedConfigUi ? (
-                                <SohlenversteifungConfigCard
-                                    selected={normalizedSelected}
-                                    onSelect={(optId) => onSetGroup(g.id, optId)}
                                 />
                             ) : (
                                 <YesNoField
