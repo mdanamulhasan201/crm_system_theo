@@ -119,6 +119,20 @@ export default function VorderkappeUnifiedConfigCard({
 
       {mode ? (
         <div className="mt-5 border-t border-gray-200 pt-5">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Länge</p>
+          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2">
+            <RadioOption
+              selected={laenge === "normal"}
+              onClick={() => setLaenge("normal")}
+              label="Normal"
+            />
+            <RadioOption selected={laenge === "kurz"} onClick={() => setLaenge("kurz")} label="Kurz" />
+          </div>
+        </div>
+      ) : null}
+
+      {mode ? (
+        <div className="mt-5 border-t border-gray-200 pt-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Material</p>
           {mode === "gleich" ? (
             <div className="mt-3">
@@ -130,20 +144,6 @@ export default function VorderkappeUnifiedConfigCard({
               <SelectionRow sideLabel="RECHTS" value={rightMaterial} onChange={patchRight} />
             </div>
           )}
-        </div>
-      ) : null}
-
-      {mode ? (
-        <div className="mt-5 border-t border-gray-200 pt-5">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Länge</p>
-          <div className="mt-2 flex flex-wrap gap-x-6 gap-y-2">
-            <RadioOption
-              selected={laenge === "normal"}
-              onClick={() => setLaenge("normal")}
-              label="Normal"
-            />
-            <RadioOption selected={laenge === "kurz"} onClick={() => setLaenge("kurz")} label="Kurz" />
-          </div>
         </div>
       ) : null}
     </ConfigCard>
