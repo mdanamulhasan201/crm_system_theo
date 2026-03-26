@@ -93,10 +93,11 @@ export default function KvaSheet({
     });
   }, [items]);
 
+  /** Line prices are net (excl. VAT). Rows show 0% in MwSt; VAT is summed in the footer. */
   const totals = useMemo(() => {
-    const gross = expandedItems.reduce((sum, it) => sum + (Number(it?.price) || 0), 0);
-    const net = vatRate > 0 ? gross / (1 + vatRate) : gross;
-    const vat = gross - net;
+    const net = expandedItems.reduce((sum, it) => sum + (Number(it?.price) || 0), 0);
+    const vat = vatRate > 0 ? net * vatRate : 0;
+    const gross = net + vat;
     return { gross, net, vat };
   }, [expandedItems, vatRate]);
 
@@ -276,7 +277,7 @@ export default function KvaSheet({
                   <div style={{ textAlign: 'right', color: '#111827' }}>{seite ? String(seite) : '1'}</div>
                   <div style={{ textAlign: 'right', color: '#111827' }}>{formatMoneyDE(price)}</div>
                   <div style={{ textAlign: 'right', color: '#111827' }}>{formatMoneyDE(price)}</div>
-                  <div style={{ textAlign: 'right', color: '#111827' }}>{Math.round(vatRate * 100)}%</div>
+                  <div style={{ textAlign: 'right', color: '#111827' }}>0%</div>
                 </div>
               );
             })

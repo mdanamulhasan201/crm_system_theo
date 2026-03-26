@@ -152,6 +152,30 @@ const mapApiDataToOrderData = (
   const customer = apiOrder.customer ?? null;
 
   const priority = (apiOrder.priority as "Dringend" | "Normal") || "Normal";
+
+  const productName =
+    (apiOrder as any).orderCategory === "sonstiges"
+      ? (apiOrder as any).service_name ||
+        product?.status ||
+        product?.name ||
+        "—"
+      : product?.status || product?.name || "—";
+
+  let beschreibung =
+    werkstattzettel?.versorgung ||
+    product?.versorgung ||
+    product?.status ||
+    "—";
+
+  const normLabel = (s: string) => s.trim().toLowerCase();
+  if (
+    beschreibung &&
+    productName &&
+    normLabel(beschreibung) === normLabel(productName)
+  ) {
+    beschreibung = "";
+  }
+
   return {
     id: apiOrder.id,
     customerId: customer?.id ?? "",
@@ -174,11 +198,7 @@ const mapApiDataToOrderData = (
     insuranceTotalPrice: apiOrder.insuranceTotalPrice ?? null,
     zahlung: formatPaymentStatus(apiOrder.bezahlt),
     bezahlt: apiOrder.bezahlt || werkstattzettel?.bezahlt || null, // Store raw payment status
-    beschreibung:
-      werkstattzettel?.versorgung ||
-      product?.versorgung ||
-      product?.status ||
-      "—",
+    beschreibung,
     abholort: "Abholung Innsbruck oder Wird mit Post versandt",
     fertigstellung: new Date(
       apiOrder.statusUpdate || apiOrder.createdAt,
@@ -192,10 +212,7 @@ const mapApiDataToOrderData = (
         apiOrder.statusUpdate ||
         apiOrder.updatedAt,
     ),
-    productName:
-      (apiOrder as any).orderCategory === "sonstiges"
-        ? (apiOrder as any).service_name || product?.status || product?.name || "—"
-        : product?.status || product?.name || "—",
+    productName,
     deliveryDate: new Date(apiOrder.updatedAt).toLocaleDateString("de-DE"),
     invoice: apiOrder.invoice,
     priority,
