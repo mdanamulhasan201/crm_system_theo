@@ -307,11 +307,10 @@ export const GROUPS2: GroupDef2[] = [
     question: "Brandsohle",
     fieldType: "brandsohleSide",
     options: [
-      { id: "standard", label: "Standard" },
+      { id: "standard", label: "Standard (Texon) (+0,00 €)" },
       { id: "standard_kork", label: "Standard mit mitlaufendem Kork von 3mm (+4,99€)" },
-      { id: "leder", label: "Leder (+7,99€)" },
-      { id: "diabetes", label: "Diabetes/Versteift (+9,99€)" },
-
+      { id: "leder", label: "Leder (+3,99 € / Seite)" },
+      { id: "diabetes", label: "Diabetes / Versteift (+7,99 € / Seite)" },
     ],
   },
  

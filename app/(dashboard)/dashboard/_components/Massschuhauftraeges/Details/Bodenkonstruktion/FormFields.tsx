@@ -1879,6 +1879,9 @@ export function HinterkappeSideField({
 }
 
 // 3. Brandsohle Side Field - gleich/unterschiedlich
+export type BrandsohleKorkPosition = "vorfuss" | "rueckfuss" | "langsohlig" | null
+export type BrandsohleKorkDicke = "3" | "5" | "custom" | null
+
 export type BrandsohleSideData = {
     mode: GleichUnterschiedlichMode
     /** For mode "gleich": single selection for both sides */
@@ -1886,6 +1889,11 @@ export type BrandsohleSideData = {
     /** For mode "unterschiedlich": left/right separate */
     leftValues?: string[] | null
     rightValues?: string[] | null
+    /** Erweiterte Optionen: Korkeinlage (unified Brandsohle-Karte) */
+    korkEnabled?: boolean | null
+    korkPosition?: BrandsohleKorkPosition
+    korkDicke?: BrandsohleKorkDicke
+    korkCustomMm?: string | null
 }
 
 export function BrandsohleSideField({
@@ -1904,6 +1912,12 @@ export function BrandsohleSideField({
     const sameValues = value?.sameValues || []
     const leftValues = value?.leftValues || []
     const rightValues = value?.rightValues || []
+    const korkRest = {
+        korkEnabled: value?.korkEnabled,
+        korkPosition: value?.korkPosition,
+        korkDicke: value?.korkDicke,
+        korkCustomMm: value?.korkCustomMm,
+    }
 
     const updateMode = (newMode: GleichUnterschiedlichMode) => {
         onChange({
@@ -1911,6 +1925,7 @@ export function BrandsohleSideField({
             sameValues: newMode === "gleich" ? (sameValues || []) : undefined,
             leftValues: newMode === "unterschiedlich" ? (leftValues || []) : undefined,
             rightValues: newMode === "unterschiedlich" ? (rightValues || []) : undefined,
+            ...korkRest,
         })
     }
 
@@ -1920,7 +1935,7 @@ export function BrandsohleSideField({
         const newArray = currentArray.includes(optionId)
             ? currentArray.filter(id => id !== optionId)
             : [...currentArray, optionId]
-        onChange({ mode, sameValues: newArray.length > 0 ? newArray : null })
+        onChange({ mode, sameValues: newArray.length > 0 ? newArray : null, ...korkRest })
     }
 
     const toggleLeftValue = (optionId: string) => {
@@ -1933,6 +1948,7 @@ export function BrandsohleSideField({
             mode,
             leftValues: newArray.length > 0 ? newArray : null,
             rightValues: rightValues,
+            ...korkRest,
         })
     }
 
@@ -1946,6 +1962,7 @@ export function BrandsohleSideField({
             mode,
             leftValues: leftValues,
             rightValues: newArray.length > 0 ? newArray : null,
+            ...korkRest,
         })
     }
 

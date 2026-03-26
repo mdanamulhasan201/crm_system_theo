@@ -10,7 +10,7 @@ import type { VorderkappeSideData, HinterkappeMusterSideData, HinterkappeSideDat
 const HINTERKAPPE_MUSTERART_LABELS: Record<string, string> = {
   normal: "Normal",
   knoechelkappe: "Knöchelkappe",
-  achillessehne: "Achillessehnenfrei",
+  achillessehne: "Knöchelkappe Achillessehnenfrei",
   peronaeus: "Peronaeus / T-Form",
   arthrodese: "Arthrodese",
 }
@@ -41,6 +41,53 @@ function buildHinterkappeMusterPdfLines(h: HinterkappeMusterSideData | null | un
       if (h.leftValue) parts.push(`Hinterkappe links: ${h.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
       if (h.rightValue) parts.push(`Hinterkappe rechts: ${h.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
     }
+  }
+  return parts
+}
+
+function buildBrandsohlePdfLines(
+  brandsohleSide: BrandsohleSideData,
+  options: { id: string; label: string }[]
+): string[] {
+  const parts: string[] = [
+    `Ausführung: ${brandsohleSide.mode === "gleich" ? "Beidseitig identisch" : "Links und rechts unterschiedlich"}`,
+  ]
+  if (brandsohleSide.mode === "gleich" && brandsohleSide.sameValues && Array.isArray(brandsohleSide.sameValues)) {
+    brandsohleSide.sameValues.forEach((val) => {
+      const option = options.find((opt) => opt.id === val)
+      if (option) parts.push(`Auswahl (beide Seiten): ${option.label}`)
+    })
+  }
+  if (brandsohleSide.mode === "unterschiedlich") {
+    if (brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
+      brandsohleSide.leftValues.forEach((val) => {
+        const option = options.find((opt) => opt.id === val)
+        if (option) parts.push(`Links: ${option.label}`)
+      })
+    }
+    if (brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
+      brandsohleSide.rightValues.forEach((val) => {
+        const option = options.find((opt) => opt.id === val)
+        if (option) parts.push(`Rechts: ${option.label}`)
+      })
+    }
+  }
+  if (brandsohleSide.korkEnabled) {
+    const posLabels: Record<string, string> = {
+      vorfuss: "Vorfuß",
+      rueckfuss: "Rückfuß",
+      langsohlig: "Langsohlig",
+    }
+    let thick = ""
+    if (brandsohleSide.korkDicke === "custom" && brandsohleSide.korkCustomMm?.trim()) {
+      thick = `${brandsohleSide.korkCustomMm.trim()} mm (eigene Angabe)`
+    } else if (brandsohleSide.korkDicke === "5") thick = "5 mm"
+    else if (brandsohleSide.korkDicke === "3") thick = "3 mm"
+    const pl = brandsohleSide.korkPosition ? posLabels[brandsohleSide.korkPosition] : ""
+    const chunks = ["Korkeinlage: Ja"]
+    if (pl) chunks.push(`Position: ${pl}`)
+    if (thick) chunks.push(`Dicke: ${thick}`)
+    parts.push(chunks.join(", "))
   }
   return parts
 }
@@ -699,27 +746,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       if (!brandsohleSide || !brandsohleSide.mode) {
                         return null
                       }
-                      const parts: string[] = [`Ausführung: ${brandsohleSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`]
-                      if (brandsohleSide.mode === "gleich" && brandsohleSide.sameValues && Array.isArray(brandsohleSide.sameValues)) {
-                        brandsohleSide.sameValues.forEach(val => {
-                          const option = g.options.find(opt => opt.id === val)
-                          if (option) parts.push(`Auswahl (beide Seiten): ${option.label}`)
-                        })
-                      }
-                      if (brandsohleSide.mode === "unterschiedlich") {
-                        if (brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
-                          brandsohleSide.leftValues.forEach(val => {
-                            const option = g.options.find(opt => opt.id === val)
-                            if (option) parts.push(`Links: ${option.label}`)
-                          })
-                        }
-                        if (brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
-                          brandsohleSide.rightValues.forEach(val => {
-                            const option = g.options.find(opt => opt.id === val)
-                            if (option) parts.push(`Rechts: ${option.label}`)
-                          })
-                        }
-                      }
+                      const parts = buildBrandsohlePdfLines(brandsohleSide, g.options)
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                           <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
@@ -1189,27 +1216,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   if (!brandsohleSide || !brandsohleSide.mode) {
                     return null
                   }
-                  const parts: string[] = [`Ausführung: ${brandsohleSide.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`]
-                  if (brandsohleSide.mode === "gleich" && brandsohleSide.sameValues && Array.isArray(brandsohleSide.sameValues)) {
-                    brandsohleSide.sameValues.forEach(val => {
-                      const option = g.options.find(opt => opt.id === val)
-                      if (option) parts.push(`Auswahl (beide Seiten): ${option.label}`)
-                    })
-                  }
-                  if (brandsohleSide.mode === "unterschiedlich") {
-                    if (brandsohleSide.leftValues && Array.isArray(brandsohleSide.leftValues)) {
-                      brandsohleSide.leftValues.forEach(val => {
-                        const option = g.options.find(opt => opt.id === val)
-                        if (option) parts.push(`Links: ${option.label}`)
-                      })
-                    }
-                    if (brandsohleSide.rightValues && Array.isArray(brandsohleSide.rightValues)) {
-                      brandsohleSide.rightValues.forEach(val => {
-                        const option = g.options.find(opt => opt.id === val)
-                        if (option) parts.push(`Rechts: ${option.label}`)
-                      })
-                    }
-                  }
+                  const parts = buildBrandsohlePdfLines(brandsohleSide, g.options)
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>

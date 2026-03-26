@@ -24,7 +24,12 @@ const MUSTERART_OPTIONS: {
 }[] = [
   { value: "normal", label: "Normal", desc: "Standard", tooltip: "Wenig Stabilität" },
   { value: "knoechelkappe", label: "Knöchelkappe", desc: "Mehr Halt", tooltip: "Mehr Halt im Knöchelbereich" },
-  { value: "achillessehne", label: "Achillessehnenfrei", desc: "Druckentlastung", tooltip: "Druckentlastung der Achillessehne" },
+  {
+    value: "achillessehne",
+    label: "Knöchelkappe Achillessehnenfrei",
+    desc: "Mehr Halt & Druckentlastung",
+    tooltip: "Kombination aus Knöchelhalt und Druckentlastung der Achillessehne",
+  },
   { value: "peronaeus", label: "Peronaeus / T-Form", desc: "Gezielte Führung", tooltip: "Gezielte seitliche Führung" },
   { value: "arthrodese", label: "Arthrodese", desc: "Max. Fixierung", tooltip: "Maximale Fixierung, sehr hohe und feste Konstruktion (höher als Knöchelkappe)" },
 ]

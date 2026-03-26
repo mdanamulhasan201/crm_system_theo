@@ -596,7 +596,11 @@ export default function BodenkonstruktionPage() {
                 mode: brandsohleSide.mode,
                 sameValues: brandsohleSide.sameValues || [],
                 leftValues: brandsohleSide.leftValues || [],
-                rightValues: brandsohleSide.rightValues || []
+                rightValues: brandsohleSide.rightValues || [],
+                korkEnabled: Boolean(brandsohleSide.korkEnabled),
+                korkPosition: brandsohleSide.korkPosition || "",
+                korkDicke: brandsohleSide.korkDicke || "",
+                korkCustomMm: brandsohleSide.korkCustomMm || "",
             }
             let price = 0
             const halfPrice = (p: number) => Math.floor(p * 50) / 100
@@ -790,6 +794,7 @@ export default function BodenkonstruktionPage() {
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}
                 brandsohleSide={brandsohleSide}
+                brandsohleUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

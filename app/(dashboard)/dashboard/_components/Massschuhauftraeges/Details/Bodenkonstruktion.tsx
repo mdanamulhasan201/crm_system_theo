@@ -802,6 +802,10 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 sameValues: brandsohleSide?.sameValues ?? [],
                 leftValues: brandsohleSide?.leftValues ?? [],
                 rightValues: brandsohleSide?.rightValues ?? [],
+                korkEnabled: Boolean(brandsohleSide?.korkEnabled),
+                korkPosition: brandsohleSide?.korkPosition ?? "",
+                korkDicke: brandsohleSide?.korkDicke ?? "",
+                korkCustomMm: brandsohleSide?.korkCustomMm ?? "",
             },
             "Sohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
             "Bevorzugte_Farbe": textAreas.schlemmaterial_preferred_colour || "",
@@ -1226,6 +1230,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}
                 brandsohleSide={brandsohleSide}
+                brandsohleUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

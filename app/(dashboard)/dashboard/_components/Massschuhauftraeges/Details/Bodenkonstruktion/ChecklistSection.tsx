@@ -3,6 +3,7 @@ import { GROUPS2 } from "../ShoeData"
 import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
 import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
 import VorderkappeUnifiedConfigCard from "./VorderkappeUnifiedConfigCard"
+import BrandsohleUnifiedConfigCard from "./BrandsohleUnifiedConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -45,6 +46,8 @@ interface ChecklistSectionProps {
     hinterkappeSplitConfigUi?: boolean
     /** When true: „Vorderkappe“ als eine ConfigCard (Ausführung + Material + Länge). */
     vorderkappeUnifiedConfigUi?: boolean
+    /** When true: „Brandsohle“ als eine ConfigCard (Ausführung + OptionCards + erweiterte Korkeinlage). */
+    brandsohleUnifiedConfigUi?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -91,6 +94,7 @@ export default function ChecklistSection({
     hinterkappeMusterSimple = false,
     hinterkappeSplitConfigUi = false,
     vorderkappeUnifiedConfigUi = false,
+    brandsohleUnifiedConfigUi = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -234,12 +238,20 @@ export default function ChecklistSection({
                                 />
                             )
                         ) : g.fieldType === "brandsohleSide" ? (
-                            <BrandsohleSideField
-                                def={g}
-                                value={brandsohleSide || null}
-                                onChange={onBrandsohleChange || (() => {})}
-                                hidePrice={hideBrandsohlePrice}
-                            />
+                            brandsohleUnifiedConfigUi ? (
+                                <BrandsohleUnifiedConfigCard
+                                    value={brandsohleSide || null}
+                                    onChange={onBrandsohleChange || (() => {})}
+                                    hidePrice={hideBrandsohlePrice}
+                                />
+                            ) : (
+                                <BrandsohleSideField
+                                    def={g}
+                                    value={brandsohleSide || null}
+                                    onChange={onBrandsohleChange || (() => {})}
+                                    hidePrice={hideBrandsohlePrice}
+                                />
+                            )
                         ) : g.fieldType === "vorderkappeSide" && showOrthopedicFields ? (
                             vorderkappeUnifiedConfigUi ? (
                                 <VorderkappeUnifiedConfigCard
