@@ -53,6 +53,7 @@ const formatDateDE = (d = new Date()) =>
 const guessVatRate = (country?: string | null) => {
   if (!country) return 0.19;
   const c = country.toUpperCase();
+  if (c === 'IT' || c.includes('(IT)') || c.includes(' IT')) return 0.04;
   if (c === 'DE' || c.includes('(DE)') || c.includes(' DE')) return 0.19;
   if (c === 'AT' || c.includes('(AT)') || c.includes(' AT')) return 0.2;
   return 0.19;

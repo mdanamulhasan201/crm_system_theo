@@ -65,7 +65,9 @@ export default function CustomerHistory() {
     const [isGebrauchsanweisungOpen, setIsGebrauchsanweisungOpen] = useState(false);
     const [isKonformitatOpen, setIsKonformitatOpen] = useState(false);
     const [isMehrkostenOpen, setIsMehrkostenOpen] = useState(false);
-
+    /** Kostenvoranschlag (Codex) — persists while on this customer page */
+    const [codexSelectedPositions, setCodexSelectedPositions] = useState<string[]>([]);
+    const [codexItemSides, setCodexItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({});
 
     // Show shimmer while the real data is loading
     if (loading) return <CustomerHistoryShimmer />;
@@ -407,6 +409,16 @@ export default function CustomerHistory() {
                 open={isKostenvoranschlagOpen}
                 onOpenChange={setIsKostenvoranschlagOpen}
                 customerId={String(params.id)}
+                selectedPositionsnummer={codexSelectedPositions}
+                onSelectedPositionsnummerChange={setCodexSelectedPositions}
+                itemSides={codexItemSides}
+                onItemSideChange={(posNum, side) =>
+                    setCodexItemSides((prev) => ({ ...prev, [posNum]: side }))
+                }
+                onClearCodexSelection={() => {
+                    setCodexSelectedPositions([])
+                    setCodexItemSides({})
+                }}
             />
 
             <RechnungErstellenDialog
