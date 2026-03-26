@@ -114,7 +114,7 @@ export function RahmenOptionsContent({
                   imageSrc={RAHMEN_VERSCHALUNG_IMAGES.oberleder}
                   imageAlt="Verschalung am Oberleder geführt"
                   title="Am Oberleder geführt"
-                  description="Klassische Verschalung, folgt dem Oberleder"
+                  description="Klassische Verschalung des Oberleders, Sohlenaufbau folgt auf Verschalung"
                   selected={ausfuehrung === "oberleder"}
                   onClick={() => setAusfuehrung("oberleder")}
                 />
@@ -122,7 +122,7 @@ export function RahmenOptionsContent({
                   imageSrc={RAHMEN_VERSCHALUNG_IMAGES.gesamt}
                   imageAlt="Verschalung über gesamten Aufbau gezogen"
                   title="Über gesamten Aufbau"
-                  description="Umschließt Zwischensohle + Absatz komplett"
+                  description="Verschalung kleiner Teil Oberleder und Sohlenaufbau, folgt nur mehr Laufsohle"
                   selected={ausfuehrung === "gesamt"}
                   onClick={() => setAusfuehrung("gesamt")}
                 />

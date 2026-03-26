@@ -1,10 +1,11 @@
 import React from "react"
 import { GROUPS2 } from "../ShoeData"
-import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, SoleElevationField, YesNoField, VorderkappeSideField, RahmenField, SohlenhoeheDifferenziertField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type SoleElevationData, type VorderkappeSideData, type RahmenData, type SohlenhoeheDifferenziertData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
+import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, YesNoField, VorderkappeSideField, RahmenField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, type HeelWidthAdjustmentData, type VorderkappeSideData, type RahmenData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData } from "./FormFields"
 import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
 import VorderkappeUnifiedConfigCard from "./VorderkappeUnifiedConfigCard"
 import BrandsohleUnifiedConfigCard from "./BrandsohleUnifiedConfigCard"
 import VerbindungslederConfigCard from "./VerbindungslederConfigCard"
+import SohlenversteifungConfigCard from "./SohlenversteifungConfigCard"
 import KonstruktionsartConfigCard from "./KonstruktionsartConfigCard"
 import RahmenUnifiedConfigCard from "./RahmenUnifiedConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
@@ -22,8 +23,6 @@ interface ChecklistSectionProps {
     onTextAreaChange: (key: string, value: string) => void
     onHeelWidthChange?: (value: HeelWidthAdjustmentData | null) => void
     heelWidthAdjustment?: HeelWidthAdjustmentData | null
-    onSoleElevationChange?: (value: SoleElevationData | null) => void
-    soleElevation?: SoleElevationData | null
     checkboxError: boolean
     grandTotal: number
     onWeiterClick: () => void
@@ -38,8 +37,6 @@ interface ChecklistSectionProps {
     vorderkappeSide?: VorderkappeSideData | null
     onRahmenChange?: (value: RahmenData | null) => void
     rahmen?: RahmenData | null
-    onSohlenhoeheDifferenziertChange?: (value: SohlenhoeheDifferenziertData | null) => void
-    sohlenhoeheDifferenziert?: SohlenhoeheDifferenziertData | null
     // Left/Right selection fields
     onHinterkappeMusterChange?: (value: HinterkappeMusterSideData | null) => void
     hinterkappeMusterSide?: HinterkappeMusterSideData | null
@@ -53,6 +50,8 @@ interface ChecklistSectionProps {
     brandsohleUnifiedConfigUi?: boolean
     /** When true: „Verbindungsleder“ als ConfigCard (Ja/Nein mit RadioOption). */
     verbindungslederUnifiedConfigUi?: boolean
+    /** When true: „Sohlenversteifung“ als ConfigCard (Ja/Nein, Standard Nein). */
+    sohlenversteifungUnifiedConfigUi?: boolean
     /** When true: „Konstruktionsart“ als ConfigCard (RadioOption; Optionen aus ShoeData). */
     konstruktionsartUnifiedConfigUi?: boolean
     /** When true: „Rahmen“ als ConfigCard (Rahmentyp + Verschalung mit Bildern). */
@@ -80,8 +79,6 @@ export default function ChecklistSection({
     onTextAreaChange,
     onHeelWidthChange,
     heelWidthAdjustment,
-    onSoleElevationChange,
-    soleElevation,
     checkboxError,
     grandTotal,
     onWeiterClick,
@@ -95,8 +92,6 @@ export default function ChecklistSection({
     vorderkappeSide,
     onRahmenChange,
     rahmen,
-    onSohlenhoeheDifferenziertChange,
-    sohlenhoeheDifferenziert,
     // Left/Right selection fields
     onHinterkappeMusterChange,
     hinterkappeMusterSide,
@@ -105,6 +100,7 @@ export default function ChecklistSection({
     vorderkappeUnifiedConfigUi = false,
     brandsohleUnifiedConfigUi = false,
     verbindungslederUnifiedConfigUi = false,
+    sohlenversteifungUnifiedConfigUi = false,
     konstruktionsartUnifiedConfigUi = false,
     rahmenUnifiedConfigUi = false,
     onHinterkappeChange,
@@ -121,7 +117,6 @@ export default function ChecklistSection({
         "hinterkappe_muster",
         "vorderkappe",
         "rahmen",
-        "sohlenhoehe_differenziert",
         "leisten_belassen"
     ]
 
@@ -129,16 +124,6 @@ export default function ChecklistSection({
     const filteredGroups = showOrthopedicFields 
         ? GROUPS2 
         : GROUPS2.filter(g => !orthopedicFieldIds.includes(g.id))
-
-    // Check if Sohlenmaterial has at least one option selected
-    const hasSohlenmaterialSelected = (() => {
-        const schlemmaterialValue = selected.schlemmaterial
-        if (!schlemmaterialValue) return false
-        if (Array.isArray(schlemmaterialValue)) {
-            return schlemmaterialValue.length > 0
-        }
-        return !!schlemmaterialValue
-    })()
 
     const hinterkappeMaterialGroupDef = GROUPS2.find((x) => x.id === "hinterkappe")
 
@@ -157,16 +142,6 @@ export default function ChecklistSection({
                 }
 
                 const normalizedSelected = normalizeSelected(selected[g.id])
-
-                // Show color input only when Sohlenmaterial is selected
-                const showSohlenmaterialColorInput =
-                    g.id === "schlemmaterial" && hasSohlenmaterialSelected
-                
-                // Show Sohlenhöhe differenziert only when Sohlenmaterial is selected AND showOrthopedicFields is true
-                const shouldShowSohlenhoeheDifferenziert = 
-                    g.id === "sohlenhoehe_differenziert" && 
-                    showOrthopedicFields && 
-                    hasSohlenmaterialSelected
 
                 return (
                     <React.Fragment key={g.id}>
@@ -202,12 +177,6 @@ export default function ChecklistSection({
                                 value={heelWidthAdjustment || null}
                                 onChange={onHeelWidthChange || (() => {})}
                             />
-                        ) : g.fieldType === "soleElevation" ? (
-                            <SoleElevationField
-                                def={g}
-                                value={soleElevation || null}
-                                onChange={onSoleElevationChange || (() => {})}
-                            />
                         ) : g.fieldType === "yesNo" ? (
                             g.id === "verbindungsleder" && verbindungslederUnifiedConfigUi ? (
                                 <VerbindungslederConfigCard
@@ -217,6 +186,11 @@ export default function ChecklistSection({
                                         g.tooltipText ||
                                         "Lederstück zur Verbindung von Vorder- und Hinterkappe für zusätzliche Stabilität im Schaftbereich."
                                     }
+                                />
+                            ) : g.id === "sohlenversteifung" && sohlenversteifungUnifiedConfigUi ? (
+                                <SohlenversteifungConfigCard
+                                    selected={normalizedSelected}
+                                    onSelect={(optId) => onSetGroup(g.id, optId)}
                                 />
                             ) : (
                                 <YesNoField
@@ -303,15 +277,6 @@ export default function ChecklistSection({
                                     hidePrice={hideRahmenPrice}
                                 />
                             )
-                        ) : g.fieldType === "sohlenhoeheDifferenziert" && shouldShowSohlenhoeheDifferenziert ? (
-                            <SohlenhoeheDifferenziertField
-                                def={g}
-                                value={sohlenhoeheDifferenziert || null}
-                                onChange={onSohlenhoeheDifferenziertChange || (() => {})}
-                            />
-                        ) : g.id === "sohlenhoehe_differenziert" ? (
-                            // Hide this field if Sohlenmaterial is not selected
-                            null
                         ) : g.id === "Konstruktionsart" &&
                           konstruktionsartUnifiedConfigUi &&
                           g.fieldType === "checkbox" ? (
@@ -321,40 +286,17 @@ export default function ChecklistSection({
                                 onSelect={(optId) => onSetGroup(g.id, optId)}
                             />
                         ) : (
-                            <>
-                                <OptionGroup
-                                    def={g}
-                                    selected={selected[g.id] ?? null}
-                                    onSelect={(optId) => onSetGroup(g.id, optId)}
-                                    optionInputs={optionInputs}
-                                    setOptionInputs={setOptionInputs}
-                                    onOptionClick={onAbsatzFormClick}
-                                    selectedSole={selectedSole}
-                                    tooltipText={(g as any).tooltipText}
-                                    hidePriceForGroupIds={hideOptionPricesForGroupIds}
-                                />
-
-                                {/* Bevorzugte Farbe input für Sohlenmaterial */}
-                                {showSohlenmaterialColorInput && (
-                                    <div className="mt-2 ml-10">
-                                        <label className="block text-sm font-semibold text-gray-800 mb-1">
-                                            Bevorzugte Farbe
-                                        </label>
-                                        <input
-                                            type="text"
-                                            className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                            placeholder="Bevorzugte Farbe (z. B. Schwarz, Dunkelblau …)"
-                                            value={textAreas.schlemmaterial_preferred_colour || ""}
-                                            onChange={(e) =>
-                                                onTextAreaChange(
-                                                    "schlemmaterial_preferred_colour",
-                                                    e.target.value
-                                                )
-                                            }
-                                        />
-                                    </div>
-                                )}
-                            </>
+                            <OptionGroup
+                                def={g}
+                                selected={selected[g.id] ?? null}
+                                onSelect={(optId) => onSetGroup(g.id, optId)}
+                                optionInputs={optionInputs}
+                                setOptionInputs={setOptionInputs}
+                                onOptionClick={onAbsatzFormClick}
+                                selectedSole={selectedSole}
+                                tooltipText={(g as any).tooltipText}
+                                hidePriceForGroupIds={hideOptionPricesForGroupIds}
+                            />
                         )}
                         {!(hinterkappeSplitConfigUi && g.id === "hinterkappe") && (
                             <hr className="border-gray-200 my-4" />

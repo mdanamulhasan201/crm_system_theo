@@ -11,7 +11,7 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, SoleElevationData, VorderkappeSideData, RahmenData, SohlenhoeheDifferenziertData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 // Components
 import SoleSelectionSection from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/SoleSelectionSection"
@@ -41,18 +41,16 @@ export default function BodenkonstruktionPage() {
     const [customerName, setCustomerName] = useState<string>("")
 
     // Form states
-    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff" })
+    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff", sohlenversteifung: "nein" })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [textAreas, setTextAreas] = useState<TextAreasState>({
         besondere_hinweise: "",
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
-    const [soleElevation, setSoleElevation] = useState<SoleElevationData | null>(null)
 
     // Orthopedic fields
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
     const [rahmen, setRahmen] = useState<RahmenData | null>(null)
-    const [sohlenhoeheDifferenziert, setSohlenhoeheDifferenziert] = useState<SohlenhoeheDifferenziertData | null>(null)
 
     // Left/Right selection fields
     const [hinterkappeMusterSide, setHinterkappeMusterSide] = useState<HinterkappeMusterSideData | null>(null)
@@ -264,25 +262,6 @@ export default function BodenkonstruktionPage() {
         setTextAreas((prev) => ({ ...prev, [key]: value }))
     }
 
-    // Clear dependent fields when Sohlenmaterial is deselected
-    React.useEffect(() => {
-        const schlemmaterialValue = selected.schlemmaterial
-        const hasSelection = schlemmaterialValue && (
-            Array.isArray(schlemmaterialValue) ? schlemmaterialValue.length > 0 : true
-        )
-
-        if (!hasSelection) {
-            // Clear color field
-            if (textAreas.schlemmaterial_preferred_colour) {
-                handleTextAreaChange("schlemmaterial_preferred_colour", "")
-            }
-            // Clear height fields
-            if (sohlenhoeheDifferenziert) {
-                setSohlenhoeheDifferenziert(null)
-            }
-        }
-    }, [selected.schlemmaterial, textAreas.schlemmaterial_preferred_colour, sohlenhoeheDifferenziert])
-
     // Handle final form submission (deliveryDate from CompletionPopUp when deliveryCategory is set)
     const handleFinalSubmit = async (deliveryDate?: string | null) => {
         setIsSubmitting(true)
@@ -463,6 +442,10 @@ export default function BodenkonstruktionPage() {
             // === 5. Verbindungsleder ===
             verbindungsleder: getSelectedValue(selected.verbindungsleder) || "",
 
+            // === Sohlenversteifung ===
+            sohlenversteifung: getSelectedValue(selected.sohlenversteifung) || "nein",
+            Sohlenversteifung: getSelectedValue(selected.sohlenversteifung) || "nein",
+
             // === 6. Konstruktionsart ===
             Konstruktionsart: getSelectedValue(selected.Konstruktionsart) || "",
             Konstruktionsart_price: 0,
@@ -471,24 +454,16 @@ export default function BodenkonstruktionPage() {
             rahmen: {} as any,
             Rahmenfarbe: "",
 
-            // === 8. Sohlenmaterial ===
-            Sohlenmaterial: getSelectedValue(selected.schlemmaterial) || "",
-            ohlenmaterial: getSelectedValue(selected.schlemmaterial) || "",
+            Sohlenmaterial: "",
+            ohlenmaterial: "",
+            Bevorzugte_Farbe: "",
+            schlemmaterial_preferred_colour: "",
+            Sohlenerhöhung: "nein",
+            Seite_der_Sohlenerhöhung: "",
+            Höhe_der_Sohlenerhöhung_mm: "",
+            sole_elevation: {},
 
-            // === 9. Bevorzugte Farbe ===
-            Bevorzugte_Farbe: textAreas.schlemmaterial_preferred_colour || "",
-            schlemmaterial_preferred_colour: textAreas.schlemmaterial_preferred_colour || "",
-
-            // === 10. Sohlenhöhe gesamt – Differenziert (Ferse, Ballen, Spitze mm) ===
-            sohlenhoehe_differenziert: {} as any,
-
-            // === 11. Sohlenerhöhung ===
-            Sohlenerhöhung: soleElevation?.enabled ? "ja" : "nein",
-            Seite_der_Sohlenerhöhung: soleElevation?.side || "",
-            Höhe_der_Sohlenerhöhung_mm: soleElevation?.height_mm ?? "",
-            sole_elevation: (soleElevation && soleElevation.enabled) ? soleElevation : {},
-
-            // === 12. Absatz Form ===
+            // === 9. Absatz Form ===
             absatz_form: getSelectedValue(selected.absatzform) || "",
             absatz_höhe_am_besten_wie_bei_leisten_beachten: getSelectedValue(selected.absatzhoehe) || "",
             absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich: getSelectedValue(selected.absatzform) || "",
@@ -654,15 +629,6 @@ export default function BodenkonstruktionPage() {
             bodenkonstruktionJson.Rahmenfarbe = rahmen.color || ""
         }
 
-        // 6. Sohlenhöhe Differenziert
-        if (sohlenhoeheDifferenziert && (sohlenhoeheDifferenziert.ferse || sohlenhoeheDifferenziert.ballen || sohlenhoeheDifferenziert.spitze)) {
-            bodenkonstruktionJson.sohlenhoehe_differenziert = {
-                ferse: sohlenhoeheDifferenziert.ferse || 0,
-                ballen: sohlenhoeheDifferenziert.ballen || 0,
-                spitze: sohlenhoeheDifferenziert.spitze || 0
-            }
-        }
-
         // Remove any remaining nulls before sending
         const cleanedJson = removeNulls(bodenkonstruktionJson)
         formData.append('bodenkonstruktion_json', JSON.stringify(cleanedJson))
@@ -772,8 +738,6 @@ export default function BodenkonstruktionPage() {
                 onTextAreaChange={handleTextAreaChange}
                 onHeelWidthChange={setHeelWidthAdjustment}
                 heelWidthAdjustment={heelWidthAdjustment}
-                onSoleElevationChange={setSoleElevation}
-                soleElevation={soleElevation}
                 checkboxError={checkboxError}
                 grandTotal={grandTotal}
                 onWeiterClick={handleWeiterClick}
@@ -786,8 +750,6 @@ export default function BodenkonstruktionPage() {
                 vorderkappeSide={vorderkappeSide}
                 onRahmenChange={setRahmen}
                 rahmen={rahmen}
-                onSohlenhoeheDifferenziertChange={setSohlenhoeheDifferenziert}
-                sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
                 hinterkappeSplitConfigUi={true}
@@ -798,6 +760,7 @@ export default function BodenkonstruktionPage() {
                 brandsohleSide={brandsohleSide}
                 brandsohleUnifiedConfigUi={true}
                 verbindungslederUnifiedConfigUi={true}
+                sohlenversteifungUnifiedConfigUi={true}
                 konstruktionsartUnifiedConfigUi={true}
                 rahmenUnifiedConfigUi={true}
             />
@@ -819,10 +782,8 @@ export default function BodenkonstruktionPage() {
                     orderData={orderDataForPDF}
                     selectedSole={selectedSole}
                     heelWidthAdjustment={heelWidthAdjustment}
-                    soleElevation={soleElevation}
                     vorderkappeSide={vorderkappeSide}
                     rahmen={rahmen}
-                    sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                     hinterkappeMusterSide={hinterkappeMusterSide}
                     hinterkappeSide={hinterkappeSide}
                     brandsohleSide={brandsohleSide}

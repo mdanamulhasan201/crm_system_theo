@@ -163,7 +163,6 @@ interface PDFPopupProps {
     fussproblem_leisten?: string
     leisten_wuensche?: string
     besondere_hinweise?: string
-    schlemmaterial_preferred_colour?: string
     [key: string]: string | undefined
   }
   showDetails?: boolean
@@ -180,11 +179,9 @@ interface PDFPopupProps {
     medial?: { op: "widen" | "narrow" | null; mm: number }
     lateral?: { op: "widen" | "narrow" | null; mm: number }
   } | null
-  soleElevation?: { enabled: boolean; side: "links" | "rechts" | "beidseitig" | null; height_mm: number } | null
   // Orthopedic fields (mode: gleich | unterschiedlich)
   vorderkappeSide?: VorderkappeSideData | null
   rahmen?: RahmenData | null
-  sohlenhoeheDifferenziert?: { ferse?: number; ballen?: number; spitze?: number } | null
   hinterkappeMusterSide?: HinterkappeMusterSideData | null
   hinterkappeSide?: HinterkappeSideData | null
   brandsohleSide?: BrandsohleSideData | null
@@ -259,10 +256,8 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
   orderData,
   selectedSole,
   heelWidthAdjustment,
-  soleElevation,
   vorderkappeSide,
   rahmen,
-  sohlenhoeheDifferenziert,
   hinterkappeMusterSide,
   hinterkappeSide,
   brandsohleSide,
@@ -890,22 +885,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       )
                     }
                     
-                    // Handle soleElevation field type
-                    if (g.fieldType === "soleElevation") {
-                      if (!soleElevation || !soleElevation.enabled || !soleElevation.height_mm) {
-                        return null
-                      }
-                      const sideLabel = soleElevation.side === "links" ? "Links" : soleElevation.side === "rechts" ? "Rechts" : soleElevation.side === "beidseitig" ? "Beidseitig" : ""
-                      return (
-                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
-                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
-                          <div className="flex-1 leading-loose">
-                            <ModalCheckbox isSelected={true} label={`Seite: ${sideLabel}, Höhe: ${soleElevation.height_mm} mm`} />
-                          </div>
-                        </div>
-                      )
-                    }
-                    
                     // Handle vorderkappeSide field type
                     if (g.fieldType === "vorderkappeSide") {
                       if (!vorderkappeSide || !vorderkappeSide.mode) {
@@ -955,35 +934,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       )
                     }
                     
-                    // Handle sohlenhoeheDifferenziert field type
-                    if (g.fieldType === "sohlenhoeheDifferenziert") {
-                      if (!sohlenhoeheDifferenziert || (!sohlenhoeheDifferenziert.ferse && !sohlenhoeheDifferenziert.ballen && !sohlenhoeheDifferenziert.spitze)) {
-                        return null
-                      }
-                      const parts: string[] = []
-                      if (sohlenhoeheDifferenziert.ferse && sohlenhoeheDifferenziert.ferse > 0) {
-                        parts.push(`Ferse: ${sohlenhoeheDifferenziert.ferse} mm`)
-                      }
-                      if (sohlenhoeheDifferenziert.ballen && sohlenhoeheDifferenziert.ballen > 0) {
-                        parts.push(`Ballen: ${sohlenhoeheDifferenziert.ballen} mm`)
-                      }
-                      if (sohlenhoeheDifferenziert.spitze && sohlenhoeheDifferenziert.spitze > 0) {
-                        parts.push(`Spitze: ${sohlenhoeheDifferenziert.spitze} mm`)
-                      }
-                      return (
-                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
-                          <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
-                          <div className="flex-1 leading-loose">
-                            {parts.map((part, idx) => (
-                              <div key={idx} className="mb-1">
-                                <ModalCheckbox isSelected={true} label={part} />
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )
-                    }
-                    
                     // Handle yesNo field type (e.g., verbindungsleder)
                     if (g.fieldType === "yesNo") {
                       const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
@@ -1005,29 +955,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                     
                     // Handle checkbox and other field types (default)
                     // Always show the field, renderModalOptions will show all options with selected ones checked
-                    // For Sohlenmaterial, show Bevorzugte Farbe right below (not at bottom)
-                    if (g.id === "schlemmaterial") {
-                      return (
-                        <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
-                          <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
-                          <div className="flex-1 leading-loose">
-                            {g.options && g.options.length > 0 ? (
-                              <>
-                                {renderModalOptions(g)}
-                                {textAreas?.schlemmaterial_preferred_colour && (
-                                  <div className="mt-3">
-                                    <div className="text-xs font-semibold text-slate-700 mb-1">Bevorzugte Farbe (Sohlenmaterial)</div>
-                                    <div className="text-xs text-slate-600 p-2 bg-slate-50 border border-gray-200 rounded leading-relaxed">{textAreas.schlemmaterial_preferred_colour}</div>
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-xs text-slate-400 italic">Keine Optionen verfügbar</span>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    }
                     return (
                     <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
@@ -1357,22 +1284,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   )
                 }
                 
-                // Handle soleElevation field type
-                if (g.fieldType === "soleElevation") {
-                  if (!soleElevation || !soleElevation.enabled || !soleElevation.height_mm) {
-                    return null
-                  }
-                  const sideLabel = soleElevation.side === "links" ? "Links" : soleElevation.side === "rechts" ? "Rechts" : soleElevation.side === "beidseitig" ? "Beidseitig" : ""
-                  return (
-                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
-                      <div style={{ flex: 1, lineHeight: 1.8 }}>
-                        <PDFCheckbox isSelected={true} label={`Seite: ${sideLabel}, Höhe: ${soleElevation.height_mm} mm`} />
-                      </div>
-                    </div>
-                  )
-                }
-                
                 // Handle vorderkappeSide field type
                 if (g.fieldType === "vorderkappeSide") {
                   if (!vorderkappeSide || !vorderkappeSide.mode) {
@@ -1422,35 +1333,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   )
                 }
                 
-                // Handle sohlenhoeheDifferenziert field type
-                if (g.fieldType === "sohlenhoeheDifferenziert") {
-                  if (!sohlenhoeheDifferenziert || (!sohlenhoeheDifferenziert.ferse && !sohlenhoeheDifferenziert.ballen && !sohlenhoeheDifferenziert.spitze)) {
-                    return null
-                  }
-                  const parts: string[] = []
-                  if (sohlenhoeheDifferenziert.ferse && sohlenhoeheDifferenziert.ferse > 0) {
-                    parts.push(`Ferse: ${sohlenhoeheDifferenziert.ferse} mm`)
-                  }
-                  if (sohlenhoeheDifferenziert.ballen && sohlenhoeheDifferenziert.ballen > 0) {
-                    parts.push(`Ballen: ${sohlenhoeheDifferenziert.ballen} mm`)
-                  }
-                  if (sohlenhoeheDifferenziert.spitze && sohlenhoeheDifferenziert.spitze > 0) {
-                    parts.push(`Spitze: ${sohlenhoeheDifferenziert.spitze} mm`)
-                  }
-                  return (
-                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
-                      <div style={{ flex: 1, lineHeight: 1.8 }}>
-                        {parts.map((part, idx) => (
-                          <div key={idx} style={{ marginBottom: '4px' }}>
-                            <PDFCheckbox isSelected={true} label={part} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )
-                }
-                
                 // Handle yesNo field type (e.g., verbindungsleder)
                 if (g.fieldType === "yesNo") {
                   const selectedValue = Array.isArray(selectedOptionId) ? selectedOptionId[0] : selectedOptionId
@@ -1471,29 +1353,6 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                 }
                             
                 // Handle checkbox and other field types (default)
-                // For Sohlenmaterial, show Bevorzugte Farbe right below (not at bottom)
-                if (g.id === "schlemmaterial") {
-                  return (
-                    <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
-                      <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>
-                      <div style={{ flex: 1, lineHeight: 1.8 }}>
-                        {g.options && g.options.length > 0 ? (
-                          <>
-                            {renderPDFOptions(g)}
-                            {textAreas?.schlemmaterial_preferred_colour && (
-                              <div style={{ marginTop: '12px' }}>
-                                <div style={{ fontSize: '12px', fontWeight: 600, color: '#1e293b', marginBottom: '4px' }}>Bevorzugte Farbe (Sohlenmaterial)</div>
-                                <div style={{ fontSize: '12px', color: '#475569', padding: '8px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', lineHeight: 1.5 }}>{textAreas.schlemmaterial_preferred_colour}</div>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <span style={{ fontSize: '12px', color: '#94a3b8', fontStyle: 'italic' }}>Keine Optionen verfügbar</span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                }
                 return (
                   <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>

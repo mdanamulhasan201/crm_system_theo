@@ -6,11 +6,14 @@ export default function ConfigCard({
   title,
   subtitle,
   icon,
+  titleAddon,
   children,
 }: {
   title: string
   subtitle?: string
   icon?: React.ReactNode
+  /** e.g. InfoTooltip next to the title */
+  titleAddon?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
@@ -22,7 +25,10 @@ export default function ConfigCard({
           </div>
         )}
         <div className="min-w-0">
-          <h3 className="text-lg font-bold tracking-tight text-gray-900 sm:text-xl">{title}</h3>
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-lg font-bold tracking-tight text-gray-900 sm:text-xl">{title}</h3>
+            {titleAddon}
+          </div>
           {subtitle ? (
             <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
           ) : null}

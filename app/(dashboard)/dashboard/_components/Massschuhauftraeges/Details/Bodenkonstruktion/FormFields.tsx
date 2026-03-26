@@ -29,7 +29,7 @@ type GroupDef = {
     id: string
     question: string
     options: OptionDef[]
-    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "sohlenhoeheDifferenziert" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
+    fieldType?: "checkbox" | "select" | "text" | "heelWidthAdjustment" | "soleElevation" | "yesNo" | "vorderkappeSide" | "rahmen" | "section" | "hinterkappeMusterSide" | "hinterkappeSide" | "brandsohleSide"
 }
 
 export type HeelWidthAdjustmentData = {
@@ -671,6 +671,7 @@ export function OptionGroup({
     selectedSole,
     tooltipText,
     hidePriceForGroupIds,
+    hideQuestion = false,
 }: {
     def: GroupDef & { multiSelect?: boolean }
     selected: string | string[] | null
@@ -682,6 +683,8 @@ export function OptionGroup({
     tooltipText?: string
     /** When group id is in this list, option labels are shown without price (e.g. customer-order page) */
     hidePriceForGroupIds?: string[]
+    /** When true, only render options (no question row); use with an outer ConfigCard title */
+    hideQuestion?: boolean
 }) {
     const isMultiSelect = def.multiSelect === true
     const selectedArray = isMultiSelect 
@@ -741,7 +744,6 @@ export function OptionGroup({
     const verticalLayoutFields = [
         "Konstruktionsart",
         "brandsohle",
-        "schlemmaterial",
         "abrollhilfe",
         "absatzform",
         "laufsohle_lose_beilegen"
@@ -750,26 +752,34 @@ export function OptionGroup({
 
     return (
         <div
-            className={useVerticalLayout ? "mb-6" : "flex items-start mb-6"}
+            className={
+                hideQuestion
+                    ? "mb-0"
+                    : useVerticalLayout
+                      ? "mb-6"
+                      : "mb-6 flex items-start"
+            }
             role="radiogroup"
             aria-label={def.question}
             onDoubleClick={() => onSelect(null)}
         >
-            <div className={`text-base font-bold text-gray-800 ${useVerticalLayout ? "mb-4" : "mr-6 min-w-[200px]"} flex items-center gap-2`}>
-                <span>{def.question}</span>
-                {tooltipText && (
-                    <div className="relative group">
-                        <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center cursor-help hover:bg-gray-300 transition-colors">
-                            <svg className="w-3 h-3 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                            </svg>
+            {!hideQuestion ? (
+                <div className={`text-base font-bold text-gray-800 ${useVerticalLayout ? "mb-4" : "mr-6 min-w-[200px]"} flex items-center gap-2`}>
+                    <span>{def.question}</span>
+                    {tooltipText && (
+                        <div className="relative group">
+                            <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center cursor-help hover:bg-gray-300 transition-colors">
+                                <svg className="w-3 h-3 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="absolute left-0 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
+                                {tooltipText}
+                            </div>
                         </div>
-                        <div className="absolute left-0 bottom-full mb-2 w-80 p-3 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 shadow-lg">
-                            {tooltipText}
-                        </div>
-                    </div>
-                )}
-            </div>
+                    )}
+                </div>
+            ) : null}
             <div className={`flex flex-wrap items-center gap-4`}>
                 {def.options.map((opt) => {
                     const isChecked = isMultiSelect 
@@ -1169,100 +1179,6 @@ export function RahmenField({
         <div className="mb-6">
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
             <RahmenOptionsContent value={value} onChange={onChange} hidePrice={hidePrice} />
-        </div>
-    )
-}
-
-// Sohlenhöhe Differenziert Field - 3 mm inputs (Ferse, Ballen, Spitze)
-export type SohlenhoeheDifferenziertData = {
-    ferse?: number
-    ballen?: number
-    spitze?: number
-}
-
-export function SohlenhoeheDifferenziertField({
-    def,
-    value,
-    onChange,
-}: {
-    def: GroupDef
-    value: SohlenhoeheDifferenziertData | null
-    onChange: (value: SohlenhoeheDifferenziertData | null) => void
-}) {
-    const ferse = value?.ferse || 0
-    const ballen = value?.ballen || 0
-    const spitze = value?.spitze || 0
-
-    const updateValue = (field: "ferse" | "ballen" | "spitze", newValue: number) => {
-        const updatedData: SohlenhoeheDifferenziertData = {
-            ferse: field === "ferse" ? newValue : ferse,
-            ballen: field === "ballen" ? newValue : ballen,
-            spitze: field === "spitze" ? newValue : spitze,
-        }
-        // Only save if at least one value is > 0
-        if ((updatedData.ferse || 0) > 0 || (updatedData.ballen || 0) > 0 || (updatedData.spitze || 0) > 0) {
-            onChange(updatedData)
-        } else {
-            onChange(null)
-        }
-    }
-
-    return (
-        <div className="mb-6">
-            <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
-            <div className="text-sm text-gray-600 mb-3">
-                Detaillierte Höhenangabe für orthopädische Fertigung
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Ferse */}
-                <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Ferse (mm)
-                    </label>
-                    <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder="0"
-                        value={ferse || ""}
-                        onChange={(e) => updateValue("ferse", parseFloat(e.target.value) || 0)}
-                    />
-                </div>
-                
-                {/* Ballen */}
-                <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Ballen (mm)
-                    </label>
-                    <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder="0"
-                        value={ballen || ""}
-                        onChange={(e) => updateValue("ballen", parseFloat(e.target.value) || 0)}
-                    />
-                </div>
-                
-                {/* Spitze */}
-                <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-1">
-                        Spitze (mm)
-                    </label>
-                    <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder="0"
-                        value={spitze || ""}
-                        onChange={(e) => updateValue("spitze", parseFloat(e.target.value) || 0)}
-                    />
-                </div>
-            </div>
         </div>
     )
 }

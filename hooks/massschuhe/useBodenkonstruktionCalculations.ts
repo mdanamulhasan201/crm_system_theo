@@ -148,8 +148,6 @@ export function useBodenkonstruktionCalculations(
             if (vorderkappeSide.rightMaterial === "doppelt") totalExtraPrice += vkDoppelt
         }
 
-        // Note: sohlenhoehe_differenziert has no price impact
-
         return totalExtraPrice
     }, [selected, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide, vorderkappeSide])
 

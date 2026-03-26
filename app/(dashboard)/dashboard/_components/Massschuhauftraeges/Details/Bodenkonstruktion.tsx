@@ -19,7 +19,7 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "./Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, SoleElevationData, VorderkappeSideData, RahmenData, SohlenhoeheDifferenziertData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "./Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "./Bodenkonstruktion/FormFields"
 
 // Components
 import ProductHeader from "./Bodenkonstruktion/ProductHeader"
@@ -53,16 +53,14 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
     const { customShaftData: contextData, clearCustomShaftData } = useCustomShaftData()
     
     // Form states
-    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff" })
+    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff", sohlenversteifung: "nein" })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [textAreas, setTextAreas] = useState<TextAreasState>({
         besondere_hinweise: "",
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
-    const [soleElevation, setSoleElevation] = useState<SoleElevationData | null>(null)
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
     const [rahmen, setRahmen] = useState<RahmenData | null>(null)
-    const [sohlenhoeheDifferenziert, setSohlenhoeheDifferenziert] = useState<SohlenhoeheDifferenziertData | null>(null)
     const [hinterkappeMusterSide, setHinterkappeMusterSide] = useState<HinterkappeMusterSideData | null>(null)
     const [hinterkappeSide, setHinterkappeSide] = useState<HinterkappeSideData | null>(null)
     const [brandsohleSide, setBrandsohleSide] = useState<BrandsohleSideData | null>(null)
@@ -788,12 +786,9 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 verschalungAusfuehrung: rahmen?.verschalungAusfuehrung ?? "",
             },
             "Rahmenfarbe": rahmen?.color || "",
-            "sohlenhoehe_differenziert": {
-                ferse: sohlenhoeheDifferenziert?.ferse ?? 0,
-                ballen: sohlenhoeheDifferenziert?.ballen ?? 0,
-                spitze: sohlenhoeheDifferenziert?.spitze ?? 0,
-            },
             "Verbindungsleder": getSelectedValue(selected.verbindungsleder) || "",
+            "sohlenversteifung": getSelectedValue(selected.sohlenversteifung) || "nein",
+            "Sohlenversteifung": getSelectedValue(selected.sohlenversteifung) || "nein",
             "Konstruktionsart": getSelectedValue(selected.Konstruktionsart) || "",
             "Konstruktionsart_price": 0.0,
             "brandsohle": getSelectedValue(selected.brandsohle) || "",
@@ -809,11 +804,11 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 korkDicke: brandsohleSide?.korkDicke ?? "",
                 korkCustomMm: brandsohleSide?.korkCustomMm ?? "",
             },
-            "Sohlenmaterial": getSelectedValue(selected.schlemmaterial) || "",
-            "Bevorzugte_Farbe": textAreas.schlemmaterial_preferred_colour || "",
-            "Sohlenerhöhung": soleElevation?.enabled ? "ja" : "nein",
-            "Seite_der_Sohlenerhöhung": soleElevation?.side || "",
-            "Höhe_der_Sohlenerhöhung_mm": soleElevation?.height_mm ?? "",
+            "Sohlenmaterial": "",
+            "Bevorzugte_Farbe": "",
+            "Sohlenerhöhung": "nein",
+            "Seite_der_Sohlenerhöhung": "",
+            "Höhe_der_Sohlenerhöhung_mm": "",
             "absatz_höhe_am_besten_wie_bei_leisten_beachten": getSelectedValue(selected.absatzhoehe) || "",
             "Absatz_Form": getSelectedValue(selected.absatzform) || "",
             "absatz_form_achtung_bitte_achten_Sohle_beachten_ob_möglich": getSelectedValue(selected.absatzform) || "",
@@ -1039,16 +1034,12 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             formData.append('Verbindungsleder', verbindungsleder)
         }
 
+        formData.append('Sohlenversteifung', getSelectedValue(selected.sohlenversteifung) || 'nein')
+
         // Farbauswahl_Bodenkonstruktion
         const farbauswahl = getSelectedValue(selected.farbauswahl)
         if (farbauswahl) {
             formData.append('Farbauswahl_Bodenkonstruktion', farbauswahl)
-        }
-
-        // Sohlenmaterial
-        const schlemmaterial = getSelectedValue(selected.schlemmaterial)
-        if (schlemmaterial) {
-            formData.append('Sohlenmaterial', schlemmaterial)
         }
 
         // Brandsohle
@@ -1098,19 +1089,10 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             formData.append('heel_width_adjustment', JSON.stringify(heelWidthAdjustment))
         }
 
-        // Sole Elevation
-        if (soleElevation && soleElevation.enabled) {
-            formData.append('sole_elevation', JSON.stringify(soleElevation))
-        }
-
         // Besondere_Hinweise
         if (textAreas.besondere_hinweise) {
             formData.append('Besondere_Hinweise', textAreas.besondere_hinweise)
         }
-        if (textAreas.schlemmaterial_preferred_colour) {
-            formData.append('Sohlenmaterial_Bevorzugte_Farbe', textAreas.schlemmaterial_preferred_colour)
-        }
-
         // Add sole id "4" specific fields if selected
         if (selectedSole?.id === "4") {
             if (sole4Thickness) {
@@ -1209,8 +1191,6 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 onTextAreaChange={handleTextAreaChange}
                 onHeelWidthChange={setHeelWidthAdjustment}
                 heelWidthAdjustment={heelWidthAdjustment}
-                onSoleElevationChange={setSoleElevation}
-                soleElevation={soleElevation}
                 checkboxError={checkboxError}
                 grandTotal={grandTotal}
                 onWeiterClick={handleWeiterClick}
@@ -1223,8 +1203,6 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 vorderkappeSide={vorderkappeSide}
                 onRahmenChange={setRahmen}
                 rahmen={rahmen}
-                onSohlenhoeheDifferenziertChange={setSohlenhoeheDifferenziert}
-                sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
                 vorderkappeUnifiedConfigUi={true}
@@ -1234,6 +1212,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 brandsohleSide={brandsohleSide}
                 brandsohleUnifiedConfigUi={true}
                 verbindungslederUnifiedConfigUi={true}
+                sohlenversteifungUnifiedConfigUi={true}
                 konstruktionsartUnifiedConfigUi={true}
                 rahmenUnifiedConfigUi={true}
             />
@@ -1256,10 +1235,8 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                     orderData={{ ...orderDataForPDF, totalPrice: grandTotal }}
                     selectedSole={selectedSole}
                     heelWidthAdjustment={heelWidthAdjustment}
-                    soleElevation={soleElevation}
                     vorderkappeSide={vorderkappeSide}
                     rahmen={rahmen}
-                    sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                     hinterkappeMusterSide={hinterkappeMusterSide}
                     hinterkappeSide={hinterkappeSide}
                     brandsohleSide={brandsohleSide}

@@ -341,9 +341,15 @@ export const GROUPS2: GroupDef2[] = [
     options: [],
   },
 
- 
-
-  
+  {
+    id: "sohlenversteifung",
+    question: "Sohlenversteifung",
+    fieldType: "yesNo",
+    options: [
+      { id: "ja", label: "Ja" },
+      { id: "nein", label: "Nein" },
+    ],
+  },
 
   // {
   //   id: "farbauswahl",
@@ -355,36 +361,6 @@ export const GROUPS2: GroupDef2[] = [
   //     { id: "eigene", label: "Eigene Angabe" },
   //   ],
   // },
-  {
-    id: "schlemmaterial",
-    question: "Sohlenmaterial",
-    fieldType: "checkbox",
-    options: [
-      { id: "eva95", label: "EVA Shore 58 (Lunalight)" },
-      { id: "eva93", label: "EVA Shore 53 (AL)" },
-      { id: "eva30", label: "EVA Shore 30 (SLW)" },
-      { id: "leder", label: "Leder" },
-    ],
-    tooltipText: "Die Gesamthöhe der Sohle muss berücksichtigt werden. Die angegebenen Werte beziehen sich auf die Gesamthöhe/Dicke der kompletten Sohle und Aufbaumaterialien, wobei die Absatzhöhe (Absatzhöhe) berücksichtigt werden muss. Daher sollte die Gesamtsolhöhe differenziert für Ferse (Ferse), Ballen (Ballen) und Zehenspitze (Spitze) in Millimetern eingegeben werden, wie es für die orthopädische Fertigung erforderlich ist.",
-  },
-
-  {
-    id: "sohlenhoehe_differenziert",
-    question: "Sohlenhöhe gesamt – Differenziert",
-    fieldType: "sohlenhoeheDifferenziert",
-    options: [],
-  },
-
-  {
-    id: "sohlenerhoehung",
-    question: "Sohlenerhöhung",
-    fieldType: "soleElevation",
-    options: [
-      { id: "ja", label: "Ja" },
-      { id: "nein", label: "Nein" },
-    ],
-  },
-
   // {
   //   id: "absatzhoehe",
   //   question: "Absatz Höhe (Am besten wie bei Leisten beachtet)",

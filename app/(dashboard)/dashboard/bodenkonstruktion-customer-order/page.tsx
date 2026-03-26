@@ -11,7 +11,7 @@ import toast from "react-hot-toast"
 import type { OptionInputsState, TextAreasState } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/types"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
-import type { HeelWidthAdjustmentData, SoleElevationData, VorderkappeSideData, RahmenData, SohlenhoeheDifferenziertData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
+import type { HeelWidthAdjustmentData, VorderkappeSideData, RahmenData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/FormFields"
 
 // Components
 import SoleSelectionSection from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/SoleSelectionSection"
@@ -42,18 +42,16 @@ export default function BodenkonstruktionCustomerOrderPage() {
     const [customerName, setCustomerName] = useState<string>("")
 
     // Form states
-    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff" })
+    const [selected, setSelected] = useState<SelectedState>({ hinterkappe: "kunststoff", sohlenversteifung: "nein" })
     const [optionInputs, setOptionInputs] = useState<OptionInputsState>({})
     const [textAreas, setTextAreas] = useState<TextAreasState>({
         besondere_hinweise: "",
     })
     const [heelWidthAdjustment, setHeelWidthAdjustment] = useState<HeelWidthAdjustmentData | null>(null)
-    const [soleElevation, setSoleElevation] = useState<SoleElevationData | null>(null)
 
     // Orthopedic fields
     const [vorderkappeSide, setVorderkappeSide] = useState<VorderkappeSideData | null>(null)
     const [rahmen, setRahmen] = useState<RahmenData | null>(null)
-    const [sohlenhoeheDifferenziert, setSohlenhoeheDifferenziert] = useState<SohlenhoeheDifferenziertData | null>(null)
 
     // Left/Right selection fields
     const [hinterkappeMusterSide, setHinterkappeMusterSide] = useState<HinterkappeMusterSideData | null>(null)
@@ -141,10 +139,8 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 if (json.textAreas && typeof json.textAreas === "object") setTextAreas((prev) => ({ ...prev, ...json.textAreas } as TextAreasState))
                 if (typeof json.customerName === "string") setCustomerName(json.customerName)
                 if (json.heelWidthAdjustment != null) setHeelWidthAdjustment(json.heelWidthAdjustment as HeelWidthAdjustmentData | null)
-                if (json.soleElevation != null) setSoleElevation(json.soleElevation as SoleElevationData | null)
                 if (json.vorderkappeSide != null) setVorderkappeSide(json.vorderkappeSide as VorderkappeSideData | null)
                 if (json.rahmen != null) setRahmen(json.rahmen as RahmenData | null)
-                if (json.sohlenhoeheDifferenziert != null) setSohlenhoeheDifferenziert(json.sohlenhoeheDifferenziert as SohlenhoeheDifferenziertData | null)
                 if (json.hinterkappeMusterSide != null) setHinterkappeMusterSide(json.hinterkappeMusterSide as HinterkappeMusterSideData | null)
                 if (json.hinterkappeSide != null) setHinterkappeSide(json.hinterkappeSide as HinterkappeSideData | null)
                 if (json.brandsohleSide != null) setBrandsohleSide(json.brandsohleSide as BrandsohleSideData | null)
@@ -320,25 +316,6 @@ export default function BodenkonstruktionCustomerOrderPage() {
         setTextAreas((prev) => ({ ...prev, [key]: value }))
     }
 
-    // Clear dependent fields when Sohlenmaterial is deselected
-    React.useEffect(() => {
-        const schlemmaterialValue = selected.schlemmaterial
-        const hasSelection = schlemmaterialValue && (
-            Array.isArray(schlemmaterialValue) ? schlemmaterialValue.length > 0 : true
-        )
-
-        if (!hasSelection) {
-            // Clear color field
-            if (textAreas.schlemmaterial_preferred_colour) {
-                handleTextAreaChange("schlemmaterial_preferred_colour", "")
-            }
-            // Clear height fields
-            if (sohlenhoeheDifferenziert) {
-                setSohlenhoeheDifferenziert(null)
-            }
-        }
-    }, [selected.schlemmaterial, textAreas.schlemmaterial_preferred_colour, sohlenhoeheDifferenziert])
-
     // Build bodenkonstruktion_json payload (all form data except image)
     const buildBodenkonstruktionJson = () => ({
         selected,
@@ -346,10 +323,8 @@ export default function BodenkonstruktionCustomerOrderPage() {
         textAreas,
         customerName,
         heelWidthAdjustment,
-        soleElevation,
         vorderkappeSide,
         rahmen,
-        sohlenhoeheDifferenziert,
         hinterkappeMusterSide,
         hinterkappeSide,
         brandsohleSide,
@@ -551,8 +526,6 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 onTextAreaChange={handleTextAreaChange}
                 onHeelWidthChange={setHeelWidthAdjustment}
                 heelWidthAdjustment={heelWidthAdjustment}
-                onSoleElevationChange={setSoleElevation}
-                soleElevation={soleElevation}
                 checkboxError={checkboxError}
                 grandTotal={grandTotal}
                 onWeiterClick={handleWeiterClick}
@@ -565,14 +538,14 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 vorderkappeSide={vorderkappeSide}
                 onRahmenChange={setRahmen}
                 rahmen={rahmen}
-                onSohlenhoeheDifferenziertChange={setSohlenhoeheDifferenziert}
-                sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
                 onHinterkappeChange={setHinterkappeSide}
                 hinterkappeSide={hinterkappeSide}
                 onBrandsohleChange={setBrandsohleSide}
                 brandsohleSide={brandsohleSide}
+                verbindungslederUnifiedConfigUi={true}
+                sohlenversteifungUnifiedConfigUi={true}
                 hideBrandsohlePrice={true}
                 hideRahmenPrice={true}
                 hideOptionPricesForGroupIds={["laufsohle_lose_beilegen"]}
@@ -595,10 +568,8 @@ export default function BodenkonstruktionCustomerOrderPage() {
                     orderData={orderDataForPDF}
                     selectedSole={selectedSole}
                     heelWidthAdjustment={heelWidthAdjustment}
-                    soleElevation={soleElevation}
                     vorderkappeSide={vorderkappeSide}
                     rahmen={rahmen}
-                    sohlenhoeheDifferenziert={sohlenhoeheDifferenziert}
                     hinterkappeMusterSide={hinterkappeMusterSide}
                     hinterkappeSide={hinterkappeSide}
                     brandsohleSide={brandsohleSide}
