@@ -37,8 +37,10 @@ async function generateCombinedFeetPdf(params: {
     header: FeetImagesPdfHeader;
     leftFootLength?: number;
     rightFootLength?: number;
+    /** When true (order setting), omit Pelottenposition footer when foot length is missing. */
+    showMeasPoints10_11?: boolean;
 }): Promise<Blob> {
-    const { leftImageUrl, rightImageUrl, header, leftFootLength = 0, rightFootLength = 0 } = params;
+    const { leftImageUrl, rightImageUrl, header, leftFootLength = 0, rightFootLength = 0, showMeasPoints10_11 } = params;
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = 210;
     const pageHeight = 297;
@@ -105,7 +107,7 @@ async function generateCombinedFeetPdf(params: {
             pdf.setTextColor(0, 0, 0);
             pdf.text(`Pelottenposition ${footSide} = ${pelottenposition.toFixed(1)}mm`,
                 margin, footerY, { align: 'left' });
-        } else {
+        } else if (showMeasPoints10_11 !== true) {
             pdf.setFontSize(10);
             pdf.setFont('helvetica', 'normal');
             pdf.setTextColor(0, 0, 0);
@@ -204,8 +206,9 @@ export async function generateFeetPdf(params: {
     generateCombined?: boolean;
     leftFootLength?: number;
     rightFootLength?: number;
+    showMeasPoints10_11?: boolean;
 }): Promise<{ combined?: Blob; }> {
-    const { leftImageUrl, rightImageUrl, header, generateCombined = false, leftFootLength, rightFootLength } = params;
+    const { leftImageUrl, rightImageUrl, header, generateCombined = false, leftFootLength, rightFootLength, showMeasPoints10_11 } = params;
     const results: { combined?: Blob; } = {};
 
     if (generateCombined && leftImageUrl && rightImageUrl) {
@@ -214,7 +217,8 @@ export async function generateFeetPdf(params: {
             rightImageUrl,
             header,
             leftFootLength,
-            rightFootLength
+            rightFootLength,
+            showMeasPoints10_11
         });
     }
 

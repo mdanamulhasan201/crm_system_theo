@@ -602,3 +602,17 @@ export const identifyKvaData = async (customerId: string) => {
     }
 }
 
+
+
+
+// v2/order_settings/manage?fields=showMeasPoints10_11
+export const getOrderSettingsShowMeasPoints10_11 = async () => {
+    try {
+        const response = await axiosClient.get(`/v2/order_settings/manage?fields=showMeasPoints10_11`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
+

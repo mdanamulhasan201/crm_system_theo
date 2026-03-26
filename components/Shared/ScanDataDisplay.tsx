@@ -7,6 +7,7 @@ import { RiArrowDownSLine } from 'react-icons/ri'
 import { ScanData } from '@/types/scan'
 import { useAuth } from '@/contexts/AuthContext'
 import { generateFeetPdf } from '@/lib/FootPdfGenerate'
+import { getOrderSettingsShowMeasPoints10_11 } from '@/apis/productsOrder'
 import { shouldUnoptimizeImage } from '@/lib/imageUtils'
 import ZoomMode from './ZoomMode'
 
@@ -388,13 +389,24 @@ export default function ScanDataDisplay({
             const leftFootLength = parseFloat((currentData as any).fusslange2 as string) || 0; // Left foot Fusslänge
             const rightFootLength = parseFloat((currentData as any).fusslange1 as string) || 0; // Right foot Fusslänge
 
+            let showMeasPoints10_11: boolean | undefined;
+            try {
+                const settingsRes = await getOrderSettingsShowMeasPoints10_11();
+                if (settingsRes?.success && typeof settingsRes?.data?.showMeasPoints10_11 === 'boolean') {
+                    showMeasPoints10_11 = settingsRes.data.showMeasPoints10_11;
+                }
+            } catch {
+                showMeasPoints10_11 = undefined;
+            }
+
             const { combined } = await generateFeetPdf({
                 rightImageUrl: rightUrl,
                 leftImageUrl: leftUrl,
                 header: headerBase,
                 generateCombined: true,
                 leftFootLength,
-                rightFootLength
+                rightFootLength,
+                showMeasPoints10_11
             });
 
             if (combined) {
