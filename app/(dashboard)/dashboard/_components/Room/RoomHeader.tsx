@@ -1,7 +1,16 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/lib/utils';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+
+const STAFF_VISIBLE_COUNT = 4;
 
 export interface StaffItem {
     id: string;
@@ -43,11 +52,13 @@ function FilterPill<T extends { id: string; name: string; percentage: number }>(
     selected,
     onSelect,
     showPercentageInLabel = true,
+    className,
 }: {
     item: T;
     selected: boolean;
     onSelect: () => void;
     showPercentageInLabel?: boolean;
+    className?: string;
 }) {
     const label = showPercentageInLabel ? `${item.name} ${item.percentage}%` : item.name;
     const pct = Math.min(100, Math.max(0, item.percentage));
@@ -61,7 +72,8 @@ function FilterPill<T extends { id: string; name: string; percentage: number }>(
                 'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#62A07C] focus-visible:ring-offset-2',
                 selected
                     ? 'bg-[#62A07C] text-white shadow-md shadow-[#62A07C]/20'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:border-[#62A07C]/40 hover:bg-gray-50/80'
+                    : 'bg-white text-gray-700 border border-gray-200 hover:border-[#62A07C]/40 hover:bg-gray-50/80',
+                className
             )}
         >
             <span className="text-sm font-semibold truncate leading-tight">{label}</span>
@@ -91,6 +103,11 @@ export default function RoomHeader({
     onStaffSelect,
     onRoomSelect,
 }: RoomHeaderProps) {
+    const [staffMoreOpen, setStaffMoreOpen] = useState(false);
+    const visibleStaff = staff.slice(0, STAFF_VISIBLE_COUNT);
+    const overflowStaff = staff.slice(STAFF_VISIBLE_COUNT);
+    const overflowCount = overflowStaff.length;
+
     return (
         <div className="px-4 mt-10 py-5 bg-white border-t border-gray-100 rounded-t-xl shadow-sm">
             <div className="flex flex-col gap-5">
@@ -101,8 +118,8 @@ export default function RoomHeader({
                         </span>
                         <span className="hidden sm:inline text-gray-300">·</span>
                     </div>
-                    <div className="flex flex-wrap gap-2 sm:gap-3">
-                        {staff.map((s) => (
+                    <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+                        {visibleStaff.map((s) => (
                             <FilterPill
                                 key={s.id}
                                 item={s}
@@ -111,6 +128,48 @@ export default function RoomHeader({
                                 showPercentageInLabel
                             />
                         ))}
+                        {overflowCount > 0 && (
+                            <Dialog open={staffMoreOpen} onOpenChange={setStaffMoreOpen}>
+                                <DialogTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            'relative flex flex-col rounded-xl min-w-[5rem] px-3.5 py-2.5 text-left transition-all duration-200',
+                                            'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#62A07C] focus-visible:ring-offset-2',
+                                            'bg-white text-gray-700 border border-gray-200 hover:border-[#62A07C]/40 hover:bg-gray-50/80'
+                                        )}
+                                    >
+                                        <span className="text-sm font-semibold truncate leading-tight">
+                                            +{overflowCount} mehr
+                                        </span>
+                                        <div
+                                            className="mt-2 h-1.5 w-full rounded-full overflow-hidden bg-gray-200"
+                                            aria-hidden
+                                        />
+                                    </button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>Weitere Mitarbeiter</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2 w-full">
+                                        {overflowStaff.map((s) => (
+                                            <FilterPill
+                                                key={s.id}
+                                                item={s}
+                                                selected={selectedStaffId === s.id}
+                                                onSelect={() => {
+                                                    onStaffSelect?.(s.id);
+                                                    setStaffMoreOpen(false);
+                                                }}
+                                                showPercentageInLabel
+                                                className="w-full min-w-0"
+                                            />
+                                        ))}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        )}
                     </div>
                 </div>
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-5">
