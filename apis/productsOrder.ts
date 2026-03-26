@@ -563,6 +563,16 @@ export const updateOrder = async (orderId: string, payload: Record<string, any>)
 }
 
 
+// customers/extra-info/kva-data/{{customer Id}}
+export const getKvaDataByCustomerId = async (customerId: string) => {
+    try {
+        const response = await axiosClient.get(`/customers/extra-info/kva-data/${customerId}`);
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+}
+
 // customer-orders/track/identify-kva-data/{{customer Id}}\
 export const identifyKvaData = async (customerId: string) => {
     try {
@@ -572,3 +582,4 @@ export const identifyKvaData = async (customerId: string) => {
         throw error;
     }
 }
+

@@ -3,12 +3,23 @@
 import React, { useEffect, useState } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Loader2 } from 'lucide-react'
-import toast from 'react-hot-toast'
-import { identifyKvaData } from '@/apis/productsOrder'
-import { generatePdfFromElement } from '@/lib/pdfGenerator'
-import KvaSheet, { KvaData } from '@/components/OrdersPage/ProccessTable/KvaPdf/KvaSheet'
+import { useAuth } from '@/contexts/AuthContext'
+import PositionsnummerDropdown from '@/app/(dashboard)/dashboard/_components/Scanning/Einlagen/Dropdowns/PositionsnummerDropdown'
 
-const KVA_PDF_ELEMENT_ID = 'kva-customer-history-pdf';
+interface PositionsnummerItem {
+    id: string
+    positionsnummer?: string
+    category?: string
+    description: string | {
+        positionsnummer?: string
+        title?: string
+        subtitle?: string
+        Quantità?: string
+        'Importo U.'?: string
+        IVA?: string
+    }
+    price: number
+}
 
 interface KostenvoranschlagDialogProps {
     open: boolean
@@ -16,94 +27,134 @@ interface KostenvoranschlagDialogProps {
     customerId?: string
 }
 
-const getProxyImageUrl = (externalUrl: string): string => {
-    if (!externalUrl) return externalUrl;
-    if (externalUrl.startsWith('/api/proxy-image?url=')) return externalUrl;
-    const absoluteUrl = externalUrl.startsWith('http')
-        ? externalUrl
-        : `${window.location.origin}${externalUrl.startsWith('/') ? '' : '/'}${externalUrl}`;
-    return `/api/proxy-image?url=${encodeURIComponent(absoluteUrl)}`;
-};
+export default function KostenvoranschlagDialog({ open, onOpenChange }: KostenvoranschlagDialogProps) {
+    const { user } = useAuth()
+    const vatCountry = user?.accountInfo?.vat_country
 
-const downloadBlob = (blob: Blob, fileName: string) => {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-};
+    const [positionsnummerAustriaData, setPositionsnummerAustriaData] = useState<PositionsnummerItem[]>([])
+    const [positionsnummerItalyData, setPositionsnummerItalyData] = useState<PositionsnummerItem[]>([])
+    const [loadingPositionsnummer, setLoadingPositionsnummer] = useState(true)
 
-const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-
-export default function KostenvoranschlagDialog({ open, onOpenChange, customerId }: KostenvoranschlagDialogProps) {
-    const [kvaPdfData, setKvaPdfData] = useState<KvaData | null>(null);
-    const [kvaPdfLogoProxy, setKvaPdfLogoProxy] = useState<string | null>(null);
+    const [selectedPositionsnummer, setSelectedPositionsnummer] = useState<string[]>([])
+    const [itemSides, setItemSides] = useState<Record<string, 'L' | 'R' | 'BDS'>>({})
 
     useEffect(() => {
-        if (!open || !customerId) return;
-
-        const generatePdf = async () => {
+        const loadPositionsnummerData = async () => {
             try {
-                const res = await identifyKvaData(customerId);
-                if (!res?.success || !res?.data) {
-                    toast.error(res?.message || 'KVA Daten konnten nicht geladen werden');
-                    onOpenChange(false);
-                    return;
+                const [austriaResponse, italyResponse] = await Promise.all([
+                    fetch('/data/positionsnummer-austria.json'),
+                    fetch('/data/positionsnummer-italy.json'),
+                ])
+                if (austriaResponse.ok) {
+                    const austriaData = await austriaResponse.json()
+                    setPositionsnummerAustriaData(austriaData)
                 }
-
-                const kvaData: KvaData = res.data;
-                setKvaPdfData(kvaData);
-                setKvaPdfLogoProxy(kvaData.logo ? getProxyImageUrl(kvaData.logo as string) : null);
-
-                await nextFrame();
-
-                const pdfBlob = await generatePdfFromElement(KVA_PDF_ELEMENT_ID, { scale: 1.5, quality: 0.88, format: 'jpeg' });
-                const safeName = (kvaData?.customerInfo?.firstName || 'KVA')
-                    .toString()
-                    .trim()
-                    .replace(/\s+/g, '_');
-                downloadBlob(pdfBlob, `Kostenvoranschlag_${safeName}.pdf`);
-                toast.success('PDF erfolgreich erstellt');
-                onOpenChange(false);
-            } catch (e) {
-                console.error('KVA PDF error:', e);
-                toast.error('Fehler beim Erstellen des KVA PDFs');
-                onOpenChange(false);
+                if (italyResponse.ok) {
+                    const italyData = await italyResponse.json()
+                    setPositionsnummerItalyData(italyData)
+                }
+            } catch (error) {
+                console.error('Failed to load positionsnummer data:', error)
             } finally {
-                setTimeout(() => {
-                    setKvaPdfData(null);
-                    setKvaPdfLogoProxy(null);
-                }, 1500);
+                setLoadingPositionsnummer(false)
             }
-        };
+        }
+        loadPositionsnummerData()
+    }, [])
 
-        generatePdf();
-    }, [open, customerId]);
+    useEffect(() => {
+        if (!open) {
+            setSelectedPositionsnummer([])
+            setItemSides({})
+        }
+    }, [open])
+
+    const getFilteredPositionsnummerData = (): PositionsnummerItem[] => {
+        if (vatCountry === 'Österreich (AT)' || vatCountry === 'Austria (AT)') {
+            return positionsnummerAustriaData
+        }
+        if (vatCountry === 'Italien (IT)') {
+            return positionsnummerItalyData
+        }
+        return []
+    }
+
+    const options = getFilteredPositionsnummerData()
+
+    const getVatRate = (): number => {
+        if (vatCountry === 'Italien (IT)') return 4
+        if (vatCountry === 'Österreich (AT)' || vatCountry === 'Austria (AT)') return 20
+        return 0
+    }
+
+    const unavailableMessage =
+        vatCountry && options.length === 0 && !loadingPositionsnummer
+            ? 'Positionsnummer ist für Ihr Land nicht verfügbar'
+            : null
 
     return (
-        <>
-            <Dialog open={open} onOpenChange={onOpenChange}>
-                <DialogContent className="max-w-sm">
-                    <DialogHeader>
-                        <DialogTitle className="text-lg font-semibold">Kostenvoranschlag</DialogTitle>
-                    </DialogHeader>
-                    <div className="flex flex-col items-center gap-4 py-6">
-                        <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
-                        <p className="text-sm text-gray-600">PDF wird erstellt...</p>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="flex max-w-2xl max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+                <DialogHeader className="p-4 sm:p-6 pr-12 border-b border-gray-200 space-y-0 shrink-0">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <DialogTitle className="text-lg sm:text-xl font-semibold text-gray-900">
+                            Kostenvoranschlag (Codex)
+                        </DialogTitle>
+                        {getVatRate() > 0 && (
+                            <span className="text-sm text-gray-600 bg-gray-100 px-2.5 py-1 rounded-md">
+                                +{getVatRate()}% VAT
+                            </span>
+                        )}
                     </div>
-                </DialogContent>
-            </Dialog>
+                    <div className="flex flex-wrap items-end justify-between gap-2 mt-2">
+                      
+                        {selectedPositionsnummer.length > 0 && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setSelectedPositionsnummer([])
+                                    setItemSides({})
+                                }}
+                                className="text-sm font-medium text-emerald-700 hover:text-emerald-800 shrink-0 cursor-pointer"
+                            >
+                                Auswahl leeren
+                            </button>
+                        )}
+                    </div>
+                </DialogHeader>
 
-            {/* Hidden element for PDF rendering */}
-            <div
-                id={KVA_PDF_ELEMENT_ID}
-                style={{ position: 'fixed', top: '-9999px', left: '-9999px', zIndex: -1, pointerEvents: 'none' }}
-            >
-                {kvaPdfData ? <KvaSheet data={kvaPdfData} logoProxyUrl={kvaPdfLogoProxy} /> : null}
-            </div>
-        </>
-    );
+                {loadingPositionsnummer ? (
+                    <div className="flex flex-col items-center gap-4 py-12">
+                        <Loader2 className="w-10 h-10 animate-spin text-emerald-600" />
+                        <p className="text-sm text-gray-600">Daten werden geladen…</p>
+                    </div>
+                ) : unavailableMessage ? (
+                    <div className="p-8 text-center text-gray-600 text-sm">{unavailableMessage}</div>
+                ) : (
+                    <div className="flex min-h-0 flex-1 flex-col overflow-hidden ">
+                        <PositionsnummerDropdown
+                            variant="embedded"
+                            embeddedActive={open}
+                            label="Positionsnummer"
+                            value={selectedPositionsnummer}
+                            placeholder="Pos.-Nr."
+                            options={options}
+                            isOpen={false}
+                            onToggle={() => {}}
+                            onSelect={setSelectedPositionsnummer}
+                            onClear={() => {
+                                setSelectedPositionsnummer([])
+                                setItemSides({})
+                            }}
+                            itemSides={itemSides}
+                            onItemSideChange={(posNum, side) =>
+                                setItemSides((prev) => ({ ...prev, [posNum]: side }))
+                            }
+                            vatCountry={vatCountry || undefined}
+                        />
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
+    )
 }
