@@ -16,11 +16,14 @@ function stripPriceFromBrandsohleLabel(label: string): string {
     return label.replace(/\s*\([+]?\d{1,3}[.,]\d{2}\s*€\)\s*$/i, "").trim()
 }
 
-/** Strip price from option label - e.g. "Ja (–5,99 €)" or "Gummi-Rahmen (+20,00 €)" -> "Ja" / "Gummi-Rahmen". Handles + and –/-. */
-function stripPriceFromOptionLabel(label: string): string {
+/** Strip price from option label - e.g. "Ja (–5,99 €)" -> "Ja". Handles + and –/-. */
+export function stripPriceFromOptionLabel(label: string): string {
     return label.replace(/\s*\([+\-–]?\d{1,3}[.,]\d{2}\s*€\)\s*$/i, "").trim()
 }
 import type { OptionDef, OptionInputsState } from "./types"
+import type { RahmenData } from "./rahmenTypes"
+import { RahmenOptionsContent } from "./RahmenOptionsContent"
+export type { RahmenData, RahmenVerschalungHoehe, RahmenVerschalungAusfuehrung } from "./rahmenTypes"
 
 type GroupDef = {
     id: string
@@ -1149,12 +1152,7 @@ export function VorderkappeSideField({
     )
 }
 
-// Rahmen Field - Selection + Color Text Input
-export type RahmenData = {
-    type: "eva" | "gummi" | null
-    color?: string
-}
-
+// Rahmen Field – Label + shared RahmenOptionsContent (Gummi ohne Farbfeld)
 export function RahmenField({
     def,
     value,
@@ -1167,94 +1165,10 @@ export function RahmenField({
     /** When true, show option labels without price (e.g. customer-order page only) */
     hidePrice?: boolean
 }) {
-    const type = value?.type || null
-    const color = value?.color || ""
-
-    const updateType = (newType: "eva" | "gummi" | null) => {
-        if (newType === null) {
-            onChange(null)
-        } else {
-            const newValue: RahmenData = {
-                type: newType,
-                color: newType === "gummi" ? color : undefined,
-            }
-            onChange(newValue)
-        }
-    }
-
-    const updateColor = (newColor: string) => {
-        if (type !== "gummi") return
-        const newValue: RahmenData = {
-            type,
-            color: newColor,
-        }
-        onChange(newValue)
-    }
-
     return (
         <div className="mb-6">
             <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
-            
-            {/* Type Selection */}
-            <div className="flex flex-wrap items-center gap-4 mb-4">
-                {[
-                    { value: "eva", label: "EVA-Rahmen" },
-                    { value: "gummi", label: "Gummi-Rahmen (+20,00 €)" }
-                ].map((option) => {
-                    const isChecked = type === option.value
-                    const displayLabel = hidePrice ? stripPriceFromOptionLabel(option.label) : option.label
-                    const handleToggle = () => {
-                        // Toggle: if already checked, uncheck it; otherwise check it
-                        updateType(isChecked ? null : (option.value as "eva" | "gummi"))
-                    }
-                    return (
-                        <div key={option.value} className="flex items-center gap-2">
-                            <div className="relative flex items-center">
-                                <input
-                                    type="checkbox"
-                                    className="sr-only"
-                                    checked={isChecked}
-                                    onChange={handleToggle}
-                                    aria-label={displayLabel}
-                                />
-                                <div 
-                                    className={`h-5 w-5 border-2 rounded transition-all flex items-center justify-center ${
-                                        isChecked 
-                                            ? 'bg-green-500 border-green-500 cursor-pointer' 
-                                            : 'bg-white border-gray-300 hover:border-green-400 cursor-pointer'
-                                    }`}
-                                    onClick={handleToggle}
-                                >
-                                    {isChecked && (
-                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    )}
-                                </div>
-                            </div>
-                            <span className="text-base text-gray-700 cursor-pointer" onClick={handleToggle}>
-                                {displayLabel}
-                            </span>
-                        </div>
-                    )
-                })}
-            </div>
-
-            {/* Color Input - only show if Gummi-Rahmen is selected */}
-            {type === "gummi" && (
-                <div className="mt-3">
-                    <label className="block text-sm font-semibold text-gray-800 mb-1">
-                        Rahmenfarbe
-                    </label>
-                    <input
-                        type="text"
-                        className="w-full max-w-md px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder="Farbe eingeben (z. B. Schwarz, Braun...)"
-                        value={color}
-                        onChange={(e) => updateColor(e.target.value)}
-                    />
-                </div>
-            )}
+            <RahmenOptionsContent value={value} onChange={onChange} hidePrice={hidePrice} />
         </div>
     )
 }

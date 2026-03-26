@@ -14,7 +14,7 @@ import type { RahmenData, HinterkappeMusterSideData, HinterkappeSideData, Brands
  * 
  * @param selected - Object containing selected options for each field group
  * @param orderTotalPrice - Optional base price from the order (defaults to 0)
- * @param rahmen - Rahmen selection data (EVA or Gummi with color)
+ * @param rahmen - Rahmen selection data (Verschalung / Gürtel +24,99 €; kein Gummi-Aufpreis)
  * @param hinterkappeMusterSide - Hinterkappe Muster (mode: gleich | unterschiedlich). Ja = +5€ or +2.50€ per side
  * @param hinterkappeSide - Hinterkappe (beide Seiten): Leder sub-options (e.g. Leder Dünn +4,99 €)
  * @param brandsohleSide - Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
@@ -100,12 +100,12 @@ export function useBodenkonstruktionCalculations(
                 if (hinterkappeMusterSide.rightValue === "ja") totalExtraPrice += 2.49
             }
         }
-        
-        // 2. Rahmen: "gummi" = +20.00€
-        if (rahmen && rahmen.type === "gummi") {
-            totalExtraPrice += 20.00
-        }
 
+        // 2a. Rahmen: Verschalung / Gürtel +24,99 €
+        if (rahmen?.type === "verschalung") {
+            totalExtraPrice += 24.99
+        }
+        
         // 2b. Hinterkappe (beide Seiten): Leder sub-options (e.g. Leder Dünn +4,99 €)
         const hinterkappeGroup = GROUPS2.find(g => g.id === "hinterkappe")
         const lederSubOptions = hinterkappeGroup?.subOptions?.leder

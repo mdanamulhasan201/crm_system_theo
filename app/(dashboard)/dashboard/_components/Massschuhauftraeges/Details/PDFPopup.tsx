@@ -5,7 +5,13 @@ import React, { useRef } from "react"
 import { CloseIcon, DownloadIcon, PrintIcon } from "./Icons"
 import type { GroupDef2 } from "./ShoeData"
 import { getVorderkappeMaterialLabel } from "./Bodenkonstruktion/FormFields"
-import type { VorderkappeSideData, HinterkappeMusterSideData, HinterkappeSideData, BrandsohleSideData } from "./Bodenkonstruktion/FormFields"
+import type {
+  VorderkappeSideData,
+  HinterkappeMusterSideData,
+  HinterkappeSideData,
+  BrandsohleSideData,
+  RahmenData,
+} from "./Bodenkonstruktion/FormFields"
 
 const HINTERKAPPE_MUSTERART_LABELS: Record<string, string> = {
   normal: "Normal",
@@ -92,6 +98,41 @@ function buildBrandsohlePdfLines(
   return parts
 }
 
+function rahmenTypPdfLabel(t: string): string {
+  switch (t) {
+    case "eva":
+      return "EVA-Rahmen"
+    case "gummi":
+      return "Gummi-Rahmen"
+    case "leder":
+      return "Lederrahmen"
+    case "verschalung":
+      return "Verschalung / Gürtel (+24,99 €)"
+    default:
+      return t
+  }
+}
+
+function buildRahmenPdfLines(rahmen: RahmenData): string[] {
+  if (!rahmen.type) return []
+  const parts: string[] = [`Typ: ${rahmenTypPdfLabel(rahmen.type)}`]
+  if (rahmen.type === "gummi" && rahmen.color) {
+    parts.push(`Farbe: ${rahmen.color}`)
+  }
+  if (rahmen.type === "verschalung") {
+    if (rahmen.verschalungHoehe) {
+      parts.push(`Höhe der Verschalung: ${rahmen.verschalungHoehe} mm`)
+    }
+    if (rahmen.verschalungAusfuehrung === "oberleder") {
+      parts.push("Ausführung: Am Oberleder geführt")
+    }
+    if (rahmen.verschalungAusfuehrung === "gesamt") {
+      parts.push("Ausführung: Über gesamten Aufbau")
+    }
+  }
+  return parts
+}
+
 // Order data interface for dynamic PDF content
 export interface OrderDataForPDF {
   orderNumber?: string
@@ -142,7 +183,7 @@ interface PDFPopupProps {
   soleElevation?: { enabled: boolean; side: "links" | "rechts" | "beidseitig" | null; height_mm: number } | null
   // Orthopedic fields (mode: gleich | unterschiedlich)
   vorderkappeSide?: VorderkappeSideData | null
-  rahmen?: { type: "eva" | "gummi" | null; color?: string } | null
+  rahmen?: RahmenData | null
   sohlenhoeheDifferenziert?: { ferse?: number; ballen?: number; spitze?: number } | null
   hinterkappeMusterSide?: HinterkappeMusterSideData | null
   hinterkappeSide?: HinterkappeSideData | null
@@ -899,10 +940,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                       if (!rahmen || !rahmen.type) {
                         return null
                       }
-                      const parts: string[] = [`Typ: ${rahmen.type === "eva" ? "EVA-Rahmen" : "Gummi-Rahmen"}`]
-                      if (rahmen.type === "gummi" && rahmen.color) {
-                        parts.push(`Farbe: ${rahmen.color}`)
-                      }
+                      const parts = buildRahmenPdfLines(rahmen)
                       return (
                         <div key={g.id} className="flex items-start py-4 border-b border-gray-300">
                           <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">{g.question}</div>
@@ -1369,10 +1407,7 @@ const PDFPopup: React.FC<PDFPopupProps> = ({
                   if (!rahmen || !rahmen.type) {
                     return null
                   }
-                  const parts: string[] = [`Typ: ${rahmen.type === "eva" ? "EVA-Rahmen" : "Gummi-Rahmen"}`]
-                  if (rahmen.type === "gummi" && rahmen.color) {
-                    parts.push(`Farbe: ${rahmen.color}`)
-                  }
+                  const parts = buildRahmenPdfLines(rahmen)
                   return (
                     <div key={g.id} className="pdf-page-break-avoid" style={{ display: 'flex', alignItems: 'flex-start', padding: '16px 0', borderBottom: '1px solid #d1d5db', pageBreakInside: 'avoid', breakInside: 'avoid' }}>
                       <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px', lineHeight: 1.4 }}>{g.question}</div>

@@ -784,6 +784,8 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             "rahmen": {
                 type: rahmen?.type ?? "",
                 color: rahmen?.color ?? "",
+                verschalungHoehe: rahmen?.verschalungHoehe ?? "",
+                verschalungAusfuehrung: rahmen?.verschalungAusfuehrung ?? "",
             },
             "Rahmenfarbe": rahmen?.color || "",
             "sohlenhoehe_differenziert": {
@@ -1233,6 +1235,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 brandsohleUnifiedConfigUi={true}
                 verbindungslederUnifiedConfigUi={true}
                 konstruktionsartUnifiedConfigUi={true}
+                rahmenUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

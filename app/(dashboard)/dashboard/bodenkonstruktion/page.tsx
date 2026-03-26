@@ -647,7 +647,9 @@ export default function BodenkonstruktionPage() {
         if (rahmen && rahmen.type) {
             bodenkonstruktionJson.rahmen = {
                 type: rahmen.type,
-                color: rahmen.color || ""
+                color: rahmen.color || "",
+                verschalungHoehe: rahmen.verschalungHoehe ?? "",
+                verschalungAusfuehrung: rahmen.verschalungAusfuehrung ?? "",
             }
             bodenkonstruktionJson.Rahmenfarbe = rahmen.color || ""
         }
@@ -797,6 +799,7 @@ export default function BodenkonstruktionPage() {
                 brandsohleUnifiedConfigUi={true}
                 verbindungslederUnifiedConfigUi={true}
                 konstruktionsartUnifiedConfigUi={true}
+                rahmenUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

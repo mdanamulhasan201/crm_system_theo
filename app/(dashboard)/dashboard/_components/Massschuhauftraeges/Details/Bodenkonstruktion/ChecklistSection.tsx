@@ -6,6 +6,7 @@ import VorderkappeUnifiedConfigCard from "./VorderkappeUnifiedConfigCard"
 import BrandsohleUnifiedConfigCard from "./BrandsohleUnifiedConfigCard"
 import VerbindungslederConfigCard from "./VerbindungslederConfigCard"
 import KonstruktionsartConfigCard from "./KonstruktionsartConfigCard"
+import RahmenUnifiedConfigCard from "./RahmenUnifiedConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -54,6 +55,8 @@ interface ChecklistSectionProps {
     verbindungslederUnifiedConfigUi?: boolean
     /** When true: „Konstruktionsart“ als ConfigCard (RadioOption; Optionen aus ShoeData). */
     konstruktionsartUnifiedConfigUi?: boolean
+    /** When true: „Rahmen“ als ConfigCard (Rahmentyp + Verschalung mit Bildern). */
+    rahmenUnifiedConfigUi?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -103,6 +106,7 @@ export default function ChecklistSection({
     brandsohleUnifiedConfigUi = false,
     verbindungslederUnifiedConfigUi = false,
     konstruktionsartUnifiedConfigUi = false,
+    rahmenUnifiedConfigUi = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -285,12 +289,20 @@ export default function ChecklistSection({
                                 />
                             )
                         ) : g.fieldType === "rahmen" && showOrthopedicFields ? (
-                            <RahmenField
-                                def={g}
-                                value={rahmen || null}
-                                onChange={onRahmenChange || (() => {})}
-                                hidePrice={hideRahmenPrice}
-                            />
+                            rahmenUnifiedConfigUi ? (
+                                <RahmenUnifiedConfigCard
+                                    value={rahmen || null}
+                                    onChange={onRahmenChange || (() => {})}
+                                    hidePrice={hideRahmenPrice}
+                                />
+                            ) : (
+                                <RahmenField
+                                    def={g}
+                                    value={rahmen || null}
+                                    onChange={onRahmenChange || (() => {})}
+                                    hidePrice={hideRahmenPrice}
+                                />
+                            )
                         ) : g.fieldType === "sohlenhoeheDifferenziert" && shouldShowSohlenhoeheDifferenziert ? (
                             <SohlenhoeheDifferenziertField
                                 def={g}
