@@ -385,15 +385,36 @@ export default function Calendar() {
     setRoomDate(date)
   }
 
-  const handleAddAppointment = (presetDate?: Date, presetTime?: string) => {
-    appointmentForm.reset()
-    appointmentForm.setValue('selectedEventDate', presetDate ?? currentDate)
-    if (presetTime) appointmentForm.setValue('uhrzeit', presetTime)
-    if (selectedEmployeeDetails.length > 0) {
-      appointmentForm.setValue('employees', selectedEmployeeDetails)
-    }
-    setIsAddModalOpen(true)
-  }
+  /** Local calendar day at noon (avoids TZ shifting). `presetDate` = slot day; else main/sidebar `currentDate` (first day in 2-day view). */
+  const toFormEventDate = (d: Date) =>
+    new Date(d.getFullYear(), d.getMonth(), d.getDate(), 12, 0, 0, 0)
+
+  const handleAddAppointment = useCallback(
+    (presetDate?: Date, presetTime?: string) => {
+      const daySource = presetDate ?? currentDate
+      const selectedEventDate = toFormEventDate(daySource)
+      appointmentForm.reset({
+        isClientEvent: true,
+        kunde: '',
+        uhrzeit: presetTime ?? '',
+        selectedEventDate,
+        termin: '',
+        mitarbeiter: '',
+        bemerk: '',
+        duration: 1,
+        customerId: undefined,
+        employeeId: undefined,
+        employees:
+          selectedEmployeeDetails.length > 0
+            ? selectedEmployeeDetails.map((e) => ({ ...e }))
+            : [],
+        reminder: null,
+        appomnentRoom: undefined,
+      })
+      setIsAddModalOpen(true)
+    },
+    [appointmentForm, currentDate, selectedEmployeeDetails]
+  )
 
   const handleSlotClick = (date: Date, time: string) => {
     handleAddAppointment(date, time)
@@ -491,7 +512,7 @@ export default function Calendar() {
       <div className="flex flex-col h-fit bg-gray-50 -m-4 relative">
         {/* Main Calendar Navbar */}
         <CalendarMainNav
-          onAddAppointment={handleAddAppointment}
+          onAddAppointment={() => handleAddAppointment()}
         />
 
         {/* Calendar Date Navigation Bar */}

@@ -645,6 +645,9 @@ export default function AppointmentModal({
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-auto p-0 rounded-xl" align="start">
                                                     <Calendar
+                                                        key={
+                                                            toValidDate(field.value)?.getTime() ?? 'datum'
+                                                        }
                                                         mode="single"
                                                         selected={toValidDate(field.value)}
                                                         onSelect={field.onChange}
