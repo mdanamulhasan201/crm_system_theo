@@ -953,8 +953,16 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 // Resolve privatePrice (amount customer pays privately)
                 const privatePrice = formDataForOrder.privatePrice;
 
-                // When Verordnungsvorschlag (halbprobe) = YES → all prices go as null
+                // Verordnungsvorschlag: Versorgung/Fußanalyse etc. null; Wirtschaftlicher Aufpreis optional
                 const isHalbprobeOrder = formDataForOrder.halbprobe === true || formDataForOrder.lieferschein === true;
+                const halbprobeAddonNum =
+                    formDataForOrder.addonPrices != null && formDataForOrder.addonPrices !== ''
+                        ? Number(formDataForOrder.addonPrices)
+                        : NaN;
+                const halbprobeMitAufpreis =
+                    isHalbprobeOrder &&
+                    Number.isFinite(halbprobeAddonNum) &&
+                    halbprobeAddonNum > 0;
 
                 // Build base payload
                 const orderPayload: any = {
@@ -984,16 +992,39 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     fussanalysePreis: isHalbprobeOrder ? null : fussanalysePreis,
                     einlagenversorgungPreis: isHalbprobeOrder ? null : einlagenversorgungPreis,
                     einlagenversorgung: isHalbprobeOrder ? null : einlagenversorgungPreis,
-                    // Gesamt aus Werkstattzettel ("totalPrice") — null when halbprobe
-                    totalPrice: isHalbprobeOrder ? null : (formDataForOrder.totalPrice !== undefined
-                        ? Number(formDataForOrder.totalPrice)
-                        : undefined),
+                    addonPrices: halbprobeMitAufpreis
+                        ? halbprobeAddonNum
+                        : !isHalbprobeOrder &&
+                            formDataForOrder.addonPrices != null &&
+                            formDataForOrder.addonPrices !== '' &&
+                            Number(formDataForOrder.addonPrices) > 0
+                          ? Number(formDataForOrder.addonPrices)
+                          : isHalbprobeOrder
+                            ? null
+                            : undefined,
+                    totalPrice: isHalbprobeOrder
+                        ? halbprobeMitAufpreis &&
+                          formDataForOrder.totalPrice !== undefined &&
+                          formDataForOrder.totalPrice !== null
+                            ? Number(formDataForOrder.totalPrice)
+                            : null
+                        : formDataForOrder.totalPrice !== undefined
+                          ? Number(formDataForOrder.totalPrice)
+                          : undefined,
                     werkstattEmployeeId: formDataForOrder.employeeId || formDataForOrder.werkstattEmployeeId || '',
                     screenerId: formDataForOrder.screenerId || null,
-                    discount: isHalbprobeOrder ? null : (formDataForOrder.discount !== undefined && formDataForOrder.discount !== null 
-                        ? (typeof formDataForOrder.discount === 'number' ? formDataForOrder.discount : Number(formDataForOrder.discount))
-                        : undefined),
-                    discountType: isHalbprobeOrder ? null : (formDataForOrder.discountType || undefined),
+                    discount:
+                        isHalbprobeOrder && !halbprobeMitAufpreis
+                            ? null
+                            : formDataForOrder.discount !== undefined && formDataForOrder.discount !== null
+                              ? typeof formDataForOrder.discount === 'number'
+                                  ? formDataForOrder.discount
+                                  : Number(formDataForOrder.discount)
+                              : undefined,
+                    discountType:
+                        isHalbprobeOrder && !halbprobeMitAufpreis
+                            ? null
+                            : formDataForOrder.discountType || undefined,
                     insurances: buildInsurancesArray(),
                     insuranceTotalPrice: isHalbprobeOrder ? null : (formDataForOrder.insuranceTotalPrice !== undefined && formDataForOrder.insuranceTotalPrice !== null
                         ? Number(formDataForOrder.insuranceTotalPrice)
@@ -1001,8 +1032,20 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     insoleStandards: formDataForOrder.insoleStandards || [],
                     diagnosisList: formDataForOrder.diagnosisList || [],
                     notiz_hinzufügen: formDataForOrder.notiz_hinzufügen || undefined,
-                    privatePrice: isHalbprobeOrder ? null : (privatePrice !== undefined && privatePrice !== null ? Number(privatePrice) : undefined),
-                    ...(isHalbprobeOrder ? { vat_rate: null } : (formDataForOrder.vat_rate !== undefined && { vat_rate: Number(formDataForOrder.vat_rate) })),
+                    privatePrice: isHalbprobeOrder
+                        ? halbprobeMitAufpreis && privatePrice !== undefined && privatePrice !== null
+                            ? Number(privatePrice)
+                            : null
+                        : privatePrice !== undefined && privatePrice !== null
+                          ? Number(privatePrice)
+                          : undefined,
+                    ...(isHalbprobeOrder
+                        ? halbprobeMitAufpreis && formDataForOrder.vat_rate != null
+                            ? { vat_rate: Number(formDataForOrder.vat_rate) }
+                            : { vat_rate: null }
+                        : formDataForOrder.vat_rate !== undefined
+                          ? { vat_rate: Number(formDataForOrder.vat_rate) }
+                          : {}),
                     ...(isHalbprobeOrder ? { austria_price: null } : (formDataForOrder.austria_price !== undefined && formDataForOrder.austria_price !== null && { austria_price: Number(formDataForOrder.austria_price) })),
                 };
 

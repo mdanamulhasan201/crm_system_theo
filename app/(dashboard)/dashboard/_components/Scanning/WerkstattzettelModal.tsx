@@ -397,7 +397,7 @@ export default function WerkstattzettelModal({
         : form.footAnalysisPrice === 'custom'
           ? (parseFloat(form.customFootPrice) || 0)
           : (parseFloat(form.footAnalysisPrice) || 0)
-      const addonPricesTotalForTotal = isVerordnungsvorschlag ? 0 : (() => {
+      const addonPricesTotalForTotal = (() => {
         const raw = form.addonPrices
         if (!raw || typeof raw !== 'string') return 0
         const parts = raw.split(/[,\s]+/).filter(Boolean)
@@ -421,19 +421,34 @@ export default function WerkstattzettelModal({
       const eigenanteilForTotal = isKrankenkasseAt ? 46.20 : 0
       const totalPriceOverride = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
 
-      // privatePrice: Krankenkasse + AT = Fußanalyse + Eigenanteil + Wirtschaftlicher Aufpreis; Privat = full total
-      // When Verordnungsvorschlag → no privatePrice
-      const isPrivat = !isVerordnungsvorschlag && formData?.billingType === 'Privat'
+      // privatePrice: KK+AT normal = Fußanalyse + Eigenanteil + Aufpreis; Privat = Gesamt;
+      // Verordnungsvorschlag + Aufpreis: customer pays surcharge (Privat: full Gesamt; KK+AT: Aufpreis-only share)
+      const isPrivatBilling = formData?.billingType === 'Privat'
+      const isPrivat = !isVerordnungsvorschlag && isPrivatBilling
       const totalForPayload = subtotalForTotal - discountAmountForTotal + eigenanteilForTotal
+      const kkAtVerordnungMitAufpreis =
+        isVerordnungsvorschlag &&
+        formData?.billingType === 'Krankenkassa' &&
+        vatCountry === 'Österreich (AT)' &&
+        addonPricesTotalForTotal > 0
       const privatePrice = isKrankenkasseAt
         ? footPriceForTotal + eigenanteilForTotal + addonPricesTotalForTotal
         : isPrivat
           ? totalForPayload
-          : undefined
-      // insuranceTotalPrice (Krankenkassa AT): rest = Positionsnummer (inkl. MwSt.) = what insurance pays
+          : kkAtVerordnungMitAufpreis
+            ? totalForPayload
+            : isVerordnungsvorschlag && isPrivatBilling && addonPricesTotalForTotal > 0
+              ? totalForPayload
+              : undefined
+      // insuranceTotalPrice (Krankenkassa AT): rest = Positionsnummer — 0 bei Verordnungsvorschlag
       const insuranceTotalPrice = isKrankenkasseAt ? positionsnummerTotalForTotal : undefined
-      // vat_rate: only for Krankenkasse + AT when Wirtschaftlicher Aufpreis; Privat = no vat_rate
-      const vatRate = isKrankenkasseAt && addonPricesTotalForTotal > 0 ? 20 : undefined
+      // MwSt. auf Wirtschaftlicher Aufpreis (KK + AT), auch bei Verordnungsvorschlag
+      const vatRate =
+        formData?.billingType === 'Krankenkassa' &&
+        vatCountry === 'Österreich (AT)' &&
+        addonPricesTotalForTotal > 0
+          ? 20
+          : undefined
 
       // Create payload using utility function
       const werkstattzettelPayload = createWerkstattzettelPayload(
@@ -485,22 +500,35 @@ export default function WerkstattzettelModal({
         // Controls whether invoice PDF download should be enabled later
         printWerkstattzettel: shouldPrintWerkstattzettel,
         // ── Individual price fields ──────────────────────────────────────
-        // When Verordnungsvorschlag (halbprobe) = YES → all price fields are null
+        // Verordnungsvorschlag: Versorgung/Fußanalyse etc. null; Wirtschaftlicher Aufpreis + Gesamt/Rabatt wenn gesetzt
         fussanalysePreis: isVerordnungsvorschlag ? null : Math.round(footPriceForTotal * 100) / 100,
         einlagenversorgungPreis: isVerordnungsvorschlag ? null : Math.round(versorgungPriceForTotal * 100) / 100,
         quantity: quantityNum,
-        addonPrices: isVerordnungsvorschlag ? null : Math.round(addonPricesTotalForTotal * 100) / 100,
-        totalPrice: isVerordnungsvorschlag ? null : Math.round(totalPriceOverride * 100) / 100,
-        discount: isVerordnungsvorschlag ? null : (() => {
+        addonPrices:
+          addonPricesTotalForTotal > 0
+            ? Math.round(addonPricesTotalForTotal * 100) / 100
+            : null,
+        totalPrice:
+          isVerordnungsvorschlag
+            ? addonPricesTotalForTotal > 0 || totalPriceOverride > 0
+              ? Math.round(totalPriceOverride * 100) / 100
+              : null
+            : Math.round(totalPriceOverride * 100) / 100,
+        discount: (() => {
           if (!form.discountValue || form.discountValue.trim() === '') return undefined
           const parsed = parseFloat(form.discountValue)
           return isNaN(parsed) ? undefined : parsed
         })(),
-        discountType: isVerordnungsvorschlag ? null : (form.discountType || undefined),
+        discountType: form.discountType || undefined,
         notiz_hinzufügen: notizText?.trim() || undefined,
-        privatePrice: isVerordnungsvorschlag ? null : (privatePrice !== undefined ? Math.round(privatePrice * 100) / 100 : undefined),
+        privatePrice:
+          privatePrice !== undefined
+            ? Math.round(privatePrice * 100) / 100
+            : isVerordnungsvorschlag
+              ? null
+              : undefined,
         insuranceTotalPrice: isVerordnungsvorschlag ? null : (insuranceTotalPrice !== undefined ? Math.round(insuranceTotalPrice * 100) / 100 : undefined),
-        vat_rate: isVerordnungsvorschlag ? null : (vatRate !== undefined ? vatRate : undefined),
+        vat_rate: vatRate !== undefined ? vatRate : isVerordnungsvorschlag ? null : undefined,
         austria_price: isVerordnungsvorschlag ? null : (eigenanteilForTotal > 0 ? eigenanteilForTotal : undefined),
       }
 

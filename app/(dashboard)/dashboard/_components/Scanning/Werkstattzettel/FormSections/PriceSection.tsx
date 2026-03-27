@@ -187,7 +187,7 @@ export default function PriceSection({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [footAnalysisPrice, footOptions])
 
-  // Calculate prices – when Verordnungsvorschlag is YES all prices are forced to 0
+  // Calculate prices – Verordnungsvorschlag: Versorgung/Fußanalyse/Positionsnummer 0; Wirtschaftlicher Aufpreis zählt
   const versorgungPrice = isVerordnungsvorschlag ? 0 : (parseFloat(insoleSupplyPrice) || 0)
   const footPrice = isVerordnungsvorschlag
     ? 0
@@ -196,13 +196,12 @@ export default function PriceSection({
       : (parseFloat(footAnalysisPrice) || 0)
   const quantityNum = parseInt(quantity?.match(/\d+/)?.[0] || '1', 10)
 
-  // Parse addon prices - supports single number or comma-separated (e.g. "10" or "10, 20, 5")
+  // Wirtschaftlicher Aufpreis: also counted when Verordnungsvorschlag (other lines stay 0)
   const addonPricesTotal = useMemo(() => {
-    if (isVerordnungsvorschlag) return 0
     if (!addonPrices || typeof addonPrices !== 'string') return 0
     const parts = addonPrices.split(/[,\s]+/).filter(Boolean)
     return parts.reduce((sum, p) => sum + (parseFloat(p.replace(',', '.')) || 0), 0)
-  }, [addonPrices, isVerordnungsvorschlag])
+  }, [addonPrices])
 
   // Positionsnummer VAT breakdown & insurance/customer split (using account vat_country)
   const { user } = useAuth()
