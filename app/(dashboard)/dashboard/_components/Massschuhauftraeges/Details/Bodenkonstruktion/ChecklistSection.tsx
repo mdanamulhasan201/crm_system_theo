@@ -1,4 +1,5 @@
 import React from "react"
+import { MessageSquare } from "lucide-react"
 import { GROUPS2 } from "../ShoeData"
 import { SelectField, TextField, OptionGroup, HeelWidthAdjustmentField, YesNoField, VorderkappeSideField, RahmenField, HinterkappeMusterSideField, HinterkappeMusterSimpleField, HinterkappeSideField, BrandsohleSideField, defaultSohlenversteifungData, defaultSohlenaufbauData, type HeelWidthAdjustmentData, type VorderkappeSideData, type RahmenData, type HinterkappeMusterSideData, type HinterkappeSideData, type BrandsohleSideData, type SohlenversteifungData, type SohlenaufbauData } from "./FormFields"
 import HinterkappeUnifiedConfigCard from "./HinterkappeUnifiedConfigCard"
@@ -11,6 +12,7 @@ import KonstruktionsartConfigCard from "./KonstruktionsartConfigCard"
 import RahmenUnifiedConfigCard from "./RahmenUnifiedConfigCard"
 import AbsatzAbrollhilfeUnifiedConfigCard from "./AbsatzAbrollhilfeUnifiedConfigCard"
 import LaufsohleLeistenUnifiedConfigCard from "./LaufsohleLeistenUnifiedConfigCard"
+import ConfigCard from "./shared/ConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -386,15 +388,22 @@ export default function ChecklistSection({
             })}
 
             <div className="mb-4">
-                <label className="block text-base font-bold text-gray-800 mb-2">
-                    Besondere Hinweise <span className="text-gray-500 font-normal text-sm">(Optional)</span>
-                </label>
-                <textarea
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-gray-700 focus:ring-2 focus:ring-green-500 focus:border-transparent min-h-[100px]"
-                    placeholder="Textfeld"
-                    value={textAreas.besondere_hinweise}
-                    onChange={(e) => onTextAreaChange("besondere_hinweise", e.target.value)}
-                />
+                <ConfigCard
+                    title="Besondere Hinweise"
+                    subtitle="Optional – freie Anmerkungen zur Bestellung"
+                    icon={<MessageSquare size={20} />}
+                >
+                    <label htmlFor="besondere-hinweise-textarea" className="sr-only">
+                        Besondere Hinweise (optional)
+                    </label>
+                    <textarea
+                        id="besondere-hinweise-textarea"
+                        className="min-h-[120px] w-full rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-[#6B9B87] focus:bg-white focus:ring-2 focus:ring-[#6B9B87]/20 focus:outline-none"
+                        placeholder="Textfeld"
+                        value={textAreas.besondere_hinweise}
+                        onChange={(e) => onTextAreaChange("besondere_hinweise", e.target.value)}
+                    />
+                </ConfigCard>
             </div>
 
             {checkboxError && (
