@@ -52,6 +52,8 @@ interface SuggestSupplyAndStockModalProps {
     requiredLengthMm?: number;
     /** Backend error message that triggered this modal (e.g. "Block 3 ist nicht auf Lager...") */
     errorMessage?: string | null;
+    /** From create-order error (`storeType`); parent sends as `u_orderType` when Überspringen. */
+    storeType?: string | null;
     loading?: boolean;
     /** When user selects a supply or milling_block card, call with that item's id (used as versorgungId in order) */
     onSelectVersorgung?: (id: string) => void;
@@ -67,6 +69,7 @@ export default function SuggestSupplyAndStockModal({
     data,
     requiredLengthMm,
     errorMessage,
+    storeType,
     loading = false,
     onSelectVersorgung,
     onSkip,
@@ -100,6 +103,11 @@ export default function SuggestSupplyAndStockModal({
                             Erforderliche Länge: <strong>{requiredLengthMm} mm</strong>
                         </p>
                     )}
+                    {/* {storeType ? (
+                        <p className="text-sm text-gray-500 mt-1">
+                             <strong className="font-mono">{storeType}</strong>
+                        </p>
+                    ) : null} */}
                 </DialogHeader>
 
                 {step === 1 ? (

@@ -368,6 +368,8 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [suggestedVersorgungIdOverride, setSuggestedVersorgungIdOverride] = useState<string | null>(null);
     /** Full order payload when order failed with suggestSupplyAndStock (for Skip = create without supply/store) */
     const [suggestSupplyOrderPayload, setSuggestSupplyOrderPayload] = useState<Record<string, any> | null>(null);
+    /** From create-order error (`storeType` / `suggestParams.storeType`); sent as `u_orderType` on Überspringen. */
+    const [suggestSupplyStoreType, setSuggestSupplyStoreType] = useState<string | null>(null);
 
     const [manualFootLengthModalOpen, setManualFootLengthModalOpen] = useState(false);
     const [manualFootLengthMessage, setManualFootLengthMessage] = useState<string | null>(null);
@@ -524,6 +526,7 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setManualFootLengthInput('');
         setManualFootLengthModalOpen(false);
         setManualFootLengthMessage(null);
+        setSuggestSupplyStoreType(null);
     };
     
     // Clear selectedPositionsnummer and itemSides when billingType changes
@@ -1062,6 +1065,12 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 if (suggestSupply && requiredLength != null && !Number.isNaN(requiredLength)) {
                     setShowConfirmModal(false);
                     setSuggestedVersorgungIdOverride(null);
+                    const storeTypeRaw = errData?.storeType ?? errData?.suggestParams?.storeType;
+                    setSuggestSupplyStoreType(
+                        typeof storeTypeRaw === 'string' && storeTypeRaw.trim()
+                            ? storeTypeRaw.trim()
+                            : null
+                    );
                     setSuggestSupplyRequiredLength(requiredLength);
                     setSuggestSupplyErrorMessage(errData?.message ?? null);
                     setSuggestSupplyModalOpen(true);
@@ -1581,21 +1590,34 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
 
             <SuggestSupplyAndStockModal
                 open={suggestSupplyModalOpen}
-                onOpenChange={setSuggestSupplyModalOpen}
+                onOpenChange={(open) => {
+                    setSuggestSupplyModalOpen(open);
+                    if (!open) {
+                        setSuggestSupplyStoreType(null);
+                    }
+                }}
                 data={suggestSupplyModalData}
                 requiredLengthMm={suggestSupplyRequiredLength}
                 errorMessage={suggestSupplyErrorMessage}
                 loading={suggestSupplyModalLoading}
+                storeType={suggestSupplyStoreType}
                 onSkip={async () => {
                     if (!suggestSupplyOrderPayload) return;
                     try {
-                        const result: any = await createOrderWithoutSupplyOrStore(suggestSupplyOrderPayload);
+                        const skipPayload = {
+                            ...suggestSupplyOrderPayload,
+                            ...(suggestSupplyStoreType
+                                ? { u_orderType: suggestSupplyStoreType }
+                                : {}),
+                        };
+                        const result: any = await createOrderWithoutSupplyOrStore(skipPayload);
                         const orderId = result?.data?.id ?? result?.id ?? result?.orderId;
                         if (orderId) {
                             setCurrentOrderId(orderId);
                             setShowPdfModal(true);
                             setSuggestedVersorgungIdOverride(null);
                             setSuggestSupplyOrderPayload(null);
+                            setSuggestSupplyStoreType(null);
                             setSuggestSupplyModalOpen(false);
                             setShowUserInfoUpdateModal(false);
                             resetEinlagenForm();
