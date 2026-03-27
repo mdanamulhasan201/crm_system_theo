@@ -269,3 +269,45 @@ export const getSingleAvailability = async (employeeId: string, dayOfWeek: strin
         throw error;
     }
 }
+
+
+// --- Shop office hours (Bürozeiten) ---
+// POST/GET /v2/appointment/appomnent-room/shop-settings
+// Body: { shop_open: "09:00", shop_close: "17:00" }
+// Response: { success: true, data: { shop_open, shop_close } }
+
+export type ShopOfficeHoursPayload = {
+    shop_open: string;
+    shop_close: string;
+};
+
+export type ShopOfficeHoursApiEnvelope = {
+    success?: boolean;
+    data?: Partial<ShopOfficeHoursPayload>;
+};
+
+export const setOfficeStartAndEndTime = async (
+    shop_open: string,
+    shop_close: string
+) => {
+    try {
+        const response = await axiosClient.post<ShopOfficeHoursApiEnvelope>(
+            `/v2/appointment/appomnent-room/shop-settings`,
+            { shop_open, shop_close }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
+
+export const getOfficeStartAndEndTime = async () => {
+    try {
+        const response = await axiosClient.get<ShopOfficeHoursApiEnvelope>(
+            `/v2/appointment/appomnent-room/shop-settings`
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
