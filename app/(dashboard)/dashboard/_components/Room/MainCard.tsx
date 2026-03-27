@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
-import { format, addDays, isSameDay, startOfWeek, subDays } from 'date-fns';
+import { format, addDays, isSameDay, startOfWeek } from 'date-fns';
 import { de } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -31,26 +31,6 @@ export interface MainCardProps {
 }
 
 const DEFAULT_WEEK_DAYS = 4;
-
-function getDemoData(day: Date): DayAppointment[] {
-  const dayNum = day.getDay();
-  if (dayNum === 1) return [
-    { id: '1', time: '09:00', title: 'Dr', color: 'gray' },
-    { id: '2', time: '11:30', title: 'Thera', color: 'gray' },
-  ];
-  if (dayNum === 2) return [
-    { id: '3', time: '10:00', title: 'Follow-up', color: 'green' },
-  ];
-  if (dayNum === 3) return [
-    { id: '4', time: '09:30', title: 'Team Sync', color: 'orange' },
-    { id: '5', time: '14:00', title: 'Consultation', color: 'gray' },
-    { id: '6', time: '16:00', title: 'Review', color: 'gray' },
-  ];
-  if (dayNum === 4) return [
-    { id: '7', time: '11:00', title: 'New Patient', color: 'gray' },
-  ];
-  return [];
-}
 
 const colorClasses = {
   green: 'bg-emerald-100 text-emerald-800',
@@ -123,7 +103,7 @@ export default function MainCard({
           <div className="flex -ml-3 min-h-[200px]">
             {days.map((day) => {
               const key = format(day, 'yyyy-MM-dd');
-              const appointments = appointmentsByDay[key] ?? getDemoData(day);
+              const appointments = appointmentsByDay[key] ?? [];
               const isToday = isSameDay(day, today);
 
               return (
@@ -147,26 +127,30 @@ export default function MainCard({
                     </div>
 
                     {/* Appointments */}
-                    <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto">
-                      {appointments.map((apt) => (
-                        <button
-                          key={apt.id}
-                          type="button"
-                          onClick={() => {
-                            onAppointmentClick?.(apt.id);
-                            onCardAppointmentClick?.(key, apt.id);
-                            setExpandedDayKey(key);
-                          }}
-                          className={cn(
-                            'text-left rounded-lg px-2.5 py-2 text-xs font-medium cursor-pointer transition-all',
-                            'hover:ring-2 hover:ring-offset-1 hover:ring-[#62A07C]/50 hover:brightness-95',
-                            colorClasses[apt.color ?? 'gray']
-                          )}
-                        >
-                          <span className="text-gray-500 font-normal">{apt.time}</span>{' '}
-                          <span className="font-medium">{apt.title}</span>
-                        </button>
-                      ))}
+                    <div className="p-3 flex-1 flex flex-col gap-2 overflow-y-auto min-h-[4.5rem]">
+                      {appointments.length === 0 ? (
+                        <p className="text-xs text-gray-400 italic py-1">Keine Termine</p>
+                      ) : (
+                        appointments.map((apt) => (
+                          <button
+                            key={apt.id}
+                            type="button"
+                            onClick={() => {
+                              onAppointmentClick?.(apt.id);
+                              onCardAppointmentClick?.(key, apt.id);
+                              setExpandedDayKey(key);
+                            }}
+                            className={cn(
+                              'text-left rounded-lg px-2.5 py-2 text-xs font-medium cursor-pointer transition-all',
+                              'hover:ring-2 hover:ring-offset-1 hover:ring-[#62A07C]/50 hover:brightness-95',
+                              colorClasses[apt.color ?? 'gray']
+                            )}
+                          >
+                            <span className="text-gray-500 font-normal">{apt.time}</span>{' '}
+                            <span className="font-medium">{apt.title}</span>
+                          </button>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>

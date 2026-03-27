@@ -236,7 +236,7 @@ export default function Calendar() {
     const dateStr = format(date, 'yyyy-MM-dd')
     try {
       const res = await getRoomAppointmentsByDate(dateStr)
-      if (res?.days) {
+      if (Array.isArray(res?.days)) {
         const mapped: Record<string, DayAppointment[]> = {}
         res.days.forEach((day: { date: string; appointments: Array<{ id: string; time: string; employeeName: string }> }) => {
           mapped[day.date] = day.appointments.map((apt) => ({
@@ -247,6 +247,8 @@ export default function Calendar() {
           }))
         })
         setRoomAppointmentsByDay(mapped)
+      } else {
+        setRoomAppointmentsByDay({})
       }
     } catch {
       setRoomAppointmentsByDay({})
