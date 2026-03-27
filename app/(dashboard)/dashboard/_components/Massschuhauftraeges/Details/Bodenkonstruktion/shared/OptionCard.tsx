@@ -6,21 +6,26 @@ export default function OptionCard({
   price,
   selected,
   onClick,
+  disabled = false,
 }: {
   label: string
   desc?: string
   price?: string
   selected: boolean
   onClick: () => void
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
-      className={`min-w-[140px] flex-1 cursor-pointer rounded-lg border px-3 py-3 text-center text-sm font-medium transition-all sm:min-w-[120px] ${
-        selected
-          ? "border-[#61A175] bg-[#61A175]/15 text-gray-900 shadow-sm ring-1 ring-[#61A175]/25"
-          : "border-gray-200 bg-gray-50/80 text-gray-900 hover:border-[#61A175]/55 hover:bg-[#61A175]/6"
+      className={`min-w-[140px] flex-1 rounded-lg border px-3 py-3 text-center text-sm font-medium transition-all sm:min-w-[120px] ${
+        disabled
+          ? "cursor-not-allowed border-gray-200 bg-gray-100/80 text-gray-400 opacity-70"
+          : selected
+            ? "cursor-pointer border-[#61A175] bg-[#61A175]/15 text-gray-900 shadow-sm ring-1 ring-[#61A175]/25"
+            : "cursor-pointer border-gray-200 bg-gray-50/80 text-gray-900 hover:border-[#61A175]/55 hover:bg-[#61A175]/6"
       }`}
     >
       <span className="block font-semibold">{label}</span>

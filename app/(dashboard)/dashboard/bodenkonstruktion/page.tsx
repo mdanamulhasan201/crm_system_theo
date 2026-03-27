@@ -783,6 +783,7 @@ export default function BodenkonstruktionPage() {
                 onSohlenaufbauChange={setSohlenaufbau}
                 konstruktionsartUnifiedConfigUi={true}
                 rahmenUnifiedConfigUi={true}
+                absatzAbrollhilfeUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

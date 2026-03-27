@@ -1227,6 +1227,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 onSohlenaufbauChange={setSohlenaufbau}
                 konstruktionsartUnifiedConfigUi={true}
                 rahmenUnifiedConfigUi={true}
+                absatzAbrollhilfeUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

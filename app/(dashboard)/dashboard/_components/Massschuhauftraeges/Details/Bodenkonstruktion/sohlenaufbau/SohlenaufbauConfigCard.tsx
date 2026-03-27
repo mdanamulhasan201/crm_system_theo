@@ -12,7 +12,6 @@ import SohlenaufbauHeightGrid from "./SohlenaufbauHeightGrid"
 import SohlenaufbauShoreSection from "./SohlenaufbauShoreSection"
 import SohlenaufbauVerschalungSubsection from "./SohlenaufbauVerschalungSubsection"
 import SohlenaufbauBiomechanicsPanel from "./SohlenaufbauBiomechanicsPanel"
-import SohlenaufbauProductionOptionsPanel from "./SohlenaufbauProductionOptionsPanel"
 import { parseSohlenaufbauNum } from "./utils"
 import type { SohlenaufbauPreviewData } from "./SolePreview3D"
 import {
@@ -344,8 +343,6 @@ export default function SohlenaufbauConfigCard({
             <p className="mt-2 text-xs text-gray-500">Schematische Darstellung – nicht maßstabsgetreu</p>
           </div>
         ) : null}
-
-        {hasValues && calc.valid ? <SohlenaufbauProductionOptionsPanel /> : null}
 
         {hasValues && calc.valid ? (
           <SohlenaufbauBiomechanicsPanel

@@ -9,6 +9,7 @@ import SohlenversteifungConfigCard from "./SohlenversteifungConfigCard"
 import SohlenaufbauConfigCard from "./sohlenaufbau/SohlenaufbauConfigCard"
 import KonstruktionsartConfigCard from "./KonstruktionsartConfigCard"
 import RahmenUnifiedConfigCard from "./RahmenUnifiedConfigCard"
+import AbsatzAbrollhilfeUnifiedConfigCard from "./AbsatzAbrollhilfeUnifiedConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -63,6 +64,10 @@ interface ChecklistSectionProps {
     konstruktionsartUnifiedConfigUi?: boolean
     /** When true: „Rahmen“ als ConfigCard (Rahmentyp + Verschalung mit Bildern). */
     rahmenUnifiedConfigUi?: boolean
+    /** When true: Absatzform, Abrollhilfe und Absatzbreite in einer ConfigCard. */
+    absatzAbrollhilfeUnifiedConfigUi?: boolean
+    /** Optional: setzt Abrollhilfe auf genau eine Option (oder null). Standard: via onSetGroup. */
+    onAbrollhilfeReplace?: (ids: string[] | null) => void
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -115,6 +120,8 @@ export default function ChecklistSection({
     onSohlenaufbauChange,
     konstruktionsartUnifiedConfigUi = false,
     rahmenUnifiedConfigUi = false,
+    absatzAbrollhilfeUnifiedConfigUi = false,
+    onAbrollhilfeReplace,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -138,12 +145,20 @@ export default function ChecklistSection({
         : GROUPS2.filter(g => !orthopedicFieldIds.includes(g.id))
 
     const hinterkappeMaterialGroupDef = GROUPS2.find((x) => x.id === "hinterkappe")
+    const abrollhilfeGroupDef = GROUPS2.find((x) => x.id === "abrollhilfe")
 
     return (
         <div className="bg-white rounded-lg p-4 w-full">
             <h2 className="text-2xl font-bold text-gray-800 mb-8">Checkliste</h2>
 
             {filteredGroups.map((g) => {
+                if (absatzAbrollhilfeUnifiedConfigUi && g.id === "abrollhilfe") {
+                    return <React.Fragment key={g.id} />
+                }
+                if (absatzAbrollhilfeUnifiedConfigUi && g.id === "absatzbreite") {
+                    return <React.Fragment key={g.id} />
+                }
+
                 // Normalize selected value for SelectField (convert array to string or null)
                 const normalizeSelected = (value: string | string[] | null | undefined): string | null => {
                     if (!value) return null
@@ -182,6 +197,25 @@ export default function ChecklistSection({
                                 def={g}
                                 selected={normalizedSelected}
                                 onSelect={(value) => onSetGroup(g.id, value)}
+                            />
+                        ) : absatzAbrollhilfeUnifiedConfigUi && g.id === "absatzform" && abrollhilfeGroupDef ? (
+                            <AbsatzAbrollhilfeUnifiedConfigCard
+                                absatzformDef={g}
+                                abrollhilfeDef={abrollhilfeGroupDef}
+                                selectedAbsatzform={normalizeSelected(selected.absatzform)}
+                                selectedAbrollhilfe={selected.abrollhilfe ?? null}
+                                onAbsatzformSelect={(optId) => onSetGroup("absatzform", optId)}
+                                onAbrollhilfeReplace={
+                                    onAbrollhilfeReplace ??
+                                    ((ids) => {
+                                        onSetGroup("abrollhilfe", null)
+                                        if (ids?.[0]) onSetGroup("abrollhilfe", ids[0])
+                                    })
+                                }
+                                onAbsatzFormClick={onAbsatzFormClick}
+                                heelWidthAdjustment={heelWidthAdjustment ?? null}
+                                onHeelWidthChange={onHeelWidthChange || (() => {})}
+                                selectedSole={selectedSole ?? undefined}
                             />
                         ) : g.fieldType === "heelWidthAdjustment" ? (
                             <HeelWidthAdjustmentField
@@ -318,9 +352,11 @@ export default function ChecklistSection({
                                 hidePriceForGroupIds={hideOptionPricesForGroupIds}
                             />
                         )}
-                        {!(hinterkappeSplitConfigUi && g.id === "hinterkappe") && (
-                            <hr className="border-gray-200 my-4" />
-                        )}
+                        {!(
+                            (absatzAbrollhilfeUnifiedConfigUi &&
+                                (g.id === "abrollhilfe" || g.id === "absatzbreite")) ||
+                            (hinterkappeSplitConfigUi && g.id === "hinterkappe")
+                        ) && <hr className="border-gray-200 my-4" />}
                     </React.Fragment>
                 )
             })}
