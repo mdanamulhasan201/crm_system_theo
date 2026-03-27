@@ -25,6 +25,7 @@ import VersorgungsnotizCard from './Einlagen/FormSections/VersorgungsnotizCard';
 import WerkstattzettelModal from './WerkstattzettelModal';
 import SpringerDialog from './SpringerDialog';
 import SuggestSupplyAndStockModal, { type SuggestSupplyAndStockData } from './SuggestSupplyAndStockModal';
+import ManualFootLengthModal from './ManualFootLengthModal';
 import { getSettingData, getAllSupplyStatuses } from '@/apis/einlagenApis';
 import { suggestSupplyAndStockByRequiredLength, createOrderWithoutSupplyOrStore } from '@/apis/productsOrder';
 import { getOrdersFieldSettings } from '@/apis/setting/basicSettingsApis';
@@ -367,6 +368,13 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
     const [suggestedVersorgungIdOverride, setSuggestedVersorgungIdOverride] = useState<string | null>(null);
     /** Full order payload when order failed with suggestSupplyAndStock (for Skip = create without supply/store) */
     const [suggestSupplyOrderPayload, setSuggestSupplyOrderPayload] = useState<Record<string, any> | null>(null);
+
+    const [manualFootLengthModalOpen, setManualFootLengthModalOpen] = useState(false);
+    const [manualFootLengthMessage, setManualFootLengthMessage] = useState<string | null>(null);
+    const [manualFootLengthInput, setManualFootLengthInput] = useState('');
+    /** Sent with order payload when set (Fußlänge modal only updates state; order runs from Bestätigen). */
+    const [customerFootLength, setCustomerFootLength] = useState<number | null>(null);
+
     
     // Settings data state
     const [coverTypes, setCoverTypes] = useState<string[]>([]);
@@ -450,7 +458,6 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         };
 
         void fetchStandardVersorgungen();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [einlagentyp, selectedDiagnosisList]);
 
     // Check localStorage for custom versorgung ID on mount
@@ -513,6 +520,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setFormDataForOrder(null);
         setRealOrderData(null);
         setOrderPrices(null);
+        setCustomerFootLength(null);
+        setManualFootLengthInput('');
+        setManualFootLengthModalOpen(false);
+        setManualFootLengthMessage(null);
     };
     
     // Clear selectedPositionsnummer and itemSides when billingType changes
@@ -807,6 +818,19 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
         setOrderPrices(null);
     };
 
+    const handleManualFootLengthSave = () => {
+        const normalized = manualFootLengthInput.replace(',', '.').trim();
+        const parsed = parseFloat(normalized);
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+            toast.error('Bitte eine gültige Fußlänge eingeben.');
+            return;
+        }
+        setCustomerFootLength(parsed);
+        setManualFootLengthModalOpen(false);
+        setShowConfirmModal(true);
+        toast.success('Fußlänge gespeichert. Bitte bestätigen Sie die Bestellung erneut.');
+    };
+
     const handleConfirmOrder = async () => {
         // Use custom versorgung ID if on einmalig tab and it exists, otherwise use resolved ID. If user selected from suggest modal, use that.
         let versorgungIdToUse: string | null = null;
@@ -996,6 +1020,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     orderPayload.billingType = formDataForOrder.billingType;
                 }
 
+                if (customerFootLength != null && Number.isFinite(customerFootLength)) {
+                    orderPayload.customerFootLength = customerFootLength;
+                }
+
                 // For createOrderAndGeneratePdf, we still pass versorgungIdToUse
                 // The actual field (versorgungId or key) is already set in orderPayload
                 setSuggestSupplyOrderPayload(orderPayload);
@@ -1053,6 +1081,15 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                     } finally {
                         setSuggestSupplyModalLoading(false);
                     }
+                } else if (errData?.requiresManualFootLength === true) {
+                    setManualFootLengthMessage(
+                        typeof errData?.message === 'string' ? errData.message : null
+                    );
+                    setManualFootLengthInput(
+                        customerFootLength != null ? String(customerFootLength) : ''
+                    );
+                    setShowConfirmModal(false);
+                    setManualFootLengthModalOpen(true);
                 } else {
                     toast.error(errData?.message || 'Fehler beim Erstellen der Bestellung. Bitte versuchen Sie es erneut.');
                 }
@@ -1508,6 +1545,10 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 scanData={customer as ScanData}
                 formData={formDataForOrder}
                 onShowOrderConfirmation={(formData) => {
+                    setCustomerFootLength(null);
+                    setManualFootLengthInput('');
+                    setManualFootLengthModalOpen(false);
+                    setManualFootLengthMessage(null);
                     setFormDataForOrder(formData || formDataForOrder);
                     setInvoiceDownloadEnabled((formData as any)?.printWerkstattzettel !== false);
                     setShowConfirmModal(true);
@@ -1522,6 +1563,20 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                 formData={formDataForOrder}
                 customerId={customer?.id}
                 versorgungId={resolveVersorgungIdFromText()}
+            />
+
+            <ManualFootLengthModal
+                open={manualFootLengthModalOpen}
+                onOpenChange={(open) => {
+                    setManualFootLengthModalOpen(open);
+                    if (!open) {
+                        setShowConfirmModal(true);
+                    }
+                }}
+                message={manualFootLengthMessage}
+                value={manualFootLengthInput}
+                onValueChange={setManualFootLengthInput}
+                onSave={handleManualFootLengthSave}
             />
 
             <SuggestSupplyAndStockModal

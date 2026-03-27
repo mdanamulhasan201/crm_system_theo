@@ -21,7 +21,8 @@ export const useCreateOrder = () => {
             console.error('Failed to create order', error);
             const errData = error?.response?.data;
             const isSuggestFlow = errData?.suggestSupplyAndStock === true;
-            if (!isSuggestFlow) {
+            const isManualFootLengthFlow = errData?.requiresManualFootLength === true;
+            if (!isSuggestFlow && !isManualFootLengthFlow) {
                 const apiMessage = errData?.message || error?.message || 'Failed to create order';
                 toast.error(apiMessage);
             }
@@ -55,7 +56,8 @@ export const useCreateOrder = () => {
             console.error('Failed to create order', error);
             const errData = error?.response?.data;
             const isSuggestFlow = errData?.suggestSupplyAndStock === true;
-            if (!isSuggestFlow) {
+            const isManualFootLengthFlow = errData?.requiresManualFootLength === true;
+            if (!isSuggestFlow && !isManualFootLengthFlow) {
                 const apiMessage = errData?.message || error?.message || 'Failed to create order';
                 toast.error(apiMessage);
             }

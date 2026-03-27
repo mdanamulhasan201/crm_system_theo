@@ -11,7 +11,7 @@ import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSect
 import PriceSection from './Werkstattzettel/FormSections/PriceSection'
 import { createWerkstattzettelPayload } from './utils/formDataUtils'
 import { getSettingData } from '@/apis/einlagenApis'
-import { getAllLocations } from '@/apis/setting/locationManagementApis'
+import { getAllLocations, type StoreLocation } from '@/apis/setting/locationManagementApis'
 import { getOrderSettings } from '@/apis/versorgungApis'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 import { useAuth } from '@/contexts/AuthContext'
@@ -50,6 +50,22 @@ interface FormData {
   paymentStatus?: string
   printWerkstattzettel?: boolean
   halbprobe?: boolean
+}
+
+type WerkstattzettelLocationRow = {
+  id: string
+  address: string
+  description: string
+  isPrimary: boolean
+}
+
+function normalizeLocationsForState(data: StoreLocation[]): WerkstattzettelLocationRow[] {
+  return data.map((loc) => ({
+    id: loc.id,
+    address: loc.address,
+    description: loc.description ?? '',
+    isPrimary: loc.isPrimary ?? false,
+  }))
 }
 
 interface UserInfoUpdateModalProps {
@@ -138,7 +154,7 @@ export default function WerkstattzettelModal({
   // Settings data state
   const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([])
   const [pricesLoading, setPricesLoading] = useState(false)
-  const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([])
+  const [locations, setLocations] = useState<WerkstattzettelLocationRow[]>([])
   const [locationsLoading, setLocationsLoading] = useState(false)
 
   // Extract Einlagenversorgung price and name from selected versorgung (or Einlagetyp for Einmalige Versorgung)
@@ -286,10 +302,8 @@ export default function WerkstattzettelModal({
         setLocationsLoading(true)
         try {
           const response = await getAllLocations(1, 100)
-          if (response?.success && response?.data && Array.isArray(response.data)) {
-            setLocations(response.data)
-          } else if (Array.isArray(response?.data)) {
-            setLocations(response.data)
+          if (Array.isArray(response?.data)) {
+            setLocations(normalizeLocationsForState(response.data))
           }
         } catch (error) {
           console.error('Failed to fetch locations:', error)
