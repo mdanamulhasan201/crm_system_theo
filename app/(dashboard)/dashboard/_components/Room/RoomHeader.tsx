@@ -10,7 +10,7 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 
-const STAFF_VISIBLE_COUNT = 4;
+const VISIBLE_PILL_COUNT = 4;
 
 export interface StaffItem {
     id: string;
@@ -104,9 +104,13 @@ export default function RoomHeader({
     onRoomSelect,
 }: RoomHeaderProps) {
     const [staffMoreOpen, setStaffMoreOpen] = useState(false);
-    const visibleStaff = staff.slice(0, STAFF_VISIBLE_COUNT);
-    const overflowStaff = staff.slice(STAFF_VISIBLE_COUNT);
-    const overflowCount = overflowStaff.length;
+    const [roomsMoreOpen, setRoomsMoreOpen] = useState(false);
+    const visibleStaff = staff.slice(0, VISIBLE_PILL_COUNT);
+    const overflowStaff = staff.slice(VISIBLE_PILL_COUNT);
+    const staffOverflowCount = overflowStaff.length;
+    const visibleRooms = rooms.slice(0, VISIBLE_PILL_COUNT);
+    const overflowRooms = rooms.slice(VISIBLE_PILL_COUNT);
+    const roomsOverflowCount = overflowRooms.length;
 
     return (
         <div className="px-4 mt-10 py-5 bg-white border-t border-gray-100 rounded-t-xl shadow-sm">
@@ -128,7 +132,7 @@ export default function RoomHeader({
                                 showPercentageInLabel
                             />
                         ))}
-                        {overflowCount > 0 && (
+                        {staffOverflowCount > 0 && (
                             <Dialog open={staffMoreOpen} onOpenChange={setStaffMoreOpen}>
                                 <DialogTrigger asChild>
                                     <button
@@ -140,7 +144,7 @@ export default function RoomHeader({
                                         )}
                                     >
                                         <span className="text-sm font-semibold truncate leading-tight">
-                                            +{overflowCount} mehr
+                                            +{staffOverflowCount} mehr
                                         </span>
                                         <div
                                             className="mt-2 h-1.5 w-full rounded-full overflow-hidden bg-gray-200"
@@ -179,8 +183,8 @@ export default function RoomHeader({
                         </span>
                         <span className="hidden sm:inline text-gray-300">·</span>
                     </div>
-                    <div className="flex flex-wrap gap-2 sm:gap-3">
-                        {rooms.map((r) => (
+                    <div className="flex flex-wrap gap-2 sm:gap-3 items-center">
+                        {visibleRooms.map((r) => (
                             <FilterPill
                                 key={r.id}
                                 item={r}
@@ -189,6 +193,48 @@ export default function RoomHeader({
                                 showPercentageInLabel
                             />
                         ))}
+                        {roomsOverflowCount > 0 && (
+                            <Dialog open={roomsMoreOpen} onOpenChange={setRoomsMoreOpen}>
+                                <DialogTrigger asChild>
+                                    <button
+                                        type="button"
+                                        className={cn(
+                                            'relative flex flex-col rounded-xl min-w-[5rem] px-3.5 py-2.5 text-left transition-all duration-200',
+                                            'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#62A07C] focus-visible:ring-offset-2',
+                                            'bg-white text-gray-700 border border-gray-200 hover:border-[#62A07C]/40 hover:bg-gray-50/80'
+                                        )}
+                                    >
+                                        <span className="text-sm font-semibold truncate leading-tight">
+                                            +{roomsOverflowCount} mehr
+                                        </span>
+                                        <div
+                                            className="mt-2 h-1.5 w-full rounded-full overflow-hidden bg-gray-200"
+                                            aria-hidden
+                                        />
+                                    </button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-md">
+                                    <DialogHeader>
+                                        <DialogTitle>Weitere Räume</DialogTitle>
+                                    </DialogHeader>
+                                    <div className="grid grid-cols-2 gap-2 sm:gap-3 pt-2 w-full">
+                                        {overflowRooms.map((r) => (
+                                            <FilterPill
+                                                key={r.id}
+                                                item={r}
+                                                selected={selectedRoomId === r.id}
+                                                onSelect={() => {
+                                                    onRoomSelect?.(r.id);
+                                                    setRoomsMoreOpen(false);
+                                                }}
+                                                showPercentageInLabel
+                                                className="w-full min-w-0"
+                                            />
+                                        ))}
+                                    </div>
+                                </DialogContent>
+                            </Dialog>
+                        )}
                     </div>
                 </div>
             </div>

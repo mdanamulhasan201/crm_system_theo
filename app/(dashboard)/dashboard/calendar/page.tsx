@@ -13,8 +13,13 @@ import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
 import DeleteConfirmModal from '@/app/(dashboard)/dashboard/_components/MainCalendar/DeleteConfirmModal'
 import { useAppoinment } from '@/hooks/appoinment/useAppoinment'
 import { getAppointmentsByDate, type AppointmentByDateItem } from '@/apis/calendarManagementApis'
-import { getAppointmentsByDate as getRoomAppointmentsByDate, getEmployeeFreeSlots, getEmployeeFreePercentage } from '@/apis/appoinmentApis'
-import RoomHeader, { type StaffItem } from '../_components/Room/RoomHeader'
+import {
+  getAppointmentsByDate as getRoomAppointmentsByDate,
+  getEmployeeFreeSlots,
+  getEmployeeFreePercentage,
+  getRoomOccupancyPercentage,
+} from '@/apis/appoinmentApis'
+import RoomHeader, { type StaffItem, type RoomItem } from '../_components/Room/RoomHeader'
 import MainCard, { type DayAppointment, type EmployeeFreeSlotGroup } from '../_components/Room/MainCard'
 
 interface Employee {
@@ -160,6 +165,8 @@ export default function Calendar() {
   const [roomFreeSlotsByDay, setRoomFreeSlotsByDay] = useState<Record<string, EmployeeFreeSlotGroup[]>>({})
   const [staffFreePercentages, setStaffFreePercentages] = useState<StaffItem[]>([])
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
+  const [roomOccupancyPills, setRoomOccupancyPills] = useState<RoomItem[]>([])
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
 
   const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
@@ -261,10 +268,40 @@ export default function Calendar() {
     }
   }, [])
 
+  const fetchRoomOccupancy = useCallback(async (date: Date) => {
+    const dateStr = format(date, 'yyyy-MM-dd')
+    try {
+      const res = await getRoomOccupancyPercentage([dateStr])
+      const rows = res?.data ?? []
+      const pills: RoomItem[] = rows
+        .filter((row) => row.isActive !== false)
+        .map((row) => {
+          const n = Number(row.occupancy ?? 0)
+          const pct = Number.isFinite(n) ? Math.min(100, Math.max(0, Math.round(n))) : 0
+          return {
+            id: row.roomId,
+            name: row.roomName || '—',
+            percentage: pct,
+          }
+        })
+      setRoomOccupancyPills(pills)
+    } catch {
+      setRoomOccupancyPills([])
+    }
+  }, [])
+
   useEffect(() => {
     fetchRoomAppointments(roomDate)
     fetchEmployeeFreePercentages(roomDate)
-  }, [roomDate, fetchRoomAppointments, fetchEmployeeFreePercentages])
+    fetchRoomOccupancy(roomDate)
+  }, [roomDate, fetchRoomAppointments, fetchEmployeeFreePercentages, fetchRoomOccupancy])
+
+  useEffect(() => {
+    setSelectedRoomId((prev) => {
+      if (!prev) return null
+      return roomOccupancyPills.some((r) => r.id === prev) ? prev : null
+    })
+  }, [roomOccupancyPills])
 
   const handleRoomCardClick = useCallback(async (date: string, employeeId: string) => {
     try {
@@ -487,8 +524,11 @@ export default function Calendar() {
       {/* new room section */}
       <RoomHeader
         staff={staffFreePercentages}
+        rooms={roomOccupancyPills}
         selectedStaffId={selectedStaffId}
+        selectedRoomId={selectedRoomId}
         onStaffSelect={setSelectedStaffId}
+        onRoomSelect={setSelectedRoomId}
       />
       <MainCard
         weekStart={roomDate}

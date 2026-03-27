@@ -167,3 +167,33 @@ export const getEmployeeFreePercentage = async (dates: string[]) => {
     }
 };
 
+
+// v2/appointment/room-occupancy-percentage
+// Body: { "dates": ["2026-03-27", ...] } (ISO yyyy-MM-dd strings)
+// Response: { success, dates?: string[], data: [{ roomId, roomName, isActive, occupancy }] }
+// occupancy is used as percentage (0–100) for UI
+
+export type RoomOccupancyRow = {
+    roomId: string;
+    roomName: string;
+    isActive: boolean;
+    occupancy: number;
+};
+
+export type RoomOccupancyPercentageResponse = {
+    success?: boolean;
+    dates?: string[];
+    data?: RoomOccupancyRow[];
+};
+
+export const getRoomOccupancyPercentage = async (dates: string[]) => {
+    try {
+        const response = await axiosClient.post<RoomOccupancyPercentageResponse>(
+            `/v2/appointment/room-occupancy-percentage`,
+            { dates }
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};
