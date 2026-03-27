@@ -80,6 +80,11 @@ interface PriceSectionProps {
   onTotalChange?: (total: number) => void
   // When Verordnungsvorschlag (lieferschein) is YES, show all prices as 0
   isVerordnungsvorschlag?: boolean
+  /** `order_creation_appomnent === true`: nur berechnetes Datum, keine Uhrzeit. */
+  fertigstellungDateReadOnly?: boolean
+  fertigstellungTimeHidden?: boolean
+  /** `order_creation_appomnent === false`: Uhrzeit sichtbar aber nicht änderbar. */
+  fertigstellungTimeDisabled?: boolean
 }
 
 // Helper function to format price in German format
@@ -157,6 +162,9 @@ export default function PriceSection({
   mwstAmount,
   onTotalChange,
   isVerordnungsvorschlag = false,
+  fertigstellungDateReadOnly = false,
+  fertigstellungTimeHidden = false,
+  fertigstellungTimeDisabled = false,
 }: PriceSectionProps) {
   // Build unique option keys so only ONE item can ever appear selected,
   // even if multiple items share the same numeric price.
@@ -277,6 +285,14 @@ export default function PriceSection({
     onFertigstellungBisTimeChange(convertTo24Hour(hour, minute))
   }
 
+  const formatDeDate = (iso: string) => {
+    if (!iso) return '—'
+    const d = iso.slice(0, 10)
+    const [y, m, day] = d.split('-')
+    if (!y || !m || !day) return iso
+    return `${day}.${m}.${y}`
+  }
+
   return (
     <div className="space-y-0">
       {/* Header with icon */}
@@ -349,37 +365,68 @@ export default function PriceSection({
             <div className="space-y-1.5">
               <Label className="text-sm font-medium text-gray-700">Fertigstellung bis</Label>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full min-w-0">
-                <Input
-                  type="date"
-                  value={fertigstellungBis ? fertigstellungBis.slice(0, 10) : ''}
-                  onChange={(e) => onFertigstellungBisChange(e.target.value)}
-                  className={cn(
-                    'h-10 border-gray-300 flex-1 min-w-0 text-sm',
-                    fertigstellungBisError && 'border-red-500'
-                  )}
-                />
-                <div className="flex items-center gap-1 flex-1 min-w-0">
-                  <Select value={currentHour || '__placeholder__'} onValueChange={(v) => handleHourChange(v === '__placeholder__' ? '' : v)}>
-                    <SelectTrigger className="h-10 border-gray-300 flex-1 min-w-0 text-sm">
-                      <SelectValue placeholder="Std" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__placeholder__">Std</SelectItem>
-                      {hours24.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <span className="text-gray-400 text-sm shrink-0">:</span>
-                  <Select value={currentMinute || '__placeholder__'} onValueChange={(v) => handleMinuteChange(v === '__placeholder__' ? '' : v)}>
-                    <SelectTrigger className="h-10 border-gray-300 flex-1 min-w-0 text-sm">
-                      <SelectValue placeholder="Min" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__placeholder__">Min</SelectItem>
-                      {minutes.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {fertigstellungDateReadOnly ? (
+                  <div
+                    className={cn(
+                      'h-10 flex items-center px-3 rounded-md border border-gray-200 bg-gray-50 text-sm text-gray-800 flex-1 min-w-0',
+                      fertigstellungBisError && 'border-red-500'
+                    )}
+                  >
+                    {formatDeDate(fertigstellungBis)}
+                  </div>
+                ) : (
+                  <Input
+                    type="date"
+                    value={fertigstellungBis ? fertigstellungBis.slice(0, 10) : ''}
+                    onChange={(e) => onFertigstellungBisChange(e.target.value)}
+                    className={cn(
+                      'h-10 border-gray-300 flex-1 min-w-0 text-sm',
+                      fertigstellungBisError && 'border-red-500'
+                    )}
+                  />
+                )}
+                {!fertigstellungTimeHidden && (
+                  <div className="flex items-center gap-1 flex-1 min-w-0">
+                    <Select
+                      disabled={fertigstellungTimeDisabled}
+                      value={currentHour || '__placeholder__'}
+                      onValueChange={(v) => handleHourChange(v === '__placeholder__' ? '' : v)}
+                    >
+                      <SelectTrigger className="h-10 border-gray-300 flex-1 min-w-0 text-sm">
+                        <SelectValue placeholder="Std" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__placeholder__">Std</SelectItem>
+                        {hours24.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <span className="text-gray-400 text-sm shrink-0">:</span>
+                    <Select
+                      disabled={fertigstellungTimeDisabled}
+                      value={currentMinute || '__placeholder__'}
+                      onValueChange={(v) => handleMinuteChange(v === '__placeholder__' ? '' : v)}
+                    >
+                      <SelectTrigger className="h-10 border-gray-300 flex-1 min-w-0 text-sm">
+                        <SelectValue placeholder="Min" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__placeholder__">Min</SelectItem>
+                        {minutes.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
+              {fertigstellungDateReadOnly && (
+                <p className="text-[11px] leading-snug text-gray-500 max-w-md">
+                  Datum aus Bearbeitungsdauer – kein Kalendereintrag bei Auftragsanlage.
+                </p>
+              )}
+              {fertigstellungTimeDisabled && !fertigstellungTimeHidden && (
+                <p className="text-[11px] leading-snug text-gray-500 max-w-md">
+                  Uhrzeit ist fest vorgegeben und kann hier nicht geändert werden.
+                </p>
+              )}
               {fertigstellungBisError && <p className="text-xs text-red-500">{fertigstellungBisError}</p>}
             </div>
           </div>

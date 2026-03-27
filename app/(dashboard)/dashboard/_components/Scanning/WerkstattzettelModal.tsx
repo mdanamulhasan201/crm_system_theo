@@ -160,6 +160,12 @@ export default function WerkstattzettelModal({
   const [pricesLoading, setPricesLoading] = useState(false)
   /** From GET /customer-settings/settings → `orderSettings[0].pickupAssignmentMode`. `true` = Auftragsersteller übernimmt Abholung (no extra UI). */
   const [pickupAssignmentMode, setPickupAssignmentMode] = useState<boolean | null>(null)
+  /**
+   * `orderSettings[0].order_creation_appomnent` (API spelling).
+   * `true` = Termin automatisch: nur Datum, keine Uhrzeit, kein Abhol-Mitarbeiter-Block.
+   * `false` = Datum wählbar, Uhrzeit-Anzeige deaktiviert, Mitarbeiter (Abholung) nur Anzeige.
+   */
+  const [orderCreationAutoAppointment, setOrderCreationAutoAppointment] = useState<boolean | null>(null)
   const [locations, setLocations] = useState<WerkstattzettelLocationRow[]>([])
   const [locationsLoading, setLocationsLoading] = useState(false)
 
@@ -267,11 +273,20 @@ export default function WerkstattzettelModal({
     getSettingData()
       .then((response: any) => {
         if (cancelled) return
-        const os = response?.orderSettings
-        if (Array.isArray(os) && os[0] && typeof os[0].pickupAssignmentMode === 'boolean') {
-          setPickupAssignmentMode(Boolean(os[0].pickupAssignmentMode))
+        const osRaw = response?.orderSettings ?? response?.data?.orderSettings
+        const os = Array.isArray(osRaw) ? osRaw : []
+        const firstOs = os[0] as Record<string, unknown> | undefined
+        if (firstOs && typeof firstOs.pickupAssignmentMode === 'boolean') {
+          setPickupAssignmentMode(Boolean(firstOs.pickupAssignmentMode))
         } else {
           setPickupAssignmentMode(true)
+        }
+        if (firstOs && typeof firstOs.order_creation_appomnent === 'boolean') {
+          setOrderCreationAutoAppointment(Boolean(firstOs.order_creation_appomnent))
+        } else if (firstOs) {
+          setOrderCreationAutoAppointment(false)
+        } else {
+          setOrderCreationAutoAppointment(null)
         }
         if (response?.data?.laser_print_prices && Array.isArray(response.data.laser_print_prices)) {
           const formattedPrices: PriceItem[] = response.data.laser_print_prices
@@ -301,6 +316,23 @@ export default function WerkstattzettelModal({
       })
     return () => { cancelled = true }
   }, [isOpen])
+
+  const autoCalendarOnly = orderCreationAutoAppointment === true
+  const manualAppointmentNoAuto = orderCreationAutoAppointment === false
+
+  useEffect(() => {
+    if (!isOpen || !autoCalendarOnly) return
+    form.setFertigstellungBisTime('')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, autoCalendarOnly])
+
+  useEffect(() => {
+    if (!isOpen || !manualAppointmentNoAuto) return
+    if (!form.fertigstellungBisTime || form.fertigstellungBisTime.trim() === '') {
+      form.setFertigstellungBisTime('09:00')
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, manualAppointmentNoAuto])
 
   useEffect(() => {
     if (!isOpen) return
@@ -397,7 +429,7 @@ export default function WerkstattzettelModal({
       return
     }
 
-    if (pickupAssignmentMode === false) {
+    if (pickupAssignmentMode === false && manualAppointmentNoAuto) {
       const gid = form.geschaeftsstandort?.id
       if (gid && gid !== 'versand') {
         const emp = locations.find((l) => l.id === gid)?.employees
@@ -527,6 +559,7 @@ export default function WerkstattzettelModal({
       const abholungStoreIdForPayload = form.geschaeftsstandort?.id
       const appomentEmployeePayloadId =
         pickupAssignmentMode === false &&
+        manualAppointmentNoAuto &&
         abholungStoreIdForPayload &&
         abholungStoreIdForPayload !== 'versand'
           ? locations.find((l) => l.id === abholungStoreIdForPayload)?.employees?.id
@@ -705,6 +738,9 @@ export default function WerkstattzettelModal({
               mwstAmount={mwstAmount}
               onTotalChange={setCalculatedTotal}
               isVerordnungsvorschlag={formData?.halbprobe === true}
+              fertigstellungDateReadOnly={autoCalendarOnly}
+              fertigstellungTimeHidden={autoCalendarOnly}
+              fertigstellungTimeDisabled={manualAppointmentNoAuto}
             />
           </div>
 
@@ -760,15 +796,19 @@ export default function WerkstattzettelModal({
               </div>
             </div>
 
-            {pickupAssignmentMode === false && (
-              <div className="mt-5 pt-5 border-t border-gray-100">
+            {/* Mitarbeiter (Abholung) – nur bei festem Standort-Mitarbeiter und manueller Terminlogik */}
+            {pickupAssignmentMode === false && manualAppointmentNoAuto && (
+              <div
+                className="mt-5 pt-5 border-t border-gray-100 pointer-events-none select-none opacity-90"
+                aria-disabled
+              >
                 <span className="text-xs font-medium text-gray-500 block">
                   Mitarbeiter (Abholung)
                 </span>
                 {form.geschaeftsstandort?.id !== 'versand' &&
                   form.geschaeftsstandort?.description !== 'Versand an Kunden' && (
                     <p className="text-[11px] leading-snug text-gray-500 mt-1 mb-2 max-w-md">
-                      Der Abholtermin wird im Kalender mit diesem Mitarbeiter angelegt.
+                      Nur Anzeige (nicht änderbar). Der Abholtermin wird mit diesem Mitarbeiter verbunden.
                     </p>
                   )}
                 {form.geschaeftsstandort?.id === 'versand' ||
@@ -777,7 +817,7 @@ export default function WerkstattzettelModal({
                     Nicht zutreffend bei Versand an Kunden.
                   </p>
                 ) : abholungPickupEmployee ? (
-                  <div className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50/80 p-3 max-w-md">
+                  <div className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-100/80 p-3 max-w-md">
                     {abholungPickupEmployee.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
