@@ -177,9 +177,9 @@ export default function MainCard({
                       {appointments.length === 0 ? (
                         <p className="text-xs text-gray-400 italic py-1">Keine Termine</p>
                       ) : (
-                        appointments.map((apt) => (
+                        appointments.map((apt, aptIdx) => (
                           <button
-                            key={apt.id}
+                            key={`${key}-${apt.id}-${aptIdx}`}
                             type="button"
                             onClick={() => {
                               onAppointmentClick?.(apt.id);
@@ -242,9 +242,9 @@ export default function MainCard({
                 <p className="text-sm text-gray-400 italic">Keine freien Slots gefunden.</p>
               ) : (
                 <div className="flex flex-col gap-4">
-                  {groups.map((group) => (
+                  {groups.map((group, gIdx) => (
                     <div
-                      key={group.employeeId}
+                      key={`${expandedDayKey}-${group.employeeId}-${gIdx}`}
                       className="rounded-lg border border-gray-200/80 bg-white/90 px-3 py-3 shadow-sm"
                     >
                       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -256,7 +256,7 @@ export default function MainCard({
                           if (parsed.type === 'range') {
                             return (
                               <button
-                                key={`${group.employeeId}-${slot}-${idx}`}
+                                key={`${expandedDayKey}-${gIdx}-${idx}-${slot}`}
                                 type="button"
                                 onClick={() => onSlotClick?.(day, slot, group.employeeId)}
                                 className="text-left rounded-lg border border-[#62A07C]/30 bg-[#62A07C]/5 px-3 py-2.5 transition-colors hover:bg-[#62A07C]/10 hover:border-[#62A07C]/50"
@@ -272,7 +272,7 @@ export default function MainCard({
                           }
                           return (
                             <button
-                              key={`${group.employeeId}-${slot}-${idx}`}
+                              key={`${expandedDayKey}-${gIdx}-${idx}-${slot}`}
                               type="button"
                               onClick={() => onSlotClick?.(day, slot, group.employeeId)}
                               className="rounded-lg px-3 py-2 text-sm font-medium text-left bg-white border border-gray-200 text-gray-800 hover:border-[#62A07C] hover:bg-emerald-50/50 transition-colors"
