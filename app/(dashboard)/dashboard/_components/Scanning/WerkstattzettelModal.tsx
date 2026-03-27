@@ -11,7 +11,7 @@ import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSect
 import PriceSection from './Werkstattzettel/FormSections/PriceSection'
 import { createWerkstattzettelPayload } from './utils/formDataUtils'
 import { getSettingData } from '@/apis/einlagenApis'
-import { getAllLocations, type StoreLocation } from '@/apis/setting/locationManagementApis'
+import { getAllLocations, type StoreLocation, type StoreLocationEmployee } from '@/apis/setting/locationManagementApis'
 import { getOrderSettings } from '@/apis/versorgungApis'
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types'
 import { useAuth } from '@/contexts/AuthContext'
@@ -50,6 +50,8 @@ interface FormData {
   paymentStatus?: string
   printWerkstattzettel?: boolean
   halbprobe?: boolean
+  /** Pickup/appointment employee for fixed-per-location mode (from store locations API). */
+  AppomentEmployeeId?: string
 }
 
 type WerkstattzettelLocationRow = {
@@ -57,6 +59,7 @@ type WerkstattzettelLocationRow = {
   address: string
   description: string
   isPrimary: boolean
+  employees?: StoreLocationEmployee | null
 }
 
 function normalizeLocationsForState(data: StoreLocation[]): WerkstattzettelLocationRow[] {
@@ -65,6 +68,7 @@ function normalizeLocationsForState(data: StoreLocation[]): WerkstattzettelLocat
     address: loc.address,
     description: loc.description ?? '',
     isPrimary: loc.isPrimary ?? false,
+    employees: loc.employees ?? null,
   }))
 }
 
@@ -154,6 +158,8 @@ export default function WerkstattzettelModal({
   // Settings data state
   const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([])
   const [pricesLoading, setPricesLoading] = useState(false)
+  /** From GET /customer-settings/settings → `orderSettings[0].pickupAssignmentMode`. `true` = Auftragsersteller übernimmt Abholung (no extra UI). */
+  const [pickupAssignmentMode, setPickupAssignmentMode] = useState<boolean | null>(null)
   const [locations, setLocations] = useState<WerkstattzettelLocationRow[]>([])
   const [locationsLoading, setLocationsLoading] = useState(false)
 
@@ -259,8 +265,14 @@ export default function WerkstattzettelModal({
     let cancelled = false
     setPricesLoading(true)
     getSettingData()
-      .then((response) => {
+      .then((response: any) => {
         if (cancelled) return
+        const os = response?.orderSettings
+        if (Array.isArray(os) && os[0] && typeof os[0].pickupAssignmentMode === 'boolean') {
+          setPickupAssignmentMode(Boolean(os[0].pickupAssignmentMode))
+        } else {
+          setPickupAssignmentMode(true)
+        }
         if (response?.data?.laser_print_prices && Array.isArray(response.data.laser_print_prices)) {
           const formattedPrices: PriceItem[] = response.data.laser_print_prices
             .map((item: any) => {
@@ -372,10 +384,30 @@ export default function WerkstattzettelModal({
 
   // ✅ ALL VALIDATION REMOVED - Backend will handle everything
 
+  const abholungPickupEmployee = React.useMemo(() => {
+    if (pickupAssignmentMode !== false) return null
+    const gid = form.geschaeftsstandort?.id
+    if (!gid || gid === 'versand') return null
+    return locations.find((l) => l.id === gid)?.employees ?? null
+  }, [pickupAssignmentMode, form.geschaeftsstandort?.id, locations])
+
   const handleSave = async () => {
     if (!scanData?.id) {
       toast.error('Customer ID not found')
       return
+    }
+
+    if (pickupAssignmentMode === false) {
+      const gid = form.geschaeftsstandort?.id
+      if (gid && gid !== 'versand') {
+        const emp = locations.find((l) => l.id === gid)?.employees
+        if (!emp?.id) {
+          toast.error(
+            'Für diesen Abholstandort ist kein Mitarbeiter hinterlegt. Bitte in den Einstellungen zuweisen oder einen anderen Standort wählen.'
+          )
+          return
+        }
+      }
     }
 
     // ✅ No validation - proceed directly
@@ -492,6 +524,14 @@ export default function WerkstattzettelModal({
         scanData.id
       )
 
+      const abholungStoreIdForPayload = form.geschaeftsstandort?.id
+      const appomentEmployeePayloadId =
+        pickupAssignmentMode === false &&
+        abholungStoreIdForPayload &&
+        abholungStoreIdForPayload !== 'versand'
+          ? locations.find((l) => l.id === abholungStoreIdForPayload)?.employees?.id
+          : undefined
+
         // Combine formData with werkstattzettel payload
       const combinedFormData = {
         ...formData,
@@ -530,6 +570,7 @@ export default function WerkstattzettelModal({
         insuranceTotalPrice: isVerordnungsvorschlag ? null : (insuranceTotalPrice !== undefined ? Math.round(insuranceTotalPrice * 100) / 100 : undefined),
         vat_rate: vatRate !== undefined ? vatRate : isVerordnungsvorschlag ? null : undefined,
         austria_price: isVerordnungsvorschlag ? null : (eigenanteilForTotal > 0 ? eigenanteilForTotal : undefined),
+        ...(appomentEmployeePayloadId ? { AppomentEmployeeId: appomentEmployeePayloadId } : {}),
       }
 
       // Do NOT close the Werkstattzettel modal here.
@@ -718,6 +759,62 @@ export default function WerkstattzettelModal({
                 </Button>
               </div>
             </div>
+
+            {pickupAssignmentMode === false && (
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                <span className="text-xs font-medium text-gray-500 block">
+                  Mitarbeiter (Abholung)
+                </span>
+                {form.geschaeftsstandort?.id !== 'versand' &&
+                  form.geschaeftsstandort?.description !== 'Versand an Kunden' && (
+                    <p className="text-[11px] leading-snug text-gray-500 mt-1 mb-2 max-w-md">
+                      Der Abholtermin wird im Kalender mit diesem Mitarbeiter angelegt.
+                    </p>
+                  )}
+                {form.geschaeftsstandort?.id === 'versand' ||
+                form.geschaeftsstandort?.description === 'Versand an Kunden' ? (
+                  <p className="text-sm text-gray-500">
+                    Nicht zutreffend bei Versand an Kunden.
+                  </p>
+                ) : abholungPickupEmployee ? (
+                  <div className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50/80 p-3 max-w-md">
+                    {abholungPickupEmployee.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={abholungPickupEmployee.image}
+                        alt=""
+                        className="h-10 w-10 rounded-full object-cover border border-gray-200 shrink-0"
+                      />
+                    ) : (
+                      <div className="h-10 w-10 rounded-full bg-gray-200 shrink-0 flex items-center justify-center text-[10px] font-medium text-gray-600">
+                        {(abholungPickupEmployee.employeeName || '?')
+                          .split(/\s+/)
+                          .map((p) => p[0])
+                          .join('')
+                          .slice(0, 2)
+                          .toUpperCase()}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-semibold text-gray-900 truncate">
+                        {(abholungPickupEmployee.employeeName || '')
+                          .trim()
+                          .split(/\s+/)[0] || '—'}
+                      </p>
+                      {abholungPickupEmployee.email ? (
+                        <p className="text-xs text-gray-500 truncate mt-0.5">
+                          {abholungPickupEmployee.email}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-amber-700">
+                    Kein Mitarbeiter für diesen Abholstandort hinterlegt.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl border border-[#d9e0f0] p-6">

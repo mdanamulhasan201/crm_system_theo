@@ -1,11 +1,21 @@
 import axiosClient from "@/lib/axiosClient";
 
+/** Optional employee assigned to the store for pickup / appointments (from API). */
+export type StoreLocationEmployee = {
+    id: string;
+    employeeName: string;
+    email?: string;
+    accountName?: string;
+    image?: string | null;
+};
+
 export type StoreLocation = {
     id: string;
     address: string;
     description?: string;
     isPrimary?: boolean;
     createdAt?: string;
+    employees?: StoreLocationEmployee | null;
 };
 
 export type StoreLocationsListResponse = {

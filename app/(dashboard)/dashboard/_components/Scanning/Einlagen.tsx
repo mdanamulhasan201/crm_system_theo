@@ -1012,6 +1012,9 @@ export default function Einlagen({ customer, prefillOrderData, screenerId, onCus
                           ? Number(formDataForOrder.totalPrice)
                           : undefined,
                     werkstattEmployeeId: formDataForOrder.employeeId || formDataForOrder.werkstattEmployeeId || '',
+                    ...(formDataForOrder.AppomentEmployeeId
+                        ? { AppomentEmployeeId: formDataForOrder.AppomentEmployeeId }
+                        : {}),
                     screenerId: formDataForOrder.screenerId || null,
                     discount:
                         isHalbprobeOrder && !halbprobeMitAufpreis
