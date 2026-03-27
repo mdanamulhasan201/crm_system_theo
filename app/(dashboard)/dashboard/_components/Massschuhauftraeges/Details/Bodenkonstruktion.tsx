@@ -1212,6 +1212,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 rahmen={rahmen}
                 onHinterkappeMusterChange={setHinterkappeMusterSide}
                 hinterkappeMusterSide={hinterkappeMusterSide}
+                hinterkappeSplitConfigUi={true}
                 vorderkappeUnifiedConfigUi={true}
                 onHinterkappeChange={setHinterkappeSide}
                 hinterkappeSide={hinterkappeSide}

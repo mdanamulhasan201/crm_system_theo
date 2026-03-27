@@ -271,6 +271,7 @@ export default function ChecklistSection({
                         ) : g.fieldType === "hinterkappeMusterSide" && showOrthopedicFields ? (
                             hinterkappeSplitConfigUi && hinterkappeMaterialGroupDef ? (
                                 <HinterkappeUnifiedConfigCard
+                                    musterDef={g}
                                     materialDef={hinterkappeMaterialGroupDef}
                                     musterValue={hinterkappeMusterSide || null}
                                     materialValue={hinterkappeSide || null}

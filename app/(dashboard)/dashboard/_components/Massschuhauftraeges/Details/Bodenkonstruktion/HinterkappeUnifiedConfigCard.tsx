@@ -9,11 +9,12 @@ import SideSelector from "./shared/SideSelector"
 import OptionCard from "./shared/OptionCard"
 import InfoTooltip from "./shared/InfoTooltip"
 import type { GroupDef2 } from "../Types"
-import type {
-  GleichUnterschiedlichMode,
-  HinterkappeMusterErstellung,
-  HinterkappeMusterSideData,
-  HinterkappeSideData,
+import {
+  HinterkappeMusterSideField,
+  type GleichUnterschiedlichMode,
+  type HinterkappeMusterErstellung,
+  type HinterkappeMusterSideData,
+  type HinterkappeSideData,
 } from "./FormFields"
 
 const MUSTERART_OPTIONS: {
@@ -141,12 +142,14 @@ const MaterialRow = ({
 }
 
 export default function HinterkappeUnifiedConfigCard({
+  musterDef,
   materialDef,
   musterValue,
   materialValue,
   onMusterChange,
   onMaterialChange,
 }: {
+  musterDef: GroupDef2
   materialDef: GroupDef2
   musterValue: HinterkappeMusterSideData | null
   materialValue: HinterkappeSideData | null
@@ -240,115 +243,130 @@ export default function HinterkappeUnifiedConfigCard({
   }
 
   return (
-    <ConfigCard
-      title="Hinterkappe"
-      subtitle="Material und Leder können links und rechts unterschiedlich gewählt werden"
-      icon={<ShieldCheck size={20} />}
-    >
-      <TooltipProvider delayDuration={200}>
-        <div className="space-y-2">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Soll ein Muster erstellt werden?
-          </p>
-          <div className="flex flex-wrap gap-x-6 gap-y-2">
-            <RadioOption
-              selected={erstellung === "ja"}
-              onClick={() => setErstellung("ja")}
-              label="Ja, ein Muster erstellen"
-            />
-            <RadioOption
-              selected={erstellung === "nein"}
-              onClick={() => setErstellung("nein")}
-              label="Nein, Muster liefern wir selbst"
-            />
-            <RadioOption
-              selected={erstellung === "leisten"}
-              onClick={() => setErstellung("leisten")}
-              label="Wird auf dem Leisten gekennzeichnet"
-            />
-          </div>
-        </div>
+    <TooltipProvider delayDuration={200}>
+      <div className="space-y-6">
+        <ConfigCard
+          title={musterDef.question}
+          subtitle="Auswahl gilt separat für linken und rechten Schuh"
+          icon={<ShieldCheck size={20} />}
+        >
+          <HinterkappeMusterSideField
+            embedded
+            def={musterDef}
+            value={musterValue}
+            onChange={onMusterChange}
+          />
 
-        {erstellung === "ja" ? (
-          <div className="mt-5 border-t border-gray-200 pt-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Musterart</p>
-            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {MUSTERART_OPTIONS.map((opt) => (
-                <div
-                  key={opt.value}
-                  className={`flex items-start gap-1 rounded-lg border px-3 py-3 text-sm font-medium transition-all ${
-                    musterart === opt.value
-                      ? "border-[#61A175] bg-[#61A175]/14 text-gray-900 shadow-sm ring-1 ring-[#61A175]/20"
-                      : "border-gray-200 bg-white text-gray-900 hover:border-[#61A175]/50"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setMusterart(opt.value)}
-                    className="min-w-0 flex-1 cursor-pointer rounded-md px-1 py-0 text-left text-sm font-medium text-gray-900 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#61A175]/55"
-                  >
-                    <span className="block font-semibold">{opt.label}</span>
-                    <span className="mt-0.5 block text-xs font-normal text-gray-500">{opt.desc}</span>
-                  </button>
-                  <InfoTooltip content={opt.tooltip} />
-                </div>
-              ))}
+          <div className="mt-6 border-t border-gray-200 pt-5">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Soll ein Muster erstellt werden?
+              </p>
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
+                <RadioOption
+                  selected={erstellung === "ja"}
+                  onClick={() => setErstellung("ja")}
+                  label="Ja, ein Muster erstellen"
+                />
+                <RadioOption
+                  selected={erstellung === "nein"}
+                  onClick={() => setErstellung("nein")}
+                  label="Nein, Muster liefern wir selbst"
+                />
+                <RadioOption
+                  selected={erstellung === "leisten"}
+                  onClick={() => setErstellung("leisten")}
+                  label="Wird auf dem Leisten gekennzeichnet"
+                />
+              </div>
             </div>
-          </div>
-        ) : null}
 
-        <div className="mt-5 border-t border-gray-200 pt-5">
+            {erstellung === "ja" ? (
+              <div className="mt-5 border-t border-gray-200 pt-5">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Musterart</p>
+                <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {MUSTERART_OPTIONS.map((opt) => (
+                    <div
+                      key={opt.value}
+                      className={`flex items-start gap-1 rounded-lg border px-3 py-3 text-sm font-medium transition-all ${
+                        musterart === opt.value
+                          ? "border-[#61A175] bg-[#61A175]/14 text-gray-900 shadow-sm ring-1 ring-[#61A175]/20"
+                          : "border-gray-200 bg-white text-gray-900 hover:border-[#61A175]/50"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setMusterart(opt.value)}
+                        className="min-w-0 flex-1 cursor-pointer rounded-md px-1 py-0 text-left text-sm font-medium text-gray-900 outline-none ring-offset-2 focus-visible:ring-2 focus-visible:ring-[#61A175]/55"
+                      >
+                        <span className="block font-semibold">{opt.label}</span>
+                        <span className="mt-0.5 block text-xs font-normal text-gray-500">{opt.desc}</span>
+                      </button>
+                      <InfoTooltip content={opt.tooltip} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </ConfigCard>
+
+        <ConfigCard
+          title="Hinterkappe"
+          subtitle="Material und Leder können links und rechts unterschiedlich gewählt werden"
+          icon={<ShieldCheck size={20} />}
+        >
           <SideSelector value={mode} onChange={setMode} />
-        </div>
 
-        {mode ? (
-          <div className="mt-5 border-t border-gray-200 pt-5">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Material</p>
-            {mode === "gleich" ? (
-              <div className="mt-3">
-                <MaterialRow
-                  material={sameValue}
-                  subValue={sameSubValue}
-                  def={materialDef}
-                  onMaterial={(id) => {
-                    if (id === null) patchGleich({ sameValue: null, sameSubValue: null })
-                    else if (id !== "leder") patchGleich({ sameValue: id, sameSubValue: null })
-                    else patchGleich({ sameValue: "leder", sameSubValue: sameSubValue })
-                  }}
-                  onSub={(id) => patchGleich({ sameSubValue: id })}
-                />
-              </div>
-            ) : (
-              <div className="mt-3 space-y-6">
-                <MaterialRow
-                  sideLabel="LINKS"
-                  material={leftValue}
-                  subValue={leftSubValue}
-                  def={materialDef}
-                  onMaterial={(id) => {
-                    if (id === null) patchLinks({ leftValue: null, leftSubValue: null })
-                    else if (id !== "leder") patchLinks({ leftValue: id, leftSubValue: null })
-                    else patchLinks({ leftValue: "leder", leftSubValue: leftSubValue })
-                  }}
-                  onSub={(id) => patchLinks({ leftSubValue: id })}
-                />
-                <MaterialRow
-                  sideLabel="RECHTS"
-                  material={rightValue}
-                  subValue={rightSubValue}
-                  def={materialDef}
-                  onMaterial={(id) => {
-                    if (id === null) patchRechts({ rightValue: null, rightSubValue: null })
-                    else if (id !== "leder") patchRechts({ rightValue: id, rightSubValue: null })
-                    else patchRechts({ rightValue: "leder", rightSubValue: rightSubValue })
-                  }}
-                  onSub={(id) => patchRechts({ rightSubValue: id })}
-                />
-              </div>
-            )}
-          </div>
-        ) : null}
-      </TooltipProvider>
-    </ConfigCard>
+          {mode ? (
+            <div className="mt-5 border-t border-gray-200 pt-5">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Material</p>
+              {mode === "gleich" ? (
+                <div className="mt-3">
+                  <MaterialRow
+                    material={sameValue}
+                    subValue={sameSubValue}
+                    def={materialDef}
+                    onMaterial={(id) => {
+                      if (id === null) patchGleich({ sameValue: null, sameSubValue: null })
+                      else if (id !== "leder") patchGleich({ sameValue: id, sameSubValue: null })
+                      else patchGleich({ sameValue: "leder", sameSubValue: sameSubValue })
+                    }}
+                    onSub={(id) => patchGleich({ sameSubValue: id })}
+                  />
+                </div>
+              ) : (
+                <div className="mt-3 space-y-6">
+                  <MaterialRow
+                    sideLabel="LINKS"
+                    material={leftValue}
+                    subValue={leftSubValue}
+                    def={materialDef}
+                    onMaterial={(id) => {
+                      if (id === null) patchLinks({ leftValue: null, leftSubValue: null })
+                      else if (id !== "leder") patchLinks({ leftValue: id, leftSubValue: null })
+                      else patchLinks({ leftValue: "leder", leftSubValue: leftSubValue })
+                    }}
+                    onSub={(id) => patchLinks({ leftSubValue: id })}
+                  />
+                  <MaterialRow
+                    sideLabel="RECHTS"
+                    material={rightValue}
+                    subValue={rightSubValue}
+                    def={materialDef}
+                    onMaterial={(id) => {
+                      if (id === null) patchRechts({ rightValue: null, rightSubValue: null })
+                      else if (id !== "leder") patchRechts({ rightValue: id, rightSubValue: null })
+                      else patchRechts({ rightValue: "leder", rightSubValue: rightSubValue })
+                    }}
+                    onSub={(id) => patchRechts({ rightSubValue: id })}
+                  />
+                </div>
+              )}
+            </div>
+          ) : null}
+        </ConfigCard>
+      </div>
+    </TooltipProvider>
   )
 }

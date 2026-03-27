@@ -6,7 +6,7 @@ import { RadioOption } from "./RadioOption"
 export default function SideSelector({
   value,
   onChange,
-  label = "Ausführung",
+  label = "Auswahlbereich",
 }: {
   value: GleichUnterschiedlichMode
   onChange: (v: NonNullable<Exclude<GleichUnterschiedlichMode, null>>) => void
@@ -19,12 +19,12 @@ export default function SideSelector({
         <RadioOption
           selected={value === "gleich"}
           onClick={() => onChange("gleich")}
-          label="Beidseitig identisch"
+          label="Beidseitig – gleich"
         />
         <RadioOption
           selected={value === "unterschiedlich"}
           onClick={() => onChange("unterschiedlich")}
-          label="Links und rechts unterschiedlich"
+          label="Beidseitig – unterschiedlich"
         />
       </div>
     </div>

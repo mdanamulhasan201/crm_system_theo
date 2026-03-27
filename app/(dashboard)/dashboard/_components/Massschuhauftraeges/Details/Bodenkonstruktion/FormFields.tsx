@@ -1394,10 +1394,13 @@ export function HinterkappeMusterSideField({
     def,
     value,
     onChange,
+    /** When true, omit title and intro (e.g. outer ConfigCard provides them). */
+    embedded = false,
 }: {
     def: GroupDef2
     value: HinterkappeMusterSideData | null
     onChange: (value: HinterkappeMusterSideData | null) => void
+    embedded?: boolean
 }) {
     const mode = value?.mode || null
     const sameValue = value?.sameValue || null
@@ -1429,10 +1432,14 @@ export function HinterkappeMusterSideField({
     }
 
     return (
-        <div className="mb-6">
-            <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
-            <p className="text-sm text-gray-600 mb-3">Auswahl gilt separat für linken und rechten Schuh</p>
-            
+        <div className={embedded ? "" : "mb-6"}>
+            {!embedded ? (
+                <>
+                    <label className="block text-base font-bold text-gray-800 mb-3">{def.question}</label>
+                    <p className="text-sm text-gray-600 mb-3">Auswahl gilt separat für linken und rechten Schuh</p>
+                </>
+            ) : null}
+
             {/* Mode Selection - Auswahlbereich (checkbox-style like other fields) */}
             <div className="mb-4">
                 <div className="text-sm font-semibold text-gray-700 mb-2">Auswahlbereich</div>
