@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   CalendarDays,
   CalendarClock,
@@ -10,8 +10,17 @@ import {
   MapPin,
   Plus,
   Trash2,
+  Pencil,
 } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import {
@@ -24,10 +33,27 @@ import {
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import WohnortInput from "../../_components/Customers/WohnortInput";
+import EmployeeDropdown from "../../_components/Scanning/Common/EmployeeDropdown";
 import toast from "react-hot-toast";
-import { createAuftragszettel, getAuftragszettel } from "@/apis/auftragszettelApis";
+import {
+  createAuftragszettel,
+  getAuftragszettel,
+  getEmployeeForLocation,
+  setEmployeeForLocation,
+  type EmployeeForLocationEmployee,
+  type EmployeeForLocationItem,
+} from "@/apis/auftragszettelApis";
 import { getAllLocations } from "@/apis/setting/locationManagementApis";
+import { useSearchEmployee } from "@/hooks/employee/useSearchEmployee";
 
 type PickupAddress = { address: string };
 
@@ -69,6 +95,15 @@ export default function AbholungTerminplanungPage() {
   const [locationsLoading, setLocationsLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [employeeByLocation, setEmployeeByLocation] = useState<EmployeeForLocationItem[]>([]);
+  const [employeeByLocationLoading, setEmployeeByLocationLoading] = useState(true);
+
+  const assignEmployeeSearch = useSearchEmployee(80);
+  const [assignModalOpen, setAssignModalOpen] = useState(false);
+  const [assignRow, setAssignRow] = useState<EmployeeForLocationItem | null>(null);
+  const [assignEmployeeId, setAssignEmployeeId] = useState<string | null>(null);
+  const [assignEmployeeName, setAssignEmployeeName] = useState("");
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
 
   const buildPayload = () => {
     const insoleDays = Number.parseInt(processingDays || "0", 10);
@@ -176,6 +211,31 @@ export default function AbholungTerminplanungPage() {
     void hydrate();
   }, []);
 
+  const refreshEmployeesForLocation = useCallback(
+    async (opts?: { showLoading?: boolean }) => {
+      const showLoading = opts?.showLoading !== false;
+      try {
+        if (showLoading) setEmployeeByLocationLoading(true);
+        const res = await getEmployeeForLocation();
+        const rows = Array.isArray(res?.data) ? res.data : [];
+        setEmployeeByLocation(rows);
+      } catch (e) {
+        console.error(e);
+        if (showLoading) {
+          setEmployeeByLocation([]);
+          toast.error("Fehler beim Laden der Standort-Mitarbeiter.");
+        }
+      } finally {
+        if (showLoading) setEmployeeByLocationLoading(false);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    void refreshEmployeesForLocation();
+  }, [refreshEmployeesForLocation]);
+
   // Debounced auto-save — only runs when the user actually changes a value.
   // If current state matches what was just loaded from the API, skip saving.
   useEffect(() => {
@@ -225,6 +285,53 @@ export default function AbholungTerminplanungPage() {
     pickupLocations,
     isLoading,
   ]);
+
+  const handleAssignEmployeeSave = async () => {
+    if (!assignRow?.id || !assignEmployeeId) {
+      toast.error("Bitte einen Mitarbeiter auswählen.");
+      return;
+    }
+    const locationId = assignRow.id;
+    const newEmployeeId = assignEmployeeId;
+    const newEmployeeName = assignEmployeeName;
+
+    setAssignSubmitting(true);
+    try {
+      const res = await setEmployeeForLocation({
+        locationId,
+        employeeId: newEmployeeId,
+      });
+      if (res?.success === false) {
+        throw new Error(res?.message || "Zuweisung fehlgeschlagen.");
+      }
+      toast.success(res?.message || "Mitarbeiter zugewiesen.");
+
+      const updatedEmployee: EmployeeForLocationEmployee = {
+        id: newEmployeeId,
+        employeeName: newEmployeeName,
+      };
+      setEmployeeByLocation((prev) =>
+        prev.map((r) =>
+          r.id === locationId ? { ...r, employees: updatedEmployee } : r
+        )
+      );
+
+      setAssignModalOpen(false);
+      setAssignRow(null);
+      setAssignEmployeeId(null);
+      setAssignEmployeeName("");
+      assignEmployeeSearch.clearSearch();
+      assignEmployeeSearch.setShowSuggestions(false);
+
+      void refreshEmployeesForLocation({ showLoading: false });
+    } catch (e: any) {
+      toast.error(
+        e?.response?.data?.message || e?.message || "Zuweisung fehlgeschlagen."
+      );
+    } finally {
+      setAssignSubmitting(false);
+    }
+  };
 
   return (
     <div className="w-full px-5 py-6 space-y-6 mb-20">
@@ -373,7 +480,191 @@ export default function AbholungTerminplanungPage() {
             </label>
           </div>
         </CardContent>
+
+        <CardContent className="pt-4 border-t border-gray-100">
+          <p className="text-xs text-gray-500 mb-3">
+            Standorte mit optional zugewiesenem Mitarbeiter für{" "}
+            <span className="font-medium text-gray-700">
+              Fester Mitarbeiter pro Standort
+            </span>
+            
+          </p>
+          {employeeByLocationLoading ? (
+            <p className="text-sm text-gray-500 py-6 text-center">Laden …</p>
+          ) : employeeByLocation.length === 0 ? (
+            <p className="text-sm text-gray-500 py-6 text-center rounded-lg border border-dashed border-gray-200 bg-gray-50/80">
+              Keine Standorte gefunden.
+            </p>
+          ) : (
+            <Table className="table-fixed w-full">
+              <TableHeader>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="font-semibold w-[300px] max-w-[300px] text-gray-900">
+                    Abholadresse
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900">Mitarbeiter</TableHead>
+                  <TableHead className="font-semibold w-14 text-center text-gray-900">
+                    Aktion
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...employeeByLocation]
+                  .sort((a, b) => Number(b.isPrimary) - Number(a.isPrimary))
+                  .map((row) => {
+                    const emp = row.employees;
+                    return (
+                      <TableRow key={row.id}>
+                        <TableCell className="align-middle text-gray-700 w-[300px] max-w-[300px] p-3">
+                          <span
+                            className="block truncate text-sm"
+                            title={row.address || undefined}
+                          >
+                            {row.address || "—"}
+                          </span>
+                        </TableCell>
+                        <TableCell className="align-middle min-w-0 p-3">
+                          {emp ? (
+                            <div className="flex items-center gap-2 min-w-0">
+                              {emp.image ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={emp.image}
+                                  alt=""
+                                  className="h-8 w-8 rounded-full object-cover border border-gray-200 shrink-0"
+                                />
+                              ) : (
+                                <div className="h-8 w-8 rounded-full bg-gray-200 shrink-0 flex items-center justify-center text-[10px] text-gray-500 font-medium">
+                                  {(emp.employeeName || "?")
+                                    .split(/\s+/)
+                                    .map((p) => p[0])
+                                    .join("")
+                                    .slice(0, 2)
+                                    .toUpperCase()}
+                                </div>
+                              )}
+                              <span className="text-sm font-medium text-gray-900 truncate">
+                                {emp.employeeName || "—"}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-amber-700">Nicht zugewiesen</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="align-middle text-center w-14 p-3">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 mx-auto cursor-pointer text-gray-600 hover:text-gray-900"
+                            aria-label="Standort bearbeiten"
+                            title="Bearbeiten"
+                            onClick={() => {
+                              setAssignRow(row);
+                              setAssignEmployeeId(row.employees?.id ?? null);
+                              setAssignEmployeeName(row.employees?.employeeName ?? "");
+                              assignEmployeeSearch.setSearchText("");
+                              assignEmployeeSearch.setShowSuggestions(false);
+                              setAssignModalOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
       </Card>
+
+      <Dialog
+        open={assignModalOpen}
+        onOpenChange={(open) => {
+          setAssignModalOpen(open);
+          if (!open) {
+            setAssignRow(null);
+            setAssignEmployeeId(null);
+            setAssignEmployeeName("");
+            assignEmployeeSearch.clearSearch();
+            assignEmployeeSearch.setShowSuggestions(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Mitarbeiter zuweisen</DialogTitle>
+            <DialogDescription className="text-left text-gray-600">
+              Wählen Sie einen Mitarbeiter für diesen Standort. Die Adresse wird
+              nur zur Orientierung angezeigt.
+            </DialogDescription>
+          </DialogHeader>
+          {assignRow ? (
+            <div className="space-y-4 py-2">
+              <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                <span className="font-medium text-gray-500 text-xs uppercase tracking-wide">
+                  Abholadresse
+                </span>
+                <p className="mt-1 line-clamp-3" title={assignRow.address}>
+                  {assignRow.address || "—"}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-800">
+                  Mitarbeiter
+                </Label>
+                <EmployeeDropdown
+                  layout="inline"
+                  selectedEmployee={assignEmployeeName}
+                  employeeSearchText={assignEmployeeSearch.searchText}
+                  isEmployeeDropdownOpen={false}
+                  employeeSuggestions={assignEmployeeSearch.suggestions}
+                  employeeLoading={assignEmployeeSearch.loading}
+                  onEmployeeSearchChange={(v) => {
+                    assignEmployeeSearch.handleChange(v);
+                    assignEmployeeSearch.setShowSuggestions(true);
+                  }}
+                  onEmployeeDropdownChange={() => {}}
+                  onEmployeeSelect={(emp) => {
+                    setAssignEmployeeId(emp.id);
+                    setAssignEmployeeName(emp.employeeName);
+                    assignEmployeeSearch.setSearchText("");
+                    assignEmployeeSearch.setShowSuggestions(false);
+                  }}
+                  onClear={() => {
+                    setAssignEmployeeId(null);
+                    setAssignEmployeeName("");
+                    assignEmployeeSearch.clearSearch();
+                  }}
+                  placeholder="Mitarbeiter suchen und wählen…"
+                  className="w-full"
+                />
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              className="cursor-pointer"
+              onClick={() => setAssignModalOpen(false)}
+              disabled={assignSubmitting}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              className="cursor-pointer bg-[#61A178] hover:bg-[#4A8A5F]"
+              disabled={!assignEmployeeId || assignSubmitting}
+              onClick={() => void handleAssignEmployeeSave()}
+            >
+              {assignSubmitting ? "Wird gespeichert…" : "Zuweisen"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Kalender-Regeln */}
       <Card className="border-gray-200 shadow-sm">

@@ -25,3 +25,64 @@ export const getAuftragszettel = async () => {
         throw error;
     }
 }
+
+
+export type EmployeeForLocationEmployee = {
+    id: string;
+    employeeName: string;
+    email?: string;
+    image?: string | null;
+};
+
+export type EmployeeForLocationItem = {
+    id: string;
+    isPrimary?: boolean;
+    address: string;
+    description?: string;
+    employees: EmployeeForLocationEmployee | null;
+};
+
+export type EmployeeForLocationResponse = {
+    success?: boolean;
+    message?: string;
+    data?: EmployeeForLocationItem[];
+};
+
+/** GET /v2/order_settings/employee-for-location */
+export const getEmployeeForLocation = async (): Promise<EmployeeForLocationResponse> => {
+    try {
+        const response = await axiosClient.get<EmployeeForLocationResponse>(
+            "/v2/order_settings/employee-for-location"
+        );
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+};
+
+
+export type SetEmployeeForLocationBody = {
+    locationId: string;
+    employeeId: string;
+};
+
+export type SetEmployeeForLocationResponse = {
+    success?: boolean;
+    message?: string;
+};
+
+/** POST /v2/order_settings/set-employee-for-location */
+export const setEmployeeForLocation = async (
+    body: SetEmployeeForLocationBody
+): Promise<SetEmployeeForLocationResponse> => {
+    try {
+        const response = await axiosClient.post<SetEmployeeForLocationResponse>(
+            "/v2/order_settings/set-employee-for-location",
+            body
+        );
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+};
+
