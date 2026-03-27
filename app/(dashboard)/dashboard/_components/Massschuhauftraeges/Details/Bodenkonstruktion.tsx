@@ -1228,6 +1228,7 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 konstruktionsartUnifiedConfigUi={true}
                 rahmenUnifiedConfigUi={true}
                 absatzAbrollhilfeUnifiedConfigUi={true}
+                laufsohleLeistenUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

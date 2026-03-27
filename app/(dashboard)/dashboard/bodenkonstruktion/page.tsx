@@ -784,6 +784,7 @@ export default function BodenkonstruktionPage() {
                 konstruktionsartUnifiedConfigUi={true}
                 rahmenUnifiedConfigUi={true}
                 absatzAbrollhilfeUnifiedConfigUi={true}
+                laufsohleLeistenUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}

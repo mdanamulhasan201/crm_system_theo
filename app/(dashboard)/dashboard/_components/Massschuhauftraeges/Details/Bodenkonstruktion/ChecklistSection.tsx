@@ -10,6 +10,7 @@ import SohlenaufbauConfigCard from "./sohlenaufbau/SohlenaufbauConfigCard"
 import KonstruktionsartConfigCard from "./KonstruktionsartConfigCard"
 import RahmenUnifiedConfigCard from "./RahmenUnifiedConfigCard"
 import AbsatzAbrollhilfeUnifiedConfigCard from "./AbsatzAbrollhilfeUnifiedConfigCard"
+import LaufsohleLeistenUnifiedConfigCard from "./LaufsohleLeistenUnifiedConfigCard"
 import type { OptionInputsState, TextAreasState } from "./types"
 import type { SelectedState } from "@/hooks/massschuhe/useBodenkonstruktionCalculations"
 import type { SoleType } from "@/hooks/massschuhe/useSoleData"
@@ -68,6 +69,8 @@ interface ChecklistSectionProps {
     absatzAbrollhilfeUnifiedConfigUi?: boolean
     /** Optional: setzt Abrollhilfe auf genau eine Option (oder null). Standard: via onSetGroup. */
     onAbrollhilfeReplace?: (ids: string[] | null) => void
+    /** When true: Laufsohle lose beilegen + Leisten belassen/ausleisten in einer ConfigCard. */
+    laufsohleLeistenUnifiedConfigUi?: boolean
     onHinterkappeChange?: (value: HinterkappeSideData | null) => void
     hinterkappeSide?: HinterkappeSideData | null
     onBrandsohleChange?: (value: BrandsohleSideData | null) => void
@@ -122,6 +125,7 @@ export default function ChecklistSection({
     rahmenUnifiedConfigUi = false,
     absatzAbrollhilfeUnifiedConfigUi = false,
     onAbrollhilfeReplace,
+    laufsohleLeistenUnifiedConfigUi = false,
     onHinterkappeChange,
     hinterkappeSide,
     onBrandsohleChange,
@@ -146,6 +150,7 @@ export default function ChecklistSection({
 
     const hinterkappeMaterialGroupDef = GROUPS2.find((x) => x.id === "hinterkappe")
     const abrollhilfeGroupDef = GROUPS2.find((x) => x.id === "abrollhilfe")
+    const leistenBelassenGroupDef = GROUPS2.find((x) => x.id === "leisten_belassen")
 
     return (
         <div className="bg-white rounded-lg p-4 w-full">
@@ -156,6 +161,9 @@ export default function ChecklistSection({
                     return <React.Fragment key={g.id} />
                 }
                 if (absatzAbrollhilfeUnifiedConfigUi && g.id === "absatzbreite") {
+                    return <React.Fragment key={g.id} />
+                }
+                if (laufsohleLeistenUnifiedConfigUi && g.id === "leisten_belassen") {
                     return <React.Fragment key={g.id} />
                 }
 
@@ -331,6 +339,21 @@ export default function ChecklistSection({
                                     hidePrice={hideRahmenPrice}
                                 />
                             )
+                        ) : laufsohleLeistenUnifiedConfigUi &&
+                          g.id === "laufsohle_lose_beilegen" &&
+                          leistenBelassenGroupDef ? (
+                            <LaufsohleLeistenUnifiedConfigCard
+                                laufsohleDef={g}
+                                leistenDef={leistenBelassenGroupDef}
+                                showLeistenSection={showOrthopedicFields}
+                                selectedLaufsohle={normalizeSelected(selected.laufsohle_lose_beilegen)}
+                                selectedLeisten={normalizeSelected(selected.leisten_belassen)}
+                                onLaufsohleSelect={(optId) => onSetGroup("laufsohle_lose_beilegen", optId)}
+                                onLeistenSelect={(optId) => onSetGroup("leisten_belassen", optId)}
+                                hideLaufsohlePrices={
+                                    hideOptionPricesForGroupIds?.includes("laufsohle_lose_beilegen") ?? false
+                                }
+                            />
                         ) : g.id === "Konstruktionsart" &&
                           konstruktionsartUnifiedConfigUi &&
                           g.fieldType === "checkbox" ? (
@@ -355,6 +378,7 @@ export default function ChecklistSection({
                         {!(
                             (absatzAbrollhilfeUnifiedConfigUi &&
                                 (g.id === "abrollhilfe" || g.id === "absatzbreite")) ||
+                            (laufsohleLeistenUnifiedConfigUi && g.id === "leisten_belassen") ||
                             (hinterkappeSplitConfigUi && g.id === "hinterkappe")
                         ) && <hr className="border-gray-200 my-4" />}
                     </React.Fragment>

@@ -570,6 +570,7 @@ export default function BodenkonstruktionCustomerOrderPage() {
                 hideRahmenPrice={true}
                 hideOptionPricesForGroupIds={["laufsohle_lose_beilegen"]}
                 absatzAbrollhilfeUnifiedConfigUi={true}
+                laufsohleLeistenUnifiedConfigUi={true}
             />
 
             {/* PDF Popup */}
