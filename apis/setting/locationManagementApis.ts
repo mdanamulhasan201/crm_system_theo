@@ -1,5 +1,27 @@
 import axiosClient from "@/lib/axiosClient";
 
+export type StoreLocation = {
+    id: string;
+    address: string;
+    description?: string;
+    isPrimary?: boolean;
+    createdAt?: string;
+};
+
+export type StoreLocationsListResponse = {
+    success?: boolean;
+    message?: string;
+    data?: StoreLocation[];
+    pagination?: {
+        totalItems?: number;
+        totalPages?: number;
+        currentPage?: number;
+        itemsPerPage?: number;
+        hasNextPage?: boolean;
+        hasPrevPage?: boolean;
+    };
+};
+
 //  create location
 export const createLocation = async (location: any) => {
     try {
@@ -12,22 +34,45 @@ export const createLocation = async (location: any) => {
 
 
 // get all locations customer-settings/store-locations?page=1&limit=2
-export const getAllLocations = async (page: number, limit: number) => {
+export const getAllLocations = async (
+    page: number,
+    limit: number
+): Promise<StoreLocationsListResponse> => {
     try {
-        const response = await axiosClient.get(`/customer-settings/store-locations?page=${page}&limit=${limit}`);
+        const response = await axiosClient.get<StoreLocationsListResponse>(
+            `/customer-settings/store-locations?page=${page}&limit=${limit}`
+        );
         const data = response.data;
-        
-        // Check if the response indicates an error
+
         if (data?.success === false) {
-            const error = new Error(data?.message || data?.error || 'Failed to fetch locations');
-            (error as any).response = { data };
+            const error = new Error(
+                data?.message || (data as any)?.error || "Failed to fetch locations"
+            );
+            (error as Error & { response?: { data: unknown } }).response = { data };
             throw error;
         }
-        
+
         return data;
     } catch (error) {
         throw error;
     }
+};
+
+const LOCATIONS_PAGE_SIZE = 50;
+
+/** Loads every page until `hasNextPage` is false (for dropdowns). */
+export async function fetchAllStoreLocations(): Promise<StoreLocation[]> {
+    const all: StoreLocation[] = [];
+    let page = 1;
+    for (;;) {
+        const res = await getAllLocations(page, LOCATIONS_PAGE_SIZE);
+        const batch = res?.data;
+        if (Array.isArray(batch)) all.push(...batch);
+        if (!res?.pagination?.hasNextPage) break;
+        page += 1;
+        if (page > 500) break;
+    }
+    return all;
 }
 
 // delete location customer-settings/store-locations/6af7a47c-e0d9-4e63-b791-0325a5c2c5e8
