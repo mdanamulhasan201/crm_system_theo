@@ -190,16 +190,7 @@ export default function VersorgungKonfigurierenCard({
 
                 {/* Tabs */}
                 <div className="flex flex-wrap gap-2">
-                    <button
-                        type="button"
-                        onClick={() => handleTabChange('standard')}
-                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${activeTab === 'standard'
-                            ? 'bg-[#61A178] text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        📄 Standard-Vorlage
-                    </button>
+                   
                     <button
                         type="button"
                         onClick={() => handleTabChange('einmalig')}
@@ -209,6 +200,16 @@ export default function VersorgungKonfigurierenCard({
                             }`}
                     >
                         ⚙️ Einmalige Versorgung
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => handleTabChange('standard')}
+                        className={`px-4 py-2 rounded-md text-sm font-medium transition-all cursor-pointer ${activeTab === 'standard'
+                            ? 'bg-[#61A178] text-white'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                            }`}
+                    >
+                        📄 Standard-Vorlage
                     </button>
                     {/* <button
                         type="button"
