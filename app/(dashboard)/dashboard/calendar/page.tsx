@@ -86,6 +86,7 @@ export interface CalendarAppointment {
   person: string
   date: Date
   type?: string
+  appomnentRoom?: string
 }
 
 const LIMIT = 30
@@ -160,7 +161,8 @@ function mapApiAppointmentToCalendar(api: AppointmentByDateItem): CalendarAppoin
     endTime: formatTime24(endHours, endMins),
     person,
     date: parseApiDate(api.date || ''),
-    type: api.reason
+    type: api.reason,
+    appomnentRoom: api.appomnentRoom?.trim() || undefined,
   }
 }
 
@@ -564,12 +566,6 @@ export default function Calendar() {
             }}
           />
         )}
-
-
-
-
-
-
 
         {/* Delete Confirm Modal */}
         <DeleteConfirmModal

@@ -24,6 +24,7 @@ export interface AppointmentByDateItem {
     reminderSent?: boolean;
     customerId?: string;
     createdAt?: string;
+    appomnentRoom?: string;
 }
 
 export interface GetAppointmentsByDateResponse {

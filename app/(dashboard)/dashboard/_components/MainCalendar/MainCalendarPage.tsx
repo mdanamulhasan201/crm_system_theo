@@ -17,6 +17,7 @@ interface Appointment {
   person: string
   date: Date
   type?: string
+  appomnentRoom?: string
 }
 
 interface MainCalendarPageProps {
@@ -381,32 +382,43 @@ export default function MainCalendarPage({
                                 e.stopPropagation()
                                 onDeleteAppointment(appointment.id)
                               }}
-                              className="absolute top-1.5 right-1.5 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity cursor-pointer"
+                              className="absolute top-1.5 right-1.5 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 hover:bg-red-600 transition-opacity cursor-pointer z-[1]"
                               aria-label="Delete"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
                           )}
-                          <div className="font-semibold text-green-800 text-xs leading-snug line-clamp-2 shrink-0">
+                          <div className="font-semibold text-green-800 text-xs leading-snug line-clamp-2 shrink-0 pr-5">
                             {appointment.title}
                           </div>
-                          <div className="flex items-center justify-between gap-2 shrink-0 min-h-0">
-                            <span className="text-[11px] text-gray-600">
-                              {appointment.startTime} – {appointment.endTime}
-                            </span>
-                            {appointment.type && (
-                              <span className="text-[10px] text-gray-600 font-semibold truncate max-w-[50%]">
-                                {getReasonLabel(appointment.type)}
+                          <div className="flex flex-1 min-h-0 gap-2 items-start justify-between min-w-0">
+                            <div className="flex flex-col gap-1 min-w-0 flex-1 items-start justify-end">
+                              <span className="text-[11px] text-gray-600 shrink-0">
+                                {appointment.startTime} – {appointment.endTime}
                               </span>
+                              <div className="flex items-center gap-1.5 w-full min-w-0 mt-auto">
+                                <span className="text-[11px] text-gray-700 truncate font-medium min-w-0 text-left">
+                                  {appointment.person.trim() || '—'}
+                                </span>
+                                <span className="w-4 h-4 rounded-full bg-[#62A07C] text-white flex items-center justify-center text-[10px] font-semibold shrink-0 shadow-sm">
+                                  {(appointment.person.trim() || '?').charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                            </div>
+                            {(appointment.type || appointment.appomnentRoom?.trim()) && (
+                              <div className="shrink-0 max-w-[46%] flex flex-col items-end gap-0.5 text-right">
+                                {appointment.type ? (
+                                  <span className="text-[10px] text-gray-700 font-semibold leading-tight line-clamp-2">
+                                    {getReasonLabel(appointment.type)}
+                                  </span>
+                                ) : null}
+                                {appointment.appomnentRoom?.trim() ? (
+                                  <span className="text-[10px] text-[#62A07C] font-medium leading-tight line-clamp-2 wrap-break-word">
+                                    {appointment.appomnentRoom.trim()}
+                                  </span>
+                                ) : null}
+                              </div>
                             )}
-                          </div>
-                          <div className="flex items-center gap-2 mt-auto shrink-0 min-h-0">
-                            <span className="text-[11px] text-gray-700 truncate font-medium flex-1 min-w-0">
-                              {appointment.person.trim() || '—'}
-                            </span>
-                            <span className="w-4 h-4 rounded-full bg-[#62A07C] text-white flex items-center justify-center text-[10px] font-semibold shrink-0 shadow-sm">
-                              {(appointment.person.trim() || '?').charAt(0).toUpperCase()}
-                            </span>
                           </div>
                         </div>
                       </div>
