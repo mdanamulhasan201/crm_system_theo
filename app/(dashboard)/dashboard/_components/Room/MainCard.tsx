@@ -13,6 +13,8 @@ export interface DayAppointment {
   title: string;
   type?: string;
   color?: 'green' | 'orange' | 'gray';
+  /** Required for loading free slots when clicking the appointment pill */
+  employeeId?: string;
 }
 
 export interface EmployeeFreeSlotGroup {
@@ -21,10 +23,54 @@ export interface EmployeeFreeSlotGroup {
   freeSlots: string[];
 }
 
+/** API envelope for employee-free-slots (per day); supports legacy plain arrays */
+export interface DayFreeSlotsBundle {
+  groups: EmployeeFreeSlotGroup[];
+  /** Response `date` (yyyy-MM-dd) */
+  apiDate?: string;
+  missingEmployeeIds?: string[];
+  loading?: boolean;
+}
+
+export type FreeSlotsByDayMap = Record<
+  string,
+  EmployeeFreeSlotGroup[] | DayFreeSlotsBundle
+>;
+
+function normalizeFreeSlotsEntry(
+  entry: EmployeeFreeSlotGroup[] | DayFreeSlotsBundle | undefined
+): {
+  groups: EmployeeFreeSlotGroup[];
+  apiDate?: string;
+  missingEmployeeIds?: string[];
+  isLoading: boolean;
+} {
+  if (entry === undefined) {
+    return { groups: [], isLoading: true };
+  }
+  if (Array.isArray(entry)) {
+    return { groups: entry, isLoading: false };
+  }
+  return {
+    groups: entry.groups ?? [],
+    apiDate: entry.apiDate,
+    missingEmployeeIds: entry.missingEmployeeIds,
+    isLoading: entry.loading === true,
+  };
+}
+
+/** "04:00-17:00" or "04:00 - 17:00" → range; otherwise single slot label */
+function parseSlotDisplay(slot: string): { type: 'range'; a: string; b: string } | { type: 'single'; label: string } {
+  const s = slot.trim();
+  const m = s.match(/^(\d{1,2}:\d{2})\s*-\s*(\d{1,2}:\d{2})$/);
+  if (m) return { type: 'range', a: m[1], b: m[2] };
+  return { type: 'single', label: s };
+}
+
 export interface MainCardProps {
   weekStart?: Date;
   appointmentsByDay?: Record<string, DayAppointment[]>;
-  freeSlotsByDay?: Record<string, EmployeeFreeSlotGroup[]>;
+  freeSlotsByDay?: FreeSlotsByDayMap;
   onSlotClick?: (date: Date, slot: string, employeeId: string) => void;
   onAppointmentClick?: (appointmentId: string) => void;
   onCardAppointmentClick?: (date: string, employeeId: string) => void;
@@ -137,7 +183,9 @@ export default function MainCard({
                             type="button"
                             onClick={() => {
                               onAppointmentClick?.(apt.id);
-                              onCardAppointmentClick?.(key, apt.id);
+                              // API employee-free-slots expects Mitarbeiter-ID; fallback to appointment id if backend omits employeeId on day list
+                              const slotQueryId = apt.employeeId?.trim() || apt.id;
+                              onCardAppointmentClick?.(key, slotQueryId);
                               setExpandedDayKey(key);
                             }}
                             className={cn(
@@ -159,53 +207,92 @@ export default function MainCard({
           </div>
         </div>
 
-        {/* Free slots expanded panel */}
+        {/* Free slots expanded panel — data from employee-free-slots API */}
         {expandedDayKey && (() => {
           const day = days.find((d) => format(d, 'yyyy-MM-dd') === expandedDayKey);
           if (!day) return null;
-          const groups = freeSlotsByDay[expandedDayKey];
-          if (groups === undefined) return null;
+          const normalized = normalizeFreeSlotsEntry(freeSlotsByDay[expandedDayKey]);
+          const { groups, apiDate, missingEmployeeIds, isLoading } = normalized;
           const label = `${format(day, 'd')} ${format(day, 'EEE', { locale: de })}`;
           return (
             <div className="border-t border-gray-200 bg-gray-50/80 px-4 py-3 mt-2">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm font-semibold text-gray-700">
-                  Verfügbare Slots für {label}:
-                </span>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="min-w-0">
+                  <span className="text-sm font-semibold text-gray-700 block">
+                    Verfügbare Slots für {label}
+                  </span>
+                  {apiDate ? (
+                    <span className="text-xs text-gray-500 mt-0.5 block">
+                      Datum: {apiDate}
+                    </span>
+                  ) : null}
+                </div>
                 <button
                   type="button"
                   onClick={() => setExpandedDayKey(null)}
-                  className="p-1 rounded text-gray-500 hover:bg-gray-200 hover:text-gray-700"
+                  className="p-1 rounded shrink-0 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
                   aria-label="Schließen"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
-              {groups.length === 0 ? (
+              {isLoading ? (
+                <p className="text-sm text-gray-500">Freie Slots werden geladen…</p>
+              ) : groups.length === 0 ? (
                 <p className="text-sm text-gray-400 italic">Keine freien Slots gefunden.</p>
               ) : (
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-4">
                   {groups.map((group) => (
-                    <div key={group.employeeId}>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                    <div
+                      key={group.employeeId}
+                      className="rounded-lg border border-gray-200/80 bg-white/90 px-3 py-3 shadow-sm"
+                    >
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                         {group.employeeName}
                       </p>
-                      <div className="flex flex-wrap gap-2">
-                        {group.freeSlots.map((slot) => (
-                          <button
-                            key={slot}
-                            type="button"
-                            onClick={() => onSlotClick?.(day, slot, group.employeeId)}
-                            className="rounded-lg px-3 py-2 text-sm font-medium bg-white border border-gray-200 text-gray-800 hover:border-[#62A07C] hover:bg-emerald-50/50 transition-colors"
-                          >
-                            {slot}
-                          </button>
-                        ))}
+                      <div className="flex flex-col gap-2">
+                        {(group.freeSlots ?? []).map((slot, idx) => {
+                          const parsed = parseSlotDisplay(slot);
+                          if (parsed.type === 'range') {
+                            return (
+                              <button
+                                key={`${group.employeeId}-${slot}-${idx}`}
+                                type="button"
+                                onClick={() => onSlotClick?.(day, slot, group.employeeId)}
+                                className="text-left rounded-lg border border-[#62A07C]/30 bg-[#62A07C]/5 px-3 py-2.5 transition-colors hover:bg-[#62A07C]/10 hover:border-[#62A07C]/50"
+                              >
+                                <span className="text-[10px] font-semibold uppercase tracking-wide text-[#62A07C]">
+                                  Freier Zeitraum
+                                </span>
+                                <p className="text-sm font-semibold text-gray-900 mt-1 tabular-nums">
+                                  {parsed.a} <span className="text-gray-400 font-normal">–</span> {parsed.b}
+                                </p>
+                              </button>
+                            );
+                          }
+                          return (
+                            <button
+                              key={`${group.employeeId}-${slot}-${idx}`}
+                              type="button"
+                              onClick={() => onSlotClick?.(day, slot, group.employeeId)}
+                              className="rounded-lg px-3 py-2 text-sm font-medium text-left bg-white border border-gray-200 text-gray-800 hover:border-[#62A07C] hover:bg-emerald-50/50 transition-colors"
+                            >
+                              {parsed.label}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   ))}
                 </div>
               )}
+              {!isLoading &&
+                missingEmployeeIds &&
+                missingEmployeeIds.length > 0 && (
+                  <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-1.5 mt-3">
+                    Hinweis: Für {missingEmployeeIds.length} Mitarbeiter-ID(s) lagen keine Daten vor.
+                  </p>
+                )}
             </div>
           );
         })()}

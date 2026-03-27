@@ -20,7 +20,11 @@ import {
   getRoomOccupancyPercentage,
 } from '@/apis/appoinmentApis'
 import RoomHeader, { type StaffItem, type RoomItem } from '../_components/Room/RoomHeader'
-import MainCard, { type DayAppointment, type EmployeeFreeSlotGroup } from '../_components/Room/MainCard'
+import MainCard, {
+  type DayAppointment,
+  type EmployeeFreeSlotGroup,
+  type FreeSlotsByDayMap,
+} from '../_components/Room/MainCard'
 
 interface Employee {
   employeeId: string
@@ -117,6 +121,24 @@ function formatTime24(hours: number, minutes: number): string {
   return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
 }
 
+/** Use start of range "04:00-17:00" or single "09:00" for appointment form */
+function presetTimeFromFreeSlot(slot: string): string {
+  const s = slot.trim()
+  const range = s.match(/^(\d{1,2}):(\d{2})\s*-\s*\d{1,2}:\d{2}$/)
+  if (range) {
+    const h = Math.min(23, Math.max(0, parseInt(range[1], 10)))
+    const m = Math.min(59, Math.max(0, parseInt(range[2], 10)))
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  const single = s.match(/^(\d{1,2}):(\d{2})$/)
+  if (single) {
+    const h = Math.min(23, Math.max(0, parseInt(single[1], 10)))
+    const m = Math.min(59, Math.max(0, parseInt(single[2], 10)))
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+  }
+  return '09:00'
+}
+
 /** Take only date part from API date string "2026-02-19T00:00:00.000Z" -> local Date for 2026-02-19 */
 function parseApiDate(dateStr: string): Date {
   const part = (dateStr || '').split('T')[0]
@@ -162,7 +184,7 @@ export default function Calendar() {
 
   const [roomDate, setRoomDate] = useState<Date>(() => new Date())
   const [roomAppointmentsByDay, setRoomAppointmentsByDay] = useState<Record<string, DayAppointment[]>>({})
-  const [roomFreeSlotsByDay, setRoomFreeSlotsByDay] = useState<Record<string, EmployeeFreeSlotGroup[]>>({})
+  const [roomFreeSlotsByDay, setRoomFreeSlotsByDay] = useState<FreeSlotsByDayMap>({})
   const [staffFreePercentages, setStaffFreePercentages] = useState<StaffItem[]>([])
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
   const [roomOccupancyPills, setRoomOccupancyPills] = useState<RoomItem[]>([])
@@ -238,14 +260,29 @@ export default function Calendar() {
       const res = await getRoomAppointmentsByDate(dateStr)
       if (Array.isArray(res?.days)) {
         const mapped: Record<string, DayAppointment[]> = {}
-        res.days.forEach((day: { date: string; appointments: Array<{ id: string; time: string; employeeName: string }> }) => {
-          mapped[day.date] = day.appointments.map((apt) => ({
-            id: apt.id,
-            time: apt.time,
-            title: apt.employeeName,
-            color: 'gray' as const,
-          }))
-        })
+        res.days.forEach(
+          (day: {
+            date: string
+            appointments: Array<{
+              id: string
+              time: string
+              employeeName: string
+              employeeId?: string
+              employeId?: string
+            }>
+          }) => {
+            mapped[day.date] = day.appointments.map((apt) => {
+              const empId = apt.employeeId ?? apt.employeId
+              const base: DayAppointment = {
+                id: apt.id,
+                time: apt.time,
+                title: apt.employeeName,
+                color: 'gray',
+              }
+              return empId ? { ...base, employeeId: empId } : base
+            })
+          }
+        )
         setRoomAppointmentsByDay(mapped)
       } else {
         setRoomAppointmentsByDay({})
@@ -293,6 +330,7 @@ export default function Calendar() {
   }, [])
 
   useEffect(() => {
+    setRoomFreeSlotsByDay({})
     fetchRoomAppointments(roomDate)
     fetchEmployeeFreePercentages(roomDate)
     fetchRoomOccupancy(roomDate)
@@ -308,10 +346,35 @@ export default function Calendar() {
   const handleRoomCardClick = useCallback(async (date: string, employeeId: string) => {
     try {
       const res = await getEmployeeFreeSlots(date, employeeId)
-      const groups: EmployeeFreeSlotGroup[] = res?.data ?? []
-      setRoomFreeSlotsByDay((prev) => ({ ...prev, [date]: groups }))
+      const raw = res?.data
+      const groups: EmployeeFreeSlotGroup[] = Array.isArray(raw)
+        ? raw.map((row: any) => ({
+            employeeId: String(row.employeeId ?? ''),
+            employeeName: String(row.employeeName ?? '—'),
+            freeSlots: Array.isArray(row.freeSlots) ? row.freeSlots.map(String) : [],
+          }))
+        : []
+      const apiDate = typeof res?.date === 'string' ? res.date : date
+      const missingEmployeeIds = Array.isArray(res?.missingEmployeeIds)
+        ? res.missingEmployeeIds.map(String)
+        : []
+      setRoomFreeSlotsByDay((prev) => ({
+        ...prev,
+        [date]: {
+          groups,
+          apiDate,
+          missingEmployeeIds,
+        },
+      }))
     } catch {
-      // silently ignore
+      setRoomFreeSlotsByDay((prev) => ({
+        ...prev,
+        [date]: {
+          groups: [],
+          apiDate: date,
+          missingEmployeeIds: [],
+        },
+      }))
     }
   }, [])
 
@@ -537,6 +600,9 @@ export default function Calendar() {
         appointmentsByDay={roomAppointmentsByDay}
         freeSlotsByDay={roomFreeSlotsByDay}
         onCardAppointmentClick={handleRoomCardClick}
+        onSlotClick={(date, slot) => {
+          handleAddAppointment(date, presetTimeFromFreeSlot(slot))
+        }}
       />
     </>
   )
