@@ -9,7 +9,10 @@ import CalendarMainNav from '../_components/MainCalendar/CalendarMainNav'
 import CalendarNav, { type CalendarViewMode } from '../_components/MainCalendar/CalendarNav'
 import MainCalendarPage from '../_components/MainCalendar/MainCalendarPage'
 import RightSidebarCalendar from '../_components/MainCalendar/RightSidebarCalendar'
-import AppointmentModal from '@/components/AppointmentModal/AppointmentModal'
+import AppointmentModal, {
+  buildAppointmentDurationOptions,
+  clampDurationToAllowedOptions,
+} from '@/components/AppointmentModal/AppointmentModal'
 import DeleteConfirmModal from '@/app/(dashboard)/dashboard/_components/MainCalendar/DeleteConfirmModal'
 import { useAppoinment } from '@/hooks/appoinment/useAppoinment'
 import { getAppointmentsByDate, type AppointmentByDateItem } from '@/apis/calendarManagementApis'
@@ -18,6 +21,8 @@ import {
   getEmployeeFreeSlots,
   getEmployeeFreePercentage,
   getRoomOccupancyPercentage,
+  getAllBookingRules,
+  type BookingRulesData,
 } from '@/apis/appoinmentApis'
 import RoomHeader, { type StaffItem, type RoomItem } from '../_components/Room/RoomHeader'
 import MainCard, {
@@ -191,6 +196,7 @@ export default function Calendar() {
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null)
   const [roomOccupancyPills, setRoomOccupancyPills] = useState<RoomItem[]>([])
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
+  const [bookingRules, setBookingRules] = useState<BookingRulesData | null>(null)
 
   const { createNewAppointment, updateAppointmentById, getAppointmentById, deleteAppointmentById } = useAppoinment()
 
@@ -255,6 +261,20 @@ export default function Calendar() {
   useEffect(() => {
     fetchAppointments()
   }, [fetchAppointments])
+
+  useEffect(() => {
+    let cancelled = false
+    getAllBookingRules()
+      .then((res) => {
+        if (!cancelled && res?.success && res.data) setBookingRules(res.data)
+      })
+      .catch(() => {
+        if (!cancelled) setBookingRules(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const fetchRoomAppointments = useCallback(async (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd')
@@ -393,6 +413,12 @@ export default function Calendar() {
     (presetDate?: Date, presetTime?: string) => {
       const daySource = presetDate ?? currentDate
       const selectedEventDate = toFormEventDate(daySource)
+      const durationOpts = buildAppointmentDurationOptions(
+        bookingRules?.defaultSlotMinutes,
+        bookingRules?.minDurationMinutes
+      )
+      const duration =
+        durationOpts.length > 0 ? clampDurationToAllowedOptions(1, durationOpts) : 1
       appointmentForm.reset({
         isClientEvent: true,
         kunde: '',
@@ -401,7 +427,7 @@ export default function Calendar() {
         termin: '',
         mitarbeiter: '',
         bemerk: '',
-        duration: 1,
+        duration,
         customerId: undefined,
         employeeId: undefined,
         employees:
@@ -413,7 +439,7 @@ export default function Calendar() {
       })
       setIsAddModalOpen(true)
     },
-    [appointmentForm, currentDate, selectedEmployeeDetails]
+    [appointmentForm, currentDate, selectedEmployeeDetails, bookingRules]
   )
 
   const handleSlotClick = (date: Date, time: string) => {
@@ -452,6 +478,15 @@ export default function Calendar() {
     }))
     const datePart = (a.date || '').toString().split('T')[0]
     const [y, m, d] = datePart.split('-').map(Number)
+    const durationOpts = buildAppointmentDurationOptions(
+      bookingRules?.defaultSlotMinutes,
+      bookingRules?.minDurationMinutes
+    )
+    const rawDuration = a.duration ?? 1
+    const duration =
+      durationOpts.length > 0
+        ? clampDurationToAllowedOptions(rawDuration, durationOpts)
+        : rawDuration
     updateAppointmentForm.reset({
       isClientEvent: Boolean(a.isClient),
       kunde: a.customer_name || '',
@@ -460,7 +495,7 @@ export default function Calendar() {
       termin: a.reason || '',
       mitarbeiter: employees[0]?.assignedTo || '',
       bemerk: a.details || '',
-      duration: a.duration ?? 1,
+      duration,
       customerId: a.customerId,
       employeeId: employees[0]?.employeeId,
       employees,
@@ -559,6 +594,8 @@ export default function Calendar() {
             onSubmit={handleAppointmentSubmit}
             title="Neuer Termin"
             buttonText="Termin bestätigen"
+            maxAppointmentDurationMinutes={bookingRules?.defaultSlotMinutes ?? null}
+            minAppointmentDurationMinutes={bookingRules?.minDurationMinutes ?? null}
           />
         )}
 
@@ -585,6 +622,8 @@ export default function Calendar() {
                 fetchAppointments()
               }
             }}
+            maxAppointmentDurationMinutes={bookingRules?.defaultSlotMinutes ?? null}
+            minAppointmentDurationMinutes={bookingRules?.minDurationMinutes ?? null}
           />
         )}
 

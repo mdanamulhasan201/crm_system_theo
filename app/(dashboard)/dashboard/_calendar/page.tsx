@@ -4,7 +4,11 @@ import { Plus, X, Loader2 } from 'lucide-react';
 // import AppoinmentData from '@/components/AppoinmentData/AppoinmentData';
 import { useForm } from "react-hook-form"
 import { useAppoinment } from '@/hooks/appoinment/useAppoinment';
-import AppointmentModal from '@/components/AppointmentModal/AppointmentModal';
+import AppointmentModal, {
+    buildAppointmentDurationOptions,
+    clampDurationToAllowedOptions,
+} from '@/components/AppointmentModal/AppointmentModal';
+import { getAllBookingRules, type BookingRulesData } from '@/apis/appoinmentApis';
 import { useWeeklyCalendar } from '@/hooks/calendar/useWeeklyCalendar';
 import MiniCalendar from '@/components/AppoinmentData/MiniCalendar';
 
@@ -111,6 +115,7 @@ const WeeklyCalendar = () => {
     const [visibleDaysCount, setVisibleDaysCount] = React.useState(4);
     const [selectedRowStartDate, setSelectedRowStartDate] = React.useState<Date | null>(null);
     const [currentSelectedDate, setCurrentSelectedDate] = React.useState<Date>(today);
+    const [bookingRules, setBookingRules] = React.useState<BookingRulesData | null>(null);
 
     // Use the custom hook
     const {
@@ -163,6 +168,20 @@ const WeeklyCalendar = () => {
     React.useEffect(() => {
         fetchAppointments();
     }, [fetchAppointments]);
+
+    React.useEffect(() => {
+        let cancelled = false;
+        getAllBookingRules()
+            .then((res) => {
+                if (!cancelled && res?.success && res.data) setBookingRules(res.data);
+            })
+            .catch(() => {
+                if (!cancelled) setBookingRules(null);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     // Generate dates based on selected month from mini calendar or selected row
     const getSelectedMonthDates = () => {
@@ -241,6 +260,13 @@ const WeeklyCalendar = () => {
 
         form.reset();
         form.setValue('selectedEventDate', date);
+        const durationOpts = buildAppointmentDurationOptions(
+            bookingRules?.defaultSlotMinutes,
+            bookingRules?.minDurationMinutes
+        );
+        const duration =
+            durationOpts.length > 0 ? clampDurationToAllowedOptions(1, durationOpts) : 1;
+        form.setValue('duration', duration);
         setShowAddForm(true);
     };
 
@@ -256,6 +282,13 @@ const WeeklyCalendar = () => {
         form.reset();
         form.setValue('selectedEventDate', date);
         form.setValue('uhrzeit', formattedTime);
+        const durationOpts = buildAppointmentDurationOptions(
+            bookingRules?.defaultSlotMinutes,
+            bookingRules?.minDurationMinutes
+        );
+        const duration =
+            durationOpts.length > 0 ? clampDurationToAllowedOptions(1, durationOpts) : 1;
+        form.setValue('duration', duration);
         setShowAddForm(true);
     };
 
@@ -334,6 +367,16 @@ const WeeklyCalendar = () => {
             const firstEmployeeName = employeesArray.length > 0 ? employeesArray[0].assignedTo : (typeof apt.assignedTo === 'string' ? apt.assignedTo : '');
             const firstEmployeeId = employeesArray.length > 0 ? employeesArray[0].employeeId : apt.employeId;
 
+            const durationOpts = buildAppointmentDurationOptions(
+                bookingRules?.defaultSlotMinutes,
+                bookingRules?.minDurationMinutes
+            );
+            const rawDuration = apt.duration || 1;
+            const duration =
+                durationOpts.length > 0
+                    ? clampDurationToAllowedOptions(rawDuration, durationOpts)
+                    : rawDuration;
+
             editForm.reset({
                 kunde: apt.customer_name,
                 uhrzeit: formattedTime,
@@ -342,7 +385,7 @@ const WeeklyCalendar = () => {
                 bemerk: apt.details,
                 mitarbeiter: firstEmployeeName,
                 isClientEvent: apt.isClient,
-                duration: apt.duration || 1,
+                duration,
                 customerId: apt.customerId,
                 employeeId: firstEmployeeId,
                 employees: employeesArray,
@@ -659,6 +702,8 @@ const WeeklyCalendar = () => {
                     onSubmit={onSubmit}
                     title="Neuer Termin"
                     buttonText="Termin bestätigen"
+                    maxAppointmentDurationMinutes={bookingRules?.defaultSlotMinutes ?? null}
+                    minAppointmentDurationMinutes={bookingRules?.minDurationMinutes ?? null}
                 />
             )}
 
@@ -680,6 +725,8 @@ const WeeklyCalendar = () => {
                             });
                         }
                     }}
+                    maxAppointmentDurationMinutes={bookingRules?.defaultSlotMinutes ?? null}
+                    minAppointmentDurationMinutes={bookingRules?.minDurationMinutes ?? null}
                 />
             )}
 

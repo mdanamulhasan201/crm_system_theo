@@ -197,3 +197,34 @@ export const getRoomOccupancyPercentage = async (dates: string[]) => {
         throw error;
     }
 };
+
+export type BookingRulesData = {
+    id?: string;
+    partnerId?: string;
+    minNoticeHours?: number;
+    cancellationHours?: number;
+    /** Upper limit for appointment length (minutes). Dauer options must not exceed this. */
+    defaultSlotMinutes?: number;
+    /** If provided, Dauer options must be at least this many minutes. */
+    minDurationMinutes?: number;
+    createdAt?: string;
+    updatedAt?: string;
+};
+
+export type BookingRulesResponse = {
+    success?: boolean;
+    data?: BookingRulesData;
+    message?: string;
+};
+
+/** GET /v2/appointment/booking-rules/get */
+export const getAllBookingRules = async (): Promise<BookingRulesResponse> => {
+    try {
+        const response = await axiosClient.get<BookingRulesResponse>(
+            `/v2/appointment/booking-rules/get`
+        );
+        return response.data;
+    } catch (error) {
+        throw error;
+    }
+};

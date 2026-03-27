@@ -64,6 +64,71 @@ function expandAvailableSlots(times: string[], intervalMinutes: number): string[
     return result;
 }
 
+/** Minute steps offered for Dauer (filtered by booking rules). */
+const DURATION_STEPS_MINUTES = [
+    10, 15, 20, 30, 45, 60, 90, 120, 180, 210, 240, 300, 360, 420, 480, 540, 600,
+];
+
+function labelForDurationMinutes(m: number): string {
+    if (m < 60) return `${m} Minuten`;
+    if (m === 60) return "60 Minuten";
+    const h = m / 60;
+    if (Number.isInteger(h)) return `${h} Stunden`;
+    const s = h.toFixed(1).replace(".", ",");
+    return `${s} Stunden`;
+}
+
+export type DurationOption = { minutes: number; value: number; label: string };
+
+/** Build Dauer options: min … max minutes (inclusive). `defaultSlotMinutes` from API = max length. */
+export function buildAppointmentDurationOptions(
+    maxMinutes: number | null | undefined,
+    minMinutes: number | null | undefined
+): DurationOption[] {
+    const min =
+        minMinutes != null && Number.isFinite(minMinutes) && minMinutes > 0
+            ? Math.floor(minMinutes)
+            : 10;
+    const max =
+        maxMinutes != null && Number.isFinite(maxMinutes) && maxMinutes > 0
+            ? Math.floor(maxMinutes)
+            : Infinity;
+
+    const set = new Set<number>();
+    for (const step of DURATION_STEPS_MINUTES) {
+        if (step >= min && step <= max) set.add(step);
+    }
+    if (Number.isFinite(max) && max >= min) set.add(max);
+
+    const sorted = [...set].sort((a, b) => a - b);
+    if (sorted.length === 0 && Number.isFinite(max) && max > 0) {
+        return [
+            {
+                minutes: max,
+                value: max / 60,
+                label: labelForDurationMinutes(max),
+            },
+        ];
+    }
+    return sorted.map((m) => ({
+        minutes: m,
+        value: m / 60,
+        label: labelForDurationMinutes(m),
+    }));
+}
+
+export function clampDurationToAllowedOptions(
+    durationHours: number,
+    options: DurationOption[]
+): number {
+    if (!options.length) return durationHours;
+    const allowedM = options.map((o) => o.minutes).sort((a, b) => a - b);
+    const m = Math.round(durationHours * 60);
+    const notAbove = allowedM.filter((x) => x <= m);
+    const pick = notAbove.length ? notAbove[notAbove.length - 1] : allowedM[0];
+    return pick / 60;
+}
+
 interface Employee {
     employeeId: string;
     assignedTo: string;
@@ -110,6 +175,10 @@ interface AppointmentModalProps {
     buttonText: string;
     onDelete?: () => void;
     showDeleteButton?: boolean;
+    /** From booking rules `defaultSlotMinutes` — longest selectable Dauer (minutes). */
+    maxAppointmentDurationMinutes?: number | null;
+    /** Optional API `minDurationMinutes` — shortest selectable Dauer (minutes). */
+    minAppointmentDurationMinutes?: number | null;
 }
 
 export default function AppointmentModal({
@@ -120,7 +189,9 @@ export default function AppointmentModal({
     title,
     buttonText,
     onDelete,
-    showDeleteButton = false
+    showDeleteButton = false,
+    maxAppointmentDurationMinutes = null,
+    minAppointmentDurationMinutes = null,
 }: AppointmentModalProps) {
     const [submitting, setSubmitting] = React.useState(false);
     const isClientEvent = form.watch('isClientEvent');
@@ -202,16 +273,23 @@ export default function AppointmentModal({
         { value: 'externe-termine-kooperation', label: 'Externe Termine / Kooperation' },
     ], []);
 
-    const durationOptions = [
-        { value: 0.17, label: '10 Minuten' }, // 10/60 = 0.17 hours
-        { value: 0.5, label: '30 Minuten' },  // 30/60 = 0.5 hours
-        { value: 1, label: '60 Minuten' },    // 1 hour
-        { value: 2, label: '2 Stunden' },     // 2 hours
-        { value: 3, label: '3 Stunden' },     // 3 hours
-        { value: 3.5, label: '3.5 Stunden' }, // 3.5 hours
-        { value: 4, label: '4 Stunden' },      // 4 hours
-        { value: 5, label: '5 Stunden' },      // 5 hours
-    ];
+    const durationOptions = React.useMemo(
+        () =>
+            buildAppointmentDurationOptions(
+                maxAppointmentDurationMinutes,
+                minAppointmentDurationMinutes
+            ),
+        [maxAppointmentDurationMinutes, minAppointmentDurationMinutes]
+    );
+
+    React.useLayoutEffect(() => {
+        if (!isOpen || durationOptions.length === 0) return;
+        const cur = form.getValues("duration");
+        const clamped = clampDurationToAllowedOptions(cur, durationOptions);
+        if (clamped !== cur) {
+            form.setValue("duration", clamped, { shouldValidate: true, shouldDirty: true });
+        }
+    }, [isOpen, durationOptions, form]);
 
     const reminderOptions = [
         { value: null, label: 'Keine Erinnerung' },
@@ -682,11 +760,33 @@ export default function AppointmentModal({
                                         <FormLabel className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                                             Dauer <span className="text-red-400">*</span>
                                         </FormLabel>
+                                        {maxAppointmentDurationMinutes != null &&
+                                            Number.isFinite(maxAppointmentDurationMinutes) &&
+                                            maxAppointmentDurationMinutes > 0 && (
+                                                <p className="text-[11px] text-gray-500 mt-0.5">
+                                                    Max. {maxAppointmentDurationMinutes} Min. pro Termin (Buchungsregeln).
+                                                </p>
+                                            )}
+                                        {minAppointmentDurationMinutes != null &&
+                                            Number.isFinite(minAppointmentDurationMinutes) &&
+                                            minAppointmentDurationMinutes > 0 && (
+                                                <p className="text-[11px] text-gray-500 mt-0.5">
+                                                    Mind. {minAppointmentDurationMinutes} Min. pro Termin.
+                                                </p>
+                                            )}
                                         <div className={cn(!dauerEnabled && "pointer-events-none select-none")}>
                                             <Select
-                                                disabled={!dauerEnabled}
-                                                onValueChange={(value) => field.onChange(parseFloat(value))}
-                                                value={field.value?.toString()}
+                                                disabled={!dauerEnabled || durationOptions.length === 0}
+                                                onValueChange={(value) =>
+                                                    field.onChange(parseInt(value, 10) / 60)
+                                                }
+                                                value={(() => {
+                                                    if (durationOptions.length === 0) return undefined;
+                                                    if (!Number.isFinite(field.value)) return undefined;
+                                                    const m = Math.round(field.value * 60);
+                                                    const match = durationOptions.some((o) => o.minutes === m);
+                                                    return String(match ? m : durationOptions[0]!.minutes);
+                                                })()}
                                             >
                                                 <FormControl>
                                                     <SelectTrigger className={cn(
@@ -700,7 +800,11 @@ export default function AppointmentModal({
                                                 </FormControl>
                                                 <SelectContent className="rounded-xl">
                                                     {durationOptions.map((opt) => (
-                                                        <SelectItem key={opt.value} value={opt.value.toString()} className="cursor-pointer rounded-lg">
+                                                        <SelectItem
+                                                            key={opt.minutes}
+                                                            value={String(opt.minutes)}
+                                                            className="cursor-pointer rounded-lg"
+                                                        >
                                                             {opt.label}
                                                         </SelectItem>
                                                     ))}
