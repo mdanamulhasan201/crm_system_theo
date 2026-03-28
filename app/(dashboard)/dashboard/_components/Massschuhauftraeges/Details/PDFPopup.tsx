@@ -195,6 +195,29 @@ function buildSohlenaufbauPdfLines(d: SohlenaufbauData | null | undefined): stri
     parts.push("Hinweis: Fersenhöhe kleiner als Ballenhöhe (ungültige Kombination)")
   }
   parts.push(`Farbkonzept: ${v.farbModus === "einheitlich" ? "Eine Farbe pro Bereich" : "Individuell pro Lage"}`)
+  if (v.farbModus === "einheitlich") {
+    if (zw > 0) parts.push(`Zwischensohle – Farbe: ${v.zwFarbe}`)
+    if (ab > 0) parts.push(`Absatz – Farbe: ${v.abFarbe}`)
+  } else {
+    if (zw > 0) {
+      if (v.zwSplit.mode === "einteilig") {
+        parts.push(`Zwischensohle – Farbe: ${v.zwLayerFarben[0] ?? v.zwFarbe}`)
+      } else {
+        v.zwSplit.layers.forEach((_, i) => {
+          parts.push(`Zwischensohle Lage ${i + 1} – Farbe: ${v.zwLayerFarben[i] ?? "#1a1a1a"}`)
+        })
+      }
+    }
+    if (ab > 0) {
+      if (v.abSplit.mode === "einteilig") {
+        parts.push(`Absatz – Farbe: ${v.abLayerFarben[0] ?? v.abFarbe}`)
+      } else {
+        v.abSplit.layers.forEach((_, i) => {
+          parts.push(`Absatz Lage ${i + 1} – Farbe: ${v.abLayerFarben[i] ?? "#1a1a1a"}`)
+        })
+      }
+    }
+  }
   parts.push(`Zwischensohle – Aufteilung: ${v.zwSplit.mode}, Lagen: ${v.zwSplit.layers.join(" / ") || "–"}`)
   parts.push(`Absatz – Aufteilung: ${v.abSplit.mode}, Lagen: ${v.abSplit.layers.join(" / ") || "–"}`)
   const shoreMod = v.shoreModus === "individuell" ? "individuell" : "einheitlich"

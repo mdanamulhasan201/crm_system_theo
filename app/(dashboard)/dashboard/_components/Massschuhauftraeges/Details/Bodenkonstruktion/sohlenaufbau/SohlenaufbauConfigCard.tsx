@@ -16,6 +16,7 @@ import SohlenaufbauBiomechanicsPanel from "./SohlenaufbauBiomechanicsPanel"
 import { parseSohlenaufbauNum } from "./utils"
 import type { SohlenaufbauPreviewData } from "./SolePreview3D"
 import { downloadSohlenaufbauGlb } from "./sohlenaufbauExport"
+import { getSohlenaufbauPreviewDataFromForm } from "./sohlenaufbauPreviewFromForm"
 import {
   getSohlenaufbauShoreForColor,
   sanitizeSohlenaufbauColorsForShore,
@@ -107,33 +108,10 @@ export default function SohlenaufbauConfigCard({
     apply({ abLayerFarben: next })
   }
 
-  const previewData: SohlenaufbauPreviewData = useMemo(() => {
-    const zwLayers =
-      value.zwSplit.mode === "einteilig"
-        ? [{ height: calc.zwischensohle, color: value.zwFarbe }]
-        : value.zwSplit.layers.map((v, i) => ({
-            height: parseSohlenaufbauNum(v),
-            color:
-              value.farbModus === "individuell" ? value.zwLayerFarben[i] || "#1a1a1a" : value.zwFarbe,
-          }))
-
-    const abLayers =
-      value.abSplit.mode === "einteilig"
-        ? [{ height: calc.absatz, color: value.abFarbe }]
-        : value.abSplit.layers.map((v, i) => ({
-            height: parseSohlenaufbauNum(v),
-            color:
-              value.farbModus === "individuell" ? value.abLayerFarben[i] || "#1a1a1a" : value.abFarbe,
-          }))
-
-    return {
-      zwLayers,
-      abLayers,
-      ballenHeight: calc.zwischensohle,
-      ferseHeight: calc.ferse,
-      absatzform: "keilabsatz",
-    }
-  }, [calc, value.zwSplit, value.abSplit, value.farbModus, value.zwFarbe, value.abFarbe, value.zwLayerFarben, value.abLayerFarben])
+  const previewData: SohlenaufbauPreviewData = useMemo(
+    () => getSohlenaufbauPreviewDataFromForm(value),
+    [value]
+  )
 
   const setFarbModus = (farbModus: SohlenaufbauFarbModus) => apply({ farbModus })
 

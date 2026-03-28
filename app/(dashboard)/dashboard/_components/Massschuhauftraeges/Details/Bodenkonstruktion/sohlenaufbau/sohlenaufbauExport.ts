@@ -57,17 +57,20 @@ export function buildSohlenaufbauExportGroup(data: SohlenaufbauPreviewData): THR
 }
 
 /** glTF binary — materials/Farben bleiben erhalten (z. B. Blender). */
+export async function buildSohlenaufbauGlbBlob(data: SohlenaufbauPreviewData): Promise<Blob | null> {
+  const root = buildSohlenaufbauExportGroup(data)
+  if (!root) return null
+  const exporter = new GLTFExporter()
+  const result = await exporter.parseAsync(root, { binary: true })
+  return new Blob([result as ArrayBuffer], { type: "model/gltf-binary" })
+}
+
 export async function downloadSohlenaufbauGlb(
   data: SohlenaufbauPreviewData,
   filename = "sohlenaufbau-vorschau.glb"
 ): Promise<boolean> {
-  const root = buildSohlenaufbauExportGroup(data)
-  if (!root) return false
-
-  const exporter = new GLTFExporter()
-  const result = await exporter.parseAsync(root, { binary: true })
-
-  const blob = new Blob([result as ArrayBuffer], { type: "model/gltf-binary" })
+  const blob = await buildSohlenaufbauGlbBlob(data)
+  if (!blob) return false
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url

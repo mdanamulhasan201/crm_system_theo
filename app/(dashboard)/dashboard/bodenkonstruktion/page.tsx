@@ -44,6 +44,11 @@ import { createCustomBodenkonstruktion } from "@/apis/MassschuheManagemantApis"
 // Hooks - delivery date by category
 import { useDeliveryDateByCategory } from "@/hooks/useDeliveryDateByCategory"
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
+import { buildSohlenaufbauGlbBlob } from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/sohlenaufbau/sohlenaufbauExport"
+import {
+    canExportSohlenaufbau3d,
+    getSohlenaufbauPreviewDataFromForm,
+} from "../_components/Massschuhauftraeges/Details/Bodenkonstruktion/sohlenaufbau/sohlenaufbauPreviewFromForm"
 
 export default function BodenkonstruktionPage() {
     const router = useRouter()
@@ -644,9 +649,51 @@ export default function BodenkonstruktionPage() {
             bodenkonstruktionJson.Rahmenfarbe = rahmen.color || ""
         }
 
+        // Vollständige Rohdaten (Checkliste + Seiten) für Backend — zusätzlich zu den flachen Feldern oben
+        bodenkonstruktionJson.checklist_selected = removeNulls({ ...selected })
+        bodenkonstruktionJson.option_inputs = removeNulls(optionInputs)
+        bodenkonstruktionJson.text_areas = removeNulls(textAreas)
+        bodenkonstruktionJson.selected_sole = selectedSole
+            ? removeNulls({
+                  id: selectedSole.id,
+                  name: selectedSole.name,
+                  image: selectedSole.image,
+                  description: selectedSole.description,
+                  des: selectedSole.des ?? "",
+              })
+            : ""
+        bodenkonstruktionJson.sole_variant_options = removeNulls({
+            sole4Thickness,
+            sole4Color,
+            sole5Thickness,
+            sole5Color,
+            sole6Thickness,
+            sole6Color,
+        })
+        bodenkonstruktionJson.pricing = removeNulls({
+            basePrice,
+            grandTotal,
+            currency: "EUR",
+        })
+        bodenkonstruktionJson.delivery_date_display = deliveryDate
+        bodenkonstruktionJson.product_name = shoe2.name || ""
+
         // Remove any remaining nulls before sending
         const cleanedJson = removeNulls(bodenkonstruktionJson)
         formData.append('bodenkonstruktion_json', JSON.stringify(cleanedJson))
+
+        // 3D-Modell (GLB) — außerhalb von bodenkonstruktion_json, eigenes FormData-Feld
+        if (canExportSohlenaufbau3d(sohlenaufbau)) {
+            try {
+                const previewForGlb = getSohlenaufbauPreviewDataFromForm(sohlenaufbau)
+                const glbBlob = await buildSohlenaufbauGlbBlob(previewForGlb)
+                if (glbBlob) {
+                    formData.append("threeDFile", glbBlob, "sohlenaufbau.glb")
+                }
+            } catch {
+                /* GLB optional — Bestellung ohne 3D-Datei fortfahren */
+            }
+        }
 
         // Add staticImage (selectedSole image) - convert to File
         if (selectedSole?.image) {
