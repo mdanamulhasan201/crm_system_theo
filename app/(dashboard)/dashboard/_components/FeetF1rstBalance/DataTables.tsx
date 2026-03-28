@@ -34,6 +34,15 @@ interface ApiOrderData {
     id: string;
     orderNumber: string;
     status: string;
+    orderFor?: string;
+    storeOrderOverview?: {
+        id?: string;
+        storeId?: string;
+        produktname?: string;
+        hersteller?: string;
+        artikelnummer?: string;
+        status?: string;
+    } | null;
     price: number;
     note: string | null;
     custom_shafts_catagoary: string | null;
@@ -198,7 +207,10 @@ export default function DataTables({
                     kundenname: customerName,
                     beschreibung: item.custom_shafts_catagoary || item.note || null,
                     einnahmesumme: item.price || 0,
-                    status: item.status || null,
+                    status:
+                        item.orderFor === 'store' && item.storeOrderOverview?.status
+                            ? item.storeOrderOverview.status
+                            : item.status || null,
                     custom_shafts_status: item.custom_shafts?.status || null,
                     custom_shafts_invoice: item.custom_shafts?.invoice || null,
                     custom_shafts_invoice2: item.custom_shafts?.invoice2 || null,
@@ -411,6 +423,9 @@ export default function DataTables({
         if (statusLower === 'ausgeführt') {
             return 'bg-emerald-100 text-emerald-700 border border-emerald-200';
         }
+        if (statusLower === 'in_bearbeitung' || statusLower === 'in bearbeitung') {
+            return 'bg-blue-100 text-blue-700 border border-blue-200';
+        }
 
         return 'bg-gray-100 text-gray-700 border border-gray-200';
     };
@@ -478,7 +493,7 @@ export default function DataTables({
         },
         {
             key: 'beschreibung',
-            header: 'Einlagenbestellung',
+            header: 'Bestellung',
             render: (value) => value || '-',
         },
         {
@@ -517,6 +532,13 @@ export default function DataTables({
                 // Normalize "panding" to "Pending" with capital P
                 if (displayStatus && displayStatus.toLowerCase() === 'panding') {
                     displayStatus = 'Pending';
+                }
+                // e.g. In_bearbeitung -> In Bearbeitung
+                if (displayStatus && displayStatus.includes('_')) {
+                    displayStatus = displayStatus
+                        .split('_')
+                        .map((part: string) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                        .join(' ');
                 }
 
                 const isHalbprobeAusgefuehrt =
