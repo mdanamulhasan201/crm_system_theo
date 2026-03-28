@@ -47,6 +47,8 @@ export default function BalanceCard({ data = defaultData, payoutHistoryRefreshKe
     const [lastMonthData, setLastMonthData] = useState<{
         totalPrice: number | null;
         period: string;
+        dateRange?: { from: string; to: string };
+        status?: string | null;
     } | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -57,9 +59,17 @@ export default function BalanceCard({ data = defaultData, payoutHistoryRefreshKe
                 setLoading(true);
                 const response = await getLeastOneMonthPaymentData();
                 if (response.success && response.data?.lastMonth) {
+                    const lm = response.data.lastMonth as {
+                        totalPrice: number;
+                        period: string;
+                        dateRange?: { from: string; to: string };
+                        status?: string | null;
+                    };
                     setLastMonthData({
-                        totalPrice: response.data.lastMonth.totalPrice,
-                        period: response.data.lastMonth.period,
+                        totalPrice: lm.totalPrice,
+                        period: lm.period,
+                        dateRange: lm.dateRange,
+                        status: lm.status ?? null,
                     });
                 }
             } catch (error) {
@@ -80,6 +90,37 @@ export default function BalanceCard({ data = defaultData, payoutHistoryRefreshKe
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
         });
+    };
+
+    const formatDateRangeDe = (from: string, to: string) => {
+        const opts: Intl.DateTimeFormatOptions = {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+        };
+        const d1 = new Date(from);
+        const d2 = new Date(to);
+        if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return null;
+        return `${d1.toLocaleDateString('de-DE', opts)} – ${d2.toLocaleDateString('de-DE', opts)}`;
+    };
+
+    const formatLastMonthStatusLabel = (raw: string | null | undefined) => {
+        if (!raw) return null;
+        const lower = raw.toLowerCase();
+        if (lower === 'panding') return 'Pending';
+        return raw;
+    };
+
+    const lastMonthStatusBadgeClass = (raw: string | null | undefined) => {
+        if (!raw) return 'bg-gray-100 text-gray-700 border border-gray-200';
+        const lower = raw.toLowerCase();
+        if (lower === 'panding' || lower === 'pending') {
+            return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+        }
+        if (lower === 'completed' || lower === 'complated' || lower === 'abgeschlossen') {
+            return 'bg-green-100 text-green-800 border border-green-200';
+        }
+        return 'bg-gray-100 text-gray-700 border border-gray-200';
     };
 
     return (
@@ -147,7 +188,23 @@ export default function BalanceCard({ data = defaultData, payoutHistoryRefreshKe
                                 </span>
                                 <span className="text-emerald-500 text-base sm:text-lg font-bold">€</span>
                             </div>
-                            <span className="text-xs text-gray-500 break-words">{lastMonthData.period}</span>
+                            {lastMonthData.dateRange?.from && lastMonthData.dateRange?.to ? (
+                                <span className="text-xs text-gray-600 break-words">
+                                    {formatDateRangeDe(
+                                        lastMonthData.dateRange.from,
+                                        lastMonthData.dateRange.to,
+                                    ) ?? lastMonthData.period}
+                                </span>
+                            ) : (
+                                <span className="text-xs text-gray-500 break-words">{lastMonthData.period}</span>
+                            )}
+                            {/* {formatLastMonthStatusLabel(lastMonthData.status) && (
+                                <span
+                                    className={`inline-flex w-fit items-center rounded-full px-2 py-0.5 text-[11px] font-semibold ${lastMonthStatusBadgeClass(lastMonthData.status)}`}
+                                >
+                                    {formatLastMonthStatusLabel(lastMonthData.status)}
+                                </span>
+                            )} */}
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2">
