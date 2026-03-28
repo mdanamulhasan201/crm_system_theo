@@ -334,7 +334,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
         e.preventDefault()
 
         // Validation
-        if (!formData.Produktname || !formData.Hersteller || !formData.Produktkürzel) {
+        if (!formData.Produktname || !formData.Hersteller) {
             toast.error('Bitte füllen Sie alle Pflichtfelder aus')
             return
         }
@@ -421,7 +421,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                         setProductNameDropdownOpen(true)
                                                     }
                                                 }}
-                                                placeholder="z. B. Laufschuh Pro X"
+                                                placeholder="z. B."
                                                 required
                                                 disabled={isLoading}
                                                 className="h-11 border-gray-200 bg-white"
@@ -470,7 +470,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                 value={formData.Hersteller}
                                                 onChange={(e) => handleInputChange('Hersteller', e.target.value)}
                                                 onFocus={() => setHerstellerDropdownOpen(true)}
-                                                placeholder="z. B. Nike, Adidas"
+                                                placeholder="z. B."
                                                 required
                                                 disabled={isLoading}
                                                 className="h-11 border-gray-200 bg-white"
@@ -521,14 +521,13 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
 
                                         <div>
                                             <label className="mb-1.5 block text-sm font-medium text-gray-800">
-                                                Artikelnummer <span className="text-red-500">*</span>
+                                                Artikelnummer <span className="text-xs font-normal text-gray-400">(optional)</span>
                                             </label>
                                             <Input
                                                 type="text"
                                                 value={formData.Produktkürzel}
                                                 onChange={(e) => handleInputChange('Produktkürzel', e.target.value)}
-                                                placeholder="z. B. ART-2024-001"
-                                                required
+                                                placeholder="z. B."
                                                 disabled={isLoading}
                                                 className="h-11 border-gray-200 bg-white"
                                             />
@@ -542,7 +541,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                 type="text"
                                                 value={formData.Lagerort}
                                                 onChange={(e) => handleInputChange('Lagerort', e.target.value)}
-                                                placeholder="z. B. Regal A3 Halle 2"
+                                                placeholder="z. B."
                                                 disabled={isLoading}
                                                 className="h-11 border-gray-200 bg-white"
                                             />
