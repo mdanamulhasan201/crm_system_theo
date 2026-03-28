@@ -447,7 +447,7 @@ export default function AddProduct({ onAddProduct, sizeColumns, editProductId, o
                                                         value={newProduct.sizeQuantities[size]?.mindestmenge ?? ''}
                                                         onChange={e => handleNewProductMinQuantityChange(size, e.target.value)}
                                                         className="w-full"
-                                                        disabled={!!(isLoading && editProductId) || !canEditQuantityFields}
+                                                        disabled={!!(isLoading && editProductId)}
                                                     />
                                                 </TableCell>
                                                 <TableCell>
