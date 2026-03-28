@@ -17,6 +17,7 @@ import {
 import { IoTime } from 'react-icons/io5'
 import { IoCreate } from 'react-icons/io5'
 import { IoTrash } from 'react-icons/io5'
+import { Download, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { Switch } from '@/components/ui/switch'
 import MillingBlockImageModal from './MillingBlockImageModal'
@@ -29,6 +30,7 @@ import DeleteMillingBlockModal from './DeleteMillingBlockModal'
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
 import { normalizeFeatures } from '../featureUtils'
 import AutoOrderConfirmDialog from '../AutoOrderConfirmDialog'
+import { downloadBestellscheinPdf, shouldShowBestellscheinDownload } from '@/lib/bestellscheinPdf'
 
 interface MillingBlock {
     id: string
@@ -95,6 +97,7 @@ export default function MillingBlocksTable({
     const [selectedProductForEdit, setSelectedProductForEdit] = useState<MillingBlock | null>(null)
     const [togglingAutoOrderId, setTogglingAutoOrderId] = useState<string | null>(null)
     const [autoOrderConfirmProduct, setAutoOrderConfirmProduct] = useState<MillingBlock | null>(null)
+    const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null)
 
     // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
     const apiDataToMillingBlock = (data: any): MillingBlock => {
@@ -230,6 +233,27 @@ export default function MillingBlocksTable({
             await handleAutoOrderToggle(p)
         } finally {
             setAutoOrderConfirmProduct(null)
+        }
+    }
+
+    const handleBestellscheinPdf = async (product: MillingBlock) => {
+        setPdfLoadingId(product.id)
+        try {
+            const response: any = await getSingleStorage(product.id)
+            if (!response?.success || !response?.data) {
+                toast.error('Produktdaten konnten nicht geladen werden.')
+                return
+            }
+            const result = await downloadBestellscheinPdf(response.data)
+            if (!result.ok) {
+                toast.error('Keine Nachbestellzeilen für den PDF-Export.')
+                return
+            }
+            toast.success('Bestellschein heruntergeladen')
+        } catch (e: any) {
+            toast.error(e?.message || 'PDF konnte nicht erstellt werden.')
+        } finally {
+            setPdfLoadingId(null)
         }
     }
 
@@ -374,6 +398,22 @@ export default function MillingBlocksTable({
                                     </TableCell>
                                     <TableCell className="p-3">
                                         <div className="flex items-center gap-2">
+                                            {shouldShowBestellscheinDownload(product.create_status, product.Status) && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => void handleBestellscheinPdf(product)}
+                                                    disabled={pdfLoadingId === product.id}
+                                                    className="h-8 w-8 p-0 text-[#1a2b4b] hover:text-[#1a2b4b] hover:bg-emerald-50"
+                                                    title="Bestellschein (PDF)"
+                                                >
+                                                    {pdfLoadingId === product.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Download className="w-4 h-4" />
+                                                    )}
+                                                </Button>
+                                            )}
                                             <Button
                                                 size="sm"
                                                 variant="ghost"

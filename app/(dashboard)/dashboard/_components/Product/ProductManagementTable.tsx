@@ -24,6 +24,7 @@ import { IoWarning } from 'react-icons/io5'
 import { IoTime } from 'react-icons/io5'
 import { IoCreate } from 'react-icons/io5'
 import { IoTrash } from 'react-icons/io5'
+import { Download, Loader2 } from 'lucide-react'
 import AddProduct from './AddProduct'
 import EinlagenNachbestellenModal from './EinlagenNachbestellenModal'
 import { useStockManagementSlice } from '@/hooks/stockManagement/useStockManagementSlice'
@@ -34,6 +35,7 @@ import { getSingleStorage, switchStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import { normalizeFeatures } from './featureUtils'
 import AutoOrderConfirmDialog from './AutoOrderConfirmDialog'
+import { downloadBestellscheinPdf, shouldShowBestellscheinDownload } from '@/lib/bestellscheinPdf'
 
 interface SizeData {
     length: number;
@@ -147,6 +149,7 @@ export default function ProductManagementTable({
     const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
     const [togglingAutoOrderId, setTogglingAutoOrderId] = useState<string | null>(null)
     const [autoOrderConfirmProduct, setAutoOrderConfirmProduct] = useState<Product | null>(null)
+    const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null)
 
     // Convert API single-storage response to Product (for modal)
     const apiDataToProduct = (data: any): Product => ({
@@ -269,6 +272,27 @@ export default function ProductManagementTable({
     };
 
     const isEinlagenrohlinge = apiType === 'rady_insole';
+
+    const handleBestellscheinPdf = async (product: Product) => {
+        setPdfLoadingId(product.id)
+        try {
+            const response: any = await getSingleStorage(product.id)
+            if (!response?.success || !response?.data) {
+                toast.error('Produktdaten konnten nicht geladen werden.')
+                return
+            }
+            const result = await downloadBestellscheinPdf(response.data)
+            if (!result.ok) {
+                toast.error('Keine Nachbestellzeilen für den PDF-Export.')
+                return
+            }
+            toast.success('Bestellschein heruntergeladen')
+        } catch (e: any) {
+            toast.error(e?.message || 'PDF konnte nicht erstellt werden.')
+        } finally {
+            setPdfLoadingId(null)
+        }
+    }
 
     if (isLoading) {
         return <ProductManagementTableShimmer sizeColumns={sizeColumns} rows={5} />
@@ -437,6 +461,22 @@ export default function ProductManagementTable({
                                     )}
                                     <TableCell className="min-w-[120px]">
                                         <div className="flex items-center gap-2 whitespace-nowrap">
+                                            {shouldShowBestellscheinDownload(product.create_status, product.Status) && (
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={() => void handleBestellscheinPdf(product)}
+                                                    disabled={pdfLoadingId === product.id}
+                                                    className="h-8 w-8 p-0 text-[#1a2b4b] hover:text-[#1a2b4b] hover:bg-emerald-50"
+                                                    title="Bestellschein (PDF)"
+                                                >
+                                                    {pdfLoadingId === product.id ? (
+                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                    ) : (
+                                                        <Download className="w-4 h-4" />
+                                                    )}
+                                                </Button>
+                                            )}
                                             <Button
                                                 size="sm"
                                                 variant="ghost"
