@@ -165,7 +165,7 @@ export default function BalanceCard({ data = defaultData, payoutHistoryRefreshKe
             <Dialog open={payoutModalOpen} onOpenChange={setPayoutModalOpen}>
                 <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
-                        <DialogTitle>Auszahlungsverlauf</DialogTitle>
+                        <DialogTitle>Zahlungsverlauf</DialogTitle>
                     </DialogHeader>
                     <div className="mt-2">
                         <PayoutHistory refreshKey={payoutHistoryRefreshKey} hideTitle />
