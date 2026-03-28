@@ -606,7 +606,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                 <p className="text-sm text-gray-500">Einkaufs-, Verkaufspreise und Mindestbestandsmengen.</p>
                             </div>
                             <div className="rounded-xl border border-gray-200 bg-[#fafafa] p-5">
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                                     <div>
                                         <label className="mb-1.5 block text-sm font-medium text-gray-800">
                                             Einkaufspreis <span className="text-xs font-normal text-gray-400">(optional)</span>
@@ -639,7 +639,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                         <p className="mt-1.5 text-xs text-gray-500">Kann leer bleiben oder als Durchschnittspreis verwendet werden.</p>
                                     </div>
 
-                                    <div>
+                                    {/* <div>
                                         <label className="mb-1.5 block text-sm font-medium text-gray-800">
                                             Mindestbestand
                                         </label>
@@ -652,7 +652,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                             className="h-11 border-gray-200 bg-white"
                                         />
                                         <p className="mt-1.5 text-xs text-gray-500">Globale Grenze, falls keine größenbezogene Mindestmenge gesetzt ist.</p>
-                                    </div>
+                                    </div> */}
                                 </div>
                             </div>
                         </section>
