@@ -30,6 +30,11 @@ const FOOTER_TEXT = 'Automatisch generiert – Produktverwaltungssystem'
 /** Product photo slot (mm) – compact width, taller height so insoles look natural (contain fit). */
 const PRODUCT_IMAGE_SLOT_MM = { w: 38, h: 52 } as const
 
+/** Table: 2 mm inset from content left/right so the header bar doesn’t touch the margins. */
+const TABLE_H_PAD_MM = 2
+/** Column width ratios (narrow size col, wider recommended-order col) – less empty space in header */
+const TABLE_COL_FR = [0.2, 0.3, 0.5] as const
+
 /** Show Bestellschein download in AKTIONEN when both match (manual warehouse + low stock). */
 export function shouldShowBestellscheinDownload(
     create_status: string | undefined,
@@ -331,24 +336,32 @@ async function renderBestellscheinA4(
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(12)
     doc.setTextColor(...COLORS.navy)
-    doc.text('Nachbestellung pro Größe', m, y)
+    const tLeft = m + TABLE_H_PAD_MM
+    const tW = innerW - 2 * TABLE_H_PAD_MM
+
+    doc.text('Nachbestellung pro Größe', tLeft, y)
     y += 9
 
     const rowHmm = 8
-    const colW = innerW / 3
-    const col1 = m + 2
-    const col2 = m + colW
-    const col3 = m + 2 * colW
+    const w0 = tW * TABLE_COL_FR[0]
+    const w1 = tW * TABLE_COL_FR[1]
+    const w2 = tW - w0 - w1
+    /** Horizontal center of each column (proportional widths + 2 mm side padding) */
+    const colCenterX = [
+        tLeft + w0 / 2,
+        tLeft + w0 + w1 / 2,
+        tLeft + w0 + w1 + w2 / 2,
+    ] as const
 
     const drawTableHeader = (yy: number) => {
         doc.setFillColor(...COLORS.tableHeaderBg)
-        doc.rect(m, yy - 5.2, innerW, rowHmm, 'F')
+        doc.rect(tLeft, yy - 5.2, tW, rowHmm, 'F')
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(9)
         doc.setTextColor(55, 65, 75)
-        doc.text('Größe', col1, yy)
-        doc.text('Aktueller Bestand', col2, yy)
-        doc.text('Empfohlene Bestellung', col3, yy)
+        doc.text('Größe', colCenterX[0], yy, { align: 'center' })
+        doc.text('Aktueller Bestand', colCenterX[1], yy, { align: 'center' })
+        doc.text('Empfohlene Bestellung', colCenterX[2], yy, { align: 'center' })
     }
 
     drawTableHeader(y)
@@ -364,18 +377,18 @@ async function renderBestellscheinA4(
             y += rowHmm + 1
         }
 
-        // Mockup: white body rows (no zebra)
+        // Cell text centered under each header column
         doc.setFont('helvetica', 'bold')
         doc.setFontSize(10)
         doc.setTextColor(0, 0, 0)
-        doc.text(String(row.sizeLabel), col1, y)
+        doc.text(String(row.sizeLabel), colCenterX[0], y, { align: 'center' })
 
         doc.setFont('helvetica', 'normal')
-        doc.text(String(row.currentStock), col2, y)
+        doc.text(String(row.currentStock), colCenterX[1], y, { align: 'center' })
 
         doc.setFont('helvetica', 'bold')
         doc.setTextColor(...COLORS.recommendedRed)
-        doc.text(String(row.recommendedOrder), col3, y)
+        doc.text(String(row.recommendedOrder), colCenterX[2], y, { align: 'center' })
         doc.setTextColor(0, 0, 0)
 
         y += rowHmm
