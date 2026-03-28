@@ -9,7 +9,7 @@ import { useEinlagen } from "@/hooks/einlagen/useEinlagen";
 import { getCustomerSettings, getSettingData } from "@/apis/einlagenApis";
 import toast from "react-hot-toast";
 import { PriceItem } from "../_components/Preisverwaltung/types";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 interface Insole {
     id: string;
@@ -206,18 +206,36 @@ export default function PreisverwaltungPage() {
 
     return (
         <div className="p-6 bg-white min-h-screen">
-            <div className="flex justify-between items-center mb-8">
-                <div className="flex-1" />
-                <button
-                    onClick={() => {
-                        setEditingInsole(null);
-                        setModalOpen(true);
-                    }}
-                    className="border cursor-pointer bg-[#61A175] text-white rounded-md px-4 py-2 font-bold uppercase text-sm tracking-wide hover:bg-[#61A175]/80 flex items-center gap-2"
-                >
-                         <Plus className="w-4 h-4" />
-                    EINLAGE HINZUFÜGEN
-                </button>
+            <div className="mb-6 flex flex-col gap-4 border-b border-gray-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-xl md:text-2xl leading-tight font-bold mb-2 text-gray-900">Einlagen</h2>
+                <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
+                    {selectedCount > 0 && (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleDeleteClick}
+                            disabled={isLoading}
+                            className="h-10 border-red-200 bg-white text-red-600 shadow-sm hover:bg-red-50 hover:text-red-700"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4 shrink-0" aria-hidden />
+                            <span className="font-semibold">Löschen</span>
+                            <span className="ml-1.5 inline-flex min-w-5 items-center justify-center rounded-full bg-red-100 px-1.5 text-xs font-bold text-red-700">
+                                {selectedCount}
+                            </span>
+                        </Button>
+                    )}
+                    <Button
+                        type="button"
+                        onClick={() => {
+                            setEditingInsole(null);
+                            setModalOpen(true);
+                        }}
+                        className="h-10 cursor-pointer bg-[#61A175] font-bold uppercase tracking-wide text-white shadow-sm hover:bg-[#61A175]/90"
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Einlage hinzufügen
+                    </Button>
+                </div>
             </div>
 
             <EinlagehinzufügenModal
@@ -245,7 +263,6 @@ export default function PreisverwaltungPage() {
                 isInitialLoading={isInitialLoading}
                 onSelect={handleInsoleSelect}
                 onEdit={handleUpdateInsole}
-                onDeleteClick={handleDeleteClick}
                 onDeleteConfirm={handleDeleteSelected}
                 deleteConfirmOpen={deleteConfirmOpen}
                 onCloseDeleteConfirm={() => setDeleteConfirmOpen(false)}

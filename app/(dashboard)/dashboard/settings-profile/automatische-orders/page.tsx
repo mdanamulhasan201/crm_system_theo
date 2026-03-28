@@ -119,26 +119,16 @@ export default function AutomatischeOrdersPage() {
   }
 
   return (
-    <div className="w-full px-5 py-6 space-y-6 mb-20">
+    <div className="w-full ">
       {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <Button
-          onClick={() => router.back()}
-          variant="outline"
-          className="flex items-center gap-2 cursor-pointer"
-          size="icon"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </Button>
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+      <div className="mb-2">
+          <h1 className="text-xl md:text-2xl leading-tight font-bold mb-2 text-gray-900">
             Lagereinstellungen & Auto-Bestellungen
           </h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <p className="text-sm md:text-base text-gray-600 mt-1">
             Konfiguration der automatischen Nachbestellung und Lagerstandorte
           </p>
         </div>
-      </div>
 
       {/* Automatic Ordering by Manufacturer Section */}
       <Card className="bg-gray-50 border-gray-200">

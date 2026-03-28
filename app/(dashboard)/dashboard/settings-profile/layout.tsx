@@ -163,7 +163,7 @@ export default function SettingsProfileLayout({
                 {
                     id: "automatische-orders",
                     icon: GrOrderedList,
-                    label: "Automatische Orders",
+                    label: "Automatische Bestellungen",
                     href: "/dashboard/settings-profile/automatische-orders"
                 },
                 {

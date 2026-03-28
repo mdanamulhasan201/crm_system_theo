@@ -2,7 +2,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import Image from "next/image";
-import { Trash2, Package } from "lucide-react";
+import { Package } from "lucide-react";
 
 interface Insole {
     id: string;
@@ -21,7 +21,6 @@ interface InsoleListProps {
     isInitialLoading: boolean;
     onSelect: (id: string) => void;
     onEdit: (insole: Insole) => void;
-    onDeleteClick: () => void;
     onDeleteConfirm: () => void;
     deleteConfirmOpen: boolean;
     onCloseDeleteConfirm: () => void;
@@ -34,7 +33,6 @@ export default function InsoleList({
     isInitialLoading,
     onSelect,
     onEdit,
-    onDeleteClick,
     onDeleteConfirm,
     deleteConfirmOpen,
     onCloseDeleteConfirm,
@@ -42,20 +40,6 @@ export default function InsoleList({
 }: InsoleListProps) {
     return (
         <>
-            <div className="flex justify-between items-center mb-8">
-                {selectedCount > 0 && (
-                    <div className="flex gap-3">
-                        <button
-                            onClick={onDeleteClick}
-                            className="border border-red-500 text-red-500 rounded-[5px] px-4 py-2 font-bold uppercase text-sm tracking-wide bg-white hover:bg-red-50 cursor-pointer flex items-center gap-2"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                            Löschen ({selectedCount})
-                        </button>
-                    </div>
-                )}
-            </div>
-
             <Dialog open={deleteConfirmOpen} onOpenChange={onCloseDeleteConfirm}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
@@ -86,10 +70,7 @@ export default function InsoleList({
                 </DialogContent>
             </Dialog>
 
-            {/* Section Title */}
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Einlagen</h2>
-
-            <div className="space-y-4 mb-12">
+            <div className="mb-12 space-y-4">
                 {isInitialLoading ? (
                     Array.from({ length: 3 }).map((_, index) => (
                         <div

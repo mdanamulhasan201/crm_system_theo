@@ -18,9 +18,9 @@ export default function Benachrichtigungen() {
     const [enabled, setEnabled] = useState(true);
 
     return (
-        <div className="max-w-3xl mx-auto mt-10 font-sans">
-            <h1 className="text-4xl font-bold mb-2">Benachrichtigungseinstellungen</h1>
-            <p className="mb-8">
+        <div className="border border-gray-200 rounded-lg p-6 font-sans">
+            <h1 className="text-xl md:text-2xl leading-tight font-bold mb-2 text-gray-900">Benachrichtigungseinstellungen</h1>
+            <p className="mb-8 text-sm md:text-base text-gray-600">
                 Verwalten Sie hier, wie und wann Sie Benachrichtigungen aus dem System erhalten möchten.
             </p>
 

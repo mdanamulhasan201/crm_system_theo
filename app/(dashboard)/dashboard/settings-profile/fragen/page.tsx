@@ -140,8 +140,8 @@ export default function FragenPage() {
             <Einstellungen />
 
             <div className=" mt-10 font-sans">
-                <h1 className="text-3xl font-semibold mb-2">Fragen</h1>
-                <p className="mb-6 text-sm text-gray-600">
+                <h1 className="text-xl md:text-2xl leading-tight font-bold mb-2 text-gray-900">Fragen</h1>
+                <p className="mb-6 text-sm md:text-base text-gray-600">
                     Übersicht aller Fragen für Einlagen- und Maßschuh-Versorgung.
                 </p>
 
