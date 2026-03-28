@@ -104,7 +104,7 @@ export default function PerformerData() {
             </div>
 
             {/* Chart and Table */}
-            <div className="w-full overflow-x-auto -mx-2 sm:mx-0">
+            <div className="w-full  -mx-2 sm:mx-0">
                 <div className="rounded-lg border border-gray-200 p-2 sm:p-4 min-w-[280px]">
                     <h1 className='text-base sm:text-lg md:text-xl font-semibold text-gray-800 mb-3 sm:mb-4 md:mb-6'>
                         {activeTab === 'top' ? 'Top-Performer' : 'Low-Performer'} Modelle/Aufträge
@@ -168,8 +168,8 @@ export default function PerformerData() {
                             </div>
 
                             {/* Table */}
-                            <div className="w-full lg:w-4/12 h-auto lg:h-[300px]">
-                                <div className="bg-gray-50 rounded-lg p-2 sm:p-3 md:p-4 h-full flex flex-col min-h-[200px] lg:min-h-0">
+                            <div className="w-full lg:w-4/12 ">
+                                <div className="bg-gray-50 rounded-lg p-2 sm:p-3 md:p-4 flex flex-col ">
                                     <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
                                         <div className="text-xs sm:text-sm font-medium text-gray-700 text-center">Verkäufe</div>
                                         <div className="text-xs sm:text-sm font-medium text-gray-700 text-center">
