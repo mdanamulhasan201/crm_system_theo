@@ -71,10 +71,46 @@ export default function PerformerData() {
         return null
     }
 
-    // Calculate max verkaufe for dynamic domain
-    const maxVerkaufe = currentData.length > 0 
-        ? Math.max(...currentData.map(item => item.verkaufe), 1) * 1.2 // Add 20% padding, minimum 1
-        : 250
+    /** Extra vertical px per category so Y labels and grid lines do not stack; hover shows full name via <title> */
+    const renderYAxisTick = (props: { x?: number; y?: number; payload?: { value?: string } }) => {
+        const { x = 0, y = 0, payload } = props
+        const raw = String(payload?.value ?? '')
+        const maxLen = isSmall ? 14 : 26
+        const shown = raw.length > maxLen ? `${raw.slice(0, Math.max(0, maxLen - 1))}…` : raw
+        return (
+            <g transform={`translate(${x},${y})`}>
+                <title>{raw}</title>
+                <text x={0} y={0} dy={4} textAnchor="end" fill="#666" fontSize={isSmall ? 10 : 11}>
+                    {shown}
+                </text>
+            </g>
+        )
+    }
+
+    // Calculate max verkaufe for dynamic domain (round domain to avoid float ticks like 63.5999…)
+    const maxVerkaufeRaw =
+        currentData.length > 0 ? Math.max(...currentData.map((item) => item.verkaufe), 1) * 1.2 : 250
+    const maxVerkaufe = Math.ceil(maxVerkaufeRaw)
+
+    /** Vertical bar chart: generous px per row so labels/bars do not stick together; outer box stays short — scroll handles overflow */
+    const BAR_ROW_PX = 44
+    const CHART_MIN_HEIGHT = 220
+    const SCROLL_MAX_HEIGHT = 'min(46vh, 340px)'
+    const chartContentHeight = Math.max(CHART_MIN_HEIGHT, currentData.length * BAR_ROW_PX)
+
+    const formatUmsatzanteil = (n: number) => {
+        if (!Number.isFinite(n)) return '0'
+        const rounded = Math.round(n * 10) / 10
+        return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+    }
+
+    const xAxisTickFormatter = (v: number) => {
+        if (!Number.isFinite(v)) return ''
+        const rounded = Math.round(v)
+        return Math.abs(v - rounded) < 1e-9 ? String(rounded) : String(Math.round(v * 10) / 10)
+    }
+
+    const yAxisWidth = isSmall ? 80 : windowWidth < 1024 ? 118 : 140
 
     return (
         <div className="lg:mt-14 w-full">
@@ -111,30 +147,35 @@ export default function PerformerData() {
                     </h1>
                     
                     {loading ? (
-                        <div className="flex items-center justify-center h-[300px]">
+                        <div className="flex items-center justify-center h-[160px]">
                             <div className="text-gray-500 text-sm">Loading...</div>
                         </div>
                     ) : error ? (
-                        <div className="flex items-center justify-center h-[300px]">
+                        <div className="flex items-center justify-center h-[160px]">
                             <div className="text-red-500 text-sm">{error}</div>
                         </div>
                     ) : currentData.length === 0 ? (
-                        <div className="flex items-center justify-center h-[300px]">
+                        <div className="flex items-center justify-center h-[160px]">
                             <div className="text-gray-500 text-sm">No data available</div>
                         </div>
                     ) : (
-                        <div className='flex flex-col lg:flex-row gap-4 sm:gap-6 lg:gap-8'>
-                            {/* Chart */}
-                            <div className="flex-1 w-full min-w-0">
-                                <div className="h-[200px] sm:h-[240px] md:h-[280px] lg:h-[300px]">
-                                    <ResponsiveContainer width="100%" height="100%">
+                        <div
+                            className="flex flex-col lg:flex-row gap-3 sm:gap-4 lg:gap-6 lg:items-start overflow-y-auto overflow-x-hidden rounded-md pr-1 -mr-1 [scrollbar-gutter:stable]"
+                            style={{ maxHeight: SCROLL_MAX_HEIGHT }}
+                        >
+                            {/* Chart — height grows with row count; section scrolls when content exceeds maxHeight */}
+                            <div className="flex-1 w-full min-w-0 shrink-0">
+                                <div style={{ height: chartContentHeight }} className="w-full min-h-[220px]">
+                                    <ResponsiveContainer width="100%" height={chartContentHeight}>
                                         <BarChart
                                             data={currentData}
                                             layout="vertical"
+                                            barCategoryGap="36%"
+                                            barGap={4}
                                             margin={{
                                                 top: 10,
-                                                right: isSmall ? 5 : (windowWidth < 1024 ? 15 : 30),
-                                                left: isSmall ? 0 : 0,
+                                                right: isSmall ? 8 : windowWidth < 1024 ? 14 : 22,
+                                                left: 10,
                                                 bottom: 10
                                             }}
                                         >
@@ -144,22 +185,33 @@ export default function PerformerData() {
                                                 domain={[0, maxVerkaufe]}
                                                 axisLine={false}
                                                 tickLine={false}
-                                                tick={{ fontSize: isSmall ? 10 : (windowWidth < 1024 ? 11 : 12), fill: '#666' }}
+                                                tick={{ fontSize: isSmall ? 10 : windowWidth < 1024 ? 11 : 12, fill: '#666' }}
+                                                tickFormatter={xAxisTickFormatter}
                                             />
                                             <YAxis
                                                 type="category"
                                                 dataKey="model"
                                                 axisLine={false}
                                                 tickLine={false}
-                                                tick={{ fontSize: isSmall ? 10 : (windowWidth < 1024 ? 11 : 12), fill: '#666' }}
-                                                width={isSmall ? 60 : (windowWidth < 1024 ? 70 : 80)}
+                                                interval={0}
+                                                tick={renderYAxisTick}
+                                                width={yAxisWidth}
                                             />
                                             <Tooltip content={<CustomTooltip />} />
                                             <Bar
                                                 dataKey="verkaufe"
                                                 fill="#10B981"
-                                                radius={[0, 4, 4, 0]}
-                                                barSize={isSmall ? 10 : (windowWidth < 640 ? 12 : (windowWidth < 1024 ? 14 : 16))}
+                                                radius={[0, 3, 3, 0]}
+                                                maxBarSize={26}
+                                                barSize={
+                                                    isSmall
+                                                        ? 12
+                                                        : windowWidth < 640
+                                                          ? 14
+                                                          : windowWidth < 1024
+                                                            ? 16
+                                                            : 18
+                                                }
                                                 name="Verkäufe"
                                             />
                                         </BarChart>
@@ -167,31 +219,35 @@ export default function PerformerData() {
                                 </div>
                             </div>
 
-                            {/* Table */}
-                            <div className="w-full lg:w-4/12 ">
-                                <div className="bg-gray-50 rounded-lg p-2 sm:p-3 md:p-4 flex flex-col ">
+                            {/* Table — same scroll region as chart so rows stay aligned */}
+                            <div className="w-full lg:w-4/12 shrink-0">
+                                <div className="bg-gray-50 rounded-lg p-2 sm:p-3 md:p-4 flex flex-col h-full">
                                     <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3">
-                                        <div className="text-xs sm:text-sm font-medium text-gray-700 text-center">Verkäufe</div>
+                                        <div className="text-xs sm:text-sm font-medium text-gray-700 text-center">
+                                            Verkäufe
+                                        </div>
                                         <div className="text-xs sm:text-sm font-medium text-gray-700 text-center">
                                             Umsatzanteil
                                         </div>
                                     </div>
 
-                                    <div className="flex-1 flex flex-col justify-between gap-2 sm:gap-0">
+                                    <div className="flex flex-col">
                                         {currentData.map((item, index) => (
-                                            <div key={index} className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm">
-                                                <div className="text-center font-medium text-gray-800">
+                                            <div
+                                                key={index}
+                                                className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm py-2 border-b border-gray-100/80 last:border-0 min-h-[44px] items-center"
+                                            >
+                                                <div className="text-center font-medium text-gray-800 tabular-nums">
                                                     {item.verkaufe}
                                                 </div>
-                                                <div className="text-center font-medium text-gray-800">
-                                                    {item.umsatzanteil}%
+                                                <div className="text-center font-medium text-gray-800 tabular-nums">
+                                                    {formatUmsatzanteil(item.umsatzanteil)}%
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     )}
                 </div>
