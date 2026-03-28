@@ -28,6 +28,7 @@ import MillingBlockHistory from './MillingBlockHistory'
 import DeleteMillingBlockModal from './DeleteMillingBlockModal'
 import ProductManagementTableShimmer from '@/components/ShimmerEffect/Product/ProductManagementTableShimmer'
 import { normalizeFeatures } from '../featureUtils'
+import AutoOrderConfirmDialog from '../AutoOrderConfirmDialog'
 
 interface MillingBlock {
     id: string
@@ -93,6 +94,7 @@ export default function MillingBlocksTable({
     const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
     const [selectedProductForEdit, setSelectedProductForEdit] = useState<MillingBlock | null>(null)
     const [togglingAutoOrderId, setTogglingAutoOrderId] = useState<string | null>(null)
+    const [autoOrderConfirmProduct, setAutoOrderConfirmProduct] = useState<MillingBlock | null>(null)
 
     // Convert API single-storage response to MillingBlock (normalize size keys for milling_block)
     const apiDataToMillingBlock = (data: any): MillingBlock => {
@@ -221,6 +223,16 @@ export default function MillingBlocksTable({
         }
     }
 
+    const handleConfirmAutoOrderOn = async () => {
+        if (!autoOrderConfirmProduct) return
+        const p = autoOrderConfirmProduct
+        try {
+            await handleAutoOrderToggle(p)
+        } finally {
+            setAutoOrderConfirmProduct(null)
+        }
+    }
+
     if (isLoading) {
         return <ProductManagementTableShimmer sizeColumns={sizeColumns} rows={5} />
     }
@@ -335,7 +347,14 @@ export default function MillingBlocksTable({
                                             <Switch
                                                 checked={hasAutoOrderOn(product)}
                                                 disabled={!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id}
-                                                onCheckedChange={() => handleAutoOrderToggle(product)}
+                                                onCheckedChange={(checked) => {
+                                                    if (!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id) return
+                                                    if (checked) {
+                                                        setAutoOrderConfirmProduct(product)
+                                                    } else {
+                                                        void handleAutoOrderToggle(product)
+                                                    }
+                                                }}
                                                 className={`data-[state=checked]:bg-emerald-500 ${isAutoOrderEnabled(product)
                                                         ? 'cursor-pointer data-[state=unchecked]:bg-slate-300'
                                                         : 'cursor-not-allowed data-[state=unchecked]:bg-slate-200 data-[state=checked]:bg-slate-400'
@@ -482,6 +501,18 @@ export default function MillingBlocksTable({
                 }}
                 product={selectedProductForDelete}
                 isLoading={isDeleting}
+            />
+
+            <AutoOrderConfirmDialog
+                open={!!autoOrderConfirmProduct}
+                onOpenChange={(open) => {
+                    if (!open) setAutoOrderConfirmProduct(null)
+                }}
+                onConfirm={handleConfirmAutoOrderOn}
+                isLoading={
+                    !!autoOrderConfirmProduct &&
+                    togglingAutoOrderId === autoOrderConfirmProduct.id
+                }
             />
         </>
     )

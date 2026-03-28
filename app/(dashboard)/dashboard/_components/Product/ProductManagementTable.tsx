@@ -33,6 +33,7 @@ import { Switch } from '@/components/ui/switch'
 import { getSingleStorage, switchStore } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 import { normalizeFeatures } from './featureUtils'
+import AutoOrderConfirmDialog from './AutoOrderConfirmDialog'
 
 interface SizeData {
     length: number;
@@ -145,6 +146,7 @@ export default function ProductManagementTable({
     const [orderAdminStoreId, setOrderAdminStoreId] = useState<string | null>(null)
     const [orderStoreId, setOrderStoreId] = useState<string | null>(null)
     const [togglingAutoOrderId, setTogglingAutoOrderId] = useState<string | null>(null)
+    const [autoOrderConfirmProduct, setAutoOrderConfirmProduct] = useState<Product | null>(null)
 
     // Convert API single-storage response to Product (for modal)
     const apiDataToProduct = (data: any): Product => ({
@@ -253,6 +255,16 @@ export default function ProductManagementTable({
             toast.error(err?.response?.data?.message || 'Auto-Bestellung konnte nicht aktualisiert werden');
         } finally {
             setTogglingAutoOrderId(null);
+        }
+    };
+
+    const handleConfirmAutoOrderOn = async () => {
+        if (!autoOrderConfirmProduct) return;
+        const p = autoOrderConfirmProduct;
+        try {
+            await handleAutoOrderToggle(p);
+        } finally {
+            setAutoOrderConfirmProduct(null);
         }
     };
 
@@ -397,7 +409,14 @@ export default function ProductManagementTable({
                                                 <Switch
                                                     checked={hasAutoOrderOn(product)}
                                                     disabled={!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id}
-                                                    onCheckedChange={() => handleAutoOrderToggle(product)}
+                                                    onCheckedChange={(checked) => {
+                                                        if (!isAutoOrderEnabled(product) || togglingAutoOrderId === product.id) return;
+                                                        if (checked) {
+                                                            setAutoOrderConfirmProduct(product);
+                                                        } else {
+                                                            void handleAutoOrderToggle(product);
+                                                        }
+                                                    }}
                                                     className={`data-[state=checked]:bg-emerald-500 ${isAutoOrderEnabled(product)
                                                             ? 'cursor-pointer data-[state=unchecked]:bg-slate-300'
                                                             : 'cursor-not-allowed data-[state=unchecked]:bg-slate-200 data-[state=checked]:bg-slate-400'
@@ -618,6 +637,18 @@ export default function ProductManagementTable({
                 onOrderSuccess={onOrderSuccess}
                 initialQuantitiesZero
                 storeId={orderStoreId}
+            />
+
+            <AutoOrderConfirmDialog
+                open={!!autoOrderConfirmProduct}
+                onOpenChange={(open) => {
+                    if (!open) setAutoOrderConfirmProduct(null);
+                }}
+                onConfirm={handleConfirmAutoOrderOn}
+                isLoading={
+                    !!autoOrderConfirmProduct &&
+                    togglingAutoOrderId === autoOrderConfirmProduct.id
+                }
             />
         </>
     )
