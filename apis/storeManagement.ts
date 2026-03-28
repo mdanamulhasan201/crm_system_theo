@@ -269,3 +269,15 @@ export const getAllMyStoreOverview = async (limit: number, cursor: string) => {
         throw error;
     }
 }
+
+
+// store/partner-confirmation/:id
+
+export const partnerConfirmation = async (id: string) => {
+    try {
+        const response = await axiosClient.post(`/store/partner-confirmation/${id}`);
+        return response.data;
+    } catch (error: any) {
+        throw error;
+    }
+}

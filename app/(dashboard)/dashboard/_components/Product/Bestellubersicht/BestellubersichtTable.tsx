@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import {
     Table,
     TableBody,
@@ -16,10 +16,18 @@ import {
     PaginationNext,
     PaginationPrevious,
 } from '@/components/ui/pagination'
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog'
 import BestelldetailsModal, {
     type BestelldetailsModalData,
 } from './BestelldetailsModal'
-import { getAllMyStoreOverview } from '@/apis/storeManagement'
+import { getAllMyStoreOverview, partnerConfirmation } from '@/apis/storeManagement'
 import toast from 'react-hot-toast'
 
 interface OverviewSizeData {
@@ -57,6 +65,8 @@ const getStatusLabel = (status: string) => {
             return 'Ausstehend'
         case 'Geliefert':
             return 'Geliefert'
+        case 'Confirmation':
+            return 'Zur Bestätigung'
         default:
             return status.replace(/_/g, ' ')
     }
@@ -69,6 +79,10 @@ const getStatusClassName = (status: string) => {
 
     if (status === 'Geliefert') {
         return 'bg-[#E8F5E9] text-[#2E7D32]'
+    }
+
+    if (status === 'Confirmation') {
+        return 'bg-blue-50 text-blue-800 ring-1 ring-blue-100'
     }
 
     return 'bg-gray-100 text-gray-700'
@@ -93,30 +107,74 @@ export default function BestellubersichtTable() {
     const [cursorHistory, setCursorHistory] = useState<string[]>([])
     const [modalOpen, setModalOpen] = useState(false)
     const [modalData, setModalData] = useState<BestelldetailsModalData | null>(null)
+    const [confirmingId, setConfirmingId] = useState<string | null>(null)
+    const [partnerConfirmOpen, setPartnerConfirmOpen] = useState(false)
+    const [partnerConfirmTarget, setPartnerConfirmTarget] = useState<{
+        id: string
+        produktname: string
+        hersteller: string
+    } | null>(null)
 
-    useEffect(() => {
-        const fetchOverview = async () => {
-            setIsLoading(true)
-            try {
-                const response = await getAllMyStoreOverview(ITEMS_PER_PAGE, currentCursor)
-                if (response?.success && Array.isArray(response?.data)) {
-                    setRows(response.data)
-                    setHasMore(Boolean(response.hasMore))
-                } else {
-                    setRows([])
-                    setHasMore(false)
-                }
-            } catch (err: any) {
+    const loadOverview = useCallback(async (options?: { silent?: boolean }) => {
+        const silent = options?.silent === true
+        if (!silent) setIsLoading(true)
+        try {
+            const response = await getAllMyStoreOverview(ITEMS_PER_PAGE, currentCursor)
+            if (response?.success && Array.isArray(response?.data)) {
+                setRows(response.data)
+                setHasMore(Boolean(response.hasMore))
+            } else {
                 setRows([])
                 setHasMore(false)
-                toast.error(err?.response?.data?.message || 'Bestellübersicht konnte nicht geladen werden')
-            } finally {
-                setIsLoading(false)
             }
+        } catch (err: any) {
+            if (!silent) {
+                setRows([])
+                setHasMore(false)
+            }
+            toast.error(err?.response?.data?.message || 'Bestellübersicht konnte nicht geladen werden')
+        } finally {
+            if (!silent) setIsLoading(false)
         }
-
-        fetchOverview()
     }, [currentCursor])
+
+    useEffect(() => {
+        loadOverview()
+    }, [loadOverview])
+
+    const openPartnerConfirmDialog = (row: StoreOverviewItem) => {
+        setPartnerConfirmTarget({
+            id: row.id,
+            produktname: row.produktname,
+            hersteller: row.hersteller,
+        })
+        setPartnerConfirmOpen(true)
+    }
+
+    const handlePartnerConfirmDialogOpenChange = (open: boolean) => {
+        if (!open && confirmingId) return
+        setPartnerConfirmOpen(open)
+        if (!open) setPartnerConfirmTarget(null)
+    }
+
+    const handlePartnerConfirmSubmit = async () => {
+        if (!partnerConfirmTarget) return
+        const id = partnerConfirmTarget.id
+        setConfirmingId(id)
+        try {
+            const res = await partnerConfirmation(id)
+            toast.success(
+                typeof res?.message === 'string' ? res.message : 'Bestätigung erfolgreich',
+            )
+            setPartnerConfirmOpen(false)
+            setPartnerConfirmTarget(null)
+            await loadOverview({ silent: true })
+        } catch (err: any) {
+            toast.error(err?.response?.data?.message || 'Bestätigung fehlgeschlagen')
+        } finally {
+            setConfirmingId(null)
+        }
+    }
 
     const openDetails = (row: StoreOverviewItem) => {
         const items = getOrderedItems(row.groessenMengen)
@@ -162,18 +220,19 @@ export default function BestellubersichtTable() {
                                     <TableHead className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-900 text-xs sm:text-sm uppercase">PRODUKT</TableHead>
                                     <TableHead className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-900 text-xs sm:text-sm uppercase">BESTELLTE MENGEN</TableHead>
                                     <TableHead className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-900 text-xs sm:text-sm uppercase">STATUS</TableHead>
+                                    <TableHead className="px-3 sm:px-4 py-2 sm:py-3 text-left font-semibold text-gray-900 text-xs sm:text-sm uppercase">AKTION</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {isLoading ? (
                                     <TableRow className="border-b border-gray-100 bg-white">
-                                        <TableCell colSpan={5} className="px-3 sm:px-4 py-8 text-center text-sm text-gray-500">
+                                        <TableCell colSpan={6} className="px-3 sm:px-4 py-8 text-center text-sm text-gray-500">
                                             Lädt...
                                         </TableCell>
                                     </TableRow>
                                 ) : rows.length === 0 ? (
                                     <TableRow className="border-b border-gray-100 bg-white">
-                                        <TableCell colSpan={5} className="px-3 sm:px-4 py-8 text-center text-sm text-gray-500">
+                                        <TableCell colSpan={6} className="px-3 sm:px-4 py-8 text-center text-sm text-gray-500">
                                             Keine Bestellungen gefunden.
                                         </TableCell>
                                     </TableRow>
@@ -223,6 +282,20 @@ export default function BestellubersichtTable() {
                                                         {getStatusLabel(row.status)}
                                                     </span>
                                                 </TableCell>
+                                                <TableCell className="px-3 sm:px-4 py-2 sm:py-3 whitespace-nowrap">
+                                                    {row.status === 'Confirmation' ? (
+                                                        <button
+                                                            type="button"
+                                                            disabled={confirmingId === row.id}
+                                                            onClick={() => openPartnerConfirmDialog(row)}
+                                                            className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-[#61A178] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#528a6a] disabled:cursor-not-allowed disabled:opacity-60"
+                                                        >
+                                                            Bestätigen
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-xs text-gray-400">—</span>
+                                                    )}
+                                                </TableCell>
                                             </TableRow>
                                         )
                                     })
@@ -261,6 +334,46 @@ export default function BestellubersichtTable() {
                     // TODO: wire to add-to-lager API
                 }}
             />
+
+            <Dialog open={partnerConfirmOpen} onOpenChange={handlePartnerConfirmDialogOpenChange}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Bestellung bestätigen</DialogTitle>
+                        <DialogDescription asChild>
+                            <div className="space-y-2 pt-1 text-sm text-gray-600">
+                                <p>
+                                    Möchten Sie diese Bestellung wirklich bestätigen? Diese Aktion kann nicht
+                                    rückgängig gemacht werden.
+                                </p>
+                                {partnerConfirmTarget && (
+                                    <div className="rounded-md bg-gray-50 px-3 py-2 text-left text-gray-800">
+                                        <p className="font-medium">{partnerConfirmTarget.produktname}</p>
+                                        <p className="text-xs text-gray-500">{partnerConfirmTarget.hersteller}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="gap-2 sm:gap-5">
+                        <button
+                            type="button"
+                            disabled={Boolean(confirmingId)}
+                            onClick={() => handlePartnerConfirmDialogOpenChange(false)}
+                            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg border border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 disabled:opacity-50"
+                        >
+                            Abbrechen
+                        </button>
+                        <button
+                            type="button"
+                            disabled={Boolean(confirmingId)}
+                            onClick={handlePartnerConfirmSubmit}
+                            className="inline-flex h-9 cursor-pointer items-center justify-center rounded-lg bg-[#61A178] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#528a6a] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            {confirmingId ? 'Wird bestätigt…' : 'Ja, bestätigen'}
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </>
     )
 }
