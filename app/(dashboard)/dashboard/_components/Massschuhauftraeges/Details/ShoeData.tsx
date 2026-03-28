@@ -250,7 +250,7 @@ export const GROUPS2: GroupDef2[] = [
     fieldType: "hinterkappeMusterSide",
     options: [
       { id: "ja", label: "Ja" },
-      { id: "nein", label: "Nein (+4,99 €)" },
+      { id: "nein", label: "Nein" },
     ],
   },
   {

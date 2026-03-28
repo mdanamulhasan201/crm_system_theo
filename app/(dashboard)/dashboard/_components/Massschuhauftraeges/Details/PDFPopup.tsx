@@ -31,7 +31,7 @@ function buildHinterkappeMusterPdfLines(h: HinterkappeMusterSideData | null | un
   if (!h) return parts
   if (h.musterErstellung) {
     if (h.musterErstellung === "ja") {
-      parts.push("Soll ein Muster erstellt werden?: Ja, ein Muster erstellen (+4,99 €)")
+      parts.push("Soll ein Muster erstellt werden?: Ja, ein Muster erstellen")
       if (h.musterart) {
         parts.push(
           `Musterart: ${HINTERKAPPE_MUSTERART_LABELS[h.musterart] ?? h.musterart}`
@@ -47,10 +47,10 @@ function buildHinterkappeMusterPdfLines(h: HinterkappeMusterSideData | null | un
   if (h.mode) {
     parts.push(`Ausführung: ${h.mode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich"}`)
     if (h.mode === "gleich" && h.sameValue) {
-      parts.push(`Hinterkappe (beide Seiten): ${h.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein"}`)
+      parts.push(`Hinterkappe (beide Seiten): ${h.sameValue === "ja" ? "Ja" : "Nein"}`)
     } else if (h.mode === "unterschiedlich") {
-      if (h.leftValue) parts.push(`Hinterkappe links: ${h.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
-      if (h.rightValue) parts.push(`Hinterkappe rechts: ${h.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein"}`)
+      if (h.leftValue) parts.push(`Hinterkappe links: ${h.leftValue === "ja" ? "Ja" : "Nein"}`)
+      if (h.rightValue) parts.push(`Hinterkappe rechts: ${h.rightValue === "ja" ? "Ja" : "Nein"}`)
     }
   }
   return parts

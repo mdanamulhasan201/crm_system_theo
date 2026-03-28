@@ -159,25 +159,30 @@ export default function HinterkappeUnifiedConfigCard({
   const erstellung = resolveErstellung(musterValue)
   const musterart = musterValue?.musterart ?? null
 
+  /** Nur musterErstellung / musterart setzen – Auswahlbereich (gleich/unterschiedlich, Ja/Nein) bleibt erhalten. */
   const setErstellung = (choice: HinterkappeMusterErstellung) => {
+    const prev = musterValue
+    const base = {
+      mode: (prev?.mode ?? "gleich") as GleichUnterschiedlichMode,
+      sameValue: prev?.sameValue,
+      leftValue: prev?.leftValue,
+      rightValue: prev?.rightValue,
+    }
     if (choice === "ja") {
       onMusterChange({
-        mode: "gleich",
-        sameValue: "ja",
+        ...base,
         musterErstellung: "ja",
-        musterart: musterart || null,
+        musterart: musterart ?? prev?.musterart ?? null,
       })
     } else if (choice === "nein") {
       onMusterChange({
-        mode: "gleich",
-        sameValue: "nein",
+        ...base,
         musterErstellung: "nein",
         musterart: null,
       })
     } else {
       onMusterChange({
-        mode: "gleich",
-        sameValue: "nein",
+        ...base,
         musterErstellung: "leisten",
         musterart: null,
       })
@@ -186,9 +191,12 @@ export default function HinterkappeUnifiedConfigCard({
 
   const setMusterart = (art: string) => {
     if (musterValue?.musterErstellung !== "ja" && erstellung !== "ja") return
+    const prev = musterValue
     onMusterChange({
-      mode: "gleich",
-      sameValue: "ja",
+      mode: (prev?.mode ?? "gleich") as GleichUnterschiedlichMode,
+      sameValue: prev?.sameValue,
+      leftValue: prev?.leftValue,
+      rightValue: prev?.rightValue,
       musterErstellung: "ja",
       musterart: art,
     })

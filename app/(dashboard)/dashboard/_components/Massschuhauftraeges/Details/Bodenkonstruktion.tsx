@@ -40,6 +40,11 @@ import { prepareOrderDataForPDF, parseEuroFromText } from "./HelperFunctions"
 import StickyPriceSummary from "@/components/StickyPriceSummary/StickyPriceSummary"
 import { buildUmfangmasseWithTitles } from "@/utils/customShoeOrderHelpers"
 import { useSingleCustomShaft } from "@/hooks/customShafts/useSingleCustomShaft"
+import { buildSohlenaufbauGlbBlob } from "./Bodenkonstruktion/sohlenaufbau/sohlenaufbauExport"
+import {
+    canExportSohlenaufbau3d,
+    getSohlenaufbauPreviewDataFromForm,
+} from "./Bodenkonstruktion/sohlenaufbau/sohlenaufbauPreviewFromForm"
 
 interface BodenkonstruktionProps {
     orderId?: string | null
@@ -543,6 +548,11 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
         
         // Update total price with Bodenkonstruktion additions
         formData.set('totalPrice', grandTotal.toFixed(2))
+
+        // Gleicher Inhalt wie Massschafterstellung_json2 (Backend / Altlasten)
+        formData.append("bodenkonstruktion_json", JSON.stringify(massschafterstellungJson2))
+
+        await appendThreeDFileToFormData(formData)
         
         // Detect if it's a custom order
         const isCustomOrder = !!customShaftData.uploadedImage
@@ -743,11 +753,27 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
         return obj
     }
 
+    const appendThreeDFileToFormData = async (formData: FormData) => {
+        if (!canExportSohlenaufbau3d(sohlenaufbau)) return
+        try {
+            const preview = getSohlenaufbauPreviewDataFromForm(sohlenaufbau)
+            const glbBlob = await buildSohlenaufbauGlbBlob(preview)
+            if (glbBlob) {
+                formData.append("threeDFile", glbBlob, "sohlenaufbau.glb")
+            }
+        } catch {
+            /* GLB optional */
+        }
+    }
+
     // Prepare Massschafterstellung_json2 (Bodenkonstruktion data) - full structure so all conditional data is in payload
     const prepareMassschafterstellungJson2 = () => {
         const json: any = {
+            "Mehr_ansehen_image": selectedSole?.image || "",
             "Mehr_ansehen_title": selectedSole?.name || "",
             "Mehr_ansehen_description": selectedSole?.description || "",
+            "customerName": orderDataForPDF.customerName || "",
+            "order_id": orderId || "",
             "hinterkappe_muster": {
                 mode: hinterkappeMusterSide?.mode ?? "",
                 sameValue: hinterkappeMusterSide?.sameValue ?? "",
@@ -755,9 +781,9 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 rightValue: hinterkappeMusterSide?.rightValue ?? "",
                 musterErstellung: hinterkappeMusterSide?.musterErstellung ?? "",
                 musterart: hinterkappeMusterSide?.musterart ?? "",
-                samePrice: hinterkappeMusterSide?.mode === "gleich" ? (hinterkappeMusterSide?.sameValue === "ja" ? 4.99 : 0) : 0,
-                leftPrice: hinterkappeMusterSide?.mode === "unterschiedlich" ? (hinterkappeMusterSide?.leftValue === "ja" ? 2.49 : 0) : 0,
-                rightPrice: hinterkappeMusterSide?.mode === "unterschiedlich" ? (hinterkappeMusterSide?.rightValue === "ja" ? 2.49 : 0) : 0,
+                samePrice: 0,
+                leftPrice: 0,
+                rightPrice: 0,
             },
             "hinterkappe": hinterkappeSide && hinterkappeSide.mode ? {
                 mode: hinterkappeSide.mode,
@@ -839,10 +865,10 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             json.Hinterkappe_Muster_Auswahlbereich = {
                 Auswahlbereich: musterMode === "gleich" ? "Beidseitig – gleich" : "Beidseitig – unterschiedlich",
                 ...(musterMode === "gleich"
-                    ? { "Hinterkappe (beide Seiten)": hinterkappeMusterSide?.sameValue === "ja" ? "Ja (+4,99 €)" : "Nein" }
+                    ? { "Hinterkappe (beide Seiten)": hinterkappeMusterSide?.sameValue === "ja" ? "Ja" : "Nein" }
                     : {
-                        "Hinterkappe links": hinterkappeMusterSide?.leftValue === "ja" ? "Ja (+2,49 €)" : "Nein",
-                        "Hinterkappe rechts": hinterkappeMusterSide?.rightValue === "ja" ? "Ja (+2,49 €)" : "Nein",
+                        "Hinterkappe links": hinterkappeMusterSide?.leftValue === "ja" ? "Ja" : "Nein",
+                        "Hinterkappe rechts": hinterkappeMusterSide?.rightValue === "ja" ? "Ja" : "Nein",
                     }),
             }
         } else {
@@ -959,6 +985,42 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
         if (orderAny?.threed_model_right || orderAny?.image3d_1) {
             json.linker_schuh_left_Shoe = orderAny.threed_model_right || orderAny.image3d_1 || ""
         }
+
+        json.leisten_belassen = getSelectedValue(selected.leisten_belassen) || ""
+        json.farbauswahl = getSelectedValue(selected.farbauswahl) || ""
+        json.laufkohle = getSelectedValue(selected.laufkohle) || ""
+        json.schlenstaerke = getSelectedValue(selected.schlenstaerke) || ""
+        json.absatz_form = getSelectedValue(selected.absatzform) || ""
+        json.Absatzbreite_anpassen = heelWidthAdjustment ? JSON.stringify(heelWidthAdjustment) : ""
+        json.heel_width_adjustment = heelWidthAdjustment || {}
+
+        json.checklist_selected = removeNulls({ ...selected })
+        json.option_inputs = removeNulls(optionInputs)
+        json.text_areas = removeNulls(textAreas)
+        json.selected_sole = selectedSole
+            ? removeNulls({
+                  id: selectedSole.id,
+                  name: selectedSole.name,
+                  image: selectedSole.image,
+                  description: selectedSole.description,
+                  des: selectedSole.des ?? "",
+              })
+            : ""
+        json.sole_variant_options = removeNulls({
+            sole4Thickness,
+            sole4Color,
+            sole5Thickness,
+            sole5Color,
+            sole6Thickness,
+            sole6Color,
+        })
+        json.pricing = removeNulls({
+            basePrice,
+            grandTotal,
+            currency: "EUR",
+        })
+        json.delivery_date_display = orderDataForPDF.deliveryDate || ""
+        json.product_name = orderDataForPDF.productName || shoe2.name || ""
 
         return removeNulls(json)
     }
@@ -1129,6 +1191,8 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
                 formData.append('sole6_color', sole6Color)
             }
         }
+
+        await appendThreeDFileToFormData(formData)
 
         return formData
     }

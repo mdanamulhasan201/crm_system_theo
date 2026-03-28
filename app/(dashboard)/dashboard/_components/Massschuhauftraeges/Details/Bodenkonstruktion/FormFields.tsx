@@ -1379,9 +1379,9 @@ export type HinterkappeMusterErstellung = "ja" | "nein" | "leisten"
 // 1. Hinterkappe Muster Side Field - only 2 modes: Beidseitig – gleich | Beidseitig – unterschiedlich
 export type HinterkappeMusterSideData = {
     mode: GleichUnterschiedlichMode
-    /** For mode "gleich": single selection for both sides. Ja = +5€, Nein = 0 */
+    /** For mode "gleich": single selection for both sides (ohne Aufpreis im Checkout) */
     sameValue?: "ja" | "nein" | null
-    /** For mode "unterschiedlich": left/right separate. Each Ja = +2.50€, max 5€ total */
+    /** For mode "unterschiedlich": left/right separate (ohne Aufpreis pro Seite im Checkout) */
     leftValue?: "ja" | "nein" | null
     rightValue?: "ja" | "nein" | null
     /** Optional: explizite UI-Wahl (ja / nein selbst liefern / Leisten-Kennzeichnung) */

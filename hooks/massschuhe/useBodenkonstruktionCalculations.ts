@@ -15,7 +15,7 @@ import type { RahmenData, HinterkappeMusterSideData, HinterkappeSideData, Brands
  * @param selected - Object containing selected options for each field group
  * @param orderTotalPrice - Optional base price from the order (defaults to 0)
  * @param rahmen - Rahmen selection data (Verschalung / Gürtel +24,99 €; kein Gummi-Aufpreis)
- * @param hinterkappeMusterSide - Hinterkappe Muster (mode: gleich | unterschiedlich). Ja = +5€ or +2.50€ per side
+ * @param hinterkappeMusterSide - Hinterkappe Muster (kein Aufpreis im Gesamtpreis)
  * @param hinterkappeSide - Hinterkappe (beide Seiten): Leder sub-options (e.g. Leder Dünn +4,99 €)
  * @param brandsohleSide - Brandsohle (mode: gleich = full price | unterschiedlich = half price per side)
  * @param vorderkappeSide - Vorderkappe „Doppelt“ = +2,99 € pro betroffener Seite (bei gleich: beide Schuhe)
@@ -36,6 +36,10 @@ export function useBodenkonstruktionCalculations(
 
         for (const group of GROUPS2) {
             if (group.fieldType === "sohlenversteifung" || group.fieldType === "sohlenaufbau") {
+                continue
+            }
+            // Hinterkappe Muster: Preise nur über hinterkappeMusterSide (unten), nicht über GROUPS2-Labels
+            if (group.id === "hinterkappe_muster") {
                 continue
             }
 
@@ -92,18 +96,7 @@ export function useBodenkonstruktionCalculations(
         }
         
         // Add orthopedic field prices
-        // 1. Hinterkappe Muster (mode: gleich | unterschiedlich): Ja = +4,99€ or +2,49€ per side
-        const musterNoAufpreis =
-            hinterkappeMusterSide?.musterErstellung === "nein" ||
-            hinterkappeMusterSide?.musterErstellung === "leisten"
-        if (!musterNoAufpreis) {
-            if (hinterkappeMusterSide?.mode === "gleich" && hinterkappeMusterSide.sameValue === "ja") {
-                totalExtraPrice += 4.99
-            } else if (hinterkappeMusterSide?.mode === "unterschiedlich") {
-                if (hinterkappeMusterSide.leftValue === "ja") totalExtraPrice += 2.49
-                if (hinterkappeMusterSide.rightValue === "ja") totalExtraPrice += 2.49
-            }
-        }
+        // 1. Hinterkappe Muster: kein Aufpreis (weder „Muster erstellen“ noch Auswahlbereich)
 
         // 2a. Rahmen: Verschalung / Gürtel +24,99 €
         if (rahmen?.type === "verschalung") {
@@ -153,7 +146,7 @@ export function useBodenkonstruktionCalculations(
         }
 
         return totalExtraPrice
-    }, [selected, rahmen, hinterkappeMusterSide, hinterkappeSide, brandsohleSide, vorderkappeSide])
+    }, [selected, rahmen, hinterkappeSide, brandsohleSide, vorderkappeSide])
 
     // Calculate grand total: base price + extra prices from selected options
     const grandTotal = useMemo(() => {

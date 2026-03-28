@@ -425,11 +425,11 @@ export default function BodenkonstruktionPage() {
                 musterErstellung: hinterkappeMusterSide?.musterErstellung ?? "",
                 musterart: hinterkappeMusterSide?.musterart ?? "",
                 ...(hinterkappeMusterSide?.mode === "gleich" && {
-                    samePrice: hinterkappeMusterSide?.sameValue === "ja" ? 4.99 : 0,
+                    samePrice: 0,
                 }),
                 ...(hinterkappeMusterSide?.mode === "unterschiedlich" && {
-                    leftPrice: hinterkappeMusterSide?.leftValue === "ja" ? 2.49 : 0,
-                    rightPrice: hinterkappeMusterSide?.rightValue === "ja" ? 2.49 : 0,
+                    leftPrice: 0,
+                    rightPrice: 0,
                 }),
             },
 
