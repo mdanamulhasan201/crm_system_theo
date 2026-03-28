@@ -1,8 +1,9 @@
 "use client"
 
 import dynamic from "next/dynamic"
-import { useCallback, useMemo } from "react"
-import { Layers } from "lucide-react"
+import { useCallback, useMemo, useState } from "react"
+import { Download, Layers } from "lucide-react"
+import toast from "react-hot-toast"
 import ConfigCard from "../shared/ConfigCard"
 import { RadioOption } from "../shared/RadioOption"
 import type { SohlenaufbauData, SohlenaufbauFarbModus } from "../FormFields"
@@ -14,6 +15,7 @@ import SohlenaufbauVerschalungSubsection from "./SohlenaufbauVerschalungSubsecti
 import SohlenaufbauBiomechanicsPanel from "./SohlenaufbauBiomechanicsPanel"
 import { parseSohlenaufbauNum } from "./utils"
 import type { SohlenaufbauPreviewData } from "./SolePreview3D"
+import { downloadSohlenaufbauGlb } from "./sohlenaufbauExport"
 import {
   getSohlenaufbauShoreForColor,
   sanitizeSohlenaufbauColorsForShore,
@@ -144,6 +146,8 @@ export default function SohlenaufbauConfigCard({
 
   const zwLayerCount = value.zwSplit.mode === "einteilig" ? 1 : value.zwSplit.layers.length
   const abLayerCount = value.abSplit.mode === "einteilig" ? 1 : value.abSplit.layers.length
+
+  const [exportingGlb, setExportingGlb] = useState(false)
 
   return (
     <ConfigCard
@@ -336,11 +340,37 @@ export default function SohlenaufbauConfigCard({
 
         {hasValues && calc.valid ? (
           <div className="border-t border-gray-200 pt-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-gray-500">3D-Vorschau</p>
+            <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">3D-Vorschau</p>
+              <button
+                type="button"
+                disabled={exportingGlb}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#6B9B87] bg-[#6B9B87] px-3 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#5a8a72] disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={async () => {
+                  setExportingGlb(true)
+                  try {
+                    const ok = await downloadSohlenaufbauGlb(previewData)
+                    if (!ok) {
+                      toast.error("Keine Schichten zum Export – bitte Höhen prüfen.")
+                    }
+                  } catch {
+                    toast.error("GLB-Export fehlgeschlagen.")
+                  } finally {
+                    setExportingGlb(false)
+                  }
+                }}
+              >
+                <Download className="h-4 w-4 shrink-0" aria-hidden />
+                {exportingGlb ? "Wird erstellt…" : "3D herunterladen (GLB, mit Farben)"}
+              </button>
+            </div>
             <div className="relative h-[280px] w-full overflow-hidden rounded-lg bg-gray-100">
               <SolePreview3D data={previewData} />
             </div>
-            <p className="mt-2 text-xs text-gray-500">Schematische Darstellung – nicht maßstabsgetreu</p>
+            <p className="mt-2 text-xs text-gray-500">
+              Schematische Darstellung – nicht maßstabsgetreu. Die GLB-Datei enthält die Farben aus dem Farbkonzept (z. B.
+              für Blender).
+            </p>
           </div>
         ) : null}
 
