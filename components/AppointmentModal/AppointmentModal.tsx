@@ -545,23 +545,32 @@ export default function AppointmentModal({
                                                     <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 animate-spin" />
                                                 )}
                                                 {showNameSuggestions && nameSuggestions.length > 0 && (
-                                                    <div className="absolute z-50 mt-1.5 w-full bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden">
-                                                        {nameSuggestions.map((s) => (
-                                                            <button
-                                                                type="button"
-                                                                key={s.id}
-                                                                className="w-full text-left px-3 py-2.5 hover:bg-[#61A07B]/5 cursor-pointer flex items-center gap-3 transition-colors"
-                                                                onClick={() => handleKundeSuggestionClick(s)}
-                                                            >
-                                                                <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 text-sm flex items-center justify-center shrink-0 font-semibold">
-                                                                    {s.name.charAt(0).toUpperCase()}
-                                                                </div>
-                                                                <div className="min-w-0">
-                                                                    <div className="font-medium text-sm text-gray-800 truncate">{s.name}</div>
-                                                                    <div className="text-xs text-gray-400 truncate">{s.phone || ''}{s.email ? ` • ${s.email}` : ''}</div>
-                                                                </div>
-                                                            </button>
-                                                        ))}
+                                                    <div className="absolute z-50 mt-1.5 w-full bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl overflow-hidden py-1">
+                                                        {nameSuggestions.map((s, i) => {
+                                                            const meta = [s.phone, s.email].filter(Boolean).join(" · ");
+                                                            return (
+                                                                <button
+                                                                    type="button"
+                                                                    key={s.id}
+                                                                    className="w-full text-left px-3 py-2 hover:bg-white/10 cursor-pointer flex items-baseline gap-3 transition-colors"
+                                                                    onClick={() => handleKundeSuggestionClick(s)}
+                                                                >
+                                                                    <span className="tabular-nums font-extrabold text-sm text-white/50 w-7 text-right shrink-0">
+                                                                        {i + 1}
+                                                                    </span>
+                                                                    <div className="min-w-0 flex-1">
+                                                                        <div className="font-bold text-sm uppercase tracking-tight text-white truncate">
+                                                                            {s.name}
+                                                                        </div>
+                                                                        {meta ? (
+                                                                            <div className="text-[11px] text-white/45 truncate mt-0.5">
+                                                                                {meta}
+                                                                            </div>
+                                                                        ) : null}
+                                                                    </div>
+                                                                </button>
+                                                            );
+                                                        })}
                                                     </div>
                                                 )}
                                             </div>
@@ -661,20 +670,26 @@ export default function AppointmentModal({
                                                 )}
                                             </div>
                                             {showEmployeeSuggestions && filteredEmployeeSuggestions.length > 0 && (
-                                                <div className="absolute z-50 top-full left-0 mt-1.5 w-full bg-white border border-gray-200 rounded-xl shadow-lg max-h-52 overflow-y-auto">
-                                                    {filteredEmployeeSuggestions.map((s) => (
+                                                <div className="absolute z-50 top-full left-0 mt-1.5 w-full bg-neutral-900 border border-neutral-800 rounded-lg shadow-xl max-h-52 overflow-y-auto py-1">
+                                                    {filteredEmployeeSuggestions.map((s, i) => (
                                                         <button
                                                             type="button"
                                                             key={s.id}
-                                                            className="w-full text-left px-3 py-2.5 hover:bg-[#61A07B]/5 cursor-pointer flex items-center gap-3 transition-colors"
+                                                            className="w-full text-left px-3 py-2 hover:bg-white/10 cursor-pointer flex items-baseline gap-3 transition-colors"
                                                             onClick={() => addEmployee(s)}
                                                         >
-                                                            <div className="w-8 h-8 rounded-full bg-[#61A07B]/15 text-[#61A07B] text-sm flex items-center justify-center shrink-0 font-bold">
-                                                                {s.employeeName.charAt(0).toUpperCase()}
-                                                            </div>
-                                                            <div className="min-w-0">
-                                                                <div className="font-medium text-sm text-gray-800 truncate">{s.employeeName}</div>
-                                                                {s.email && <div className="text-xs text-gray-400 truncate">{s.email}</div>}
+                                                            <span className="tabular-nums font-extrabold text-sm text-white/50 w-7 text-right shrink-0">
+                                                                {i + 1}
+                                                            </span>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="font-bold text-sm uppercase tracking-tight text-white truncate">
+                                                                    {s.employeeName}
+                                                                </div>
+                                                                {s.email ? (
+                                                                    <div className="text-[11px] text-white/45 truncate mt-0.5">
+                                                                        {s.email}
+                                                                    </div>
+                                                                ) : null}
                                                             </div>
                                                         </button>
                                                     ))}
