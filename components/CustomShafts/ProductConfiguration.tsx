@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColorSectionModal';
 import ZipperPlacementModal, { type ZipperPosition } from './ZipperPlacementModal';
 import ProductCadCategoryFields from './ProductCadCategoryFields';
+import SchafthoheCard from './SchafthoheCard';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -589,173 +590,30 @@ export default function ProductConfiguration({
           )}
         </ConfigCard>
 
-        <ConfigCard title="Maße & Polsterung" subtitle="Schafthöhen, Umfänge, Polsterung und Verstärkungen">
-        {/* Schafthöhe Links (Left) */}
-        <div className="flex flex-col md:flex-row md:items-start gap-4">
-          <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Links:</Label>
-          <div className="flex flex-col gap-3 w-full md:w-1/2">
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                placeholder="z.B. 14"
-                className="flex-1 border-gray-300"
-                value={schafthoheLinks}
-                onChange={e => setSchafthoheLinks(e.target.value)}
-              />
-              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
-            </div>
-            {(() => {
-              const leftH = parseFloat(schafthoheLinks);
-              const fields = getCircumferenceFieldsForHeight(leftH);
-              if (!fields.requireCircumference) return null;
-              return (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-3">
-                 
-                  <p className="text-xs text-yellow-800">
-                    Nur erforderlich, wenn kein Leisten vorliegt oder der vorhandene Leisten für höhere Schafthöhen nicht ausreichend ist.
-                  </p>
-                  {fields.showKnoechelumfang && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Knöchelumfang</Label>
-                      <Input
-                        type="text"
-                        placeholder="z.B. 24"
-                        className="flex-1 border-yellow-300 bg-white"
-                        value={knoechelumfangLinks}
-                        onChange={e => setKnoechelumfangLinks(e.target.value)}
-                      />
-                      <span className="text-sm text-gray-600">cm</span>
-                    </div>
-                  )}
-                  {fields.showUmfang15 && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 15 cm Höhe (ab Boden)</Label>
-                      <Input
-                        type="text"
-                        placeholder="z.B. 26"
-                        className="flex-1 border-yellow-300 bg-white"
-                        value={umfangBei14Links}
-                        onChange={e => setUmfangBei14Links(e.target.value)}
-                      />
-                      <span className="text-sm text-gray-600">cm</span>
-                    </div>
-                  )}
-                  {fields.showUmfang16 && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 16 cm Höhe (ab Boden)</Label>
-                      <Input
-                        type="text"
-                        placeholder="z.B. 27"
-                        className="flex-1 border-yellow-300 bg-white"
-                        value={umfangBei16Links}
-                        onChange={e => setUmfangBei16Links(e.target.value)}
-                      />
-                      <span className="text-sm text-gray-600">cm</span>
-                    </div>
-                  )}
-                  {fields.showUmfang18 && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 18 cm Höhe (ab Boden)</Label>
-                      <Input
-                        type="text"
-                        placeholder="z.B. 28"
-                        className="flex-1 border-yellow-300 bg-white"
-                        value={umfangBei18Links}
-                        onChange={e => setUmfangBei18Links(e.target.value)}
-                      />
-                      <span className="text-sm text-gray-600">cm</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
+        <SchafthoheCard
+          schafthoheLinks={schafthoheLinks}
+          setSchafthoheLinks={setSchafthoheLinks}
+          schafthoheRechts={schafthoheRechts}
+          setSchafthoheRechts={setSchafthoheRechts}
+          knoechelumfangLinks={knoechelumfangLinks}
+          setKnoechelumfangLinks={setKnoechelumfangLinks}
+          umfangBei14Links={umfangBei14Links}
+          setUmfangBei14Links={setUmfangBei14Links}
+          umfangBei16Links={umfangBei16Links}
+          setUmfangBei16Links={setUmfangBei16Links}
+          umfangBei18Links={umfangBei18Links}
+          setUmfangBei18Links={setUmfangBei18Links}
+          knoechelumfangRechts={knoechelumfangRechts}
+          setKnoechelumfangRechts={setKnoechelumfangRechts}
+          umfangBei14Rechts={umfangBei14Rechts}
+          setUmfangBei14Rechts={setUmfangBei14Rechts}
+          umfangBei16Rechts={umfangBei16Rechts}
+          setUmfangBei16Rechts={setUmfangBei16Rechts}
+          umfangBei18Rechts={umfangBei18Rechts}
+          setUmfangBei18Rechts={setUmfangBei18Rechts}
+        />
 
-        {/* Schafthöhe Rechts (Right) */}
-        <div className="flex flex-col md:flex-row md:items-start gap-4">
-          <Label className="font-medium text-base md:w-1/3 md:mt-2">Schafthöhe Rechts:</Label>
-          <div className="flex flex-col gap-3 w-full md:w-1/2">
-            <div className="flex items-center gap-2">
-              <Input
-                type="number"
-                placeholder="z.B. 14"
-                className="flex-1 border-gray-300"
-                value={schafthoheRechts}
-                onChange={e => setSchafthoheRechts(e.target.value)}
-              />
-              <span className="text-sm font-medium text-gray-700 whitespace-nowrap">cm</span>
-            </div>
-            {(() => {
-              const rightH = parseFloat(schafthoheRechts);
-              const fields = getCircumferenceFieldsForHeight(rightH);
-              if (!fields.requireCircumference) return null;
-              return (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 space-y-3">
-                
-                  <p className="text-xs text-yellow-800">
-                    Nur erforderlich, wenn kein Leisten vorliegt oder der vorhandene Leisten für höhere Schafthöhen nicht ausreichend ist.
-                  </p>
-                  {fields.showKnoechelumfang && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Knöchelumfang</Label>
-                      <Input
-                        type="text"
-                        placeholder="z.B. 24"
-                        className="flex-1 border-yellow-300 bg-white"
-                        value={knoechelumfangRechts}
-                        onChange={e => setKnoechelumfangRechts(e.target.value)}
-                      />
-                      <span className="text-sm text-gray-600">cm</span>
-                    </div>
-                  )}
-                  {fields.showUmfang15 && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 15 cm Höhe (ab Boden)</Label>
-                      <Input
-                        type="text"
-                        placeholder="z.B. 26"
-                        className="flex-1 border-yellow-300 bg-white"
-                        value={umfangBei14Rechts}
-                        onChange={e => setUmfangBei14Rechts(e.target.value)}
-                      />
-                      <span className="text-sm text-gray-600">cm</span>
-                    </div>
-                  )}
-                  {fields.showUmfang16 && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 16 cm Höhe (ab Boden)</Label>
-                      <Input
-                        type="text"
-                        placeholder="z.B. 27"
-                        className="flex-1 border-yellow-300 bg-white"
-                        value={umfangBei16Rechts}
-                        onChange={e => setUmfangBei16Rechts(e.target.value)}
-                      />
-                      <span className="text-sm text-gray-600">cm</span>
-                    </div>
-                  )}
-                  {fields.showUmfang18 && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm text-yellow-900 w-48 shrink-0">Umfang bei 18 cm Höhe (ab Boden)</Label>
-                      <Input
-                        type="text"
-                        placeholder="z.B. 28"
-                        className="flex-1 border-yellow-300 bg-white"
-                        value={umfangBei18Rechts}
-                        onChange={e => setUmfangBei18Rechts(e.target.value)}
-                      />
-                      <span className="text-sm text-gray-600">cm</span>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-          </div>
-        </div>
-
-
-
+        <ConfigCard title="Maße & Polsterung" subtitle="Polsterung und Verstärkungen">
         {/* Polsterung */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Polsterung:</Label>
