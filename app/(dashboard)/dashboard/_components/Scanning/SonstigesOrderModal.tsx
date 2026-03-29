@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { MapPin, StickyNote } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getAllLocations } from '@/apis/setting/locationManagementApis';
+import { getAllLocations, type StoreLocation } from '@/apis/setting/locationManagementApis';
 import { useSearchEmployee } from '@/hooks/employee/useSearchEmployee';
 import { getSettingData } from '@/apis/einlagenApis';
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types';
@@ -88,7 +88,7 @@ export default function SonstigesOrderModal({
     const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
     
     // Location dropdown
-    const [locations, setLocations] = useState<Array<{id: string; address: string; description: string; isPrimary: boolean}>>([]);
+    const [locations, setLocations] = useState<StoreLocation[]>([]);
     const [locationsLoading, setLocationsLoading] = useState(false);
     const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
     

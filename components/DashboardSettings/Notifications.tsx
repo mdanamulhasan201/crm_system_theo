@@ -7,23 +7,22 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MapPin, Plus, Edit, Trash2 } from "lucide-react";
-import { createLocation, getAllLocations, updateLocation, deleteLocation } from "@/apis/setting/locationManagementApis";
+import {
+    createLocation,
+    getAllLocations,
+    updateLocation,
+    deleteLocation,
+    type StoreLocation,
+} from "@/apis/setting/locationManagementApis";
 import toast from "react-hot-toast";
 
-interface Location {
-    id: string;
-    address: string;
-    description: string;
-    isPrimary: boolean;
-}
-
 export default function Notifications() {
-    const [locations, setLocations] = useState<Location[]>([]);
+    const [locations, setLocations] = useState<StoreLocation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-    const [editingLocation, setEditingLocation] = useState<Location | null>(null);
-    const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
+    const [editingLocation, setEditingLocation] = useState<StoreLocation | null>(null);
+    const [deletingLocation, setDeletingLocation] = useState<StoreLocation | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -52,26 +51,22 @@ export default function Notifications() {
                 return;
             }
             
-            // Handle different response structures
-            if (response?.data) {
-                // Check if data is an array
-                if (Array.isArray(response.data)) {
-                    setLocations(response.data);
-                    setError(null); // Clear error on success
-                } else if (response.data.data && Array.isArray(response.data.data)) {
-                    // Handle nested data structure
-                    setLocations(response.data.data);
-                    setError(null); // Clear error on success
-                } else {
-                    console.warn("Unexpected response structure:", response);
-                    setLocations([]);
-                }
-            } else if (Array.isArray(response)) {
-                // Handle case where response is directly an array
-                setLocations(response);
-                setError(null); // Clear error on success
-            } else {
+            // Handle `data` as array (typed API) or legacy `{ data: StoreLocation[] }` wrapper
+            const raw = response?.data as
+                | StoreLocation[]
+                | { data?: StoreLocation[] }
+                | undefined;
+            if (raw === undefined) {
                 console.warn("No data found in response:", response);
+                setLocations([]);
+            } else if (Array.isArray(raw)) {
+                setLocations(raw);
+                setError(null);
+            } else if (Array.isArray(raw.data)) {
+                setLocations(raw.data);
+                setError(null);
+            } else {
+                console.warn("Unexpected response structure:", response);
                 setLocations([]);
             }
         } catch (error: any) {
@@ -133,18 +128,18 @@ export default function Notifications() {
     };
 
     // Open edit modal
-    const handleEditClick = (location: Location) => {
+    const handleEditClick = (location: StoreLocation) => {
         setEditingLocation(location);
         setFormData({
             address: location.address,
-            description: location.description,
-            isPrimary: location.isPrimary,
+            description: location.description ?? "",
+            isPrimary: location.isPrimary ?? false,
         });
         setIsModalOpen(true);
     };
 
     // Open delete modal
-    const handleDeleteClick = (location: Location) => {
+    const handleDeleteClick = (location: StoreLocation) => {
         setDeletingLocation(location);
         setIsDeleteModalOpen(true);
     };

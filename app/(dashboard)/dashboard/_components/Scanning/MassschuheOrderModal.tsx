@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { initializeDeliveryDate, getRequiredDeliveryDate } from './utils/dateUtils';
 import { getSettingData } from '@/apis/einlagenApis';
 import { PriceItem } from '@/app/(dashboard)/dashboard/settings-profile/_components/Preisverwaltung/types';
-import { getAllLocations } from '@/apis/setting/locationManagementApis';
+import { getAllLocations, type StoreLocation } from '@/apis/setting/locationManagementApis';
 import PaymentStatusSection from './Werkstattzettel/FormSections/PaymentStatusSection';
 
 interface Customer {
@@ -298,7 +298,7 @@ export default function MassschuheOrderModal({
     const [quantity, setQuantity] = useState<number>(1);
     const [laserPrintPrices, setLaserPrintPrices] = useState<PriceItem[]>([]);
     const [pricesLoading, setPricesLoading] = useState(false);
-    const [locations, setLocations] = useState<Array<{ id: string; address: string; description: string; isPrimary: boolean }>>([]);
+    const [locations, setLocations] = useState<StoreLocation[]>([]);
     const [locationsLoading, setLocationsLoading] = useState(false);
     const [showNotizTextarea, setShowNotizTextarea] = useState(false);
     const [showConfirmModal, setShowConfirmModal] = useState(false);

@@ -9,7 +9,7 @@ import VersandAnKundenModal from './VersandAnKundenModal'
 import { useWerkstattzettelForm } from '../../../../../hooks/einlagen/useWerkstattzettelForm'
 import CustomerInfoSection from './Werkstattzettel/FormSections/CustomerInfoSection'
 import PriceSection from './Werkstattzettel/FormSections/PriceSection'
-import { createWerkstattzettelPayload } from './utils/formDataUtils'
+import { createWerkstattzettelPayload, type WerkstattzettelFormData } from './utils/formDataUtils'
 import { getSettingData } from '@/apis/einlagenApis'
 import { getAllLocations, type StoreLocation, type StoreLocationEmployee } from '@/apis/setting/locationManagementApis'
 import { getOrderSettings } from '@/apis/versorgungApis'
@@ -515,44 +515,45 @@ export default function WerkstattzettelModal({
           : undefined
 
       // Create payload using utility function
+      const werkstattzettelFormInput: WerkstattzettelFormData = {
+        vorname: form.vorname,
+        nachname: form.nachname,
+        email: form.email,
+        telefonnummer: form.telefonnummer,
+        wohnort: form.wohnort,
+        mitarbeiter: form.mitarbeiter,
+        versorgung: form.versorgung,
+        datumAuftrag: form.datumAuftrag,
+        geschaeftsstandort: form.geschaeftsstandort,
+        auftragAngenommenBei: form.auftragAngenommenBei,
+        fertigstellungBis: form.fertigstellungBis,
+        fertigstellungBisTime: form.fertigstellungBisTime,
+        bezahlt: form.bezahlt,
+        employeeId: form.employeeId,
+        footAnalysisPrice: form.footAnalysisPrice,
+        insoleSupplyPrice: form.insoleSupplyPrice,
+        quantity: (() => {
+          // Parse quantity from string to number (e.g., "1 paar" -> 1)
+          if (!form.quantity) return formData?.menge || formData?.quantity || undefined
+          const match = form.quantity.match(/^(\d+)\s*paar/i)
+          return match ? parseInt(match[1], 10) : undefined
+        })(),
+        discount: (() => {
+          if (!form.discountValue || form.discountValue.trim() === '') return undefined
+          const parsed = parseFloat(form.discountValue)
+          return isNaN(parsed) ? undefined : parsed
+        })(),
+        discountType: form.discountType || undefined,
+        addonPrices: form.addonPrices || undefined,
+        positionsnummerTotal: formData?.positionsnummerTotal,
+        selectedVersorgungData: formData?.selectedVersorgungData,
+        // Pass billing type through so pricing logic can respect Krankenkassa vs Privat
+        billingType: formData?.billingType,
+        einlagetypPriceForPrivat: formData?.einlagetypPriceForPrivat,
+        totalPriceOverride,
+      }
       const werkstattzettelPayload = createWerkstattzettelPayload(
-        {
-          vorname: form.vorname,
-          nachname: form.nachname,
-          email: form.email,
-          telefonnummer: form.telefonnummer,
-          wohnort: form.wohnort,
-          mitarbeiter: form.mitarbeiter,
-          versorgung: form.versorgung,
-          datumAuftrag: form.datumAuftrag,
-          geschaeftsstandort: form.geschaeftsstandort,
-          auftragAngenommenBei: form.auftragAngenommenBei,
-          fertigstellungBis: form.fertigstellungBis,
-          fertigstellungBisTime: form.fertigstellungBisTime,
-          bezahlt: form.bezahlt,
-          employeeId: form.employeeId,
-          footAnalysisPrice: form.footAnalysisPrice,
-          insoleSupplyPrice: form.insoleSupplyPrice,
-          quantity: (() => {
-            // Parse quantity from string to number (e.g., "1 paar" -> 1)
-            if (!form.quantity) return formData?.menge || formData?.quantity || undefined
-            const match = form.quantity.match(/^(\d+)\s*paar/i)
-            return match ? parseInt(match[1], 10) : undefined
-          })(),
-          discount: (() => {
-            if (!form.discountValue || form.discountValue.trim() === '') return undefined
-            const parsed = parseFloat(form.discountValue)
-            return isNaN(parsed) ? undefined : parsed
-          })(),
-          discountType: form.discountType || undefined,
-          addonPrices: form.addonPrices || undefined,
-          positionsnummerTotal: formData?.positionsnummerTotal,
-          selectedVersorgungData: formData?.selectedVersorgungData,
-          // Pass billing type through so pricing logic can respect Krankenkassa vs Privat
-          billingType: formData?.billingType,
-          einlagetypPriceForPrivat: formData?.einlagetypPriceForPrivat,
-          totalPriceOverride,
-        },
+        werkstattzettelFormInput,
         scanData.id
       )
 

@@ -10,7 +10,7 @@ import { ChevronDown, Check, X } from 'lucide-react'
 export type FilialeLocation = {
   id: string
   address: string
-  description: string
+  description?: string
   isPrimary?: boolean
 }
 

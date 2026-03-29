@@ -21,6 +21,8 @@ export type StoreLocation = {
 export type StoreLocationsListResponse = {
     success?: boolean;
     message?: string;
+    /** Some error payloads use this instead of message */
+    error?: string;
     data?: StoreLocation[];
     pagination?: {
         totalItems?: number;
@@ -56,7 +58,7 @@ export const getAllLocations = async (
 
         if (data?.success === false) {
             const error = new Error(
-                data?.message || (data as any)?.error || "Failed to fetch locations"
+                data?.message || data?.error || "Failed to fetch locations"
             );
             (error as Error & { response?: { data: unknown } }).response = { data };
             throw error;

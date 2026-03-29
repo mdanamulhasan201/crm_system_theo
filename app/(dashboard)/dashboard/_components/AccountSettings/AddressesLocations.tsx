@@ -7,16 +7,17 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
-import { createLocation, getAllLocations, updateLocation, deleteLocation } from "@/apis/setting/locationManagementApis"
+import {
+  createLocation,
+  getAllLocations,
+  updateLocation,
+  deleteLocation,
+  type StoreLocation,
+} from "@/apis/setting/locationManagementApis"
 import toast from "react-hot-toast"
 import WohnortInput from "../Customers/WohnortInput"
 
-interface Location {
-  id: string
-  address: string
-  description: string
-  isPrimary: boolean
-}
+type Location = StoreLocation
 
 export default function AddressesLocations() {
   const [locations, setLocations] = useState<Location[]>([])
@@ -53,23 +54,23 @@ export default function AddressesLocations() {
         return
       }
       
-      // Handle different response structures
-      if (response?.data) {
-        // Check if data is an array
-        if (Array.isArray(response.data)) {
-          setLocations(response.data)
+      // Handle different response structures (array or legacy nested { data: [] })
+      if (response?.data !== undefined && response.data !== null) {
+        const payload = response.data as
+          | StoreLocation[]
+          | { data?: StoreLocation[] }
+        if (Array.isArray(payload)) {
+          setLocations(payload)
           setError(null)
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          // Handle nested data structure
-          setLocations(response.data.data)
+        } else if (Array.isArray(payload.data)) {
+          setLocations(payload.data)
           setError(null)
         } else {
           console.warn("Unexpected response structure:", response)
           setLocations([])
         }
       } else if (Array.isArray(response)) {
-        // Handle case where response is directly an array
-        setLocations(response)
+        setLocations(response as Location[])
         setError(null)
       } else {
         console.warn("No data found in response:", response)
@@ -145,8 +146,8 @@ export default function AddressesLocations() {
     setEditingLocation(location)
     setFormData({
       address: location.address,
-      description: location.description,
-      isPrimary: location.isPrimary,
+      description: location.description ?? "",
+      isPrimary: location.isPrimary ?? false,
     })
     setIsModalOpen(true)
   }

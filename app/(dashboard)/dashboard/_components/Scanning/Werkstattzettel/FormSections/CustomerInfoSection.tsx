@@ -7,6 +7,7 @@ import LocationDropdown from '../Dropdowns/LocationDropdown'
 import { calculateDeliveryDate, getMinimumDeliveryDate } from '../../utils/dateUtils'
 import { cn } from '@/lib/utils'
 import { User, MapPin, Mail, Calendar, Phone, Users } from 'lucide-react'
+import type { StoreLocation } from '@/apis/setting/locationManagementApis'
 
 interface CustomerInfoSectionData {
   // Form values
@@ -18,7 +19,10 @@ interface CustomerInfoSectionData {
   versorgung: string
   datumAuftrag: string
   telefonnummer: string
-  geschaeftsstandort: {id: string; address: string; description: string; isPrimary?: boolean} | null
+  geschaeftsstandort: Pick<StoreLocation, 'id' | 'address'> & {
+    description?: string
+    isPrimary?: boolean
+  } | null
   fertigstellungBis: string
   fertigstellungBisTime: string
   quantity: string
@@ -31,7 +35,9 @@ interface CustomerInfoSectionData {
   onVersorgungChange: (value: string) => void
   onDatumAuftragChange: (value: string) => void
   onTelefonnummerChange: (value: string) => void
-  onGeschaeftsstandortChange: (location: {id: string; address: string; description: string; isPrimary?: boolean} | null) => void
+  onGeschaeftsstandortChange: (
+    location: (Pick<StoreLocation, 'id' | 'address'> & { description?: string; isPrimary?: boolean }) | null
+  ) => void
   onFertigstellungBisChange: (value: string) => void
   onFertigstellungBisTimeChange: (value: string) => void
   onQuantityChange: (value: string) => void
@@ -45,7 +51,7 @@ interface CustomerInfoSectionData {
   onEmployeeSearchChange: (value: string) => void
 
   // Location dropdown
-  locations: Array<{id: string; address: string; description: string; isPrimary?: boolean}>
+  locations: StoreLocation[]
   isLocationDropdownOpen: boolean
   onLocationDropdownChange: (open: boolean) => void
   sameAsBusiness?: boolean

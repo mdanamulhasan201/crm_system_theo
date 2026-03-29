@@ -395,7 +395,7 @@ async function renderBestellscheinA4(
     }
 
     // Footer on last page, fixed to bottom (A4)
-    const totalPages = doc.internal.getNumberOfPages()
+    const totalPages = doc.getNumberOfPages()
     doc.setPage(totalPages)
     drawA4Footer(doc, m)
 }

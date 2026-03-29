@@ -12,16 +12,8 @@ import { shouldUnoptimizeImage } from '@/lib/imageUtils'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Phone, Mail, Clock } from 'lucide-react'
-import { getAllLocations } from '@/apis/setting/locationManagementApis'
+import { getAllLocations, type StoreLocation } from '@/apis/setting/locationManagementApis'
 import Mentors from '../_components/Settings/Mentors'
-
-type StoreLocation = {
-    id: string;
-    address: string;
-    description?: string;
-    isPrimary: boolean;
-    createdAt: string;
-};
 
 export default function Settingss() {
     const [showLanguageDropdown, setShowLanguageDropdown] = React.useState(false);

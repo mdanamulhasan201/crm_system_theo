@@ -8,16 +8,23 @@ import PaymentStatusSection from './PaymentStatusSection'
 import LocationDropdown from '../Dropdowns/LocationDropdown'
 import { FileText } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+import type { StoreLocation } from '@/apis/setting/locationManagementApis'
 
 type EinlagenversorgungPriceItem = { name: string; price: number } | number
 
+/** Matches LocationDropdown / API store locations (description optional). */
+type AuftragLocationValue = Pick<StoreLocation, 'id' | 'address'> & {
+  description?: string
+  isPrimary?: boolean
+}
+
 interface PriceSectionProps {
   // Auftrag angenommen bei (location dropdown before Versorgung - separate from Abholung)
-  auftragAngenommenBei?: { id: string; address: string; description: string; isPrimary?: boolean } | null
-  locations?: Array<{ id: string; address: string; description: string; isPrimary?: boolean }>
+  auftragAngenommenBei?: AuftragLocationValue | null
+  locations?: StoreLocation[]
   isAuftragLocationDropdownOpen?: boolean
   onAuftragLocationDropdownChange?: (open: boolean) => void
-  onAuftragAngenommenBeiChange?: (location: { id: string; address: string; description: string; isPrimary?: boolean } | null) => void
+  onAuftragAngenommenBeiChange?: (location: AuftragLocationValue | null) => void
   onAuftragAngenommenBeiClear?: () => void
 
   // Versorgung, Menge, Fertigstellung bis

@@ -11,16 +11,14 @@ import { Button } from "@/components/ui/button";
 import { Pen, FileText, X, Printer } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import Image from "next/image";
-import { getAllLocations } from "@/apis/setting/locationManagementApis";
+import {
+  getAllLocations,
+  type StoreLocation,
+} from "@/apis/setting/locationManagementApis";
 import { createCustomerSign } from "@/apis/customerSignApis";
 import toast from "react-hot-toast";
 
-interface Location {
-  id: string;
-  address: string;
-  description: string;
-  isPrimary: boolean;
-}
+type Location = StoreLocation;
 
 interface DatenschutzDialogProps {
   open: boolean;
@@ -65,15 +63,17 @@ export default function DatenschutzDialog({
           const response = await getAllLocations(1, 100);
           let locations: Location[] = [];
 
-          // Handle different response structures
-          if (response?.data) {
-            if (Array.isArray(response.data)) {
-              locations = response.data;
-            } else if (response.data.data && Array.isArray(response.data.data)) {
-              locations = response.data.data;
+          if (response?.data !== undefined && response.data !== null) {
+            const payload = response.data as
+              | StoreLocation[]
+              | { data?: StoreLocation[] };
+            if (Array.isArray(payload)) {
+              locations = payload;
+            } else if (Array.isArray(payload.data)) {
+              locations = payload.data;
             }
           } else if (Array.isArray(response)) {
-            locations = response;
+            locations = response as Location[];
           }
 
           // Find primary location

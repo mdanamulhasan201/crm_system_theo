@@ -5,6 +5,9 @@ import { initializeFormData } from '../../app/(dashboard)/dashboard/_components/
 import { initializeDeliveryDate } from '../../app/(dashboard)/dashboard/_components/Scanning/utils/dateUtils'
 import toast from 'react-hot-toast'
 import { getRequiredDeliveryDate } from '../../app/(dashboard)/dashboard/_components/Scanning/utils/dateUtils'
+import type { WerkstattzettelStandortSelection } from '../../app/(dashboard)/dashboard/_components/Scanning/utils/formDataUtils'
+
+export type { WerkstattzettelStandortSelection }
 
 interface FormData {
   ausführliche_diagnose?: string
@@ -39,8 +42,8 @@ export function useWerkstattzettelForm(
   const [mitarbeiter, setMitarbeiter] = useState('')
   const [versorgung, setVersorgung] = useState('')
   const [datumAuftrag, setDatumAuftrag] = useState('')
-  const [geschaeftsstandort, setGeschaeftsstandort] = useState<{id: string; address: string; description: string; isPrimary?: boolean} | null>(null)
-  const [auftragAngenommenBei, setAuftragAngenommenBei] = useState<{id: string; address: string; description: string; isPrimary?: boolean} | null>(null)
+  const [geschaeftsstandort, setGeschaeftsstandort] = useState<WerkstattzettelStandortSelection | null>(null)
+  const [auftragAngenommenBei, setAuftragAngenommenBei] = useState<WerkstattzettelStandortSelection | null>(null)
   const [fertigstellungBis, setFertigstellungBis] = useState('')
   const [fertigstellungBisTime, setFertigstellungBisTime] = useState('')
   const [bezahlt, setBezahlt] = useState('')
@@ -144,13 +147,13 @@ export function useWerkstattzettelForm(
   }
 
   // Handle business location selection (Abholung)
-  const handleLocationSelect = (location: {id: string; address: string; description: string; isPrimary?: boolean} | null) => {
+  const handleLocationSelect = (location: WerkstattzettelStandortSelection | null) => {
     setGeschaeftsstandort(location)
     setIsLocationDropdownOpen(false)
   }
 
   // Handle Auftrag angenommen bei location selection
-  const handleAuftragLocationSelect = (location: {id: string; address: string; description: string; isPrimary?: boolean} | null) => {
+  const handleAuftragLocationSelect = (location: WerkstattzettelStandortSelection | null) => {
     setAuftragAngenommenBei(location)
     setIsAuftragLocationDropdownOpen(false)
   }

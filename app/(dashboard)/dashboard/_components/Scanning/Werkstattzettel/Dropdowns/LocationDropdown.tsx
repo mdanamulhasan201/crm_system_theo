@@ -6,7 +6,7 @@ import { ChevronDown, Check, X } from 'lucide-react'
 interface Location {
   id: string
   address: string
-  description: string
+  description?: string
   isPrimary?: boolean
 }
 

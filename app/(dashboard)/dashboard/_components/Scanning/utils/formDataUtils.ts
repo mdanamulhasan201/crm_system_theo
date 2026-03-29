@@ -4,6 +4,14 @@
 
 import { formatDateWithCurrentTime } from './dateUtils'
 
+/** Store / UI standort row — matches API StoreLocation fields used in the form */
+export type WerkstattzettelStandortSelection = {
+  id: string
+  address: string
+  description?: string
+  isPrimary?: boolean
+}
+
 export interface WerkstattzettelFormData {
   vorname: string
   nachname: string
@@ -13,8 +21,8 @@ export interface WerkstattzettelFormData {
   mitarbeiter: string
   versorgung: string
   datumAuftrag: string
-  geschaeftsstandort: {id: string; address: string; description: string; isPrimary?: boolean} | null
-  auftragAngenommenBei?: {id: string; address: string; description: string; isPrimary?: boolean} | null
+  geschaeftsstandort: WerkstattzettelStandortSelection | null
+  auftragAngenommenBei?: WerkstattzettelStandortSelection | null
   fertigstellungBis: string
   fertigstellungBisTime?: string
   bezahlt: string
@@ -122,7 +130,10 @@ export function createWerkstattzettelPayload(
     geschaeftsstandort: formData.geschaeftsstandort ? {
       address: formData.geschaeftsstandort.address,
       // Versand an Kunden: location API has no description; send blank in payload
-      description: formData.geschaeftsstandort.description === 'Versand an Kunden' ? '' : formData.geschaeftsstandort.description
+      description:
+        formData.geschaeftsstandort.description === 'Versand an Kunden'
+          ? ''
+          : (formData.geschaeftsstandort.description ?? ''),
     } : undefined,
     auftragAngenommenBei: (formData as any).auftragAngenommenBei ? {
       address: (formData as any).auftragAngenommenBei.address,

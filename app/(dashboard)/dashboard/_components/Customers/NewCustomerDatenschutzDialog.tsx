@@ -10,15 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Pen, FileText, Printer, Upload, CheckCircle, X } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllLocations } from "@/apis/setting/locationManagementApis";
+import {
+  getAllLocations,
+  type StoreLocation,
+} from "@/apis/setting/locationManagementApis";
 import toast from "react-hot-toast";
 
-interface Location {
-  id: string;
-  address: string;
-  description: string;
-  isPrimary: boolean;
-}
+type Location = StoreLocation;
 
 interface NewCustomerDatenschutzDialogProps {
   open: boolean;
@@ -78,14 +76,17 @@ export default function NewCustomerDatenschutzDialog({
           const response = await getAllLocations(1, 100);
           let locations: Location[] = [];
 
-          if (response?.data) {
-            if (Array.isArray(response.data)) {
-              locations = response.data;
-            } else if (response.data.data && Array.isArray(response.data.data)) {
-              locations = response.data.data;
+          if (response?.data !== undefined && response.data !== null) {
+            const payload = response.data as
+              | StoreLocation[]
+              | { data?: StoreLocation[] };
+            if (Array.isArray(payload)) {
+              locations = payload;
+            } else if (Array.isArray(payload.data)) {
+              locations = payload.data;
             }
           } else if (Array.isArray(response)) {
-            locations = response;
+            locations = response as Location[];
           }
 
           const primary = locations.find((loc) => loc.isPrimary);

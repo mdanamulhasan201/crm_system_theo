@@ -9,7 +9,10 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
-import { getAllLocations } from "@/apis/setting/locationManagementApis";
+import {
+  getAllLocations,
+  type StoreLocation,
+} from "@/apis/setting/locationManagementApis";
 import { Printer } from "lucide-react";
 import Image from "next/image";
 
@@ -19,12 +22,7 @@ interface MehrkostenVereinbarungDialogProps {
   customerData?: any;
 }
 
-interface Location {
-  id: string;
-  address: string;
-  description: string;
-  isPrimary: boolean;
-}
+type Location = StoreLocation;
 
 export default function MehrkostenVereinbarungDialog({
   open,
@@ -42,14 +40,17 @@ export default function MehrkostenVereinbarungDialog({
           const response = await getAllLocations(1, 100);
           let locations: Location[] = [];
 
-          if (response?.data) {
-            if (Array.isArray(response.data)) {
-              locations = response.data;
-            } else if (response.data.data && Array.isArray(response.data.data)) {
-              locations = response.data.data;
+          if (response?.data !== undefined && response.data !== null) {
+            const payload = response.data as
+              | StoreLocation[]
+              | { data?: StoreLocation[] };
+            if (Array.isArray(payload)) {
+              locations = payload;
+            } else if (Array.isArray(payload.data)) {
+              locations = payload.data;
             }
           } else if (Array.isArray(response)) {
-            locations = response;
+            locations = response as Location[];
           }
 
           const primary = locations.find((loc) => loc.isPrimary);
