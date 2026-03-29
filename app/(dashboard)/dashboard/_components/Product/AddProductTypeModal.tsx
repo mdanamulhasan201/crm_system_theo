@@ -14,7 +14,8 @@ import Image from 'next/image'
 
 interface SizeData {
     length?: number;
-    quantity: number;
+    /** Leer im UI → undefined, Submit → 0 */
+    quantity?: number;
     mindestmenge?: number;
     autoOrderLimit?: number;
     orderQuantity?: number;
@@ -44,14 +45,23 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
         : ['35', '36', '37', '38', '39', '40', '41', '42', '43', '44', '45', '46', '47', '48']
     const initialVisibleSizeCount = type === 'milling_block' ? sizeColumns.length : 4
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        Produktname: string
+        Hersteller: string
+        Produktkürzel: string
+        Lagerort: string
+        minStockLevel: number | undefined
+        purchase_price: number | undefined
+        selling_price: number | undefined
+        image: string
+    }>({
         Produktname: '',
         Hersteller: '',
         Produktkürzel: '',
         Lagerort: '',
-        minStockLevel: 0,
-        purchase_price: 0,
-        selling_price: 0,
+        minStockLevel: undefined,
+        purchase_price: undefined,
+        selling_price: undefined,
         image: ''
     })
 
@@ -63,8 +73,8 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
         const initial: { [key: string]: SizeData } = {}
         sizeColumns.forEach(size => {
             initial[size] = {
-                quantity: 0,
-                mindestmenge: 0,
+                quantity: undefined,
+                mindestmenge: undefined,
                 ...(type === 'rady_insole' && { length: 0 }),
                 autoOrderLimit: undefined,
                 orderQuantity: undefined
@@ -182,9 +192,9 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                 Hersteller: '',
                 Produktkürzel: '',
                 Lagerort: '',
-                minStockLevel: 0,
-                purchase_price: 0,
-                selling_price: 0,
+                minStockLevel: undefined,
+                purchase_price: undefined,
+                selling_price: undefined,
                 image: ''
             })
             setFeaturesList([])
@@ -196,8 +206,8 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
             const resetSizes: { [key: string]: SizeData } = {}
             sizeColumns.forEach(size => {
                 resetSizes[size] = {
-                    quantity: 0,
-                    mindestmenge: 0,
+                    quantity: undefined,
+                    mindestmenge: undefined,
                     ...(type === 'rady_insole' && { length: 0 }),
                     autoOrderLimit: undefined,
                     orderQuantity: undefined
@@ -219,11 +229,24 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isOpen, type])
 
-    const handleInputChange = (field: string, value: string | number) => {
+    const handleInputChange = (field: string, value: string | number | undefined) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
         }))
+    }
+
+    /** Preisfelder: leer = kein Wert im State (nur Placeholder sichtbar), Submit → 0 */
+    const handleOptionalPriceInput = (field: 'purchase_price' | 'selling_price', raw: string) => {
+        const trimmed = raw.trim()
+        if (trimmed === '') {
+            handleInputChange(field, undefined)
+            return
+        }
+        const n = parseFloat(trimmed.replace(',', '.'))
+        if (!Number.isNaN(n)) {
+            handleInputChange(field, n)
+        }
     }
 
     const filteredModelOptions = modelOptions.filter((model) =>
@@ -232,11 +255,32 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
 
     const handleSizeChange = (size: string, field: keyof SizeData, value: string | number | undefined) => {
         setSizeQuantities(prev => {
-            const processedValue = value === undefined
-                ? undefined
-                : (typeof value === 'string'
-                    ? (value === '' ? (field === 'autoOrderLimit' || field === 'orderQuantity' ? undefined : 0) : parseFloat(value) || 0)
-                    : value)
+            let processedValue: string | number | undefined
+            if (value === undefined) {
+                processedValue = undefined
+            } else if (typeof value === 'string') {
+                if (value === '') {
+                    if (
+                        field === 'autoOrderLimit' ||
+                        field === 'orderQuantity' ||
+                        field === 'quantity' ||
+                        field === 'mindestmenge'
+                    ) {
+                        processedValue = undefined
+                    } else {
+                        processedValue = 0
+                    }
+                } else {
+                    const n = parseFloat(value.replace(',', '.'))
+                    if (field === 'quantity' || field === 'mindestmenge') {
+                        processedValue = Number.isNaN(n) ? undefined : n
+                    } else {
+                        processedValue = Number.isNaN(n) ? 0 : n
+                    }
+                }
+            } else {
+                processedValue = value
+            }
 
             return {
                 ...prev,
@@ -260,7 +304,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
         setSizeQuantities(prev => {
             const updatedSizeQuantities = { ...prev }
             Object.keys(updatedSizeQuantities).forEach(size => {
-                const currentQuantity = updatedSizeQuantities[size]?.quantity || 0
+                const currentQuantity = updatedSizeQuantities[size]?.quantity ?? 0
                 updatedSizeQuantities[size] = {
                     ...updatedSizeQuantities[size],
                     quantity: currentQuantity + numValue
@@ -346,7 +390,7 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                 const sizeData = sizeQuantities[size]
                 convertedSizeQuantities[size] = {
                     length: sizeData.length ?? 0,
-                    quantity: sizeData.quantity,
+                    quantity: sizeData.quantity ?? 0,
                     ...(sizeData.mindestmenge !== undefined && { mindestmenge: sizeData.mindestmenge }),
                     ...(sizeData.autoOrderLimit !== undefined && { autoOrderLimit: sizeData.autoOrderLimit }),
                     ...(sizeData.orderQuantity !== undefined && { orderQuantity: sizeData.orderQuantity })
@@ -359,9 +403,9 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                 Produktkürzel: formData.Produktkürzel,
                 ...(selectedModelId && { model_id: selectedModelId }),
                 Lagerort: formData.Lagerort,
-                minStockLevel: formData.minStockLevel,
-                purchase_price: formData.purchase_price,
-                selling_price: formData.selling_price,
+                minStockLevel: formData.minStockLevel ?? 0,
+                purchase_price: formData.purchase_price ?? 0,
+                selling_price: formData.selling_price ?? 0,
                 sizeQuantities: convertedSizeQuantities,
                 imageFile: imageFile || undefined, // Send file directly, not base64
                 ...(featuresList.length > 0 && { features: featuresList })
@@ -615,8 +659,9 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                             type="number"
                                             step="0.01"
                                             min={0}
-                                            value={formData.purchase_price}
-                                            onChange={(e) => handleInputChange('purchase_price', parseFloat(e.target.value) || 0)}
+                                            placeholder="0"
+                                            value={formData.purchase_price === undefined ? '' : formData.purchase_price}
+                                            onChange={(e) => handleOptionalPriceInput('purchase_price', e.target.value)}
                                             disabled={isLoading}
                                             className="h-11 border-gray-200 bg-white"
                                         />
@@ -631,8 +676,9 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                             type="number"
                                             step="0.01"
                                             min={0}
-                                            value={formData.selling_price}
-                                            onChange={(e) => handleInputChange('selling_price', parseFloat(e.target.value) || 0)}
+                                            placeholder="0"
+                                            value={formData.selling_price === undefined ? '' : formData.selling_price}
+                                            onChange={(e) => handleOptionalPriceInput('selling_price', e.target.value)}
                                             disabled={isLoading}
                                             className="h-11 border-gray-200 bg-white"
                                         />
@@ -721,7 +767,8 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                         <Input
                                                             type="number"
                                                             min={0}
-                                                            value={sizeQuantities[size]?.quantity || 0}
+                                                            placeholder="0"
+                                                            value={sizeQuantities[size]?.quantity === undefined ? '' : sizeQuantities[size].quantity}
                                                             onChange={(e) => handleSizeChange(size, 'quantity', e.target.value)}
                                                             className="h-9 border-gray-200 bg-[#fcfcfc]"
                                                             disabled={isLoading}
@@ -746,7 +793,11 @@ export default function AddProductTypeModal({ isOpen, onClose, onSuccess, type }
                                                             type="number"
                                                             min={0}
                                                             placeholder="0"
-                                                            value={sizeQuantities[size]?.mindestmenge ?? ''}
+                                                            value={
+                                                                sizeQuantities[size]?.mindestmenge === undefined
+                                                                    ? ''
+                                                                    : sizeQuantities[size].mindestmenge
+                                                            }
                                                             onChange={(e) => handleSizeChange(size, 'mindestmenge', e.target.value)}
                                                             className="h-9 border-gray-200 bg-[#fcfcfc]"
                                                             disabled={isLoading}
