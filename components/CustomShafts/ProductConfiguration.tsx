@@ -101,31 +101,45 @@ function SegmentedNeinJa({
   onChange,
   className,
   variant = 'default',
+  disabled = false,
 }: {
   value: boolean | undefined;
   onChange: (next: boolean | undefined) => void;
   className?: string;
   variant?: 'default' | 'green';
+  disabled?: boolean;
 }) {
   const activeClass = variant === 'green' ? ACTIVE_SEGMENT_GREEN : ACTIVE_SEGMENT_SLATE;
   return (
-    <div className={cn('flex w-full rounded-lg border border-gray-200 bg-gray-100 p-0.5 sm:max-w-md', className)}>
+    <div
+      className={cn(
+        'flex w-full rounded-lg border border-gray-200 bg-gray-100 p-0.5 sm:max-w-md',
+        disabled && 'opacity-60',
+        className
+      )}
+    >
       <button
         type="button"
-        onClick={() => onChange(value === false ? undefined : false)}
+        disabled={disabled}
+        aria-disabled={disabled}
+        onClick={() => !disabled && onChange(value === false ? undefined : false)}
         className={cn(
           'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
-          value === false ? activeClass : 'text-gray-700 hover:bg-white/60'
+          value === false ? activeClass : 'text-gray-700 hover:bg-white/60',
+          disabled && 'cursor-not-allowed'
         )}
       >
         Nein
       </button>
       <button
         type="button"
-        onClick={() => onChange(value === true ? undefined : true)}
+        disabled={disabled}
+        aria-disabled={disabled}
+        onClick={() => !disabled && onChange(value === true ? undefined : true)}
         className={cn(
           'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
-          value === true ? activeClass : 'text-gray-700 hover:bg-white/60'
+          value === true ? activeClass : 'text-gray-700 hover:bg-white/60',
+          disabled && 'cursor-not-allowed'
         )}
       >
         Ja
@@ -237,6 +251,10 @@ interface ProductConfigurationProps {
   setAdditionalNotes?: (notes: string) => void;
   /** When true, CAD + Kategorie are rendered in the product hero card (parent); omit here */
   hideCadAndCategory?: boolean;
+  /** Kollektion details: API `is_zipper === false` — „Ja, Reißverschluss“ deaktivieren */
+  disableZipperExtraOption?: boolean;
+  /** Kollektion details: API `ziernaht === false` — „Ziernaht vorhanden?“ deaktivieren */
+  disableZiernahtVorhanden?: boolean;
 }
 
 export type ProductConfigurationHandle = {
@@ -336,6 +354,8 @@ const ProductConfiguration = forwardRef<ProductConfigurationHandle, ProductConfi
   additionalNotes = '',
   setAdditionalNotes,
   hideCadAndCategory = false,
+  disableZipperExtraOption = false,
+  disableZiernahtVorhanden = false,
 }: ProductConfigurationProps,
 ref: React.Ref<ProductConfigurationHandle>
 ) {
@@ -387,6 +407,11 @@ ref: React.Ref<ProductConfigurationHandle>
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paintImage]);
+
+  useEffect(() => {
+    if (!disableZiernahtVorhanden) return;
+    setZiernahtVorhanden(false);
+  }, [disableZiernahtVorhanden, setZiernahtVorhanden]);
 
   // Zipper is now controlled by the "Zusätzlicher Reißverschluss" checkbox, not by closureType
 
@@ -476,6 +501,16 @@ ref: React.Ref<ProductConfigurationHandle>
       setLocalZipperExtra(value);
     }
   };
+
+  useEffect(() => {
+    if (!disableZipperExtraOption) return;
+    if (setZipperExtra) setZipperExtra(false);
+    else setLocalZipperExtra(false);
+    if (setZipperPosition) setZipperPosition(null);
+    else setLocalZipperPosition(null);
+    setZipperPlacementImage(null);
+    if (setZipperImage) setZipperImage(null);
+  }, [disableZipperExtraOption, setZipperExtra, setZipperPosition, setZipperImage]);
 
   // Category is read-only from backend, no handler needed
 
@@ -678,7 +713,12 @@ ref: React.Ref<ProductConfigurationHandle>
 
             <div className="flex min-w-0 flex-col">
               <FieldLabel>Ziernaht vorhanden?</FieldLabel>
-              <SegmentedNeinJa variant="green" value={ziernahtVorhanden} onChange={setZiernahtVorhanden} />
+              <SegmentedNeinJa
+                variant="green"
+                value={ziernahtVorhanden}
+                onChange={setZiernahtVorhanden}
+                disabled={disableZiernahtVorhanden}
+              />
             </div>
           </div>
 
@@ -831,7 +871,9 @@ ref: React.Ref<ProductConfigurationHandle>
         <ZusaetzeOptionenCard
           value={effektZipperExtra}
           effectiveZipperPosition={effectiveZipperPosition}
+          zipperJaDisabled={disableZipperExtraOption}
           onZipperSegmentChange={(v) => {
+            if (disableZipperExtraOption && v === true) return;
             if (v === false) {
               updateZipperExtra(false);
               return;

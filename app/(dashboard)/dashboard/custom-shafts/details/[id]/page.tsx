@@ -690,6 +690,8 @@ export default function CollectionShaftDetailsPage() {
         <ProductConfiguration
           ref={productConfigRef}
           hideCadAndCategory
+          disableZipperExtraOption={shaft?.is_zipper === false}
+          disableZiernahtVorhanden={shaft?.ziernaht === false}
           cadModeling={cadModeling}
           setCadModeling={setCadModeling}
           customCategory={customCategory}

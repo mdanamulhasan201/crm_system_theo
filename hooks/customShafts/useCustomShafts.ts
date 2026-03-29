@@ -11,6 +11,10 @@ export interface CustomShaft {
   gender: string;
   description: string;
   verschlussart?: string;
+  /** false = kein optionaler Zusatz-Reißverschluss für dieses Kollektionsmodell */
+  is_zipper?: boolean;
+  /** false = keine Ziernaht-Option für dieses Modell */
+  ziernaht?: boolean;
   createdAt: string;
   updatedAt: string;
 }
