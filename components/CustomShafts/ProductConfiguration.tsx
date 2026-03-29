@@ -3,9 +3,7 @@ import React, { useState, useEffect, useRef, type Dispatch, type SetStateAction 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
 import { TooltipProvider } from '@/components/ui/tooltip';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColorSectionModal';
@@ -14,6 +12,8 @@ import ProductCadCategoryFields from './ProductCadCategoryFields';
 import SchafthoheCard from './SchafthoheCard';
 import VerschlussCard from './VerschlussCard';
 import PolsterungCard from './PolsterungCard';
+import VerstarkungenCard from './VerstarkungenCard';
+import ZusaetzeOptionenCard from './ZusaetzeOptionenCard';
 import type { PolsterungMmFields } from './polsterungPayload';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
@@ -666,125 +666,43 @@ export default function ProductConfiguration({
           setPolsterungMm={setPolsterungMm}
         />
 
-        <ConfigCard title="Verstärkungen" subtitle="Verstärkungen und Hinweise">
-        {/* Verstärkungen */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Verstärkungen:</Label>
-          <div className="flex gap-4 flex-wrap">
-            {['Standard', 'Fersenverstärkung', 'Innen-Außenknöchel', 'Vorderfuß'].map((option) => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={verstarkungen.includes(option)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setVerstarkungen([...verstarkungen, option]);
-                    } else {
-                      setVerstarkungen(verstarkungen.filter(item => item !== option));
-                    }
-                  }}
-                />
-                {option}
-              </label>
-            ))}
-          </div>
-        </div>
+        <VerstarkungenCard
+          verstarkungen={verstarkungen}
+          setVerstarkungen={setVerstarkungen}
+          verstarkungenText={verstarkungenText}
+          setVerstarkungenText={setVerstarkungenText}
+        />
 
-        {/* Verstärkungen Anmerkung */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3"> </Label>
-          <Textarea
-            placeholder="Besondere Anmerkung zu den Verstärkungen (z.B. Material, Stärke, Position)"
-            className="w-full md:w-1/2 border-gray-300"
-            value={verstarkungenText}
-            onChange={(e) => setVerstarkungenText(e.target.value)}
-          />
-        </div>
-        </ConfigCard>
-
-        <ConfigCard title="Zusätze & Optionen" subtitle="Reißverschluss und Notizen">
-        <div className="flex flex-col gap-2">
-          <FieldLabel>Zusätzlicher Reißverschluss?</FieldLabel>
-          <p className="text-xs text-gray-500">
-            {effectiveZipperPosition === 'both' ? (
-              <span className="font-medium text-green-600">+19,99 €</span>
-            ) : (
-              <span className="font-medium text-green-600">+9,99 €</span>
-            )}{' '}
-            bei Ja (nach Position)
-          </p>
-          <SegmentedNeinJa
-            value={effektZipperExtra}
-            onChange={(v) => {
-              if (v === false) {
-                updateZipperExtra(false);
-                return;
-              }
-              if (v === true) {
-                if (zipperPlacementImage) {
-                  updateZipperExtra(true);
-                } else {
-                  if (!shoeImage) {
-                    toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
-                    return;
-                  }
-                  setShowZipperPlacementModal(true);
+        <ZusaetzeOptionenCard
+          value={effektZipperExtra}
+          effectiveZipperPosition={effectiveZipperPosition}
+          onZipperSegmentChange={(v) => {
+            if (v === false) {
+              updateZipperExtra(false);
+              return;
+            }
+            if (v === true) {
+              if (zipperPlacementImage) {
+                updateZipperExtra(true);
+              } else {
+                if (!shoeImage) {
+                  toast.error('Bitte laden Sie zuerst ein Schuhbild hoch.');
+                  return;
                 }
-                return;
+                setShowZipperPlacementModal(true);
               }
-              updateZipperExtra(undefined);
-            }}
-          />
-        </div>
+              return;
+            }
+            updateZipperExtra(undefined);
+          }}
+          effektZipperExtra={effektZipperExtra === true}
+          zipperPlacementImage={zipperPlacementImage}
+          shoeImage={shoeImage}
+          onEditZipperPosition={() => setShowZipperPlacementModal(true)}
+        />
 
-        {/* Display Zipper Drawing Image if exists */}
-        {effektZipperExtra === true && (zipperPlacementImage || effectiveZipperPosition) && (
-          <div className="flex flex-col md:flex-row md:items-start gap-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <Label className="font-medium text-base md:w-1/3 md:mt-2">Reißverschluss-Position:</Label>
-            <div className="flex-1 space-y-3">
-              {effectiveZipperPosition && (
-                <p className="text-sm text-gray-700">
-                  {effectiveZipperPosition === 'inside' && 'Innen (+9,99 €)'}
-                  {effectiveZipperPosition === 'outside' && 'Außen (+9,99 €)'}
-                  {effectiveZipperPosition === 'both' && 'Beide Seiten (+19,99 €)'}
-                </p>
-              )}
-              <div className="relative inline-block">
-                {/* Show shoe image as background if available, otherwise just the drawing */}
-                {zipperPlacementImage && shoeImage ? (
-                  <div className="relative">
-                    <img 
-                      src={shoeImage} 
-                      alt="Shoe base" 
-                      className="max-w-full h-auto max-h-[300px] rounded border border-gray-300"
-                    />
-                    <img 
-                      src={zipperPlacementImage} 
-                      alt="Zipper placement" 
-                      className="absolute top-0 left-0 w-full h-full object-contain"
-                    />
-                  </div>
-                ) : zipperPlacementImage ? (
-                  <img 
-                    src={zipperPlacementImage} 
-                    alt="Zipper placement" 
-                    className="max-w-full h-auto max-h-[300px] rounded border border-gray-300"
-                  />
-                ) : null}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowZipperPlacementModal(true)}
-                className="mt-2"
-              >
-                Position bearbeiten
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex flex-col gap-2 border-t border-gray-100 pt-5">
+        <ConfigCard title="Notizen" subtitle="Optional — erscheinen in Rechnung/PDF">
+        <div className="flex flex-col gap-2">
           <FieldLabel>Sonstige Notizen</FieldLabel>
           <Textarea
             placeholder="Zusätzliche Informationen, Sonderwünsche, Produktionshinweise, etc. (optional)"
@@ -792,7 +710,6 @@ export default function ProductConfiguration({
             value={additionalNotes}
             onChange={(e) => setAdditionalNotes?.(e.target.value)}
           />
-          <p className="text-xs text-gray-500">Diese Notizen erscheinen in der Rechnung/PDF</p>
         </div>
 
         <div className="flex justify-center pt-2">
