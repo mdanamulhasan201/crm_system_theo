@@ -4,34 +4,7 @@ import { CloseIcon } from './Icons';
 import { useState, useEffect } from 'react';
 import { balanceMassschuheOrder } from '@/apis/MassschuheManagemantApis';
 import { getDeliveryDates } from '@/apis/deliveryDateCalculation';
-
-interface ShaftConfiguration {
-  customCategory?: string;
-  cadModeling?: '1x' | '2x';
-  lederType?: string;
-  lederfarbe?: string;
-  numberOfLeatherColors?: string;
-  leatherColors?: string[];
-  innenfutter?: string;
-  schafthohe?: string;
-  schafthoheLinks?: string;
-  schafthoheRechts?: string;
-  umfangmasseLinks?: string;
-  umfangmasseRechts?: string;
-  polsterung?: string[];
-  verstarkungen?: string[];
-  polsterungText?: string;
-  verstarkungenText?: string;
-  nahtfarbe?: string;
-  nahtfarbeOption?: string;
-  closureType?: string;
-  passendenSchnursenkel?: boolean;
-  osenEinsetzen?: boolean;
-  zipperExtra?: boolean;
-  zipperPosition?: 'inside' | 'outside' | 'both' | null;
-  additionalNotes?: string;
-  deliveryMethod?: string;
-}
+import type { ShaftConfiguration } from '@/components/CustomShafts/shaftOrderConfiguration';
 
 interface CompletionPopUpProps {
   onClose: () => void;

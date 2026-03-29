@@ -71,7 +71,13 @@ interface CustomShaftData {
   // Seam and closure
   nahtfarbe: string;
   nahtfarbe_text: string;
+  ziernahtVorhanden?: boolean;
   closureType: string;
+  offenstandSchnuerungMm?: string;
+  anzahlOesen?: string;
+  anzahlHaken?: string;
+  anzahlKlettstreifen?: string;
+  breiteKlettstreifenMm?: string;
   
   // Add-ons
   passenden_schnursenkel: boolean;

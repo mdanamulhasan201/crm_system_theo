@@ -13,7 +13,7 @@ import ProductImageUploadInfo from '@/components/CustomShafts/ProductImageUpload
 import ProductCadCategoryFields from '@/components/CustomShafts/ProductCadCategoryFields';
 import ProductConfiguration from '@/components/CustomShafts/ProductConfiguration';
 import ConfirmationModal from '@/components/CustomShafts/ConfirmationModal';
-import ShaftPDFPopup, { ShaftOrderDataForPDF } from '@/components/CustomShafts/ShaftPDFPopup';
+import ShaftPDFPopup, { ShaftOrderDataForPDF, type ShaftConfiguration } from '@/components/CustomShafts/ShaftPDFPopup';
 import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp';
 import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
 import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
@@ -110,9 +110,15 @@ export default function CustomShoeOrderPage() {
   // Seam color
   const [nahtfarbeOption, setNahtfarbeOption] = useState('default');
   const [customNahtfarbe, setCustomNahtfarbe] = useState('');
+  const [ziernahtVorhanden, setZiernahtVorhanden] = useState<boolean | undefined>(undefined);
 
   // Closure type
-  const [closureType, setClosureType] = useState<string>('');
+  const [closureType, setClosureType] = useState<string>('Eyelets');
+  const [offenstandSchnuerungMm, setOffenstandSchnuerungMm] = useState('');
+  const [anzahlOesen, setAnzahlOesen] = useState('');
+  const [anzahlHaken, setAnzahlHaken] = useState('');
+  const [anzahlKlettstreifen, setAnzahlKlettstreifen] = useState('');
+  const [breiteKlettstreifenMm, setBreiteKlettstreifenMm] = useState('');
 
   // Add-ons
   const [passendenSchnursenkel, setPassendenSchnursenkel] = useState<boolean | undefined>(undefined);
@@ -274,7 +280,13 @@ export default function CustomShoeOrderPage() {
       // Seam and closure – send selected Nahtfarbe option (default | personal | custom value)
       nahtfarbe: nahtfarbeOption === 'custom' ? (customNahtfarbe?.trim() || '') : (nahtfarbeOption || 'default'),
       nahtfarbe_text: nahtfarbeOption === 'custom' ? (customNahtfarbe?.trim() || '') : '',
+      ziernahtVorhanden: typeof ziernahtVorhanden === 'boolean' ? ziernahtVorhanden : undefined,
       closureType,
+      offenstandSchnuerungMm: offenstandSchnuerungMm.trim() || undefined,
+      anzahlOesen: anzahlOesen.trim() || undefined,
+      anzahlHaken: anzahlHaken.trim() || undefined,
+      anzahlKlettstreifen: anzahlKlettstreifen.trim() || undefined,
+      breiteKlettstreifenMm: breiteKlettstreifenMm.trim() || undefined,
 
       // Add-ons
       passenden_schnursenkel: passendenSchnursenkel === true,
@@ -457,6 +469,8 @@ export default function CustomShoeOrderPage() {
           setNahtfarbeOption={setNahtfarbeOption}
           customNahtfarbe={customNahtfarbe}
           setCustomNahtfarbe={setCustomNahtfarbe}
+          ziernahtVorhanden={ziernahtVorhanden}
+          setZiernahtVorhanden={setZiernahtVorhanden}
           passendenSchnursenkel={passendenSchnursenkel}
           setPassendenSchnursenkel={setPassendenSchnursenkel}
           osenEinsetzen={osenEinsetzen}
@@ -470,6 +484,16 @@ export default function CustomShoeOrderPage() {
           setZipperPosition={setZipperPosition}
           closureType={closureType}
           setClosureType={setClosureType}
+          offenstandSchnuerungMm={offenstandSchnuerungMm}
+          setOffenstandSchnuerungMm={setOffenstandSchnuerungMm}
+          anzahlOesen={anzahlOesen}
+          setAnzahlOesen={setAnzahlOesen}
+          anzahlHaken={anzahlHaken}
+          setAnzahlHaken={setAnzahlHaken}
+          anzahlKlettstreifen={anzahlKlettstreifen}
+          setAnzahlKlettstreifen={setAnzahlKlettstreifen}
+          breiteKlettstreifenMm={breiteKlettstreifenMm}
+          setBreiteKlettstreifenMm={setBreiteKlettstreifenMm}
           lederType={lederType}
           setLederType={setLederType}
           lederfarbe={lederfarbe}
@@ -577,33 +601,41 @@ export default function CustomShoeOrderPage() {
           orderData={orderDataForPDF}
           shaftImage={uploadedImage}
           deliveryCategory={pendingAction === 'boden' ? 'Komplettfertigung' : pendingAction === 'ohne-boden' ? 'Massschafterstellung' : undefined}
-          shaftConfiguration={{
-            customCategory,
-            cadModeling,
-            lederType,
-            lederfarbe,
-            numberOfLeatherColors,
-            leatherColors,
-            innenfutter,
-            schafthohe,
-            schafthoheLinks,
-            schafthoheRechts,
-            umfangmasseLinks: umfangmasseLinksDisplay,
-            umfangmasseRechts: umfangmasseRechtsDisplay,
-            polsterung,
-            verstarkungen,
-            polsterungText,
-            verstarkungenText,
-            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
-            nahtfarbeOption: nahtfarbeOption,
-            closureType,
-            passendenSchnursenkel,
-            osenEinsetzen,
-            zipperExtra,
-            zipperPosition,
-            additionalNotes,
-            deliveryMethod,
-          }}
+          shaftConfiguration={
+            {
+              customCategory,
+              cadModeling,
+              lederType,
+              lederfarbe,
+              numberOfLeatherColors,
+              leatherColors,
+              innenfutter,
+              schafthohe,
+              schafthoheLinks,
+              schafthoheRechts,
+              umfangmasseLinks: umfangmasseLinksDisplay,
+              umfangmasseRechts: umfangmasseRechtsDisplay,
+              polsterung,
+              verstarkungen,
+              polsterungText,
+              verstarkungenText,
+              nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+              nahtfarbeOption: nahtfarbeOption,
+              ziernahtVorhanden,
+              closureType,
+              offenstandSchnuerungMm,
+              anzahlOesen,
+              anzahlHaken,
+              anzahlKlettstreifen,
+              breiteKlettstreifenMm,
+              passendenSchnursenkel,
+              osenEinsetzen,
+              zipperExtra,
+              zipperPosition,
+              additionalNotes,
+              deliveryMethod,
+            } satisfies ShaftConfiguration
+          }
         />
       )}
 
@@ -647,33 +679,41 @@ export default function CustomShoeOrderPage() {
           value={orderPrice.toFixed(2)}
           isLoading={isCreatingOrder}
           deliveryCategory="Massschafterstellung"
-          shaftConfiguration={{
-            customCategory,
-            cadModeling,
-            lederType,
-            lederfarbe,
-            numberOfLeatherColors,
-            leatherColors,
-            innenfutter,
-            schafthohe,
-            schafthoheLinks,
-            schafthoheRechts,
-            umfangmasseLinks: umfangmasseLinksDisplay,
-            umfangmasseRechts: umfangmasseRechtsDisplay,
-            polsterung,
-            verstarkungen,
-            polsterungText,
-            verstarkungenText,
-            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
-            nahtfarbeOption: nahtfarbeOption,
-            closureType,
-            passendenSchnursenkel,
-            osenEinsetzen,
-            zipperExtra,
-            zipperPosition,
-            additionalNotes,
-            deliveryMethod,
-          }}
+          shaftConfiguration={
+            {
+              customCategory,
+              cadModeling,
+              lederType,
+              lederfarbe,
+              numberOfLeatherColors,
+              leatherColors,
+              innenfutter,
+              schafthohe,
+              schafthoheLinks,
+              schafthoheRechts,
+              umfangmasseLinks: umfangmasseLinksDisplay,
+              umfangmasseRechts: umfangmasseRechtsDisplay,
+              polsterung,
+              verstarkungen,
+              polsterungText,
+              verstarkungenText,
+              nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+              nahtfarbeOption: nahtfarbeOption,
+              ziernahtVorhanden,
+              closureType,
+              offenstandSchnuerungMm,
+              anzahlOesen,
+              anzahlHaken,
+              anzahlKlettstreifen,
+              breiteKlettstreifenMm,
+              passendenSchnursenkel,
+              osenEinsetzen,
+              zipperExtra,
+              zipperPosition,
+              additionalNotes,
+              deliveryMethod,
+            } satisfies ShaftConfiguration
+          }
           onConfirm={(deliveryDate) => {
             // Only "ohne-boden" flow uses completion popup now
             // Call function directly (no await - function handles async internally)

@@ -2,6 +2,10 @@
 
 import React, { useRef } from "react"
 import { useDeliveryDateByCategory } from "@/hooks/useDeliveryDateByCategory"
+import type { ShaftConfiguration } from "@/components/CustomShafts/shaftOrderConfiguration"
+
+/** Re-export so pages can import `ShaftConfiguration` next to `ShaftPDFPopup` */
+export type { ShaftConfiguration }
 
 // Order data interface for dynamic PDF content
 export interface ShaftOrderDataForPDF {
@@ -24,33 +28,7 @@ interface ShaftPDFPopupProps {
   shaftImage: string | null
   /** When set (e.g. "Komplettfertigung" for JA BODEN KONFIGURIEREN), delivery date is calculated from API by category */
   deliveryCategory?: string | null
-  shaftConfiguration: {
-    customCategory?: string
-    cadModeling?: '1x' | '2x'
-    lederType?: string
-    lederfarbe?: string
-    numberOfLeatherColors?: string
-    leatherColors?: string[]
-    innenfutter?: string
-    schafthohe?: string
-    schafthoheLinks?: string
-    schafthoheRechts?: string
-    umfangmasseLinks?: string
-    umfangmasseRechts?: string
-    polsterung?: string[]
-    verstarkungen?: string[]
-    polsterungText?: string
-    verstarkungenText?: string
-    nahtfarbe?: string
-    nahtfarbeOption?: string
-    closureType?: string
-    passendenSchnursenkel?: boolean
-    osenEinsetzen?: boolean
-    zipperExtra?: boolean
-    zipperPosition?: 'inside' | 'outside' | 'both' | null
-    additionalNotes?: string
-    deliveryMethod?: string
-  }
+  shaftConfiguration: ShaftConfiguration
 }
 
 const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
@@ -673,14 +651,78 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                     </div>
                   )}
                   
-                  {/* Verschlussart - Only show selected option (no border so no line above Extras in modal) */}
+                  {shaftConfiguration.ziernahtVorhanden !== undefined && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Ziernaht vorhanden?
+                      </div>
+                      <div className="flex-1 leading-loose">
+                        <ModalCheckbox
+                          isSelected={true}
+                          label={shaftConfiguration.ziernahtVorhanden ? 'Ja' : 'Nein'}
+                        />
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Verschlussart */}
                   {shaftConfiguration.closureType && (
-                    <div className="flex py-3 items-start">
+                    <div className="flex py-3 border-b border-gray-300 items-start">
                       <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
                         Verschlussart
                       </div>
                       <div className="flex-1 leading-loose">
                         <ModalCheckbox isSelected={true} label={getClosureTypeDisplayName(shaftConfiguration.closureType)} />
+                      </div>
+                    </div>
+                  )}
+                  {shaftConfiguration.offenstandSchnuerungMm?.trim() && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Offenstand der Schnürung
+                      </div>
+                      <div className="flex-1 text-xs text-slate-600 pt-1">
+                        {shaftConfiguration.offenstandSchnuerungMm.trim()} mm
+                      </div>
+                    </div>
+                  )}
+                  {shaftConfiguration.anzahlOesen?.trim() && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Anzahl Ösen
+                      </div>
+                      <div className="flex-1 text-xs text-slate-600 pt-1">
+                        {shaftConfiguration.anzahlOesen.trim()} Stk
+                      </div>
+                    </div>
+                  )}
+                  {shaftConfiguration.anzahlHaken?.trim() && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Anzahl Haken
+                      </div>
+                      <div className="flex-1 text-xs text-slate-600 pt-1">
+                        {shaftConfiguration.anzahlHaken.trim()} Stk
+                      </div>
+                    </div>
+                  )}
+                  {shaftConfiguration.anzahlKlettstreifen?.trim() && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Anzahl Klettstreifen
+                      </div>
+                      <div className="flex-1 text-xs text-slate-600 pt-1">
+                        {shaftConfiguration.anzahlKlettstreifen.trim()} Stk
+                      </div>
+                    </div>
+                  )}
+                  {shaftConfiguration.breiteKlettstreifenMm?.trim() && (
+                    <div className="flex py-3 border-b border-gray-300 items-start">
+                      <div className="w-[200px] flex-shrink-0 text-sm font-semibold text-slate-800 pr-4 leading-snug">
+                        Breite Klettstreifen
+                      </div>
+                      <div className="flex-1 text-xs text-slate-600 pt-1">
+                        {shaftConfiguration.breiteKlettstreifenMm.trim()} mm
                       </div>
                     </div>
                   )}
@@ -995,14 +1037,78 @@ const ShaftPDFPopup: React.FC<ShaftPDFPopupProps> = ({
                   </div>
                 )}
                 
-                {/* Verschlussart - Only show selected option (no borderBottom so no line above Extras) */}
+                {shaftConfiguration.ziernahtVorhanden !== undefined && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Ziernaht vorhanden?
+                    </div>
+                    <div style={{ flex: 1, lineHeight: 1.4 }}>
+                      <PDFCheckbox
+                        isSelected={true}
+                        label={shaftConfiguration.ziernahtVorhanden ? 'Ja' : 'Nein'}
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                {/* Verschlussart */}
                 {shaftConfiguration.closureType && (
-                  <div style={{ display: 'flex', padding: '6px 0', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
                     <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
                       Verschlussart
                     </div>
                     <div style={{ flex: 1, lineHeight: 1.4 }}>
                       <PDFCheckbox isSelected={true} label={getClosureTypeDisplayName(shaftConfiguration.closureType)} />
+                    </div>
+                  </div>
+                )}
+                {shaftConfiguration.offenstandSchnuerungMm?.trim() && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Offenstand der Schnürung
+                    </div>
+                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
+                      {shaftConfiguration.offenstandSchnuerungMm.trim()} mm
+                    </div>
+                  </div>
+                )}
+                {shaftConfiguration.anzahlOesen?.trim() && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Anzahl Ösen
+                    </div>
+                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
+                      {shaftConfiguration.anzahlOesen.trim()} Stk
+                    </div>
+                  </div>
+                )}
+                {shaftConfiguration.anzahlHaken?.trim() && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Anzahl Haken
+                    </div>
+                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
+                      {shaftConfiguration.anzahlHaken.trim()} Stk
+                    </div>
+                  </div>
+                )}
+                {shaftConfiguration.anzahlKlettstreifen?.trim() && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Anzahl Klettstreifen
+                    </div>
+                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
+                      {shaftConfiguration.anzahlKlettstreifen.trim()} Stk
+                    </div>
+                  </div>
+                )}
+                {shaftConfiguration.breiteKlettstreifenMm?.trim() && (
+                  <div style={{ display: 'flex', padding: '6px 0', borderBottom: '1px solid #e5e7eb', alignItems: 'flex-start' }}>
+                    <div style={{ width: '200px', flexShrink: 0, fontSize: '13px', fontWeight: 600, color: '#1e293b', paddingRight: '16px' }}>
+                      Breite Klettstreifen
+                    </div>
+                    <div style={{ flex: 1, fontSize: '12px', color: '#475569', paddingTop: '2px' }}>
+                      {shaftConfiguration.breiteKlettstreifenMm.trim()} mm
                     </div>
                   </div>
                 )}

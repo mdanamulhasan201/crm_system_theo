@@ -12,6 +12,7 @@ import LeatherColorSectionModal, { LeatherColorAssignment } from './LeatherColor
 import ZipperPlacementModal, { type ZipperPosition } from './ZipperPlacementModal';
 import ProductCadCategoryFields from './ProductCadCategoryFields';
 import SchafthoheCard from './SchafthoheCard';
+import VerschlussCard from './VerschlussCard';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -44,16 +45,23 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** Nein / Ja — same visual as design mockup; value `undefined` = keine Auswahl */
+const ACTIVE_SEGMENT_SLATE = 'bg-[#1e293b] text-white shadow-sm';
+/** Muted green — matches Verschluss / site accent */
+const ACTIVE_SEGMENT_GREEN = 'bg-[#679C7A] text-white shadow-sm';
+
+/** Nein / Ja — value `undefined` = keine Auswahl; `variant="green"` uses green active (not slate) */
 function SegmentedNeinJa({
   value,
   onChange,
   className,
+  variant = 'default',
 }: {
   value: boolean | undefined;
   onChange: (next: boolean | undefined) => void;
   className?: string;
+  variant?: 'default' | 'green';
 }) {
+  const activeClass = variant === 'green' ? ACTIVE_SEGMENT_GREEN : ACTIVE_SEGMENT_SLATE;
   return (
     <div className={cn('flex w-full rounded-lg border border-gray-200 bg-gray-100 p-0.5 sm:max-w-md', className)}>
       <button
@@ -61,7 +69,7 @@ function SegmentedNeinJa({
         onClick={() => onChange(value === false ? undefined : false)}
         className={cn(
           'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
-          value === false ? 'bg-[#1e293b] text-white shadow-sm' : 'text-gray-700 hover:bg-white/60'
+          value === false ? activeClass : 'text-gray-700 hover:bg-white/60'
         )}
       >
         Nein
@@ -71,7 +79,7 @@ function SegmentedNeinJa({
         onClick={() => onChange(value === true ? undefined : true)}
         className={cn(
           'flex-1 rounded-md px-4 py-2 text-sm font-medium transition-colors',
-          value === true ? 'bg-[#1e293b] text-white shadow-sm' : 'text-gray-700 hover:bg-white/60'
+          value === true ? activeClass : 'text-gray-700 hover:bg-white/60'
         )}
       >
         Ja
@@ -93,6 +101,8 @@ interface ProductConfigurationProps {
   setNahtfarbeOption: (option: string) => void;
   customNahtfarbe: string;
   setCustomNahtfarbe: (color: string) => void;
+  ziernahtVorhanden: boolean | undefined;
+  setZiernahtVorhanden: (value: boolean | undefined) => void;
   passendenSchnursenkel?: boolean | undefined;
   setPassendenSchnursenkel?: (value: boolean | undefined) => void;
   osenEinsetzen?: boolean | undefined;
@@ -104,6 +114,16 @@ interface ProductConfigurationProps {
   setZipperPosition?: (value: ZipperPosition | null) => void;
   closureType: string;
   setClosureType: (type: string) => void;
+  offenstandSchnuerungMm: string;
+  setOffenstandSchnuerungMm: (v: string) => void;
+  anzahlOesen: string;
+  setAnzahlOesen: (v: string) => void;
+  anzahlHaken: string;
+  setAnzahlHaken: (v: string) => void;
+  anzahlKlettstreifen: string;
+  setAnzahlKlettstreifen: (v: string) => void;
+  breiteKlettstreifenMm: string;
+  setBreiteKlettstreifenMm: (v: string) => void;
   lederType: string;
   setLederType: (type: string) => void;
   lederfarbe: string;
@@ -179,6 +199,8 @@ export default function ProductConfiguration({
   setNahtfarbeOption,
   customNahtfarbe,
   setCustomNahtfarbe,
+  ziernahtVorhanden,
+  setZiernahtVorhanden,
   passendenSchnursenkel,
   setPassendenSchnursenkel,
   osenEinsetzen,
@@ -189,6 +211,16 @@ export default function ProductConfiguration({
   setZipperPosition,
   closureType,
   setClosureType,
+  offenstandSchnuerungMm,
+  setOffenstandSchnuerungMm,
+  anzahlOesen,
+  setAnzahlOesen,
+  anzahlHaken,
+  setAnzahlHaken,
+  anzahlKlettstreifen,
+  setAnzahlKlettstreifen,
+  breiteKlettstreifenMm,
+  setBreiteKlettstreifenMm,
   lederType,
   setLederType,
   lederfarbe,
@@ -326,6 +358,14 @@ export default function ProductConfiguration({
     }
   };
 
+  const handleClosureTypeChange = (value: string) => {
+    setClosureType(value);
+    if (value === 'Velcro') {
+      updateSchnursenkel(undefined);
+      updateOsen(undefined);
+    }
+  };
+
   const effektZipperExtra = typeof zipperExtra === 'boolean' ? zipperExtra : localZipperExtra;
   const updateZipperExtra = (value: boolean | undefined) => {
     if (setZipperExtra) {
@@ -388,7 +428,7 @@ export default function ProductConfiguration({
           </div>
         )}
 
-        <ConfigCard title="Material & Ausführung" subtitle="Leder, Futter, Naht und Verschluss">
+        <ConfigCard title="Material & Ausführung" subtitle="Leder, Futter und Naht">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-x-5 md:gap-y-4">
             <div className="flex min-w-0 flex-col">
               <FieldLabel>Anzahl der Ledertypen</FieldLabel>
@@ -477,29 +517,8 @@ export default function ProductConfiguration({
             </div>
 
             <div className="flex min-w-0 flex-col">
-              <FieldLabel>Verschlussart</FieldLabel>
-              <Select
-                value={closureType}
-                onValueChange={(value) => {
-                  setClosureType(value);
-                  if (value === 'Velcro') {
-                    updateSchnursenkel(undefined);
-                    updateOsen(undefined);
-                  }
-                }}
-              >
-                <SelectTrigger className={SELECT_FIELD_CLASS}>
-                  <SelectValue placeholder="Verschlussart wählen…" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem className="cursor-pointer" value="Eyelets">
-                    Ösen (Schnürung)
-                  </SelectItem>
-                  <SelectItem className="cursor-pointer" value="Velcro">
-                    Klettverschluss
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+              <FieldLabel>Ziernaht vorhanden?</FieldLabel>
+              <SegmentedNeinJa variant="green" value={ziernahtVorhanden} onChange={setZiernahtVorhanden} />
             </div>
           </div>
 
@@ -613,6 +632,25 @@ export default function ProductConfiguration({
           setUmfangBei18Rechts={setUmfangBei18Rechts}
         />
 
+        <VerschlussCard
+          closureType={closureType}
+          onClosureTypeChange={handleClosureTypeChange}
+          passendenSchnursenkel={effektSchnursenkel}
+          onPassendenSchnursenkelChange={updateSchnursenkel}
+          osenEinsetzen={effektOsen}
+          onOsenEinsetzenChange={updateOsen}
+          offenstandSchnuerungMm={offenstandSchnuerungMm}
+          setOffenstandSchnuerungMm={setOffenstandSchnuerungMm}
+          anzahlOesen={anzahlOesen}
+          setAnzahlOesen={setAnzahlOesen}
+          anzahlHaken={anzahlHaken}
+          setAnzahlHaken={setAnzahlHaken}
+          anzahlKlettstreifen={anzahlKlettstreifen}
+          setAnzahlKlettstreifen={setAnzahlKlettstreifen}
+          breiteKlettstreifenMm={breiteKlettstreifenMm}
+          setBreiteKlettstreifenMm={setBreiteKlettstreifenMm}
+        />
+
         <ConfigCard title="Maße & Polsterung" subtitle="Polsterung und Verstärkungen">
         {/* Polsterung */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -681,27 +719,7 @@ export default function ProductConfiguration({
         </div>
         </ConfigCard>
 
-        <ConfigCard title="Zusätze & Optionen" subtitle="Schnürsenkel, Ösen, Reißverschluss und Notizen">
-        {closureType === 'Eyelets' && (
-          <div className="flex flex-col gap-2">
-            <FieldLabel>Passende Schnürsenkel zum Schuh?</FieldLabel>
-            <p className="text-xs text-gray-500">
-              <span className="font-medium text-green-600">+4,49 €</span> bei Ja
-            </p>
-            <SegmentedNeinJa value={effektSchnursenkel} onChange={updateSchnursenkel} />
-          </div>
-        )}
-
-        {closureType === 'Eyelets' && (
-          <div className="flex flex-col gap-2">
-            <FieldLabel>Schaft mit eingesetzten Ösen?</FieldLabel>
-            <p className="text-xs text-gray-500">
-              <span className="font-medium text-green-600">+8,99 €</span> bei Ja
-            </p>
-            <SegmentedNeinJa value={effektOsen} onChange={updateOsen} />
-          </div>
-        )}
-
+        <ConfigCard title="Zusätze & Optionen" subtitle="Reißverschluss und Notizen">
         <div className="flex flex-col gap-2">
           <FieldLabel>Zusätzlicher Reißverschluss?</FieldLabel>
           <p className="text-xs text-gray-500">

@@ -393,7 +393,16 @@ export default function Bodenkonstruktion({ orderId, productId }: Bodenkonstrukt
             verstarkungen_text: customShaftData.verstarkungen_text || customShaftData.verstarkungen_text || null,
             nahtfarbe: customShaftData.nahtfarbe || null,
             nahtfarbe_text: customShaftData.nahtfarbe_text || null,
+            ziernaht_vorhanden:
+              typeof customShaftData.ziernahtVorhanden === 'boolean'
+                ? customShaftData.ziernahtVorhanden
+                : null,
             verschlussart: customShaftData.closureType || null,
+            offenstand_schnuerung_mm: customShaftData.offenstandSchnuerungMm?.trim() || null,
+            anzahl_oesen: customShaftData.anzahlOesen?.trim() || null,
+            anzahl_haken: customShaftData.anzahlHaken?.trim() || null,
+            anzahl_klettstreifen: customShaftData.anzahlKlettstreifen?.trim() || null,
+            breite_klettstreifen_mm: customShaftData.breiteKlettstreifenMm?.trim() || null,
             moechten_sie_passende_schnuersenkel_zum_schuh: customShaftData.passenden_schnursenkel || null,
             moechten_sie_passende_schnuersenkel_zum_schuh_price: customShaftData.moechten_sie_passende_schnuersenkel_zum_schuh_price || null,
             moechten_sie_den_schaft_bereits_mit_eingesetzten_oesen: customShaftData.osen_einsetzen || null,

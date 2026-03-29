@@ -58,7 +58,15 @@ interface CustomShaftData {
   verstarkungen_text: string;
   nahtfarbe: string;
   nahtfarbe_text: string;
+  /** Dekorative Ziernaht — Nein / Ja */
+  ziernahtVorhanden?: boolean;
   closureType: string;
+  /** Verschluss — Offenstand (mm) */
+  offenstandSchnuerungMm?: string;
+  anzahlOesen?: string;
+  anzahlHaken?: string;
+  anzahlKlettstreifen?: string;
+  breiteKlettstreifenMm?: string;
   passenden_schnursenkel: boolean;
   moechten_sie_passende_schnuersenkel_zum_schuh_price: string | null;
   osen_einsetzen: boolean;
@@ -167,7 +175,13 @@ export const prepareMassschafterstellungJson1 = (data: CustomShaftData) => {
     verstarkungen_text: data.verstarkungen_text || null,
     nahtfarbe: data.nahtfarbe || null,
     nahtfarbe_text: data.nahtfarbe_text || null,
+    ziernaht_vorhanden: typeof data.ziernahtVorhanden === 'boolean' ? data.ziernahtVorhanden : null,
     verschlussart: data.closureType || null,
+    offenstand_schnuerung_mm: data.offenstandSchnuerungMm?.trim() || null,
+    anzahl_oesen: data.anzahlOesen?.trim() || null,
+    anzahl_haken: data.anzahlHaken?.trim() || null,
+    anzahl_klettstreifen: data.anzahlKlettstreifen?.trim() || null,
+    breite_klettstreifen_mm: data.breiteKlettstreifenMm?.trim() || null,
     moechten_sie_passende_schnuersenkel_zum_schuh: data.passenden_schnursenkel || null,
     moechten_sie_passende_schnuersenkel_zum_schuh_price:
       data.moechten_sie_passende_schnuersenkel_zum_schuh_price || null,
