@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, type Dispatch, type SetStateAction } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -13,6 +13,8 @@ import ZipperPlacementModal, { type ZipperPosition } from './ZipperPlacementModa
 import ProductCadCategoryFields from './ProductCadCategoryFields';
 import SchafthoheCard from './SchafthoheCard';
 import VerschlussCard from './VerschlussCard';
+import PolsterungCard from './PolsterungCard';
+import type { PolsterungMmFields } from './polsterungPayload';
 import { cn } from '@/lib/utils';
 import toast from 'react-hot-toast';
 
@@ -156,6 +158,8 @@ interface ProductConfigurationProps {
   setKnoechelumfangRechts: (v: string) => void;
   polsterung: string[];
   setPolsterung: (items: string[]) => void;
+  polsterungMm: PolsterungMmFields;
+  setPolsterungMm: Dispatch<SetStateAction<PolsterungMmFields>>;
   verstarkungen: string[];
   setVerstarkungen: (items: string[]) => void;
   polsterungText: string;
@@ -251,6 +255,8 @@ export default function ProductConfiguration({
   setKnoechelumfangRechts,
   polsterung,
   setPolsterung,
+  polsterungMm,
+  setPolsterungMm,
   verstarkungen,
   setVerstarkungen,
   polsterungText,
@@ -651,40 +657,16 @@ export default function ProductConfiguration({
           setBreiteKlettstreifenMm={setBreiteKlettstreifenMm}
         />
 
-        <ConfigCard title="Maße & Polsterung" subtitle="Polsterung und Verstärkungen">
-        {/* Polsterung */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3">Polsterung:</Label>
-          <div className="flex gap-4 flex-wrap">
-            {['Standard', 'Lasche', 'Ferse', 'Innen-Außenknöchel', 'Vorderfuß'].map((option) => (
-              <label key={option} className="flex items-center gap-2 cursor-pointer">
-                <Checkbox
-                  checked={polsterung.includes(option)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setPolsterung([...polsterung, option]);
-                    } else {
-                      setPolsterung(polsterung.filter(item => item !== option));
-                    }
-                  }}
-                />
-                {option}
-              </label>
-            ))}
-          </div>
-        </div>
+        <PolsterungCard
+          polsterung={polsterung}
+          setPolsterung={setPolsterung}
+          polsterungText={polsterungText}
+          setPolsterungText={setPolsterungText}
+          polsterungMm={polsterungMm}
+          setPolsterungMm={setPolsterungMm}
+        />
 
-        {/* Polsterung Anmerkung */}
-        <div className="flex flex-col md:flex-row md:items-center gap-4">
-          <Label className="font-medium text-base md:w-1/3"> </Label>
-          <Textarea
-            placeholder="Spezielle Anmerkung (z.B. Polsterdicke in mm, asymmetrisch, extraweich..)"
-            className="w-full md:w-1/2 border-gray-300"
-            value={polsterungText}
-            onChange={(e) => setPolsterungText(e.target.value)}
-          />
-        </div>
-
+        <ConfigCard title="Verstärkungen" subtitle="Verstärkungen und Hinweise">
         {/* Verstärkungen */}
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Label className="font-medium text-base md:w-1/3">Verstärkungen:</Label>

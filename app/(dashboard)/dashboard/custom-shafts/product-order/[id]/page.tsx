@@ -18,6 +18,11 @@ import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhau
 import StickyPriceSummary from '@/components/StickyPriceSummary/StickyPriceSummary';
 import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
 import type { ZipperPosition } from '@/components/CustomShafts/ZipperPlacementModal';
+import {
+  EMPTY_POLSTERUNG_MM,
+  buildPolsterungTextPayload,
+  type PolsterungMmFields,
+} from '@/components/CustomShafts/polsterungPayload';
 
 interface Customer {
   id: string;
@@ -102,9 +107,10 @@ export default function CustomShoeOrderPage() {
   const [umfangBei16Rechts, setUmfangBei16Rechts] = useState('');
   const [umfangBei18Rechts, setUmfangBei18Rechts] = useState('');
   const [knoechelumfangRechts, setKnoechelumfangRechts] = useState('');
-  const [polsterung, setPolsterung] = useState<string[]>([]);
+  const [polsterung, setPolsterung] = useState<string[]>(['Standard']);
   const [verstarkungen, setVerstarkungen] = useState<string[]>([]);
   const [polsterungText, setPolsterungText] = useState('');
+  const [polsterungMm, setPolsterungMm] = useState<PolsterungMmFields>(EMPTY_POLSTERUNG_MM);
   const [verstarkungenText, setVerstarkungenText] = useState('');
 
   // Seam color
@@ -206,6 +212,12 @@ export default function CustomShoeOrderPage() {
 
   const orderPrice = calculateTotalPrice();
 
+  const polsterungTextForPdf = buildPolsterungTextPayload(
+    polsterungText,
+    polsterungMm,
+    polsterung.includes('Erweitert')
+  );
+
   // Prepare order data for PDF
   const orderDataForPDF: ShaftOrderDataForPDF = {
     orderNumber: existingOrderId ? `#${existingOrderId}` : undefined,
@@ -274,7 +286,11 @@ export default function CustomShoeOrderPage() {
       knoechelumfangRechts,
       polsterung,
       verstarkungen,
-      polsterung_text: polsterungText,
+      polsterung_text: buildPolsterungTextPayload(
+        polsterungText,
+        polsterungMm,
+        polsterung.includes('Erweitert')
+      ),
       verstarkungen_text: verstarkungenText,
 
       // Seam and closure – send selected Nahtfarbe option (default | personal | custom value)
@@ -524,6 +540,8 @@ export default function CustomShoeOrderPage() {
           setKnoechelumfangRechts={setKnoechelumfangRechts}
           polsterung={polsterung}
           setPolsterung={setPolsterung}
+          polsterungMm={polsterungMm}
+          setPolsterungMm={setPolsterungMm}
           verstarkungen={verstarkungen}
           setVerstarkungen={setVerstarkungen}
           polsterungText={polsterungText}
@@ -615,25 +633,25 @@ export default function CustomShoeOrderPage() {
               schafthoheRechts,
               umfangmasseLinks: umfangmasseLinksDisplay,
               umfangmasseRechts: umfangmasseRechtsDisplay,
-              polsterung,
-              verstarkungen,
-              polsterungText,
-              verstarkungenText,
-              nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
-              nahtfarbeOption: nahtfarbeOption,
-              ziernahtVorhanden,
-              closureType,
-              offenstandSchnuerungMm,
-              anzahlOesen,
-              anzahlHaken,
-              anzahlKlettstreifen,
-              breiteKlettstreifenMm,
-              passendenSchnursenkel,
-              osenEinsetzen,
-              zipperExtra,
-              zipperPosition,
-              additionalNotes,
-              deliveryMethod,
+            polsterung,
+            verstarkungen,
+            polsterungText: polsterungTextForPdf,
+            verstarkungenText,
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+            nahtfarbeOption: nahtfarbeOption,
+            ziernahtVorhanden,
+            closureType,
+            offenstandSchnuerungMm,
+            anzahlOesen,
+            anzahlHaken,
+            anzahlKlettstreifen,
+            breiteKlettstreifenMm,
+            passendenSchnursenkel,
+            osenEinsetzen,
+            zipperExtra,
+            zipperPosition,
+            additionalNotes,
+            deliveryMethod,
             } satisfies ShaftConfiguration
           }
         />
@@ -693,25 +711,25 @@ export default function CustomShoeOrderPage() {
               schafthoheRechts,
               umfangmasseLinks: umfangmasseLinksDisplay,
               umfangmasseRechts: umfangmasseRechtsDisplay,
-              polsterung,
-              verstarkungen,
-              polsterungText,
-              verstarkungenText,
-              nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
-              nahtfarbeOption: nahtfarbeOption,
-              ziernahtVorhanden,
-              closureType,
-              offenstandSchnuerungMm,
-              anzahlOesen,
-              anzahlHaken,
-              anzahlKlettstreifen,
-              breiteKlettstreifenMm,
-              passendenSchnursenkel,
-              osenEinsetzen,
-              zipperExtra,
-              zipperPosition,
-              additionalNotes,
-              deliveryMethod,
+            polsterung,
+            verstarkungen,
+            polsterungText: polsterungTextForPdf,
+            verstarkungenText,
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+            nahtfarbeOption: nahtfarbeOption,
+            ziernahtVorhanden,
+            closureType,
+            offenstandSchnuerungMm,
+            anzahlOesen,
+            anzahlHaken,
+            anzahlKlettstreifen,
+            breiteKlettstreifenMm,
+            passendenSchnursenkel,
+            osenEinsetzen,
+            zipperExtra,
+            zipperPosition,
+            additionalNotes,
+            deliveryMethod,
             } satisfies ShaftConfiguration
           }
           onConfirm={(deliveryDate) => {

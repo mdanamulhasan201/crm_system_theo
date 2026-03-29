@@ -21,6 +21,11 @@ import ShaftPDFPopup, { ShaftOrderDataForPDF, type ShaftConfiguration } from '@/
 import CompletionPopUp from '@/app/(dashboard)/dashboard/_components/Massschuhauftraeges/Details/Completion-PopUp';
 import { LeatherColorAssignment } from '@/components/CustomShafts/LeatherColorSectionModal';
 import type { ZipperPosition } from '@/components/CustomShafts/ZipperPlacementModal';
+import {
+  EMPTY_POLSTERUNG_MM,
+  buildPolsterungTextPayload,
+  type PolsterungMmFields,
+} from '@/components/CustomShafts/polsterungPayload';
 
 interface Customer {
   id: string;
@@ -103,9 +108,10 @@ export default function CollectionShaftDetailsPage() {
   const [umfangBei16Rechts, setUmfangBei16Rechts] = useState('');
   const [umfangBei18Rechts, setUmfangBei18Rechts] = useState('');
   const [knoechelumfangRechts, setKnoechelumfangRechts] = useState('');
-  const [polsterung, setPolsterung] = useState<string[]>([]);
+  const [polsterung, setPolsterung] = useState<string[]>(['Standard']);
   const [verstarkungen, setVerstarkungen] = useState<string[]>([]);
   const [polsterungText, setPolsterungText] = useState('');
+  const [polsterungMm, setPolsterungMm] = useState<PolsterungMmFields>(EMPTY_POLSTERUNG_MM);
   const [verstarkungenText, setVerstarkungenText] = useState('');
 
   // Seam color
@@ -265,6 +271,12 @@ export default function CollectionShaftDetailsPage() {
 
   const orderPrice = calculateTotalPrice();
 
+  const polsterungTextForPdf = buildPolsterungTextPayload(
+    polsterungText,
+    polsterungMm,
+    polsterung.includes('Erweitert')
+  );
+
   // Prepare order data for PDF
   const orderDataForPDF: ShaftOrderDataForPDF = {
     orderNumber: orderId ? `#${orderId}` : undefined,
@@ -336,7 +348,11 @@ export default function CollectionShaftDetailsPage() {
       knoechelumfangRechts,
       polsterung,
       verstarkungen,
-      polsterung_text: polsterungText,
+      polsterung_text: buildPolsterungTextPayload(
+        polsterungText,
+        polsterungMm,
+        polsterung.includes('Erweitert')
+      ),
       verstarkungen_text: verstarkungenText,
 
       // Seam and closure – send selected Nahtfarbe option (default | personal | custom value)
@@ -686,6 +702,8 @@ export default function CollectionShaftDetailsPage() {
           setKnoechelumfangRechts={setKnoechelumfangRechts}
           polsterung={polsterung}
           setPolsterung={setPolsterung}
+          polsterungMm={polsterungMm}
+          setPolsterungMm={setPolsterungMm}
           verstarkungen={verstarkungen}
           setVerstarkungen={setVerstarkungen}
           polsterungText={polsterungText}
@@ -780,25 +798,25 @@ export default function CollectionShaftDetailsPage() {
               schafthoheRechts,
               umfangmasseLinks: umfangmasseLinksDisplay,
               umfangmasseRechts: umfangmasseRechtsDisplay,
-              polsterung,
-              verstarkungen,
-              polsterungText,
-              verstarkungenText,
-              nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
-              nahtfarbeOption: nahtfarbeOption,
-              ziernahtVorhanden,
-              closureType,
-              offenstandSchnuerungMm,
-              anzahlOesen,
-              anzahlHaken,
-              anzahlKlettstreifen,
-              breiteKlettstreifenMm,
-              passendenSchnursenkel,
-              osenEinsetzen,
-              zipperExtra,
-              zipperPosition,
-              additionalNotes,
-              deliveryMethod,
+            polsterung,
+            verstarkungen,
+            polsterungText: polsterungTextForPdf,
+            verstarkungenText,
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+            nahtfarbeOption: nahtfarbeOption,
+            ziernahtVorhanden,
+            closureType,
+            offenstandSchnuerungMm,
+            anzahlOesen,
+            anzahlHaken,
+            anzahlKlettstreifen,
+            breiteKlettstreifenMm,
+            passendenSchnursenkel,
+            osenEinsetzen,
+            zipperExtra,
+            zipperPosition,
+            additionalNotes,
+            deliveryMethod,
             } satisfies ShaftConfiguration
           }
         />
@@ -859,25 +877,25 @@ export default function CollectionShaftDetailsPage() {
               schafthoheRechts,
               umfangmasseLinks: umfangmasseLinksDisplay,
               umfangmasseRechts: umfangmasseRechtsDisplay,
-              polsterung,
-              verstarkungen,
-              polsterungText,
-              verstarkungenText,
-              nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
-              nahtfarbeOption: nahtfarbeOption,
-              ziernahtVorhanden,
-              closureType,
-              offenstandSchnuerungMm,
-              anzahlOesen,
-              anzahlHaken,
-              anzahlKlettstreifen,
-              breiteKlettstreifenMm,
-              passendenSchnursenkel,
-              osenEinsetzen,
-              zipperExtra,
-              zipperPosition,
-              additionalNotes,
-              deliveryMethod,
+            polsterung,
+            verstarkungen,
+            polsterungText: polsterungTextForPdf,
+            verstarkungenText,
+            nahtfarbe: nahtfarbeOption === 'custom' ? customNahtfarbe : (nahtfarbeOption || 'default'),
+            nahtfarbeOption: nahtfarbeOption,
+            ziernahtVorhanden,
+            closureType,
+            offenstandSchnuerungMm,
+            anzahlOesen,
+            anzahlHaken,
+            anzahlKlettstreifen,
+            breiteKlettstreifenMm,
+            passendenSchnursenkel,
+            osenEinsetzen,
+            zipperExtra,
+            zipperPosition,
+            additionalNotes,
+            deliveryMethod,
             } satisfies ShaftConfiguration
           }
           onConfirm={(deliveryDate) => {
